@@ -1,5 +1,5 @@
 ---
-name: 이슈
+name: 이슈등록
 about: 이슈 등록 시 사용
 title: "[FEAT] "
 labels: feature
