@@ -1,0 +1,22 @@
+# 공통
+.env
+*.log
+logs/
+
+# Spring Boot
+backend/src/main/resources/application*.yml
+backend/build/
+backend/.gradle/
+
+# FastAPI
+ai-server/.venv/
+ai-server/__pycache__/
+
+# React
+frontend/node_modules/
+frontend/dist/
+
+# IDE
+.idea/
+.vscode/
+*.iml

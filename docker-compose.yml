@@ -1,0 +1,73 @@
+version: '3.9'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: tftgogo-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: tftgogo
+      MYSQL_USER: tftuser
+      MYSQL_PASSWORD: tftpass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: tftgogo-redis
+    ports:
+      - "6379:6379"
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: tftgogo-postgres
+    environment:
+      POSTGRES_DB: tftgogo_ai
+      POSTGRES_USER: tftuser
+      POSTGRES_PASSWORD: tftpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tftgogo-backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+      - redis
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+
+  ai-server:
+    build:
+      context: ./ai-server
+      dockerfile: Dockerfile
+    container_name: tftgogo-ai
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+    env_file:
+      - ./ai-server/.env
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tftgogo-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+      - ai-server
+
+volumes:
+  mysql-data:
+  postgres-data:
