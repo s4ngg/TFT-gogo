@@ -10,6 +10,7 @@ on:
 
 jobs:
   build:
+    if: false # TODO: 실제 소스코드 추가 후 활성화
     runs-on: ubuntu-latest
 
     steps:
