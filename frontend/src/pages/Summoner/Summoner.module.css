@@ -1,0 +1,224 @@
+.page {
+  width: 960px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 40px;
+}
+
+.topSearch {
+  height: 46px;
+  display: grid;
+  grid-template-columns: 1fr 52px;
+  overflow: hidden;
+  border: 1px solid var(--border-active);
+  border-radius: var(--radius-button);
+  background: rgba(3, 15, 20, 0.94);
+  box-shadow: 0 0 18px rgba(0, 221, 215, 0.08);
+}
+
+.topSearch input {
+  min-width: 0;
+  padding: 0 16px;
+  border: 0;
+  outline: 0;
+  color: #ffffff;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.topSearch input::placeholder {
+  color: #c2c9cf;
+}
+
+.topSearch button {
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-left: 1px solid rgba(0, 244, 235, 0.55);
+  color: #ffffff;
+  background: linear-gradient(135deg, #075c62, #0b9898);
+  cursor: pointer;
+}
+
+.profileCard {
+  display: grid;
+  grid-template-columns: 120px 1fr auto;
+  align-items: center;
+  gap: 24px;
+  padding: 24px 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: linear-gradient(180deg, rgba(8, 21, 29, 0.96), rgba(5, 15, 21, 0.96));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.015), 0 18px 38px rgba(0, 0, 0, 0.18);
+}
+
+.emblem {
+  width: 120px;
+  height: 110px;
+  background: url("/assets/ranks/platinum-emblem.png") center / contain no-repeat;
+}
+
+.profileInfo h1 {
+  margin: 0 0 8px;
+  color: #ffffff;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.tag {
+  margin-left: 4px;
+  color: #7a8896;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.tierLine {
+  margin: 0 0 6px;
+  color: #04f3e5;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.recordLine {
+  display: flex;
+  gap: 12px;
+  margin: 0;
+  color: #b5bdc5;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.winRateText {
+  color: #76ef33;
+}
+
+.updateBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 20px;
+  border: 1px solid rgba(118, 151, 160, 0.36);
+  border-radius: var(--radius-button);
+  color: #d9dde3;
+  background: rgba(14, 27, 34, 0.74);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.matchSection h2 {
+  margin: 0 0 12px;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.matchList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.matchRow {
+  display: grid;
+  grid-template-columns: 80px 1fr auto 90px;
+  align-items: center;
+  gap: 20px;
+  padding: 14px 20px;
+  border: 1px solid rgba(112, 144, 152, 0.18);
+  border-left-width: 4px;
+  border-radius: var(--radius-card);
+}
+
+.gold {
+  border-left-color: #f7d26d;
+  background: linear-gradient(90deg, rgba(108, 74, 25, 0.24), rgba(6, 17, 24, 0.82));
+}
+
+.gold .placementBadge span {
+  color: #f7d26d;
+}
+
+.top4 {
+  border-left-color: #04f3e5;
+  background: linear-gradient(90deg, rgba(0, 80, 80, 0.22), rgba(6, 17, 24, 0.82));
+}
+
+.top4 .placementBadge span {
+  color: #04f3e5;
+}
+
+.bot4 {
+  border-left-color: #ff4945;
+  background: linear-gradient(90deg, rgba(100, 20, 20, 0.22), rgba(6, 17, 24, 0.82));
+}
+
+.bot4 .placementBadge span {
+  color: #ff4945;
+}
+
+.placementBadge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.placementBadge span {
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.placementBadge small {
+  margin-top: 3px;
+  color: #8a939c;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.matchMeta .deckName {
+  margin: 0 0 4px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.matchMeta .timeAgo {
+  margin: 0;
+  color: #8a939c;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.augments {
+  display: flex;
+  gap: 6px;
+}
+
+.augIcon {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(114, 150, 160, 0.28);
+  border-radius: 6px;
+  background: rgba(30, 50, 62, 0.8);
+}
+
+.lpDelta {
+  text-align: right;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.lpGain {
+  color: #76ef33;
+}
+
+.lpLoss {
+  color: #ff4945;
+}
