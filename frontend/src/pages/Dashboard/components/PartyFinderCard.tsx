@@ -26,7 +26,7 @@ function PartyFinderCard() {
         <button type="button">커스텀</button>
       </div>
       <div className={styles.partyList}>
-        {partyPosts.map((post) => {
+        {partyPosts.slice(0, 3).map((post) => {
           const Icon = partyPostIcons[post.icon]
 
           return (
