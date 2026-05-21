@@ -450,7 +450,7 @@
   min-height: 0;
   height: var(--snapshot-height);
   display: grid;
-  grid-template-rows: 306px 220px minmax(160px, 1fr);
+  grid-template-rows: 260px 258px minmax(148px, 1fr);
   gap: 14px;
 }
 
@@ -464,8 +464,8 @@
 .smallTabs {
   display: flex;
   gap: 10px;
-  margin-top: 14px;
-  margin-bottom: 10px;
+  margin-top: 10px;
+  margin-bottom: 8px;
 }
 
 .smallTabs button {
@@ -479,12 +479,12 @@
 }
 
 .partyRow {
-  min-height: 58px;
+  min-height: 52px;
   display: grid;
   grid-template-columns: 48px minmax(0, 1fr) auto;
   align-items: center;
   gap: 9px;
-  padding: 7px 9px 7px 7px;
+  padding: 6px 9px 6px 7px;
   border-bottom: 1px solid rgba(112, 145, 153, 0.12);
 }
 
@@ -494,8 +494,8 @@
 
 .partyIcon {
   position: relative;
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
   border-radius: 10px;
@@ -548,7 +548,7 @@
 }
 
 .partyRow h3 {
-  margin: 0 0 5px;
+  margin: 0 0 4px;
   overflow: hidden;
   color: #ffffff;
   font-size: 14px;
@@ -585,11 +585,11 @@
 }
 
 .chatList {
-  margin-top: 11px;
+  margin-top: 9px;
 }
 
 .chatRow {
-  height: 26px;
+  height: 24px;
   display: grid;
   grid-template-columns: 22px 86px 58px 1fr 46px;
   align-items: center;
@@ -636,7 +636,7 @@
 
 .chatButton {
   width: 100%;
-  height: 37px;
+  height: 35px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -652,7 +652,7 @@
 }
 
 .aiPanel {
-  min-height: 116px;
+  min-height: 0;
   height: auto;
   overflow: hidden;
   display: grid;
@@ -843,7 +843,7 @@ button:hover {
   }
 
   .rightColumn {
-    grid-template-rows: 306px 218px minmax(160px, 1fr);
+    grid-template-rows: 252px 242px minmax(146px, 1fr);
     gap: 12px;
   }
 
@@ -858,10 +858,10 @@ button:hover {
   }
 
   .partyRow {
-    min-height: 54px;
+    min-height: 50px;
     grid-template-columns: 45px minmax(0, 1fr) auto;
-    padding-top: 6px;
-    padding-bottom: 6px;
+    padding-top: 5px;
+    padding-bottom: 5px;
   }
 
   .partyIcon {
@@ -879,7 +879,7 @@ button:hover {
   }
 
   .aiPanel {
-    min-height: 116px;
+    min-height: 0;
     height: auto;
     grid-template-columns: 1fr 104px;
     gap: 6px 10px;
