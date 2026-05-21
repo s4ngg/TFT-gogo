@@ -1,14 +1,17 @@
 import { ChevronRight, MessageCircle, Users } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { chatChannels } from '../dashboardData'
 import styles from '../Dashboard.module.css'
 
 function LiveChat() {
+  const navigate = useNavigate()
+
   return (
     <section className={`${styles.panel} ${styles.chatPanel}`}>
       <div className={styles.sideHeading}>
         <h2>실시간 채팅</h2>
-        <button type="button">
-          채널 목록
+        <button type="button" onClick={() => navigate('/party')}>
+          더 보기
           <ChevronRight size={16} />
         </button>
       </div>
@@ -26,7 +29,7 @@ function LiveChat() {
           </article>
         ))}
       </div>
-      <button type="button" className={styles.chatButton}>
+      <button type="button" className={styles.chatButton} onClick={() => navigate('/party')}>
         <MessageCircle size={20} />
         채팅 열기
       </button>

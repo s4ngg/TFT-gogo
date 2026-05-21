@@ -4,7 +4,6 @@
   ClipboardList,
   Home,
   LayoutGrid,
-  MessageCircle,
   RefreshCcw,
   Users,
 } from 'lucide-react'
@@ -78,11 +77,6 @@ function Sidebar() {
           </button>
         </section>
       )}
-
-      <button className={styles.feedbackButton} type="button">
-        <MessageCircle size={21} />
-        의견 보내기
-      </button>
     </aside>
   )
 }

@@ -1,4 +1,5 @@
 import { ChevronRight, Crown, Leaf, Sparkles, Swords, Users } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { partyPosts, type PartyPost } from '../dashboardData'
 import styles from '../Dashboard.module.css'
 
@@ -10,11 +11,13 @@ const partyPostIcons: Record<PartyPost['icon'], typeof Crown> = {
 }
 
 function PartyFinderCard() {
+  const navigate = useNavigate()
+
   return (
     <section className={`${styles.panel} ${styles.partyPanel}`}>
       <div className={styles.sideHeading}>
         <h2>파티원 찾기</h2>
-        <button type="button">
+        <button type="button" onClick={() => navigate('/party')}>
           더 보기
           <ChevronRight size={16} />
         </button>

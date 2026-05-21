@@ -1,4 +1,5 @@
 import { BadgePlus, Crosshair, Gem, LayoutGrid, Sparkles } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import styles from '../Dashboard.module.css'
 
 const aiOptions = [
@@ -9,6 +10,8 @@ const aiOptions = [
 ]
 
 function AiDeckRecommend() {
+  const navigate = useNavigate()
+
   return (
     <section className={`${styles.panel} ${styles.aiPanel}`}>
       <div>
@@ -27,7 +30,7 @@ function AiDeckRecommend() {
           </div>
         ))}
       </div>
-      <button type="button">
+      <button type="button" onClick={() => navigate('/ai-recommend')}>
         <Sparkles size={30} />
         분석 시작
       </button>
