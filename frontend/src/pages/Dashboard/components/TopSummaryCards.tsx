@@ -1,4 +1,6 @@
 import { ClipboardList, Search } from 'lucide-react'
+import { useState } from 'react'
+import useSummonerStore from '../../../store/useSummonerStore'
 import styles from '../Dashboard.module.css'
 
 function PatchMetaCard() {
@@ -17,23 +19,56 @@ function PatchMetaCard() {
   )
 }
 
+const QUICK_TAGS = ['정동글#KR1', '새벽의달#KR', '응의자#KR1', 'TFT잘하고싶다#1234']
+
 function SummonerSearchCard() {
+  const [query, setQuery] = useState('')
+  const setSummoner = useSummonerStore((s) => s.setSummoner)
+
+  function handleSearch(input: string) {
+    const trimmed = input.trim()
+    if (!trimmed) return
+    const [name = trimmed, tag = 'KR1'] = trimmed.split('#')
+    // TODO: 실제 API 연동 후 교체
+    setSummoner({
+      name,
+      tag,
+      tier: '플래티넘 II',
+      lp: 45,
+      wins: 123,
+      losses: 98,
+      emblemKey: 'platinum',
+    })
+  }
+
   return (
     <section className={`${styles.panel} ${styles.searchPanel}`}>
       <h1>소환사 전적 검색</h1>
       <p>소환사명, 태그#KR 등을 입력하세요</p>
-      <form className={styles.searchBox}>
-        <input aria-label="소환사명 검색" placeholder="소환사명#태그 입력" />
+      <form
+        className={styles.searchBox}
+        onSubmit={(e) => {
+          e.preventDefault()
+          handleSearch(query)
+        }}
+      >
+        <input
+          aria-label="소환사명 검색"
+          placeholder="소환사명#태그 입력"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
         <button type="submit" aria-label="검색">
           <Search size={28} />
         </button>
       </form>
       <div className={styles.searchTags}>
         <span>인기 검색</span>
-        <button type="button">정동글#KR1</button>
-        <button type="button">새벽의달#KR</button>
-        <button type="button">응의자#KR1</button>
-        <button type="button">TFT잘하고싶다#1234</button>
+        {QUICK_TAGS.map((tag) => (
+          <button key={tag} type="button" onClick={() => handleSearch(tag)}>
+            {tag}
+          </button>
+        ))}
       </div>
     </section>
   )
