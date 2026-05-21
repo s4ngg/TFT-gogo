@@ -1,4 +1,5 @@
 import { ChevronRight, Clock3 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import ChampionCard from '../../../components/common/ChampionCard'
 import TierBadge from '../../../components/common/TierBadge'
 import TraitHexBadge from '../../../components/common/TraitHexBadge'
@@ -49,6 +50,7 @@ function Champions({ champions }: ChampionsProps) {
 
 function MetaSnapshot() {
   const { data: metaDecks = [] } = useMetaSnapshot()
+  const navigate = useNavigate()
 
   return (
     <section className={`${styles.panel} ${styles.metaPanel}`}>
@@ -60,7 +62,7 @@ function MetaSnapshot() {
             업데이트: 3분 전
           </span>
         </div>
-        <button type="button">
+        <button type="button" onClick={() => navigate('/decks')}>
           전체 보기
           <ChevronRight size={20} />
         </button>

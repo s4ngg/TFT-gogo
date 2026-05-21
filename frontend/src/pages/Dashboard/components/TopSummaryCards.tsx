@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import styles from '../Dashboard.module.css'
 
 function PatchMetaCard() {
+  const navigate = useNavigate()
+
   return (
     <section className={`${styles.panel} ${styles.patchCard}`}>
       <div className={styles.patchEmblemArt} aria-hidden="true" />
@@ -11,7 +13,7 @@ function PatchMetaCard() {
         <h2>17.3 추천 메타</h2>
         <p>5월 20일 업데이트</p>
       </div>
-      <button type="button">
+      <button type="button" onClick={() => navigate('/patch-notes')}>
         <ClipboardList size={19} />
         패치 노트 보기
       </button>
