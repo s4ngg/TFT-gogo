@@ -1,0 +1,36 @@
+.badge {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(218, 166, 35, 0.95);
+  border-radius: 6px;
+  color: #ffd33d;
+  background:
+    radial-gradient(circle at 50% 48%, rgba(31, 38, 25, 0.98) 0 42%, rgba(7, 14, 17, 0.98) 73%),
+    linear-gradient(180deg, #091721, #03080d);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.72), 0 0 7px rgba(255, 198, 46, 0.32);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 218, 88, 0.1),
+    inset 0 8px 9px rgba(255, 213, 65, 0.08),
+    inset 0 -8px 13px rgba(0, 0, 0, 0.55),
+    0 0 8px rgba(214, 154, 25, 0.16);
+}
+
+.badge span {
+  position: relative;
+  z-index: 2;
+  display: block;
+  color: #ffd744;
+}
+
+.badge[data-tier="A+"] {
+  font-size: 15px;
+}
