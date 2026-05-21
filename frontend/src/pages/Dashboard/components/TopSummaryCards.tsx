@@ -1,6 +1,6 @@
 import { ClipboardList, Search } from 'lucide-react'
 import { useState } from 'react'
-import useSummonerStore from '../../../store/useSummonerStore'
+import { useNavigate } from 'react-router-dom'
 import styles from '../Dashboard.module.css'
 
 function PatchMetaCard() {
@@ -23,22 +23,13 @@ const QUICK_TAGS = ['정동글#KR1', '새벽의달#KR', '응의자#KR1', 'TFT잘
 
 function SummonerSearchCard() {
   const [query, setQuery] = useState('')
-  const setSummoner = useSummonerStore((s) => s.setSummoner)
+  const navigate = useNavigate()
 
   function handleSearch(input: string) {
     const trimmed = input.trim()
     if (!trimmed) return
     const [name = trimmed, tag = 'KR1'] = trimmed.split('#')
-    // TODO: 실제 API 연동 후 교체
-    setSummoner({
-      name,
-      tag,
-      tier: '플래티넘 II',
-      lp: 45,
-      wins: 123,
-      losses: 98,
-      emblemKey: 'platinum',
-    })
+    navigate(`/summoner/${encodeURIComponent(name)}/${tag}`)
   }
 
   return (
