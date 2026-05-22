@@ -11,7 +11,7 @@
 /decks          → Decks (덱 목록)
 /ai-recommend   → AiRecommend (AI 덱 추천)
 /guide          → Guide (게임 가이드)
-/party          → Party (파티원 찾기)
+/community      → Community (커뮤니티 — 파티원 찾기 + 실시간 채팅)
 /patch-notes    → PatchNotes (패치 노트)
 *               → / 로 리다이렉트
 ```
@@ -29,7 +29,7 @@
       <Route path="/decks"        element={<Decks />} />
       <Route path="/ai-recommend" element={<AiRecommend />} />
       <Route path="/guide"        element={<Guide />} />
-      <Route path="/party"        element={<Party />} />
+      <Route path="/community"    element={<Community />} />
       <Route path="/patch-notes"  element={<PatchNotes />} />
     </Route>
     <Route path="*" element={<Navigate to="/" replace />} />
