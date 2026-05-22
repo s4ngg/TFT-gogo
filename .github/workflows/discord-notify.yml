@@ -1,0 +1,125 @@
+name: Discord 알림
+
+on:
+  issues:
+    types: [opened, closed, reopened]
+  pull_request:
+    types: [opened, closed, reopened, ready_for_review]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    # DISCORD_WEBHOOK_URL 시크릿이 설정된 경우에만 실행
+    if: ${{ secrets.DISCORD_WEBHOOK_URL != '' }}
+    steps:
+      - name: Discord 알림 전송
+        env:
+          DISCORD_WEBHOOK:  ${{ secrets.DISCORD_WEBHOOK_URL }}
+          EVENT_NAME:       ${{ github.event_name }}
+          EVENT_ACTION:     ${{ github.event.action }}
+          # 이슈 관련
+          ISSUE_NUMBER:     ${{ github.event.issue.number }}
+          ISSUE_TITLE:      ${{ github.event.issue.title }}
+          ISSUE_URL:        ${{ github.event.issue.html_url }}
+          ISSUE_AUTHOR:     ${{ github.event.issue.user.login }}
+          ISSUE_BODY:       ${{ github.event.issue.body }}
+          # PR 관련
+          PR_NUMBER:        ${{ github.event.pull_request.number }}
+          PR_TITLE:         ${{ github.event.pull_request.title }}
+          PR_URL:           ${{ github.event.pull_request.html_url }}
+          PR_AUTHOR:        ${{ github.event.pull_request.user.login }}
+          PR_BASE:          ${{ github.event.pull_request.base.ref }}
+          PR_HEAD:          ${{ github.event.pull_request.head.ref }}
+          PR_MERGED:        ${{ github.event.pull_request.merged }}
+        run: |
+          python3 << 'PYEOF'
+          import json, os, urllib.request, sys
+
+          webhook = os.environ.get("DISCORD_WEBHOOK", "")
+          if not webhook:
+              print("DISCORD_WEBHOOK_URL 시크릿이 설정되지 않았습니다.")
+              sys.exit(0)
+
+          event  = os.environ.get("EVENT_NAME", "")
+          action = os.environ.get("EVENT_ACTION", "")
+
+          # ── 이슈 ──────────────────────────────────────
+          if event == "issues":
+              number = os.environ.get("ISSUE_NUMBER", "?")
+              title  = os.environ.get("ISSUE_TITLE",  "(제목 없음)")
+              url    = os.environ.get("ISSUE_URL",    "")
+              author = os.environ.get("ISSUE_AUTHOR", "unknown")
+              body   = os.environ.get("ISSUE_BODY",   "") or ""
+              # 본문 미리보기 (최대 120자)
+              preview = (body[:120] + "…") if len(body) > 120 else body
+
+              cfg = {
+                  "opened":   ("📋", "새 이슈 등록",  3447003),   # 파랑
+                  "closed":   ("✅", "이슈 닫힘",     5763719),   # 초록
+                  "reopened": ("🔄", "이슈 재오픈",   16776960),  # 노랑
+              }
+              emoji, status, color = cfg.get(action, ("📌", action, 7506394))
+
+              embed = {
+                  "title":       f"{emoji} [{status}] #{number}  {title}",
+                  "url":         url,
+                  "description": preview,
+                  "color":       color,
+                  "fields": [
+                      {"name": "작성자",    "value": f"`{author}`", "inline": True},
+                      {"name": "이슈 번호", "value": f"#{number}",  "inline": True},
+                  ],
+                  "footer": {"text": "TFT-gogo · GitHub Issues"},
+              }
+
+          # ── PR ────────────────────────────────────────
+          elif event == "pull_request":
+              number = os.environ.get("PR_NUMBER", "?")
+              title  = os.environ.get("PR_TITLE",  "(제목 없음)")
+              url    = os.environ.get("PR_URL",    "")
+              author = os.environ.get("PR_AUTHOR", "unknown")
+              base   = os.environ.get("PR_BASE",   "?")
+              head   = os.environ.get("PR_HEAD",   "?")
+              merged = os.environ.get("PR_MERGED", "false")
+
+              if action == "opened":
+                  emoji, status, color = "🔀", "PR 오픈",            10181046  # 보라
+              elif action == "closed" and merged == "true":
+                  emoji, status, color = "🎉", "PR 머지 완료",        5763719   # 초록
+              elif action == "closed":
+                  emoji, status, color = "🚫", "PR 닫힘 (미머지)",    15548997  # 빨강
+              elif action == "ready_for_review":
+                  emoji, status, color = "👀", "리뷰 요청",           16776960  # 노랑
+              elif action == "reopened":
+                  emoji, status, color = "🔄", "PR 재오픈",           3447003   # 파랑
+              else:
+                  emoji, status, color = "🔗", action,               7506394
+
+              embed = {
+                  "title": f"{emoji} [{status}] #{number}  {title}",
+                  "url":   url,
+                  "color": color,
+                  "fields": [
+                      {"name": "작성자", "value": f"`{author}`",             "inline": True},
+                      {"name": "브랜치", "value": f"`{head}` → `{base}`",   "inline": True},
+                  ],
+                  "footer": {"text": "TFT-gogo · GitHub Pull Requests"},
+              }
+
+          else:
+              print(f"처리하지 않는 이벤트: {event}")
+              sys.exit(0)
+
+          payload = json.dumps({"embeds": [embed]}).encode("utf-8")
+          req = urllib.request.Request(
+              webhook,
+              data=payload,
+              headers={"Content-Type": "application/json"},
+          )
+          try:
+              urllib.request.urlopen(req)
+              print("✅ Discord 알림 전송 완료")
+          except urllib.error.HTTPError as e:
+              print(f"❌ Discord 전송 실패: {e.code} {e.reason}")
+              sys.exit(1)
+          PYEOF
