@@ -3,8 +3,9 @@
 *.log
 logs/
 
-# Spring Boot
-backend/src/main/resources/application*.yml
+# Spring Boot — 민감정보 포함 파일만 제외 (application.yml 은 추적)
+backend/src/main/resources/application-local.yml
+backend/src/main/resources/application-secret.yml
 backend/build/
 backend/.gradle/
 
