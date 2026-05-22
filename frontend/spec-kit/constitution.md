@@ -49,10 +49,13 @@ src/
       README.md
   hooks/
   pages/
-    Community/
-    DeckRecommend/
-    GameGuide/
-    MatchSearch/
+    Dashboard/
+    SummonerDetail/
+    Decks/
+    AiRecommend/
+    Guide/
+    Party/
+    PatchNotes/
   store/
   styles/
     global.css
