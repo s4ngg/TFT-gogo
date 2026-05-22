@@ -5,18 +5,23 @@ on:
     types: [opened, closed, reopened]
   pull_request:
     types: [opened, closed, reopened, ready_for_review]
+  workflow_dispatch:          # 수동 테스트용
+    inputs:
+      test_message:
+        description: '테스트 메시지'
+        required: false
+        default: '🔔 Discord 알림 연동 테스트'
 
 jobs:
   notify:
     runs-on: ubuntu-latest
-    # DISCORD_WEBHOOK_URL 시크릿이 설정된 경우에만 실행
-    if: ${{ secrets.DISCORD_WEBHOOK_URL != '' }}
     steps:
       - name: Discord 알림 전송
         env:
           DISCORD_WEBHOOK:  ${{ secrets.DISCORD_WEBHOOK_URL }}
           EVENT_NAME:       ${{ github.event_name }}
           EVENT_ACTION:     ${{ github.event.action }}
+          TEST_MESSAGE:     ${{ inputs.test_message }}
           # 이슈 관련
           ISSUE_NUMBER:     ${{ github.event.issue.number }}
           ISSUE_TITLE:      ${{ github.event.issue.title }}
@@ -35,28 +40,37 @@ jobs:
           python3 << 'PYEOF'
           import json, os, urllib.request, sys
 
-          webhook = os.environ.get("DISCORD_WEBHOOK", "")
+          webhook = os.environ.get("DISCORD_WEBHOOK", "").strip()
           if not webhook:
-              print("DISCORD_WEBHOOK_URL 시크릿이 설정되지 않았습니다.")
+              print("⚠️  DISCORD_WEBHOOK_URL 시크릿이 설정되지 않았습니다. 스킵합니다.")
               sys.exit(0)
 
-          event  = os.environ.get("EVENT_NAME", "")
+          event  = os.environ.get("EVENT_NAME",   "")
           action = os.environ.get("EVENT_ACTION", "")
 
+          # ── 수동 테스트 ───────────────────────────────
+          if event == "workflow_dispatch":
+              msg = os.environ.get("TEST_MESSAGE", "🔔 Discord 알림 연동 테스트")
+              embed = {
+                  "title":       "🔔 TFT-gogo 알림 테스트",
+                  "description": msg,
+                  "color":       5814783,
+                  "footer":      {"text": "TFT-gogo · 테스트 메시지"},
+              }
+
           # ── 이슈 ──────────────────────────────────────
-          if event == "issues":
+          elif event == "issues":
               number = os.environ.get("ISSUE_NUMBER", "?")
               title  = os.environ.get("ISSUE_TITLE",  "(제목 없음)")
               url    = os.environ.get("ISSUE_URL",    "")
               author = os.environ.get("ISSUE_AUTHOR", "unknown")
               body   = os.environ.get("ISSUE_BODY",   "") or ""
-              # 본문 미리보기 (최대 120자)
               preview = (body[:120] + "…") if len(body) > 120 else body
 
               cfg = {
-                  "opened":   ("📋", "새 이슈 등록",  3447003),   # 파랑
-                  "closed":   ("✅", "이슈 닫힘",     5763719),   # 초록
-                  "reopened": ("🔄", "이슈 재오픈",   16776960),  # 노랑
+                  "opened":   ("📋", "새 이슈 등록",  3447003),
+                  "closed":   ("✅", "이슈 닫힘",     5763719),
+                  "reopened": ("🔄", "이슈 재오픈",   16776960),
               }
               emoji, status, color = cfg.get(action, ("📌", action, 7506394))
 
@@ -83,15 +97,15 @@ jobs:
               merged = os.environ.get("PR_MERGED", "false")
 
               if action == "opened":
-                  emoji, status, color = "🔀", "PR 오픈",            10181046  # 보라
+                  emoji, status, color = "🔀", "PR 오픈",            10181046
               elif action == "closed" and merged == "true":
-                  emoji, status, color = "🎉", "PR 머지 완료",        5763719   # 초록
+                  emoji, status, color = "🎉", "PR 머지 완료",        5763719
               elif action == "closed":
-                  emoji, status, color = "🚫", "PR 닫힘 (미머지)",    15548997  # 빨강
+                  emoji, status, color = "🚫", "PR 닫힘 (미머지)",    15548997
               elif action == "ready_for_review":
-                  emoji, status, color = "👀", "리뷰 요청",           16776960  # 노랑
+                  emoji, status, color = "👀", "리뷰 요청",           16776960
               elif action == "reopened":
-                  emoji, status, color = "🔄", "PR 재오픈",           3447003   # 파랑
+                  emoji, status, color = "🔄", "PR 재오픈",           3447003
               else:
                   emoji, status, color = "🔗", action,               7506394
 
@@ -100,8 +114,8 @@ jobs:
                   "url":   url,
                   "color": color,
                   "fields": [
-                      {"name": "작성자", "value": f"`{author}`",             "inline": True},
-                      {"name": "브랜치", "value": f"`{head}` → `{base}`",   "inline": True},
+                      {"name": "작성자", "value": f"`{author}`",           "inline": True},
+                      {"name": "브랜치", "value": f"`{head}` → `{base}`", "inline": True},
                   ],
                   "footer": {"text": "TFT-gogo · GitHub Pull Requests"},
               }
@@ -120,6 +134,7 @@ jobs:
               urllib.request.urlopen(req)
               print("✅ Discord 알림 전송 완료")
           except urllib.error.HTTPError as e:
-              print(f"❌ Discord 전송 실패: {e.code} {e.reason}")
+              body_resp = e.read().decode()
+              print(f"❌ Discord 전송 실패: {e.code} {e.reason}\n{body_resp}")
               sys.exit(1)
           PYEOF
