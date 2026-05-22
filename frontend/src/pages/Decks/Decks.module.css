@@ -1,15 +1,14 @@
 .page {
   width: 1270px;
-  padding: 28px 0 48px;
+  padding: 28px 0 60px;
 }
 
-/* ── 헤더 ── */
+/* ── 헤더 + 탭 ── */
 .pageHeader {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   margin-bottom: 0;
-  padding-bottom: 0;
 }
 
 .titleBlock h1 {
@@ -26,7 +25,6 @@
   font-size: 13px;
 }
 
-/* ── 탭 ── */
 .tabBar {
   display: flex;
   gap: 0;
@@ -48,10 +46,7 @@
 
 .tabBar button:hover { color: #c0c8d0; }
 
-.activeTab {
-  color: #04f3e5 !important;
-}
-
+.activeTab { color: #04f3e5 !important; }
 .activeTab::after {
   content: '';
   position: absolute;
@@ -63,7 +58,7 @@
   background: #04f3e5;
 }
 
-/* ── 툴바 (덱모음 탭) ── */
+/* ── 툴바 ── */
 .toolBar {
   display: flex;
   align-items: center;
@@ -100,7 +95,7 @@
   font-weight: 500;
 }
 
-/* ── 메타통계 탭 상단 여백 ── */
+/* ── 테이블 래퍼 ── */
 .tableWrap {
   margin-top: 14px;
   border: 1px solid rgba(112, 144, 152, 0.16);
@@ -111,14 +106,9 @@
 }
 
 /* ── 테이블 ── */
-.table {
-  width: 100%;
-  border-collapse: collapse;
-}
+.table { width: 100%; border-collapse: collapse; }
 
-.table thead tr {
-  border-bottom: 1px solid rgba(112, 144, 152, 0.2);
-}
+.table thead tr { border-bottom: 1px solid rgba(112, 144, 152, 0.2); }
 
 .table th {
   padding: 10px 12px;
@@ -130,29 +120,17 @@
   letter-spacing: 0.02em;
 }
 
-.nameCol { text-align: left !important; padding-left: 10px !important; min-width: 200px; }
+.nameCol { text-align: left !important; padding-left: 10px !important; min-width: 190px; }
 .champCol { text-align: left !important; }
 
 .sortTh { cursor: pointer; user-select: none; }
 .sortTh:hover { color: #c0c8d0; }
 
-.sortIcon {
-  display: inline-block;
-  vertical-align: middle;
-  margin-left: 3px;
-  color: #4a5560;
-}
-
+.sortIcon { display: inline-block; vertical-align: middle; margin-left: 3px; color: #4a5560; }
 .sortActive { color: #04f3e5 !important; }
 
 /* ── 티어 헤더 행 (메타통계) ── */
-.tierHeaderRow td {
-  padding: 0;
-}
-
-.tierHeaderRow + .tierHeaderRow td {
-  padding-top: 4px;
-}
+.tierHeaderRow td { padding: 0; }
 
 .tierHeaderInner {
   display: flex;
@@ -163,24 +141,9 @@
   background: rgba(255, 255, 255, 0.028);
 }
 
-.tierName {
-  font-size: 17px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
-.tierDesc {
-  color: #5a6470;
-  font-size: 12px;
-  font-weight: 400;
-}
-
-.tierCount {
-  margin-left: auto;
-  color: #4a5560;
-  font-size: 12px;
-  font-weight: 500;
-}
+.tierName { font-size: 17px; font-weight: 800; letter-spacing: -0.02em; }
+.tierDesc { color: #5a6470; font-size: 12px; }
+.tierCount { margin-left: auto; color: #4a5560; font-size: 12px; }
 
 /* ── 덱 행 ── */
 .deckRow {
@@ -189,7 +152,6 @@
 }
 
 .deckRow:last-child { border-bottom: none; }
-
 .deckRow:hover { background: rgba(18, 40, 52, 0.5); }
 
 .deckRow td {
@@ -232,8 +194,222 @@
 /* ── 수치 컬럼 ── */
 .winRate  { color: #04ede0; font-size: 14px; font-weight: 700; }
 .top4     { color: #e8edf2; font-size: 14px; font-weight: 600; }
-.avgPlace { color: #a78bfa; font-size: 14px; font-weight: 600; }
+.avgPlace { color: #f87171; font-size: 14px; font-weight: 700; }
+.avgHash  { color: #ef4444; font-size: 12px; font-weight: 500; margin-right: 1px; }
 .pickRate { color: #f9c860; font-size: 14px; font-weight: 600; }
 
 /* ── 빈 결과 ── */
 .empty { padding: 52px; color: #5a6470; font-size: 14px; text-align: center; }
+
+/* ════════════════════════════
+   특수 섹션 (영웅 증강 / 유물)
+════════════════════════════ */
+.specialSection {
+  margin-top: 36px;
+}
+
+.specialHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(112, 144, 152, 0.14);
+}
+
+.specialHeader h2 {
+  margin: 0;
+  color: #fff;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.specialHeader p {
+  margin: 0;
+  color: #6b757e;
+  font-size: 13px;
+}
+
+.specialBadge {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  border: 1px solid rgba(4, 243, 229, 0.35);
+  border-radius: 5px;
+  color: #04f3e5;
+  background: rgba(4, 243, 229, 0.1);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ── 영웅 증강 카드 그리드 ── */
+.augmentGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 12px;
+}
+
+.augmentCard {
+  padding: 16px 18px;
+  border: 1px solid rgba(4, 243, 229, 0.14);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(5, 50, 58, 0.28), rgba(6, 16, 22, 0.96));
+  transition: border-color 0.15s;
+}
+
+.augmentCard:hover { border-color: rgba(4, 243, 229, 0.32); }
+
+.augCardTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.augHeroName {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.augName {
+  color: #04f3e5;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.augDesc {
+  margin: 0 0 10px;
+  color: #8e97a1;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.augTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+
+.augTag {
+  padding: 2px 8px;
+  border: 1px solid rgba(110, 142, 150, 0.22);
+  border-radius: 4px;
+  color: #7a8790;
+  background: rgba(10, 22, 30, 0.8);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.augChamps {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.augStats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(112, 144, 152, 0.1);
+  text-align: center;
+}
+
+.augStats small {
+  display: block;
+  margin-bottom: 3px;
+  color: #5a6470;
+  font-size: 11px;
+}
+
+.augStats strong { display: block; font-size: 15px; font-weight: 700; }
+
+/* ── 유물 추천 ── */
+.artifactList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.artifactRow {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  border: 1px solid rgba(112, 144, 152, 0.14);
+  border-radius: 10px;
+  background: rgba(8, 20, 28, 0.8);
+}
+
+.artifactItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.artifactIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  border: 1px solid rgba(249, 200, 96, 0.3);
+  object-fit: cover;
+}
+
+.artifactName {
+  color: #f9c860;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.artifactUnits {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.artifactUnit {
+  display: grid;
+  grid-template-columns: 40px 1fr 60px;
+  align-items: center;
+  gap: 10px;
+}
+
+.artifactChampImg {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.artifactUnitInfo { min-width: 0; }
+
+.artifactUnitName {
+  display: block;
+  color: #e0e6ec;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.artifactUnitReason {
+  display: block;
+  overflow: hidden;
+  color: #6b757e;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.artifactWinRate {
+  color: #04ede0;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: right;
+}
