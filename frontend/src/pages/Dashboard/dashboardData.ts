@@ -390,8 +390,6 @@ export const metaDecks: MetaDeck[] = [
       champion('나미', championImageUrls.nami, 2, recommendedItems.support),
     ],
   },
-]
-
   {
     rank: 9,
     grade: 'B',
