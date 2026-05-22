@@ -7,13 +7,14 @@
 ## 라우팅 구조
 
 ```
-/               → Dashboard (기본 페이지)
-/decks          → Decks (덱 목록)
-/ai-recommend   → AiRecommend (AI 덱 추천)
-/guide          → Guide (게임 가이드)
-/party          → Party (파티원 찾기)
-/patch-notes    → PatchNotes (패치 노트)
-*               → / 로 리다이렉트
+/                              → Dashboard (기본 페이지)
+/summoner/:gameName/:tagLine   → SummonerDetail (소환사 전적 상세)
+/decks                         → Decks (덱 목록)
+/ai-recommend                  → AiRecommend (AI 덱 추천)
+/guide                         → Guide (게임 가이드)
+/party                         → Party (파티원 찾기)
+/patch-notes                   → PatchNotes (패치 노트)
+*                              → / 로 리다이렉트
 ```
 
 - `App.tsx`에서 React Router v6 기준으로 라우터 설정
@@ -25,12 +26,13 @@
 <BrowserRouter>
   <Routes>
     <Route element={<AppLayout />}>
-      <Route path="/"             element={<Dashboard />} />
-      <Route path="/decks"        element={<Decks />} />
-      <Route path="/ai-recommend" element={<AiRecommend />} />
-      <Route path="/guide"        element={<Guide />} />
-      <Route path="/party"        element={<Party />} />
-      <Route path="/patch-notes"  element={<PatchNotes />} />
+      <Route path="/"                                    element={<Dashboard />} />
+      <Route path="/summoner/:gameName/:tagLine"         element={<SummonerDetail />} />
+      <Route path="/decks"                               element={<Decks />} />
+      <Route path="/ai-recommend"                        element={<AiRecommend />} />
+      <Route path="/guide"                               element={<Guide />} />
+      <Route path="/party"                               element={<Party />} />
+      <Route path="/patch-notes"                         element={<PatchNotes />} />
     </Route>
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>
@@ -76,6 +78,7 @@ src/api/
   communityDragonAssets.ts    # Community Dragon URL helper
   summoner.ts                 # 소환사 검색 API
   meta.ts                     # 메타 스냅샷 API
+  match.ts                    # 소환사 전적 목록 API
   deck.ts                     # 덱 추천 API
 ```
 
