@@ -4,7 +4,6 @@
   ClipboardList,
   Home,
   LayoutGrid,
-  LineChart,
   RefreshCcw,
   Users,
 } from 'lucide-react'
@@ -16,7 +15,6 @@ import styles from './Layout.module.css'
 const navIcons: Record<NavItem['key'], typeof Home> = {
   home: Home,
   decks: LayoutGrid,
-  meta: LineChart,
   ai: Bot,
   guide: Bookmark,
   party: Users,
