@@ -22,7 +22,7 @@
 - [ ] `components/layout/AppLayout.tsx` — Sidebar + TopBar + Outlet 조합
 - [ ] `components/layout/README.md` — 공통 컴포넌트 목록 기록
 - [ ] `App.tsx` — React Router v6 라우팅 설정
-- [ ] 각 페이지 빈 컴포넌트 생성 (Dashboard, SummonerDetail, Decks, AiRecommend, Guide, Party, PatchNotes)
+- [ ] 각 페이지 빈 컴포넌트 생성 (Dashboard, SummonerDetail, Decks, AiRecommend, Guide, Community, PatchNotes)
 - [ ] `pages/NotFound.tsx` — 404 페이지
 
 > ✅ PR 2 develop 머지 완료 후 팀원 각자 페이지 작업 시작
@@ -77,10 +77,12 @@
 - [ ] 유닛/시너지/아이템 조회 UI
 - [ ] API 연동
 
-### PR 11: Party UI + API 연동
-- [ ] 파티원 모집 목록/작성 UI (유형 아이콘: CSS + lucide)
-- [ ] 채팅 채널 목록 UI
-- [ ] API 연동
+### PR 11: Community UI + API 연동
+- [ ] 파티원 모집글 목록/필터/검색 UI
+- [ ] 모집글 작성 폼 UI (제목, 랭크 유형, 최소 티어, 모집 인원, 플레이 스타일)
+- [ ] 실시간 채팅 채널 목록 UI (#일반, #덱 공략, #파티 모집, #질문 & 답변)
+- [ ] 채팅 메시지 영역 UI (온라인 수, 실시간 메시지)
+- [ ] API 연동 (모집글 CRUD, 채팅 WebSocket)
 
 ### PR 12: PatchNotes UI + API 연동
 - [ ] 최신 패치 노트 UI

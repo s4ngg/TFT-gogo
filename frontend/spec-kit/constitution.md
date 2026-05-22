@@ -54,7 +54,7 @@ src/
     Decks/
     AiRecommend/
     Guide/
-    Party/
+    Community/
     PatchNotes/
   store/
   styles/
