@@ -22,7 +22,7 @@
 - [ ] `components/layout/AppLayout.tsx` — Sidebar + TopBar + Outlet 조합
 - [ ] `components/layout/README.md` — 공통 컴포넌트 목록 기록
 - [ ] `App.tsx` — React Router v6 라우팅 설정
-- [ ] 각 페이지 빈 컴포넌트 생성 (Dashboard, Decks, AiRecommend, Guide, Party, PatchNotes)
+- [ ] 각 페이지 빈 컴포넌트 생성 (Dashboard, SummonerDetail, Decks, AiRecommend, Guide, Community, PatchNotes)
 - [ ] `pages/NotFound.tsx` — 404 페이지
 
 > ✅ PR 2 develop 머지 완료 후 팀원 각자 페이지 작업 시작
@@ -50,29 +50,41 @@
 - [ ] `hooks/useMetaSnapshot.ts`
 - [ ] PR 4 컴포넌트에 실제 데이터 연결
 
-### PR 6: Decks UI + API 연동
+### PR 6: SummonerDetail UI
+- [ ] `MatchList.tsx` — 최근 전적 목록
+- [ ] `MatchItem.tsx` — 전적 항목 (순위, TOP4/BOT 구분, 덱 이름, 게임 시간, LP 변동, 유닛 이미지)
+- [ ] `UpdateButton.tsx` — 전적 업데이트 버튼
+- [ ] 로딩 / 빈 상태 / 에러 상태 UI
+
+### PR 7: SummonerDetail API 연동
+- [ ] `api/match.ts`
+- [ ] `hooks/useSummonerDetail.ts`
+- [ ] `hooks/useMatchHistory.ts`
+- [ ] PR 6 컴포넌트에 실제 데이터 연결
+
+### PR 8: Decks UI + API 연동
 - [ ] 덱 목록 UI 컴포넌트
 - [ ] 덱 상세 UI 컴포넌트
 - [ ] `api/decks.ts`
 - [ ] `hooks/useDecks.ts`
 
-### PR 7: AiRecommend UI + API 연동
+### PR 9: AiRecommend UI + API 연동
 - [ ] AI 추천 UI 컴포넌트
 - [ ] `api/aiRecommend.ts`
 - [ ] `hooks/useAiRecommend.ts`
 
-### PR 8: Guide UI + API 연동
+### PR 10: Guide UI + API 연동
 - [ ] 유닛/시너지/아이템 조회 UI
 - [ ] API 연동
 
-### PR 9: Community UI + API 연동
+### PR 11: Community UI + API 연동
 - [ ] 파티원 모집글 목록/필터/검색 UI
 - [ ] 모집글 작성 폼 UI (제목, 랭크 유형, 최소 티어, 모집 인원, 플레이 스타일)
 - [ ] 실시간 채팅 채널 목록 UI (#일반, #덱 공략, #파티 모집, #질문 & 답변)
 - [ ] 채팅 메시지 영역 UI (온라인 수, 실시간 메시지)
 - [ ] API 연동 (모집글 CRUD, 채팅 WebSocket)
 
-### PR 10: PatchNotes UI + API 연동
+### PR 12: PatchNotes UI + API 연동
 - [ ] 최신 패치 노트 UI
 - [ ] 챔피언/아이템/시너지 변경사항 UI
 - [ ] 패치 히스토리 목록 UI
@@ -82,7 +94,7 @@
 
 ## Phase 3 — 마무리
 
-### PR 11: 공통 마무리
+### PR 13: 공통 마무리
 - [ ] 전체 페이지 반응형 점검
 - [ ] 에러/빈 상태 누락 항목 보완
 - [ ] checklist.md 전체 항목 최종 확인

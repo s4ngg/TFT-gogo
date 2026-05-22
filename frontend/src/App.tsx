@@ -5,13 +5,13 @@ import Dashboard from './pages/Dashboard/Dashboard'
 import Guide from './pages/Guide/Guide'
 import Party from './pages/Party/Party'
 import PatchNotes from './pages/PatchNotes/PatchNotes'
-import SummonerPage from './pages/Summoner/SummonerPage'
+import SummonerDetail from './pages/SummonerDetail/SummonerDetail'
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<Dashboard />} />
-      <Route path="/summoner/:summonerName/:tagLine" element={<SummonerPage />} />
+      <Route path="/summoner/:gameName/:tagLine" element={<SummonerDetail />} />
       <Route path="/decks" element={<Decks />} />
       <Route path="/ai-recommend" element={<AiRecommend />} />
       <Route path="/guide" element={<Guide />} />
