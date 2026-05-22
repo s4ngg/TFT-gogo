@@ -141,8 +141,8 @@
   background: rgba(255, 255, 255, 0.028);
 }
 
-.tierName { font-size: 17px; font-weight: 800; letter-spacing: -0.02em; }
-.tierDesc { color: #5a6470; font-size: 12px; }
+.tierName  { font-size: 17px; font-weight: 800; letter-spacing: -0.02em; }
+.tierDesc  { color: #5a6470; font-size: 12px; }
 .tierCount { margin-left: auto; color: #4a5560; font-size: 12px; }
 
 /* ── 덱 행 ── */
@@ -188,7 +188,7 @@
   white-space: nowrap;
 }
 
-.traits { display: flex; align-items: flex-end; gap: 4px; }
+.traits    { display: flex; align-items: flex-end; gap: 4px; }
 .champions { display: flex; align-items: flex-end; gap: 5px; }
 
 /* ── 수치 컬럼 ── */
@@ -202,11 +202,9 @@
 .empty { padding: 52px; color: #5a6470; font-size: 14px; text-align: center; }
 
 /* ════════════════════════════
-   특수 섹션 (영웅 증강 / 유물)
+   특수 섹션 공통
 ════════════════════════════ */
-.specialSection {
-  margin-top: 36px;
-}
+.specialSection { margin-top: 36px; }
 
 .specialHeader {
   display: flex;
@@ -217,8 +215,11 @@
   border-bottom: 1px solid rgba(112, 144, 152, 0.14);
 }
 
+/* 제목 블록 (h2 + p 묶음) */
+.specialHeaderText { flex: 1; }
+
 .specialHeader h2 {
-  margin: 0;
+  margin: 0 0 2px;
   color: #fff;
   font-size: 19px;
   font-weight: 700;
@@ -243,14 +244,54 @@
   white-space: nowrap;
 }
 
-/* ── 영웅 증강 카드 그리드 ── */
-.augmentGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-  gap: 12px;
+/* ════════════════════════════
+   영웅 증강 — 캐러셀
+════════════════════════════ */
+
+/* 내비게이션 버튼 */
+.carouselBtns {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
+.carouselBtn {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(110, 142, 150, 0.28);
+  border-radius: 6px;
+  background: rgba(8, 20, 28, 0.8);
+  color: #8e97a1;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.carouselBtn:hover {
+  border-color: rgba(4, 243, 229, 0.4);
+  color: #04f3e5;
+}
+
+/* 가로 스크롤 트랙 */
+.augmentCarousel {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(4, 243, 229, 0.25) rgba(10, 22, 30, 0.5);
+}
+
+.augmentCarousel::-webkit-scrollbar        { height: 4px; }
+.augmentCarousel::-webkit-scrollbar-track  { background: rgba(10, 22, 30, 0.5); border-radius: 2px; }
+.augmentCarousel::-webkit-scrollbar-thumb  { background: rgba(4, 243, 229, 0.25); border-radius: 2px; }
+
+/* 카드 (고정 폭으로 캐러셀 동작) */
 .augmentCard {
+  flex: 0 0 290px;
+  scroll-snap-align: start;
   padding: 16px 18px;
   border: 1px solid rgba(4, 243, 229, 0.14);
   border-radius: 10px;
@@ -258,25 +299,42 @@
   transition: border-color 0.15s;
 }
 
-.augmentCard:hover { border-color: rgba(4, 243, 229, 0.32); }
+.augmentCard:hover                         { border-color: rgba(4, 243, 229, 0.32); }
+.augmentCard[data-recommended="false"]     { border-color: rgba(248, 113, 113, 0.14); }
+.augmentCard[data-recommended="false"]:hover { border-color: rgba(248, 113, 113, 0.3); }
 
 .augCardTop {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 8px;
   margin-bottom: 10px;
 }
 
-.augHeroName {
-  color: #fff;
-  font-size: 15px;
+.augHeroName { color: #fff; font-size: 15px; font-weight: 700; }
+.augName     { color: #04f3e5; font-size: 13px; font-weight: 600; }
+
+/* 추천 / 비추천 배지 */
+.augRecommendBadge {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border: 1px solid rgba(4, 243, 229, 0.35);
+  border-radius: 4px;
+  background: rgba(4, 243, 229, 0.1);
+  color: #04f3e5;
+  font-size: 11px;
   font-weight: 700;
 }
 
-.augName {
-  color: #04f3e5;
-  font-size: 13px;
-  font-weight: 600;
+.augNotRecommendBadge {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  border-radius: 4px;
+  background: rgba(248, 113, 113, 0.08);
+  color: #f87171;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .augDesc {
@@ -319,16 +377,36 @@
   text-align: center;
 }
 
-.augStats small {
-  display: block;
-  margin-bottom: 3px;
-  color: #5a6470;
-  font-size: 11px;
+.augStats small   { display: block; margin-bottom: 3px; color: #5a6470; font-size: 11px; }
+.augStats strong  { display: block; font-size: 15px; font-weight: 700; }
+
+/* ════════════════════════════
+   유물 섹션
+════════════════════════════ */
+.artifactSearch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(110, 142, 150, 0.3);
+  border-radius: 7px;
+  color: #8e97a1;
+  background: rgba(5, 14, 20, 0.9);
+  flex-shrink: 0;
 }
 
-.augStats strong { display: block; font-size: 15px; font-weight: 700; }
+.artifactSearch input {
+  width: 160px;
+  border: none;
+  outline: none;
+  color: #fff;
+  background: transparent;
+  font-size: 13px;
+}
 
-/* ── 유물 추천 ── */
+.artifactSearch input::placeholder { color: #5a6470; }
+
 .artifactList {
   display: flex;
   flex-direction: column;
@@ -412,4 +490,29 @@
   font-size: 14px;
   font-weight: 700;
   text-align: right;
+}
+
+/* 더보기 버튼 */
+.showMoreBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid rgba(112, 144, 152, 0.18);
+  border-radius: 8px;
+  background: rgba(8, 20, 28, 0.5);
+  color: #6b7580;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.showMoreBtn:hover {
+  border-color: rgba(4, 243, 229, 0.3);
+  color: #04f3e5;
+  background: rgba(4, 243, 229, 0.04);
 }
