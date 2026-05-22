@@ -2,7 +2,7 @@ import { RefreshCcw, Search } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AppLayout } from '../../components/layout'
-import styles from './Summoner.module.css'
+import styles from './SummonerDetail.module.css'
 
 const DUMMY_TIER = {
   tier: '다이아몬드',
@@ -29,12 +29,12 @@ function placementTone(n: number) {
   return styles.bot4
 }
 
-function SummonerPage() {
-  const { summonerName, tagLine } = useParams<{ summonerName: string; tagLine: string }>()
+function SummonerDetail() {
+  const { gameName, tagLine } = useParams<{ gameName: string; tagLine: string }>()
   const [query, setQuery] = useState('')
   const navigate = useNavigate()
 
-  const name = decodeURIComponent(summonerName ?? '')
+  const name = decodeURIComponent(gameName ?? '')
   const tag = tagLine ?? 'KR1'
   const winRate = Math.round(DUMMY_TIER.wins / (DUMMY_TIER.wins + DUMMY_TIER.losses) * 100)
 
@@ -112,4 +112,4 @@ function SummonerPage() {
   )
 }
 
-export default SummonerPage
+export default SummonerDetail
