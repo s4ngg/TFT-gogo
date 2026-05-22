@@ -415,8 +415,8 @@
 
 .artifactRow {
   display: grid;
-  grid-template-columns: 180px 1fr;
-  align-items: center;
+  grid-template-columns: 160px 1fr;
+  align-items: start;
   gap: 16px;
   padding: 14px 18px;
   border: 1px solid rgba(112, 144, 152, 0.14);
@@ -449,48 +449,64 @@
 .artifactUnits {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
 }
 
+/* 컬럼 헤더 행 */
+.artifactUnitHeader {
+  display: grid;
+  grid-template-columns: 34px minmax(80px, 1fr) 62px 62px 110px 62px;
+  gap: 8px;
+  padding: 0 0 6px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(112, 144, 152, 0.12);
+  color: #5a6470;
+  font-size: 11px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.artifactUnitHeader span:nth-child(2) { text-align: left; }
+
+/* 유닛 데이터 행 */
 .artifactUnit {
   display: grid;
-  grid-template-columns: 40px 1fr 60px;
+  grid-template-columns: 34px minmax(80px, 1fr) 62px 62px 110px 62px;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(112, 144, 152, 0.06);
 }
 
+.artifactUnit:last-child { border-bottom: none; }
+
 .artifactChampImg {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 6px;
   object-fit: cover;
 }
 
-.artifactUnitInfo { min-width: 0; }
-
 .artifactUnitName {
-  display: block;
   color: #e0e6ec;
   font-size: 13px;
   font-weight: 600;
-  margin-bottom: 2px;
-}
-
-.artifactUnitReason {
-  display: block;
-  overflow: hidden;
-  color: #6b757e;
-  font-size: 12px;
-  text-overflow: ellipsis;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.artifactWinRate {
-  color: #04ede0;
-  font-size: 14px;
+/* 스탯 셀 공통 */
+.artifactStat {
+  text-align: center;
+  font-size: 13px;
   font-weight: 700;
-  text-align: right;
 }
+
+.artifactStatFreq { color: #8e97a1; font-weight: 500; }
+.artifactStatWin  { color: #04ede0; }
+.artifactStatImp  { color: #4ade80; }
+.artifactStatTop4 { color: #f9c860; font-weight: 600; }
 
 /* 더보기 버튼 */
 .showMoreBtn {

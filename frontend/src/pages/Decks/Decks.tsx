@@ -41,8 +41,10 @@ interface HeroAugmentDeck {
 interface ArtifactUnit {
   name: string
   imageUrl: string
-  reason: string
-  winRate: string
+  frequency: string       // 빈도수
+  winRate: string         // 승률
+  avgImprovement: string  // 평균 등수 향상 (예: '+0.94')
+  top4: string            // TOP4 확률
 }
 
 interface ArtifactRec {
@@ -193,80 +195,80 @@ const ARTIFACT_RECS: ArtifactRec[] = [
   {
     itemName: '무한의 대검', itemIcon: itemIconUrls.infinityEdge,
     units: [
-      { name: '진',   imageUrl: champUrls.jhin,  reason: '4번째 공격이 항상 치명타 → 극강 폭딜',        winRate: '62.1%' },
-      { name: '카이사', imageUrl: champUrls.kaisa, reason: '빠른 공격속도로 치명타 누적',                  winRate: '58.4%' },
-      { name: '자야',  imageUrl: champUrls.xayah,  reason: '도전자 시너지로 공속 증가 후 치명타 폭딜',     winRate: '56.2%' },
+      { name: '진',    imageUrl: champUrls.jhin,  frequency: '18.3%', winRate: '62.1%', avgImprovement: '+0.94', top4: '71.2%' },
+      { name: '카이사', imageUrl: champUrls.kaisa, frequency: '14.1%', winRate: '58.4%', avgImprovement: '+0.71', top4: '66.8%' },
+      { name: '자야',  imageUrl: champUrls.xayah,  frequency: '11.7%', winRate: '56.2%', avgImprovement: '+0.58', top4: '63.4%' },
     ],
   },
   {
     itemName: '워모그의 갑옷', itemIcon: itemIconUrls.warmogsArmor,
     units: [
-      { name: '오른',   imageUrl: champUrls.ornn,   reason: '체력 비례 방어력 스킬과 시너지',              winRate: '64.8%' },
-      { name: '일라오이', imageUrl: champUrls.illaoi, reason: '체력 회복 + 촉수 생성으로 무한 지속',        winRate: '60.3%' },
-      { name: '람머스',  imageUrl: champUrls.rammus,  reason: '요새 시너지로 방어력 → 데미지 전환',         winRate: '57.9%' },
+      { name: '오른',    imageUrl: champUrls.ornn,   frequency: '22.5%', winRate: '64.8%', avgImprovement: '+1.12', top4: '74.3%' },
+      { name: '일라오이', imageUrl: champUrls.illaoi, frequency: '17.8%', winRate: '60.3%', avgImprovement: '+0.87', top4: '69.1%' },
+      { name: '람머스',  imageUrl: champUrls.rammus,  frequency: '13.2%', winRate: '57.9%', avgImprovement: '+0.64', top4: '65.7%' },
     ],
   },
   {
     itemName: '라바돈의 죽음모자', itemIcon: itemIconUrls.rabadonsDeathcap,
     units: [
-      { name: '아우렐리온 솔', imageUrl: champUrls.aurelionSol, reason: '광역 마법 피해 극대화',            winRate: '66.2%' },
-      { name: '벡스',         imageUrl: champUrls.vex,         reason: '연속 스킬 발동 시 AP 폭발 효과',   winRate: '61.7%' },
-      { name: '빅토르',       imageUrl: champUrls.viktor,      reason: '복제자 시너지로 AP 2배 적용',       winRate: '58.5%' },
+      { name: '아우렐리온 솔', imageUrl: champUrls.aurelionSol, frequency: '15.6%', winRate: '66.2%', avgImprovement: '+1.28', top4: '76.4%' },
+      { name: '벡스',         imageUrl: champUrls.vex,         frequency: '12.4%', winRate: '61.7%', avgImprovement: '+0.95', top4: '70.8%' },
+      { name: '빅토르',       imageUrl: champUrls.viktor,      frequency: '10.9%', winRate: '58.5%', avgImprovement: '+0.73', top4: '67.2%' },
     ],
   },
   {
     itemName: '쇼진의 창', itemIcon: itemIconUrls.spearOfShojin,
     units: [
-      { name: '소나',   imageUrl: champUrls.sona,  reason: '스킬 반복 사용으로 힐 + 버프 지속',           winRate: '59.4%' },
-      { name: '카르마', imageUrl: champUrls.karma, reason: '빠른 궁극기 발동으로 팀 강화',                 winRate: '57.1%' },
+      { name: '소나',   imageUrl: champUrls.sona,  frequency: '16.2%', winRate: '59.4%', avgImprovement: '+0.82', top4: '68.5%' },
+      { name: '카르마', imageUrl: champUrls.karma, frequency: '13.7%', winRate: '57.1%', avgImprovement: '+0.67', top4: '65.1%' },
     ],
   },
   {
     itemName: '블루 버프', itemIcon: itemIconUrls.blueBuff,
     units: [
-      { name: '소나',         imageUrl: champUrls.sona,        reason: '마나 충전 즉시 재사용으로 힐 폭증', winRate: '65.3%' },
-      { name: '카르마',       imageUrl: champUrls.karma,       reason: '궁극기 반복 사용으로 팀 버프 지속', winRate: '62.1%' },
-      { name: '빅토르',       imageUrl: champUrls.viktor,      reason: '복제자 스킬 연속 사용 극대화',      winRate: '58.7%' },
+      { name: '소나',   imageUrl: champUrls.sona,   frequency: '19.4%', winRate: '65.3%', avgImprovement: '+1.18', top4: '75.2%' },
+      { name: '카르마', imageUrl: champUrls.karma,   frequency: '15.8%', winRate: '62.1%', avgImprovement: '+0.96', top4: '71.6%' },
+      { name: '빅토르', imageUrl: champUrls.viktor,  frequency: '12.3%', winRate: '58.7%', avgImprovement: '+0.74', top4: '67.5%' },
     ],
   },
   {
     itemName: '거인 슬레이어', itemIcon: itemIconUrls.giantSlayer,
     units: [
-      { name: '진',     imageUrl: champUrls.jhin,     reason: '탱커 관통으로 후반 고체력 딜링',            winRate: '61.2%' },
-      { name: '마스터 이', imageUrl: champUrls.masterYi, reason: '고체력 대상 연속 공격 시 효율 극대화',    winRate: '59.8%' },
-      { name: '카이사',  imageUrl: champUrls.kaisa,    reason: '공격속도 기반 빠른 퍼센트 체력 감소',       winRate: '57.4%' },
+      { name: '진',      imageUrl: champUrls.jhin,     frequency: '16.7%', winRate: '61.2%', avgImprovement: '+0.91', top4: '70.3%' },
+      { name: '마스터 이', imageUrl: champUrls.masterYi, frequency: '14.2%', winRate: '59.8%', avgImprovement: '+0.79', top4: '68.9%' },
+      { name: '카이사',  imageUrl: champUrls.kaisa,    frequency: '11.8%', winRate: '57.4%', avgImprovement: '+0.63', top4: '65.8%' },
     ],
   },
   {
     itemName: '용의 발톱', itemIcon: itemIconUrls.dragonsClaw,
     units: [
-      { name: '오른',   imageUrl: champUrls.ornn,   reason: '마법 방어력 시너지로 생존력 극대화',           winRate: '63.1%' },
-      { name: '람머스',  imageUrl: champUrls.rammus,  reason: '요새 + 마저 시너지 이중 방어',               winRate: '60.7%' },
-      { name: '일라오이', imageUrl: champUrls.illaoi, reason: '힐 + 마저로 AP 딜러 카운터',                winRate: '55.3%' },
+      { name: '오른',    imageUrl: champUrls.ornn,   frequency: '20.1%', winRate: '63.1%', avgImprovement: '+1.05', top4: '73.2%' },
+      { name: '람머스',  imageUrl: champUrls.rammus,  frequency: '16.4%', winRate: '60.7%', avgImprovement: '+0.88', top4: '70.1%' },
+      { name: '일라오이', imageUrl: champUrls.illaoi, frequency: '13.5%', winRate: '55.3%', avgImprovement: '+0.52', top4: '63.9%' },
     ],
   },
   {
     itemName: '모렐로노미콘', itemIcon: itemIconUrls.morellonomicon,
     units: [
-      { name: '아우렐리온 솔', imageUrl: champUrls.aurelionSol, reason: '광역 화상으로 힐 차단 + 피해',    winRate: '64.5%' },
-      { name: '벡스',         imageUrl: champUrls.vex,         reason: '스킬 범위 내 전체 힐차단',         winRate: '60.2%' },
-      { name: '카르마',       imageUrl: champUrls.karma,       reason: '빠른 스킬 발동으로 힐차단 유지',    winRate: '56.8%' },
+      { name: '아우렐리온 솔', imageUrl: champUrls.aurelionSol, frequency: '14.8%', winRate: '64.5%', avgImprovement: '+1.15', top4: '74.8%' },
+      { name: '벡스',         imageUrl: champUrls.vex,         frequency: '12.1%', winRate: '60.2%', avgImprovement: '+0.88', top4: '69.4%' },
+      { name: '카르마',       imageUrl: champUrls.karma,       frequency: '9.8%',  winRate: '56.8%', avgImprovement: '+0.61', top4: '64.7%' },
     ],
   },
   {
     itemName: '이온 스파크', itemIcon: itemIconUrls.ionicSpark,
     units: [
-      { name: '벡스',   imageUrl: champUrls.vex,   reason: '스킬 발동마다 번개 체인 추가 피해',            winRate: '62.3%' },
-      { name: '빅토르', imageUrl: champUrls.viktor, reason: '복제자 시너지와 번개 연쇄 콤보',              winRate: '60.5%' },
-      { name: '카르마', imageUrl: champUrls.karma,  reason: '마법 저항 감소로 팀 전체 AP 증폭',            winRate: '57.2%' },
+      { name: '벡스',   imageUrl: champUrls.vex,   frequency: '13.6%', winRate: '62.3%', avgImprovement: '+0.97', top4: '71.9%' },
+      { name: '빅토르', imageUrl: champUrls.viktor, frequency: '11.3%', winRate: '60.5%', avgImprovement: '+0.85', top4: '70.2%' },
+      { name: '카르마', imageUrl: champUrls.karma,  frequency: '9.4%',  winRate: '57.2%', avgImprovement: '+0.66', top4: '65.4%' },
     ],
   },
   {
     itemName: '타이탄의 결의', itemIcon: itemIconUrls.titansResolve,
     units: [
-      { name: '오른',   imageUrl: champUrls.ornn,   reason: '스택 쌓기 용이 + 방어력 극대화',              winRate: '68.1%' },
-      { name: '일라오이', imageUrl: champUrls.illaoi, reason: '전투 지속 시간 길어 스택 충전 최적',         winRate: '62.4%' },
-      { name: '람머스',  imageUrl: champUrls.rammus,  reason: '도발로 장시간 전투 유지하며 스택 충전',       winRate: '59.0%' },
+      { name: '오른',    imageUrl: champUrls.ornn,   frequency: '24.8%', winRate: '68.1%', avgImprovement: '+1.42', top4: '78.5%' },
+      { name: '일라오이', imageUrl: champUrls.illaoi, frequency: '19.3%', winRate: '62.4%', avgImprovement: '+1.07', top4: '72.8%' },
+      { name: '람머스',  imageUrl: champUrls.rammus,  frequency: '15.7%', winRate: '59.0%', avgImprovement: '+0.81', top4: '68.3%' },
     ],
   },
 ]
@@ -434,16 +436,16 @@ function HeroAugmentSection() {
 }
 
 /* ════════════════════════════
-   유물 섹션 (더보기 + 검색)
+   유물 섹션 (검색 상시 노출 + 더보기)
 ════════════════════════════ */
 function ArtifactSection() {
   const [showAll, setShowAll] = useState(false)
-  const [search, setSearch] = useState('')
+  const [search, setSearch]   = useState('')
 
-  const visible = showAll
-    ? ARTIFACT_RECS.filter((r) => r.itemName.includes(search))
-    : ARTIFACT_RECS.slice(0, INITIAL_ARTIFACT_COUNT)
-
+  const searchActive = search.trim() !== ''
+  // 검색 중이면 전체에서 필터, 아니면 showAll 여부에 따라 slice
+  const allFiltered = ARTIFACT_RECS.filter((r) => !searchActive || r.itemName.includes(search))
+  const visible     = searchActive || showAll ? allFiltered : allFiltered.slice(0, INITIAL_ARTIFACT_COUNT)
   const hiddenCount = ARTIFACT_RECS.length - INITIAL_ARTIFACT_COUNT
 
   return (
@@ -459,16 +461,15 @@ function ArtifactSection() {
           <h2>유물별 최적 유닛</h2>
           <p>시너지 무관, 해당 유물 장착 시 승률이 크게 오르는 유닛</p>
         </div>
-        {showAll && (
-          <div className={styles.artifactSearch}>
-            <Search size={14} />
-            <input
-              placeholder="아이템 이름 검색"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-        )}
+        {/* 검색 — 항상 표시 */}
+        <div className={styles.artifactSearch}>
+          <Search size={14} />
+          <input
+            placeholder="유물 이름 검색"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
       </div>
 
       <div className={styles.artifactList}>
@@ -477,19 +478,30 @@ function ArtifactSection() {
         ) : (
           visible.map((rec) => (
             <div key={rec.itemName} className={styles.artifactRow}>
+              {/* 아이템 아이콘 + 이름 */}
               <div className={styles.artifactItem}>
                 <img src={rec.itemIcon} alt={rec.itemName} className={styles.artifactIcon} />
                 <span className={styles.artifactName}>{rec.itemName}</span>
               </div>
+
+              {/* 유닛 목록 + 컬럼 헤더 */}
               <div className={styles.artifactUnits}>
+                <div className={styles.artifactUnitHeader}>
+                  <span />
+                  <span>유닛</span>
+                  <span>빈도수</span>
+                  <span>승률</span>
+                  <span>평균 등수 향상</span>
+                  <span>TOP4</span>
+                </div>
                 {rec.units.map((u) => (
                   <div key={u.name} className={styles.artifactUnit}>
                     <img src={u.imageUrl} alt={u.name} className={styles.artifactChampImg} />
-                    <div className={styles.artifactUnitInfo}>
-                      <span className={styles.artifactUnitName}>{u.name}</span>
-                      <span className={styles.artifactUnitReason}>{u.reason}</span>
-                    </div>
-                    <span className={styles.artifactWinRate}>{u.winRate}</span>
+                    <span className={styles.artifactUnitName}>{u.name}</span>
+                    <span className={`${styles.artifactStat} ${styles.artifactStatFreq}`}>{u.frequency}</span>
+                    <span className={`${styles.artifactStat} ${styles.artifactStatWin}`}>{u.winRate}</span>
+                    <span className={`${styles.artifactStat} ${styles.artifactStatImp}`}>{u.avgImprovement}</span>
+                    <span className={`${styles.artifactStat} ${styles.artifactStatTop4}`}>{u.top4}</span>
                   </div>
                 ))}
               </div>
@@ -498,11 +510,12 @@ function ArtifactSection() {
         )}
       </div>
 
-      {hiddenCount > 0 && (
+      {/* 더보기 / 접기 — 검색 중이 아닐 때만 표시 */}
+      {!searchActive && hiddenCount > 0 && (
         <button
           type="button"
           className={styles.showMoreBtn}
-          onClick={() => { setShowAll((v) => !v); setSearch('') }}
+          onClick={() => setShowAll((v) => !v)}
         >
           {showAll ? '접기' : `더보기 (${hiddenCount}개 더)`}
         </button>
