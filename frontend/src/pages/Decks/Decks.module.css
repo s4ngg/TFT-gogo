@@ -1,0 +1,534 @@
+.page {
+  width: 1270px;
+  padding: 28px 0 60px;
+}
+
+/* ── 헤더 + 탭 ── */
+.pageHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 0;
+}
+
+.titleBlock h1 {
+  margin: 0 0 5px;
+  color: #fff;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.titleBlock p {
+  margin: 0;
+  color: #8e97a1;
+  font-size: 13px;
+}
+
+.tabBar {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid rgba(112, 144, 152, 0.16);
+}
+
+.tabBar button {
+  position: relative;
+  height: 44px;
+  padding: 0 28px;
+  border: none;
+  color: #6b7580;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.tabBar button:hover { color: #c0c8d0; }
+
+.activeTab { color: #04f3e5 !important; }
+.activeTab::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: #04f3e5;
+}
+
+/* ── 툴바 ── */
+.toolBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 14px 0;
+}
+
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(110, 142, 150, 0.3);
+  border-radius: 7px;
+  color: #8e97a1;
+  background: rgba(5, 14, 20, 0.9);
+}
+
+.searchBox input {
+  width: 200px;
+  border: none;
+  outline: none;
+  color: #fff;
+  background: transparent;
+  font-size: 13px;
+}
+
+.searchBox input::placeholder { color: #5a6470; }
+
+.countLabel {
+  color: #4a5560;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ── 테이블 래퍼 ── */
+.tableWrap {
+  margin-top: 14px;
+  border: 1px solid rgba(112, 144, 152, 0.16);
+  border-radius: 10px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(8, 21, 29, 0.96), rgba(5, 15, 21, 0.96));
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.18);
+}
+
+/* ── 테이블 ── */
+.table { width: 100%; border-collapse: collapse; }
+
+.table thead tr { border-bottom: 1px solid rgba(112, 144, 152, 0.2); }
+
+.table th {
+  padding: 10px 12px;
+  color: #6b7580;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.nameCol { text-align: left !important; padding-left: 10px !important; min-width: 190px; }
+.champCol { text-align: left !important; }
+
+.sortTh { cursor: pointer; user-select: none; }
+.sortTh:hover { color: #c0c8d0; }
+
+.sortIcon { display: inline-block; vertical-align: middle; margin-left: 3px; color: #4a5560; }
+.sortActive { color: #04f3e5 !important; }
+
+/* ── 티어 헤더 행 (메타통계) ── */
+.tierHeaderRow td { padding: 0; }
+
+.tierHeaderInner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-left: 3px solid transparent;
+  background: rgba(255, 255, 255, 0.028);
+}
+
+.tierName  { font-size: 17px; font-weight: 800; letter-spacing: -0.02em; }
+.tierDesc  { color: #5a6470; font-size: 12px; }
+.tierCount { margin-left: auto; color: #4a5560; font-size: 12px; }
+
+/* ── 덱 행 ── */
+.deckRow {
+  border-bottom: 1px solid rgba(114, 145, 153, 0.1);
+  transition: background 0.12s;
+}
+
+.deckRow:last-child { border-bottom: none; }
+.deckRow:hover { background: rgba(18, 40, 52, 0.5); }
+
+.deckRow td {
+  padding: 9px 12px;
+  vertical-align: middle;
+  text-align: center;
+}
+
+/* ── 순위 ── */
+.rank {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  color: #6b757e;
+  background: rgba(30, 45, 55, 0.7);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.rank[data-top="1"] { color: #f7d26d; background: linear-gradient(135deg, rgba(108,74,25,.86), rgba(35,37,36,.94)); }
+.rank[data-top="2"] { color: #e0e8ef; background: linear-gradient(135deg, rgba(80,100,115,.82), rgba(30,40,48,.9)); }
+.rank[data-top="3"] { color: #ed8d48; background: linear-gradient(135deg, rgba(100,58,20,.82), rgba(35,37,36,.9)); }
+
+/* ── 덱 이름 + 시너지 ── */
+.deckName {
+  display: block;
+  margin-bottom: 7px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+}
+
+.traits    { display: flex; align-items: flex-end; gap: 4px; }
+.champions { display: flex; align-items: flex-end; gap: 5px; }
+
+/* ── 수치 컬럼 ── */
+.winRate  { color: #04ede0; font-size: 14px; font-weight: 700; }
+.top4     { color: #e8edf2; font-size: 14px; font-weight: 600; }
+.avgPlace { color: #f87171; font-size: 14px; font-weight: 700; }
+.avgHash  { color: #ef4444; font-size: 12px; font-weight: 500; margin-right: 1px; }
+.pickRate { color: #f9c860; font-size: 14px; font-weight: 600; }
+
+/* ── 빈 결과 ── */
+.empty { padding: 52px; color: #5a6470; font-size: 14px; text-align: center; }
+
+/* ════════════════════════════
+   특수 섹션 공통
+════════════════════════════ */
+.specialSection { margin-top: 36px; }
+
+.specialHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(112, 144, 152, 0.14);
+}
+
+/* 제목 블록 (h2 + p 묶음) */
+.specialHeaderText { flex: 1; }
+
+.specialHeader h2 {
+  margin: 0 0 2px;
+  color: #fff;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.specialHeader p {
+  margin: 0;
+  color: #6b757e;
+  font-size: 13px;
+}
+
+.specialBadge {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  border: 1px solid rgba(4, 243, 229, 0.35);
+  border-radius: 5px;
+  color: #04f3e5;
+  background: rgba(4, 243, 229, 0.1);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ════════════════════════════
+   영웅 증강 — 캐러셀
+════════════════════════════ */
+
+/* 내비게이션 버튼 */
+.carouselBtns {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.carouselBtn {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(110, 142, 150, 0.28);
+  border-radius: 6px;
+  background: rgba(8, 20, 28, 0.8);
+  color: #8e97a1;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.carouselBtn:hover {
+  border-color: rgba(4, 243, 229, 0.4);
+  color: #04f3e5;
+}
+
+/* 가로 스크롤 트랙 */
+.augmentCarousel {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(4, 243, 229, 0.25) rgba(10, 22, 30, 0.5);
+}
+
+.augmentCarousel::-webkit-scrollbar        { height: 4px; }
+.augmentCarousel::-webkit-scrollbar-track  { background: rgba(10, 22, 30, 0.5); border-radius: 2px; }
+.augmentCarousel::-webkit-scrollbar-thumb  { background: rgba(4, 243, 229, 0.25); border-radius: 2px; }
+
+/* 카드 (고정 폭으로 캐러셀 동작) */
+.augmentCard {
+  flex: 0 0 290px;
+  scroll-snap-align: start;
+  padding: 16px 18px;
+  border: 1px solid rgba(4, 243, 229, 0.14);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(5, 50, 58, 0.28), rgba(6, 16, 22, 0.96));
+  transition: border-color 0.15s;
+}
+
+.augmentCard:hover                         { border-color: rgba(4, 243, 229, 0.32); }
+.augmentCard[data-recommended="false"]     { border-color: rgba(248, 113, 113, 0.14); }
+.augmentCard[data-recommended="false"]:hover { border-color: rgba(248, 113, 113, 0.3); }
+
+.augCardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.augHeroName { color: #fff; font-size: 15px; font-weight: 700; }
+.augName     { color: #04f3e5; font-size: 13px; font-weight: 600; }
+
+/* 추천 / 비추천 배지 */
+.augRecommendBadge {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border: 1px solid rgba(4, 243, 229, 0.35);
+  border-radius: 4px;
+  background: rgba(4, 243, 229, 0.1);
+  color: #04f3e5;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.augNotRecommendBadge {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  border-radius: 4px;
+  background: rgba(248, 113, 113, 0.08);
+  color: #f87171;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.augDesc {
+  margin: 0 0 10px;
+  color: #8e97a1;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.augTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+
+.augTag {
+  padding: 2px 8px;
+  border: 1px solid rgba(110, 142, 150, 0.22);
+  border-radius: 4px;
+  color: #7a8790;
+  background: rgba(10, 22, 30, 0.8);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.augChamps {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.augStats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(112, 144, 152, 0.1);
+  text-align: center;
+}
+
+.augStats small   { display: block; margin-bottom: 3px; color: #5a6470; font-size: 11px; }
+.augStats strong  { display: block; font-size: 15px; font-weight: 700; }
+
+/* ════════════════════════════
+   유물 섹션
+════════════════════════════ */
+.artifactSearch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(110, 142, 150, 0.3);
+  border-radius: 7px;
+  color: #8e97a1;
+  background: rgba(5, 14, 20, 0.9);
+  flex-shrink: 0;
+}
+
+.artifactSearch input {
+  width: 160px;
+  border: none;
+  outline: none;
+  color: #fff;
+  background: transparent;
+  font-size: 13px;
+}
+
+.artifactSearch input::placeholder { color: #5a6470; }
+
+.artifactList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.artifactRow {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  align-items: start;
+  gap: 16px;
+  padding: 14px 18px;
+  border: 1px solid rgba(112, 144, 152, 0.14);
+  border-radius: 10px;
+  background: rgba(8, 20, 28, 0.8);
+}
+
+.artifactItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.artifactIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  border: 1px solid rgba(249, 200, 96, 0.3);
+  object-fit: cover;
+}
+
+.artifactName {
+  color: #f9c860;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.artifactUnits {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* 컬럼 헤더 행 */
+.artifactUnitHeader {
+  display: grid;
+  grid-template-columns: 34px minmax(80px, 1fr) 62px 62px 110px 62px;
+  gap: 8px;
+  padding: 0 0 6px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(112, 144, 152, 0.12);
+  color: #5a6470;
+  font-size: 11px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.artifactUnitHeader span:nth-child(2) { text-align: left; }
+
+/* 유닛 데이터 행 */
+.artifactUnit {
+  display: grid;
+  grid-template-columns: 34px minmax(80px, 1fr) 62px 62px 110px 62px;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(112, 144, 152, 0.06);
+}
+
+.artifactUnit:last-child { border-bottom: none; }
+
+.artifactChampImg {
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.artifactUnitName {
+  color: #e0e6ec;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 스탯 셀 공통 */
+.artifactStat {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.artifactStatFreq { color: #8e97a1; font-weight: 500; }
+.artifactStatWin  { color: #04ede0; }
+.artifactStatImp  { color: #4ade80; }
+.artifactStatTop4 { color: #f9c860; font-weight: 600; }
+
+/* 더보기 버튼 */
+.showMoreBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid rgba(112, 144, 152, 0.18);
+  border-radius: 8px;
+  background: rgba(8, 20, 28, 0.5);
+  color: #6b7580;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.showMoreBtn:hover {
+  border-color: rgba(4, 243, 229, 0.3);
+  color: #04f3e5;
+  background: rgba(4, 243, 229, 0.04);
+}

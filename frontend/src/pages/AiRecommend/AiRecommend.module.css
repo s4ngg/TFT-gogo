@@ -1,0 +1,357 @@
+.page {
+  width: 1100px;
+  padding: 28px 0 48px;
+}
+
+/* ── 헤더 ── */
+.pageHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.pageHeader h1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 5px;
+  color: #fff;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.pageHeader p {
+  margin: 0;
+  color: #8e97a1;
+  font-size: 13px;
+}
+
+.summonerBadge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid rgba(4, 243, 229, 0.28);
+  border-radius: 8px;
+  background: rgba(4, 80, 86, 0.3);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.summonerDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #04f3e5;
+  box-shadow: 0 0 8px #04f3e5;
+}
+
+.summonerTag {
+  color: #6b757e;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+/* ── 공통 패널 ── */
+.panel {
+  padding: 20px 22px;
+  border: 1px solid rgba(112, 144, 152, 0.16);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(9, 22, 31, 0.97), rgba(5, 14, 21, 0.97));
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
+}
+
+.panelHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: #04ede0;
+}
+
+.panelHead h2 {
+  margin: 0;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.panelSub {
+  color: #5a6470;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* ── 레이아웃 ── */
+.content { display: flex; flex-direction: column; gap: 14px; }
+
+.twoCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+/* ── 미연동 프롬프트 ── */
+.promptWrap {
+  display: flex;
+  justify-content: center;
+  padding: 48px 0;
+}
+
+.promptCard {
+  width: 520px;
+  padding: 40px;
+  border: 1px solid rgba(4, 243, 229, 0.18);
+  border-radius: 14px;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(5, 60, 65, 0.28), rgba(5, 14, 21, 0.97));
+}
+
+.promptIcon {
+  width: 68px;
+  height: 68px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 20px;
+  border: 1px solid rgba(4, 243, 229, 0.3);
+  border-radius: 18px;
+  color: #04f3e5;
+  background: rgba(4, 90, 96, 0.36);
+  box-shadow: 0 0 24px rgba(4, 243, 229, 0.12);
+}
+
+.promptCard h2 {
+  margin: 0 0 12px;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+}
+
+.promptCard p {
+  margin: 0 0 22px;
+  color: #8e97a1;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.promptFeatures {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+.promptFeatures span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #6b757e;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.connectBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 22px;
+  border: 1px solid #04f3e5;
+  border-radius: 8px;
+  color: #fff;
+  background: linear-gradient(180deg, rgba(4, 160, 155, 0.9), rgba(3, 80, 86, 0.95));
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.14s;
+}
+
+.connectBtn:hover { filter: brightness(1.1); }
+
+/* ── 최근 전적 요약 ── */
+.summaryPanel { }
+
+.summaryStats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.statCard {
+  padding: 14px;
+  border: 1px solid rgba(112, 144, 152, 0.14);
+  border-radius: 8px;
+  text-align: center;
+  background: rgba(6, 17, 24, 0.7);
+}
+
+.statCard small {
+  display: block;
+  margin-bottom: 6px;
+  color: #5a6470;
+  font-size: 12px;
+}
+
+.statCard strong {
+  color: #e0e6ec;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+/* ── 자주 쓴 덱 ── */
+.myDeckList { display: flex; flex-direction: column; gap: 8px; }
+
+.myDeckRow {
+  display: grid;
+  grid-template-columns: 22px 34px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(112, 144, 152, 0.1);
+  border-radius: 8px;
+  background: rgba(8, 20, 28, 0.6);
+}
+
+.myDeckNum {
+  color: #4a5560;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.myDeckName {
+  overflow: hidden;
+  color: #dde3e9;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.myDeckStats {
+  display: flex;
+  gap: 12px;
+  color: #6b757e;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.myAvg  { color: #a78bfa; }
+.myTop4 { color: #04ede0; }
+
+/* ── 증강 분석 ── */
+.augmentList { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+
+.augRow {
+  display: grid;
+  grid-template-columns: 20px 26px 1fr 100px 46px 44px;
+  align-items: center;
+  gap: 8px;
+}
+
+.augRank { color: #4a5560; font-size: 12px; font-weight: 600; text-align: center; }
+.augIcon { font-size: 18px; text-align: center; }
+.augName { color: #dde3e9; font-size: 13px; font-weight: 500; }
+
+.augBar { height: 6px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden; }
+.augBarFill { height: 100%; border-radius: 999px; transition: width 0.4s ease; }
+
+.augPlace { font-size: 13px; font-weight: 700; text-align: right; }
+.augGames { color: #4a5560; font-size: 12px; text-align: right; }
+
+.augTip {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 7px;
+  color: #8e97a1;
+  background: rgba(4, 243, 229, 0.06);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.augTip b { color: #04f3e5; }
+
+/* ── AI 추천 덱 ── */
+.aiDeckList {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.aiDeckCard {
+  padding: 14px;
+  border: 1px solid rgba(4, 243, 229, 0.14);
+  border-radius: 9px;
+  background: rgba(4, 60, 66, 0.18);
+}
+
+.aiDeckTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.aiDeckBadge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: #04f3e5;
+  background: rgba(4, 100, 106, 0.38);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.aiDeckName {
+  overflow: hidden;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.aiDeckTraits {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.aiDeckStats {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 10px;
+  color: #6b757e;
+  font-size: 12px;
+}
+
+.aiDeckStats b { font-weight: 700; }
+.green  { color: #04ede0; }
+.purple { color: #a78bfa; }
+.gold   { color: #f9c860; }
+
+.aiReason {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 5px;
+  color: #8e97a1;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 12px;
+}
+
+.aiDisclaimer {
+  margin: 0;
+  color: #4a5560;
+  font-size: 12px;
+  line-height: 1.5;
+}

@@ -1,6 +1,6 @@
 import styles from './TierBadge.module.css'
 
-export type TierBadgeValue = 'S' | 'A+' | 'A'
+export type TierBadgeValue = 'S' | 'A+' | 'A' | 'B' | 'C' | 'D'
 
 interface TierBadgeProps {
   value: TierBadgeValue

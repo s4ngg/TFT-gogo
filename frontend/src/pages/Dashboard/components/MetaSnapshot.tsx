@@ -49,7 +49,8 @@ function Champions({ champions }: ChampionsProps) {
 }
 
 function MetaSnapshot() {
-  const { data: metaDecks = [] } = useMetaSnapshot()
+  const { data: allDecks = [] } = useMetaSnapshot()
+  const metaDecks = allDecks.slice(0, 8)
   const navigate = useNavigate()
 
   return (
