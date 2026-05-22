@@ -128,7 +128,10 @@ jobs:
           req = urllib.request.Request(
               webhook,
               data=payload,
-              headers={"Content-Type": "application/json"},
+              headers={
+                  "Content-Type": "application/json",
+                  "User-Agent": "TFT-gogo-Bot/1.0 (GitHub Actions; +https://github.com/s4ngg/TFT-gogo)",
+              },
           )
           try:
               urllib.request.urlopen(req)
