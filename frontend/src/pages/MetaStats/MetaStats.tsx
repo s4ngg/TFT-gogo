@@ -1,95 +1,83 @@
-import { BarChart2, Clock3, TrendingUp, Zap } from 'lucide-react'
+import { Clock3 } from 'lucide-react'
 import { AppLayout } from '../../components/layout'
+import ChampionCard from '../../components/common/ChampionCard'
 import TierBadge from '../../components/common/TierBadge'
+import TraitHexBadge from '../../components/common/TraitHexBadge'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
-import type { MetaDeck, TraitSummary } from '../Dashboard/dashboardData'
+import type { MetaDeck } from '../Dashboard/dashboardData'
+import type { TierBadgeValue } from '../../components/common/TierBadge'
 import styles from './MetaStats.module.css'
 
-/* ── 유틸 ── */
-function avgWinRate(decks: MetaDeck[]): string {
-  if (decks.length === 0) return '0%'
-  const sum = decks.reduce((acc, d) => acc + parseFloat(d.winRate), 0)
-  return `${(sum / decks.length).toFixed(1)}%`
+/* ── 티어 순서 및 색상 ── */
+const TIER_ORDER: TierBadgeValue[] = ['S', 'A+', 'A', 'B', 'C', 'D']
+
+const TIER_META: Record<TierBadgeValue, { color: string; label: string }> = {
+  S:   { color: '#04f3e5', label: '최상위 픽 · 강력 추천' },
+  'A+': { color: '#f7d26d', label: '상위권 안정적 덱' },
+  A:   { color: '#a78bfa', label: '중상위권 범용 덱' },
+  B:   { color: '#60a5fa', label: '중위권 상황 의존적' },
+  C:   { color: '#818cf8', label: '하위권 전문 운영 필요' },
+  D:   { color: '#6b7280', label: '비추천 · 낮은 안정성' },
 }
 
-function collectTraitFrequency(decks: MetaDeck[]): { name: string; count: number; iconUrl: string }[] {
-  const map = new Map<string, { count: number; iconUrl: string }>()
-  for (const deck of decks) {
-    for (const t of deck.traits) {
-      const prev = map.get(t.name)
-      map.set(t.name, { count: (prev?.count ?? 0) + 1, iconUrl: t.iconUrl })
-    }
-  }
-  return Array.from(map.entries())
-    .map(([name, v]) => ({ name, ...v }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 8)
-}
-
-/* ── 서브 컴포넌트 ── */
-interface SummaryCardProps {
-  label: string
-  value: string
-  sub?: string
-  icon: typeof BarChart2
-  accent?: boolean
-}
-
-function SummaryCard({ label, value, sub, icon: Icon, accent }: SummaryCardProps) {
+/* ── 덱 카드 ── */
+function DeckCard({ deck }: { deck: MetaDeck }) {
   return (
-    <div className={`${styles.summaryCard} ${accent ? styles.accentCard : ''}`}>
-      <div className={styles.cardIcon}>
-        <Icon size={18} />
+    <article className={styles.deckCard}>
+      <div className={styles.cardTop}>
+        <TierBadge value={deck.grade} />
+        <span className={styles.cardName}>{deck.name}</span>
+        <span className={styles.cardRank}>#{deck.rank}</span>
       </div>
-      <div>
-        <small>{label}</small>
-        <strong>{value}</strong>
-        {sub && <span>{sub}</span>}
+      <div className={styles.cardTraits}>
+        {deck.traits.slice(0, 4).map((t) => (
+          <TraitHexBadge key={`${t.name}-${t.count}`} count={t.count} iconUrl={t.iconUrl} name={t.name} tone={t.tone} />
+        ))}
       </div>
-    </div>
+      <div className={styles.cardChamps}>
+        {deck.champions.slice(0, 6).map((c, i) => (
+          <ChampionCard key={`${c.name}-${i}`} imageUrl={c.imageUrl} label={c.name} stars={c.stars} toneIndex={i} />
+        ))}
+      </div>
+      <div className={styles.cardStats}>
+        <div className={styles.stat}>
+          <small>승률</small>
+          <strong className={styles.winRate}>{deck.winRate}</strong>
+        </div>
+        <div className={styles.stat}>
+          <small>TOP 4</small>
+          <strong>{deck.top4}</strong>
+        </div>
+        <div className={styles.stat}>
+          <small>평균 등수</small>
+          <strong className={styles.avgPlace}>{deck.avgPlace}</strong>
+        </div>
+        <div className={styles.stat}>
+          <small>픽률</small>
+          <strong className={styles.pickRate}>{deck.pickRate}</strong>
+        </div>
+      </div>
+    </article>
   )
 }
 
-interface TierBarProps {
-  tier: string
-  count: number
-  total: number
-  color: string
-}
+/* ── 티어 섹션 ── */
+function TierSection({ tier, decks }: { tier: TierBadgeValue; decks: MetaDeck[] }) {
+  if (decks.length === 0) return null
+  const { color, label } = TIER_META[tier]
 
-function TierBar({ tier, count, total, color }: TierBarProps) {
-  const pct = total === 0 ? 0 : Math.round((count / total) * 100)
   return (
-    <div className={styles.tierBar}>
-      <span className={styles.tierLabel} style={{ color }}>{tier}</span>
-      <div className={styles.barTrack}>
-        <div className={styles.barFill} style={{ width: `${pct}%`, background: color }} />
+    <section className={styles.tierSection}>
+      <div className={styles.tierHeader} style={{ borderColor: `${color}44` }}>
+        <TierBadge value={tier} />
+        <span className={styles.tierLabel} style={{ color }}>{tier} 티어</span>
+        <span className={styles.tierDesc}>{label}</span>
+        <span className={styles.tierCount}>{decks.length}개 덱</span>
       </div>
-      <span className={styles.tierCount}>{count}개 ({pct}%)</span>
-    </div>
-  )
-}
-
-interface TraitRowProps {
-  rank: number
-  name: string
-  count: number
-  max: number
-  iconUrl: string
-}
-
-function TraitRow({ rank, name, count, max, iconUrl }: TraitRowProps) {
-  const pct = max === 0 ? 0 : Math.round((count / max) * 100)
-  return (
-    <div className={styles.traitRow}>
-      <span className={styles.traitRank}>{rank}</span>
-      <img className={styles.traitIcon} src={iconUrl} alt={name} />
-      <span className={styles.traitName}>{name}</span>
-      <div className={styles.traitBarTrack}>
-        <div className={styles.traitBarFill} style={{ width: `${pct}%` }} />
+      <div className={styles.cardGrid}>
+        {decks.map((d) => <DeckCard key={d.rank} deck={d} />)}
       </div>
-      <span className={styles.traitCountLabel}>{count}덱</span>
-    </div>
+    </section>
   )
 }
 
@@ -97,24 +85,18 @@ function TraitRow({ rank, name, count, max, iconUrl }: TraitRowProps) {
 function MetaStats() {
   const { data: decks = [] } = useMetaSnapshot()
 
-  const tierCounts = {
-    S:   decks.filter((d) => d.grade === 'S').length,
-    'A+': decks.filter((d) => d.grade === 'A+').length,
-    A:   decks.filter((d) => d.grade === 'A').length,
-  }
-  const traits = collectTraitFrequency(decks)
-  const maxTraitCount = traits[0]?.count ?? 1
-
-  const top5 = [...decks].sort((a, b) => parseFloat(b.winRate) - parseFloat(a.winRate)).slice(0, 5)
+  const byTier = TIER_ORDER.reduce<Record<TierBadgeValue, MetaDeck[]>>(
+    (acc, t) => { acc[t] = decks.filter((d) => d.grade === t); return acc },
+    { S: [], 'A+': [], A: [], B: [], C: [], D: [] },
+  )
 
   return (
     <AppLayout>
       <div className={styles.page}>
-        {/* 헤더 */}
         <div className={styles.pageHeader}>
           <div>
             <h1>메타 통계</h1>
-            <p>현재 패치 기준 덱 · 시너지 · 티어 분포 분석</p>
+            <p>현재 패치 기준 S~D 티어 전체 덱 분석 · 픽률 · 평균 등수</p>
           </div>
           <div className={styles.updateBadge}>
             <Clock3 size={13} />
@@ -122,57 +104,9 @@ function MetaStats() {
           </div>
         </div>
 
-        {/* 요약 카드 */}
-        <div className={styles.summaryRow}>
-          <SummaryCard label="분석된 메타 덱" value={`${decks.length}개`} icon={BarChart2} />
-          <SummaryCard label="S 티어 덱" value={`${tierCounts.S}개`} sub="최상위 픽률" icon={Zap} accent />
-          <SummaryCard label="평균 승률" value={avgWinRate(decks)} icon={TrendingUp} />
-          <SummaryCard label="평균 TOP4율" value="69.7%" sub="전체 덱 기준" icon={BarChart2} />
-        </div>
-
-        <div className={styles.twoCol}>
-          {/* 티어 분포 */}
-          <section className={styles.panel}>
-            <h2>티어 분포</h2>
-            <div className={styles.tierBars}>
-              <TierBar tier="S" count={tierCounts.S} total={decks.length} color="#04f3e5" />
-              <TierBar tier="A+" count={tierCounts['A+']} total={decks.length} color="#f7c948" />
-              <TierBar tier="A" count={tierCounts.A} total={decks.length} color="#a78bfa" />
-            </div>
-          </section>
-
-          {/* 상위 5덱 승률 */}
-          <section className={styles.panel}>
-            <h2>승률 TOP 5</h2>
-            <div className={styles.top5List}>
-              {top5.map((deck, i) => (
-                <div key={deck.rank} className={styles.top5Row}>
-                  <span className={styles.top5Num}>{i + 1}</span>
-                  <TierBadge value={deck.grade} />
-                  <span className={styles.top5Name}>{deck.name}</span>
-                  <b className={styles.top5WinRate}>{deck.winRate}</b>
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
-
-        {/* 인기 시너지 */}
-        <section className={styles.panel}>
-          <h2>인기 시너지 TOP 8 <small>메타 덱 내 등장 빈도</small></h2>
-          <div className={styles.traitList}>
-            {traits.map((t, i) => (
-              <TraitRow
-                key={t.name}
-                rank={i + 1}
-                name={t.name}
-                count={t.count}
-                max={maxTraitCount}
-                iconUrl={t.iconUrl}
-              />
-            ))}
-          </div>
-        </section>
+        {TIER_ORDER.map((t) => (
+          <TierSection key={t} tier={t} decks={byTier[t]} />
+        ))}
       </div>
     </AppLayout>
   )

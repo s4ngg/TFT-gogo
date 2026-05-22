@@ -9,6 +9,8 @@ export interface MetaDeck {
   name: string
   winRate: string
   top4: string
+  avgPlace: string
+  pickRate: string
   traits: TraitSummary[]
   champions: ChampionSummary[]
 }
@@ -198,6 +200,8 @@ export const metaDecks: MetaDeck[] = [
     name: '선봉대 벡스',
     winRate: '55.8%',
     top4: '76.4%',
+    avgPlace: '3.41',
+    pickRate: '11.2%',
     traits: [
       trait('선봉대', 4, traitIconUrls.vanguard),
       trait('동물특공대', 3, traitIconUrls.animaSquad),
@@ -221,6 +225,8 @@ export const metaDecks: MetaDeck[] = [
     name: '6암흑의 별 진',
     winRate: '54.3%',
     top4: '73.2%',
+    avgPlace: '3.56',
+    pickRate: '9.8%',
     traits: [
       trait('암흑의 별', 6, traitIconUrls.darkStar),
       trait('말살자', 2, traitIconUrls.sniper),
@@ -244,6 +250,8 @@ export const metaDecks: MetaDeck[] = [
     name: '정령족 코르키 백류',
     winRate: '52.1%',
     top4: '71.8%',
+    avgPlace: '3.72',
+    pickRate: '8.5%',
     traits: [
       trait('정령족', 4, traitIconUrls.spirit),
       trait('운명술사', 3, traitIconUrls.fateweaver),
@@ -267,6 +275,8 @@ export const metaDecks: MetaDeck[] = [
     name: '습격자 마스터 이',
     winRate: '51.0%',
     top4: '70.4%',
+    avgPlace: '3.88',
+    pickRate: '7.9%',
     traits: [
       trait('습격자', 4, traitIconUrls.rogue),
       trait('초능력', 3, traitIconUrls.psyOps),
@@ -290,6 +300,8 @@ export const metaDecks: MetaDeck[] = [
     name: '별돌보미 룰루 (메탈)',
     winRate: '49.6%',
     top4: '68.5%',
+    avgPlace: '4.02',
+    pickRate: '7.1%',
     traits: [
       trait('별돌보미', 4, traitIconUrls.stargazer),
       trait('정령족', 3, traitIconUrls.spirit),
@@ -313,6 +325,8 @@ export const metaDecks: MetaDeck[] = [
     name: '8요새 럼블',
     winRate: '48.2%',
     top4: '66.1%',
+    avgPlace: '4.18',
+    pickRate: '6.4%',
     traits: [
       trait('요새', 8, traitIconUrls.bastion),
       trait('정령족', 2, traitIconUrls.spirit),
@@ -335,6 +349,8 @@ export const metaDecks: MetaDeck[] = [
     name: '4그림자 암살자',
     winRate: '47.1%',
     top4: '64.0%',
+    avgPlace: '4.31',
+    pickRate: '5.8%',
     traits: [
       trait('불한당', 6, traitIconUrls.rogue),
       trait('N.O.V.A.', 4, traitIconUrls.nova),
@@ -356,6 +372,8 @@ export const metaDecks: MetaDeck[] = [
     name: '발명의 대가 하이머딩거',
     winRate: '46.3%',
     top4: '63.2%',
+    avgPlace: '4.42',
+    pickRate: '5.2%',
     traits: [
       trait('초능력', 5, traitIconUrls.psyOps),
       trait('운명술사', 2, traitIconUrls.fateweaver, 'silver'),
@@ -370,6 +388,144 @@ export const metaDecks: MetaDeck[] = [
       champion('징크스', championImageUrls.jinx, 3, recommendedItems.physicalCarry),
       champion('소나', championImageUrls.sona, 2, recommendedItems.magicUtility),
       champion('나미', championImageUrls.nami, 2, recommendedItems.support),
+    ],
+  },
+]
+
+  {
+    rank: 9,
+    grade: 'B',
+    name: '4저격수 징크스',
+    winRate: '45.1%',
+    top4: '61.8%',
+    avgPlace: '4.55',
+    pickRate: '4.7%',
+    traits: [
+      trait('저격수', 4, traitIconUrls.sniper),
+      trait('암흑의 별', 2, traitIconUrls.darkStar, 'silver'),
+      trait('도전자', 2, traitIconUrls.challenger),
+      trait('습격자', 2, traitIconUrls.rogue, 'silver'),
+    ],
+    champions: [
+      champion('징크스', championImageUrls.jinx, 3, recommendedItems.physicalCarry),
+      champion('카이사', championImageUrls.kaisa, 2),
+      champion('진', championImageUrls.jhin, 2),
+      champion('모르가나', championImageUrls.morgana, 2),
+      champion('나미', championImageUrls.nami, 2, recommendedItems.support),
+      champion('뽀삐', championImageUrls.poppy, 2),
+    ],
+  },
+  {
+    rank: 10,
+    grade: 'B',
+    name: '복제자 빅토르',
+    winRate: '44.0%',
+    top4: '60.2%',
+    avgPlace: '4.63',
+    pickRate: '4.1%',
+    traits: [
+      trait('복제자', 4, traitIconUrls.replicator),
+      trait('메카', 3, traitIconUrls.mech),
+      trait('초능력', 2, traitIconUrls.psyOps),
+      trait('요새', 2, traitIconUrls.bastion, 'silver'),
+    ],
+    champions: [
+      champion('빅토르', championImageUrls.viktor, 3, recommendedItems.magicRamp),
+      champion('아우솔', championImageUrls.aurelionSol, 2),
+      champion('코르키', championImageUrls.corki, 2),
+      champion('오른', championImageUrls.ornn, 2, recommendedItems.tank),
+      champion('블리츠', championImageUrls.blitzcrank, 2),
+      champion('소나', championImageUrls.sona, 2),
+    ],
+  },
+  {
+    rank: 11,
+    grade: 'C',
+    name: '우주그루브 소나',
+    winRate: '42.4%',
+    top4: '57.9%',
+    avgPlace: '4.82',
+    pickRate: '3.3%',
+    traits: [
+      trait('우주 그루브', 4, traitIconUrls.spaceGroove),
+      trait('정령족', 2, traitIconUrls.spirit),
+      trait('별돌보미', 2, traitIconUrls.stargazer, 'silver'),
+      trait('운명술사', 2, traitIconUrls.fateweaver),
+    ],
+    champions: [
+      champion('소나', championImageUrls.sona, 3, recommendedItems.magicUtility),
+      champion('룰루', championImageUrls.lulu, 2),
+      champion('나미', championImageUrls.nami, 2),
+      champion('바드', championImageUrls.bard, 2),
+      champion('뽀삐', championImageUrls.poppy, 2, recommendedItems.tank),
+      champion('나르', championImageUrls.gnar, 2),
+    ],
+  },
+  {
+    rank: 12,
+    grade: 'C',
+    name: '운명술사 트페',
+    winRate: '41.2%',
+    top4: '56.1%',
+    avgPlace: '4.97',
+    pickRate: '2.9%',
+    traits: [
+      trait('운명술사', 4, traitIconUrls.fateweaver),
+      trait('도전자', 3, traitIconUrls.challenger, 'silver'),
+      trait('초능력', 2, traitIconUrls.psyOps),
+      trait('불한당', 2, traitIconUrls.rogue),
+    ],
+    champions: [
+      champion('트페', championImageUrls.twistedFate, 3, recommendedItems.magicBurst),
+      champion('아칼리', championImageUrls.akali, 2),
+      champion('파이크', championImageUrls.pyke, 2),
+      champion('쉔', championImageUrls.shen, 2),
+      champion('나르', championImageUrls.gnar, 2, recommendedItems.tank),
+      champion('모르가나', championImageUrls.morgana, 2),
+    ],
+  },
+  {
+    rank: 13,
+    grade: 'D',
+    name: '6도전자 자야',
+    winRate: '39.5%',
+    top4: '53.4%',
+    avgPlace: '5.18',
+    pickRate: '2.2%',
+    traits: [
+      trait('도전자', 6, traitIconUrls.challenger),
+      trait('암흑의 별', 2, traitIconUrls.darkStar, 'silver'),
+      trait('습격자', 2, traitIconUrls.rogue),
+    ],
+    champions: [
+      champion('자야', championImageUrls.xayah, 3, recommendedItems.physicalCarry),
+      champion('카이사', championImageUrls.kaisa, 2),
+      champion('진', championImageUrls.jhin, 2),
+      champion('아칼리', championImageUrls.akali, 2),
+      champion('잭스', championImageUrls.jax, 2, recommendedItems.bruiser),
+      champion('제드', championImageUrls.zed, 2),
+    ],
+  },
+  {
+    rank: 14,
+    grade: 'D',
+    name: '길잡이 나미',
+    winRate: '38.1%',
+    top4: '51.7%',
+    avgPlace: '5.34',
+    pickRate: '1.8%',
+    traits: [
+      trait('길잡이', 4, traitIconUrls.shepherd),
+      trait('정령족', 2, traitIconUrls.spirit, 'silver'),
+      trait('별돌보미', 2, traitIconUrls.stargazer),
+    ],
+    champions: [
+      champion('나미', championImageUrls.nami, 3, recommendedItems.support),
+      champion('룰루', championImageUrls.lulu, 2),
+      champion('소나', championImageUrls.sona, 2),
+      champion('바드', championImageUrls.bard, 2),
+      champion('오로라', championImageUrls.aurora, 2, recommendedItems.magicBurst),
+      champion('뽀삐', championImageUrls.poppy, 2),
     ],
   },
 ]
