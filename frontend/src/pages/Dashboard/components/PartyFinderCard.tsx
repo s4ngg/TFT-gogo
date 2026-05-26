@@ -3,10 +3,7 @@ import { ChevronRight, Crown, Leaf, Sparkles, Swords, Users } from 'lucide-react
 import { useNavigate } from 'react-router-dom'
 import { partyPosts, type PartyPost } from '../dashboardData'
 import styles from '../Dashboard.module.css'
-
-type PartyFilter = '전체' | '랭크' | '일반' | '커스텀'
-
-const partyFilters: PartyFilter[] = ['전체', '랭크', '일반', '커스텀']
+import { partyFilters, type PartyFilter } from '../../Party/partyFilters'
 
 const partyPostIcons: Record<PartyPost['icon'], typeof Crown> = {
   crown: Crown,
