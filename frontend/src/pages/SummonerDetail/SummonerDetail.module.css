@@ -44,7 +44,7 @@
 
 .profileCard {
   display: grid;
-  grid-template-columns: 120px 1fr auto;
+  grid-template-columns: 80px 120px 1fr auto;
   align-items: center;
   gap: 24px;
   padding: 24px 28px;
@@ -52,6 +52,31 @@
   border-radius: var(--radius-card);
   background: linear-gradient(180deg, rgba(8, 21, 29, 0.96), rgba(5, 15, 21, 0.96));
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.015), 0 18px 38px rgba(0, 0, 0, 0.18);
+}
+
+.profileIconWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.profileIcon {
+  width: 68px;
+  height: 68px;
+  border: 2px solid var(--border-active);
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.profileLevel {
+  padding: 2px 10px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: rgba(0, 212, 180, 0.12);
+  color: #04f3e5;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .emblem {
@@ -110,6 +135,29 @@
   cursor: pointer;
 }
 
+.loadMoreBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px 0;
+  border: 1px solid rgba(118, 151, 160, 0.28);
+  border-radius: var(--radius-button);
+  color: #b5bdc5;
+  background: rgba(14, 27, 34, 0.6);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.loadMoreBtn:hover {
+  background: rgba(4, 243, 229, 0.07);
+  color: #04f3e5;
+  border-color: rgba(4, 243, 229, 0.3);
+}
+
 .matchSection h2 {
   margin: 0 0 12px;
   color: #ffffff;
@@ -124,6 +172,11 @@
   gap: 6px;
 }
 
+.matchItem {
+  display: flex;
+  flex-direction: column;
+}
+
 .matchRow {
   display: grid;
   grid-template-columns: 80px 1fr auto 90px;
@@ -133,6 +186,18 @@
   border: 1px solid rgba(112, 144, 152, 0.18);
   border-left-width: 4px;
   border-radius: var(--radius-card);
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+
+.matchRow:hover {
+  filter: brightness(1.08);
+}
+
+.matchRowOpen {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-color: transparent;
 }
 
 .gold {
@@ -169,16 +234,9 @@
 }
 
 .placementBadge span {
-  font-size: 36px;
+  font-size: 28px;
   font-weight: 800;
   line-height: 1;
-}
-
-.placementBadge small {
-  margin-top: 3px;
-  color: #8a939c;
-  font-size: 11px;
-  font-weight: 600;
 }
 
 .matchMeta .deckName {
@@ -210,9 +268,16 @@
 }
 
 .lpDelta {
-  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
   font-size: 16px;
   font-weight: 700;
+}
+
+.chevron {
+  opacity: 0.5;
 }
 
 .lpGain {
@@ -221,4 +286,518 @@
 
 .lpLoss {
   color: #ff4945;
+}
+
+/* ── profileCard 확장 ── */
+.avgPlaceText {
+  color: #a78bfa;
+}
+
+.top4Text {
+  color: #04f3e5;
+}
+
+.profileRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+/* ── 순위 분포 ── */
+.rankDist {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.rankDistItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.rankDistBarWrap {
+  display: flex;
+  align-items: flex-end;
+  height: 60px;
+}
+
+.rankDistBar {
+  width: 14px;
+  border-radius: 3px 3px 0 0;
+  transition: height 0.3s ease;
+}
+
+.top4Bar {
+  background: #04f3e5;
+}
+
+.bot4Bar {
+  background: #ff4945;
+}
+
+.rankDistNum {
+  color: #8a939c;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.rankDistCount {
+  color: #b5bdc5;
+  font-size: 9px;
+}
+
+/* ── 시너지/챔피언 그리드 ── */
+.statGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.statSection {
+  padding: 20px 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: linear-gradient(180deg, rgba(8, 21, 29, 0.96), rgba(5, 15, 21, 0.96));
+}
+
+.statSectionTitle {
+  margin: 0 0 14px;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* ── 시너지 행 ── */
+.topTraitList,
+.topChampList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.topTraitRow,
+.topChampRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topRank {
+  width: 16px;
+  color: #8a939c;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.topName {
+  flex: 1;
+  color: #d9dde3;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topGames {
+  color: #8a939c;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.topAvg {
+  color: #a78bfa;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ── 챔피언 썸네일 ── */
+.champThumbWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.champThumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  object-fit: cover;
+  display: block;
+}
+
+.champCost {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* ── 유닛 이미지 목록 ── */
+.unitList {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.unitWrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.unitStar3 .unitImg {
+  border: 2px solid #f9c860;
+  border-radius: 6px;
+}
+
+.unitImg {
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 2px solid transparent;
+}
+
+.unitStars {
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #f9c860;
+  font-size: 8px;
+  white-space: nowrap;
+  letter-spacing: -1px;
+}
+
+.unitItemRow {
+  display: flex;
+  gap: 1px;
+  margin-top: 2px;
+}
+
+.unitItemImg {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  object-fit: cover;
+}
+
+/* ── 매치 상세 패널 ── */
+.matchDetailPanel {
+  border: 1px solid rgba(112, 144, 152, 0.18);
+  border-top: none;
+  border-left-width: 4px;
+  border-left-color: rgba(112, 144, 152, 0.18);
+  border-radius: 0 0 var(--radius-card) var(--radius-card);
+  background: rgba(3, 10, 16, 0.97);
+}
+
+.matchDetailHeader {
+  display: grid;
+  grid-template-columns: 26px 148px 58px 116px 86px 1fr 44px 58px;
+  gap: 8px;
+  padding: 7px 16px;
+  border-bottom: 1px solid rgba(112, 144, 152, 0.14);
+  color: #8a939c;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.matchDetailRow {
+  display: grid;
+  grid-template-columns: 26px 148px 58px 116px 86px 1fr 44px 58px;
+  gap: 8px;
+  padding: 7px 16px;
+  align-items: center;
+  border-bottom: 1px solid rgba(112, 144, 152, 0.06);
+  transition: background 0.1s;
+}
+
+.matchDetailRow:last-child {
+  border-bottom: none;
+}
+
+.matchDetailRow:hover {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.myMatchDetailRow {
+  background: rgba(4, 243, 229, 0.055);
+}
+
+.myMatchDetailRow:hover {
+  background: rgba(4, 243, 229, 0.08);
+}
+
+.detailRank {
+  color: #8a939c;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.detailPlayer {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.detailName {
+  color: #d9dde3;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detailTag {
+  color: #8a939c;
+  font-size: 10px;
+}
+
+.detailStage {
+  color: #b5bdc5;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.detailTraits {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.detailTraitBadge {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 5px 2px 3px;
+  border-radius: 4px;
+  background: rgba(30, 50, 62, 0.85);
+  border: 1px solid rgba(114, 150, 160, 0.2);
+  font-size: 10px;
+  font-weight: 700;
+  color: #d9dde3;
+}
+
+.detailTraitIcon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.detailAugments {
+  display: flex;
+  gap: 3px;
+}
+
+.detailAugIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  font-size: 14px;
+  border-radius: 4px;
+  background: rgba(30, 50, 62, 0.8);
+  border: 1px solid rgba(114, 150, 160, 0.2);
+}
+
+.detailUnits {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+
+.detailUnitWrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.detailUnitImg {
+  width: 32px;
+  height: 32px;
+  border-radius: 5px;
+  object-fit: cover;
+  border: 2px solid transparent;
+}
+
+.detailUnitStar3 .detailUnitImg {
+  border-color: #f9c860;
+}
+
+.detailUnitStars {
+  position: absolute;
+  bottom: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #f9c860;
+  font-size: 7px;
+  white-space: nowrap;
+  letter-spacing: -1px;
+}
+
+.detailKills {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #d9dde3;
+}
+
+.detailGold {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #f7d26d;
+}
+
+.detailUnitItems {
+  display: flex;
+  gap: 1px;
+  margin-top: 2px;
+  justify-content: center;
+}
+
+.detailUnitItemImg {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  object-fit: cover;
+}
+
+/* ── 30게임 요약 ── */
+.summarySection {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 20px 24px;
+  margin-bottom: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: linear-gradient(180deg, rgba(8, 21, 29, 0.96), rgba(5, 15, 21, 0.96));
+}
+
+.winRateDonut {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: conic-gradient(#04f3e5 var(--pct), rgba(255, 255, 255, 0.07) 0);
+  flex-shrink: 0;
+}
+
+.winRateInner {
+  position: absolute;
+  inset: 13px;
+  border-radius: 50%;
+  background: rgba(5, 15, 21, 0.97);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.winRatePct {
+  color: #04f3e5;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.summaryStats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.summaryStatLabel {
+  margin: 0;
+  color: #8a939c;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.summaryStatValue {
+  margin: 0 0 10px;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.summaryStatValue:last-child {
+  margin-bottom: 0;
+}
+
+.summaryStatSub {
+  color: #8a939c;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.summaryStatTh {
+  color: #8a939c;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ── 툴팁 ── */
+.tip {
+  position: relative;
+}
+
+.tip[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 5px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(5, 12, 18, 0.96);
+  border: 1px solid rgba(112, 144, 152, 0.3);
+  color: #e4e8ed;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 200;
+}
+
+.tip[data-tip]:hover::after {
+  opacity: 1;
+}
+
+.itemTipWrap {
+  display: inline-flex;
 }
