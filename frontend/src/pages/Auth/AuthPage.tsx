@@ -114,7 +114,7 @@ function AuthPage({ mode }: AuthPageProps) {
           </div>
 
           {/* onSubmit — 버튼 클릭 시 handleSubmit 실행 */}
-          <form className={styles.authForm} onSubmit={handleSubmit}>
+          <form className={styles.authForm} onSubmit={handleSubmit} noValidate>
             <label>
               <span>이메일</span>
               <div className={styles.inputBox}>
