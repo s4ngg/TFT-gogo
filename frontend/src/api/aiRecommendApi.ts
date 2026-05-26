@@ -1,5 +1,6 @@
 import axiosInstance from './axiosInstance'
 import type { TraitHexBadgeTone } from '../components/common/TraitHexBadge'
+import { mockAiRecommendation } from '../mocks/aiRecommendMock'
 
 export interface AiRecommendRequest {
   gameName: string
@@ -45,10 +46,11 @@ export interface AiRecommendResponse {
   deckReasons: AiRecommendDeckReason[]
 }
 
-export const getAiRecommendation = async (params: AiRecommendRequest) => {
-  const { data } = await axiosInstance.get<AiRecommendResponse>('/ai/recommendations', {
-    params,
-  })
-
-  return data
+export const getAiRecommendation = async (params: AiRecommendRequest): Promise<AiRecommendResponse> => {
+  try {
+    const { data } = await axiosInstance.get<AiRecommendResponse>('/ai/recommendations', { params })
+    return data
+  } catch {
+    return mockAiRecommendation
+  }
 }

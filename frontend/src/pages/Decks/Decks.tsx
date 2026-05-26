@@ -8,7 +8,9 @@ import TraitHexBadge from '../../components/common/TraitHexBadge'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
 import type { MetaDeck } from '../Dashboard/dashboardData'
 import type { TierBadgeValue } from '../../components/common/TierBadge'
-import { ARTIFACT_RECS, HERO_AUGMENT_DECKS, INITIAL_ARTIFACT_COUNT } from './deckListData'
+import { INITIAL_ARTIFACT_COUNT } from './deckListData'
+import { useHeroAugmentQuery } from '../../hooks/useHeroAugmentQuery'
+import { useArtifactQuery } from '../../hooks/useArtifactQuery'
 import styles from './Decks.module.css'
 
 /* ════════════════════════════
@@ -120,6 +122,7 @@ function TableHead({ sortKey, sortDir, onSort, showTier = true, showRank = true 
 ════════════════════════════ */
 function HeroAugmentSection() {
   const scrollRef = useRef<HTMLDivElement>(null)
+  const { data: heroAugmentDecks = [] } = useHeroAugmentQuery()
 
   function scrollCarousel(dir: 'left' | 'right') {
     if (!scrollRef.current) return
@@ -127,7 +130,7 @@ function HeroAugmentSection() {
   }
 
   // 추천(true) → 왼쪽, 비추천(false) → 오른쪽
-  const sorted = [...HERO_AUGMENT_DECKS].sort((a, b) => {
+  const sorted = [...heroAugmentDecks].sort((a, b) => {
     if (a.recommended === b.recommended) return 0
     return a.recommended ? -1 : 1
   })
@@ -193,12 +196,13 @@ function HeroAugmentSection() {
 function ArtifactSection() {
   const [showAll, setShowAll] = useState(false)
   const [search, setSearch]   = useState('')
+  const { data: artifactRecs = [] } = useArtifactQuery()
 
   const searchActive = search.trim() !== ''
   // 검색 중이면 전체에서 필터, 아니면 showAll 여부에 따라 slice
-  const allFiltered = ARTIFACT_RECS.filter((r) => !searchActive || r.itemName.includes(search))
+  const allFiltered = artifactRecs.filter((r) => !searchActive || r.itemName.includes(search))
   const visible     = searchActive || showAll ? allFiltered : allFiltered.slice(0, INITIAL_ARTIFACT_COUNT)
-  const hiddenCount = ARTIFACT_RECS.length - INITIAL_ARTIFACT_COUNT
+  const hiddenCount = artifactRecs.length - INITIAL_ARTIFACT_COUNT
 
   return (
     <section className={styles.specialSection}>
