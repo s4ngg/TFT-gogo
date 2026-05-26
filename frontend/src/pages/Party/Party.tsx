@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { type FormEvent, useMemo, useState } from 'react'
 import {
   Clock3,
   Crown,
@@ -11,6 +11,7 @@ import {
   Users,
 } from 'lucide-react'
 import { AppLayout } from '../../components/layout'
+import { partyFilters, type PartyFilter } from './partyFilters'
 import styles from './Party.module.css'
 
 interface PartyPost {
@@ -30,20 +31,16 @@ interface ChatMessage {
   isMine?: boolean
   message: string
   name: string
+  roomName: string
   time: string
   tier: string
 }
 
 interface ChatRoom {
-  active?: boolean
   lastMessage: string
   name: string
   users: string
 }
-
-type PartyFilter = '전체' | '랭크' | '일반' | '커스텀'
-
-const partyFilters: PartyFilter[] = ['전체', '랭크', '일반', '커스텀']
 
 const partyPosts: PartyPost[] = [
   {
@@ -97,18 +94,31 @@ const partyPosts: PartyPost[] = [
 ]
 
 const chatRooms: ChatRoom[] = [
-  { name: '일반', users: '1,234', lastMessage: '새로운 패치 적응 중입니다!', active: true },
+  { name: '일반', users: '1,234', lastMessage: '새로운 패치 적응 중입니다!' },
   { name: '덱 공략', users: '856', lastMessage: '증강 추천 부탁드려요' },
   { name: '파티 모집', users: '622', lastMessage: '마스터 듀오 구해요~' },
   { name: '질문 & 답변', users: '741', lastMessage: '초보 운영 질문 있습니다' },
 ]
 
 const chatMessages: ChatMessage[] = [
-  { name: '정동글', tier: 'Master', message: '선봉대 벡스 지금도 순방률 괜찮나요?', time: '14:58' },
-  { name: '새벽의달', tier: 'Diamond', message: '초반에 벡스 2성만 빨리 붙으면 꽤 안정적이에요.', time: '14:59' },
-  { name: '응의자', tier: 'Platinum', message: '아이템은 보건보다 블루 먼저 보는 게 나을까요?', time: '15:00' },
-  { name: 'TFTgogo', tier: 'System', message: '17.3 패치 기준 추천 메타가 업데이트되었습니다.', time: '15:01' },
-  { name: '나', tier: 'Diamond', message: '파티 모집 쪽에 같이 하실 분 있으면 바로 들어갈게요.', time: '15:02', isMine: true },
+  { roomName: '일반', name: '정동글', tier: 'Master', message: '선봉대 벡스 지금도 순방률 괜찮나요?', time: '14:58' },
+  { roomName: '일반', name: '새벽의달', tier: 'Diamond', message: '초반에 벡스 2성만 빨리 붙으면 꽤 안정적이에요.', time: '14:59' },
+  { roomName: '일반', name: '응의자', tier: 'Platinum', message: '아이템은 보건보다 블루 먼저 보는 게 나을까요?', time: '15:00' },
+  { roomName: '일반', name: 'TFTgogo', tier: 'System', message: '17.3 패치 기준 추천 메타가 업데이트되었습니다.', time: '15:01' },
+  {
+    roomName: '일반',
+    name: '나',
+    tier: 'Diamond',
+    message: '파티 모집 쪽에 같이 하실 분 있으면 바로 들어갈게요.',
+    time: '15:02',
+    isMine: true,
+  },
+  { roomName: '덱 공략', name: '운영연습', tier: 'Diamond', message: '전투 증강 첫 선택이면 어떤 조합이 좋아요?', time: '14:54' },
+  { roomName: '덱 공략', name: '메타분석가', tier: 'Master', message: '초반에는 선봉대나 요새 기반으로 피 관리 추천해요.', time: '14:55' },
+  { roomName: '파티 모집', name: '플레러너', tier: 'Platinum', message: '플래티넘 듀오 한 자리 남았습니다.', time: '14:50' },
+  { roomName: '파티 모집', name: '순방중독', tier: 'Master', message: '마스터 이상 저녁 랭크 같이 하실 분?', time: '14:56' },
+  { roomName: '질문 & 답변', name: '입문자', tier: 'Gold', message: '아이템 우선순위는 캐리부터 맞추면 되나요?', time: '14:48' },
+  { roomName: '질문 & 답변', name: '코치봇', tier: 'System', message: '캐리 3신기와 앞라인 탱템 균형을 같이 보는 편이 좋아요.', time: '14:49' },
 ]
 
 const partyIconMap = {
@@ -118,9 +128,21 @@ const partyIconMap = {
   swords: Swords,
 }
 
+function getCurrentTime() {
+  return new Intl.DateTimeFormat('ko-KR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date())
+}
+
 function Party() {
   const [selectedFilter, setSelectedFilter] = useState<PartyFilter>('전체')
+  const [searchDraft, setSearchDraft] = useState('')
   const [query, setQuery] = useState('')
+  const [activeRoomName, setActiveRoomName] = useState(chatRooms[0]?.name ?? '일반')
+  const [messages, setMessages] = useState<ChatMessage[]>(chatMessages)
+  const [chatInput, setChatInput] = useState('')
   const filteredPartyPosts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
 
@@ -138,6 +160,38 @@ function Party() {
       return matchesFilter && matchesQuery
     })
   }, [query, selectedFilter])
+  const activeMessages = useMemo(
+    () => messages.filter((message) => message.roomName === activeRoomName),
+    [activeRoomName, messages],
+  )
+
+  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setQuery(searchDraft)
+  }
+
+  const handleMessageSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    const trimmedMessage = chatInput.trim()
+
+    if (trimmedMessage.length === 0) {
+      return
+    }
+
+    setMessages((currentMessages) => [
+      ...currentMessages,
+      {
+        roomName: activeRoomName,
+        name: '나',
+        tier: 'Diamond',
+        message: trimmedMessage,
+        time: getCurrentTime(),
+        isMine: true,
+      },
+    ])
+    setChatInput('')
+  }
 
   return (
     <AppLayout>
@@ -162,15 +216,21 @@ function Party() {
           </div>
 
           <div className={styles.toolbar}>
-            <div className={styles.searchBox}>
+            <form className={styles.searchBox} onSubmit={handleSearchSubmit}>
               <Search size={18} />
               <input
                 aria-label="파티 모집 검색"
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => {
+                  const nextQuery = event.target.value
+
+                  setSearchDraft(nextQuery)
+                  setQuery(nextQuery)
+                }}
                 placeholder="티어, 모드, 키워드 검색"
-                value={query}
+                value={searchDraft}
               />
-            </div>
+              <button type="submit">검색</button>
+            </form>
             <div className={styles.filterTabs} aria-label="파티원 찾기 필터">
               {partyFilters.map((filter) => (
                 <button
@@ -269,7 +329,13 @@ function Party() {
           <div className={styles.chatLayout}>
             <aside className={styles.channelList} aria-label="채팅 채널">
               {chatRooms.map((room) => (
-                <button className={room.active ? styles.activeChannel : undefined} type="button" key={room.name}>
+                <button
+                  aria-pressed={activeRoomName === room.name}
+                  className={activeRoomName === room.name ? styles.activeChannel : undefined}
+                  onClick={() => setActiveRoomName(room.name)}
+                  type="button"
+                  key={room.name}
+                >
                   <strong># {room.name}</strong>
                   <span>
                     <Users size={14} />
@@ -282,25 +348,41 @@ function Party() {
 
             <div className={styles.chatWindow}>
               <div className={styles.chatWindowHeader}>
-                <strong># 일반</strong>
-                <span>14:58부터 새 메시지 5개</span>
+                <strong># {activeRoomName}</strong>
+                <span>
+                  {activeMessages.length > 0
+                    ? `새 메시지 ${activeMessages.length}개`
+                    : '대화를 시작해보세요'}
+                </span>
               </div>
               <div className={styles.messageList}>
-                {chatMessages.map((chat) => (
-                  <article className={chat.isMine ? styles.myMessage : undefined} key={`${chat.name}-${chat.time}`}>
-                    <div>
-                      <strong>{chat.name}</strong>
-                      <span>{chat.tier}</span>
-                      <time>{chat.time}</time>
-                    </div>
-                    <p>{chat.message}</p>
-                  </article>
-                ))}
+                {activeMessages.length > 0 ? (
+                  activeMessages.map((chat) => (
+                    <article
+                      className={chat.isMine ? styles.myMessage : undefined}
+                      key={`${chat.roomName}-${chat.name}-${chat.time}-${chat.message}`}
+                    >
+                      <div>
+                        <strong>{chat.name}</strong>
+                        <span>{chat.tier}</span>
+                        <time>{chat.time}</time>
+                      </div>
+                      <p>{chat.message}</p>
+                    </article>
+                  ))
+                ) : (
+                  <p className={styles.chatEmpty}>아직 이 채널에는 메시지가 없습니다.</p>
+                )}
               </div>
-              <form className={styles.messageForm}>
+              <form className={styles.messageForm} onSubmit={handleMessageSubmit}>
                 <MessageCircle size={19} />
-                <input aria-label="채팅 메시지 입력" placeholder="메시지를 입력하세요" />
-                <button type="button" aria-label="메시지 보내기">
+                <input
+                  aria-label="채팅 메시지 입력"
+                  onChange={(event) => setChatInput(event.target.value)}
+                  placeholder="메시지를 입력하세요"
+                  value={chatInput}
+                />
+                <button type="submit" aria-label="메시지 보내기">
                   <Send size={18} />
                 </button>
               </form>

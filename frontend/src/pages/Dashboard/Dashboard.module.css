@@ -671,6 +671,7 @@
 }
 
 .emptyState {
+  grid-row: 1 / -1;
   min-height: 100%;
   display: grid;
   place-items: center;
