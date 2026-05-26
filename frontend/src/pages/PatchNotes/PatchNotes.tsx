@@ -17,6 +17,7 @@ import {
   Wand2,
   Zap,
 } from 'lucide-react'
+import { communityDragonAssetUrl } from '../../api/communityDragonAssets'
 import { AppLayout } from '../../components/layout'
 import styles from './PatchNotes.module.css'
 
@@ -51,6 +52,9 @@ interface PatchHistoryItem {
   title: string
   status: '현재' | '이전'
   focus: string
+  description: string
+  highlights: string[]
+  imageUrl: string
 }
 
 interface PaginationProps {
@@ -78,6 +82,34 @@ const IMPACT_CLASS: Record<ImpactLevel, string> = {
   높음: styles.highImpact,
   중간: styles.midImpact,
   낮음: styles.lowImpact,
+}
+
+const PATCH_FALLBACK_IMAGE = '/assets/emblems/patch-meta-emblem-pink.png'
+
+const categoryImageUrl: Record<ChangeCategory, string> = {
+  챔피언: communityDragonAssetUrl('ASSETS/Characters/TFT17_Kaisa/Skins/Base/Images/TFT17_Kaisa_splash_tile_69.TFT_Set17.tex'),
+  시너지: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Challenger.TFT_Set17.tex'),
+  아이템: communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_GuinsoosRageblade.TFT_Set13.tex'),
+  증강체: communityDragonAssetUrl('ASSETS/UX/TFT/Augments/Augment_Silver.tex'),
+  시스템: PATCH_FALLBACK_IMAGE,
+}
+
+const targetImageUrl: Record<string, string> = {
+  아펠리오스: communityDragonAssetUrl('ASSETS/Characters/TFT17_Aphelios/Skins/Base/Images/TFT17_Aphelios_splash_tile_1.TFT_Set17.tex'),
+  세주아니: communityDragonAssetUrl('ASSETS/Characters/TFT17_Sejuani/Skins/Base/Images/TFT17_Sejuani_splash_tile_1.TFT_Set17.tex'),
+  럭스: communityDragonAssetUrl('ASSETS/Characters/TFT17_Lux/Skins/Base/Images/TFT17_Lux_splash_tile_1.TFT_Set17.tex'),
+  카이사: communityDragonAssetUrl('ASSETS/Characters/TFT17_Kaisa/Skins/Base/Images/TFT17_Kaisa_splash_tile_69.TFT_Set17.tex'),
+  오른: communityDragonAssetUrl('ASSETS/Characters/TFT17_Ornn/Skins/Base/Images/TFT17_Ornn_splash_tile_11.TFT_Set17.tex'),
+  학살자: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Rogue.TFT_Set17.tex'),
+  마법사: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Fateweaver.TFT_Set17.tex'),
+  감시자: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_12_Vanguard.TFT_Set12.tex'),
+  전략가: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Stargazer.TFT_Set17.tex'),
+  결투가: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Challenger.TFT_Set17.tex'),
+  '구인수의 격노검': communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_GuinsoosRageblade.TFT_Set13.tex'),
+  '워모그의 갑옷': communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_WarmogsArmor.TFT_Set13.tex'),
+  '쇼진의 창': communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_SpearOfShojin.TFT_Set13.tex'),
+  '이온 충격기': communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_IonicSpark.TFT_Set13.tex'),
+  '거인 학살자': communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_GiantSlayer.TFT_Set13.tex'),
 }
 
 const BASE_PATCH_CHANGES: PatchChange[] = [
@@ -359,23 +391,99 @@ const BASE_PATCH_CHANGES: PatchChange[] = [
 ]
 
 const PATCH_HISTORY: PatchHistoryItem[] = [
-  { version: '17.3', date: '2026.05.26', title: 'AP 전환 조합 보강', status: '현재', focus: '마법사, 아펠리오스, 리롤 증강체 조정' },
-  { version: '17.2', date: '2026.05.12', title: '리롤 덱 속도 조절', status: '이전', focus: '저코스트 캐리, 초반 골드 증강체 하향' },
-  { version: '17.1', date: '2026.04.29', title: '세트 오픈 밸런스', status: '이전', focus: '신규 시너지 안정화, 일부 5코스트 조정' },
-  { version: '16.9', date: '2026.04.15', title: '시즌 종료 메타 정리', status: '이전', focus: '상위권 고정 조합 완화' },
+  {
+    version: '17.3',
+    date: '2026.05.26',
+    title: 'AP 전환 조합 보강',
+    status: '현재',
+    focus: '마법사, 아펠리오스, 리롤 증강체 조정',
+    description: 'AP 전환 조합과 후반 캐리 라인이 다시 올라오는 패치입니다.',
+    highlights: [
+      '마법사와 AP 캐리 조합의 중반 전환 가치가 상승했습니다.',
+      '저코스트 리롤 증강체는 초반 압박력이 완화됐습니다.',
+      '공속 기반 장기전 캐리는 아이템 의존도를 더 확인해야 합니다.',
+    ],
+    imageUrl: communityDragonAssetUrl('ASSETS/Characters/TFT17_Aphelios/Skins/Base/Images/TFT17_Aphelios_splash_tile_1.TFT_Set17.tex'),
+  },
+  {
+    version: '17.2',
+    date: '2026.05.12',
+    title: '리롤 덱 속도 조절',
+    status: '이전',
+    focus: '저코스트 캐리, 초반 골드 증강체 하향',
+    description: '초반 리롤 덱의 템포를 낮추고 운영 덱으로 넘어갈 시간을 만든 패치입니다.',
+    highlights: [
+      '1~2코스트 리롤 조합의 초반 압박력이 낮아졌습니다.',
+      '연승 운영보다 체력 보존 후 7레벨 전환 가치가 커졌습니다.',
+      '골드 증강체 선택 시 후반 전환 플랜을 함께 봐야 합니다.',
+    ],
+    imageUrl: communityDragonAssetUrl('ASSETS/Characters/TFT17_Lux/Skins/Base/Images/TFT17_Lux_splash_tile_1.TFT_Set17.tex'),
+  },
+  {
+    version: '17.1',
+    date: '2026.04.29',
+    title: '세트 오픈 밸런스',
+    status: '이전',
+    focus: '신규 시너지 안정화, 일부 5코스트 조정',
+    description: '세트 초반 과도하게 튀는 신규 시너지와 고코스트 유닛을 안정화한 패치입니다.',
+    highlights: [
+      '신규 시너지의 초반 활성 보상이 완만하게 조정됐습니다.',
+      '일부 5코스트 캐리의 후반 영향력이 재분배됐습니다.',
+      '아이템 선택 폭을 넓히기 위한 기초 밸런스가 정리됐습니다.',
+    ],
+    imageUrl: communityDragonAssetUrl('ASSETS/Characters/TFT17_Ornn/Skins/Base/Images/TFT17_Ornn_splash_tile_11.TFT_Set17.tex'),
+  },
+  {
+    version: '16.9',
+    date: '2026.04.15',
+    title: '시즌 종료 메타 정리',
+    status: '이전',
+    focus: '상위권 고정 조합 완화',
+    description: '시즌 종료 전 상위권에서 고정되던 조합의 독주를 완화한 패치입니다.',
+    highlights: [
+      '상위권 고정 조합의 핵심 캐리 효율이 낮아졌습니다.',
+      '중위권 조합의 순방 가능성이 소폭 올라갔습니다.',
+      '시즌 말 랭크 환경에서 조합 선택지가 늘었습니다.',
+    ],
+    imageUrl: communityDragonAssetUrl('ASSETS/Characters/TFT17_Kaisa/Skins/Base/Images/TFT17_Kaisa_splash_tile_69.TFT_Set17.tex'),
+  },
 ]
 
-function expandPatchSamples(changes: PatchChange[]) {
+function getBaseTarget(target: string) {
+  return target.replace(/\s샘플\s\d+$/, '')
+}
+
+function getChangeImageUrl(change: PatchChange) {
+  return targetImageUrl[getBaseTarget(change.target)] ?? categoryImageUrl[change.category]
+}
+
+function buildVersionedChange(change: PatchChange, version: string, patchIndex: number): PatchChange {
+  if (version === PATCH_HISTORY[0].version) {
+    return change
+  }
+
+  return {
+    ...change,
+    id: patchIndex * 1000 + change.id,
+    summary: `${version} 패치 기준 ${change.summary}`,
+    before: `${change.before} · ${version} 이전 기준`,
+    after: `${change.after} · ${version} 적용 기준`,
+    tags: [version, ...change.tags.slice(0, 2)],
+  }
+}
+
+function expandPatchSamples(changes: PatchChange[], patch: PatchHistoryItem) {
   const targetCount = PATCH_PAGE_SIZE * SAMPLE_PAGE_COUNT
+  const patchIndex = PATCH_HISTORY.findIndex((historyItem) => historyItem.version === patch.version)
 
   return CHANGE_CATEGORIES.flatMap((category) => {
     const categoryChanges = changes.filter((change) => change.category === category)
 
     return Array.from({ length: targetCount }, (_, index) => {
-      const source = categoryChanges[index % categoryChanges.length]
+      const source = buildVersionedChange(categoryChanges[index % categoryChanges.length], patch.version, patchIndex)
       const sampleRound = Math.floor(index / categoryChanges.length) + 1
       const isOriginal = sampleRound === 1
-      const id = CHANGE_CATEGORIES.indexOf(category) * targetCount + index + 1
+      const id = patchIndex * 1000 + CHANGE_CATEGORIES.indexOf(category) * targetCount + index + 1
 
       return {
         ...source,
@@ -390,14 +498,9 @@ function expandPatchSamples(changes: PatchChange[]) {
   })
 }
 
-const PATCH_CHANGES = expandPatchSamples(BASE_PATCH_CHANGES)
-const HIGH_IMPACT_COUNT = PATCH_CHANGES.filter((change) => change.impact === '높음').length
-const BUFF_COUNT = PATCH_CHANGES.filter((change) => change.type === '상향').length
-const NERF_COUNT = PATCH_CHANGES.filter((change) => change.type === '하향').length
-
-function getCategoryCount(category: PatchCategory) {
-  if (category === '전체') return PATCH_CHANGES.length
-  return PATCH_CHANGES.filter((change) => change.category === category).length
+function getCategoryCount(category: PatchCategory, changes: PatchChange[]) {
+  if (category === '전체') return changes.length
+  return changes.filter((change) => change.category === category).length
 }
 
 function getTotalPages(totalItems: number) {
@@ -453,17 +556,26 @@ function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) 
 }
 
 function PatchNotes() {
+  const [selectedPatchVersion, setSelectedPatchVersion] = useState(PATCH_HISTORY[0].version)
   const [activeCategory, setActiveCategory] = useState<PatchCategory>('전체')
   const [activeChangeType, setActiveChangeType] = useState<ChangeTypeFilter>('전체 변경')
   const [highImpactOnly, setHighImpactOnly] = useState(false)
   const [expandedChangeIds, setExpandedChangeIds] = useState<number[]>([])
   const [query, setQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const selectedPatch = useMemo(
+    () => PATCH_HISTORY.find((patch) => patch.version === selectedPatchVersion) ?? PATCH_HISTORY[0],
+    [selectedPatchVersion],
+  )
+  const patchChanges = useMemo(() => expandPatchSamples(BASE_PATCH_CHANGES, selectedPatch), [selectedPatch])
+  const highImpactCount = patchChanges.filter((change) => change.impact === '높음').length
+  const buffCount = patchChanges.filter((change) => change.type === '상향').length
+  const nerfCount = patchChanges.filter((change) => change.type === '하향').length
 
   const filteredChanges = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
 
-    return PATCH_CHANGES.filter((change) => {
+    return patchChanges.filter((change) => {
       const matchesCategory = activeCategory === '전체' || change.category === activeCategory
       const matchesType = activeChangeType === '전체 변경' || change.type === activeChangeType
       const matchesImpact = !highImpactOnly || change.impact === '높음'
@@ -472,7 +584,7 @@ function PatchNotes() {
 
       return matchesCategory && matchesType && matchesImpact && matchesQuery
     })
-  }, [activeCategory, activeChangeType, highImpactOnly, query])
+  }, [activeCategory, activeChangeType, highImpactOnly, patchChanges, query])
 
   const totalPages = getTotalPages(filteredChanges.length)
   const safePage = Math.min(currentPage, totalPages)
@@ -489,7 +601,7 @@ function PatchNotes() {
   useEffect(() => {
     setCurrentPage(1)
     setExpandedChangeIds([])
-  }, [activeCategory, activeChangeType, highImpactOnly, query])
+  }, [activeCategory, activeChangeType, highImpactOnly, query, selectedPatchVersion])
 
   return (
     <AppLayout>
@@ -498,23 +610,31 @@ function PatchNotes() {
           <div className={styles.heroCopy}>
             <span className={styles.kicker}>
               <CalendarDays size={16} />
-              17.3 패치 노트
+              {selectedPatch.version} 패치 노트
             </span>
             <h1>패치 노트</h1>
-            <p>챔피언, 시너지, 아이템, 증강체 변경사항을 한 화면에서 확인하고 현재 메타 흐름을 빠르게 파악합니다.</p>
+            <p>{selectedPatch.description}</p>
             <div className={styles.heroMeta}>
-              <span>적용일 2026.05.26</span>
-              <span>변경 {PATCH_CHANGES.length}건</span>
-              <span>핵심 영향 {HIGH_IMPACT_COUNT}건</span>
+              <span>적용일 {selectedPatch.date}</span>
+              <span>변경 {patchChanges.length}건</span>
+              <span>핵심 영향 {highImpactCount}건</span>
             </div>
           </div>
 
           <aside className={styles.releaseCard} aria-label="현재 패치 요약">
-            <div className={styles.releaseArt} aria-hidden="true" />
+            <div className={styles.releaseArt} aria-hidden="true">
+              <img
+                src={selectedPatch.imageUrl}
+                alt=""
+                onError={(event) => {
+                  event.currentTarget.src = PATCH_FALLBACK_IMAGE
+                }}
+              />
+            </div>
             <div>
-              <span className={styles.releaseLabel}>현재 버전</span>
-              <strong>v17.3</strong>
-              <p>AP 전환 조합과 후반 캐리 라인이 다시 올라오는 패치입니다.</p>
+              <span className={styles.releaseLabel}>{selectedPatch.status === '현재' ? '현재 버전' : '선택한 버전'}</span>
+              <strong>v{selectedPatch.version}</strong>
+              <p>{selectedPatch.focus}</p>
             </div>
           </aside>
         </header>
@@ -525,7 +645,7 @@ function PatchNotes() {
               <ArrowUpRight size={18} />
             </span>
             <div>
-              <strong>{BUFF_COUNT}</strong>
+              <strong>{buffCount}</strong>
               <p>상향 항목</p>
             </div>
           </article>
@@ -534,7 +654,7 @@ function PatchNotes() {
               <AlertTriangle size={18} />
             </span>
             <div>
-              <strong>{NERF_COUNT}</strong>
+              <strong>{nerfCount}</strong>
               <p>하향 항목</p>
             </div>
           </article>
@@ -592,7 +712,7 @@ function PatchNotes() {
                   onClick={() => setActiveCategory(category)}
                 >
                   {category}
-                  <span>{getCategoryCount(category)}</span>
+                  <span>{getCategoryCount(category, patchChanges)}</span>
                 </button>
               ))}
             </div>
@@ -625,6 +745,7 @@ function PatchNotes() {
               {pagedChanges.map((change) => {
                 const CategoryIcon = CATEGORY_ICON[change.category]
                 const isExpanded = expandedChangeIds.includes(change.id)
+                const imageUrl = getChangeImageUrl(change)
 
                 return (
                   <article key={change.id} className={styles.changeItem}>
@@ -638,7 +759,16 @@ function PatchNotes() {
                     </div>
 
                     <div className={styles.changeBody}>
-                      <div>
+                      <span className={styles.changeThumb}>
+                        <img
+                          src={imageUrl}
+                          alt=""
+                          onError={(event) => {
+                            event.currentTarget.src = PATCH_FALLBACK_IMAGE
+                          }}
+                        />
+                      </span>
+                      <div className={styles.changeText}>
                         <h3>{change.target}</h3>
                         <p>{change.summary}</p>
                       </div>
@@ -690,18 +820,12 @@ function PatchNotes() {
               <span className={styles.sectionLabel}>요약</span>
               <h2>이번 패치 핵심</h2>
               <ul>
-                <li>
-                  <CheckCircle2 size={16} />
-                  <span>마법사와 AP 캐리 조합의 중반 전환 가치가 상승했습니다.</span>
-                </li>
-                <li>
-                  <CheckCircle2 size={16} />
-                  <span>저코스트 리롤 증강체는 초반 압박력이 완화됐습니다.</span>
-                </li>
-                <li>
-                  <CheckCircle2 size={16} />
-                  <span>공속 기반 장기전 캐리는 아이템 의존도를 더 확인해야 합니다.</span>
-                </li>
+                {selectedPatch.highlights.map((highlight) => (
+                  <li key={highlight}>
+                    <CheckCircle2 size={16} />
+                    <span>{highlight}</span>
+                  </li>
+                ))}
               </ul>
             </section>
 
@@ -713,14 +837,31 @@ function PatchNotes() {
               <h2>이전 패치</h2>
               <div className={styles.historyList}>
                 {PATCH_HISTORY.map((patch) => (
-                  <article key={patch.version} className={patch.status === '현재' ? styles.currentPatch : undefined}>
+                  <button
+                    key={patch.version}
+                    type="button"
+                    className={`${patch.status === '현재' ? styles.currentPatch : ''} ${
+                      selectedPatchVersion === patch.version ? styles.selectedHistory : ''
+                    }`}
+                    onClick={() => setSelectedPatchVersion(patch.version)}
+                    aria-pressed={selectedPatchVersion === patch.version}
+                  >
+                    <span className={styles.historyThumb}>
+                      <img
+                        src={patch.imageUrl}
+                        alt=""
+                        onError={(event) => {
+                          event.currentTarget.src = PATCH_FALLBACK_IMAGE
+                        }}
+                      />
+                    </span>
                     <div>
                       <strong>{patch.version}</strong>
                       <span>{patch.date}</span>
                     </div>
                     <p>{patch.title}</p>
                     <small>{patch.focus}</small>
-                  </article>
+                  </button>
                 ))}
               </div>
             </section>
