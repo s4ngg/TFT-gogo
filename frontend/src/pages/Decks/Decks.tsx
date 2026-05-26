@@ -304,8 +304,9 @@ function DeckRow({
   deck, showTier = true, showRank = true,
 }: { deck: MetaDeck; showTier?: boolean; showRank?: boolean }) {
   const navigate = useNavigate()
+  function handleRowClick() { navigate(`/decks/${deck.rank}`) }
   return (
-    <tr className={styles.deckRow} onClick={() => navigate(`/decks/${deck.rank}`)} style={{ cursor: 'pointer' }}>
+    <tr className={styles.deckRow} onClick={handleRowClick}>
       {showRank && (
         <td>
           <strong className={styles.rank} data-top={deck.rank <= 3 ? deck.rank : undefined}>
