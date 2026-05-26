@@ -391,6 +391,9 @@ function expandPatchSamples(changes: PatchChange[]) {
 }
 
 const PATCH_CHANGES = expandPatchSamples(BASE_PATCH_CHANGES)
+const HIGH_IMPACT_COUNT = PATCH_CHANGES.filter((change) => change.impact === '높음').length
+const BUFF_COUNT = PATCH_CHANGES.filter((change) => change.type === '상향').length
+const NERF_COUNT = PATCH_CHANGES.filter((change) => change.type === '하향').length
 
 function getCategoryCount(category: PatchCategory) {
   if (category === '전체') return PATCH_CHANGES.length
@@ -474,9 +477,6 @@ function PatchNotes() {
   const totalPages = getTotalPages(filteredChanges.length)
   const safePage = Math.min(currentPage, totalPages)
   const pagedChanges = useMemo(() => getPageItems(filteredChanges, safePage), [filteredChanges, safePage])
-  const highImpactCount = PATCH_CHANGES.filter((change) => change.impact === '높음').length
-  const buffCount = PATCH_CHANGES.filter((change) => change.type === '상향').length
-  const nerfCount = PATCH_CHANGES.filter((change) => change.type === '하향').length
 
   const toggleExpandedChange = (id: number) => {
     setExpandedChangeIds((currentIds) => (
@@ -490,10 +490,6 @@ function PatchNotes() {
     setCurrentPage(1)
     setExpandedChangeIds([])
   }, [activeCategory, activeChangeType, highImpactOnly, query])
-
-  useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages)
-  }, [currentPage, totalPages])
 
   return (
     <AppLayout>
@@ -509,7 +505,7 @@ function PatchNotes() {
             <div className={styles.heroMeta}>
               <span>적용일 2026.05.26</span>
               <span>변경 {PATCH_CHANGES.length}건</span>
-              <span>핵심 영향 {highImpactCount}건</span>
+              <span>핵심 영향 {HIGH_IMPACT_COUNT}건</span>
             </div>
           </div>
 
@@ -529,7 +525,7 @@ function PatchNotes() {
               <ArrowUpRight size={18} />
             </span>
             <div>
-              <strong>{buffCount}</strong>
+              <strong>{BUFF_COUNT}</strong>
               <p>상향 항목</p>
             </div>
           </article>
@@ -538,7 +534,7 @@ function PatchNotes() {
               <AlertTriangle size={18} />
             </span>
             <div>
-              <strong>{nerfCount}</strong>
+              <strong>{NERF_COUNT}</strong>
               <p>하향 항목</p>
             </div>
           </article>
