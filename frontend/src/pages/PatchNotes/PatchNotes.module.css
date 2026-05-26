@@ -234,15 +234,19 @@
 
 .searchBox:focus-within {
   border-color: rgba(5, 243, 231, 0.68);
+  box-shadow: 0 0 0 3px rgba(5, 243, 231, 0.12);
 }
 
 .searchBox input {
   width: 100%;
   border: 0;
-  outline: 0;
   color: #fff;
   background: transparent;
   font-size: 13px;
+}
+
+.searchBox input:focus-visible {
+  outline: 2px solid transparent;
 }
 
 .searchBox input::placeholder {
@@ -289,6 +293,16 @@
 .categoryTabs button:hover {
   color: #d5dde8;
   background: rgba(255, 255, 255, 0.04);
+}
+
+.categoryTabs button:focus-visible,
+.quickFilters button:focus-visible,
+.detailButton:focus-visible,
+.pagination button:focus-visible {
+  border-color: rgba(5, 243, 231, 0.7);
+  outline: 2px solid rgba(5, 243, 231, 0.72);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(5, 243, 231, 0.1);
 }
 
 .categoryTabs button span {
