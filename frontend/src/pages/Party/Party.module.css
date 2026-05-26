@@ -214,6 +214,19 @@
   margin-top: 15px;
 }
 
+.emptyState {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  border: 1px solid rgba(112, 145, 153, 0.17);
+  border-radius: 10px;
+  color: #9ea8b2;
+  background: rgba(4, 13, 18, 0.48);
+  font-size: 13px;
+  font-weight: 500;
+}
+
 .partyCard {
   display: grid;
   grid-template-columns: 54px minmax(0, 1fr) 64px;

@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react'
 import {
   Clock3,
   Crown,
@@ -39,6 +40,10 @@ interface ChatRoom {
   name: string
   users: string
 }
+
+type PartyFilter = '전체' | '랭크' | '일반' | '커스텀'
+
+const partyFilters: PartyFilter[] = ['전체', '랭크', '일반', '커스텀']
 
 const partyPosts: PartyPost[] = [
   {
@@ -114,6 +119,26 @@ const partyIconMap = {
 }
 
 function Party() {
+  const [selectedFilter, setSelectedFilter] = useState<PartyFilter>('전체')
+  const [query, setQuery] = useState('')
+  const filteredPartyPosts = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase()
+
+    return partyPosts.filter((post) => {
+      const matchesFilter = selectedFilter === '전체' || post.mode === selectedFilter
+      const searchableText = [
+        post.title,
+        post.mode,
+        post.tier,
+        post.description,
+        ...post.tags,
+      ].join(' ').toLowerCase()
+      const matchesQuery = normalizedQuery.length === 0 || searchableText.includes(normalizedQuery)
+
+      return matchesFilter && matchesQuery
+    })
+  }, [query, selectedFilter])
+
   return (
     <AppLayout>
       <div className={styles.communityPage}>
@@ -139,15 +164,25 @@ function Party() {
           <div className={styles.toolbar}>
             <div className={styles.searchBox}>
               <Search size={18} />
-              <input aria-label="파티 모집 검색" placeholder="티어, 모드, 키워드 검색" />
+              <input
+                aria-label="파티 모집 검색"
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="티어, 모드, 키워드 검색"
+                value={query}
+              />
             </div>
             <div className={styles.filterTabs} aria-label="파티원 찾기 필터">
-              <button type="button" className={styles.selectedTab}>
-                전체
-              </button>
-              <button type="button">랭크</button>
-              <button type="button">일반</button>
-              <button type="button">커스텀</button>
+              {partyFilters.map((filter) => (
+                <button
+                  aria-pressed={selectedFilter === filter}
+                  className={selectedFilter === filter ? styles.selectedTab : undefined}
+                  key={filter}
+                  onClick={() => setSelectedFilter(filter)}
+                  type="button"
+                >
+                  {filter}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -177,44 +212,48 @@ function Party() {
           </form>
 
           <div className={styles.partyList}>
-            {partyPosts.map((post) => {
-              const Icon = partyIconMap[post.icon]
+            {filteredPartyPosts.length > 0 ? (
+              filteredPartyPosts.map((post) => {
+                const Icon = partyIconMap[post.icon]
 
-              return (
-                <article className={styles.partyCard} key={post.title}>
-                  <div className={`${styles.partyIcon} ${styles[post.tone]}`}>
-                    <Icon size={28} strokeWidth={2.2} />
-                  </div>
-                  <div className={styles.partyContent}>
-                    <div className={styles.partyTitleLine}>
-                      <h3>{post.title}</h3>
-                      <span>{post.status}</span>
+                return (
+                  <article className={styles.partyCard} key={post.title}>
+                    <div className={`${styles.partyIcon} ${styles[post.tone]}`}>
+                      <Icon size={28} strokeWidth={2.2} />
                     </div>
-                    <p>{post.description}</p>
-                    <div className={styles.partyMeta}>
-                      <span>{post.mode}</span>
-                      <span>{post.tier}</span>
-                      <span>
-                        <Users size={15} />
-                        {post.capacity}
-                      </span>
-                      <span>
-                        <Clock3 size={15} />
-                        {post.close}
-                      </span>
+                    <div className={styles.partyContent}>
+                      <div className={styles.partyTitleLine}>
+                        <h3>{post.title}</h3>
+                        <span>{post.status}</span>
+                      </div>
+                      <p>{post.description}</p>
+                      <div className={styles.partyMeta}>
+                        <span>{post.mode}</span>
+                        <span>{post.tier}</span>
+                        <span>
+                          <Users size={15} />
+                          {post.capacity}
+                        </span>
+                        <span>
+                          <Clock3 size={15} />
+                          {post.close}
+                        </span>
+                      </div>
+                      <div className={styles.partyTags}>
+                        {post.tags.map((tag) => (
+                          <small key={tag}>{tag}</small>
+                        ))}
+                      </div>
                     </div>
-                    <div className={styles.partyTags}>
-                      {post.tags.map((tag) => (
-                        <small key={tag}>{tag}</small>
-                      ))}
-                    </div>
-                  </div>
-                  <button type="button" className={styles.joinButton}>
-                    참여
-                  </button>
-                </article>
-              )
-            })}
+                    <button type="button" className={styles.joinButton}>
+                      참여
+                    </button>
+                  </article>
+                )
+              })
+            ) : (
+              <p className={styles.emptyState}>조건에 맞는 모집글이 없습니다.</p>
+            )}
           </div>
         </section>
 

@@ -1,11 +1,57 @@
+import { useMemo, useState } from 'react'
 import { ChevronRight, Clock3 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import ChampionCard from '../../../components/common/ChampionCard'
 import TierBadge from '../../../components/common/TierBadge'
 import TraitHexBadge from '../../../components/common/TraitHexBadge'
 import { useMetaSnapshot } from '../../../hooks/useMetaSnapshot'
-import type { ChampionSummary, TraitSummary } from '../dashboardData'
+import type { ChampionSummary, MetaDeck, TraitSummary } from '../dashboardData'
 import styles from '../Dashboard.module.css'
+
+type MetaFilter = 'overall' | 'upper' | 'master'
+type MetaSortKey = 'winRate' | 'top4' | 'avgPlace'
+
+const metaFilters: { label: string; value: MetaFilter }[] = [
+  { label: '종합', value: 'overall' },
+  { label: '상위권', value: 'upper' },
+  { label: '마스터+', value: 'master' },
+]
+
+const sortOptions: { label: string; value: MetaSortKey }[] = [
+  { label: '승률', value: 'winRate' },
+  { label: 'TOP 4', value: 'top4' },
+  { label: '평균 등수', value: 'avgPlace' },
+]
+
+function toNumber(value: string) {
+  return Number(value.replace('%', ''))
+}
+
+function filterMetaDecks(decks: MetaDeck[], filter: MetaFilter) {
+  if (filter === 'upper') {
+    return decks.filter((deck) => deck.grade === 'S' || deck.grade === 'A+')
+  }
+
+  if (filter === 'master') {
+    return decks.filter((deck) => toNumber(deck.top4) >= 68)
+  }
+
+  return decks
+}
+
+function sortMetaDecks(decks: MetaDeck[], sortKey: MetaSortKey) {
+  const direction = sortKey === 'avgPlace' ? 1 : -1
+
+  return [...decks].sort((a, b) => {
+    const result = toNumber(a[sortKey]) - toNumber(b[sortKey])
+
+    if (result === 0) {
+      return a.rank - b.rank
+    }
+
+    return result * direction
+  })
+}
 
 interface TraitsProps {
   values: TraitSummary[]
@@ -50,7 +96,12 @@ function Champions({ champions }: ChampionsProps) {
 
 function MetaSnapshot() {
   const { data: allDecks = [] } = useMetaSnapshot()
-  const metaDecks = allDecks.slice(0, 8)
+  const [selectedFilter, setSelectedFilter] = useState<MetaFilter>('overall')
+  const [sortKey, setSortKey] = useState<MetaSortKey>('winRate')
+  const metaDecks = useMemo(
+    () => sortMetaDecks(filterMetaDecks(allDecks, selectedFilter), sortKey).slice(0, 8),
+    [allDecks, selectedFilter, sortKey],
+  )
   const navigate = useNavigate()
 
   return (
@@ -70,29 +121,51 @@ function MetaSnapshot() {
       </div>
 
       <div className={styles.metaFilters}>
-        <button type="button" className={styles.selectedFilter}>종합</button>
-        <button type="button">상위권</button>
-        <button type="button">마스터+</button>
-        <span>승률</span>
-        <span>TOP 4</span>
-        <span>평균 등수</span>
+        {metaFilters.map((filter) => (
+          <button
+            aria-pressed={selectedFilter === filter.value}
+            className={selectedFilter === filter.value ? styles.selectedFilter : undefined}
+            key={filter.value}
+            onClick={() => setSelectedFilter(filter.value)}
+            type="button"
+          >
+            {filter.label}
+          </button>
+        ))}
+        <span aria-hidden="true" className={styles.metaFilterSpacer} />
+        {sortOptions.map((option) => (
+          <button
+            aria-pressed={sortKey === option.value}
+            className={`${styles.sortFilter}${sortKey === option.value ? ` ${styles.selectedSort}` : ''}`}
+            key={option.value}
+            onClick={() => setSortKey(option.value)}
+            type="button"
+          >
+            {option.label}
+          </button>
+        ))}
       </div>
 
       <div className={styles.deckList}>
-        {metaDecks.map((deck) => (
-          <article className={styles.deckRow} key={deck.rank}>
-            <strong className={styles.rankNumber}>{deck.rank}</strong>
-            <TierBadge value={deck.grade} />
-            <div className={styles.deckInfo}>
-              <h3>{deck.name}</h3>
-              <Traits values={deck.traits} />
-            </div>
-            <Champions champions={deck.champions} />
-            <b className={styles.winRate}>{deck.winRate}</b>
-            <b className={styles.top4}>{deck.top4}</b>
-            <ChevronRight className={styles.rowArrow} size={24} />
-          </article>
-        ))}
+        {metaDecks.length > 0 ? (
+          metaDecks.map((deck) => (
+            <article className={styles.deckRow} key={deck.rank}>
+              <strong className={styles.rankNumber}>{deck.rank}</strong>
+              <TierBadge value={deck.grade} />
+              <div className={styles.deckInfo}>
+                <h3>{deck.name}</h3>
+                <Traits values={deck.traits} />
+              </div>
+              <Champions champions={deck.champions} />
+              <b className={styles.winRate}>{deck.winRate}</b>
+              <b className={styles.top4}>{deck.top4}</b>
+              <b className={styles.avgPlace}>{deck.avgPlace}</b>
+              <ChevronRight className={styles.rowArrow} size={22} />
+            </article>
+          ))
+        ) : (
+          <p className={styles.emptyState}>조건에 맞는 추천 덱이 없습니다.</p>
+        )}
       </div>
     </section>
   )
