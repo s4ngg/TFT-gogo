@@ -9,7 +9,7 @@ export interface ChampionCardProps {
     imageUrl: string
     name: string
   }[]
-  stars?: 2 | 3
+  stars?: 1 | 2 | 3
   hasItem?: boolean
   toneIndex?: number
 }

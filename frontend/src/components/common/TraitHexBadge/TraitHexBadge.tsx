@@ -1,6 +1,6 @@
 import styles from './TraitHexBadge.module.css'
 
-export type TraitHexBadgeTone = 'gold' | 'silver'
+export type TraitHexBadgeTone = 'gold' | 'silver' | 'bronze' | 'prismatic'
 
 export interface TraitHexBadgeProps {
   count: number

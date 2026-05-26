@@ -1,0 +1,158 @@
+================================================================
+  TFT-gogo ERD 수정 필요 사항
+  (Riot API 실제 스키마 확인 후 도출 — 2026-05-26)
+================================================================
+
+----------------------------------------------------------------
+[1] summoner 테이블
+----------------------------------------------------------------
+▶ 삭제
+  - summoner_id (외부 키, Riot API에서 더 이상 반환 안 함)
+  - account_id  (Riot API에서 더 이상 반환 안 함)
+  - name        (Riot API에서 더 이상 반환 안 함)
+
+▶ 추가
+  - puuid (VARCHAR 78) — 모든 테이블의 기준 식별자로 사용
+    ※ puuid는 78자 고정 길이 (API 스펙 명시)
+
+▶ 유지
+  - profile_icon_id
+  - revision_date
+  - summoner_level
+
+▶ 이유
+  Riot이 신규 API 버전에서 puuid 중심으로 전환.
+  tft-summoner-v1 (by-puuid) 응답에서 id/accountId/name 제거됨.
+
+
+----------------------------------------------------------------
+[2] league_entry 테이블
+----------------------------------------------------------------
+▶ 삭제
+  - summoner_id (FK) — puuid로 대체
+
+▶ 추가
+  - puuid (VARCHAR 78) — 기준 식별자
+  - rated_tier   (VARCHAR) — RANKED_TFT_TURBO 전용 (ORANGE|PURPLE|BLUE|GREEN|GRAY)
+  - rated_rating (INT)     — RANKED_TFT_TURBO 전용
+
+▶ 수정
+  - queue_type: 'RANKED_TFT' 외에 'RANKED_TFT_TURBO'도 존재
+  - wins:   1등 횟수 (First placement) ← 일반적인 승리 횟수 아님!
+  - losses: 2~8등 횟수 (Second through eighth placement)
+
+▶ 추가 고려
+  - mini_series 테이블 (별도) 또는 JSON 컬럼
+    mini_series: { losses, progress(string), target, wins }
+
+▶ API 엔드포인트 변경
+  기존: GET /tft/league/v1/entries/by-summoner/{summonerId}  ← 삭제
+  신규: GET /tft/league/v1/by-puuid/{puuid}                 ← 사용
+
+
+----------------------------------------------------------------
+[3] match 테이블 (info 레벨)
+----------------------------------------------------------------
+▶ 추가
+  - end_of_game_result (VARCHAR) — 게임 종료 결과 (예: "GameComplete")
+  - game_creation      (BIGINT)  — 게임 서버 로딩 시작 시각 (Unix timestamp ms)
+  - game_id            (BIGINT)  — 게임 고유 ID
+  - map_id             (INT)     — 맵 ID (TFT = 22)
+
+▶ 참고: Riot API의 혼재된 네이밍 컨벤션
+  camelCase:  endOfGameResult, gameCreation, gameId, mapId
+  snake_case: game_datetime, game_length, game_version, tft_set_number, queue_id
+  ※ Spring 파싱 시 둘 다 처리 필요
+
+
+----------------------------------------------------------------
+[4] participant 테이블
+----------------------------------------------------------------
+▶ 추가
+  - riot_id_game_name (VARCHAR) — 참가자 Riot 게임 이름
+  - riot_id_tagline   (VARCHAR) — 참가자 태그라인
+  - win               (BOOLEAN) — 1등 여부 (placement=1 과 동일하나 API 명시 필드)
+
+▶ 참고
+  - placement: 1~8 (순위)
+  - win: placement=1 이면 true, 그 외 false
+
+
+----------------------------------------------------------------
+[5] unit 테이블
+----------------------------------------------------------------
+▶ 추가
+  - items (별도 테이블 또는 JSON 배열) — 정수 아이템 ID 목록 (신규)
+    ※ 기존 item_names(문자열)와 병행 제공됨
+
+▶ 주의
+  - name 필드: API 스펙에 "often left blank" 명시
+    → character_id 기준으로 유닛 식별할 것
+  - rarity ≠ 코스트
+    rarity 0 = 1코스트
+    rarity 1 = 2코스트
+    rarity 2 = 3코스트
+    rarity 4 = 4코스트  ← 3 없음!
+    rarity 6 = 5코스트  ← 5 없음!
+
+▶ chosen 필드
+  - 특정 세트 한정 (Fates 세트 고유 메카닉)
+  - Set 17에서는 응답에 포함되지 않으므로 NULL 허용 또는 제외
+
+
+----------------------------------------------------------------
+[6] trait 테이블
+----------------------------------------------------------------
+▶ style 값 정의 (API 공식 스펙 확인 완료)
+  0 = No style (비활성)
+  1 = Bronze
+  2 = Silver
+  3 = Gold
+  4 = Chromatic  ← "Prismatic" 아님! API 공식 명칭은 Chromatic
+
+
+----------------------------------------------------------------
+[7] API 호출 흐름 변경 (Spring 구현 참고)
+----------------------------------------------------------------
+  기존 흐름 (잘못됨):
+    gameName → summoner/by-name → summonerId → league/by-summoner
+
+  신규 올바른 흐름:
+    1. GET /riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}
+       → puuid, gameName, tagLine 반환
+
+    2. GET /tft/summoner/v1/summoners/by-puuid/{puuid}
+       → profileIconId, revisionDate, summonerLevel 반환
+
+    3. GET /tft/league/v1/by-puuid/{puuid}
+       → 랭크 정보 반환 (Set[]로 여러 큐 타입 포함 가능)
+
+    4. GET /tft/match/v1/matches/by-puuid/{puuid}/ids?count=20
+       → matchId 목록 반환
+
+    5. GET /tft/match/v1/matches/{matchId} (반복)
+       → 매치 상세 (8명 participants 포함)
+
+  ※ region 주의
+    account-v1, match-v1 → ASIA 라우팅
+    summoner-v1, league-v1 → KR 라우팅
+
+
+----------------------------------------------------------------
+[8] 수정된 프론트 파일 목록
+----------------------------------------------------------------
+  frontend/src/mocks/riotTftMockData.ts
+    - RiotAccountDto 타입 추가 (신규)
+    - RiotTftSummonerDto: id/accountId/name 제거
+    - RiotMiniSeriesDto 타입 추가 (신규)
+    - RiotTftLeagueEntryDto: summonerId 제거, puuid/ratedTier/ratedRating 추가
+    - RiotTftUnitDto: items(number[]) / chosen 추가
+    - RiotTftParticipantDto: riotIdGameName/riotIdTagline/win 추가
+    - RiotTftMatchDto.info: endOfGameResult/gameCreation/gameId/mapId 추가
+    - mockTftMatches: 매치당 8명 participants 완성
+
+  frontend/src/api/riotApi.ts
+    - summonerByName(deprecated) → accountByRiotId + summonerByPuuid
+    - leagueBySummoner → leagueByPuuid
+
+================================================================
