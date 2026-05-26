@@ -149,6 +149,7 @@
 .deckRow {
   border-bottom: 1px solid rgba(114, 145, 153, 0.1);
   transition: background 0.12s;
+  cursor: pointer;
 }
 
 .deckRow:last-child { border-bottom: none; }

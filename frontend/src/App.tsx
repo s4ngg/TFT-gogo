@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import AiRecommend from './pages/AiRecommend/AiRecommend'
 import AuthPage from './pages/Auth/AuthPage'
 import Decks from './pages/Decks/Decks'
+import DeckDetail from './pages/DeckDetail/DeckDetail'
 import Dashboard from './pages/Dashboard/Dashboard'
 import Guide from './pages/Guide/Guide'
 import Party from './pages/Party/Party'
@@ -16,6 +17,7 @@ function App() {
       <Route path="/signup" element={<AuthPage mode="signup" />} />
       <Route path="/summoner/:gameName/:tagLine" element={<SummonerDetail />} />
       <Route path="/decks" element={<Decks />} />
+      <Route path="/decks/:deckId" element={<DeckDetail />} />
       <Route path="/ai-recommend" element={<AiRecommend />} />
       <Route path="/guide" element={<Guide />} />
       <Route path="/party" element={<Party />} />

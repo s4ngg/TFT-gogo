@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ChevronsUpDown, Search } from 'lucide-react'
 import { useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout'
 import ChampionCard from '../../components/common/ChampionCard'
 import TierBadge from '../../components/common/TierBadge'
@@ -302,8 +303,10 @@ function SortIcon({ col, cur, dir }: { col: SortKey; cur: SortKey; dir: SortDir 
 function DeckRow({
   deck, showTier = true, showRank = true,
 }: { deck: MetaDeck; showTier?: boolean; showRank?: boolean }) {
+  const navigate = useNavigate()
+  function handleRowClick() { navigate(`/decks/${deck.rank}`) }
   return (
-    <tr className={styles.deckRow}>
+    <tr className={styles.deckRow} onClick={handleRowClick}>
       {showRank && (
         <td>
           <strong className={styles.rank} data-top={deck.rank <= 3 ? deck.rank : undefined}>
