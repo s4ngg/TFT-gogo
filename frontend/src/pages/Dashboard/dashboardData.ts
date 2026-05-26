@@ -199,8 +199,8 @@ export const metaDecks: MetaDeck[] = [
     grade: 'S',
     name: '선봉대 벡스',
     winRate: '55.8%',
-    top4: '76.4%',
-    avgPlace: '3.41',
+    top4: '72.6%',
+    avgPlace: '3.84',
     pickRate: '11.2%',
     traits: [
       trait('선봉대', 4, traitIconUrls.vanguard),
@@ -224,8 +224,8 @@ export const metaDecks: MetaDeck[] = [
     grade: 'S',
     name: '6암흑의 별 진',
     winRate: '54.3%',
-    top4: '73.2%',
-    avgPlace: '3.56',
+    top4: '75.8%',
+    avgPlace: '3.52',
     pickRate: '9.8%',
     traits: [
       trait('암흑의 별', 6, traitIconUrls.darkStar),
@@ -250,7 +250,7 @@ export const metaDecks: MetaDeck[] = [
     name: '정령족 코르키 백류',
     winRate: '52.1%',
     top4: '71.8%',
-    avgPlace: '3.72',
+    avgPlace: '3.92',
     pickRate: '8.5%',
     traits: [
       trait('정령족', 4, traitIconUrls.spirit),
@@ -275,7 +275,7 @@ export const metaDecks: MetaDeck[] = [
     name: '습격자 마스터 이',
     winRate: '51.0%',
     top4: '70.4%',
-    avgPlace: '3.88',
+    avgPlace: '3.38',
     pickRate: '7.9%',
     traits: [
       trait('습격자', 4, traitIconUrls.rogue),
@@ -299,8 +299,8 @@ export const metaDecks: MetaDeck[] = [
     grade: 'A',
     name: '별돌보미 룰루 (메탈)',
     winRate: '49.6%',
-    top4: '68.5%',
-    avgPlace: '4.02',
+    top4: '76.4%',
+    avgPlace: '3.49',
     pickRate: '7.1%',
     traits: [
       trait('별돌보미', 4, traitIconUrls.stargazer),
@@ -324,8 +324,8 @@ export const metaDecks: MetaDeck[] = [
     grade: 'A',
     name: '8요새 럼블',
     winRate: '48.2%',
-    top4: '66.1%',
-    avgPlace: '4.18',
+    top4: '74.1%',
+    avgPlace: '3.44',
     pickRate: '6.4%',
     traits: [
       trait('요새', 8, traitIconUrls.bastion),
@@ -371,8 +371,8 @@ export const metaDecks: MetaDeck[] = [
     grade: 'A',
     name: '발명의 대가 하이머딩거',
     winRate: '46.3%',
-    top4: '63.2%',
-    avgPlace: '4.42',
+    top4: '73.5%',
+    avgPlace: '3.61',
     pickRate: '5.2%',
     traits: [
       trait('초능력', 5, traitIconUrls.psyOps),
