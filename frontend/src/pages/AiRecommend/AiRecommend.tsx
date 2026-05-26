@@ -1,8 +1,11 @@
-import { Bot, ChevronRight, Link2, Sparkles, TrendingUp, Trophy, User } from 'lucide-react'
+import { BarChart2, Bot, ChevronRight, Link2, Sparkles, ThumbsDown, ThumbsUp, TrendingUp, Trophy } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { communityDragonAssetUrl } from '../../api/communityDragonAssets'
 import { AppLayout } from '../../components/layout'
+import ChampionCard from '../../components/common/ChampionCard'
 import TierBadge from '../../components/common/TierBadge'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
+import type { TraitHexBadgeTone } from '../../components/common/TraitHexBadge'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
 import useSummonerStore from '../../store/useSummonerStore'
 import styles from './AiRecommend.module.css'
@@ -15,11 +18,53 @@ const MOCK_MY_STATS = {
   winRate: '22.5%',
 }
 
-const MOCK_MY_DECKS = [
-  { name: '선봉대 벡스', games: 7, avgPlace: '3.4', top4Rate: '71%', grade: 'S' as const },
-  { name: '정령족 코르키 백류', games: 5, avgPlace: '3.9', top4Rate: '64%', grade: 'A+' as const },
-  { name: '8요새 럼블', games: 4, avgPlace: '4.5', top4Rate: '52%', grade: 'A' as const },
+interface MockTrait {
+  name: string
+  count: number
+  iconUrl: string
+  tone: TraitHexBadgeTone
+  games: number
+  avgPlace: string
+  top4Rate: string
+}
+
+const MOCK_GOOD_TRAITS: MockTrait[] = [
+  {
+    name: '선봉대', count: 4,
+    iconUrl: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_12_Vanguard.TFT_Set12.tex'),
+    tone: 'gold', games: 12, avgPlace: '3.2', top4Rate: '72%',
+  },
+  {
+    name: '정령족', count: 4,
+    iconUrl: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Astronaut.TFT_Set17.tex'),
+    tone: 'gold', games: 8, avgPlace: '3.7', top4Rate: '65%',
+  },
+  {
+    name: '암흑의 별', count: 6,
+    iconUrl: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_DarkStar.TFT_Set17.tex'),
+    tone: 'gold', games: 5, avgPlace: '3.9', top4Rate: '61%',
+  },
 ]
+
+const MOCK_BAD_TRAITS: MockTrait[] = [
+  {
+    name: '초능력', count: 3,
+    iconUrl: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_PsyOps.TFT_Set17.tex'),
+    tone: 'silver', games: 6, avgPlace: '5.4', top4Rate: '24%',
+  },
+  {
+    name: '복제자', count: 2,
+    iconUrl: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Replicator.TFT_Set17.tex'),
+    tone: 'silver', games: 5, avgPlace: '5.9', top4Rate: '21%',
+  },
+  {
+    name: '습격자', count: 4,
+    iconUrl: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Rogue.TFT_Set17.tex'),
+    tone: 'silver', games: 5, avgPlace: '6.1', top4Rate: '19%',
+  },
+]
+
+const MIN_TRAIT_GAMES = 5
 
 const MOCK_AUGMENTS = [
   { name: '강철의 의지', avgPlace: '2.9', games: 4, icon: '🛡️' },
@@ -73,28 +118,54 @@ function StatCard({ label, value, color }: { label: string; value: string; color
   )
 }
 
-/* ── 내가 자주 쓴 덱 ── */
-function MyDecks() {
+/* ── 시너지별 승률 성적 ── */
+function TraitPerformanceList({ traits, bad }: { traits: MockTrait[]; bad?: boolean }) {
+  const filtered = traits.filter((t) => t.games >= MIN_TRAIT_GAMES)
+
+  if (filtered.length === 0) {
+    return <p className={styles.traitEmpty}>5판 이상 플레이한 시너지가 없어요</p>
+  }
+
+  return (
+    <div className={styles.myDeckList}>
+      {filtered.map((t, i) => (
+        <div key={t.name} className={styles.traitRow}>
+          <span className={styles.myDeckNum}>{i + 1}</span>
+          <TraitHexBadge count={t.count} iconUrl={t.iconUrl} name={t.name} tone={t.tone} />
+          <span className={styles.myDeckName}>{t.name}</span>
+          <div className={styles.myDeckStats}>
+            <span>{t.games}게임</span>
+            <span className={styles.myAvg}>평균 {t.avgPlace}등</span>
+            <span className={bad ? styles.myBadTop4 : styles.myTop4}>TOP4 {t.top4Rate}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function DeckPerformance() {
   return (
     <section className={styles.panel}>
       <div className={styles.panelHead}>
-        <User size={17} />
-        <h2>내가 자주 쓴 덱 TOP 3</h2>
+        <BarChart2 size={17} />
+        <h2>내 시너지별 승률 성적</h2>
         <span className={styles.panelSub}>최근 20게임 기준</span>
       </div>
-      <div className={styles.myDeckList}>
-        {MOCK_MY_DECKS.map((d, i) => (
-          <div key={d.name} className={styles.myDeckRow}>
-            <span className={styles.myDeckNum}>{i + 1}</span>
-            <TierBadge value={d.grade} />
-            <span className={styles.myDeckName}>{d.name}</span>
-            <div className={styles.myDeckStats}>
-              <span>{d.games}게임</span>
-              <span className={styles.myAvg}>평균 {d.avgPlace}등</span>
-              <span className={styles.myTop4}>TOP4 {d.top4Rate}</span>
-            </div>
+      <div className={styles.deckPerfSplit}>
+        <div className={styles.deckPerfCol}>
+          <div className={`${styles.deckPerfColHead} ${styles.deckPerfGood}`}>
+            <ThumbsUp size={14} /> 잘 맞는 시너지
           </div>
-        ))}
+          <TraitPerformanceList traits={MOCK_GOOD_TRAITS} />
+        </div>
+        <div className={styles.deckPerfDivider} />
+        <div className={styles.deckPerfCol}>
+          <div className={`${styles.deckPerfColHead} ${styles.deckPerfBad}`}>
+            <ThumbsDown size={14} /> 잘 안 맞는 시너지
+          </div>
+          <TraitPerformanceList traits={MOCK_BAD_TRAITS} bad />
+        </div>
       </div>
     </section>
   )
@@ -151,8 +222,15 @@ function AugmentAnalysis() {
 
 /* ── AI 추천 덱 ── */
 function AiRecommendedDecks() {
+  const navigate = useNavigate()
   const { data: metaDecks = [] } = useMetaSnapshot()
   const topDecks = metaDecks.filter((d) => d.grade === 'S' || d.grade === 'A+').slice(0, 3)
+
+  const deckMeta = [
+    { isPatch: false, reason: '내가 자주 쓰는 챔피언 포함' },
+    { isPatch: false, reason: '현재 메타 최상위 티어' },
+    { isPatch: true,  reason: '패치 후 픽률 + TOP4 확률 증가!' },
+  ]
 
   return (
     <section className={styles.panel}>
@@ -163,21 +241,35 @@ function AiRecommendedDecks() {
       </div>
       <div className={styles.aiDeckList}>
         {topDecks.map((deck, i) => {
-          const reasons = [
-            '내가 자주 쓰는 챔피언 포함',
-            '현재 메타 최상위 티어',
-            '증강 궁합 최적',
-          ]
+          const meta = deckMeta[i]
           return (
-            <div key={deck.rank} className={styles.aiDeckCard}>
+            <div
+              key={deck.rank}
+              className={`${styles.aiDeckCard} ${meta.isPatch ? styles.aiDeckCardPatch : ''}`}
+              onClick={() => navigate(`/decks/${deck.rank}`)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && navigate(`/decks/${deck.rank}`)}
+            >
               <div className={styles.aiDeckTop}>
                 <span className={styles.aiDeckBadge}>추천 #{i + 1}</span>
                 <TierBadge value={deck.grade} />
                 <span className={styles.aiDeckName}>{deck.name}</span>
+                {meta.isPatch && (
+                  <span className={styles.patchBadge}>
+                    <TrendingUp size={12} /> 패치 후 상승 중
+                  </span>
+                )}
+                <span className={styles.aiDeckArrow}><ChevronRight size={16} /></span>
               </div>
               <div className={styles.aiDeckTraits}>
                 {deck.traits.slice(0, 4).map((t) => (
                   <TraitHexBadge key={t.name} count={t.count} iconUrl={t.iconUrl} name={t.name} tone={t.tone} />
+                ))}
+              </div>
+              <div className={styles.aiDeckChampions}>
+                {deck.champions.map((c, ci) => (
+                  <ChampionCard key={c.name} imageUrl={c.imageUrl} items={c.items} label={c.name} stars={c.stars} toneIndex={ci} />
                 ))}
               </div>
               <div className={styles.aiDeckStats}>
@@ -185,9 +277,9 @@ function AiRecommendedDecks() {
                 <span>평균 등수 <b className={styles.purple}>{deck.avgPlace}</b></span>
                 <span>픽률 <b className={styles.gold}>{deck.pickRate}</b></span>
               </div>
-              <div className={styles.aiReason}>
-                <Bot size={13} />
-                <span>{reasons[i]}</span>
+              <div className={`${styles.aiReason} ${meta.isPatch ? styles.aiReasonPatch : ''}`}>
+                {meta.isPatch ? <TrendingUp size={13} /> : <Bot size={13} />}
+                <span>{meta.reason}</span>
               </div>
             </div>
           )
@@ -240,10 +332,8 @@ function AiRecommend() {
               </div>
             </section>
 
-            <div className={styles.twoCol}>
-              <MyDecks />
-              <AugmentAnalysis />
-            </div>
+            <DeckPerformance />
+            <AugmentAnalysis />
 
             <AiRecommendedDecks />
           </div>
