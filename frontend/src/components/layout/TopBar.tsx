@@ -8,6 +8,7 @@ const profileIconUrl = communityDragonProfileIconUrl(588)
 
 function TopBar() {
   const user = useAuthStore((state) => state.user)
+  const isLoggedIn = Boolean(user)
 
   return (
     <header className={styles.topBar}>
@@ -16,17 +17,21 @@ function TopBar() {
         <strong>상위권은 선봉대 벡스와 6암흑의 별 진 중심으로 압축 중</strong>
       </div>
       <div className={styles.topActions}>
-        <button type="button" className={styles.notificationButton} aria-label="알림">
-          <Bell size={23} />
-          <span>3</span>
-        </button>
-        <button type="button" className={styles.iconButton} aria-label="메일">
-          <Mail size={24} />
-        </button>
+        {isLoggedIn && (
+          <>
+            <button type="button" className={styles.notificationButton} aria-label="알림">
+              <Bell size={23} />
+              <span>3</span>
+            </button>
+            <button type="button" className={styles.iconButton} aria-label="메일">
+              <Mail size={24} />
+            </button>
+          </>
+        )}
         <button type="button" className={styles.iconButton} aria-label="도움말">
           <CircleHelp size={24} />
         </button>
-        {user ? (
+        {isLoggedIn ? (
           <button type="button" className={styles.profileButton}>
             <span>
               <img src={profileIconUrl} alt="" />

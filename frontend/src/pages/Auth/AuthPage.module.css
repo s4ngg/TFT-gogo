@@ -246,8 +246,8 @@
   text-decoration: none;
 }
 
-button:hover,
-a:hover {
+.authShell button:hover,
+.authShell a:hover {
   filter: brightness(1.08);
 }
 
