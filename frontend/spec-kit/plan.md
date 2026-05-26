@@ -10,6 +10,7 @@
 /                              → Dashboard (기본 페이지)
 /summoner/:gameName/:tagLine   → SummonerDetail (소환사 전적 상세)
 /decks                         → Decks (덱 목록)
+/decks/:deckId                 → DeckDetail (덱 상세 — 유닛 구성, 아이템, 포지셔닝)
 /ai-recommend                  → AiRecommend (AI 덱 추천)
 /guide                         → Guide (게임 가이드)
 /community                     → Community (커뮤니티 — 파티원 찾기 + 실시간 채팅)
@@ -29,6 +30,7 @@
       <Route path="/"                                    element={<Dashboard />} />
       <Route path="/summoner/:gameName/:tagLine"         element={<SummonerDetail />} />
       <Route path="/decks"                               element={<Decks />} />
+      <Route path="/decks/:deckId"                       element={<DeckDetail />} />
       <Route path="/ai-recommend"                        element={<AiRecommend />} />
       <Route path="/guide"                               element={<Guide />} />
       <Route path="/community"                           element={<Community />} />

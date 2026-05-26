@@ -160,8 +160,9 @@ font-variant-numeric: tabular-nums;
 - **1 PR = 1 기능 단위** — 기능이 크면 UI / API 연동으로 나눠서 올린다
 - **파일 수 권고: 20개 이하** — 초과 시 작업 단위를 나눌 수 있는지 먼저 검토
 - **예외 허용** — 파일 수가 넘더라도 기능이 쪼개지지 않는다면 허용 (단, PR 설명에 이유 명시 필수)
-- **제목 형식**: `[feat] 소환사 검색 페이지 UI`, `[fix] 빈 결과 상태 처리`
+- **제목 형식**: `feat: 소환사 검색 페이지 UI`, `fix: 빈 결과 상태 처리`
   - 타입: `feat` / `fix` / `refactor` / `docs` / `chore` / `style`
+  - 범위 명시 가능: `chore(infra): Discord 웹훅 추가`, `fix(auth): 토큰 갱신 오류`
 - **Labels 필수** — PR 올릴 때 반드시 label 붙이기
   - 예: `feat`, `fix`, `refactor`, `docs`, `chore`
 - **Milestone 필수** — 작업이 속한 마일스톤 지정 후 PR 올리기
@@ -177,8 +178,10 @@ font-variant-numeric: tabular-nums;
 ```
 main            — 배포용 (직접 push 금지)
 develop         — 통합 브랜치
-feat/기능명      — 기능 개발  (예: feat/match-search-ui)
+feature/기능명   — 기능 개발  (예: feature/summoner-search-ui)
 fix/버그명       — 버그 수정  (예: fix/empty-state-crash)
+chore/작업명     — 설정, 문서, 기타  (예: chore/discord-notify)
+docs/작업명      — 문서 작업  (예: docs/spec-kit-update)
 ```
 
 - 작업 시작 전 `develop`에서 브랜치 생성
