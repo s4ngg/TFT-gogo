@@ -1,10 +1,12 @@
 import axiosInstance from './axiosInstance'
+import { communityDragonAssetUrl } from './communityDragonAssets'
 
 export const CHANGE_CATEGORIES = ['챔피언', '시너지', '아이템', '증강체', '시스템'] as const
 export const PATCH_CATEGORIES = ['전체', ...CHANGE_CATEGORIES] as const
 export const CHANGE_TYPE_FILTERS = ['전체 변경', '상향', '하향', '조정', '신규'] as const
 export const PATCH_PAGE_SIZE = 5
 export const PATCH_SAMPLE_PAGE_COUNT = 7
+export const PATCH_FALLBACK_IMAGE = '/assets/emblems/patch-meta-emblem-pink.png'
 
 export type ChangeCategory = (typeof CHANGE_CATEGORIES)[number]
 export type PatchCategory = (typeof PATCH_CATEGORIES)[number]
@@ -18,6 +20,7 @@ export interface PatchChange {
   target: string
   type: ChangeType
   impact: ImpactLevel
+  imageUrl?: string
   summary: string
   before: string
   after: string
@@ -59,6 +62,51 @@ export interface PatchChangesResponse {
   items: PatchChange[]
   totalItems: number
   totalPages: number
+}
+
+export const PATCH_CATEGORY_IMAGE_URLS: Record<ChangeCategory, string> = {
+  챔피언: communityDragonAssetUrl('ASSETS/Characters/TFT17_Kaisa/Skins/Base/Images/TFT17_Kaisa_splash_tile_69.TFT_Set17.tex'),
+  시너지: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Challenger.TFT_Set17.tex'),
+  아이템: communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_GuinsoosRageblade.TFT_Set13.tex'),
+  증강체: communityDragonAssetUrl('ASSETS/UX/TFT/Augments/Augment_Silver.tex'),
+  시스템: PATCH_FALLBACK_IMAGE,
+}
+
+export const PATCH_TARGET_IMAGE_URLS: Record<string, string> = {
+  아펠리오스: communityDragonAssetUrl('ASSETS/Characters/TFT17_Aphelios/Skins/Base/Images/TFT17_Aphelios_splash_tile_1.TFT_Set17.tex'),
+  세주아니: communityDragonAssetUrl('ASSETS/Characters/TFT17_Sejuani/Skins/Base/Images/TFT17_Sejuani_splash_tile_1.TFT_Set17.tex'),
+  럭스: communityDragonAssetUrl('ASSETS/Characters/TFT17_Lux/Skins/Base/Images/TFT17_Lux_splash_tile_1.TFT_Set17.tex'),
+  카이사: communityDragonAssetUrl('ASSETS/Characters/TFT17_Kaisa/Skins/Base/Images/TFT17_Kaisa_splash_tile_69.TFT_Set17.tex'),
+  오른: communityDragonAssetUrl('ASSETS/Characters/TFT17_Ornn/Skins/Base/Images/TFT17_Ornn_splash_tile_11.TFT_Set17.tex'),
+  학살자: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Rogue.TFT_Set17.tex'),
+  마법사: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Fateweaver.TFT_Set17.tex'),
+  감시자: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_12_Vanguard.TFT_Set12.tex'),
+  전략가: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Stargazer.TFT_Set17.tex'),
+  결투가: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Challenger.TFT_Set17.tex'),
+  '구인수의 격노검': communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_GuinsoosRageblade.TFT_Set13.tex'),
+  '워모그의 갑옷': communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_WarmogsArmor.TFT_Set13.tex'),
+  '쇼진의 창': communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_SpearOfShojin.TFT_Set13.tex'),
+  '이온 충격기': communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_IonicSpark.TFT_Set13.tex'),
+  '거인 학살자': communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_GiantSlayer.TFT_Set13.tex'),
+}
+
+export function getPatchBaseTarget(target: string) {
+  return target.replace(/\s샘플\s\d+$/, '')
+}
+
+export function getPatchChangeImageUrl(change: PatchChange) {
+  return change.imageUrl
+    ?? PATCH_TARGET_IMAGE_URLS[getPatchBaseTarget(change.target)]
+    ?? PATCH_CATEGORY_IMAGE_URLS[change.category]
+    ?? PATCH_FALLBACK_IMAGE
+}
+
+export function getPatchChangeFallbackImageUrl(change: PatchChange) {
+  return PATCH_CATEGORY_IMAGE_URLS[change.category] ?? PATCH_FALLBACK_IMAGE
+}
+
+export function getPatchImageAlt(target: string, label: string) {
+  return `${target} ${label} 이미지`
 }
 
 function buildVersionedChange(change: PatchChange, version: string, patchIndex: number): PatchChange {

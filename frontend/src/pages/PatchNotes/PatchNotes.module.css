@@ -13,6 +13,17 @@
   margin-bottom: 16px;
 }
 
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .heroCopy,
 .releaseCard,
 .summaryCard,
@@ -321,7 +332,8 @@
 .quickFilters button:focus-visible,
 .detailButton:focus-visible,
 .pagination button:focus-visible,
-.historyList button:focus-visible {
+.historyList button:focus-visible,
+.emptyState button:focus-visible {
   border-color: rgba(5, 243, 231, 0.7);
   outline: 2px solid rgba(5, 243, 231, 0.72);
   outline-offset: 2px;
