@@ -1,78 +1,17 @@
 import { BarChart2, Bot, ChevronRight, Link2, Sparkles, ThumbsDown, ThumbsUp, TrendingUp, Trophy } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { communityDragonAssetUrl } from '../../api/communityDragonAssets'
 import { AppLayout } from '../../components/layout'
 import ChampionCard from '../../components/common/ChampionCard'
 import TierBadge from '../../components/common/TierBadge'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
-import type { TraitHexBadgeTone } from '../../components/common/TraitHexBadge'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
+import { useAiRecommendQuery } from '../../hooks/useAiRecommendQuery'
 import useSummonerStore from '../../store/useSummonerStore'
+import type { AiRecommendAugment, AiRecommendDeckReason, AiRecommendResponse, AiRecommendStats, AiRecommendTrait } from '../../api/aiRecommendApi'
+import { mockAiRecommendation } from '../../mocks/aiRecommendMock'
 import styles from './AiRecommend.module.css'
 
-/* ── Mock 개인 데이터 (실제 구현 시 Riot API로 교체) ── */
-const MOCK_MY_STATS = {
-  recentGames: 20,
-  avgPlace: '4.1',
-  top4Rate: '58.0%',
-  winRate: '22.5%',
-}
-
-interface MockTrait {
-  name: string
-  count: number
-  iconUrl: string
-  tone: TraitHexBadgeTone
-  games: number
-  avgPlace: string
-  top4Rate: string
-}
-
-const MOCK_GOOD_TRAITS: MockTrait[] = [
-  {
-    name: '선봉대', count: 4,
-    iconUrl: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_12_Vanguard.TFT_Set12.tex'),
-    tone: 'gold', games: 12, avgPlace: '3.2', top4Rate: '72%',
-  },
-  {
-    name: '정령족', count: 4,
-    iconUrl: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Astronaut.TFT_Set17.tex'),
-    tone: 'gold', games: 8, avgPlace: '3.7', top4Rate: '65%',
-  },
-  {
-    name: '암흑의 별', count: 6,
-    iconUrl: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_DarkStar.TFT_Set17.tex'),
-    tone: 'gold', games: 5, avgPlace: '3.9', top4Rate: '61%',
-  },
-]
-
-const MOCK_BAD_TRAITS: MockTrait[] = [
-  {
-    name: '초능력', count: 3,
-    iconUrl: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_PsyOps.TFT_Set17.tex'),
-    tone: 'silver', games: 6, avgPlace: '5.4', top4Rate: '24%',
-  },
-  {
-    name: '복제자', count: 2,
-    iconUrl: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Replicator.TFT_Set17.tex'),
-    tone: 'silver', games: 5, avgPlace: '5.9', top4Rate: '21%',
-  },
-  {
-    name: '습격자', count: 4,
-    iconUrl: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Rogue.TFT_Set17.tex'),
-    tone: 'silver', games: 5, avgPlace: '6.1', top4Rate: '19%',
-  },
-]
-
 const MIN_TRAIT_GAMES = 5
-
-const MOCK_AUGMENTS = [
-  { name: '강철의 의지', avgPlace: '2.9', games: 4, icon: '🛡️' },
-  { name: '정의의 손길+', avgPlace: '3.2', games: 3, icon: '⚔️' },
-  { name: '용의 불꽃', avgPlace: '3.5', games: 5, icon: '🔥' },
-  { name: '별의 수호자', avgPlace: '4.8', games: 3, icon: '✨' },
-  { name: '전사의 용기', avgPlace: '5.1', games: 4, icon: '🗡️' },
-]
 
 /* ── 소환사 미연동 화면 ── */
 function ConnectPrompt() {
@@ -109,17 +48,17 @@ function ConnectPrompt() {
 }
 
 /* ── 통계 카드 ── */
-function StatCard({ label, value, color }: { label: string; value: string; color?: string }) {
+function StatCard({ label, value, tone = 'default' }: { label: string; value: string; tone?: 'default' | 'purple' | 'green' | 'gold' }) {
   return (
-    <div className={styles.statCard}>
+    <div className={styles.statCard} data-tone={tone}>
       <small>{label}</small>
-      <strong style={color ? { color } : undefined}>{value}</strong>
+      <strong>{value}</strong>
     </div>
   )
 }
 
 /* ── 시너지별 승률 성적 ── */
-function TraitPerformanceList({ traits, bad }: { traits: MockTrait[]; bad?: boolean }) {
+function TraitPerformanceList({ traits, bad }: { traits: AiRecommendTrait[]; bad?: boolean }) {
   const filtered = traits.filter((t) => t.games >= MIN_TRAIT_GAMES)
 
   if (filtered.length === 0) {
@@ -144,7 +83,7 @@ function TraitPerformanceList({ traits, bad }: { traits: MockTrait[]; bad?: bool
   )
 }
 
-function DeckPerformance() {
+function DeckPerformance({ goodTraits, badTraits }: { goodTraits: AiRecommendTrait[]; badTraits: AiRecommendTrait[] }) {
   return (
     <section className={styles.panel}>
       <div className={styles.panelHead}>
@@ -157,14 +96,14 @@ function DeckPerformance() {
           <div className={`${styles.deckPerfColHead} ${styles.deckPerfGood}`}>
             <ThumbsUp size={14} /> 잘 맞는 시너지
           </div>
-          <TraitPerformanceList traits={MOCK_GOOD_TRAITS} />
+          <TraitPerformanceList traits={goodTraits} />
         </div>
         <div className={styles.deckPerfDivider} />
         <div className={styles.deckPerfCol}>
           <div className={`${styles.deckPerfColHead} ${styles.deckPerfBad}`}>
             <ThumbsDown size={14} /> 잘 안 맞는 시너지
           </div>
-          <TraitPerformanceList traits={MOCK_BAD_TRAITS} bad />
+          <TraitPerformanceList traits={badTraits} bad />
         </div>
       </div>
     </section>
@@ -172,9 +111,17 @@ function DeckPerformance() {
 }
 
 /* ── 증강 분석 ── */
-function AugmentAnalysis() {
-  const best = MOCK_AUGMENTS[0]
-  const worst = MOCK_AUGMENTS[MOCK_AUGMENTS.length - 1]
+function getAugmentTone(augment: AiRecommendAugment, best: AiRecommendAugment, worst: AiRecommendAugment) {
+  if (augment.name === best.name) return 'best'
+  if (augment.name === worst.name) return 'worst'
+  return 'default'
+}
+
+function AugmentAnalysis({ augments }: { augments: AiRecommendAugment[] }) {
+  const best = augments[0]
+  const worst = augments[augments.length - 1]
+
+  if (!best || !worst) return null
 
   return (
     <section className={styles.panel}>
@@ -184,30 +131,16 @@ function AugmentAnalysis() {
         <span className={styles.panelSub}>평균 등수 낮을수록 좋음</span>
       </div>
       <div className={styles.augmentList}>
-        {MOCK_AUGMENTS.map((aug, i) => {
+        {augments.map((aug, i) => {
           const avgNum = parseFloat(aug.avgPlace)
-          const isBest = aug.name === best.name
-          const isWorst = aug.name === worst.name
+          const tone = getAugmentTone(aug, best, worst)
           return (
             <div key={aug.name} className={styles.augRow}>
               <span className={styles.augRank}>{i + 1}</span>
               <span className={styles.augIcon}>{aug.icon}</span>
               <span className={styles.augName}>{aug.name}</span>
-              <div className={styles.augBar}>
-                <div
-                  className={styles.augBarFill}
-                  style={{
-                    width: `${(avgNum / 8) * 100}%`,
-                    background: isBest ? '#04ede0' : isWorst ? '#f87171' : '#a78bfa',
-                  }}
-                />
-              </div>
-              <span
-                className={styles.augPlace}
-                style={{ color: isBest ? '#04ede0' : isWorst ? '#f87171' : '#c0c8d0' }}
-              >
-                {aug.avgPlace}등
-              </span>
+              <progress className={styles.augProgress} data-tone={tone} value={avgNum} max={8} />
+              <span className={styles.augPlace} data-tone={tone}>{aug.avgPlace}등</span>
               <span className={styles.augGames}>{aug.games}게임</span>
             </div>
           )
@@ -221,16 +154,10 @@ function AugmentAnalysis() {
 }
 
 /* ── AI 추천 덱 ── */
-function AiRecommendedDecks() {
+function AiRecommendedDecks({ deckReasons }: { deckReasons: AiRecommendDeckReason[] }) {
   const navigate = useNavigate()
   const { data: metaDecks = [] } = useMetaSnapshot()
   const topDecks = metaDecks.filter((d) => d.grade === 'S' || d.grade === 'A+').slice(0, 3)
-
-  const deckMeta = [
-    { isPatch: false, reason: '내가 자주 쓰는 챔피언 포함' },
-    { isPatch: false, reason: '현재 메타 최상위 티어' },
-    { isPatch: true,  reason: '패치 후 픽률 + TOP4 확률 증가!' },
-  ]
 
   return (
     <section className={styles.panel}>
@@ -241,11 +168,12 @@ function AiRecommendedDecks() {
       </div>
       <div className={styles.aiDeckList}>
         {topDecks.map((deck, i) => {
-          const meta = deckMeta[i]
+          const meta = deckReasons.find((reason) => reason.deckRank === deck.rank)
+            ?? { isPatchTrend: false, reason: '현재 메타 기반 추천' }
           return (
             <div
               key={deck.rank}
-              className={`${styles.aiDeckCard} ${meta.isPatch ? styles.aiDeckCardPatch : ''}`}
+              className={`${styles.aiDeckCard} ${meta.isPatchTrend ? styles.aiDeckCardPatch : ''}`}
               onClick={() => navigate(`/decks/${deck.rank}`)}
               role="button"
               tabIndex={0}
@@ -255,7 +183,7 @@ function AiRecommendedDecks() {
                 <span className={styles.aiDeckBadge}>추천 #{i + 1}</span>
                 <TierBadge value={deck.grade} />
                 <span className={styles.aiDeckName}>{deck.name}</span>
-                {meta.isPatch && (
+                {meta.isPatchTrend && (
                   <span className={styles.patchBadge}>
                     <TrendingUp size={12} /> 패치 후 상승 중
                   </span>
@@ -277,8 +205,8 @@ function AiRecommendedDecks() {
                 <span>평균 등수 <b className={styles.purple}>{deck.avgPlace}</b></span>
                 <span>픽률 <b className={styles.gold}>{deck.pickRate}</b></span>
               </div>
-              <div className={`${styles.aiReason} ${meta.isPatch ? styles.aiReasonPatch : ''}`}>
-                {meta.isPatch ? <TrendingUp size={13} /> : <Bot size={13} />}
+              <div className={`${styles.aiReason} ${meta.isPatchTrend ? styles.aiReasonPatch : ''}`}>
+                {meta.isPatchTrend ? <TrendingUp size={13} /> : <Bot size={13} />}
                 <span>{meta.reason}</span>
               </div>
             </div>
@@ -296,6 +224,13 @@ function AiRecommendedDecks() {
 /* ── 메인 ── */
 function AiRecommend() {
   const summoner = useSummonerStore((s) => s.summoner)
+  const recommendationQuery = useAiRecommendQuery(
+    summoner
+      ? { gameName: summoner.name, tagLine: summoner.tag, recentGameCount: 20 }
+      : null,
+  )
+  const recommendation = recommendationQuery.data ?? mockAiRecommendation
+  const stats: AiRecommendStats = recommendation.stats
 
   return (
     <AppLayout>
@@ -322,20 +257,20 @@ function AiRecommend() {
             <section className={`${styles.panel} ${styles.summaryPanel}`}>
               <div className={styles.panelHead}>
                 <Trophy size={17} />
-                <h2>최근 {MOCK_MY_STATS.recentGames}게임 요약</h2>
+                <h2>최근 {stats.recentGames}게임 요약</h2>
               </div>
               <div className={styles.summaryStats}>
-                <StatCard label="평균 등수" value={`${MOCK_MY_STATS.avgPlace}등`} color="#a78bfa" />
-                <StatCard label="TOP 4율" value={MOCK_MY_STATS.top4Rate} color="#04ede0" />
-                <StatCard label="1등 비율" value={MOCK_MY_STATS.winRate} color="#f9c860" />
-                <StatCard label="분석 게임" value={`${MOCK_MY_STATS.recentGames}게임`} />
+                <StatCard label="평균 등수" value={`${stats.avgPlace}등`} tone="purple" />
+                <StatCard label="TOP 4율" value={stats.top4Rate} tone="green" />
+                <StatCard label="1등 비율" value={stats.winRate} tone="gold" />
+                <StatCard label="분석 게임" value={`${stats.recentGames}게임`} />
               </div>
             </section>
 
-            <DeckPerformance />
-            <AugmentAnalysis />
+            <DeckPerformance goodTraits={recommendation.goodTraits} badTraits={recommendation.badTraits} />
+            <AugmentAnalysis augments={recommendation.augments} />
 
-            <AiRecommendedDecks />
+            <AiRecommendedDecks deckReasons={recommendation.deckReasons} />
           </div>
         )}
       </div>
