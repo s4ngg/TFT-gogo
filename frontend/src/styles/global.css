@@ -1949,11 +1949,14 @@ body[data-page="deck-detail"] .page {
   margin-top: 15px;
 }
 
-.history-list article {
+.history-list button {
+  width: 100%;
   padding: 12px;
   border: 1px solid rgba(112, 144, 152, 0.12);
   border-radius: 9px;
+  color: inherit;
   background: rgba(255, 255, 255, 0.025);
+  text-align: left;
 }
 
 .history-list .current-patch {
@@ -1961,7 +1964,12 @@ body[data-page="deck-detail"] .page {
   background: rgba(5, 243, 231, 0.07);
 }
 
-.history-list article > div {
+.history-list button:hover {
+  border-color: rgba(5, 243, 231, 0.28);
+  background: rgba(5, 243, 231, 0.045);
+}
+
+.history-list button > div {
   display: flex;
   align-items: center;
   justify-content: space-between;

@@ -251,7 +251,27 @@ function patch(id, category, target, type, impact, summary, before, after, tags)
 const PATCH_DUMMY_TOTAL = 49
 const PATCH_DUMMY_PAGE_SIZE = 7
 
-const patchSeeds = [
+function buildPatchChanges(seeds, total, idOffset = 0) {
+  return Array.from({ length: total }, (_, index) => {
+    const seed = seeds[index % seeds.length]
+    const id = idOffset + index + 1
+    const page = Math.floor(index / PATCH_DUMMY_PAGE_SIZE) + 1
+    const target = index < seeds.length ? seed.target : `${seed.target} ${index + 1}`
+    return patch(
+      id,
+      seed.category,
+      target,
+      seed.type,
+      seed.impact,
+      `${seed.summary} 페이지 ${page} 더미 변경사항입니다.`,
+      seed.before,
+      seed.after,
+      [...seed.tags, `P${page}`],
+    )
+  })
+}
+
+const patchSeeds173 = [
   patch(0, '챔피언', '아펠리오스', '상향', '높음', '스킬 피해량과 후반 캐리 안정성이 올라갔습니다.', '320 / 480 / 760', '345 / 520 / 820', ['AD 캐리', '후반']),
   patch(0, '챔피언', '럭스', '하향', '중간', '초반 스킬 피해가 낮아져 연승 안정성이 줄었습니다.', '240 / 360 / 540', '220 / 340 / 520', ['초반 AP', '저코스트']),
   patch(0, '시너지', '마법사', '상향', '높음', '4시너지 구간 주문력 보상이 증가했습니다.', '20 / 45 / 80', '20 / 50 / 82', ['AP', '중반 전환']),
@@ -261,23 +281,75 @@ const patchSeeds = [
   patch(0, '시스템', '상점 확률', '조정', '중간', '8레벨 고코스트 접근성이 조금 좋아졌습니다.', '4코스트 20%', '4코스트 21%', ['레벨업', '상점']),
 ]
 
-export const patchChanges = Array.from({ length: PATCH_DUMMY_TOTAL }, (_, index) => {
-  const seed = patchSeeds[index % patchSeeds.length]
-  const id = index + 1
-  const page = Math.floor(index / PATCH_DUMMY_PAGE_SIZE) + 1
-  const target = index < patchSeeds.length ? seed.target : `${seed.target} ${id}`
-  return patch(
-    id,
-    seed.category,
-    target,
-    seed.type,
-    seed.impact,
-    `${seed.summary} 페이지 ${page} 더미 변경사항입니다.`,
-    seed.before,
-    seed.after,
-    [...seed.tags, `P${page}`],
-  )
-})
+const patchSeeds172 = [
+  patch(0, '챔피언', '징크스', '하향', '높음', '저코스트 리롤 조합의 초반 폭발력이 줄었습니다.', '공격력 54', '공격력 50', ['리롤', '초반']),
+  patch(0, '챔피언', '오른', '상향', '중간', '메인 탱커 역할을 더 안정적으로 수행합니다.', '방어력 55', '방어력 60', ['탱커', '앞라인']),
+  patch(0, '시너지', '불한당', '하향', '중간', '4시너지 구간의 순간 피해 보상이 낮아졌습니다.', '피해량 +18%', '피해량 +15%', ['암살', '템포']),
+  patch(0, '시너지', '선봉대', '상향', '높음', '중반 앞라인 유지력이 올라갔습니다.', '방어력 35 / 70', '방어력 40 / 75', ['방어', '중반']),
+  patch(0, '아이템', '푸른 파수꾼', '조정', '중간', '스킬 순환은 유지하되 첫 사용 타이밍을 늦췄습니다.', '시작 마나 +30', '시작 마나 +25', ['마나', 'AP']),
+  patch(0, '증강체', '작지만 치명적인', '하향', '높음', '저코스트 리롤 덱의 초반 압박력을 완화했습니다.', '피해량 +12%', '피해량 +9%', ['실버', '리롤']),
+  patch(0, '시스템', '연승 보상', '조정', '낮음', '초반 연승 보상의 골드 체감 폭을 조정했습니다.', '3연승 +1골드', '4연승 +1골드', ['경제', '초반']),
+]
+
+const patchSeeds171 = [
+  patch(0, '챔피언', '벡스', '상향', '높음', '세트 초반 AP 캐리 후보로 안정성을 보강했습니다.', '스킬 보호막 260', '스킬 보호막 285', ['AP', '보호막']),
+  patch(0, '챔피언', '진', '조정', '중간', '후반 고점은 유지하고 초반 체급을 낮췄습니다.', '공격력 72 / 108', '공격력 68 / 112', ['AD 캐리', '후반']),
+  patch(0, '시너지', '다크스타', '상향', '높음', '6시너지 도달 보상을 강화했습니다.', '피해량 +42%', '피해량 +46%', ['후반', '고점']),
+  patch(0, '시너지', '정령술사', '조정', '중간', '마나 회복 속도를 낮추고 보조 효과를 높였습니다.', '마나 회복 +6', '마나 회복 +5 / 보호막 +40', ['유틸', '마나']),
+  patch(0, '아이템', '무한의 대검', '상향', '중간', '치명타 캐리의 완성 아이템 가치를 높였습니다.', '치명타 피해 +18%', '치명타 피해 +20%', ['치명타', 'AD']),
+  patch(0, '증강체', '강철의 서약', '상향', '낮음', '앞라인 중심 조합의 안정성을 높였습니다.', '방어력 +20', '방어력 +24', ['탱커', '골드']),
+  patch(0, '시스템', '초반 피해량', '하향', '중간', '초반 탈락 압박을 낮추기 위해 플레이어 피해량을 줄였습니다.', '2스테이지 기본 3', '2스테이지 기본 2', ['체력 관리', '초반']),
+]
+
+export const patchNotes = [
+  {
+    version: '17.3',
+    date: '2026.05.26',
+    title: 'AP 전환 조합 보강',
+    description: 'AP 전환 조합과 후반 캐리 라인 조정',
+    meta: '마법사와 AP 캐리 조합의 중반 전환 가치가 상승했습니다.',
+    focus: 'AP',
+    tempo: '중반',
+    insights: [
+      '마법사와 AP 캐리 조합의 중반 전환 가치가 상승했습니다.',
+      '저코스트 리롤 증강체는 초반 압박력이 완화됐습니다.',
+      '공속 기반 장기전 캐리는 아이템 의존도를 더 확인해야 합니다.',
+    ],
+    changes: buildPatchChanges(patchSeeds173, PATCH_DUMMY_TOTAL, 0),
+  },
+  {
+    version: '17.2',
+    date: '2026.05.12',
+    title: '리롤 덱 속도 조절',
+    description: '저코스트 리롤과 초반 경제 보상 조정',
+    meta: '초반 리롤 덱의 압박을 낮추고 선봉대 기반 안정 운영을 보강했습니다.',
+    focus: '리롤',
+    tempo: '초반',
+    insights: [
+      '저코스트 리롤 덱의 초반 폭발력이 줄었습니다.',
+      '선봉대와 탱커 아이템을 활용한 체력 보존 운영이 좋아졌습니다.',
+      '초반 연승 보상이 늦어져 무리한 tempo 플레이의 리스크가 커졌습니다.',
+    ],
+    changes: buildPatchChanges(patchSeeds172, 28, 1000),
+  },
+  {
+    version: '17.1',
+    date: '2026.04.29',
+    title: '세트 오픈 밸런스',
+    description: '신규 시너지 안정화와 초반 피해량 조정',
+    meta: '다크스타 후반 고점과 벡스 중심 AP 운영의 기반이 잡힌 패치입니다.',
+    focus: '다크스타',
+    tempo: '후반',
+    insights: [
+      '다크스타 6시너지의 후반 보상이 강화됐습니다.',
+      '벡스가 AP 캐리 후보로 안정적인 초반 선택지가 됐습니다.',
+      '초반 플레이어 피해량이 낮아져 후반 조합까지 버티기 쉬워졌습니다.',
+    ],
+    changes: buildPatchChanges(patchSeeds171, 21, 2000),
+  },
+]
+
+export const patchChanges = patchNotes[0].changes
 
 function buildMatches() {
   const placements = [1, 2, 4, 6, 7, 3, 5, 1, 2, 3, 4, 1, 6, 5, 8, 2, 3, 1, 4, 7, 5, 2, 1, 3, 6, 4, 2, 1, 5, 4]

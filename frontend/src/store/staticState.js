@@ -20,6 +20,7 @@ export const state = {
   patchQuery: '',
   patchHighOnly: false,
   patchPage: 1,
+  patchVersion: '17.3',
   expandedPatch: [],
   expandedMatch: null,
   visibleMatches: 10,
