@@ -1,0 +1,236 @@
+.myPage {
+  display: grid;
+  gap: 16px;
+  padding: 8px 0 24px;
+}
+
+.profileHero {
+  min-height: 156px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 24px;
+  border: 1px solid rgba(88, 128, 138, 0.36);
+  border-radius: var(--radius-card);
+  background:
+    radial-gradient(circle at 88% 18%, rgba(0, 224, 210, 0.15), transparent 26%),
+    linear-gradient(135deg, rgba(8, 28, 38, 0.92), rgba(4, 13, 19, 0.96));
+}
+
+.profileIdentity {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+}
+
+.profileIcon {
+  width: 82px;
+  height: 82px;
+  overflow: hidden;
+  flex: 0 0 auto;
+  border: 1px solid #e646ff;
+  border-radius: 999px;
+  background: #071016;
+  box-shadow: 0 0 18px rgba(231, 66, 255, 0.42);
+}
+
+.profileIcon img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.profileIdentity p,
+.profileIdentity h1 {
+  margin: 0;
+}
+
+.profileIdentity p {
+  color: #00eadf;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.profileIdentity h1 {
+  margin-top: 4px;
+  color: #ffffff;
+  font-size: 32px;
+  font-weight: 800;
+}
+
+.profileIdentity span {
+  display: block;
+  margin-top: 7px;
+  color: #aeb8c2;
+  font-size: 14px;
+}
+
+.logoutButton {
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 91, 87, 0.44);
+  border-radius: var(--radius-button);
+  color: #ffd4d2;
+  background: rgba(255, 91, 87, 0.1);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.statGrid article,
+.panel {
+  border: 1px solid rgba(88, 128, 138, 0.32);
+  border-radius: var(--radius-card);
+  background: rgba(6, 19, 27, 0.82);
+}
+
+.statGrid article {
+  min-height: 86px;
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  padding: 16px;
+}
+
+.statGrid strong {
+  color: #ffffff;
+  font-size: 27px;
+  font-weight: 800;
+}
+
+.statGrid span {
+  color: #9fa9b3;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.panel {
+  min-height: 214px;
+  padding: 18px;
+}
+
+.activityPanel {
+  grid-column: 1 / -1;
+  min-height: 160px;
+}
+
+.panelHeading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 16px;
+  color: #00eadf;
+}
+
+.panelHeading h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 750;
+}
+
+.infoList {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.infoList div {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 0 11px;
+  border-bottom: 1px solid rgba(108, 139, 148, 0.16);
+}
+
+.infoList dt {
+  color: #7f8d98;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.infoList dd {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  overflow: hidden;
+  color: #e8edf2;
+  font-size: 14px;
+  font-weight: 650;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.quickLinks {
+  display: grid;
+  gap: 10px;
+}
+
+.quickLinks a {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border: 1px solid rgba(0, 224, 210, 0.36);
+  border-radius: var(--radius-button);
+  color: #e9eef3;
+  background: rgba(0, 109, 112, 0.16);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.quickLinks a:hover,
+.logoutButton:hover {
+  filter: brightness(1.08);
+}
+
+.activityPanel ul {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.activityPanel li {
+  position: relative;
+  padding-left: 15px;
+  color: #cfd8df;
+  font-size: 14px;
+}
+
+.activityPanel li::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  left: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #00eadf;
+}

@@ -1,8 +1,13 @@
 import { create } from 'zustand'
 
+interface AuthUser {
+  email: string
+  summonerTag?: string
+}
+
 interface AuthState {
-  user: unknown
-  setUser: (user: unknown) => void
+  user: AuthUser | null
+  setUser: (user: AuthUser) => void
   clearUser: () => void
 }
 

@@ -5,6 +5,7 @@ import Decks from './pages/Decks/Decks'
 import DeckDetail from './pages/DeckDetail/DeckDetail'
 import Dashboard from './pages/Dashboard/Dashboard'
 import Guide from './pages/Guide/Guide'
+import MyPage from './pages/MyPage/MyPage'
 import Party from './pages/Party/Party'
 import PatchNotes from './pages/PatchNotes/PatchNotes'
 import SummonerDetail from './pages/SummonerDetail/SummonerDetail'
@@ -22,6 +23,7 @@ function App() {
       <Route path="/guide" element={<Guide />} />
       <Route path="/party" element={<Party />} />
       <Route path="/patch-notes" element={<PatchNotes />} />
+      <Route path="/mypage" element={<MyPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
