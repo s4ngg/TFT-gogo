@@ -49,8 +49,17 @@ jobs:
             exit 1
           fi
 
-          # ── 2. Claude API 요청 JSON 구성 (jq --arg로 안전하게 escape) ─
+          # ── 2. CLAUDE.md 컨벤션 가져오기 ───────────────────────────
+          CONVENTIONS=$(curl -fSs \
+            --connect-timeout 10 \
+            --max-time 30 \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$REPO/contents/CLAUDE.md" \
+            | jq -r '.content' | base64 -d 2>/dev/null || echo "")
+
+          # ── 3. Claude API 요청 JSON 구성 (jq --arg로 안전하게 escape) ─
           jq -n \
+            --arg conventions "$CONVENTIONS" \
             --arg coderabbit "$REVIEW_BODY" \
             --arg diff "$DIFF" \
             '{
@@ -58,7 +67,7 @@ jobs:
               max_tokens: 2048,
               messages: [{
                 role: "user",
-                content: ("당신은 TFT-gogo 프로젝트의 시니어 개발자입니다.\n\nCodeRabbit이 아래와 같이 리뷰했습니다:\n\n" + $coderabbit + "\n\n코드 변경사항:\n\n" + $diff + "\n\n위 CodeRabbit 리뷰를 바탕으로 아래 형식으로 수정 제안을 작성해주세요:\n\n## 🤖 Claude AI 코드리뷰\n\n### 📋 변경사항 요약\n(PR에서 무엇을 변경했는지 1~3줄 요약)\n\n### 🚨 Critical (반드시 수정)\n- 문제: ...\n- 수정 방법: ...\n```코드 예시```\n\n### ⚠️ Warning (수정 권장)\n- 문제: ...\n- 수정 방법: ...\n\n### 💡 Suggestion (선택적 개선)\n- ...\n\n### ✅ 잘된 점\n- ...")
+                content: ("당신은 TFT-gogo 프로젝트의 시니어 개발자입니다.\n\n## 프로젝트 컨벤션\n" + $conventions + "\n\n---\n\nCodeRabbit이 아래와 같이 리뷰했습니다:\n\n" + $coderabbit + "\n\n코드 변경사항:\n\n" + $diff + "\n\n위 CodeRabbit 리뷰와 프로젝트 컨벤션을 바탕으로 아래 형식으로 수정 제안을 작성해주세요:\n\n## 🤖 Claude AI 코드리뷰\n\n### 📋 변경사항 요약\n(PR에서 무엇을 변경했는지 1~3줄 요약)\n\n### 🚨 Critical (반드시 수정)\n- 문제: ...\n- 수정 방법: ...\n```코드 예시```\n\n### ⚠️ Warning (수정 권장)\n- 문제: ...\n- 수정 방법: ...\n\n### 💡 Suggestion (선택적 개선)\n- ...\n\n### ✅ 잘된 점\n- ...")
               }]
             }' > /tmp/request.json
 
