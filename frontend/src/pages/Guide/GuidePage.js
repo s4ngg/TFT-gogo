@@ -295,7 +295,7 @@ function renderAugmentGuide(items) {
 
   return `
     <div class="augment-layout">
-      <div class="table-wrap guide-table-wrap">
+      <div class="table-wrap guide-table-wrap augment-table-wrap">
         <table class="augment-table">
           <colgroup>
             <col class="augment-info-col" />
