@@ -147,12 +147,70 @@
     - RiotMiniSeriesDto 타입 추가 (신규)
     - RiotTftLeagueEntryDto: summonerId 제거, puuid/ratedTier/ratedRating 추가
     - RiotTftUnitDto: items(number[]) / chosen 추가
-    - RiotTftParticipantDto: riotIdGameName/riotIdTagline/win 추가
-    - RiotTftMatchDto.info: endOfGameResult/gameCreation/gameId/mapId 추가
-    - mockTftMatches: 매치당 8명 participants 완성
+    - RiotTftTraitDto: style 0~4 매핑 (4=Chromatic)
+    - RiotTftMatchDto: metadata.match_id, info.endOfGameResult/gameCreation/gameId/mapId 추가
 
   frontend/src/api/riotApi.ts
-    - summonerByName(deprecated) → accountByRiotId + summonerByPuuid
-    - leagueBySummoner → leagueByPuuid
+    - RIOT_ENDPOINTS 재구성: accountByRiotId, summonerByPuuid, leagueByPuuid
+    - getAccountByRiotId(gameName, tagLine) 추가
+    - getSummonerByPuuid(puuid) 추가
+    - getLeagueByPuuid(puuid) 추가
 
+  frontend/src/api/summonerApi.ts
+    - SummonerProfileResponse: gameName, tagLine, puuid 기반
+    - MatchParticipantResponse: riotIdGameName, riotIdTagline 포함
+    - API 호출 경로: /summoner/{gameName}/{tagLine}
+
+  frontend/src/api/deckApi.ts
+    - getMetaDecks(): 실패 시 mockDeckMetaResponse 폴백
+
+  frontend/src/api/aiRecommendApi.ts
+    - getAiRecommendation(gameName, tagLine, recentGameCount)
+
+  frontend/src/hooks/useSummonerProfile.ts
+  frontend/src/hooks/useMatchHistory.ts
+  frontend/src/hooks/useAiRecommendQuery.ts
+  frontend/src/hooks/useDeckQuery.ts
+  frontend/src/hooks/useMetaSnapshot.ts
+    - React Query 훅 추가 (queryKey, enabled, staleTime 5분)
+
+  frontend/src/pages/SummonerDetail/SummonerDetail.tsx
+    - useSummonerProfile / useMatchHistory 사용
+    - 프로필·매치 데이터 렌더링 및 통계 계산
+
+  frontend/src/pages/AiRecommend/AiRecommend.tsx
+    - useAiRecommendQuery 사용
+    - StatCard, TraitPerformanceList, AugmentAnalysis, AiRecommendedDecks 바인딩
+
+  frontend/src/pages/Decks/Decks.tsx
+    - useDeckQuery 사용
+    - 영웅 증강/아티팩트 데이터는 deckListData.ts로 분리
+
+  frontend/src/components/common/ChampionCard/ChampionCard.tsx
+    - stars: 1 | 2 | 3 확장
+
+  frontend/src/components/common/TraitHexBadge/TraitHexBadge.tsx
+    - TraitHexBadgeTone: 'gold' | 'silver' | 'bronze' | 'prismatic' 확장
+
+
+----------------------------------------------------------------
+[9] 향후 백엔드(Spring) 작업 가이드
+----------------------------------------------------------------
+  1. Riot API 호출 시 puuid 중심 흐름 구현
+  2. 매치 데이터 가공:
+     - placement → avgPlace, top4Rate, winRate 계산
+     - traits → 시너지별 통계 (games, avgPlace, tone)
+     - units → 챔피언별 통계 (games, avgPlace, cost)
+  3. DTO 반환:
+     - /api/summoner/{gameName}/{tagLine} → SummonerProfileResponse
+     - /api/summoner/{gameName}/{tagLine}/matches?count=90 → MatchSummaryResponse[]
+     - /api/decks/meta → MetaDeck[]
+     - /api/ai/recommendations → AiRecommendResponse
+  4. 이미지 URL:
+     - Community Dragon asset helper 또는 Data Dragon 사용
+     - 프론트에서는 communityDragonAssetUrl() 함수로 통일
+
+
+================================================================
+  끝
 ================================================================
