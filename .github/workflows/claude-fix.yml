@@ -1,0 +1,199 @@
+name: Claude 자동 수정
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  claude-fix:
+    # PR 코멘트이고 /claude fix 명령어인 경우만 실행
+    if: |
+      github.event.issue.pull_request != null &&
+      startsWith(github.event.comment.body, '/claude fix')
+    runs-on: ubuntu-latest
+
+    permissions:
+      pull-requests: write
+      contents: write
+
+    steps:
+      # ── 1. write 권한 확인 (외부인 실행 방지) ──────────────────────
+      - name: 권한 확인
+        id: permission
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PERMISSION=$(curl -s \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/collaborators/${{ github.event.comment.user.login }}/permission" \
+            | jq -r '.permission')
+
+          if [[ "$PERMISSION" == "admin" || "$PERMISSION" == "write" || "$PERMISSION" == "maintain" ]]; then
+            echo "ok=true" >> $GITHUB_OUTPUT
+          else
+            echo "ok=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 권한 없음 알림
+        if: steps.permission.outputs.ok == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -s -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
+            -d '{"body": "⚠️ `/claude fix` 명령어는 레포 write 권한이 있는 멤버만 사용할 수 있습니다."}'
+
+      # ── 2. PR 브랜치 정보 ──────────────────────────────────────────
+      - name: PR 브랜치 정보 확인
+        if: steps.permission.outputs.ok == 'true'
+        id: pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR=$(curl -s \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.issue.number }}")
+          echo "branch=$(echo $PR | jq -r '.head.ref')" >> $GITHUB_OUTPUT
+          echo "head_repo=$(echo $PR | jq -r '.head.repo.full_name')" >> $GITHUB_OUTPUT
+
+      - name: PR 브랜치 체크아웃
+        if: steps.permission.outputs.ok == 'true'
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ steps.pr.outputs.head_repo }}
+          ref: ${{ steps.pr.outputs.branch }}
+
+      # ── 3. Claude API 호출 → 파일 수정 적용 ───────────────────────
+      - name: Claude 수정 생성 및 적용
+        if: steps.permission.outputs.ok == 'true'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          # PR diff 가져오기
+          DIFF=$(curl -s \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3.diff" \
+            "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER" \
+            | head -c 6000)
+
+          # 가장 최근 Claude 수정 제안 코멘트 가져오기
+          SUGGESTION=$(curl -s \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$REPO/issues/$PR_NUMBER/comments" \
+            | jq -r '[.[] | select(.user.type == "Bot")] | last | .body // "없음"')
+
+          # 변경 파일 목록 + 현재 내용 수집
+          FILES_LIST=$(curl -s \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER/files" \
+            | jq -r '.[].filename')
+
+          FILE_CONTENTS=""
+          while IFS= read -r f; do
+            [[ -f "$f" ]] || continue
+            CONTENT=$(head -c 3000 "$f")
+            FILE_CONTENTS="${FILE_CONTENTS}\n\n### ${f}\n\`\`\`\n${CONTENT}\n\`\`\`"
+          done <<< "$FILES_LIST"
+
+          # Claude API 호출 (순수 JSON 응답 요청)
+          RESPONSE=$(curl -s https://api.anthropic.com/v1/messages \
+            -H "x-api-key: $ANTHROPIC_API_KEY" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "content-type: application/json" \
+            -d "$(jq -n \
+              --arg suggestion "$SUGGESTION" \
+              --arg diff "$DIFF" \
+              --arg files "$FILE_CONTENTS" \
+              '{
+                model: "claude-sonnet-4-5",
+                max_tokens: 4096,
+                messages: [{
+                  role: "user",
+                  content: ("당신은 TFT-gogo 프로젝트의 시니어 개발자입니다.\n\n아래 수정 제안을 실제 코드에 적용해주세요.\n\n## 수정 제안\n" + $suggestion + "\n\n## PR Diff\n" + $diff + "\n\n## 현재 파일 내용\n" + $files + "\n\n반드시 아래 JSON 형식으로만 응답하세요 (마크다운 코드블록·설명 텍스트 없이 순수 JSON만):\n{\"fixes\":[{\"file\":\"파일경로\",\"content\":\"수정된 전체 파일 내용\"}],\"summary\":\"수정 내용 한 줄 요약\"}")
+                }]
+              }'
+            )")
+
+          echo "$RESPONSE" | jq -r '.content[0].text' > /tmp/claude_fix.json
+
+          # 파일 수정 적용 (Python)
+          python3 - << 'PYEOF'
+          import json, os, sys
+
+          with open('/tmp/claude_fix.json', 'r', encoding='utf-8') as f:
+              raw = f.read().strip()
+
+          # 코드블록 마커 제거
+          for marker in ['```json', '```']:
+              if marker in raw:
+                  raw = raw.split(marker)[1].split('```')[0].strip()
+                  break
+
+          try:
+              data = json.loads(raw)
+          except json.JSONDecodeError as e:
+              print(f"JSON 파싱 실패: {e}", file=sys.stderr)
+              print(f"응답 원문:\n{raw[:500]}", file=sys.stderr)
+              sys.exit(1)
+
+          for fix in data.get('fixes', []):
+              filepath = fix['file']
+              content  = fix['content']
+              dirpath  = os.path.dirname(filepath)
+              if dirpath:
+                  os.makedirs(dirpath, exist_ok=True)
+              with open(filepath, 'w', encoding='utf-8') as f:
+                  f.write(content)
+              print(f"✅ 수정 완료: {filepath}")
+
+          with open('/tmp/fix_summary.txt', 'w', encoding='utf-8') as f:
+              f.write(data.get('summary', 'Claude 자동 수정'))
+          PYEOF
+
+      # ── 4. 커밋 & push ─────────────────────────────────────────────
+      - name: 커밋 및 push
+        if: steps.permission.outputs.ok == 'true'
+        id: commit
+        env:
+          PR_BRANCH: ${{ steps.pr.outputs.branch }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          git config user.name  "claude-bot"
+          git config user.email "claude-bot@users.noreply.github.com"
+
+          SUMMARY=$(cat /tmp/fix_summary.txt 2>/dev/null || echo "Claude 자동 수정")
+
+          git add -A
+
+          if git diff --staged --quiet; then
+            echo "status=no-change" >> $GITHUB_OUTPUT
+          else
+            git commit -m "fix: ${SUMMARY} (Claude 자동 수정 #${PR_NUMBER})"
+            git push origin "$PR_BRANCH"
+            echo "status=committed"  >> $GITHUB_OUTPUT
+            echo "summary=${SUMMARY}" >> $GITHUB_OUTPUT
+          fi
+
+      # ── 5. 결과 코멘트 등록 ────────────────────────────────────────
+      - name: 결과 코멘트 등록
+        if: steps.permission.outputs.ok == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [[ "${{ steps.commit.outputs.status }}" == "committed" ]]; then
+            BODY="✅ **Claude 자동 수정 완료**\n\n**${{ steps.commit.outputs.summary }}**\n\n변경된 파일을 확인 후 이상 없으면 머지해주세요."
+          else
+            BODY="ℹ️ 적용할 수정 사항이 없습니다. 이미 반영됐거나 자동 적용이 어려운 경우입니다."
+          fi
+
+          curl -s -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
+            -d "$(jq -n --arg body "$BODY" '{body: $body}')"

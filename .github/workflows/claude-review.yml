@@ -1,0 +1,104 @@
+name: Claude AI 코드리뷰 어시스턴트
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  claude-assist:
+    # CodeRabbit 리뷰가 달렸을 때만 실행
+    if: github.event.review.user.login == 'coderabbitai[bot]'
+    runs-on: ubuntu-latest
+
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - name: CodeRabbit 리뷰 읽고 Claude 수정 제안 등록
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # injection 방지: review body를 환경변수로 안전하게 전달
+          REVIEW_BODY: ${{ github.event.review.body }}
+        run: |
+          set -euo pipefail
+
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          REPO=${{ github.repository }}
+
+          # ── 1. PR diff 추출 (타임아웃 + 실패 감지) ─────────────────
+          DIFF=$(curl -fSs \
+            --connect-timeout 10 \
+            --max-time 30 \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3.diff" \
+            "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER" \
+            | head -c 4000) || {
+            echo "❌ ERROR: PR diff를 가져올 수 없습니다"
+            curl -s -X POST \
+              -H "Authorization: token $GITHUB_TOKEN" \
+              -H "Content-Type: application/json" \
+              "https://api.github.com/repos/$REPO/issues/$PR_NUMBER/comments" \
+              -d '{"body": "⚠️ Claude AI 코드리뷰 실패: diff 추출 오류"}'
+            exit 1
+          }
+
+          if [[ -z "$DIFF" ]]; then
+            echo "❌ ERROR: PR diff가 비어 있습니다"
+            exit 1
+          fi
+
+          # ── 2. Claude API 요청 JSON 구성 (jq --arg로 안전하게 escape) ─
+          jq -n \
+            --arg coderabbit "$REVIEW_BODY" \
+            --arg diff "$DIFF" \
+            '{
+              model: "claude-haiku-4-5",
+              max_tokens: 2048,
+              messages: [{
+                role: "user",
+                content: ("당신은 TFT-gogo 프로젝트의 시니어 개발자입니다.\n\nCodeRabbit이 아래와 같이 리뷰했습니다:\n\n" + $coderabbit + "\n\n코드 변경사항:\n\n" + $diff + "\n\n위 CodeRabbit 리뷰를 바탕으로 아래 형식으로 수정 제안을 작성해주세요:\n\n## 🤖 Claude AI 코드리뷰\n\n### 📋 변경사항 요약\n(PR에서 무엇을 변경했는지 1~3줄 요약)\n\n### 🚨 Critical (반드시 수정)\n- 문제: ...\n- 수정 방법: ...\n```코드 예시```\n\n### ⚠️ Warning (수정 권장)\n- 문제: ...\n- 수정 방법: ...\n\n### 💡 Suggestion (선택적 개선)\n- ...\n\n### ✅ 잘된 점\n- ...")
+              }]
+            }' > /tmp/request.json
+
+          # ── 3. Claude API 호출 (HTTP 상태코드 명시적 확인) ──────────
+          HTTP_STATUS=$(curl -s \
+            -w '%{http_code}' \
+            -o /tmp/response.json \
+            --connect-timeout 10 \
+            --max-time 30 \
+            -H "x-api-key: $ANTHROPIC_API_KEY" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "content-type: application/json" \
+            "https://api.anthropic.com/v1/messages" \
+            -d @/tmp/request.json)
+
+          if [[ "$HTTP_STATUS" -ne 200 ]]; then
+            echo "❌ ERROR: Claude API 호출 실패 (Status: $HTTP_STATUS)"
+            cat /tmp/response.json >&2
+            curl -s -X POST \
+              -H "Authorization: token $GITHUB_TOKEN" \
+              -H "Content-Type: application/json" \
+              "https://api.github.com/repos/$REPO/issues/$PR_NUMBER/comments" \
+              -d '{"body": "⚠️ Claude AI 코드리뷰 실패: API 호출 오류"}'
+            exit 1
+          fi
+
+          # ── 4. 응답 파싱 (jq -e로 존재 여부 확인) ──────────────────
+          if ! COMMENT=$(jq -er '.content[0].text' /tmp/response.json); then
+            echo "❌ ERROR: Claude 응답 파싱 실패"
+            cat /tmp/response.json >&2
+            exit 1
+          fi
+
+          echo "✅ Claude 응답 추출 완료"
+
+          # ── 5. PR 코멘트 등록 ────────────────────────────────────────
+          curl -fSs -X POST \
+            --connect-timeout 10 \
+            --max-time 30 \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://api.github.com/repos/$REPO/issues/$PR_NUMBER/comments" \
+            -d "$(jq -n --arg body "$COMMENT" '{body: $body}')"

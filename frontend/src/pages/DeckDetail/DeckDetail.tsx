@@ -25,7 +25,7 @@ const BOARD_COLS = 7
 type DisplayChamp = {
   name: string
   imageUrl: string
-  stars?: 2 | 3
+  stars?: 1 | 2 | 3
   items?: { imageUrl: string; name: string }[]
 }
 

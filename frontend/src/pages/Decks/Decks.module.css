@@ -245,6 +245,12 @@
   white-space: nowrap;
 }
 
+.artifactBadge {
+  border-color: rgba(249, 200, 96, 0.35);
+  color: #f9c860;
+  background: rgba(249, 200, 96, 0.18);
+}
+
 /* ════════════════════════════
    영웅 증강 — 캐러셀
 ════════════════════════════ */

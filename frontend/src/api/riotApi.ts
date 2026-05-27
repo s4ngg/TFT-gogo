@@ -1,10 +1,11 @@
 import axiosInstance from './axiosInstance'
 
 const RIOT_ENDPOINTS = {
-  summonerByName: '/tft/summoner/v1/summoners/by-name',
+  accountByRiotId: '/riot/account/v1/accounts/by-riot-id',
+  summonerByPuuid: '/tft/summoner/v1/summoners/by-puuid',
+  leagueByPuuid: '/tft/league/v1/by-puuid',
   matchIdsByPuuid: '/tft/match/v1/matches/by-puuid',
   matchDetail: '/tft/match/v1/matches',
-  leagueBySummoner: '/tft/league/v1/entries/by-summoner',
 } as const
 
 export type RiotEndpointKey = keyof typeof RIOT_ENDPOINTS
@@ -13,8 +14,16 @@ export function getRiotEndpoint(key: RiotEndpointKey) {
   return RIOT_ENDPOINTS[key]
 }
 
-export function getSummonerByName(summonerName: string) {
-  return axiosInstance.get(`${RIOT_ENDPOINTS.summonerByName}/${summonerName}`)
+export function getAccountByRiotId(gameName: string, tagLine: string) {
+  return axiosInstance.get(`${RIOT_ENDPOINTS.accountByRiotId}/${gameName}/${tagLine}`)
+}
+
+export function getSummonerByPuuid(puuid: string) {
+  return axiosInstance.get(`${RIOT_ENDPOINTS.summonerByPuuid}/${puuid}`)
+}
+
+export function getLeagueByPuuid(puuid: string) {
+  return axiosInstance.get(`${RIOT_ENDPOINTS.leagueByPuuid}/${puuid}`)
 }
 
 export function getMatchIdsByPuuid(puuid: string) {
@@ -23,10 +32,6 @@ export function getMatchIdsByPuuid(puuid: string) {
 
 export function getMatchDetail(matchId: string) {
   return axiosInstance.get(`${RIOT_ENDPOINTS.matchDetail}/${matchId}`)
-}
-
-export function getLeagueBySummoner(encryptedSummonerId: string) {
-  return axiosInstance.get(`${RIOT_ENDPOINTS.leagueBySummoner}/${encryptedSummonerId}`)
 }
 
 export { RIOT_ENDPOINTS }
