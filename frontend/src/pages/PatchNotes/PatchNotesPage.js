@@ -3,7 +3,7 @@ import { esc, focusInput, renderTags } from '../../components/common/renderers.j
 import { patchNotes } from '../../data/staticData.js'
 import { state } from '../../store/staticState.js'
 
-const PATCH_PAGE_SIZE = 7
+const PATCH_PAGE_SIZE = 5
 
 function activePatch() {
   return patchNotes.find((patchNote) => patchNote.version === state.patchVersion) ?? patchNotes[0]

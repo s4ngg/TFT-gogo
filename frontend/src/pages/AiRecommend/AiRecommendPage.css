@@ -161,97 +161,145 @@
 
 .aug-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 66px;
-  gap: 10px 14px;
-  align-items: start;
-  padding: 14px;
+  grid-template-columns: 24px 32px minmax(180px, 1fr) 116px 64px 56px;
+  gap: 8px 12px;
+  align-items: center;
+  padding: 10px 12px;
   border: 1px solid rgba(112, 144, 152, 0.12);
-  border-radius: 10px;
+  border-radius: 8px;
   background: rgba(5, 15, 22, 0.68);
+}
+
+.aug-row[data-tone="best"] {
+  border-color: rgba(4, 243, 229, 0.2);
+  background: rgba(4, 243, 229, 0.055);
+}
+
+.aug-row[data-tone="worst"] {
+  border-color: rgba(248, 113, 113, 0.18);
+}
+
+.aug-rank {
+  color: #4a5560;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.aug-icon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(112, 144, 152, 0.14);
+  border-radius: 7px;
+  color: #04f3e5;
+  background: rgba(4, 243, 229, 0.07);
+  font-size: 12px;
+  font-weight: 900;
 }
 
 .aug-row-main strong {
   color: #fff;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
 }
 
 .aug-row-main p {
-  margin: 5px 0 9px;
+  margin: 4px 0 0;
   color: #8e97a1;
   font-size: 12px;
 }
 
-.aug-score {
-  display: grid;
-  justify-items: center;
-  gap: 2px;
-  padding: 8px;
-  border: 1px solid rgba(4, 243, 229, 0.22);
-  border-radius: 8px;
-  background: rgba(4, 243, 229, 0.07);
-}
-
-.aug-score span {
-  color: #04f3e5;
-  font-size: 18px;
-  font-weight: 900;
-}
-
-.aug-score small {
-  color: #8e97a1;
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.aug-bar {
-  grid-column: 1 / -1;
+.aug-progress {
   height: 6px;
   overflow: hidden;
   border-radius: 99px;
   background: rgba(255, 255, 255, 0.055);
 }
 
-.aug-bar span {
+.aug-progress span {
   display: block;
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, #04f3e5, #f7d26d);
 }
 
+.aug-row[data-tone="worst"] .aug-progress span {
+  background: #f87171;
+}
+
+.aug-place {
+  color: #c0c8d0;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: right;
+}
+
+.aug-row[data-tone="best"] .aug-place {
+  color: #04f3e5;
+}
+
+.aug-row[data-tone="worst"] .aug-place {
+  color: #f87171;
+}
+
+.aug-games {
+  color: #687584;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.aug-tags {
+  grid-column: 3 / -1;
+}
+
 .aug-tip {
-  grid-column: 1 / -1;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 7px;
   color: #aeb7c4;
+  background: rgba(4, 243, 229, 0.055);
   font-size: 12px;
 }
 
+.aug-tip b {
+  color: #04f3e5;
+}
+
 .ai-deck-list {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 1fr;
 }
 
 .ai-deck-card {
   display: grid;
-  gap: 14px;
-  padding: 16px;
+  grid-template-columns: minmax(0, 1fr) 210px;
+  gap: 10px 16px;
+  align-items: start;
+  padding: 14px 16px;
   border: 1px solid rgba(112, 144, 152, 0.15);
-  border-radius: 10px;
+  border-radius: 9px;
   background: linear-gradient(180deg, rgba(6, 28, 36, 0.82), rgba(5, 14, 21, 0.96));
 }
 
 .ai-deck-top {
+  grid-column: 1 / -1;
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
 .ai-deck-top h3 {
-  margin-top: 8px;
+  margin-top: 6px;
   color: #fff;
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .ai-deck-traits,
 .ai-deck-champions {
+  grid-column: 1;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -259,9 +307,14 @@
 }
 
 .ai-deck-stats {
+  grid-column: 2;
+  grid-row: 2 / 4;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  padding-top: 12px;
-  border-top: 1px solid rgba(112, 144, 152, 0.12);
+  height: 100%;
+  padding: 10px;
+  border: 1px solid rgba(112, 144, 152, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.025);
 }
 
 .ai-deck-stats span {
@@ -280,11 +333,13 @@
 }
 
 .ai-reason {
+  grid-column: 1;
   color: #aeb7c4;
   font-size: 12px;
 }
 
 .ai-card-actions {
+  grid-column: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -305,9 +360,19 @@
 }
 
 @media (max-width: 1180px) {
-  .deck-perf-split,
-  .ai-deck-list {
+  .deck-perf-split {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ai-deck-card {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-deck-stats,
+  .ai-card-actions,
+  .ai-reason {
+    grid-column: 1;
+    grid-row: auto;
   }
 }
 
@@ -320,5 +385,21 @@
 
   .trait-row {
     grid-template-columns: 1fr;
+  }
+
+  .aug-row {
+    grid-template-columns: 24px 32px minmax(0, 1fr);
+  }
+
+  .aug-progress,
+  .aug-place,
+  .aug-games,
+  .aug-tags {
+    grid-column: 3;
+  }
+
+  .aug-place,
+  .aug-games {
+    text-align: left;
   }
 }

@@ -1,6 +1,6 @@
 import { shell } from '../../components/Header/Header.js'
 import { esc, renderChampion, renderTags, renderTier, renderTrait } from '../../components/common/renderers.js'
-import { decks, guideData } from '../../data/staticData.js'
+import { decks } from '../../data/staticData.js'
 
 const summaryStats = [
   { label: '평균 등수', value: '4.1', tone: 'avg', note: '최근 20게임' },
@@ -9,10 +9,12 @@ const summaryStats = [
   { label: '추천 신뢰도', value: '86', tone: 'win', note: '패치 메타 반영' },
 ]
 
-const augmentScores = [
-  { score: 92, timing: '2-1', tip: '초반 방향성을 빠르게 확정할 때 좋습니다.' },
-  { score: 84, timing: '3-2', tip: '현재 아이템이 AP 쪽으로 기울었을 때 효율적입니다.' },
-  { score: 78, timing: '4-2', tip: '후반 완성 덱의 안정성을 보강합니다.' },
+const aiAugmentStats = [
+  { name: '강철의 의지', icon: '방', avgPlace: '2.9', games: 4, score: 92, tags: ['탱커', '연승'], tip: '앞라인 중심 조합에서 가장 좋은 성적을 냈습니다.' },
+  { name: '정의의 손길+', icon: '검', avgPlace: '3.2', games: 3, score: 88, tags: ['AD', '캐리'], tip: 'AD 캐리 아이템이 빠르게 잡힌 판에 효율적입니다.' },
+  { name: '용의 불꽃', icon: '화', avgPlace: '3.5', games: 5, score: 82, tags: ['AP', '광역'], tip: '마법사 전환이 가능한 판에서 안정적인 선택입니다.' },
+  { name: '별의 수호자', icon: '별', avgPlace: '4.8', games: 3, score: 68, tags: ['유틸', '후반'], tip: '후반 보강용으로는 좋지만 초반 방향성이 약합니다.' },
+  { name: '전사의 용기', icon: '칼', avgPlace: '5.1', games: 4, score: 61, tags: ['근접', '리스크'], tip: '근접 캐리 의존도가 높아 아이템 조건을 많이 탑니다.' },
 ]
 
 function renderSummaryPanel() {
@@ -88,34 +90,37 @@ function renderDeckPerformance() {
 }
 
 function renderAugmentAnalysis() {
+  const best = aiAugmentStats[0]
+
   return `
     <section class="panel augment-analysis-panel">
       <div class="panel-header">
         <div>
           <span class="section-label">AUGMENT ANALYSIS</span>
-          <h2>증강체 선택 경향</h2>
+          <h2>증강 성적 분석</h2>
         </div>
+        <span class="small-pill">평균 등수 낮을수록 좋음</span>
       </div>
       <div class="augment-list">
-        ${guideData.augments.map((augment, index) => {
-          const score = augmentScores[index % augmentScores.length]
+        ${aiAugmentStats.map((augment, index) => {
+          const tone = index === 0 ? 'best' : index === aiAugmentStats.length - 1 ? 'worst' : 'default'
           return `
-            <article class="aug-row">
+            <article class="aug-row" data-tone="${tone}">
+              <span class="aug-rank">${index + 1}</span>
+              <span class="aug-icon">${esc(augment.icon)}</span>
               <div class="aug-row-main">
                 <strong>${esc(augment.name)}</strong>
-                <p>${esc(augment.summary)}</p>
-                ${renderTags(augment.tags ?? [])}
+                <p>${esc(augment.tip)}</p>
               </div>
-              <div class="aug-score">
-                <span>${score.score}</span>
-                <small>${score.timing}</small>
-              </div>
-              <div class="aug-bar" aria-hidden="true"><span style="width: ${score.score}%"></span></div>
-              <p class="aug-tip">${score.tip}</p>
+              <div class="aug-progress" aria-hidden="true"><span style="width: ${augment.score}%"></span></div>
+              <span class="aug-place">${esc(augment.avgPlace)}등</span>
+              <span class="aug-games">${augment.games}게임</span>
+              <div class="aug-tags">${renderTags(augment.tags)}</div>
             </article>
           `
         }).join('')}
       </div>
+      <p class="aug-tip">추천: <b>${esc(best.name)}</b> 증강을 선택했을 때 평균 ${esc(best.avgPlace)}등으로 가장 좋은 성적을 냈습니다.</p>
     </section>
   `
 }
@@ -131,7 +136,7 @@ function renderAiDeckCard(deck, index) {
         ${renderTier(deck.grade)}
       </div>
       <div class="ai-deck-traits">${deck.traits.slice(0, 4).map(renderTrait).join('')}</div>
-      <div class="ai-deck-champions">${deck.champions.slice(0, 6).map(renderChampion).join('')}</div>
+      <div class="ai-deck-champions">${deck.champions.slice(0, 5).map(renderChampion).join('')}</div>
       <div class="ai-deck-stats">
         <span><small>승률</small><strong class="win">${esc(deck.winRate)}</strong></span>
         <span><small>TOP4</small><strong class="top4">${esc(deck.top4)}</strong></span>

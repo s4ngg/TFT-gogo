@@ -75,7 +75,7 @@ function bindSummonerEvents() {
   }))
   const load = document.querySelector('[data-load-more]')
   if (load) load.addEventListener('click', () => {
-    state.visibleMatches = Math.min(matches.length, state.visibleMatches + 10)
+    state.visibleMatches = Math.min(matches.length, state.visibleMatches + 30)
     renderSummonerDetail()
   })
 }
@@ -93,7 +93,7 @@ export function renderSummonerDetail() {
       <form class="top-search panel toolbar" id="summonerForm"><label class="search-box">검색 <input id="summonerSearch" placeholder="소환사명#태그 검색" /></label><button class="primary-button" type="submit">검색</button></form>
       <section class="profile-card"><div class="profile-icon-wrap"><img src="${profileIcon(29)}" alt="프로필" /><span>387</span></div><div class="profile-info"><h1>${esc(name)} <span class="summoner-tag">#${esc(tag)}</span></h1><p class="tier-line">Diamond IV · 45 LP</p><div class="record-line"><span>256승 137패</span><span class="win-rate-text">승률 65%</span><span class="avg-place-text">평균 3.6등</span><span class="top4-text">TOP4 67%</span></div></div><div class="profile-right"><button class="update-btn" type="button">전적 업데이트</button><div class="rank-dist">${dist.map((count, index) => `<div class="rank-bar"><i style="height:${Math.max(6, count / max * 56)}px"></i><span>${index + 1}</span><small>${count}</small></div>`).join('')}</div></div></section>
       <div class="stat-grid summoner-stat-grid">${renderTopTraits()}${renderTopChampions()}</div>
-      <section class="match-section"><h2>최근 30게임</h2>${renderRecentSummary()}<div class="match-list">${visible.map(renderMatch).join('')}</div>${state.visibleMatches < matches.length ? '<button class="load-more-btn ghost-button" data-load-more>더보기</button>' : ''}</section>
+      <section class="match-section"><h2>최근 30게임</h2>${renderRecentSummary()}<div class="match-list">${visible.map(renderMatch).join('')}</div>${state.visibleMatches < matches.length ? `<button class="load-more-btn ghost-button" data-load-more>30개 더 보기 (${matches.length - state.visibleMatches}개 남음)</button>` : ''}</section>
     </div>
   `)
   bindSummonerEvents()

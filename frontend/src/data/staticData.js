@@ -248,8 +248,8 @@ function patch(id, category, target, type, impact, summary, before, after, tags)
   return { id, category, target, type, impact, summary, before, after, tags }
 }
 
-const PATCH_DUMMY_TOTAL = 49
-const PATCH_DUMMY_PAGE_SIZE = 7
+const PATCH_DUMMY_TOTAL = 35
+const PATCH_DUMMY_PAGE_SIZE = 5
 
 function buildPatchChanges(seeds, total, idOffset = 0) {
   return Array.from({ length: total }, (_, index) => {
@@ -330,7 +330,7 @@ export const patchNotes = [
       '선봉대와 탱커 아이템을 활용한 체력 보존 운영이 좋아졌습니다.',
       '초반 연승 보상이 늦어져 무리한 tempo 플레이의 리스크가 커졌습니다.',
     ],
-    changes: buildPatchChanges(patchSeeds172, 28, 1000),
+    changes: buildPatchChanges(patchSeeds172, 25, 1000),
   },
   {
     version: '17.1',
@@ -345,7 +345,7 @@ export const patchNotes = [
       '벡스가 AP 캐리 후보로 안정적인 초반 선택지가 됐습니다.',
       '초반 플레이어 피해량이 낮아져 후반 조합까지 버티기 쉬워졌습니다.',
     ],
-    changes: buildPatchChanges(patchSeeds171, 21, 2000),
+    changes: buildPatchChanges(patchSeeds171, 20, 2000),
   },
 ]
 

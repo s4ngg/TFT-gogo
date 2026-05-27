@@ -23,5 +23,5 @@ export const state = {
   patchVersion: '17.3',
   expandedPatch: [],
   expandedMatch: null,
-  visibleMatches: 10,
+  visibleMatches: 30,
 }
