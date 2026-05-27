@@ -1,0 +1,66 @@
+name: Claude AI 코드리뷰 어시스턴트
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  claude-assist:
+    # CodeRabbit 리뷰가 달렸을 때만 실행
+    if: github.event.review.user.login == 'coderabbitai[bot]'
+    runs-on: ubuntu-latest
+
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - name: CodeRabbit 리뷰 읽고 Claude 수정 제안 등록
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          REPO=${{ github.repository }}
+
+          # CodeRabbit 리뷰 본문 추출
+          CODERABBIT_REVIEW=$(cat << 'REVIEW'
+          ${{ github.event.review.body }}
+          REVIEW
+          )
+
+          # PR diff 추출
+          DIFF=$(curl -s \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3.diff" \
+            "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER")
+
+          DIFF_TRIMMED=$(echo "$DIFF" | head -c 4000)
+
+          # Claude API 호출
+          RESPONSE=$(curl -s https://api.anthropic.com/v1/messages \
+            -H "x-api-key: $ANTHROPIC_API_KEY" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "content-type: application/json" \
+            -d "$(jq -n \
+              --arg coderabbit "$CODERABBIT_REVIEW" \
+              --arg diff "$DIFF_TRIMMED" \
+              '{
+                model: "claude-haiku-4-5",
+                max_tokens: 2048,
+                messages: [{
+                  role: "user",
+                  content: ("당신은 TFT-gogo 프로젝트의 시니어 개발자입니다.\n\nCodeRabbit이 아래와 같이 리뷰했습니다:\n\n" + $coderabbit + "\n\n코드 변경사항:\n\n" + $diff + "\n\n위 CodeRabbit 리뷰를 바탕으로:\n1. 각 지적사항을 우리 팀 컨벤션(BusinessException/ErrorCode, ApiResponse, orElseThrow, CSS Modules, any 금지 등) 관점에서 분석해줘\n2. 구체적으로 어떻게 수정해야 하는지 코드 예시와 함께 설명해줘\n3. 아래 형식으로 출력해줘:\n\n## 🤖 Claude 수정 제안\n\n### 📋 CodeRabbit 리뷰 분석\n(CodeRabbit이 지적한 핵심 내용 요약)\n\n### 🚨 Critical (반드시 수정)\n- 문제: ...\n- 수정 방법: ...\n```코드 예시```\n\n### ⚠️ Warning (수정 권장)\n- 문제: ...\n- 수정 방법: ...\n\n### 💡 Suggestion (선택적 개선)\n- ...\n\n### ✅ 확인 후 머지 가능 여부\n(수정 필요 항목 해결 시 머지 가능 여부 판단)")
+                }]
+              }'
+            )")
+
+          # 응답 추출
+          COMMENT=$(echo "$RESPONSE" | jq -r '.content[0].text')
+
+          # PR 코멘트 등록
+          curl -s -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://api.github.com/repos/$REPO/issues/$PR_NUMBER/comments" \
+            -d "$(jq -n --arg body "$COMMENT" '{body: $body}')"
