@@ -86,6 +86,9 @@ jobs:
             SCOPE="수정 제안에 있는 내용을 모두 적용해주세요."
           fi
 
+          # ── CLAUDE.md 컨벤션 읽기 (체크아웃된 파일 직접 사용) ────
+          CONVENTIONS=$(cat CLAUDE.md 2>/dev/null || echo "")
+
           # PR diff 가져오기
           DIFF=$(curl -s \
             -H "Authorization: token $GITHUB_TOKEN" \
@@ -118,6 +121,7 @@ jobs:
             -H "anthropic-version: 2023-06-01" \
             -H "content-type: application/json" \
             -d "$(jq -n \
+              --arg conventions "$CONVENTIONS" \
               --arg suggestion "$SUGGESTION" \
               --arg diff "$DIFF" \
               --arg files "$FILE_CONTENTS" \
@@ -127,7 +131,7 @@ jobs:
                 max_tokens: 4096,
                 messages: [{
                   role: "user",
-                  content: ("당신은 TFT-gogo 프로젝트의 시니어 개발자입니다.\n\n## 수정 범위\n" + $scope + "\n\n## 수정 제안 (CodeRabbit / Claude 리뷰)\n" + $suggestion + "\n\n## PR Diff\n" + $diff + "\n\n## 현재 파일 내용\n" + $files + "\n\n반드시 아래 JSON 형식으로만 응답하세요 (마크다운 코드블록·설명 텍스트 없이 순수 JSON만):\n{\"fixes\":[{\"file\":\"파일경로\",\"content\":\"수정된 전체 파일 내용\"}],\"summary\":\"수정 내용 한 줄 요약\"}")
+                  content: ("당신은 TFT-gogo 프로젝트의 시니어 개발자입니다.\n\n## 프로젝트 컨벤션\n" + $conventions + "\n\n---\n\n## 수정 범위\n" + $scope + "\n\n## 수정 제안 (CodeRabbit / Claude 리뷰)\n" + $suggestion + "\n\n## PR Diff\n" + $diff + "\n\n## 현재 파일 내용\n" + $files + "\n\n컨벤션을 반드시 준수하여 수정하세요. 반드시 아래 JSON 형식으로만 응답하세요 (마크다운 코드블록·설명 텍스트 없이 순수 JSON만):\n{\"fixes\":[{\"file\":\"파일경로\",\"content\":\"수정된 전체 파일 내용\"}],\"summary\":\"수정 내용 한 줄 요약\"}")
                 }]
               }'
             )")
