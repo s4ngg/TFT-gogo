@@ -67,41 +67,11 @@ function SummonerSearchCard() {
   )
 }
 
-function Mascot() {
-  return <div className={styles.apiMascotArt} aria-hidden="true" />
-}
-
-function RiotApiStatusCard() {
-  return (
-    <section className={`${styles.panel} ${styles.apiPanel}`}>
-      <div className={styles.apiText}>
-        <h2>
-          <span />
-          Riot API 연동
-        </h2>
-        <p>마지막 갱신: 1분 전</p>
-        <div className={styles.apiStats}>
-          <div>
-            <small>현재 접속자</small>
-            <strong>184,236</strong>
-          </div>
-          <div>
-            <small>대기열</small>
-            <strong>없음</strong>
-          </div>
-        </div>
-      </div>
-      <Mascot />
-    </section>
-  )
-}
-
 function TopSummaryCards() {
   return (
     <>
       <PatchMetaCard />
       <SummonerSearchCard />
-      <RiotApiStatusCard />
     </>
   )
 }

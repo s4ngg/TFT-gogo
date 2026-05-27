@@ -1,4 +1,4 @@
-import { type FormEvent, useMemo, useState } from 'react'
+import { type FormEvent, useMemo, useRef, useState } from 'react'
 import {
   Clock3,
   Crown,
@@ -19,7 +19,8 @@ interface PartyPost {
   close: string
   description: string
   icon: 'crown' | 'leaf' | 'spark' | 'swords'
-  mode: string
+  id: string
+  mode: Exclude<PartyFilter, '전체'>
   status: '모집중' | '대기중'
   tags: string[]
   tier: string
@@ -42,8 +43,9 @@ interface ChatRoom {
   users: string
 }
 
-const partyPosts: PartyPost[] = [
+const initialPartyPosts: PartyPost[] = [
   {
+    id: 'party-master-duo',
     title: '마스터 이상 듀오 구합니다',
     mode: '랭크',
     tier: '마스터+',
@@ -56,6 +58,7 @@ const partyPosts: PartyPost[] = [
     tone: 'purple',
   },
   {
+    id: 'party-diamond-practice',
     title: '다이아 구간 야부/연습 같이해요',
     mode: '랭크',
     tier: '다이아+',
@@ -68,6 +71,7 @@ const partyPosts: PartyPost[] = [
     tone: 'green',
   },
   {
+    id: 'party-casual-evening',
     title: '저녁 근접, 편하게 즐기실 분!',
     mode: '일반',
     tier: '제한 없음',
@@ -80,6 +84,7 @@ const partyPosts: PartyPost[] = [
     tone: 'cyan',
   },
   {
+    id: 'party-weekend-master',
     title: '주말 마스터 달성 목표!',
     mode: '랭크',
     tier: '플래티넘+',
@@ -93,7 +98,7 @@ const partyPosts: PartyPost[] = [
   },
 ]
 
-const chatRooms: ChatRoom[] = [
+const initialChatRooms: ChatRoom[] = [
   { name: '일반', users: '1,234', lastMessage: '새로운 패치 적응 중입니다!' },
   { name: '덱 공략', users: '856', lastMessage: '증강 추천 부탁드려요' },
   { name: '파티 모집', users: '622', lastMessage: '마스터 듀오 구해요~' },
@@ -136,17 +141,74 @@ function getCurrentTime() {
   }).format(new Date())
 }
 
+function normalizeCapacity(value: string) {
+  const trimmedValue = value.trim()
+  const slashMatch = trimmedValue.match(/^(\d+)\/(\d+)$/)
+
+  if (slashMatch) {
+    const current = Number(slashMatch[1])
+    const total = Number(slashMatch[2])
+
+    if (Number.isFinite(current) && Number.isFinite(total) && total > 0) {
+      return `${Math.min(current, total)}/${total}`
+    }
+  }
+
+  const total = Number(trimmedValue)
+
+  if (Number.isFinite(total) && total > 0) {
+    return `1/${total}`
+  }
+
+  return '1/2'
+}
+
+function parseCapacity(capacity: string) {
+  const [currentRaw, totalRaw] = capacity.split('/').map(Number)
+  const total = Number.isFinite(totalRaw) && totalRaw > 0 ? totalRaw : 2
+  const current = Number.isFinite(currentRaw) ? Math.min(Math.max(currentRaw, 0), total) : 0
+
+  return { current, total }
+}
+
+function getPostStyle(mode: Exclude<PartyFilter, '전체'>, tier: string) {
+  if (mode === '일반') {
+    return { icon: 'spark' as const, tone: 'cyan' as const }
+  }
+
+  if (mode === '커스텀') {
+    return { icon: 'swords' as const, tone: 'gold' as const }
+  }
+
+  if (tier.includes('다이아')) {
+    return { icon: 'leaf' as const, tone: 'green' as const }
+  }
+
+  return { icon: 'crown' as const, tone: 'purple' as const }
+}
+
 function Party() {
+  const [posts, setPosts] = useState<PartyPost[]>(initialPartyPosts)
+  const [rooms, setRooms] = useState<ChatRoom[]>(initialChatRooms)
   const [selectedFilter, setSelectedFilter] = useState<PartyFilter>('전체')
   const [searchDraft, setSearchDraft] = useState('')
   const [query, setQuery] = useState('')
-  const [activeRoomName, setActiveRoomName] = useState(chatRooms[0]?.name ?? '일반')
+  const [activeRoomName, setActiveRoomName] = useState(initialChatRooms[0]?.name ?? '일반')
   const [messages, setMessages] = useState<ChatMessage[]>(chatMessages)
   const [chatInput, setChatInput] = useState('')
+  const [joinedPostId, setJoinedPostId] = useState<string | null>(null)
+  const [titleDraft, setTitleDraft] = useState('')
+  const [modeDraft, setModeDraft] = useState<Exclude<PartyFilter, '전체'>>('랭크')
+  const [tierDraft, setTierDraft] = useState('마스터+')
+  const [capacityDraft, setCapacityDraft] = useState('2')
+  const [tagsDraft, setTagsDraft] = useState('')
+  const [descriptionDraft, setDescriptionDraft] = useState('')
+  const [composeError, setComposeError] = useState('')
+  const titleInputRef = useRef<HTMLInputElement>(null)
   const filteredPartyPosts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
 
-    return partyPosts.filter((post) => {
+    return posts.filter((post) => {
       const matchesFilter = selectedFilter === '전체' || post.mode === selectedFilter
       const searchableText = [
         post.title,
@@ -159,7 +221,7 @@ function Party() {
 
       return matchesFilter && matchesQuery
     })
-  }, [query, selectedFilter])
+  }, [posts, query, selectedFilter])
   const activeMessages = useMemo(
     () => messages.filter((message) => message.roomName === activeRoomName),
     [activeRoomName, messages],
@@ -168,6 +230,107 @@ function Party() {
   const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setQuery(searchDraft)
+  }
+
+  const handleComposeFocus = () => {
+    titleInputRef.current?.focus()
+    setComposeError('')
+  }
+
+  const handlePartySubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    const title = titleDraft.trim()
+    const description = descriptionDraft.trim()
+
+    if (!title || !description) {
+      setComposeError('모집글 제목과 플레이 스타일을 입력해주세요.')
+      return
+    }
+
+    const style = getPostStyle(modeDraft, tierDraft)
+    const parsedTags = tagsDraft
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean)
+      .slice(0, 4)
+    const nextPost: PartyPost = {
+      id: `party-${Date.now()}`,
+      title,
+      mode: modeDraft,
+      tier: tierDraft,
+      capacity: normalizeCapacity(capacityDraft),
+      close: '방금 등록',
+      status: '모집중',
+      description,
+      tags: parsedTags.length > 0 ? parsedTags : [modeDraft, tierDraft, '방금 등록'],
+      ...style,
+    }
+
+    setPosts((currentPosts) => [nextPost, ...currentPosts])
+    setSelectedFilter('전체')
+    setSearchDraft('')
+    setQuery('')
+    setTitleDraft('')
+    setModeDraft('랭크')
+    setTierDraft('마스터+')
+    setCapacityDraft('2')
+    setTagsDraft('')
+    setDescriptionDraft('')
+    setComposeError('')
+  }
+
+  const handleJoinToggle = (postId: string) => {
+    const targetPost = posts.find((post) => post.id === postId)
+
+    if (!targetPost) {
+      return
+    }
+
+    const alreadyJoined = joinedPostId === postId
+    const { current, total } = parseCapacity(targetPost.capacity)
+
+    if (!alreadyJoined && (joinedPostId !== null || current >= total)) {
+      return
+    }
+
+    const nextCurrent = alreadyJoined ? Math.max(0, current - 1) : Math.min(total, current + 1)
+    const nextMessage = alreadyJoined
+      ? `${targetPost.title} 참여 신청을 취소했어요.`
+      : `${targetPost.title} 참여 신청했습니다. (${nextCurrent}/${total})`
+
+    setPosts((currentPosts) =>
+      currentPosts.map((post) => {
+        if (post.id !== postId) {
+          return post
+        }
+
+        return {
+          ...post,
+          capacity: `${nextCurrent}/${total}`,
+          status: nextCurrent >= total ? '대기중' : '모집중',
+        }
+      }),
+    )
+
+    setJoinedPostId(alreadyJoined ? null : postId)
+    setActiveRoomName('파티 모집')
+    setMessages((currentMessages) => [
+      ...currentMessages,
+      {
+        roomName: '파티 모집',
+        name: '나',
+        tier: 'Diamond',
+        message: nextMessage,
+        time: getCurrentTime(),
+        isMine: true,
+      },
+    ])
+    setRooms((currentRooms) =>
+      currentRooms.map((room) =>
+        room.name === '파티 모집' ? { ...room, lastMessage: nextMessage } : room,
+      ),
+    )
   }
 
   const handleMessageSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -190,6 +353,11 @@ function Party() {
         isMine: true,
       },
     ])
+    setRooms((currentRooms) =>
+      currentRooms.map((room) =>
+        room.name === activeRoomName ? { ...room, lastMessage: trimmedMessage } : room,
+      ),
+    )
     setChatInput('')
   }
 
@@ -210,7 +378,7 @@ function Party() {
               <h2>파티원 찾기</h2>
               <p>티어와 플레이 스타일에 맞는 TFT 듀오를 찾아보세요.</p>
             </div>
-            <button type="button" className={styles.primaryButton}>
+            <button type="button" className={styles.primaryButton} onClick={handleComposeFocus}>
               모집글 작성
             </button>
           </div>
@@ -248,43 +416,77 @@ function Party() {
 
           <form
             className={styles.composeBox}
-            onSubmit={(event) => {
-              event.preventDefault()
-            }}
+            onSubmit={handlePartySubmit}
           >
-            <input aria-label="모집글 제목" placeholder="모집글 제목" />
-            <select aria-label="모집 모드" defaultValue="rank">
-              <option value="rank">랭크</option>
-              <option value="normal">일반</option>
-              <option value="custom">커스텀</option>
+            <input
+              aria-label="모집글 제목"
+              onChange={(event) => setTitleDraft(event.target.value)}
+              placeholder="모집글 제목"
+              ref={titleInputRef}
+              value={titleDraft}
+            />
+            <select
+              aria-label="모집 모드"
+              onChange={(event) => setModeDraft(event.target.value as Exclude<PartyFilter, '전체'>)}
+              value={modeDraft}
+            >
+              <option value="랭크">랭크</option>
+              <option value="일반">일반</option>
+              <option value="커스텀">커스텀</option>
             </select>
-            <select aria-label="티어 조건" defaultValue="master">
-              <option value="master">마스터+</option>
-              <option value="diamond">다이아+</option>
-              <option value="platinum">플래티넘+</option>
-              <option value="any">제한 없음</option>
+            <select
+              aria-label="티어 조건"
+              onChange={(event) => setTierDraft(event.target.value)}
+              value={tierDraft}
+            >
+              <option value="마스터+">마스터+</option>
+              <option value="다이아+">다이아+</option>
+              <option value="플래티넘+">플래티넘+</option>
+              <option value="제한 없음">제한 없음</option>
             </select>
-            <input aria-label="모집 인원" placeholder="모집 인원" />
-            <textarea aria-label="모집 메모" placeholder="플레이 스타일이나 요청사항을 적어주세요." />
+            <input
+              aria-label="모집 인원"
+              onChange={(event) => setCapacityDraft(event.target.value)}
+              placeholder="모집 인원"
+              value={capacityDraft}
+            />
+            <input
+              aria-label="모집 태그"
+              className={styles.tagInput}
+              onChange={(event) => setTagsDraft(event.target.value)}
+              placeholder="태그 입력 예: 음성 가능, 연습 목표, 빠른 매칭"
+              value={tagsDraft}
+            />
+            <textarea
+              aria-label="모집 메모"
+              onChange={(event) => setDescriptionDraft(event.target.value)}
+              placeholder="플레이 스타일이나 요청사항을 적어주세요."
+              value={descriptionDraft}
+            />
             <button type="submit" className={styles.primaryButton}>
               등록
             </button>
+            {composeError && <p className={styles.composeError}>{composeError}</p>}
           </form>
 
           <div className={styles.partyList}>
             {filteredPartyPosts.length > 0 ? (
               filteredPartyPosts.map((post) => {
                 const Icon = partyIconMap[post.icon]
+                const { current, total } = parseCapacity(post.capacity)
+                const isJoined = joinedPostId === post.id
+                const hasJoinedOtherPost = joinedPostId !== null && !isJoined
+                const isFull = current >= total
 
                 return (
-                  <article className={styles.partyCard} key={post.title}>
+                  <article className={styles.partyCard} key={post.id}>
                     <div className={`${styles.partyIcon} ${styles[post.tone]}`}>
                       <Icon size={28} strokeWidth={2.2} />
                     </div>
                     <div className={styles.partyContent}>
                       <div className={styles.partyTitleLine}>
                         <h3>{post.title}</h3>
-                        <span>{post.status}</span>
+                        <span>{isFull ? '마감' : post.status}</span>
                       </div>
                       <p>{post.description}</p>
                       <div className={styles.partyMeta}>
@@ -305,8 +507,14 @@ function Party() {
                         ))}
                       </div>
                     </div>
-                    <button type="button" className={styles.joinButton}>
-                      참여
+                    <button
+                      type="button"
+                      aria-pressed={isJoined}
+                      className={styles.joinButton}
+                      disabled={(isFull && !isJoined) || hasJoinedOtherPost}
+                      onClick={() => handleJoinToggle(post.id)}
+                    >
+                      {isJoined ? '참여중' : isFull ? '마감' : hasJoinedOtherPost ? '잠김' : '참여'}
                     </button>
                   </article>
                 )
@@ -328,7 +536,7 @@ function Party() {
 
           <div className={styles.chatLayout}>
             <aside className={styles.channelList} aria-label="채팅 채널">
-              {chatRooms.map((room) => (
+              {rooms.map((room) => (
                 <button
                   aria-pressed={activeRoomName === room.name}
                   className={activeRoomName === room.name ? styles.activeChannel : undefined}

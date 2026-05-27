@@ -187,6 +187,10 @@
   padding: 10px;
 }
 
+.tagInput {
+  grid-column: 1 / 4;
+}
+
 .composeBox input::placeholder,
 .composeBox textarea::placeholder {
   color: #8f9aa3;
@@ -195,6 +199,14 @@
 .composeBox button {
   height: 42px;
   align-self: end;
+}
+
+.composeError {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #ff7976;
+  font-size: 12px;
+  font-weight: 650;
 }
 
 .searchBox input::placeholder {
@@ -384,6 +396,18 @@
   width: 62px;
   height: 38px;
   font-size: 13px;
+}
+
+.joinButton[aria-pressed="true"] {
+  color: #ffffff;
+  background: rgba(0, 122, 118, 0.86);
+}
+
+.joinButton:disabled {
+  color: #7f8d98;
+  border-color: rgba(110, 142, 150, 0.22);
+  background: rgba(8, 20, 27, 0.72);
+  cursor: not-allowed;
 }
 
 .chatPanel {
