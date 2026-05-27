@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   BookOpen,
   ChevronLeft,
@@ -15,121 +15,44 @@ import {
   X,
 } from 'lucide-react'
 import { communityDragonAssetUrl } from '../../api/communityDragonAssets'
-import TierBadge, { type TierBadgeValue } from '../../components/common/TierBadge'
-import TraitHexBadge, { type TraitHexBadgeTone } from '../../components/common/TraitHexBadge'
+import {
+  CHAMPION_PAGE_SIZE,
+  DEFAULT_GUIDE_PAGE_SIZE,
+  GUIDE_TABS,
+  PAGE_NUMBER_WINDOW,
+  TRAIT_PAGE_SIZE,
+  expandGuideSamples,
+  getPageItems,
+  getTotalPages,
+  matchesSearch,
+  sortByMetric,
+  type AugmentGuide,
+  type AugmentPlan,
+  type AugmentPlanKey,
+  type ChampionCostFilter,
+  type ChampionGuide,
+  type ChampionRef,
+  type GuideCatalog,
+  type GuideTab,
+  type ItemRef,
+  type ItemStatGuide,
+  type MetricSortKey,
+  type RecentGuide,
+  type RewardRow,
+  type SortDir,
+  type TraitGuide,
+} from '../../api/guide'
+import TierBadge from '../../components/common/TierBadge'
+import TraitHexBadge from '../../components/common/TraitHexBadge'
 import { AppLayout } from '../../components/layout'
+import { useGuide } from '../../hooks/useGuide'
 import styles from './Guide.module.css'
 
-type GuideTab = 'traits' | 'items' | 'augments' | 'champions'
-type ChampionCostFilter = 'all' | 1 | 2 | 3 | 4 | 5
-type AugmentPlanKey = 'fast8' | 'reroll' | 'flex'
-type MetricSortKey = 'avgPlace' | 'pickRate' | 'top4' | 'winRate'
-type SortDir = 'asc' | 'desc'
-
-const DEFAULT_GUIDE_PAGE_SIZE = 5
-const TRAIT_PAGE_SIZE = 6
-const CHAMPION_PAGE_SIZE = 10
-const SAMPLE_PAGE_COUNT = 7
-const PAGE_NUMBER_WINDOW = 5
-const SAMPLE_VARIANTS = ['운영', '고점', '안정', '전환', '리롤', '연승', '후반']
-
-interface ChampionRef {
-  cost: number
-  imageUrl: string
-  name: string
-}
-
-interface ItemRef {
-  imageUrl: string
-  name: string
-}
-
-interface TraitGuide {
-  champions: ChampionRef[]
-  count: number
-  iconUrl: string
-  levels: string[]
-  name: string
-  summary: string
-  tips: string[]
-  tone?: TraitHexBadgeTone
-  type: string
-}
-
-interface ItemStatGuide {
-  avgPlace: string
-  bestUsers: ChampionRef[]
-  category: string
-  combinations: {
-    items: ItemRef[]
-    label: string
-    note: string
-  }[]
-  imageUrl: string
-  name: string
-  pickRate: string
-  top4: string
-  winRate: string
-}
-
-interface AugmentGuide {
-  avgPlace: string
-  description: string
-  name: string
-  pickRate: string
-  reward: string
-  tags: string[]
-  tier: TierBadgeValue
-  type: '실버' | '골드' | '프리즘'
-  winRate: string
-}
-
-interface RewardRow {
-  condition: string
-  reward: string
-  stage: string
-}
-
-interface AugmentPlan {
-  key: AugmentPlanKey
-  label: string
-  stages: {
-    choice: string
-    focus: string
-    stage: string
-  }[]
-}
-
-interface ChampionGuide {
-  bestItems: ItemRef[]
-  cost: 1 | 2 | 3 | 4 | 5
-  imageUrl: string
-  name: string
-  position: string
-  role: string
-  stats: {
-    ad: number
-    armor: number
-    attackSpeed: string
-    hp: number
-    mana: string
-    mr: number
-    range: number
-  }
-  traits: string[]
-}
-
-interface RecentGuide {
-  label: string
-  query: string
-  tab: GuideTab
-}
-
-interface SortableMetricItem {
-  avgPlace: string
-  pickRate: string
-  top4?: string
-  winRate: string
+const GUIDE_TAB_ICONS: Record<GuideTab, typeof BookOpen> = {
+  augments: Sparkles,
+  champions: Swords,
+  items: Package,
+  traits: Shield,
 }
 
 const traitIconUrls = {
@@ -274,18 +197,6 @@ const championRefs = {
   xayah: champion('자야', championUrls.xayah, 5),
   zed: champion('제드', championUrls.zed, 5),
 }
-
-const GUIDE_TABS: {
-  Icon: typeof BookOpen
-  key: GuideTab
-  label: string
-  meta: string
-}[] = [
-  { Icon: Shield, key: 'traits', label: '시너지', meta: '설명 + 필요 챔피언' },
-  { Icon: Package, key: 'items', label: '아이템', meta: '승률 + 조합 추천' },
-  { Icon: Sparkles, key: 'augments', label: '증강체', meta: '티어표 + 보상표' },
-  { Icon: Swords, key: 'champions', label: '챔피언', meta: '스탯 + 3신기' },
-]
 
 const BASE_TRAIT_GUIDES: TraitGuide[] = [
   {
@@ -919,28 +830,6 @@ const BASE_CHAMPION_GUIDES: ChampionGuide[] = [
   },
 ]
 
-function expandGuideSamples<T extends { name: string }>(
-  samples: T[],
-  pageSize: number,
-  formatName: (name: string, variant: string, copyIndex: number) => string,
-) {
-  const targetCount = pageSize * SAMPLE_PAGE_COUNT
-  if (samples.length >= targetCount) return samples.slice(0, targetCount)
-
-  return Array.from({ length: targetCount }, (_, index) => {
-    if (index < samples.length) return samples[index]
-
-    const copyIndex = index - samples.length
-    const source = samples[copyIndex % samples.length]
-    const variant = SAMPLE_VARIANTS[Math.floor(copyIndex / samples.length) % SAMPLE_VARIANTS.length]
-
-    return {
-      ...source,
-      name: formatName(source.name, variant, copyIndex + 1),
-    }
-  })
-}
-
 const TRAIT_GUIDES = expandGuideSamples(
   BASE_TRAIT_GUIDES,
   TRAIT_PAGE_SIZE,
@@ -965,38 +854,13 @@ const CHAMPION_GUIDES = expandGuideSamples(
   (name, variant, copyIndex) => `${name} ${variant} 빌드 ${copyIndex}`,
 )
 
-function normalizeText(value: string) {
-  return value.toLowerCase().replace(/\s/g, '')
-}
-
-function matchesSearch(query: string, fields: string[]) {
-  const normalizedQuery = normalizeText(query.trim())
-  if (!normalizedQuery) return true
-
-  return fields.some((field) => normalizeText(field).includes(normalizedQuery))
-}
-
-function parseMetric(value: string) {
-  return Number(value.replace(/[^\d.-]/g, '')) || 0
-}
-
-function sortByMetric<T extends SortableMetricItem>(items: T[], sortKey: MetricSortKey, sortDir: SortDir) {
-  return [...items].sort((a, b) => {
-    const first = parseMetric(sortKey === 'top4' ? a.top4 ?? '0' : a[sortKey])
-    const second = parseMetric(sortKey === 'top4' ? b.top4 ?? '0' : b[sortKey])
-    const base = first < second ? -1 : first > second ? 1 : 0
-
-    return sortDir === 'asc' ? base : -base
-  })
-}
-
-function getTotalPages(totalItems: number, pageSize = DEFAULT_GUIDE_PAGE_SIZE) {
-  return Math.max(1, Math.ceil(totalItems / pageSize))
-}
-
-function getPageItems<T>(items: T[], page: number, pageSize = DEFAULT_GUIDE_PAGE_SIZE) {
-  const startIndex = (page - 1) * pageSize
-  return items.slice(startIndex, startIndex + pageSize)
+const GUIDE_FALLBACK_DATA: GuideCatalog = {
+  augments: AUGMENT_GUIDES,
+  augmentPlans: AUGMENT_PLANS,
+  champions: CHAMPION_GUIDES,
+  items: ITEM_STATS,
+  rewards: REWARD_ROWS,
+  traits: TRAIT_GUIDES,
 }
 
 function EmptyState() {
@@ -1240,12 +1104,14 @@ function ChampionDetailDialog({
 function TraitGuideView({
   onChampionSelect,
   query,
+  traits,
 }: {
   onChampionSelect: (championName: string) => void
   query: string
+  traits: TraitGuide[]
 }) {
   const [currentPage, setCurrentPage] = useState(1)
-  const traits = TRAIT_GUIDES.filter((traitGuide) =>
+  const filteredTraits = traits.filter((traitGuide) =>
     matchesSearch(query, [
       traitGuide.name,
       traitGuide.summary,
@@ -1253,9 +1119,9 @@ function TraitGuideView({
       ...traitGuide.champions.map((championRef) => championRef.name),
     ]),
   )
-  const totalPages = getTotalPages(traits.length, TRAIT_PAGE_SIZE)
+  const totalPages = getTotalPages(filteredTraits.length, TRAIT_PAGE_SIZE)
   const safePage = Math.min(currentPage, totalPages)
-  const visibleTraits = getPageItems(traits, safePage, TRAIT_PAGE_SIZE)
+  const visibleTraits = getPageItems(filteredTraits, safePage, TRAIT_PAGE_SIZE)
 
   useEffect(() => {
     setCurrentPage(1)
@@ -1268,7 +1134,7 @@ function TraitGuideView({
   return (
     <>
       <section className={styles.traitGrid}>
-        {traits.length === 0 && <EmptyState />}
+        {filteredTraits.length === 0 && <EmptyState />}
         {visibleTraits.map((traitGuide) => (
           <article className={styles.traitCard} key={traitGuide.name}>
             <div className={styles.traitTop}>
@@ -1310,16 +1176,18 @@ function TraitGuideView({
 }
 
 function ItemStatsView({
+  items,
   onChampionSelect,
   query,
 }: {
+  items: ItemStatGuide[]
   onChampionSelect: (championName: string) => void
   query: string
 }) {
   const [currentPage, setCurrentPage] = useState(1)
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [sortKey, setSortKey] = useState<MetricSortKey>('winRate')
-  const items = ITEM_STATS.filter((itemStat) =>
+  const filteredItems = items.filter((itemStat) =>
     matchesSearch(query, [
       itemStat.name,
       itemStat.category,
@@ -1327,7 +1195,7 @@ function ItemStatsView({
       ...itemStat.combinations.map((combination) => combination.label),
     ]),
   )
-  const sortedItems = sortByMetric(items, sortKey, sortDir)
+  const sortedItems = sortByMetric(filteredItems, sortKey, sortDir)
   const totalPages = getTotalPages(sortedItems.length)
   const safePage = Math.min(currentPage, totalPages)
   const visibleItems = getPageItems(sortedItems, safePage)
@@ -1437,7 +1305,7 @@ function ItemStatsView({
             ))}
           </tbody>
         </table>
-        {items.length === 0 && <EmptyState />}
+        {filteredItems.length === 0 && <EmptyState />}
       </div>
       <Pagination currentPage={safePage} onPageChange={setCurrentPage} totalPages={totalPages} />
 
@@ -1462,19 +1330,29 @@ function ItemStatsView({
   )
 }
 
-function AugmentGuideView({ query }: { query: string }) {
+function AugmentGuideView({
+  augmentPlans,
+  augments,
+  query,
+  rewardRows,
+}: {
+  augmentPlans: AugmentPlan[]
+  augments: AugmentGuide[]
+  query: string
+  rewardRows: RewardRow[]
+}) {
   const [planKey, setPlanKey] = useState<AugmentPlanKey>('fast8')
   const [currentPage, setCurrentPage] = useState(1)
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [sortKey, setSortKey] = useState<MetricSortKey>('winRate')
-  const augments = AUGMENT_GUIDES.filter((augment) =>
+  const filteredAugments = augments.filter((augment) =>
     matchesSearch(query, [augment.name, augment.description, augment.reward, augment.type, ...augment.tags]),
   )
-  const sortedAugments = sortByMetric(augments, sortKey, sortDir)
+  const sortedAugments = sortByMetric(filteredAugments, sortKey, sortDir)
   const totalPages = getTotalPages(sortedAugments.length)
   const safePage = Math.min(currentPage, totalPages)
   const visibleAugments = getPageItems(sortedAugments, safePage)
-  const selectedPlan = AUGMENT_PLANS.find((plan) => plan.key === planKey) ?? AUGMENT_PLANS[0]
+  const selectedPlan = augmentPlans.find((plan) => plan.key === planKey) ?? augmentPlans[0]
 
   function handleSort(nextSortKey: MetricSortKey) {
     if (sortKey === nextSortKey) {
@@ -1551,7 +1429,7 @@ function AugmentGuideView({ query }: { query: string }) {
               ))}
             </tbody>
           </table>
-          {augments.length === 0 && <EmptyState />}
+          {filteredAugments.length === 0 && <EmptyState />}
         </section>
 
         <aside className={styles.rewardPanel}>
@@ -1560,7 +1438,7 @@ function AugmentGuideView({ query }: { query: string }) {
             <h2>보상표</h2>
           </div>
           <div className={styles.rewardList}>
-            {REWARD_ROWS.map((row) => (
+            {rewardRows.map((row) => (
               <div className={styles.rewardRow} key={`${row.stage}-${row.condition}`}>
                 <b>{row.stage}</b>
                 <strong>{row.condition}</strong>
@@ -1579,7 +1457,7 @@ function AugmentGuideView({ query }: { query: string }) {
             <h2>증강 선택 플랜</h2>
           </div>
           <div className={styles.planTabs}>
-            {AUGMENT_PLANS.map((plan) => (
+            {augmentPlans.map((plan) => (
               <button
                 className={plan.key === planKey ? styles.planActive : ''}
                 key={plan.key}
@@ -1592,41 +1470,45 @@ function AugmentGuideView({ query }: { query: string }) {
           </div>
         </div>
 
-        <div className={styles.plannerBody}>
-          <div className={styles.stageCards}>
-            {selectedPlan.stages.map((stage) => (
-              <article className={styles.stageCard} key={`${selectedPlan.key}-${stage.stage}`}>
-                <span>{stage.stage}</span>
-                <strong>{stage.choice}</strong>
-                <p>{stage.focus}</p>
-              </article>
-            ))}
+        {selectedPlan && (
+          <div className={styles.plannerBody}>
+            <div className={styles.stageCards}>
+              {selectedPlan.stages.map((stage) => (
+                <article className={styles.stageCard} key={`${selectedPlan.key}-${stage.stage}`}>
+                  <span>{stage.stage}</span>
+                  <strong>{stage.choice}</strong>
+                  <p>{stage.focus}</p>
+                </article>
+              ))}
+            </div>
+            <div className={styles.boardTool} aria-label="증강 선택 이후 배치 미리보기">
+              {Array.from({ length: 21 }).map((_, index) => (
+                <span
+                  className={
+                    index === 2 || index === 4 || index === 10 || index === 16
+                      ? styles.boardCellActive
+                      : ''
+                  }
+                  key={index}
+                />
+              ))}
+            </div>
           </div>
-          <div className={styles.boardTool} aria-label="증강 선택 이후 배치 미리보기">
-            {Array.from({ length: 21 }).map((_, index) => (
-              <span
-                className={
-                  index === 2 || index === 4 || index === 10 || index === 16
-                    ? styles.boardCellActive
-                    : ''
-                }
-                key={index}
-              />
-            ))}
-          </div>
-        </div>
+        )}
       </section>
     </>
   )
 }
 
 function ChampionGuideView({
+  champions,
   favoriteChampions,
   onChampionOpen,
   onFavoriteToggle,
   onItemSelect,
   query,
 }: {
+  champions: ChampionGuide[]
   favoriteChampions: string[]
   onChampionOpen: (championName: string) => void
   onFavoriteToggle: (championName: string) => void
@@ -1636,7 +1518,7 @@ function ChampionGuideView({
   const [costFilter, setCostFilter] = useState<ChampionCostFilter>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedChampion, setSelectedChampion] = useState<ChampionGuide | null>(null)
-  const champions = CHAMPION_GUIDES.filter((championGuide) => {
+  const filteredChampions = champions.filter((championGuide) => {
     const matchesCost = costFilter === 'all' || championGuide.cost === costFilter
     const matchesQuery = matchesSearch(query, [
       championGuide.name,
@@ -1648,9 +1530,9 @@ function ChampionGuideView({
 
     return matchesCost && matchesQuery
   })
-  const totalPages = getTotalPages(champions.length, CHAMPION_PAGE_SIZE)
+  const totalPages = getTotalPages(filteredChampions.length, CHAMPION_PAGE_SIZE)
   const safePage = Math.min(currentPage, totalPages)
-  const visibleChampions = getPageItems(champions, safePage, CHAMPION_PAGE_SIZE)
+  const visibleChampions = getPageItems(filteredChampions, safePage, CHAMPION_PAGE_SIZE)
 
   useEffect(() => {
     setCurrentPage(1)
@@ -1675,7 +1557,7 @@ function ChampionGuideView({
         ))}
       </div>
       <section className={styles.championGrid}>
-        {champions.length === 0 && <EmptyState />}
+        {filteredChampions.length === 0 && <EmptyState />}
         {visibleChampions.map((championGuide) => (
           <article
             className={styles.championCard}
@@ -1755,36 +1637,19 @@ function ChampionGuideView({
 }
 
 function Guide() {
-  const [activeTab, setActiveTab] = useState<GuideTab>('traits')
-  const [favoriteChampions, setFavoriteChampions] = useState<string[]>([])
-  const [recentGuides, setRecentGuides] = useState<RecentGuide[]>([])
-  const [search, setSearch] = useState('')
-
-  const activeTabInfo = useMemo(
-    () => GUIDE_TABS.find((tab) => tab.key === activeTab) ?? GUIDE_TABS[0],
-    [activeTab],
-  )
-
-  function addRecentGuide(guide: RecentGuide) {
-    setRecentGuides((current) => [
-      guide,
-      ...current.filter((item) => item.query !== guide.query || item.tab !== guide.tab),
-    ].slice(0, 6))
-  }
-
-  function jumpToGuide(tab: GuideTab, query: string, label = query) {
-    setActiveTab(tab)
-    setSearch(query)
-    addRecentGuide({ label, query, tab })
-  }
-
-  function handleFavoriteToggle(championName: string) {
-    setFavoriteChampions((current) => (
-      current.includes(championName)
-        ? current.filter((name) => name !== championName)
-        : [championName, ...current].slice(0, 12)
-    ))
-  }
+  const {
+    activeTab,
+    activeTabInfo,
+    addRecentGuide,
+    favoriteChampions,
+    guideData,
+    handleFavoriteToggle,
+    jumpToGuide,
+    recentGuides,
+    search,
+    selectTab,
+    setSearch,
+  } = useGuide({ fallbackData: GUIDE_FALLBACK_DATA })
 
   return (
     <AppLayout>
@@ -1805,21 +1670,22 @@ function Guide() {
 
         <section className={styles.controlPanel}>
           <div className={styles.tabBar}>
-            {GUIDE_TABS.map(({ Icon, key, label, meta }) => (
-              <button
-                className={activeTab === key ? styles.activeTab : ''}
-                key={key}
-                onClick={() => {
-                  setActiveTab(key)
-                  setSearch('')
-                }}
-                type="button"
-              >
-                <Icon size={18} />
-                <span>{label}</span>
-                <small>{meta}</small>
-              </button>
-            ))}
+            {GUIDE_TABS.map(({ key, label, meta }) => {
+              const Icon = GUIDE_TAB_ICONS[key]
+
+              return (
+                <button
+                  className={activeTab === key ? styles.activeTab : ''}
+                  key={key}
+                  onClick={() => selectTab(key)}
+                  type="button"
+                >
+                  <Icon size={18} />
+                  <span>{label}</span>
+                  <small>{meta}</small>
+                </button>
+              )
+            })}
           </div>
           <label className={styles.searchBox}>
             <Search size={15} />
@@ -1841,17 +1707,27 @@ function Guide() {
           <TraitGuideView
             onChampionSelect={(championName) => jumpToGuide('champions', championName, championName)}
             query={search}
+            traits={guideData.traits}
           />
         )}
         {activeTab === 'items' && (
           <ItemStatsView
+            items={guideData.items}
             onChampionSelect={(championName) => jumpToGuide('champions', championName, championName)}
             query={search}
           />
         )}
-        {activeTab === 'augments' && <AugmentGuideView query={search} />}
+        {activeTab === 'augments' && (
+          <AugmentGuideView
+            augmentPlans={guideData.augmentPlans}
+            augments={guideData.augments}
+            query={search}
+            rewardRows={guideData.rewards}
+          />
+        )}
         {activeTab === 'champions' && (
           <ChampionGuideView
+            champions={guideData.champions}
             favoriteChampions={favoriteChampions}
             onChampionOpen={(championName) => addRecentGuide({ label: championName, query: championName, tab: 'champions' })}
             onFavoriteToggle={handleFavoriteToggle}
