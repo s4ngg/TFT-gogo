@@ -20,7 +20,7 @@ function PartyFinderCard() {
       ? partyPosts
       : partyPosts.filter((post) => post.mode === selectedFilter)
 
-    return filteredPosts.slice(0, 3)
+    return filteredPosts.slice(0, 4)
   }, [selectedFilter])
 
   return (
