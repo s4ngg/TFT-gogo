@@ -194,11 +194,12 @@ function renderGuideTabs() {
 
 function renderTraitGuide(items) {
   if (!items.length) return '<p class="empty">검색 결과가 없습니다.</p>'
+  const visibleItems = items.slice(0, GUIDE_PAGE_SIZE)
 
   return `
     <div class="trait-layout">
       <div class="trait-grid">
-        ${items.map((item, index) => {
+        ${visibleItems.map((item, index) => {
           const deck = topDeckForItem(item)
           const levels = (item.tags?.[0] ?? '2/4/6').split('/').slice(0, 4)
           return `
@@ -229,6 +230,7 @@ function renderTraitGuide(items) {
 
 function renderItemGuide(items) {
   if (!items.length) return '<p class="empty">검색 결과가 없습니다.</p>'
+  const visibleItems = items.slice(0, GUIDE_PAGE_SIZE)
 
   return `
     <div class="table-wrap guide-table-wrap">
@@ -250,7 +252,7 @@ function renderItemGuide(items) {
           </tr>
         </thead>
         <tbody>
-          ${items.map((item, index) => {
+          ${visibleItems.map((item, index) => {
             const users = bestUsersForItem(item)
             return `
               <tr>
@@ -276,7 +278,7 @@ function renderItemGuide(items) {
       </table>
     </div>
     <div class="metric-cards">
-      ${items.slice(0, 3).map((item, index) => `
+      ${visibleItems.slice(0, 3).map((item, index) => `
         <article>
           <span>${index === 0 ? '가장 높은 승률' : index === 1 ? '탱커 효율' : '후반 캐리력'}</span>
           <strong>${esc(visibleGuideTags(item.tags ?? [])[0] ?? '추천')}</strong>
@@ -289,6 +291,7 @@ function renderItemGuide(items) {
 
 function renderAugmentGuide(items) {
   if (!items.length) return '<p class="empty">검색 결과가 없습니다.</p>'
+  const visibleItems = items.slice(0, GUIDE_PAGE_SIZE)
 
   return `
     <div class="augment-layout">
@@ -309,7 +312,7 @@ function renderAugmentGuide(items) {
             </tr>
           </thead>
           <tbody>
-            ${items.map((item, index) => {
+            ${visibleItems.map((item, index) => {
               const deck = decks[index % decks.length]
               return `
                 <tr>
@@ -346,7 +349,7 @@ function renderAugmentGuide(items) {
           ${plannerStages.map((stage, index) => `
             <article class="stage-card">
               <span>${stage}</span>
-              <strong>${esc(items[index % items.length].name)}</strong>
+              <strong>${esc(visibleItems[index % visibleItems.length].name)}</strong>
               <p>${index < 2 ? '초반 방향성 확정' : '완성 덱 전투력 보강'}</p>
             </article>
           `).join('')}
@@ -362,13 +365,14 @@ function renderAugmentGuide(items) {
 
 function renderChampionGuide(items) {
   if (!items.length) return '<p class="empty">검색 결과가 없습니다.</p>'
+  const visibleItems = items.slice(0, GUIDE_PAGE_SIZE)
 
   return `
     <div class="cost-filter">
       ${renderChampionCostFilters()}
     </div>
     <div class="champion-guide-grid">
-      ${items.map((item) => {
+      ${visibleItems.map((item) => {
         const active = state.favorites.includes(item.name)
         return `
           <article class="guide-champion-card">
