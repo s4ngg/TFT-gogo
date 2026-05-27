@@ -255,7 +255,7 @@ function Party() {
       .filter(Boolean)
       .slice(0, 4)
     const nextPost: PartyPost = {
-      id: `party-${Date.now()}`,
+      id: `party-${crypto.randomUUID()}`,
       title,
       mode: modeDraft,
       tier: tierDraft,
@@ -502,8 +502,8 @@ function Party() {
                         </span>
                       </div>
                       <div className={styles.partyTags}>
-                        {post.tags.map((tag) => (
-                          <small key={tag}>{tag}</small>
+                        {post.tags.map((tag, index) => (
+                          <small key={`${post.id}-${tag}-${index}`}>{tag}</small>
                         ))}
                       </div>
                     </div>
