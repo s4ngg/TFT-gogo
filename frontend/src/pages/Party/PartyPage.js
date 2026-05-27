@@ -19,7 +19,7 @@ const initialPartyPosts = [
     close: '마감 15분 전',
     status: '모집중',
     description: '17.3 추천 메타 기준으로 빠르게 점수 올리실 분 찾아요.',
-    tags: ['소통 가능', '연승 목표', '빠른 매칭'],
+    tags: ['음성 가능', '연승 목표', '빠른 매칭'],
     icon: 'crown',
     tone: 'purple',
   },
@@ -32,7 +32,7 @@ const initialPartyPosts = [
     close: '마감 42분 전',
     status: '모집중',
     description: '운영 피드백 주고받으면서 편하게 연습하실 분이면 좋아요.',
-    tags: ['피드백 환영', '듀오 접속', '마이크 선택'],
+    tags: ['피드백 환영', '저녁 접속', '마이크 선택'],
     icon: 'leaf',
     tone: 'green',
   },
@@ -45,7 +45,7 @@ const initialPartyPosts = [
     close: '마감 1시간 전',
     status: '대기중',
     description: '랭크 부담 없이 조합 테스트하면서 같이 하실 분 구해요.',
-    tags: ['초보 환영', '일반전', '테스트'],
+    tags: ['초보 환영', '일반전', '덱 실험'],
     icon: 'spark',
     tone: 'cyan',
   },
@@ -58,7 +58,7 @@ const initialPartyPosts = [
     close: '마감 2시간 전',
     status: '모집중',
     description: '초반 위주로 안정적인 운영 맞춰가실 분이면 좋습니다.',
-    tags: ['주말 집중', '초반 운영', '멘탈 좋음'],
+    tags: ['주말 집중', '순방 운영', '멘탈 좋음'],
     icon: 'swords',
     tone: 'gold',
   },
@@ -70,15 +70,17 @@ const initialChatRooms = [
   { name: '질문 & 답변', users: '741', lastMessage: '초보 운영 질문 있습니다' },
 ]
 const initialMessages = [
-  { roomName: '일반', name: '정동글', tier: 'Master', message: '선봉대 벡스 지금도 초반을 괜찮게 받아요?', time: '14:58' },
+  { roomName: '일반', name: '정동글', tier: 'Master', message: '선봉대 벡스 지금도 순방률 괜찮나요?', time: '14:58' },
   { roomName: '일반', name: '새벽의달', tier: 'Diamond', message: '초반에 벡스 2성만 빨리 붙으면 꽤 안정적이에요.', time: '14:59' },
   { roomName: '일반', name: '응의자', tier: 'Platinum', message: '아이템은 보건보다 블루 먼저 보는 게 나을까요?', time: '15:00' },
   { roomName: '일반', name: 'TFTgogo', tier: 'System', message: '17.3 패치 기준 추천 메타가 업데이트되었습니다.', time: '15:01' },
+  { roomName: '일반', name: '나', tier: 'Diamond', message: '파티 모집 쪽에 같이 하실 분 있으면 바로 들어갈게요.', time: '15:02', isMine: true },
   { roomName: '덱 공략', name: '운영연습', tier: 'Diamond', message: '전투 증강 첫 선택이면 어떤 조합이 좋아요?', time: '14:54' },
-  { roomName: '덱 공략', name: '메타분석가', tier: 'Master', message: '초반에는 선봉대와 푸른색 기반으로 피 관리 추천해요.', time: '14:55' },
-  { roomName: '파티 모집', name: '플레러너', tier: 'Platinum', message: '플래티넘 듀오 자리 있나요?', time: '14:50' },
-  { roomName: '파티 모집', name: '초반중독', tier: 'Master', message: '마스터 이상 듀오 랭크 같이 하실 분?', time: '14:56' },
+  { roomName: '덱 공략', name: '메타분석가', tier: 'Master', message: '초반에는 선봉대나 요새 기반으로 피 관리 추천해요.', time: '14:55' },
+  { roomName: '파티 모집', name: '플레러너', tier: 'Platinum', message: '플래티넘 듀오 한 자리 남았습니다.', time: '14:50' },
+  { roomName: '파티 모집', name: '순방중독', tier: 'Master', message: '마스터 이상 저녁 랭크 같이 하실 분?', time: '14:56' },
   { roomName: '질문 & 답변', name: '입문자', tier: 'Gold', message: '아이템 우선순위는 캐리부터 맞추면 되나요?', time: '14:48' },
+  { roomName: '질문 & 답변', name: '코치봇', tier: 'System', message: '캐리 3신기와 앞라인 탱템 균형을 같이 보는 편이 좋아요.', time: '14:49' },
 ]
 
 let partyPosts = [...initialPartyPosts]
@@ -194,7 +196,7 @@ function renderPartyList() {
           <div class="partyTags">${post.tags.map((tag) => `<small>${esc(tag)}</small>`).join('')}</div>
         </div>
         <button type="button" class="joinButton" aria-pressed="${isJoined}" ${((isFull && !isJoined) || hasJoinedOtherPost) ? 'disabled' : ''} data-party-join="${esc(post.id)}">
-          ${isJoined ? '참여중' : isFull ? '마감' : hasJoinedOtherPost ? '대기' : '참여'}
+          ${isJoined ? '참여중' : isFull ? '마감' : hasJoinedOtherPost ? '잠김' : '참여'}
         </button>
       </article>
     `
@@ -274,7 +276,7 @@ function renderPartyShell() {
           <div class="chatWindow">
             <div class="chatWindowHeader">
               <strong># ${esc(state.partyActiveRoom)}</strong>
-              <span>${activeMessages().length > 0 ? `총 메시지 ${activeMessages().length}개` : '대화를 시작해보세요'}</span>
+              <span>${activeMessages().length > 0 ? `새 메시지 ${activeMessages().length}개` : '대화를 시작해보세요'}</span>
             </div>
             <div class="messageList">${renderMessages()}</div>
             <form class="messageForm" id="partyMessageForm">

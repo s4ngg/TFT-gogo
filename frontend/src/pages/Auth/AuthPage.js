@@ -3,6 +3,11 @@ const socialProviders = [
   { label: 'Kakao', mark: 'K' },
   { label: 'Naver', mark: 'N' },
 ]
+const fieldIcons = {
+  mail: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/></svg>',
+  lock: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V8a4 4 0 0 1 8 0v2"/></svg>',
+  user: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 14.5-4 16 0"/></svg>',
+}
 
 function authMode() {
   return new URLSearchParams(window.location.search).get('mode') === 'signup' ? 'signup' : 'login'
@@ -11,7 +16,7 @@ function authMode() {
 function inputBox(icon, input) {
   return `
     <div class="inputBox">
-      <span aria-hidden="true">${icon}</span>
+      <span aria-hidden="true">${fieldIcons[icon]}</span>
       ${input}
     </div>
   `
@@ -21,11 +26,11 @@ function renderSignupFields() {
   return `
     <label>
       <span>비밀번호 확인</span>
-      ${inputBox('🔒', '<input type="password" placeholder="비밀번호 재입력" />')}
+      ${inputBox('lock', '<input type="password" placeholder="비밀번호 재입력" />')}
     </label>
     <label>
       <span>소환사명#태그</span>
-      ${inputBox('👤', '<input placeholder="정동글#KR1" />')}
+      ${inputBox('user', '<input placeholder="정동글#KR1" />')}
     </label>
   `
 }
@@ -64,17 +69,17 @@ function renderAuthShell(mode) {
         <form class="authForm" id="authForm">
           <label>
             <span>이메일</span>
-            ${inputBox('✉', '<input type="email" placeholder="tftgogo@example.com" />')}
+            ${inputBox('mail', '<input type="email" placeholder="tftgogo@example.com" />')}
           </label>
 
           <label>
             <span>비밀번호</span>
-            ${inputBox('🔒', '<input type="password" placeholder="비밀번호 입력" />')}
+            ${inputBox('lock', '<input type="password" placeholder="비밀번호 입력" />')}
           </label>
 
           ${isSignup ? renderSignupFields() : ''}
 
-          <button type="submit" class="submitButton">
+          <button type="button" class="submitButton">
             ${isSignup ? '회원가입' : '로그인'}
             <span aria-hidden="true">→</span>
           </button>

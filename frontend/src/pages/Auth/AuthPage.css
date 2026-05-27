@@ -200,6 +200,16 @@
   box-shadow: 0 0 18px rgba(0, 221, 215, 0.08);
 }
 
+.inputBox svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
 .inputBox input {
   min-width: 0;
   border: 0;

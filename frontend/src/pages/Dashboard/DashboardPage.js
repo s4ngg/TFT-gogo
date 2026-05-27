@@ -30,6 +30,10 @@ const chatChannels = [
   { name: '아이템 토론', users: '489', message: '쇼진 먼저 잡는 판이 많네요', time: '14:55' },
   { name: '증강 연구', users: '1,018', message: '전투 증강 첫 선택 괜찮나요?', time: '14:55' },
   { name: '초보방', users: '334', message: '연패 운영 언제 끊어야 해요?', time: '14:54' },
+  { name: '랭크 후기', users: '913', message: '암흑 별 진 2성 찍으니 안정적', time: '14:54' },
+  { name: '친선 모집', users: '276', message: '커스텀 한 판 하실 분?', time: '14:53' },
+  { name: '패치 분석', users: '645', message: '선봉대 밸류가 아직 높네요', time: '14:53' },
+  { name: '운영 질문', users: '528', message: '레벨업 타이밍 조언 부탁드려요', time: '14:52' },
 ]
 
 function goTo(path) {
