@@ -1,10 +1,13 @@
 ﻿import { useEffect, useState } from 'react'
 import {
+  AlertTriangle,
   BookOpen,
   ChevronLeft,
   ChevronRight,
   Gem,
+  Loader2,
   Package,
+  RefreshCw,
   Rows3,
   Search,
   Shield,
@@ -57,6 +60,43 @@ function EmptyState() {
     <div className={styles.emptyState}>
       <Search size={18} />
       <span>검색 결과가 없습니다.</span>
+    </div>
+  )
+}
+
+function GuideStatusBanner({
+  isFallbackData,
+  isFetching,
+  onRetry,
+}: {
+  isFallbackData: boolean
+  isFetching: boolean
+  onRetry: () => void
+}) {
+  if (!isFetching && !isFallbackData) return null
+
+  return (
+    <div
+      aria-live="polite"
+      className={`${styles.statusBanner} ${isFetching ? styles.statusLoading : styles.statusFallback}`}
+    >
+      <span className={styles.statusIcon}>
+        {isFetching ? <Loader2 size={16} /> : <AlertTriangle size={16} />}
+      </span>
+      <div>
+        <strong>{isFetching ? '가이드 데이터를 불러오는 중입니다.' : '샘플 데이터로 표시 중입니다.'}</strong>
+        <p>
+          {isFetching
+            ? '최신 가이드 응답을 확인하는 동안 현재 데이터를 유지합니다.'
+            : '가이드 API 응답을 가져오지 못해 준비된 샘플 데이터를 보여주고 있습니다.'}
+        </p>
+      </div>
+      {!isFetching && (
+        <button onClick={onRetry} type="button">
+          <RefreshCw size={14} />
+          다시 시도
+        </button>
+      )}
     </div>
   )
 }
@@ -833,7 +873,10 @@ function Guide() {
     favoriteChampions,
     guideData,
     handleFavoriteToggle,
+    isFallbackData,
+    isFetching,
     jumpToGuide,
+    refetchGuideData,
     recentGuides,
     search,
     selectTab,
@@ -885,6 +928,14 @@ function Guide() {
             />
           </label>
         </section>
+
+        <GuideStatusBanner
+          isFallbackData={isFallbackData}
+          isFetching={isFetching}
+          onRetry={() => {
+            void refetchGuideData()
+          }}
+        />
 
         <GuideQuickAccess
           favoriteChampions={favoriteChampions}

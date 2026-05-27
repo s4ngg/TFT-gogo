@@ -136,6 +136,13 @@ export interface GuideCatalog {
   traits: TraitGuide[]
 }
 
+export type GuideDataSource = 'api' | 'fallback'
+
+export interface GuideCatalogResult {
+  data: GuideCatalog
+  source: GuideDataSource
+}
+
 export interface GuideListQuery {
   cost?: ChampionCostFilter
   page?: number
@@ -209,12 +216,12 @@ export function getPageItems<T>(items: T[], page: number, pageSize = DEFAULT_GUI
   return items.slice(startIndex, startIndex + pageSize)
 }
 
-export async function getGuideCatalog(fallbackData: GuideCatalog): Promise<GuideCatalog> {
+export async function getGuideCatalog(fallbackData: GuideCatalog): Promise<GuideCatalogResult> {
   try {
     const { data } = await axiosInstance.get<GuideCatalog>('/guide')
-    return data
+    return { data, source: 'api' }
   } catch {
-    return fallbackData
+    return { data: fallbackData, source: 'fallback' }
   }
 }
 

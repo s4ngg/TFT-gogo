@@ -162,6 +162,82 @@
   color: #5a6470;
 }
 
+.statusBanner {
+  min-height: 50px;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  margin: -4px 0 16px;
+  padding: 10px 12px;
+  border: 1px solid rgba(112, 144, 152, 0.18);
+  border-radius: 8px;
+  background: rgba(8, 20, 28, 0.72);
+}
+
+.statusIcon {
+  width: 30px;
+  height: 30px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 8px;
+}
+
+.statusBanner strong {
+  display: block;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.statusBanner p {
+  margin: 3px 0 0;
+  color: #8e97a1;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.statusBanner button {
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid rgba(5, 243, 231, 0.38);
+  border-radius: 7px;
+  color: #05f3e7;
+  background: rgba(3, 80, 86, 0.2);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.statusBanner button:hover {
+  background: rgba(3, 80, 86, 0.36);
+}
+
+.statusLoading {
+  border-color: rgba(5, 243, 231, 0.24);
+}
+
+.statusLoading .statusIcon {
+  color: #05f3e7;
+  background: rgba(5, 243, 231, 0.08);
+}
+
+.statusLoading .statusIcon svg {
+  animation: statusSpin 900ms linear infinite;
+}
+
+.statusFallback {
+  border-color: rgba(249, 200, 96, 0.24);
+}
+
+.statusFallback .statusIcon {
+  color: #f9c860;
+  background: rgba(249, 200, 96, 0.08);
+}
+
 .quickAccess {
   display: grid;
   gap: 8px;
@@ -1206,6 +1282,12 @@ button.championMini:hover {
   background: rgba(8, 20, 28, 0.58);
   font-size: 13px;
   font-weight: 600;
+}
+
+@keyframes statusSpin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-height: 980px) {

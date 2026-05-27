@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   GUIDE_TABS,
   getGuideCatalog,
+  type GuideCatalogResult,
   type GuideCatalog,
   type GuideTab,
   type RecentGuide,
@@ -18,8 +19,8 @@ export function useGuide({ fallbackData }: UseGuideOptions) {
   const [recentGuides, setRecentGuides] = useState<RecentGuide[]>([])
   const [search, setSearch] = useState('')
 
-  const guideQuery = useQuery({
-    initialData: fallbackData,
+  const guideQuery = useQuery<GuideCatalogResult>({
+    initialData: { data: fallbackData, source: 'fallback' },
     queryFn: () => getGuideCatalog(fallbackData),
     queryKey: ['guide', 'catalog'],
     staleTime: 1000 * 60 * 5,
@@ -61,10 +62,12 @@ export function useGuide({ fallbackData }: UseGuideOptions) {
     activeTabInfo,
     addRecentGuide,
     favoriteChampions,
-    guideData: guideQuery.data,
+    guideData: guideQuery.data.data,
     handleFavoriteToggle,
+    isFallbackData: guideQuery.data.source === 'fallback' && !guideQuery.isFetching,
     isFetching: guideQuery.isFetching,
     jumpToGuide,
+    refetchGuideData: guideQuery.refetch,
     recentGuides,
     search,
     selectTab,
