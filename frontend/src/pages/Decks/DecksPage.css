@@ -1,1 +1,210 @@
-/* Page-specific overrides for Decks live here. Shared table/card styles remain in ../../styles/global.css. */
+body[data-page="decks"] .page {
+  width: 1270px;
+  padding: 28px 0 60px;
+}
+
+body[data-page="decks"] .page-header .tabbar {
+  gap: 0;
+  border-bottom: 2px solid rgba(112, 144, 152, 0.16);
+}
+
+body[data-page="decks"] .page-header .tab-button {
+  position: relative;
+  height: 44px;
+  padding: 0 28px;
+  border: 0;
+  border-radius: 0;
+  color: #6b7580;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+body[data-page="decks"] .page-header .tab-button.active {
+  color: #04f3e5;
+}
+
+body[data-page="decks"] .page-header .tab-button.active::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -2px;
+  left: 0;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: #04f3e5;
+}
+
+.tier-section {
+  margin-bottom: 32px;
+}
+
+.tier-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tier-label {
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.tier-desc {
+  color: #6b757e;
+  font-size: 13px;
+}
+
+.tier-count {
+  margin-left: auto;
+  color: #5a6470;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.special-section {
+  margin-top: 36px;
+}
+
+.special-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(112, 144, 152, 0.14);
+}
+
+.special-header-text {
+  flex: 1;
+}
+
+.special-header h2 {
+  margin: 0 0 2px;
+  color: #fff;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.special-header p {
+  color: #6b757e;
+  font-size: 13px;
+}
+
+.special-badge {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  border: 1px solid rgba(4, 243, 229, 0.35);
+  border-radius: 5px;
+  color: #04f3e5;
+  background: rgba(4, 243, 229, 0.1);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.augment-carousel {
+  scroll-snap-type: x mandatory;
+}
+
+.augment-card {
+  flex: 0 0 290px;
+  scroll-snap-align: start;
+  border-color: rgba(4, 243, 229, 0.14);
+  background: linear-gradient(180deg, rgba(5, 50, 58, 0.28), rgba(6, 16, 22, 0.96));
+  transition: border-color 0.15s;
+}
+
+.augment-card[data-recommended="false"] {
+  border-color: rgba(248, 113, 113, 0.14);
+}
+
+.aug-card-top {
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.aug-hero-name {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.aug-name {
+  color: #04f3e5;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.aug-recommend-badge,
+.aug-not-recommend-badge {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.aug-recommend-badge {
+  border: 1px solid rgba(4, 243, 229, 0.35);
+  color: #04f3e5;
+  background: rgba(4, 243, 229, 0.1);
+}
+
+.aug-not-recommend-badge {
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.08);
+}
+
+.aug-desc {
+  margin: 0 0 10px;
+  color: #8e97a1;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.aug-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+
+.aug-tag {
+  padding: 2px 8px;
+  border: 1px solid rgba(110, 142, 150, 0.22);
+  border-radius: 4px;
+  color: #7a8790;
+  background: rgba(10, 22, 30, 0.8);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.aug-champs {
+  margin-bottom: 14px;
+}
+
+.aug-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(112, 144, 152, 0.1);
+  text-align: center;
+}
+
+.aug-stats small {
+  display: block;
+  margin-bottom: 3px;
+  color: #5a6470;
+  font-size: 11px;
+}
+
+.aug-stats strong {
+  font-size: 15px;
+  font-weight: 700;
+}

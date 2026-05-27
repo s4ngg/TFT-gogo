@@ -1,3 +1,8 @@
+body[data-page="guide"] .page {
+  width: 1270px;
+  padding: 28px 0 60px;
+}
+
 .guide-page-header {
   align-items: center;
 }
@@ -106,8 +111,11 @@
 }
 
 .guide-layout {
+  display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
   gap: 16px;
+  align-items: start;
+  min-width: 0;
 }
 
 .guide-side-stack {
