@@ -30,5 +30,22 @@ closes #이슈번호
 ## 💬 리뷰어에게
 > 리뷰 시 특별히 봐줬으면 하는 부분을 작성해주세요.
 
+## 🤖 CodeRabbit → Codex 수정 판단
+> CodeRabbit 리뷰 후 Codex로 자동 수정할 항목만 남겨주세요.
+
+```md
+/codex fix-coderabbit
+
+판단:
+- fix:
+- skip:
+- discuss:
+
+요청:
+- fix 항목만 수정
+- 수정 후 검증 실행
+- 기존 PR 브랜치에 커밋 push
+```
+
 ## ⚠️ 주의 사항
 > 머지 전 확인 필요한 사항 작성 (환경변수 추가, DB 마이그레이션 등)
