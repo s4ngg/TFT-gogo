@@ -17,8 +17,6 @@ const TIER_KO: Record<string, string> = {
   MASTER: '마스터', GRANDMASTER: '그랜드마스터', CHALLENGER: '챌린저',
 }
 
-const LP_MAP: Record<number, number> = { 1: 22, 2: 13, 3: 8, 4: 5, 5: -9, 6: -14, 7: -19, 8: -26 }
-
 function timeAgo(gameDateTime: number): string {
   const diffMs = Date.now() - gameDateTime
   const diffMin = Math.floor(diffMs / 60000)
@@ -126,6 +124,7 @@ function MatchDetailPanel({ match, myPuuid }: { match: MatchSummaryResponse; myP
                   imageUrl={unit.imageUrl}
                   stars={unit.stars}
                   label=""
+                  items={unit.itemImageUrls.map((url) => ({ imageUrl: url, name: '' }))}
                   toneIndex={0}
                 />
               ))}
@@ -287,15 +286,15 @@ function SummonerDetail() {
                           imageUrl={unit.imageUrl}
                           stars={unit.stars}
                           label={unit.characterId}
+                          items={unit.itemImageUrls.map((url) => ({ imageUrl: url, name: '' }))}
                           toneIndex={0}
                         />
                       ))}
                     </div>
-                    <div className={`${styles.lpDelta} ${match.lpDelta >= 0 ? styles.lpGain : styles.lpLoss}`}>
-                      <span>{match.lpDelta >= 0 ? '+' : ''}{match.lpDelta} LP</span>
+                    <div className={styles.matchChevron}>
                       {isOpen
-                        ? <ChevronUp size={14} className={styles.chevron} />
-                        : <ChevronDown size={14} className={styles.chevron} />}
+                        ? <ChevronUp size={14} />
+                        : <ChevronDown size={14} />}
                     </div>
                   </article>
                   {isOpen && (

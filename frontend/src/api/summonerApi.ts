@@ -44,7 +44,7 @@ export interface MatchUnitResponse {
   characterId: string
   imageUrl: string
   stars: 1 | 2 | 3   // ChampionCard는 2|3 기본, 1성도 허용
-  itemNames: string[]
+  itemImageUrls: string[]
 }
 
 export interface MatchTraitResponse {
@@ -72,7 +72,6 @@ export interface MatchSummaryResponse {
   matchId: string
   placement: number
   gameDateTime: number    // Unix timestamp ms
-  lpDelta: number
   compositionName: string
   traits: MatchTraitResponse[]
   units: MatchUnitResponse[]
