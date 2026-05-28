@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.http.HttpStatus;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -29,6 +30,10 @@ public class ApiResponse<T> {
     }
 
     public static <T> ApiResponse<T> fail(String message) {
+        return new ApiResponse<>(false, message, null);
+    }
+
+    public static <T> ApiResponse<T> fail(String message, HttpStatus status) {
         return new ApiResponse<>(false, message, null);
     }
 }
