@@ -15,6 +15,7 @@ const iImg = (name: string) =>
 // ── 시너지 아이콘 (communityDragonAssets.ts 단일 소스) ───────
 const traitIcons = {
   vanguard:   tftTraitIconUrl('TFT17_Vanguard'),
+  bastion:    tftTraitIconUrl('TFT17_Bastion'),
   darkStar:   tftTraitIconUrl('TFT17_DarkStar'),
   spirit:     tftTraitIconUrl('TFT17_Astronaut'),
   rogue:      tftTraitIconUrl('TFT17_Rogue'),
@@ -123,7 +124,7 @@ const DECK_CONFIGS: { compositionName: string; traits: MatchTraitResponse[]; uni
     compositionName: '정령족 코르키',
     traits: [
       tr('TFT17_Astronaut', '정령족', traitIcons.spirit, 4),
-      tr('TFT17_Bastion', '요새', traitIcons.vanguard, 2, 'bronze'),
+      tr('TFT17_Bastion', '요새', traitIcons.bastion, 2, 'bronze'),
     ],
     units: [
       u('TFT17_Corki', ci.corki, 3, [it.blue, it.archangel, it.nashors]),
