@@ -73,7 +73,11 @@ public class MetaDeckResponse {
     }
 
     private static String buildChampionImageUrl(String characterId) {
+        if (characterId == null || characterId.isBlank()) {
+            throw new IllegalArgumentException("characterId가 비어 있습니다.");
+        }
+        String id = characterId.toLowerCase();
         return "https://raw.communitydragon.org/latest/game/assets/characters/"
-                + characterId.toLowerCase() + "/hud/" + characterId.toLowerCase() + "_square.tft.png";
+                + id + "/hud/" + id + "_square.tft.png";
     }
 }

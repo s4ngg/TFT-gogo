@@ -27,7 +27,7 @@ public class HeroAugment {
     private String augmentName;
 
     @Column(name = "is_recommended", nullable = false)
-    private boolean isRecommended = true;
+    private boolean isRecommended;
 
     @Column(name = "win_rate", nullable = false)
     private double winRate;

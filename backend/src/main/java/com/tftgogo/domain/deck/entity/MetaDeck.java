@@ -18,7 +18,7 @@ public class MetaDeck {
     private Long id;
 
     // 조합 식별 키 - 집계 upsert에 사용 (ERD 외 내부 필드)
-    @Column(unique = true)
+    @Column(nullable = false, unique = true, length = 255)
     private String signature;
 
     @Column(nullable = false, length = 100)
