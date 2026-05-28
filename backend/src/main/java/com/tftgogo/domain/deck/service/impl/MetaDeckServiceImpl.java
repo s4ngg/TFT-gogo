@@ -19,6 +19,7 @@ import com.tftgogo.global.riot.dto.MatchDto;
 import com.tftgogo.global.riot.dto.MatchDto.ParticipantDto;
 import com.tftgogo.global.riot.dto.MatchDto.TraitDto;
 import com.tftgogo.global.riot.dto.MatchDto.UnitDto;
+import com.tftgogo.global.riot.util.TftAssetUrlBuilder;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -323,6 +324,7 @@ public class MetaDeckServiceImpl implements MetaDeckService {
             deck.getTraits().add(deckTrait);
         }
 
+        // 집계는 이미 메모리에서 끝났고, 덱 상세 표시/저장에 필요한 상위 유닛만 남긴다.
         List<UnitStat> unitStats = stat.unitStats.values().stream()
                 .sorted(Comparator.comparingInt(UnitStat::getCount).reversed())
                 .limit(10)
@@ -416,19 +418,8 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         };
     }
 
-    private static final Pattern TRAIT_SET_PATTERN = Pattern.compile("(?:set|tft)(\\d+)_(.+)");
-
     private String buildTraitIconUrl(String traitId) {
-        // Set17_ShieldTank → trait_icon_17_shieldtank.tft_set17.png
-        Matcher m = TRAIT_SET_PATTERN.matcher(traitId.toLowerCase());
-        if (m.matches()) {
-            String setNum = m.group(1);
-            String traitName = m.group(2);
-            return "https://raw.communitydragon.org/latest/game/assets/ux/traiticons/"
-                    + "trait_icon_" + setNum + "_" + traitName + ".tft_set" + setNum + ".png";
-        }
-        return "https://raw.communitydragon.org/latest/game/assets/ux/traiticons/"
-                + traitId.toLowerCase() + ".png";
+        return TftAssetUrlBuilder.buildTraitIconUrl(traitId);
     }
 
     private String normalizePatchVersion(String gameVersion) {
