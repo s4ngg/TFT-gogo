@@ -6,8 +6,11 @@ import ChampionCard from '../../components/common/ChampionCard'
 import TierBadge from '../../components/common/TierBadge'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
 import { tftItemIconUrl } from '../../api/communityDragonAssets'
+import { getChampionName, getTraitName, getItemName, getAugmentName } from '../../api/cdragonLocale'
+import type { TFTLocale } from '../../api/cdragonLocale'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
-import type { MetaDeck, RankFilter, ItemSummary } from '../Dashboard/dashboardData'
+import { useCDragonLocale } from '../../hooks/useCDragonLocale'
+import type { MetaDeck, RankFilter } from '../Dashboard/dashboardData'
 import type { TierBadgeValue } from '../../components/common/TierBadge'
 import styles from './Decks.module.css'
 
@@ -57,8 +60,8 @@ function SortIcon({ col, cur, dir }: { col: SortKey; cur: SortKey; dir: SortDir 
 
 /** 덱 행 */
 function DeckRow({
-  deck, showTier = true, showRank = true,
-}: { deck: MetaDeck; showTier?: boolean; showRank?: boolean }) {
+  deck, showTier = true, showRank = true, locale,
+}: { deck: MetaDeck; showTier?: boolean; showRank?: boolean; locale: TFTLocale | undefined }) {
   const navigate = useNavigate()
   function handleRowClick() { navigate(`/decks/${deck.rank}`) }
   return (
@@ -75,14 +78,27 @@ function DeckRow({
         <span className={styles.deckName}>{deck.name}</span>
         <span className={styles.traits}>
           {deck.traits.map((t) => (
-            <TraitHexBadge key={`${t.name}-${t.count}`} count={t.count} iconUrl={t.iconUrl} name={t.name} tone={t.tone} />
+            <TraitHexBadge
+              key={`${t.name}-${t.count}`}
+              count={t.count}
+              iconUrl={t.iconUrl}
+              name={getTraitName(t.name, locale)}
+              tone={t.tone}
+            />
           ))}
         </span>
       </td>
       <td className={styles.champCol}>
         <span className={styles.champions}>
           {deck.champions.map((c, i) => (
-            <ChampionCard key={`${c.name}-${i}`} imageUrl={c.imageUrl} items={c.items} label={c.name} stars={c.stars} cost={c.cost} />
+            <ChampionCard
+              key={`${c.name}-${i}`}
+              imageUrl={c.imageUrl}
+              items={c.items}
+              label={getChampionName(c.imageUrl, locale, c.name)}
+              stars={c.stars}
+              cost={c.cost}
+            />
           ))}
         </span>
       </td>
@@ -125,7 +141,7 @@ function TableHead({ sortKey, sortDir, onSort, showTier = true, showRank = true 
 /* ════════════════════════════
    영웅 증강 섹션 (캐러셀) — 실데이터
 ════════════════════════════ */
-function HeroAugmentSection({ decks }: { decks: MetaDeck[] }) {
+function HeroAugmentSection({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale | undefined }) {
   const scrollRef = useRef<HTMLDivElement>(null)
 
   function scrollCarousel(dir: 'left' | 'right') {
@@ -168,7 +184,7 @@ function HeroAugmentSection({ decks }: { decks: MetaDeck[] }) {
           {sorted.map((deck) => {
             const topAug = deck.topAugments?.[0]
             const isRec = topAug?.isRecommended ?? false
-            const augName = topAug?.augmentName ?? '—'
+            const augName = topAug ? getAugmentName(topAug.augmentId, locale) : '—'
             const hasAugData = (deck.topAugments?.length ?? 0) > 0
             return (
               <article
@@ -189,17 +205,23 @@ function HeroAugmentSection({ decks }: { decks: MetaDeck[] }) {
                   {hasAugData
                     ? deck.topAugments!.slice(0, 3).map((a) => (
                         <span key={a.augmentId} className={styles.augTag}>
-                          {a.augmentName} ({a.winRate})
+                          {getAugmentName(a.augmentId, locale)} ({a.winRate})
                         </span>
                       ))
                     : deck.traits.slice(0, 3).map((t) => (
-                        <span key={t.name} className={styles.augTag}>{t.name}</span>
+                        <span key={t.name} className={styles.augTag}>{getTraitName(t.name, locale)}</span>
                       ))
                   }
                 </div>
                 <div className={styles.augChamps}>
                   {deck.champions.slice(0, 4).map((c, i) => (
-                    <ChampionCard key={`${c.name}-${i}`} imageUrl={c.imageUrl} label={c.name} stars={c.stars} cost={c.cost} />
+                    <ChampionCard
+                      key={`${c.name}-${i}`}
+                      imageUrl={c.imageUrl}
+                      label={getChampionName(c.imageUrl, locale, c.name)}
+                      stars={c.stars}
+                      cost={c.cost}
+                    />
                   ))}
                 </div>
                 <div className={styles.augStats}>
@@ -223,68 +245,58 @@ interface ItemUnitEntry {
   itemId: string
   itemName: string
   iconUrl: string
-  itemStat: ItemSummary
-  units: { name: string; imageUrl: string; frequency: number; avgDeckWinRate: number }[]
+  placementDelta: number   // 양수일수록 등수 향상 효과가 큼
+  winRate: string
+  units: { name: string; imageUrl: string }[]
 }
 
 function buildItemUnitEntries(decks: MetaDeck[]): ItemUnitEntry[] {
   const map = new Map<string, {
-    itemStat: ItemSummary
+    placementDelta: number
+    winRate: string
     iconUrl: string
-    unitMap: Map<string, { name: string; imageUrl: string; count: number; totalWinRate: number }>
+    itemName: string
+    unitSet: Map<string, { name: string; imageUrl: string }>
   }>()
 
   decks.forEach((deck) => {
     deck.topItems?.forEach((item) => {
+      const delta = parseFloat(item.placementDelta)
+      if (!Number.isFinite(delta) || delta <= 0) return
+
       if (!map.has(item.itemId)) {
         map.set(item.itemId, {
-          itemStat: item,
+          placementDelta: delta,
+          winRate: item.winRate,
           iconUrl: tftItemIconUrl(item.itemId),
-          unitMap: new Map(),
+          itemName: item.itemName,
+          unitSet: new Map(),
         })
       }
       const entry = map.get(item.itemId)!
-      const deckWinRate = parseFloat(deck.winRate)
 
       deck.champions.forEach((champ) => {
-        if (champ.recommendedItems?.includes(item.itemId)) {
-          const existing = entry.unitMap.get(champ.name)
-          if (existing) {
-            existing.count++
-            existing.totalWinRate += deckWinRate
-          } else {
-            entry.unitMap.set(champ.name, {
-              name: champ.name,
-              imageUrl: champ.imageUrl,
-              count: 1,
-              totalWinRate: deckWinRate,
-            })
-          }
+        if (champ.recommendedItems?.includes(item.itemId) && !entry.unitSet.has(champ.name)) {
+          entry.unitSet.set(champ.name, { name: champ.name, imageUrl: champ.imageUrl })
         }
       })
     })
   })
 
-  return Array.from(map.values())
-    .map(({ itemStat, iconUrl, unitMap }) => ({
-      itemId: itemStat.itemId,
-      itemName: itemStat.itemName,
+  return Array.from(map.entries())
+    .map(([itemId, { placementDelta, winRate, iconUrl, itemName, unitSet }]) => ({
+      itemId,
+      itemName,
       iconUrl,
-      itemStat,
-      units: Array.from(unitMap.values())
-        .sort((a, b) => b.count - a.count || b.totalWinRate - a.totalWinRate)
-        .map((u) => ({
-          name: u.name,
-          imageUrl: u.imageUrl,
-          frequency: u.count,
-          avgDeckWinRate: u.count > 0 ? u.totalWinRate / u.count : 0,
-        })),
+      placementDelta,
+      winRate,
+      units: Array.from(unitSet.values()),
     }))
     .filter((e) => e.units.length > 0)
-    .sort((a, b) => parseFloat(b.itemStat.winRate) - parseFloat(a.itemStat.winRate))
+    .sort((a, b) => b.placementDelta - a.placementDelta)
 }
 
-function ArtifactSection({ decks }: { decks: MetaDeck[] }) {
+function ArtifactSection({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale | undefined }) {
   const [showAll, setShowAll] = useState(false)
   const [search, setSearch]   = useState('')
 
@@ -292,9 +304,11 @@ function ArtifactSection({ decks }: { decks: MetaDeck[] }) {
   const hasData = entries.length > 0
 
   const searchActive = search.trim() !== ''
-  const allFiltered  = entries.filter((e) =>
-    !searchActive || e.itemName.toLowerCase().includes(search.toLowerCase()),
-  )
+  const allFiltered  = entries.filter((e) => {
+    if (!searchActive) return true
+    const displayName = getItemName(e.itemId, locale, e.itemName).toLowerCase()
+    return displayName.includes(search.toLowerCase())
+  })
   const visible     = searchActive || showAll ? allFiltered : allFiltered.slice(0, INITIAL_ITEM_COUNT)
   const hiddenCount = allFiltered.length - INITIAL_ITEM_COUNT
 
@@ -335,26 +349,19 @@ function ArtifactSection({ decks }: { decks: MetaDeck[] }) {
                       className={styles.artifactIcon}
                       onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '0.3' }}
                     />
-                    <span className={styles.artifactName}>{entry.itemName}</span>
+                    <div className={styles.artifactItemInfo}>
+                      <span className={styles.artifactName}>{getItemName(entry.itemId, locale, entry.itemName)}</span>
+                      <span className={styles.artifactDelta}>
+                        등수 향상 +{entry.placementDelta.toFixed(2)}
+                      </span>
+                    </div>
                   </div>
 
                   <div className={styles.artifactUnits}>
-                    <div className={styles.artifactUnitHeader}>
-                      <span />
-                      <span>유닛</span>
-                      <span>덱 빈도</span>
-                      <span>덱 승률</span>
-                      <span>아이템 승률</span>
-                      <span>픽률</span>
-                    </div>
-                    {entry.units.slice(0, 3).map((u) => (
+                    {entry.units.slice(0, 4).map((u) => (
                       <div key={u.name} className={styles.artifactUnit}>
                         <img src={u.imageUrl} alt={u.name} className={styles.artifactChampImg} />
-                        <span className={styles.artifactUnitName}>{u.name}</span>
-                        <span className={`${styles.artifactStat} ${styles.artifactStatFreq}`}>{u.frequency}덱</span>
-                        <span className={`${styles.artifactStat} ${styles.artifactStatWin}`}>{u.avgDeckWinRate.toFixed(1)}%</span>
-                        <span className={`${styles.artifactStat} ${styles.artifactStatImp}`}>{entry.itemStat.winRate}</span>
-                        <span className={`${styles.artifactStat} ${styles.artifactStatTop4}`}>{entry.itemStat.playRate}</span>
+                        <span className={styles.artifactUnitName}>{getChampionName(u.imageUrl, locale, u.name)}</span>
                       </div>
                     ))}
                   </div>
@@ -382,7 +389,7 @@ function ArtifactSection({ decks }: { decks: MetaDeck[] }) {
    탭 1 — 덱모음
    (순위·티어 없음 + 영웅 증강 + 유물 추천)
 ════════════════════════════ */
-function DeckListView({ decks }: { decks: MetaDeck[] }) {
+function DeckListView({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale | undefined }) {
   const [search, setSearch]   = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('winRate')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -410,13 +417,13 @@ function DeckListView({ decks }: { decks: MetaDeck[] }) {
           <tbody>
             {filtered.length === 0
               ? <tr><td colSpan={6} className={styles.empty}>검색 결과가 없습니다.</td></tr>
-              : filtered.map((d) => <DeckRow key={d.rank} deck={d} showTier={false} showRank={false} />)
+              : filtered.map((d) => <DeckRow key={d.rank} deck={d} showTier={false} showRank={false} locale={locale} />)
             }
           </tbody>
         </table>
       </div>
-      <HeroAugmentSection decks={safeDecks} />
-      <ArtifactSection decks={safeDecks} />
+      <HeroAugmentSection decks={safeDecks} locale={locale} />
+      <ArtifactSection decks={safeDecks} locale={locale} />
     </>
   )
 }
@@ -425,7 +432,7 @@ function DeckListView({ decks }: { decks: MetaDeck[] }) {
    탭 2 — 메타통계
    (lolchess 스타일, 티어별 수직)
 ════════════════════════════ */
-function MetaStatsView({ decks }: { decks: MetaDeck[] }) {
+function MetaStatsView({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale | undefined }) {
   const [sortKey, setSortKey] = useState<SortKey>('rank')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
 
@@ -464,7 +471,7 @@ function MetaStatsView({ decks }: { decks: MetaDeck[] }) {
                     </span>
                   </td>
                 </tr>
-                {tierDecks.map((d) => <DeckRow key={d.rank} deck={d} showTier showRank />)}
+                {tierDecks.map((d) => <DeckRow key={d.rank} deck={d} showTier showRank locale={locale} />)}
               </>
             )
           })}
@@ -488,6 +495,7 @@ function Decks() {
   const { data: metaDeckResponse } = useMetaSnapshot(rankFilter)
   const decks = metaDeckResponse?.decks ?? []
   const [tab, setTab] = useState<Tab>('덱모음')
+  const { data: locale } = useCDragonLocale()
 
   return (
     <AppLayout>
@@ -523,8 +531,8 @@ function Decks() {
         </div>
 
         {tab === '덱모음'
-          ? <DeckListView decks={decks} />
-          : <MetaStatsView decks={decks} />
+          ? <DeckListView decks={decks} locale={locale} />
+          : <MetaStatsView decks={decks} locale={locale} />
         }
       </div>
     </AppLayout>
