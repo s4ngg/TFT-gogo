@@ -31,8 +31,8 @@ export interface SummonerProfileResponse {
   tier: string            // 'DIAMOND'
   rank: string            // 'IV'
   leaguePoints: number
-  wins: number            // 1등 횟수
-  losses: number          // 2~8등 횟수
+  wins: number            // 4위 이상(순방) 횟수
+  losses: number          // 5~8위(4위 미만) 횟수
   avgPlace: number
   top4Rate: number
   rankDistribution: number[]   // index 0 = 1등 횟수, ... index 7 = 8등 횟수

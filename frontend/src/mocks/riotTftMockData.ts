@@ -36,8 +36,8 @@ export interface RiotTftLeagueEntryDto {
   leaguePoints?: number       // RANKED_TFT only
   ratedTier?: string          // RANKED_TFT_TURBO only (ORANGE|PURPLE|BLUE|GREEN|GRAY)
   ratedRating?: number        // RANKED_TFT_TURBO only
-  wins: number                // 1등 횟수
-  losses: number              // 2~8등 횟수
+  wins: number                // 4위 이상(순방) 횟수
+  losses: number              // 5~8위(4위 미만) 횟수
   hotStreak?: boolean
   veteran?: boolean
   freshBlood?: boolean

@@ -1,10 +1,11 @@
 ================================================================
   TFT-gogo ERD 수정 필요 사항
   (Riot API 실제 스키마 확인 후 도출 — 2026-05-26)
+  (ERD 현재 반영 상태 재검토 — 2026-05-28)
 ================================================================
 
 ----------------------------------------------------------------
-[1] summoner 테이블
+[1] summoner 테이블                                     ✅ 완료
 ----------------------------------------------------------------
 ▶ 삭제
   - summoner_id (외부 키, Riot API에서 더 이상 반환 안 함)
@@ -26,38 +27,38 @@
 
 
 ----------------------------------------------------------------
-[2] league_entry 테이블
+[2] ranks 테이블 (league_entry)                         ❌ 미반영
 ----------------------------------------------------------------
 ▶ 삭제
-  - summoner_id (FK) — puuid로 대체
+  - summoner_id (FK) — puuid로 대체                     ✅ 완료
 
-▶ 추가
-  - puuid (VARCHAR 78) — 기준 식별자
-  - rated_tier   (VARCHAR) — RANKED_TFT_TURBO 전용 (ORANGE|PURPLE|BLUE|GREEN|GRAY)
-  - rated_rating (INT)     — RANKED_TFT_TURBO 전용
+▶ 추가 (미반영)
+  - rated_tier   VARCHAR — RANKED_TFT_TURBO 전용 (ORANGE|PURPLE|BLUE|GREEN|GRAY)
+  - rated_rating INT     — RANKED_TFT_TURBO 전용
 
 ▶ 수정
-  - queue_type: 'RANKED_TFT' 외에 'RANKED_TFT_TURBO'도 존재
-  - wins:   1등 횟수 (First placement) ← 일반적인 승리 횟수 아님!
-  - losses: 2~8등 횟수 (Second through eighth placement)
+  - queue_id: 현재 VARCHAR(50) 이므로 'RANKED_TFT_TURBO' 수용 가능 ✅
+  - wins:   4위 이상(순방) 횟수 ← ERD 원본 주석 '4위 이상 (순방)' 이 맞음. 이전 수정 노트의 '1등 횟수' 는 오기였으므로 무효
+  - losses: 5~8위(4위 미만) 횟수
 
-▶ 추가 고려
+▶ 추가 고려 (미반영)
   - mini_series 테이블 (별도) 또는 JSON 컬럼
     mini_series: { losses, progress(string), target, wins }
 
 ▶ API 엔드포인트 변경
   기존: GET /tft/league/v1/entries/by-summoner/{summonerId}  ← 삭제
-  신규: GET /tft/league/v1/by-puuid/{puuid}                 ← 사용
+  신규: GET /tft/league/v1/by-puuid/{puuid}                 ← 사용 ✅
 
 
 ----------------------------------------------------------------
-[3] match 테이블 (info 레벨)
+[3] matches 테이블 (info 레벨)                          ❌ 미반영
 ----------------------------------------------------------------
-▶ 추가
-  - end_of_game_result (VARCHAR) — 게임 종료 결과 (예: "GameComplete")
-  - game_creation      (BIGINT)  — 게임 서버 로딩 시작 시각 (Unix timestamp ms)
-  - game_id            (BIGINT)  — 게임 고유 ID
-  - map_id             (INT)     — 맵 ID (TFT = 22)
+▶ 추가 (미반영)
+  - end_of_game_result VARCHAR(50) — 게임 종료 결과 (예: "GameComplete")
+  - game_creation      BIGINT      — 게임 서버 로딩 시작 시각 (Unix timestamp ms)
+  - game_id            BIGINT      — 게임 고유 ID
+  - map_id             INT         — 맵 ID (TFT = 22)
+  - tft_game_type      VARCHAR(30) — 게임 타입 (예: "standard") ← 신규 발견
 
 ▶ 참고: Riot API의 혼재된 네이밍 컨벤션
   camelCase:  endOfGameResult, gameCreation, gameId, mapId
@@ -66,12 +67,15 @@
 
 
 ----------------------------------------------------------------
-[4] participant 테이블
+[4] match_participants 테이블                           ❌ 미반영
 ----------------------------------------------------------------
-▶ 추가
-  - riot_id_game_name (VARCHAR) — 참가자 Riot 게임 이름
-  - riot_id_tagline   (VARCHAR) — 참가자 태그라인
-  - win               (BOOLEAN) — 1등 여부 (placement=1 과 동일하나 API 명시 필드)
+▶ 추가 (미반영)
+  - riot_id_game_name VARCHAR(50) — 참가자 Riot 게임 이름
+  - riot_id_tagline   VARCHAR(10) — 참가자 태그라인
+  - level             INT         — 참가자 레벨 (유닛 슬롯 수) ← 신규 발견
+
+▶ 유지
+  - win (BOOLEAN) — 1등 여부 (placement=1 과 동일하나 API 명시 필드) ✅
 
 ▶ 참고
   - placement: 1~8 (순위)
@@ -79,11 +83,11 @@
 
 
 ----------------------------------------------------------------
-[5] unit 테이블
+[5] participant_unit_items 테이블                       ❌ 미반영
 ----------------------------------------------------------------
-▶ 추가
-  - items (별도 테이블 또는 JSON 배열) — 정수 아이템 ID 목록 (신규)
-    ※ 기존 item_names(문자열)와 병행 제공됨
+▶ 추가 (미반영)
+  - item_id INT — 정수 아이템 ID (Riot API items: number[] 필드)
+    ※ 기존 item_name(문자열)과 병행 제공됨 — 두 필드 모두 저장할 것
 
 ▶ 주의
   - name 필드: API 스펙에 "often left blank" 명시
@@ -101,9 +105,9 @@
 
 
 ----------------------------------------------------------------
-[6] trait 테이블
+[6] participant_traits 테이블                           ✅ 완료
 ----------------------------------------------------------------
-▶ style 값 정의 (API 공식 스펙 확인 완료)
+▶ style 값 정의 (API 공식 스펙 확인 완료, ERD 주석 반영 완료)
   0 = No style (비활성)
   1 = Bronze
   2 = Silver
@@ -112,7 +116,26 @@
 
 
 ----------------------------------------------------------------
-[7] API 호출 흐름 변경 (Spring 구현 참고)
+[7] participant_augments 테이블                         ❌ 테이블 없음 (신규 추가 필요)
+----------------------------------------------------------------
+▶ 현황
+  Riot API 응답(participant)의 augments: string[] 필드가
+  ERD에 대응하는 테이블 자체가 없음.
+
+▶ 신규 테이블 추가 필요
+  CREATE TABLE participant_augments (
+    id                   BIGINT AUTO_INCREMENT PRIMARY KEY,
+    match_participant_id BIGINT       NOT NULL  COMMENT 'match_participants FK',
+    augment_id           VARCHAR(100) NOT NULL  COMMENT '증강 ID (e.g. TFT17_Augment_Guidebook)',
+    slot_order           INT          NOT NULL  COMMENT '증강 슬롯 순서 (0/1/2)',
+    created_at           DATETIME     NOT NULL  DEFAULT CURRENT_TIMESTAMP
+  );
+
+  FK: participant_augments.match_participant_id → match_participants.id
+
+
+----------------------------------------------------------------
+[8] API 호출 흐름 변경 (Spring 구현 참고)              ✅ 참고용 확인 완료
 ----------------------------------------------------------------
   기존 흐름 (잘못됨):
     gameName → summoner/by-name → summonerId → league/by-summoner
@@ -139,7 +162,7 @@
 
 
 ----------------------------------------------------------------
-[8] 수정된 프론트 파일 목록
+[9] 수정된 프론트 파일 목록                            ✅ 반영 완료
 ----------------------------------------------------------------
   frontend/src/mocks/riotTftMockData.ts
     - RiotAccountDto 타입 추가 (신규)
@@ -194,7 +217,7 @@
 
 
 ----------------------------------------------------------------
-[9] 향후 백엔드(Spring) 작업 가이드
+[10] 향후 백엔드(Spring) 작업 가이드
 ----------------------------------------------------------------
   1. Riot API 호출 시 puuid 중심 흐름 구현
   2. 매치 데이터 가공:
@@ -209,6 +232,20 @@
   4. 이미지 URL:
      - Community Dragon asset helper 또는 Data Dragon 사용
      - 프론트에서는 communityDragonAssetUrl() 함수로 통일
+
+
+----------------------------------------------------------------
+[11] ERD 미반영 항목 요약 (2026-05-28 기준)
+----------------------------------------------------------------
+  테이블              | 추가 필요 컬럼/테이블
+  ------------------- | ---------------------------------------------------
+  ranks               | rated_tier, rated_rating, mini_series
+  matches             | end_of_game_result, game_creation, game_id,
+                      | map_id, tft_game_type
+  match_participants  | riot_id_game_name, riot_id_tagline, level
+  participant_unit_   | item_id (INT)
+  items               |
+  participant_augments| 테이블 신규 생성 필요 (augments: string[] 저장용)
 
 
 ================================================================

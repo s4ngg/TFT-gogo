@@ -1,4 +1,5 @@
 .page {
+  --chevron-col-width: 28px;
   width: 960px;
   display: flex;
   flex-direction: column;
@@ -179,7 +180,7 @@
 
 .matchRow {
   display: grid;
-  grid-template-columns: 80px 1fr auto 90px;
+  grid-template-columns: 80px 1fr auto var(--chevron-col-width);
   align-items: center;
   gap: 20px;
   padding: 14px 20px;
@@ -267,25 +268,11 @@
   background: rgba(30, 50, 62, 0.8);
 }
 
-.lpDelta {
+.matchChevron {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.chevron {
-  opacity: 0.5;
-}
-
-.lpGain {
-  color: #76ef33;
-}
-
-.lpLoss {
-  color: #ff4945;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
 }
 
 /* ── profileCard 확장 ── */
