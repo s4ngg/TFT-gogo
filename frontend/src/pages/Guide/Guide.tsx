@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+﻿import { useEffect, useId, useRef, useState } from 'react'
 import {
   AlertTriangle,
   BookOpen,
@@ -53,6 +53,23 @@ const GUIDE_TAB_ICONS: Record<GuideTab, typeof BookOpen> = {
   champions: Swords,
   items: Package,
   traits: Shield,
+}
+
+function getNextGuideTabIndex(key: string, currentIndex: number): number | undefined {
+  const lastIndex = GUIDE_TABS.length - 1
+
+  if (key === 'ArrowLeft' || key === 'ArrowUp') {
+    return currentIndex === 0 ? lastIndex : currentIndex - 1
+  }
+
+  if (key === 'ArrowRight' || key === 'ArrowDown') {
+    return currentIndex === lastIndex ? 0 : currentIndex + 1
+  }
+
+  if (key === 'Home') return 0
+  if (key === 'End') return lastIndex
+
+  return undefined
 }
 
 function EmptyState() {
@@ -218,6 +235,9 @@ function ItemIconStrip({
               event.stopPropagation()
               onItemSelect(itemRef.name)
             }}
+            onKeyDown={(event) => {
+              event.stopPropagation()
+            }}
             title={`${itemRef.name} 아이템 보기`}
             type="button"
           >
@@ -285,23 +305,46 @@ function ChampionDetailDialog({
   onFavoriteToggle: (championName: string) => void
   onItemSelect: (itemName: string) => void
 }) {
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const titleId = useId()
+  const traitsId = useId()
+
+  useEffect(() => {
+    closeButtonRef.current?.focus()
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') onClose()
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
   return (
     <div className={styles.dialogBackdrop} role="presentation" onClick={onClose}>
       <section
-        aria-label={`${champion.name} 상세 정보`}
+        aria-describedby={traitsId}
+        aria-labelledby={titleId}
+        aria-modal="true"
         className={styles.championDialog}
         onClick={(event) => event.stopPropagation()}
         role="dialog"
       >
-        <button className={styles.dialogCloseButton} onClick={onClose} type="button">
+        <button
+          aria-label={`${champion.name} 상세 정보 닫기`}
+          className={styles.dialogCloseButton}
+          onClick={onClose}
+          ref={closeButtonRef}
+          type="button"
+        >
           <X size={17} />
         </button>
         <div className={styles.dialogHero}>
           <img src={champion.imageUrl} alt={champion.name} />
           <div>
-            <strong>{champion.name}</strong>
+            <strong id={titleId}>{champion.name}</strong>
             <span>{champion.role}</span>
-            <p>{champion.traits.join(' / ')}</p>
+            <p id={traitsId}>{champion.traits.join(' / ')}</p>
           </div>
         </div>
         <div className={styles.dialogItems}>
@@ -318,6 +361,7 @@ function ChampionDetailDialog({
         </dl>
         <p className={styles.dialogPosition}>권장 배치: {champion.position}</p>
         <button
+          aria-pressed={isFavorite}
           className={`${styles.dialogFavoriteButton} ${isFavorite ? styles.favoriteActive : ''}`}
           onClick={() => onFavoriteToggle(champion.name)}
           type="button"
@@ -747,6 +791,7 @@ function ChampionGuideView({
   const [costFilter, setCostFilter] = useState<ChampionCostFilter>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedChampion, setSelectedChampion] = useState<ChampionGuide | null>(null)
+  const lastFocusedElementRef = useRef<HTMLElement | null>(null)
   const filteredChampions = champions.filter((championGuide) => {
     const matchesCost = costFilter === 'all' || championGuide.cost === costFilter
     const matchesQuery = matchesSearch(query, [
@@ -771,6 +816,21 @@ function ChampionGuideView({
     if (currentPage > totalPages) setCurrentPage(totalPages)
   }, [currentPage, totalPages])
 
+  function openChampionDetail(championGuide: ChampionGuide) {
+    lastFocusedElementRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    setSelectedChampion(championGuide)
+    onChampionOpen(championGuide.name)
+  }
+
+  function closeChampionDetail() {
+    setSelectedChampion(null)
+    window.requestAnimationFrame(() => {
+      if (lastFocusedElementRef.current?.isConnected) {
+        lastFocusedElementRef.current.focus()
+      }
+    })
+  }
+
   return (
     <>
       <div className={styles.costFilter} aria-label="챔피언 비용 필터">
@@ -779,6 +839,7 @@ function ChampionGuideView({
             className={costFilter === cost ? styles.costActive : ''}
             key={cost}
             onClick={() => setCostFilter(cost)}
+            aria-pressed={costFilter === cost}
             type="button"
           >
             {cost === 'all' ? '전체' : `${cost}코스트`}
@@ -792,22 +853,27 @@ function ChampionGuideView({
             className={styles.championCard}
             key={championGuide.name}
             onClick={() => {
-              setSelectedChampion(championGuide)
-              onChampionOpen(championGuide.name)
+              openChampionDetail(championGuide)
             }}
             onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                setSelectedChampion(championGuide)
-                onChampionOpen(championGuide.name)
+              if (event.target !== event.currentTarget) return
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                openChampionDetail(championGuide)
               }
             }}
+            role="button"
             tabIndex={0}
           >
             <button
+              aria-pressed={favoriteChampions.includes(championGuide.name)}
               className={`${styles.favoriteButton} ${favoriteChampions.includes(championGuide.name) ? styles.favoriteActive : ''}`}
               onClick={(event) => {
                 event.stopPropagation()
                 onFavoriteToggle(championGuide.name)
+              }}
+              onKeyDown={(event) => {
+                event.stopPropagation()
               }}
               title={favoriteChampions.includes(championGuide.name) ? '즐겨찾기 해제' : '즐겨찾기 추가'}
               type="button"
@@ -853,10 +919,10 @@ function ChampionGuideView({
         <ChampionDetailDialog
           champion={selectedChampion}
           isFavorite={favoriteChampions.includes(selectedChampion.name)}
-          onClose={() => setSelectedChampion(null)}
+          onClose={closeChampionDetail}
           onFavoriteToggle={onFavoriteToggle}
           onItemSelect={(itemName) => {
-            setSelectedChampion(null)
+            closeChampionDetail()
             onItemSelect(itemName)
           }}
         />
@@ -896,20 +962,36 @@ function Guide() {
             <p>시너지, 아이템, 증강체, 챔피언 정보를 한 화면에서 빠르게 비교합니다.</p>
           </div>
           <div className={styles.headerStats}>
-            <StatBadge label="기준 패치" value="17.0" />
+            <StatBadge label="기준 패치" value={guideData.patchVersion} />
           </div>
         </header>
 
         <section className={styles.controlPanel}>
-          <div className={styles.tabBar}>
-            {GUIDE_TABS.map(({ key, label, meta }) => {
+          <div className={styles.tabBar} role="tablist" aria-label="게임 가이드 탭">
+            {GUIDE_TABS.map(({ key, label, meta }, guideTabIndex) => {
               const Icon = GUIDE_TAB_ICONS[key]
 
               return (
                 <button
+                  aria-controls={`guide-panel-${key}`}
+                  aria-selected={activeTab === key}
                   className={activeTab === key ? styles.activeTab : ''}
+                  id={`guide-tab-${key}`}
                   key={key}
                   onClick={() => selectTab(key)}
+                  onKeyDown={(event) => {
+                    const nextTabIndex = getNextGuideTabIndex(event.key, guideTabIndex)
+                    if (nextTabIndex === undefined) return
+
+                    event.preventDefault()
+                    const nextTab = GUIDE_TABS[nextTabIndex]
+                    selectTab(nextTab.key)
+                    window.requestAnimationFrame(() => {
+                      document.getElementById(`guide-tab-${nextTab.key}`)?.focus()
+                    })
+                  }}
+                  role="tab"
+                  tabIndex={activeTab === key ? 0 : -1}
                   type="button"
                 >
                   <Icon size={18} />
@@ -944,36 +1026,44 @@ function Guide() {
         />
 
         {activeTab === 'traits' && (
-          <TraitGuideView
-            onChampionSelect={(championName) => jumpToGuide('champions', championName, championName)}
-            query={search}
-            traits={guideData.traits}
-          />
+          <div id="guide-panel-traits" role="tabpanel" aria-labelledby="guide-tab-traits">
+            <TraitGuideView
+              onChampionSelect={(championName) => jumpToGuide('champions', championName, championName)}
+              query={search}
+              traits={guideData.traits}
+            />
+          </div>
         )}
         {activeTab === 'items' && (
-          <ItemStatsView
-            items={guideData.items}
-            onChampionSelect={(championName) => jumpToGuide('champions', championName, championName)}
-            query={search}
-          />
+          <div id="guide-panel-items" role="tabpanel" aria-labelledby="guide-tab-items">
+            <ItemStatsView
+              items={guideData.items}
+              onChampionSelect={(championName) => jumpToGuide('champions', championName, championName)}
+              query={search}
+            />
+          </div>
         )}
         {activeTab === 'augments' && (
-          <AugmentGuideView
-            augmentPlans={guideData.augmentPlans}
-            augments={guideData.augments}
-            query={search}
-            rewardRows={guideData.rewards}
-          />
+          <div id="guide-panel-augments" role="tabpanel" aria-labelledby="guide-tab-augments">
+            <AugmentGuideView
+              augmentPlans={guideData.augmentPlans}
+              augments={guideData.augments}
+              query={search}
+              rewardRows={guideData.rewards}
+            />
+          </div>
         )}
         {activeTab === 'champions' && (
-          <ChampionGuideView
-            champions={guideData.champions}
-            favoriteChampions={favoriteChampions}
-            onChampionOpen={(championName) => addRecentGuide({ label: championName, query: championName, tab: 'champions' })}
-            onFavoriteToggle={handleFavoriteToggle}
-            onItemSelect={(itemName) => jumpToGuide('items', itemName, itemName)}
-            query={search}
-          />
+          <div id="guide-panel-champions" role="tabpanel" aria-labelledby="guide-tab-champions">
+            <ChampionGuideView
+              champions={guideData.champions}
+              favoriteChampions={favoriteChampions}
+              onChampionOpen={(championName) => addRecentGuide({ label: championName, query: championName, tab: 'champions' })}
+              onFavoriteToggle={handleFavoriteToggle}
+              onItemSelect={(itemName) => jumpToGuide('items', itemName, itemName)}
+              query={search}
+            />
+          </div>
         )}
       </div>
     </AppLayout>

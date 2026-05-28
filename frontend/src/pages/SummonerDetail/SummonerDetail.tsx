@@ -44,29 +44,8 @@ function detailRankClass(n: number) {
   return ''
 }
 
-/* ── 순위 분포 바 ── */
-function RankDistribution({ dist }: { dist: number[] }) {
-  const max = Math.max(...dist, 1)
-  return (
-    <div className={styles.rankDist}>
-      {dist.map((count, i) => (
-        <div key={i} className={styles.rankDistItem}>
-          <div className={styles.rankDistBarWrap}>
-            <div
-              className={`${styles.rankDistBar} ${i < 4 ? styles.top4Bar : styles.bot4Bar}`}
-              style={{ height: `${Math.max(4, (count / max) * 56)}px` }}
-            />
-          </div>
-          <span className={styles.rankDistNum}>{i + 1}</span>
-          <span className={styles.rankDistCount}>{count}</span>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 /* ── 30게임 요약 ── */
-function RecentSummary({ matches, rankDist }: { matches: MatchSummaryResponse[]; rankDist?: number[] }) {
+function RecentSummary({ matches }: { matches: MatchSummaryResponse[] }) {
   const recent = matches.slice(0, 30)
   const top4 = recent.filter((m) => m.placement <= 4).length
   const avgPlace = recent.length > 0
@@ -92,12 +71,6 @@ function RecentSummary({ matches, rankDist }: { matches: MatchSummaryResponse[];
           {avgPlace}<span className={styles.summaryStatTh}>th</span> / 8
         </p>
       </div>
-      {rankDist && (
-        <div className={styles.summaryDistWrap}>
-          <p className={styles.summaryDistLabel}>순위 분포</p>
-          <RankDistribution dist={rankDist} />
-        </div>
-      )}
     </section>
   )
 }
@@ -122,10 +95,13 @@ function MatchDetailPanel({ match, myPuuid }: { match: MatchSummaryResponse; myP
             <span className={styles.detailStage}>{p.stage}</span>
             <div className={styles.detailTraits}>
               {p.traits.slice(0, 3).map((tr) => (
-                <div key={tr.traitId} className={styles.detailTraitBadge} title={tr.name}>
-                  <img src={tr.iconUrl} alt={tr.name} className={styles.detailTraitIcon} />
-                  <span>{tr.count}</span>
-                </div>
+                <TraitHexBadge
+                  key={tr.traitId}
+                  count={tr.count}
+                  iconUrl={tr.iconUrl}
+                  name={tr.name}
+                  tone={tr.tone}
+                />
               ))}
             </div>
             <div className={styles.detailUnits}>
@@ -149,6 +125,19 @@ function MatchDetailPanel({ match, myPuuid }: { match: MatchSummaryResponse; myP
   )
 }
 
+/* ── 소환사 없음 ── */
+function EmptyState({ name, tag }: { name: string; tag: string }) {
+  return (
+    <div className={styles.emptyState}>
+      <p className={styles.emptyTitle}>소환사를 찾을 수 없습니다</p>
+      <p className={styles.emptyDesc}>
+        <strong>{name}#{tag}</strong>에 해당하는 소환사가 존재하지 않거나 한국 서버에 등록되지 않았습니다.
+        소환사명과 태그를 다시 확인해 주세요.
+      </p>
+    </div>
+  )
+}
+
 /* ── 메인 ── */
 function SummonerDetail() {
   const { gameName, tagLine } = useParams<{ gameName: string; tagLine: string }>()
@@ -162,8 +151,12 @@ function SummonerDetail() {
   const name = decodeURIComponent(gameName ?? '')
   const tag = tagLine ?? 'KR1'
 
-  const { data: profile } = useSummonerProfile(name, tag)
-  const { data: matches = [], refetch: refetchMatches } = useMatchHistory(name, tag)
+  const { data: profile, isError: profileNotFound } = useSummonerProfile(name, tag)
+  const {
+    data: matches = [],
+    refetch: refetchMatches,
+    isRefetching: isMatchesRefetching,
+  } = useMatchHistory(name, tag)
 
   const tierKo = TIER_KO[profile?.tier ?? ''] ?? profile?.tier ?? '-'
   const total = profile ? (profile.wins + profile.losses) : 0
@@ -210,152 +203,171 @@ function SummonerDetail() {
           <button type="submit" aria-label="검색"><Search size={20} /></button>
         </form>
 
-        {/* 프로필 카드 */}
-        <section className={styles.profileCard}>
-          <div className={styles.profileIconWrap}>
-            <img
-              className={styles.profileIcon}
-              src={communityDragonProfileIconUrl(profile?.profileIconId ?? 1)}
-              alt="프로필 아이콘"
-            />
-            <span className={styles.profileLevel}>{profile?.summonerLevel ?? '-'}</span>
-          </div>
-          <div className={styles.emblem} />
-          <div className={styles.profileInfo}>
-            <h1>{name}<span className={styles.tag}>#{tag}</span></h1>
-            <p className={styles.tierLine}>
-              {tierKo} {profile?.rank} · {profile?.leaguePoints ?? '-'} LP
-            </p>
-            <p className={styles.recordLine}>
-              <span>{profile?.wins ?? '-'}승 {profile?.losses ?? '-'}패</span>
-              <span className={styles.winRateText}>승률 {winRate}%</span>
-              <span className={styles.avgPlaceText}>평균 {profile?.avgPlace ?? '-'}등</span>
-              <span className={styles.top4Text}>TOP4 {profile?.top4Rate ?? '-'}%</span>
-            </p>
-          </div>
-          <div className={styles.profileRight}>
-            <button type="button" className={styles.updateBtn} onClick={() => refetchMatches()}>
-              <RefreshCcw size={16} />전적 업데이트
-            </button>
-            {profile && <RankDistribution dist={profile.rankDistribution} />}
-          </div>
-        </section>
-
-        {/* 많이 플레이한 시너지 / 챔피언 */}
-        {profile && (
-          <div className={styles.statGrid}>
-            <section className={styles.statSection}>
-              <h2 className={styles.statSectionTitle}>많이 플레이한 시너지</h2>
-              <div className={styles.topTraitList}>
-                {(profile.topTraits ?? []).map((tr, i) => (
-                  <div key={tr.traitId} className={styles.topTraitRow}>
-                    <span className={styles.topRank}>{i + 1}</span>
-                    <TraitHexBadge count={tr.count} iconUrl={tr.iconUrl} name={tr.name} tone={tr.tone} />
-                    <span className={styles.topName}>{tr.name}</span>
-                    <span className={styles.topGames}>{tr.games}게임</span>
-                    <span className={styles.topAvg}>평균 {tr.avgPlace}등</span>
-                  </div>
-                ))}
+        {profileNotFound ? (
+          <EmptyState name={name} tag={tag} />
+        ) : (
+          <>
+            {/* 프로필 카드 */}
+            <section className={styles.profileCard}>
+              <div className={styles.profileIconWrap}>
+                <img
+                  className={styles.profileIcon}
+                  src={communityDragonProfileIconUrl(profile?.profileIconId ?? 1)}
+                  alt="프로필 아이콘"
+                />
+                <span className={styles.profileLevel}>{profile?.summonerLevel ?? '-'}</span>
+              </div>
+              <div className={styles.emblem} />
+              <div className={styles.profileInfo}>
+                <h1>{name}<span className={styles.tag}>#{tag}</span></h1>
+                <p className={styles.tierLine}>
+                  {tierKo} {profile?.rank} · {profile?.leaguePoints ?? '-'} LP
+                </p>
+                <p className={styles.recordLine}>
+                  <span>{profile?.wins ?? '-'}승 {profile?.losses ?? '-'}패</span>
+                  <span className={styles.winRateText}>승률 {winRate}%</span>
+                  <span className={styles.avgPlaceText}>평균 {profile?.avgPlace ?? '-'}등</span>
+                  <span className={styles.top4Text}>TOP4 {profile?.top4Rate ?? '-'}%</span>
+                </p>
+              </div>
+              <div className={styles.profileRight}>
+                <button
+                  type="button"
+                  className={styles.updateBtn}
+                  onClick={() => refetchMatches()}
+                  disabled={isMatchesRefetching}
+                >
+                  <RefreshCcw size={16} className={isMatchesRefetching ? styles.spin : ''} />
+                  {isMatchesRefetching ? '갱신 중...' : '전적 업데이트'}
+                </button>
               </div>
             </section>
 
-            <section className={styles.statSection}>
-              <h2 className={styles.statSectionTitle}>많이 플레이한 챔피언</h2>
-              <div className={styles.topChampList}>
-                {(profile.topChampions ?? []).map((champ, i) => (
-                  <div key={champ.characterId} className={styles.topChampRow}>
-                    <span className={styles.topRank}>{i + 1}</span>
-                    <div className={styles.champThumbWrap}>
-                      <img className={styles.champThumb} src={champ.imageUrl} alt={champ.name} />
-                      <span className={styles.champCost} style={{ background: costColor(champ.cost) }}>
-                        {champ.cost}
-                      </span>
-                    </div>
-                    <span className={styles.topName}>{champ.name}</span>
-                    <span className={styles.topGames}>{champ.games}게임</span>
-                    <span className={styles.topAvg}>평균 {champ.avgPlace}등</span>
+            {/* 많이 플레이한 시너지 / 챔피언 */}
+            {profile && (
+              <div className={styles.statGrid}>
+                <section className={styles.statSection}>
+                  <h2 className={styles.statSectionTitle}>많이 플레이한 시너지</h2>
+                  <div className={styles.topTraitList}>
+                    {(profile.topTraits ?? []).map((tr, i) => (
+                      <div key={tr.traitId} className={styles.topTraitRow}>
+                        <span className={styles.topRank}>{i + 1}</span>
+                        <TraitHexBadge count={tr.count} iconUrl={tr.iconUrl} name={tr.name} tone={tr.tone} />
+                        <span className={styles.topName}>{tr.name}</span>
+                        <span className={styles.topGames}>{tr.games}게임</span>
+                        <span className={styles.topAvg}>평균 {tr.avgPlace}등</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </section>
+
+                <section className={styles.statSection}>
+                  <h2 className={styles.statSectionTitle}>많이 플레이한 챔피언</h2>
+                  <div className={styles.topChampList}>
+                    {(profile.topChampions ?? []).map((champ, i) => (
+                      <div key={champ.characterId} className={styles.topChampRow}>
+                        <span className={styles.topRank}>{i + 1}</span>
+                        <div className={styles.champThumbWrap}>
+                          <img className={styles.champThumb} src={champ.imageUrl} alt={champ.name} />
+                          <span className={styles.champCost} style={{ background: costColor(champ.cost) }}>
+                            {champ.cost}
+                          </span>
+                        </div>
+                        <span className={styles.topName}>{champ.name}</span>
+                        <span className={styles.topGames}>{champ.games}게임</span>
+                        <span className={styles.topAvg}>평균 {champ.avgPlace}등</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
               </div>
-            </section>
-          </div>
-        )}
+            )}
 
-        {/* 매치 히스토리 */}
-        <section className={styles.matchSection}>
-          <h2>최근 {Math.min(30, filteredMatches.length)}게임</h2>
-          <RecentSummary matches={filteredMatches} />
+            {/* 매치 히스토리 */}
+            <section className={styles.matchSection}>
+              <h2>최근 {Math.min(30, filteredMatches.length)}게임</h2>
+              <RecentSummary matches={filteredMatches} />
 
-          {/* 게임 유형 필터 */}
-          <div className={styles.filterBar}>
-            {GAME_TYPE_FILTERS.map((type) => (
-              <button
-                key={type}
-                type="button"
-                className={`${styles.filterBtn} ${gameTypeFilter === type ? styles.filterBtnActive : ''}`}
-                onClick={() => handleFilterChange(type)}
-              >
-                {type === 'ALL' ? '전체' : type === 'RANKED' ? '랭크' : '일반'}
-              </button>
-            ))}
-          </div>
-
-          <div className={styles.matchList}>
-            {filteredMatches.slice(0, visibleCount).map((match) => {
-              const isOpen = expandedId === match.matchId
-              return (
-                <div key={match.matchId} className={styles.matchItem}>
-                  <article
-                    className={`${styles.matchRow} ${placementTone(match.placement)} ${isOpen ? styles.matchRowOpen : ''}`}
-                    onClick={() => setExpandedId(isOpen ? null : match.matchId)}
+              {/* 게임 유형 필터 */}
+              <div className={styles.filterBar}>
+                {GAME_TYPE_FILTERS.map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    className={`${styles.filterBtn} ${gameTypeFilter === type ? styles.filterBtnActive : ''}`}
+                    onClick={() => handleFilterChange(type)}
                   >
-                    <div className={styles.placementBadge}>
-                      <span>{match.placement}위</span>
+                    {type === 'ALL' ? '전체' : type === 'RANKED' ? '랭크' : '일반'}
+                  </button>
+                ))}
+              </div>
+
+              <div className={styles.matchList}>
+                {filteredMatches.slice(0, visibleCount).map((match) => {
+                  const isOpen = expandedId === match.matchId
+                  return (
+                    <div key={match.matchId} className={styles.matchItem}>
+                      <article
+                        className={`${styles.matchRow} ${placementTone(match.placement)} ${isOpen ? styles.matchRowOpen : ''}`}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setExpandedId(isOpen ? null : match.matchId)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            setExpandedId(isOpen ? null : match.matchId)
+                          }
+                        }}
+                      >
+                        <div className={styles.placementBadge}>
+                          <span>{match.placement}위</span>
+                        </div>
+                        <div className={styles.matchMeta}>
+                          <p className={styles.deckName}>
+                            <span className={`${styles.gameTypeBadge} ${match.gameType === 'RANKED' ? styles.gameTypeBadgeRanked : styles.gameTypeBadgeNormal}`}>
+                              {match.gameType === 'RANKED' ? '랭크' : '일반'}
+                            </span>
+                            {match.compositionName}
+                          </p>
+                          <p className={styles.timeAgo}>{timeAgo(match.gameDateTime)}</p>
+                        </div>
+                        <div className={styles.unitList}>
+                          {match.units.map((unit) => (
+                            <ChampionCard
+                              key={unit.characterId}
+                              imageUrl={unit.imageUrl}
+                              stars={unit.stars}
+                              label={unit.characterId}
+                              items={itemsFromUrls(unit.itemImageUrls)}
+                              toneIndex={0}
+                            />
+                          ))}
+                        </div>
+                        <div className={styles.matchChevron}>
+                          {isOpen
+                            ? <ChevronUp size={14} />
+                            : <ChevronDown size={14} />}
+                        </div>
+                      </article>
+                      {isOpen && (
+                        <MatchDetailPanel match={match} myPuuid={profile?.puuid ?? ''} />
+                      )}
                     </div>
-                    <div className={styles.matchMeta}>
-                      <p className={styles.deckName}>
-                        <span className={`${styles.gameTypeBadge} ${match.gameType === 'RANKED' ? styles.gameTypeBadgeRanked : styles.gameTypeBadgeNormal}`}>
-                          {match.gameType === 'RANKED' ? '랭크' : '일반'}
-                        </span>
-                        {match.compositionName}
-                      </p>
-                      <p className={styles.timeAgo}>{timeAgo(match.gameDateTime)}</p>
-                    </div>
-                    <div className={styles.unitList}>
-                      {match.units.map((unit) => (
-                        <ChampionCard
-                          key={unit.characterId}
-                          imageUrl={unit.imageUrl}
-                          stars={unit.stars}
-                          label={unit.characterId}
-                          items={itemsFromUrls(unit.itemImageUrls)}
-                          toneIndex={0}
-                        />
-                      ))}
-                    </div>
-                    <div className={styles.matchChevron}>
-                      {isOpen
-                        ? <ChevronUp size={14} />
-                        : <ChevronDown size={14} />}
-                    </div>
-                  </article>
-                  {isOpen && (
-                    <MatchDetailPanel match={match} myPuuid={profile?.puuid ?? ''} />
-                  )}
-                </div>
-              )
-            })}
-          </div>
-          {visibleCount < filteredMatches.length && (
-            <button
-              type="button"
-              className={styles.loadMoreBtn}
-              onClick={() => setVisibleCount((v) => v + 30)}
-            >
-              30개 더 보기 ({filteredMatches.length - visibleCount}개 남음)
-            </button>
-          )}
-        </section>
+                  )
+                })}
+              </div>
+              {visibleCount < filteredMatches.length && (
+                <button
+                  type="button"
+                  className={styles.loadMoreBtn}
+                  onClick={() => setVisibleCount((v) => v + 30)}
+                >
+                  30개 더 보기 ({filteredMatches.length - visibleCount}개 남음)
+                </button>
+              )}
+            </section>
+          </>
+        )}
       </div>
     </AppLayout>
   )

@@ -21,7 +21,7 @@ export interface ChampionCardProps {
   cost?: number
 }
 
-function ChampionCard({ label, imageUrl, items = [], stars = 2, hasItem = false, toneIndex = 0, cost }: ChampionCardProps) {
+function ChampionCard({ label, imageUrl, items = [], stars = 2, hasItem = false, cost }: ChampionCardProps) {
   const costClass = cost != null ? (costClasses[cost] ?? styles.cost1) : undefined
   const equippedItems = items.slice(0, 3)
 

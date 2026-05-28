@@ -819,6 +819,7 @@ export const guideFallbackData: GuideCatalog = {
   augmentPlans: AUGMENT_PLANS,
   champions: CHAMPION_GUIDES,
   items: ITEM_STATS,
+  patchVersion: '17.0',
   rewards: REWARD_ROWS,
   traits: TRAIT_GUIDES,
 }

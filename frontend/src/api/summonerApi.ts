@@ -94,7 +94,9 @@ export const getSummonerProfile = async (
       `/summoner/${encodeURIComponent(gameName)}/${tagLine}`,
     )
     return data
-  } catch {
+  } catch (err: unknown) {
+    const status = (err as { response?: { status?: number } })?.response?.status
+    if (status === 404) throw err
     return mockSummonerProfile
   }
 }
