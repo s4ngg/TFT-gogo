@@ -27,6 +27,7 @@ export interface ChampionSummary {
   items?: ChampionItemSummary[]
   name: string
   stars: ChampionCardProps['stars']
+  cost?: number
 }
 
 export interface ChampionItemSummary {

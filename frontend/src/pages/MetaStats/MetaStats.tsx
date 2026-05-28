@@ -36,7 +36,7 @@ function DeckCard({ deck }: { deck: MetaDeck }) {
       </div>
       <div className={styles.cardChamps}>
         {deck.champions.slice(0, 6).map((c, i) => (
-          <ChampionCard key={`${c.name}-${i}`} imageUrl={c.imageUrl} label={c.name} stars={c.stars} toneIndex={i} />
+          <ChampionCard key={`${c.name}-${i}`} imageUrl={c.imageUrl} label={c.name} stars={c.stars} cost={c.cost} />
         ))}
       </div>
       <div className={styles.cardStats}>

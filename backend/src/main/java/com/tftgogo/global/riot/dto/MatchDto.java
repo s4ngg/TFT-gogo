@@ -31,7 +31,8 @@ public class MatchDto {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class UnitDto {
         private String character_id;   // TFT13_Jinx 형식
-        private int tier;              // 별 등급
+        private int tier;              // 별 등급 (1~3)
+        private int rarity;            // 코스트 등급 (0=1코, 1=2코, 2=3코, 4=4코, 6=5코)
         private List<String> itemNames;
     }
 

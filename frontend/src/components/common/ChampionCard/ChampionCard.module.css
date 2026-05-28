@@ -90,35 +90,40 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.58);
 }
 
-.tone0 {
-  border-color: #ce5795;
-  background: linear-gradient(135deg, #512572, #e66570 55%, #2c112f);
+/* 코스트별 색상 (TFT 게임 기준) */
+.cost1 {
+  border-color: #8b9198;
+  background: linear-gradient(135deg, #3a3d42, #5a5e65 50%, #2a2c30);
 }
 
-.tone1 {
-  border-color: #69836a;
-  background: linear-gradient(135deg, #223a47, #95715b 52%, #1b161c);
+.cost2 {
+  border-color: #0bb453;
+  background: linear-gradient(135deg, #0a3d20, #0f6b30 50%, #072a16);
 }
 
-.tone2 {
-  border-color: #8a68d5;
-  background: linear-gradient(135deg, #6b33b8, #171e5a 48%, #de5f8a);
+.cost3 {
+  border-color: #2e93f0;
+  background: linear-gradient(135deg, #0a2a5e, #1255a0 50%, #071830);
 }
 
-.tone3 {
-  border-color: #826ee3;
-  background: linear-gradient(135deg, #34207a, #7553b0 50%, #141524);
+.cost4 {
+  border-color: #c542f5;
+  background: linear-gradient(135deg, #3a1060, #7a20b0 50%, #250a40);
 }
 
-.tone4 {
-  border-color: #dd9470;
-  background: linear-gradient(135deg, #39243f, #212a4d 40%, #a85d58);
+.cost5 {
+  border-color: #f0c030;
+  background: linear-gradient(135deg, #4a3000, #8a6000 50%, #2a1a00);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15), 0 0 12px rgba(240, 192, 48, 0.35);
 }
 
-.tone5 {
-  border-color: #3d9cb0;
-  background: linear-gradient(135deg, #1e6577, #7f2b82 48%, #c55d63);
-}
+/* 기존 tone 클래스 유지 (다른 컴포넌트 호환용) */
+.tone0 { border-color: #ce5795; background: linear-gradient(135deg, #512572, #e66570 55%, #2c112f); }
+.tone1 { border-color: #69836a; background: linear-gradient(135deg, #223a47, #95715b 52%, #1b161c); }
+.tone2 { border-color: #8a68d5; background: linear-gradient(135deg, #6b33b8, #171e5a 48%, #de5f8a); }
+.tone3 { border-color: #826ee3; background: linear-gradient(135deg, #34207a, #7553b0 50%, #141524); }
+.tone4 { border-color: #dd9470; background: linear-gradient(135deg, #39243f, #212a4d 40%, #a85d58); }
+.tone5 { border-color: #3d9cb0; background: linear-gradient(135deg, #1e6577, #7f2b82 48%, #c55d63); }
 
 @media (max-height: 980px) {
   .card {
