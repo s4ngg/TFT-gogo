@@ -7,7 +7,7 @@ import TierBadge from '../../components/common/TierBadge'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
 import { tftItemIconUrl } from '../../api/communityDragonAssets'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
-import type { MetaDeck, RankFilter, ItemSummary } from '../Dashboard/dashboardData'
+import type { MetaDeck, RankFilter } from '../Dashboard/dashboardData'
 import type { TierBadgeValue } from '../../components/common/TierBadge'
 import styles from './Decks.module.css'
 
@@ -223,65 +223,53 @@ interface ItemUnitEntry {
   itemId: string
   itemName: string
   iconUrl: string
-  itemStat: ItemSummary
-  units: { name: string; imageUrl: string; frequency: number; avgDeckWinRate: number }[]
+  placementDelta: number   // 양수일수록 등수 향상 효과가 큼
+  winRate: string
+  units: { name: string; imageUrl: string }[]
 }
 
 function buildItemUnitEntries(decks: MetaDeck[]): ItemUnitEntry[] {
   const map = new Map<string, {
-    itemStat: ItemSummary
+    placementDelta: number
+    winRate: string
     iconUrl: string
-    unitMap: Map<string, { name: string; imageUrl: string; count: number; totalWinRate: number }>
+    unitSet: Map<string, { name: string; imageUrl: string }>
   }>()
 
   decks.forEach((deck) => {
     deck.topItems?.forEach((item) => {
+      const delta = parseFloat(item.placementDelta)
+      if (delta <= 0) return
+
       if (!map.has(item.itemId)) {
         map.set(item.itemId, {
-          itemStat: item,
+          placementDelta: delta,
+          winRate: item.winRate,
           iconUrl: tftItemIconUrl(item.itemId),
-          unitMap: new Map(),
+          unitSet: new Map(),
         })
       }
       const entry = map.get(item.itemId)!
-      const deckWinRate = parseFloat(deck.winRate)
 
       deck.champions.forEach((champ) => {
-        if (champ.recommendedItems?.includes(item.itemId)) {
-          const existing = entry.unitMap.get(champ.name)
-          if (existing) {
-            existing.count++
-            existing.totalWinRate += deckWinRate
-          } else {
-            entry.unitMap.set(champ.name, {
-              name: champ.name,
-              imageUrl: champ.imageUrl,
-              count: 1,
-              totalWinRate: deckWinRate,
-            })
-          }
+        if (champ.recommendedItems?.includes(item.itemId) && !entry.unitSet.has(champ.name)) {
+          entry.unitSet.set(champ.name, { name: champ.name, imageUrl: champ.imageUrl })
         }
       })
     })
   })
 
-  return Array.from(map.values())
-    .map(({ itemStat, iconUrl, unitMap }) => ({
-      itemId: itemStat.itemId,
-      itemName: itemStat.itemName,
+  return Array.from(map.entries())
+    .map(([itemId, { placementDelta, winRate, iconUrl, unitSet }]) => ({
+      itemId,
+      itemName: itemId.split('_').pop() ?? itemId,
       iconUrl,
-      itemStat,
-      units: Array.from(unitMap.values())
-        .sort((a, b) => b.count - a.count || b.totalWinRate - a.totalWinRate)
-        .map((u) => ({
-          name: u.name,
-          imageUrl: u.imageUrl,
-          frequency: u.count,
-          avgDeckWinRate: u.count > 0 ? u.totalWinRate / u.count : 0,
-        })),
+      placementDelta,
+      winRate,
+      units: Array.from(unitSet.values()),
     }))
     .filter((e) => e.units.length > 0)
-    .sort((a, b) => parseFloat(b.itemStat.winRate) - parseFloat(a.itemStat.winRate))
+    .sort((a, b) => b.placementDelta - a.placementDelta)
 }
 
 function ArtifactSection({ decks }: { decks: MetaDeck[] }) {
@@ -335,26 +323,19 @@ function ArtifactSection({ decks }: { decks: MetaDeck[] }) {
                       className={styles.artifactIcon}
                       onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '0.3' }}
                     />
-                    <span className={styles.artifactName}>{entry.itemName}</span>
+                    <div className={styles.artifactItemInfo}>
+                      <span className={styles.artifactName}>{entry.itemName}</span>
+                      <span className={styles.artifactDelta}>
+                        등수 향상 +{entry.placementDelta.toFixed(2)}
+                      </span>
+                    </div>
                   </div>
 
                   <div className={styles.artifactUnits}>
-                    <div className={styles.artifactUnitHeader}>
-                      <span />
-                      <span>유닛</span>
-                      <span>덱 빈도</span>
-                      <span>덱 승률</span>
-                      <span>아이템 승률</span>
-                      <span>픽률</span>
-                    </div>
-                    {entry.units.slice(0, 3).map((u) => (
+                    {entry.units.slice(0, 4).map((u) => (
                       <div key={u.name} className={styles.artifactUnit}>
                         <img src={u.imageUrl} alt={u.name} className={styles.artifactChampImg} />
                         <span className={styles.artifactUnitName}>{u.name}</span>
-                        <span className={`${styles.artifactStat} ${styles.artifactStatFreq}`}>{u.frequency}덱</span>
-                        <span className={`${styles.artifactStat} ${styles.artifactStatWin}`}>{u.avgDeckWinRate.toFixed(1)}%</span>
-                        <span className={`${styles.artifactStat} ${styles.artifactStatImp}`}>{entry.itemStat.winRate}</span>
-                        <span className={`${styles.artifactStat} ${styles.artifactStatTop4}`}>{entry.itemStat.playRate}</span>
                       </div>
                     ))}
                   </div>
