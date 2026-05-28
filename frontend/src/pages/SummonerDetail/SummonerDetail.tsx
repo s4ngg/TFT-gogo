@@ -124,7 +124,10 @@ function MatchDetailPanel({ match, myPuuid }: { match: MatchSummaryResponse; myP
                   imageUrl={unit.imageUrl}
                   stars={unit.stars}
                   label=""
-                  items={unit.itemImageUrls.map((url) => ({ imageUrl: url, name: '' }))}
+                  items={unit.itemImageUrls.map((url) => ({
+                    imageUrl: url,
+                    name: url.split('/').pop()?.split('.')[0] ?? url,
+                  }))}
                   toneIndex={0}
                 />
               ))}
@@ -286,7 +289,10 @@ function SummonerDetail() {
                           imageUrl={unit.imageUrl}
                           stars={unit.stars}
                           label={unit.characterId}
-                          items={unit.itemImageUrls.map((url) => ({ imageUrl: url, name: '' }))}
+                          items={unit.itemImageUrls.map((url) => ({
+                            imageUrl: url,
+                            name: url.split('/').pop()?.split('.')[0] ?? url,
+                          }))}
                           toneIndex={0}
                         />
                       ))}

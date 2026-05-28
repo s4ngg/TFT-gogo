@@ -271,7 +271,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #8a939c;
+  color: var(--text-muted);
 }
 
 /* ── profileCard 확장 ── */
