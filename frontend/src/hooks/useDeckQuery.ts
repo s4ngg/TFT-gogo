@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { getMetaDecks } from '../api/deckApi'
-import type { MetaDeck } from '../pages/Dashboard/dashboardData'
+import type { MetaDeck, RankFilter } from '../pages/Dashboard/dashboardData'
 
-export const useDeckQuery = () =>
+export const useDeckQuery = (rankFilter: RankFilter = 'EMERALD_PLUS') =>
   useQuery<MetaDeck[]>({
-    queryKey: ['decks', 'meta'],
-    queryFn: getMetaDecks,
+    queryKey: ['decks', 'meta', rankFilter],
+    queryFn: () => getMetaDecks(rankFilter),
     staleTime: 1000 * 60 * 5,
   })

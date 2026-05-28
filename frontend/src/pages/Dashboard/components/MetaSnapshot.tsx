@@ -87,7 +87,7 @@ function Champions({ champions }: ChampionsProps) {
           key={`${champion.name}-${index}`}
           label={champion.name}
           stars={champion.stars}
-          toneIndex={index}
+          cost={champion.cost}
         />
       ))}
     </div>

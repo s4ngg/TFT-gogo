@@ -1,10 +1,11 @@
 import { Clock3 } from 'lucide-react'
+import { useState } from 'react'
 import { AppLayout } from '../../components/layout'
 import ChampionCard from '../../components/common/ChampionCard'
 import TierBadge from '../../components/common/TierBadge'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
-import type { MetaDeck } from '../Dashboard/dashboardData'
+import type { MetaDeck, RankFilter } from '../Dashboard/dashboardData'
 import type { TierBadgeValue } from '../../components/common/TierBadge'
 import styles from './MetaStats.module.css'
 
@@ -36,7 +37,7 @@ function DeckCard({ deck }: { deck: MetaDeck }) {
       </div>
       <div className={styles.cardChamps}>
         {deck.champions.slice(0, 6).map((c, i) => (
-          <ChampionCard key={`${c.name}-${i}`} imageUrl={c.imageUrl} label={c.name} stars={c.stars} toneIndex={i} />
+          <ChampionCard key={`${c.name}-${i}`} imageUrl={c.imageUrl} label={c.name} stars={c.stars} cost={c.cost} />
         ))}
       </div>
       <div className={styles.cardStats}>
@@ -81,9 +82,16 @@ function TierSection({ tier, decks }: { tier: TierBadgeValue; decks: MetaDeck[] 
   )
 }
 
+const RANK_FILTERS: { label: string; value: RankFilter }[] = [
+  { label: '에메랄드+', value: 'EMERALD_PLUS' },
+  { label: '다이아+',   value: 'DIAMOND_PLUS' },
+  { label: '마스터+',   value: 'MASTER_PLUS'  },
+]
+
 /* ── 메인 ── */
 function MetaStats() {
-  const { data: decks = [] } = useMetaSnapshot()
+  const [rankFilter, setRankFilter] = useState<RankFilter>('EMERALD_PLUS')
+  const { data: decks = [] } = useMetaSnapshot(rankFilter)
 
   const byTier = TIER_ORDER.reduce<Record<TierBadgeValue, MetaDeck[]>>(
     (acc, t) => { acc[t] = decks.filter((d) => d.grade === t); return acc },
@@ -98,9 +106,23 @@ function MetaStats() {
             <h1>메타 통계</h1>
             <p>현재 패치 기준 S~D 티어 전체 덱 분석 · 픽률 · 평균 등수</p>
           </div>
-          <div className={styles.updateBadge}>
-            <Clock3 size={13} />
-            <span>업데이트: 3분 전</span>
+          <div className={styles.headerRight}>
+            <div className={styles.rankFilterBar}>
+              {RANK_FILTERS.map((f) => (
+                <button
+                  key={f.value}
+                  type="button"
+                  className={rankFilter === f.value ? styles.rankFilterActive : styles.rankFilterBtn}
+                  onClick={() => setRankFilter(f.value)}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+            <div className={styles.updateBadge}>
+              <Clock3 size={13} />
+              <span>업데이트: 3분 전</span>
+            </div>
           </div>
         </div>
 

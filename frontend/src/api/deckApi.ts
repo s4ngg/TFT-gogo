@@ -1,11 +1,19 @@
 import axiosInstance from './axiosInstance'
-import type { MetaDeck } from '../pages/Dashboard/dashboardData'
+import type { MetaDeck, RankFilter } from '../pages/Dashboard/dashboardData'
 import { mockDeckMetaResponse } from '../mocks/deckResponseMock'
 
-export const getMetaDecks = async (): Promise<MetaDeck[]> => {
+interface ApiResponse<T> {
+  success: boolean
+  message: string
+  data: T
+}
+
+export const getMetaDecks = async (rankFilter: RankFilter = 'EMERALD_PLUS'): Promise<MetaDeck[]> => {
   try {
-    const { data } = await axiosInstance.get<MetaDeck[]>('/decks/meta')
-    return data
+    const { data } = await axiosInstance.get<ApiResponse<MetaDeck[]>>('/decks/meta', {
+      params: { rankFilter },
+    })
+    return data.data ?? []
   } catch {
     return mockDeckMetaResponse
   }

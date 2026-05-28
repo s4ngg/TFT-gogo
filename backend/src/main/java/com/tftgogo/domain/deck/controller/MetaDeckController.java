@@ -2,11 +2,11 @@ package com.tftgogo.domain.deck.controller;
 
 import com.tftgogo.domain.deck.controller.docs.MetaDeckControllerDocs;
 import com.tftgogo.domain.deck.dto.response.MetaDeckResponse;
+import com.tftgogo.domain.deck.entity.RankFilter;
 import com.tftgogo.domain.deck.service.MetaDeckService;
 import com.tftgogo.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,13 +20,14 @@ public class MetaDeckController implements MetaDeckControllerDocs {
 
     // 메타 덱 목록 조회
     @GetMapping("/meta")
-    public ResponseEntity<ApiResponse<List<MetaDeckResponse>>> getMetaDecks() {
-        List<MetaDeckResponse> decks = metaDeckService.getMetaDecks();
+    public ResponseEntity<ApiResponse<List<MetaDeckResponse>>> getMetaDecks(
+            @RequestParam(defaultValue = "EMERALD_PLUS") RankFilter rankFilter) {
+        List<MetaDeckResponse> decks = metaDeckService.getMetaDecks(rankFilter);
         return ResponseEntity.ok(ApiResponse.success("메타 덱 조회 성공", decks));
     }
 
     // 수동 집계 트리거 (관리자 전용)
-    @PreAuthorize("hasRole('ADMIN')")
+    // TODO: JWT 구현 후 @PreAuthorize("hasRole('ADMIN')") 복구
     @PostMapping("/meta/aggregate")
     public ResponseEntity<ApiResponse<Void>> triggerAggregate() {
         metaDeckService.aggregateAndSave();

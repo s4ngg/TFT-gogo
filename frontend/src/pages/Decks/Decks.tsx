@@ -6,7 +6,7 @@ import ChampionCard from '../../components/common/ChampionCard'
 import TierBadge from '../../components/common/TierBadge'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
-import type { MetaDeck } from '../Dashboard/dashboardData'
+import type { MetaDeck, RankFilter } from '../Dashboard/dashboardData'
 import type { TierBadgeValue } from '../../components/common/TierBadge'
 import { ARTIFACT_RECS, HERO_AUGMENT_DECKS, INITIAL_ARTIFACT_COUNT } from './deckListData'
 import styles from './Decks.module.css'
@@ -75,7 +75,7 @@ function DeckRow({
       <td className={styles.champCol}>
         <span className={styles.champions}>
           {deck.champions.map((c, i) => (
-            <ChampionCard key={`${c.name}-${i}`} imageUrl={c.imageUrl} items={c.items} label={c.name} stars={c.stars} toneIndex={i} />
+            <ChampionCard key={`${c.name}-${i}`} imageUrl={c.imageUrl} items={c.items} label={c.name} stars={c.stars} cost={c.cost} />
           ))}
         </span>
       </td>
@@ -366,11 +366,18 @@ function MetaStatsView({ decks }: { decks: MetaDeck[] }) {
   )
 }
 
+const RANK_FILTERS: { label: string; value: RankFilter }[] = [
+  { label: '에메랄드+', value: 'EMERALD_PLUS' },
+  { label: '다이아+',   value: 'DIAMOND_PLUS' },
+  { label: '마스터+',   value: 'MASTER_PLUS'  },
+]
+
 /* ════════════════════════════
    메인
 ════════════════════════════ */
 function Decks() {
-  const { data: decks = [] } = useMetaSnapshot()
+  const [rankFilter, setRankFilter] = useState<RankFilter>('EMERALD_PLUS')
+  const { data: decks = [] } = useMetaSnapshot(rankFilter)
   const [tab, setTab] = useState<Tab>('덱모음')
 
   return (
@@ -381,13 +388,27 @@ function Decks() {
             <h1>덱모음</h1>
             <p>현재 패치 기준 전체 메타 덱 · 승률 · 픽률 · 평균 등수</p>
           </div>
-          <div className={styles.tabBar}>
-            <button type="button" className={tab === '덱모음' ? styles.activeTab : ''} onClick={() => setTab('덱모음')}>
-              덱모음
-            </button>
-            <button type="button" className={tab === '메타통계' ? styles.activeTab : ''} onClick={() => setTab('메타통계')}>
-              메타통계
-            </button>
+          <div className={styles.rightControls}>
+            <div className={styles.rankFilterBar}>
+              {RANK_FILTERS.map((f) => (
+                <button
+                  key={f.value}
+                  type="button"
+                  className={rankFilter === f.value ? styles.rankFilterActive : styles.rankFilterBtn}
+                  onClick={() => setRankFilter(f.value)}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+            <div className={styles.tabBar}>
+              <button type="button" className={tab === '덱모음' ? styles.activeTab : ''} onClick={() => setTab('덱모음')}>
+                덱모음
+              </button>
+              <button type="button" className={tab === '메타통계' ? styles.activeTab : ''} onClick={() => setTab('메타통계')}>
+                메타통계
+              </button>
+            </div>
           </div>
         </div>
 
