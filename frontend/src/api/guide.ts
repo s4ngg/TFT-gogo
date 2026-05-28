@@ -165,6 +165,8 @@ export function expandGuideSamples<T extends { name: string }>(
   pageSize: number,
   formatName: (name: string, variant: string, copyIndex: number) => string,
 ) {
+  if (samples.length === 0) return []
+
   const targetCount = pageSize * GUIDE_SAMPLE_PAGE_COUNT
   if (samples.length >= targetCount) return samples.slice(0, targetCount)
 
