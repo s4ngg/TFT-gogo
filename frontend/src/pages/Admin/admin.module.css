@@ -14,15 +14,15 @@
 }
 
 .adminAvatar {
-  width: 36;
-  height: 36;
-  border-Radius: "50%";
-  background: "#1e2d45";
-  display: "flex";
-  align-Items: "center";
-  justify-Content: "center";
-  font-Size: 14;
-  color: "#60a5fa";
+  width: 36px;
+  height: 36px;
+  border-Radius: 50%;
+  background: #1e2d45;
+  display: flex;
+  align-Items: center;
+  justify-Content: center;
+  font-Size: 14px;
+  color: #60a5fa;
   font-Weight: 600;
 }
 
