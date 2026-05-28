@@ -28,13 +28,13 @@ jobs:
           REPO=${{ github.repository }}
 
           # ── 1. PR diff 추출 (타임아웃 + 실패 감지) ─────────────────
-          DIFF=$(curl -fSs \
+          # head -c 로 자르면 pipefail + SIGPIPE로 오류 발생 → curl 완료 후 bash로 자름
+          DIFF_FULL=$(curl -fSs \
             --connect-timeout 10 \
             --max-time 30 \
             -H "Authorization: token $GITHUB_TOKEN" \
             -H "Accept: application/vnd.github.v3.diff" \
-            "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER" \
-            | head -c 4000) || {
+            "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER") || {
             echo "❌ ERROR: PR diff를 가져올 수 없습니다"
             curl -s -X POST \
               -H "Authorization: token $GITHUB_TOKEN" \
@@ -43,6 +43,7 @@ jobs:
               -d '{"body": "⚠️ Claude AI 코드리뷰 실패: diff 추출 오류"}'
             exit 1
           }
+          DIFF="${DIFF_FULL:0:4000}"
 
           if [[ -z "$DIFF" ]]; then
             echo "❌ ERROR: PR diff가 비어 있습니다"
