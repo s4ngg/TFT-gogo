@@ -46,8 +46,8 @@ public class MetaDeckServiceImpl implements MetaDeckService {
 
     private static final Logger logger = LogManager.getLogger(MetaDeckServiceImpl.class);
 
-    private static final int MATCHES_PER_SUMMONER = 10;
-    private static final int MIN_SAMPLE = 10;
+    private static final int MATCHES_PER_SUMMONER = 20;
+    private static final int MIN_SAMPLE = 3;
     private static final int MIN_DETAIL_SAMPLE = 2;
     private static final int SIGNATURE_TRAIT_COUNT = 3;
     private static final long RATE_LIMIT_DELAY_MS = 1200L;
@@ -161,17 +161,18 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         List<String> puuids = new ArrayList<>();
         try {
             switch (rankFilter) {
+                // 각 티어당 소환사 50명 × 20게임 = 1000게임 기준
                 case MASTER_PLUS -> {
-                    addPuuids(puuids, riotApiClient.getChallenger(), 10);
-                    addPuuids(puuids, riotApiClient.getGrandmaster(), 10);
+                    addPuuids(puuids, riotApiClient.getChallenger(), 20);
+                    addPuuids(puuids, riotApiClient.getGrandmaster(), 20);
                     addPuuids(puuids, riotApiClient.getMaster(), 10);
                 }
                 case DIAMOND_PLUS -> {
                     addPuuids(puuids, riotApiClient.getChallenger(), 5);
                     addPuuids(puuids, riotApiClient.getGrandmaster(), 5);
                     addPuuids(puuids, riotApiClient.getMaster(), 5);
-                    addLeaguePuuids(puuids, "DIAMOND", "I", 10);
-                    addLeaguePuuids(puuids, "DIAMOND", "II", 5);
+                    addLeaguePuuids(puuids, "DIAMOND", "I", 15);
+                    addLeaguePuuids(puuids, "DIAMOND", "II", 10);
                     addLeaguePuuids(puuids, "DIAMOND", "III", 5);
                     addLeaguePuuids(puuids, "DIAMOND", "IV", 5);
                 }
