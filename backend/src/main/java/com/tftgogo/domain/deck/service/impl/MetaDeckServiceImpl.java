@@ -15,7 +15,9 @@ import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,6 +37,7 @@ public class MetaDeckServiceImpl implements MetaDeckService {
 
     private final MetaDeckRepository metaDeckRepository;
     private final RiotApiClient riotApiClient;
+    private final PlatformTransactionManager transactionManager;
 
     // ── 프론트 응답 ────────────────────────────────────────
     @Override
@@ -95,9 +98,9 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     }
 
     // ── DB 저장만 트랜잭션 ─────────────────────────────────
-    @Transactional
     public void persistDeckStats(Map<String, DeckStat> deckStatMap, int totalParticipants, RankFilter rankFilter) {
-        saveDeckStats(deckStatMap, totalParticipants, rankFilter);
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.executeWithoutResult(status -> saveDeckStats(deckStatMap, totalParticipants, rankFilter));
     }
 
     // ── 랭크 구간별 PUUID 수집 ─────────────────────────────
@@ -269,17 +272,6 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     }
 
     // ── 유틸 ───────────────────────────────────────────────
-    private int raritytoCost(int rarity) {
-        return switch (rarity) {
-            case 0 -> 1;
-            case 1 -> 2;
-            case 2 -> 3;
-            case 4 -> 4;
-            case 6 -> 5;
-            default -> 1;
-        };
-    }
-
     private String extractName(String id) {
         int idx = id.lastIndexOf('_');
         return idx >= 0 ? id.substring(idx + 1) : id;
@@ -299,6 +291,21 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         if (top4Rate >= 55) return "B";
         if (top4Rate >= 45) return "C";
         return "D";
+    }
+
+    // Riot API rarity → 실제 코스트 (0=1코, 1=2코, 2=3코, 4=4코, 6=5코)
+    private int raritytoCost(int rarity) {
+        return switch (rarity) {
+            case 0 -> 1;
+            case 1 -> 2;
+            case 2 -> 3;
+            case 4 -> 4;
+            case 6 -> 5;
+            default -> {
+                logger.warn("알 수 없는 rarity 값: {} — 1코스트로 처리", rarity);
+                yield 1;
+            }
+        };
     }
 
     private String buildTraitIconUrl(String traitId) {

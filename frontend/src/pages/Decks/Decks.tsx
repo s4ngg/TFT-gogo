@@ -18,6 +18,11 @@ type Tab = '덱모음' | '메타통계'
 type SortKey = 'rank' | 'winRate' | 'top4' | 'avgPlace' | 'pickRate'
 type SortDir = 'asc' | 'desc'
 
+interface RankFilterOption {
+  label: string
+  value: RankFilter
+}
+
 const TIER_ORDER: TierBadgeValue[] = ['S', 'A+', 'A', 'B', 'C', 'D']
 const TIER_COLOR: Record<TierBadgeValue, string> = {
   S: '#04f3e5', 'A+': '#f7d26d', A: '#a78bfa', B: '#60a5fa', C: '#818cf8', D: '#6b7280',
@@ -172,7 +177,7 @@ function HeroAugmentSection() {
             </div>
             <div className={styles.augChamps}>
               {d.champions.map((c, i) => (
-                <ChampionCard key={c.name} imageUrl={c.imageUrl} label={c.name} stars={c.stars} toneIndex={i} />
+                <ChampionCard key={c.name} imageUrl={c.imageUrl} label={c.name} stars={c.stars} cost={c.cost} />
               ))}
             </div>
             <div className={styles.augStats}>
@@ -369,7 +374,7 @@ function MetaStatsView({ decks }: { decks: MetaDeck[] }) {
   )
 }
 
-const RANK_FILTERS: { label: string; value: RankFilter }[] = [
+const RANK_FILTERS: RankFilterOption[] = [
   { label: '에메랄드+', value: 'EMERALD_PLUS' },
   { label: '다이아+',   value: 'DIAMOND_PLUS' },
   { label: '마스터+',   value: 'MASTER_PLUS'  },
@@ -398,6 +403,7 @@ function Decks() {
                   key={f.value}
                   type="button"
                   className={rankFilter === f.value ? styles.rankFilterActive : styles.rankFilterBtn}
+                  aria-pressed={rankFilter === f.value}
                   onClick={() => setRankFilter(f.value)}
                 >
                   {f.label}
@@ -405,10 +411,10 @@ function Decks() {
               ))}
             </div>
             <div className={styles.tabBar}>
-              <button type="button" className={tab === '덱모음' ? styles.activeTab : ''} onClick={() => setTab('덱모음')}>
+              <button type="button" className={tab === '덱모음' ? styles.activeTab : ''} aria-pressed={tab === '덱모음'} onClick={() => setTab('덱모음')}>
                 덱모음
               </button>
-              <button type="button" className={tab === '메타통계' ? styles.activeTab : ''} onClick={() => setTab('메타통계')}>
+              <button type="button" className={tab === '메타통계' ? styles.activeTab : ''} aria-pressed={tab === '메타통계'} onClick={() => setTab('메타통계')}>
                 메타통계
               </button>
             </div>

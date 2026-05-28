@@ -40,27 +40,27 @@
 
 .rankFilterBtn,
 .rankFilterActive {
-  height: 28px;
-  padding: 0 14px;
-  border: 1px solid rgba(110, 142, 150, 0.3);
-  border-radius: 14px;
+  height: var(--rank-filter-height);
+  padding: 0 var(--rank-filter-padding-x);
+  border: 1px solid var(--rank-filter-border);
+  border-radius: var(--rank-filter-radius);
   background: transparent;
-  color: #6b757e;
-  font-size: 12px;
-  font-weight: 500;
+  color: var(--rank-filter-text);
+  font-size: var(--rank-filter-font-size);
+  font-weight: var(--rank-filter-font-weight);
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
 }
 
 .rankFilterBtn:hover {
-  color: #c0c8d0;
-  border-color: rgba(110, 142, 150, 0.6);
+  color: var(--rank-filter-text-hover);
+  border-color: var(--rank-filter-border-hover);
 }
 
 .rankFilterActive {
-  border-color: #04f3e5;
-  color: #04f3e5;
-  background: rgba(4, 243, 229, 0.08);
+  border-color: var(--rank-filter-active);
+  color: var(--rank-filter-active);
+  background: var(--rank-filter-active-bg);
 }
 
 .updateBadge {

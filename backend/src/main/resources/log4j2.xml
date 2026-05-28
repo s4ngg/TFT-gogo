@@ -2,26 +2,30 @@
 <Configuration status="WARN">
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n">
-                <Replace regex="(Bearer\s+[\w\-\.]+)" replacement="Bearer ***MASKED***"/>
-                <Replace regex="(password[\&quot;:\s]*[\&quot;']?)([^\s\&quot;']+)" replacement="$1***MASKED***"/>
-                <Replace regex="(token[\&quot;:\s]*[\&quot;']?)([^\s\&quot;']+)" replacement="$1***MASKED***"/>
-            </PatternLayout>
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} [%thread] %highlight{%-5level}{FATAL=red blink, ERROR=red bold, WARN=yellow bold, INFO=green, DEBUG=cyan, TRACE=white} %logger{36} - %msg%n" disableAnsi="false"/>
         </Console>
+        <!-- Bearer 토큰, 비밀번호, 시크릿 등 민감 정보를 마스킹하는 Rewrite Appender -->
+        <Rewrite name="Rewrite">
+            <AppenderRef ref="Console"/>
+            <!-- Bearer 토큰 마스킹 (Authorization 헤더 등) -->
+            <RegexReplacement regex="Bearer\s+[A-Za-z0-9\-._~+/]+=*" replacement="Bearer [MASKED]"/>
+            <!-- 비밀번호·시크릿·API 키 마스킹 -->
+            <RegexReplacement regex="(?i)(password|passwd|pwd|secret|apikey|api[_-]key)\s*[:=]\s*\S+" replacement="$1=[MASKED]"/>
+        </Rewrite>
     </Appenders>
 
     <Loggers>
         <Logger name="com.tftgogo" level="DEBUG" additivity="false">
-            <AppenderRef ref="Console"/>
+            <AppenderRef ref="Rewrite"/>
         </Logger>
         <Logger name="org.springframework.security" level="INFO" additivity="false">
-            <AppenderRef ref="Console"/>
+            <AppenderRef ref="Rewrite"/>
         </Logger>
         <Logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
-            <AppenderRef ref="Console"/>
+            <AppenderRef ref="Rewrite"/>
         </Logger>
         <Root level="INFO">
-            <AppenderRef ref="Console"/>
+            <AppenderRef ref="Rewrite"/>
         </Root>
     </Loggers>
 </Configuration>

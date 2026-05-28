@@ -12,6 +12,11 @@ import styles from './MetaStats.module.css'
 /* ── 티어 순서 및 색상 ── */
 const TIER_ORDER: TierBadgeValue[] = ['S', 'A+', 'A', 'B', 'C', 'D']
 
+interface RankFilterOption {
+  label: string
+  value: RankFilter
+}
+
 const TIER_META: Record<TierBadgeValue, { color: string; label: string }> = {
   S:   { color: '#04f3e5', label: '최상위 픽 · 강력 추천' },
   'A+': { color: '#f7d26d', label: '상위권 안정적 덱' },
@@ -82,7 +87,7 @@ function TierSection({ tier, decks }: { tier: TierBadgeValue; decks: MetaDeck[] 
   )
 }
 
-const RANK_FILTERS: { label: string; value: RankFilter }[] = [
+const RANK_FILTERS: RankFilterOption[] = [
   { label: '에메랄드+', value: 'EMERALD_PLUS' },
   { label: '다이아+',   value: 'DIAMOND_PLUS' },
   { label: '마스터+',   value: 'MASTER_PLUS'  },
@@ -113,6 +118,7 @@ function MetaStats() {
                   key={f.value}
                   type="button"
                   className={rankFilter === f.value ? styles.rankFilterActive : styles.rankFilterBtn}
+                  aria-pressed={rankFilter === f.value}
                   onClick={() => setRankFilter(f.value)}
                 >
                   {f.label}

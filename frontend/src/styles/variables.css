@@ -1,0 +1,45 @@
+/* ────────────────────────────────────────────────────
+   챔피언 코스트 색상 토큰 (TFT 게임 기준)
+   1코스트 = 회색 / 2코스트 = 초록 / 3코스트 = 파랑
+   4코스트 = 보라 / 5코스트 = 황금
+──────────────────────────────────────────────────── */
+:root {
+  --cost1-border:    #8b9198;
+  --cost1-bg-start:  #3a3d42;
+  --cost1-bg-mid:    #5a5e65;
+  --cost1-bg-end:    #2a2c30;
+
+  --cost2-border:    #0bb453;
+  --cost2-bg-start:  #0a3d20;
+  --cost2-bg-mid:    #0f6b30;
+  --cost2-bg-end:    #072a16;
+
+  --cost3-border:    #2e93f0;
+  --cost3-bg-start:  #0a2a5e;
+  --cost3-bg-mid:    #1255a0;
+  --cost3-bg-end:    #071830;
+
+  --cost4-border:    #c542f5;
+  --cost4-bg-start:  #3a1060;
+  --cost4-bg-mid:    #7a20b0;
+  --cost4-bg-end:    #250a40;
+
+  --cost5-border:    #f0c030;
+  --cost5-bg-start:  #4a3000;
+  --cost5-bg-mid:    #8a6000;
+  --cost5-bg-end:    #2a1a00;
+  --cost5-glow:      rgba(240, 192, 48, 0.35);
+
+  --rank-filter-height: 28px;
+  --rank-filter-padding-x: 14px;
+  --rank-filter-radius: 14px;
+  --rank-filter-font-size: 12px;
+  --rank-filter-font-weight: 500;
+  --rank-filter-border: rgba(110, 142, 150, 0.3);
+  --rank-filter-border-hover: rgba(110, 142, 150, 0.6);
+  --rank-filter-text: #6b757e;
+  --rank-filter-text-hover: #c0c8d0;
+  --rank-filter-active: #04f3e5;
+  --rank-filter-active-bg: rgba(4, 243, 229, 0.08);
+  --transition-fast: 0.15s;
+}

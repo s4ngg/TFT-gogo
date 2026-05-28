@@ -23,7 +23,7 @@ public interface MetaDeckControllerDocs {
             @Parameter(description = "랭크 구간 필터", example = "EMERALD_PLUS")
             @RequestParam(defaultValue = "EMERALD_PLUS") RankFilter rankFilter);
 
-    @Operation(summary = "메타 덱 수동 집계", description = "Riot API에서 전체 랭크 구간 데이터를 즉시 수집·집계합니다.")
+    @Operation(summary = "메타 덱 수동 집계", description = "Riot API에서 전체 랭크 구간 데이터를 즉시 수집 및 집계합니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "집계 완료")
     })

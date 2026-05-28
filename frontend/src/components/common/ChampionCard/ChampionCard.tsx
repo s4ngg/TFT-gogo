@@ -1,6 +1,12 @@
 import styles from './ChampionCard.module.css'
 
-const toneClasses = [styles.tone0, styles.tone1, styles.tone2, styles.tone3, styles.tone4, styles.tone5]
+const costClasses: Record<number, string> = {
+  1: styles.cost1,
+  2: styles.cost2,
+  3: styles.cost3,
+  4: styles.cost4,
+  5: styles.cost5,
+}
 
 export interface ChampionCardProps {
   label: string
@@ -12,14 +18,15 @@ export interface ChampionCardProps {
   stars?: 1 | 2 | 3
   hasItem?: boolean
   toneIndex?: number
+  cost?: number
 }
 
-function ChampionCard({ label, imageUrl, items = [], stars = 2, hasItem = false, toneIndex = 0 }: ChampionCardProps) {
-  const toneClass = toneClasses[toneIndex % toneClasses.length]
+function ChampionCard({ label, imageUrl, items = [], stars = 2, hasItem = false, toneIndex = 0, cost }: ChampionCardProps) {
+  const costClass = cost != null ? (costClasses[cost] ?? styles.cost1) : undefined
   const equippedItems = items.slice(0, 3)
 
   return (
-    <span className={`${styles.card} ${toneClass}`}>
+    <span className={`${styles.card} ${costClass ?? ''}`}>
       <small className={styles.stars}>{'★'.repeat(stars)}</small>
       {imageUrl ? <img src={imageUrl} alt={label} className={styles.image} /> : <b className={styles.label}>{label}</b>}
       {equippedItems.length > 0 && (
