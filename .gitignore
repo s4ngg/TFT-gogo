@@ -21,3 +21,9 @@ frontend/dist/
 .idea/
 .vscode/
 *.iml
+
+# 개인 로컬 전용 파일
+CLAUDE.local.md
+TASK_PROGRESS.md
+
+

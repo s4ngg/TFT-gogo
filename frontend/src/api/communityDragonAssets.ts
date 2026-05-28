@@ -8,3 +8,10 @@ export function communityDragonAssetUrl(assetPath: string) {
 export function communityDragonProfileIconUrl(profileIconId: number) {
   return `${COMMUNITY_DRAGON_RAW_BASE_URL}/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${profileIconId}.jpg`
 }
+
+export function itemsFromUrls(urls: string[]): { imageUrl: string; name: string }[] {
+  return urls.map((url) => ({
+    imageUrl: url,
+    name: url.split('/').pop()?.split('.')[0] || url,
+  }))
+}

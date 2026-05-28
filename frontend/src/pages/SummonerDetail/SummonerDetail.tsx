@@ -1,14 +1,14 @@
 import { ChevronDown, ChevronUp, Coins, RefreshCcw, Search, Swords } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { communityDragonProfileIconUrl } from '../../api/communityDragonAssets'
+import { communityDragonProfileIconUrl, itemsFromUrls } from '../../api/communityDragonAssets'
 import { AppLayout } from '../../components/layout'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
 import ChampionCard from '../../components/common/ChampionCard'
 import useSummonerStore from '../../store/useSummonerStore'
 import { useSummonerProfile } from '../../hooks/useSummonerProfile'
 import { useMatchHistory } from '../../hooks/useMatchHistory'
-import type { MatchSummaryResponse, MatchParticipantResponse } from '../../api/summonerApi'
+import type { MatchSummaryResponse, GameType } from '../../api/summonerApi'
 import styles from './SummonerDetail.module.css'
 
 const TIER_KO: Record<string, string> = {
@@ -17,7 +17,8 @@ const TIER_KO: Record<string, string> = {
   MASTER: '마스터', GRANDMASTER: '그랜드마스터', CHALLENGER: '챌린저',
 }
 
-const LP_MAP: Record<number, number> = { 1: 22, 2: 13, 3: 8, 4: 5, 5: -9, 6: -14, 7: -19, 8: -26 }
+type GameTypeFilter = 'ALL' | GameType
+const GAME_TYPE_FILTERS: GameTypeFilter[] = ['ALL', 'RANKED', 'NORMAL']
 
 function timeAgo(gameDateTime: number): string {
   const diffMs = Date.now() - gameDateTime
@@ -36,9 +37,16 @@ function placementTone(n: number) {
   return styles.bot4
 }
 
+function detailRankClass(n: number) {
+  if (n === 1) return styles.detailRankGold
+  if (n === 2) return styles.detailRankSilver
+  if (n === 3) return styles.detailRankBronze
+  return ''
+}
+
 /* ── 순위 분포 바 ── */
 function RankDistribution({ dist }: { dist: number[] }) {
-  const max = Math.max(...dist)
+  const max = Math.max(...dist, 1)
   return (
     <div className={styles.rankDist}>
       {dist.map((count, i) => (
@@ -58,7 +66,7 @@ function RankDistribution({ dist }: { dist: number[] }) {
 }
 
 /* ── 30게임 요약 ── */
-function RecentSummary({ matches }: { matches: MatchSummaryResponse[] }) {
+function RecentSummary({ matches, rankDist }: { matches: MatchSummaryResponse[]; rankDist?: number[] }) {
   const recent = matches.slice(0, 30)
   const top4 = recent.filter((m) => m.placement <= 4).length
   const avgPlace = recent.length > 0
@@ -84,6 +92,12 @@ function RecentSummary({ matches }: { matches: MatchSummaryResponse[] }) {
           {avgPlace}<span className={styles.summaryStatTh}>th</span> / 8
         </p>
       </div>
+      {rankDist && (
+        <div className={styles.summaryDistWrap}>
+          <p className={styles.summaryDistLabel}>순위 분포</p>
+          <RankDistribution dist={rankDist} />
+        </div>
+      )}
     </section>
   )
 }
@@ -94,13 +108,13 @@ function MatchDetailPanel({ match, myPuuid }: { match: MatchSummaryResponse; myP
     <div className={styles.matchDetailPanel}>
       <div className={styles.matchDetailHeader}>
         <span>#</span><span>소환사</span><span>스테이지</span><span>시너지</span>
-        <span>증강</span><span>챔피언</span><span>킬</span><span>잔여골드</span>
+        <span>챔피언</span><span>킬</span><span>잔여골드</span>
       </div>
       {match.participants.map((p) => {
         const isMe = p.puuid === myPuuid
         return (
           <div key={p.puuid} className={`${styles.matchDetailRow} ${isMe ? styles.myMatchDetailRow : ''}`}>
-            <span className={styles.detailRank}>{p.placement}위</span>
+            <span className={`${styles.detailRank} ${detailRankClass(p.placement)}`}>{p.placement}위</span>
             <div className={styles.detailPlayer}>
               <span className={styles.detailName}>{p.riotIdGameName}</span>
               <span className={styles.detailTag}>#{p.riotIdTagline}</span>
@@ -114,11 +128,6 @@ function MatchDetailPanel({ match, myPuuid }: { match: MatchSummaryResponse; myP
                 </div>
               ))}
             </div>
-            <div className={styles.detailAugments}>
-              {p.augments.slice(0, 3).map((aug, i) => (
-                <span key={i} className={styles.detailAugIcon}>{aug.replace('TFT17_Augment_', '').slice(0, 2)}</span>
-              ))}
-            </div>
             <div className={styles.detailUnits}>
               {p.units.map((unit) => (
                 <ChampionCard
@@ -126,6 +135,7 @@ function MatchDetailPanel({ match, myPuuid }: { match: MatchSummaryResponse; myP
                   imageUrl={unit.imageUrl}
                   stars={unit.stars}
                   label=""
+                  items={itemsFromUrls(unit.itemImageUrls)}
                   toneIndex={0}
                 />
               ))}
@@ -145,6 +155,7 @@ function SummonerDetail() {
   const [query, setQuery] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [visibleCount, setVisibleCount] = useState(30)
+  const [gameTypeFilter, setGameTypeFilter] = useState<GameTypeFilter>('ALL')
   const navigate = useNavigate()
   const setSummoner = useSummonerStore((s) => s.setSummoner)
 
@@ -155,22 +166,26 @@ function SummonerDetail() {
   const { data: matches = [], refetch: refetchMatches } = useMatchHistory(name, tag)
 
   const tierKo = TIER_KO[profile?.tier ?? ''] ?? profile?.tier ?? '-'
-  const winRate = profile
-    ? Math.round((profile.wins / (profile.wins + profile.losses)) * 100)
-    : 0
+  const total = profile ? (profile.wins + profile.losses) : 0
+  const winRate = total > 0 ? Math.round((profile!.wins / total) * 100) : 0
 
-  // 소환사 스토어 갱신
-  if (profile) {
-    setSummoner({
-      name,
-      tag,
-      tier: `${tierKo} ${profile.rank}`,
-      lp: profile.leaguePoints,
-      wins: profile.wins,
-      losses: profile.losses,
-      emblemKey: (profile.tier ?? '').toLowerCase(),
-    })
-  }
+  const filteredMatches = gameTypeFilter === 'ALL'
+    ? matches
+    : matches.filter((m) => m.gameType === gameTypeFilter)
+
+  useEffect(() => {
+    if (profile) {
+      setSummoner({
+        name,
+        tag,
+        tier: `${tierKo} ${profile.rank}`,
+        lp: profile.leaguePoints,
+        wins: profile.wins,
+        losses: profile.losses,
+        emblemKey: (profile.tier ?? '').toLowerCase(),
+      })
+    }
+  }, [profile, name, tag, tierKo, setSummoner])
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
@@ -179,6 +194,12 @@ function SummonerDetail() {
     const [n = trimmed, tg = 'KR1'] = trimmed.split('#')
     navigate(`/summoner/${encodeURIComponent(n)}/${tg}`)
     setQuery('')
+  }
+
+  function handleFilterChange(filter: GameTypeFilter) {
+    setGameTypeFilter(filter)
+    setVisibleCount(30)
+    setExpandedId(null)
   }
 
   return (
@@ -226,7 +247,7 @@ function SummonerDetail() {
             <section className={styles.statSection}>
               <h2 className={styles.statSectionTitle}>많이 플레이한 시너지</h2>
               <div className={styles.topTraitList}>
-                {profile.topTraits.map((tr, i) => (
+                {(profile.topTraits ?? []).map((tr, i) => (
                   <div key={tr.traitId} className={styles.topTraitRow}>
                     <span className={styles.topRank}>{i + 1}</span>
                     <TraitHexBadge count={tr.count} iconUrl={tr.iconUrl} name={tr.name} tone={tr.tone} />
@@ -241,7 +262,7 @@ function SummonerDetail() {
             <section className={styles.statSection}>
               <h2 className={styles.statSectionTitle}>많이 플레이한 챔피언</h2>
               <div className={styles.topChampList}>
-                {profile.topChampions.map((champ, i) => (
+                {(profile.topChampions ?? []).map((champ, i) => (
                   <div key={champ.characterId} className={styles.topChampRow}>
                     <span className={styles.topRank}>{i + 1}</span>
                     <div className={styles.champThumbWrap}>
@@ -262,10 +283,25 @@ function SummonerDetail() {
 
         {/* 매치 히스토리 */}
         <section className={styles.matchSection}>
-          <h2>최근 {Math.min(30, matches.length)}게임</h2>
-          <RecentSummary matches={matches} />
+          <h2>최근 {Math.min(30, filteredMatches.length)}게임</h2>
+          <RecentSummary matches={filteredMatches} />
+
+          {/* 게임 유형 필터 */}
+          <div className={styles.filterBar}>
+            {GAME_TYPE_FILTERS.map((type) => (
+              <button
+                key={type}
+                type="button"
+                className={`${styles.filterBtn} ${gameTypeFilter === type ? styles.filterBtnActive : ''}`}
+                onClick={() => handleFilterChange(type)}
+              >
+                {type === 'ALL' ? '전체' : type === 'RANKED' ? '랭크' : '일반'}
+              </button>
+            ))}
+          </div>
+
           <div className={styles.matchList}>
-            {matches.slice(0, visibleCount).map((match) => {
+            {filteredMatches.slice(0, visibleCount).map((match) => {
               const isOpen = expandedId === match.matchId
               return (
                 <div key={match.matchId} className={styles.matchItem}>
@@ -277,7 +313,12 @@ function SummonerDetail() {
                       <span>{match.placement}위</span>
                     </div>
                     <div className={styles.matchMeta}>
-                      <p className={styles.deckName}>{match.compositionName}</p>
+                      <p className={styles.deckName}>
+                        <span className={`${styles.gameTypeBadge} ${match.gameType === 'RANKED' ? styles.gameTypeBadgeRanked : styles.gameTypeBadgeNormal}`}>
+                          {match.gameType === 'RANKED' ? '랭크' : '일반'}
+                        </span>
+                        {match.compositionName}
+                      </p>
                       <p className={styles.timeAgo}>{timeAgo(match.gameDateTime)}</p>
                     </div>
                     <div className={styles.unitList}>
@@ -287,31 +328,31 @@ function SummonerDetail() {
                           imageUrl={unit.imageUrl}
                           stars={unit.stars}
                           label={unit.characterId}
+                          items={itemsFromUrls(unit.itemImageUrls)}
                           toneIndex={0}
                         />
                       ))}
                     </div>
-                    <div className={`${styles.lpDelta} ${match.lpDelta >= 0 ? styles.lpGain : styles.lpLoss}`}>
-                      <span>{match.lpDelta >= 0 ? '+' : ''}{match.lpDelta} LP</span>
+                    <div className={styles.matchChevron}>
                       {isOpen
-                        ? <ChevronUp size={14} className={styles.chevron} />
-                        : <ChevronDown size={14} className={styles.chevron} />}
+                        ? <ChevronUp size={14} />
+                        : <ChevronDown size={14} />}
                     </div>
                   </article>
                   {isOpen && (
-                    <MatchDetailPanel match={match} myPuuid="mock-puuid-player-01" />
+                    <MatchDetailPanel match={match} myPuuid={profile?.puuid ?? ''} />
                   )}
                 </div>
               )
             })}
           </div>
-          {visibleCount < matches.length && (
+          {visibleCount < filteredMatches.length && (
             <button
               type="button"
               className={styles.loadMoreBtn}
               onClick={() => setVisibleCount((v) => v + 30)}
             >
-              30개 더 보기 ({matches.length - visibleCount}개 남음)
+              30개 더 보기 ({filteredMatches.length - visibleCount}개 남음)
             </button>
           )}
         </section>

@@ -79,8 +79,8 @@ const it = {
 
 // ── 유닛 헬퍼 ──────────────────────────────────────────────
 const u = (
-  characterId: string, imageUrl: string, stars: 1 | 2 | 3, itemNames: string[],
-): MatchUnitResponse => ({ characterId, imageUrl, stars, itemNames })
+  characterId: string, imageUrl: string, stars: 1 | 2 | 3, itemImageUrls: string[],
+): MatchUnitResponse => ({ characterId, imageUrl, stars, itemImageUrls })
 
 // ── 시너지 헬퍼 ────────────────────────────────────────────
 const tr = (
@@ -265,7 +265,6 @@ const FILLER_PARTICIPANTS: Omit<MatchParticipantResponse, 'placement'>[] = [
 ]
 
 const STAGE_BY_RANK = ['6-5', '6-3', '6-2', '5-6', '5-5', '5-3', '5-2', '4-6']
-const LP_MAP: Record<number, number> = { 1: 22, 2: 13, 3: 8, 4: 5, 5: -9, 6: -14, 7: -19, 8: -26 }
 
 // 90게임 배치 결과
 const PLACEMENTS_90 = [
@@ -282,6 +281,7 @@ const TIME_STEP = 3600000 * 2  // 2시간 간격
 
 // ── 소환사 프로필 mock ──────────────────────────────────────
 export const mockSummonerProfile: SummonerProfileResponse = {
+  puuid: 'mock-puuid-player-01',
   gameName: 'TFTgogo',
   tagLine: 'KR1',
   profileIconId: 29,
@@ -336,7 +336,7 @@ export const mockMatchHistory: MatchSummaryResponse[] = PLACEMENTS_90.map((place
     matchId: `KR_760001${String(i + 1).padStart(4, '0')}`,
     placement,
     gameDateTime: BASE_TIME - i * TIME_STEP,
-    lpDelta: LP_MAP[placement],
+    gameType: i % 5 === 4 ? 'NORMAL' : 'RANKED',
     compositionName: cfg.compositionName,
     traits: cfg.traits,
     units: cfg.units,
