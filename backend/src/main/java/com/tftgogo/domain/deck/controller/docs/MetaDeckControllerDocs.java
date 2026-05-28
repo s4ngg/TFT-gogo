@@ -1,24 +1,29 @@
 package com.tftgogo.domain.deck.controller.docs;
 
 import com.tftgogo.domain.deck.dto.response.MetaDeckResponse;
+import com.tftgogo.domain.deck.entity.RankFilter;
 import com.tftgogo.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
 @Tag(name = "Meta Deck", description = "메타 덱 API")
 public interface MetaDeckControllerDocs {
 
-    @Operation(summary = "메타 덱 목록 조회", description = "Riot API 집계 기반 현재 패치 메타 덱 목록을 반환합니다.")
+    @Operation(summary = "메타 덱 목록 조회", description = "랭크 구간별 메타 덱 목록을 반환합니다. (EMERALD_PLUS / DIAMOND_PLUS / MASTER_PLUS)")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공")
     })
-    ResponseEntity<ApiResponse<List<MetaDeckResponse>>> getMetaDecks();
+    ResponseEntity<ApiResponse<List<MetaDeckResponse>>> getMetaDecks(
+            @Parameter(description = "랭크 구간 필터", example = "EMERALD_PLUS")
+            @RequestParam(defaultValue = "EMERALD_PLUS") RankFilter rankFilter);
 
-    @Operation(summary = "메타 덱 수동 집계", description = "Riot API에서 데이터를 즉시 수집·집계합니다. (JWT 구현 후 관리자 전용으로 전환 예정 — 현재 인증 비활성화 상태)")
+    @Operation(summary = "메타 덱 수동 집계", description = "Riot API에서 전체 랭크 구간 데이터를 즉시 수집 및 집계합니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "집계 완료")
     })

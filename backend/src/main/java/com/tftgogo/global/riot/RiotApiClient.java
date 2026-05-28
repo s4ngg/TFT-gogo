@@ -3,6 +3,7 @@ package com.tftgogo.global.riot;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import com.tftgogo.global.riot.config.RiotProperties;
+import com.tftgogo.global.riot.dto.LeagueEntryDto;
 import com.tftgogo.global.riot.dto.LeagueListDto;
 import com.tftgogo.global.riot.dto.MatchDto;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,21 @@ public class RiotApiClient {
     public LeagueListDto getGrandmaster() {
         return get("/tft/league/v1/grandmaster?queue=RANKED_TFT",
                 riotProperties.getKrBaseUrl(), LeagueListDto.class);
+    }
+
+    // ── Master 리그 조회 ────────────────────────────────────
+    public LeagueListDto getMaster() {
+        return get("/tft/league/v1/master?queue=RANKED_TFT",
+                riotProperties.getKrBaseUrl(), LeagueListDto.class);
+    }
+
+    // ── 특정 티어/디비전 소환사 목록 조회 ──────────────────────
+    // tier: DIAMOND/EMERALD, division: I/II/III/IV
+    public List<LeagueEntryDto> getLeagueEntries(String tier, String division, int page) {
+        String path = "/tft/league/v1/entries/" + tier + "/" + division
+                + "?queue=RANKED_TFT&page=" + page;
+        LeagueEntryDto[] entries = get(path, riotProperties.getKrBaseUrl(), LeagueEntryDto[].class);
+        return entries != null ? Arrays.asList(entries) : List.of();
     }
 
     // ── 소환사 PUUID로 최근 매치 ID 목록 조회 ─────────────────

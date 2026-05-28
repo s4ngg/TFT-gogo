@@ -14,4 +14,6 @@ public class RiotProperties {
     private String apiKey;
     private String krBaseUrl = "https://kr.api.riotgames.com";
     private String asiaBaseUrl = "https://asia.api.riotgames.com";
+    private int connectTimeoutMs = 10_000;
+    private int readTimeoutMs = 10_000;
 }

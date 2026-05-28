@@ -5,6 +5,7 @@ import com.tftgogo.domain.deck.entity.*;
 import com.tftgogo.domain.deck.repository.MetaDeckRepository;
 import com.tftgogo.domain.deck.service.MetaDeckService;
 import com.tftgogo.global.riot.RiotApiClient;
+import com.tftgogo.global.riot.dto.LeagueEntryDto;
 import com.tftgogo.global.riot.dto.LeagueListDto;
 import com.tftgogo.global.riot.dto.MatchDto;
 import com.tftgogo.global.riot.dto.MatchDto.ParticipantDto;
@@ -14,7 +15,9 @@ import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,7 +30,6 @@ public class MetaDeckServiceImpl implements MetaDeckService {
 
     private static final Logger logger = LogManager.getLogger(MetaDeckServiceImpl.class);
 
-    private static final int MAX_SUMMONERS        = 30;
     private static final int MATCHES_PER_SUMMONER = 10;
     private static final int MIN_SAMPLE           = 10;
     private static final int SIGNATURE_TRAIT_COUNT = 3;
@@ -35,26 +37,35 @@ public class MetaDeckServiceImpl implements MetaDeckService {
 
     private final MetaDeckRepository metaDeckRepository;
     private final RiotApiClient riotApiClient;
+    private final PlatformTransactionManager transactionManager;
 
     // ── 프론트 응답 ────────────────────────────────────────
     @Override
     @Transactional(readOnly = true)
-    public List<MetaDeckResponse> getMetaDecks() {
-        List<MetaDeck> decks = metaDeckRepository.findAllOrderByWinRateDesc();
+    public List<MetaDeckResponse> getMetaDecks(RankFilter rankFilter) {
+        List<MetaDeck> decks = metaDeckRepository.findAllByRankFilterOrderByWinRateDesc(rankFilter);
         AtomicInteger rank = new AtomicInteger(1);
         return decks.stream()
                 .map(d -> MetaDeckResponse.from(d, rank.getAndIncrement()))
                 .toList();
     }
 
-    // ── Riot API 집계 (트랜잭션 없음 - 장시간 I/O 포함) ──────
+    // ── 전체 랭크 구간 집계 ───────────────────────────────────
     @Override
     public void aggregateAndSave() {
-        logger.info("메타 덱 집계 시작");
+        logger.info("전체 랭크 구간 메타 덱 집계 시작");
+        for (RankFilter rankFilter : RankFilter.values()) {
+            logger.info("[{}] 집계 시작", rankFilter);
+            aggregateForTier(rankFilter);
+        }
+        logger.info("전체 랭크 구간 집계 완료");
+    }
 
-        List<String> puuids = collectPuuids();
+    // ── 특정 랭크 구간 집계 ───────────────────────────────────
+    private void aggregateForTier(RankFilter rankFilter) {
+        List<String> puuids = collectPuuidsForTier(rankFilter);
         if (puuids.isEmpty()) {
-            logger.warn("수집된 소환사 PUUID 없음 - 집계 중단");
+            logger.warn("[{}] 수집된 소환사 PUUID 없음 - 집계 중단", rankFilter);
             return;
         }
 
@@ -74,32 +85,59 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                logger.error("집계 중단 - 인터럽트 발생", e);
+                logger.error("[{}] 집계 중단 - 인터럽트 발생", rankFilter, e);
                 return;
             } catch (Exception e) {
-                logger.warn("소환사 {} 매치 수집 실패 - 건너뜀", puuid, e);
+                logger.warn("[{}] 소환사 {} 매치 수집 실패 - 건너뜀", rankFilter, puuid, e);
             }
         }
 
-        logger.info("총 {}명 참가자 처리 완료, {}개 조합 발견", totalParticipants, deckStatMap.size());
-        // DB 저장만 트랜잭션 범위로 분리
-        persistDeckStats(deckStatMap, totalParticipants);
+        logger.info("[{}] 총 {}명 참가자 처리 완료, {}개 조합 발견",
+                rankFilter, totalParticipants, deckStatMap.size());
+        persistDeckStats(deckStatMap, totalParticipants, rankFilter);
     }
 
     // ── DB 저장만 트랜잭션 ─────────────────────────────────
-    @Transactional
-    public void persistDeckStats(Map<String, DeckStat> deckStatMap, int totalParticipants) {
-        saveDeckStats(deckStatMap, totalParticipants);
+    public void persistDeckStats(Map<String, DeckStat> deckStatMap, int totalParticipants, RankFilter rankFilter) {
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.executeWithoutResult(status -> saveDeckStats(deckStatMap, totalParticipants, rankFilter));
     }
 
-    // ── PUUID 수집 ─────────────────────────────────────────
-    private List<String> collectPuuids() {
+    // ── 랭크 구간별 PUUID 수집 ─────────────────────────────
+    private List<String> collectPuuidsForTier(RankFilter rankFilter) {
         List<String> puuids = new ArrayList<>();
         try {
-            addPuuids(puuids, riotApiClient.getChallenger(), MAX_SUMMONERS / 2);
-            addPuuids(puuids, riotApiClient.getGrandmaster(), MAX_SUMMONERS / 2);
+            switch (rankFilter) {
+                case MASTER_PLUS -> {
+                    addPuuids(puuids, riotApiClient.getChallenger(), 10);
+                    addPuuids(puuids, riotApiClient.getGrandmaster(), 10);
+                    addPuuids(puuids, riotApiClient.getMaster(), 10);
+                }
+                case DIAMOND_PLUS -> {
+                    addPuuids(puuids, riotApiClient.getChallenger(), 5);
+                    addPuuids(puuids, riotApiClient.getGrandmaster(), 5);
+                    addPuuids(puuids, riotApiClient.getMaster(), 5);
+                    addLeaguePuuids(puuids, "DIAMOND", "I", 10);
+                    addLeaguePuuids(puuids, "DIAMOND", "II", 5);
+                    addLeaguePuuids(puuids, "DIAMOND", "III", 5);
+                    addLeaguePuuids(puuids, "DIAMOND", "IV", 5);
+                }
+                case EMERALD_PLUS -> {
+                    addPuuids(puuids, riotApiClient.getChallenger(), 3);
+                    addPuuids(puuids, riotApiClient.getGrandmaster(), 3);
+                    addPuuids(puuids, riotApiClient.getMaster(), 4);
+                    addLeaguePuuids(puuids, "DIAMOND", "I", 5);
+                    addLeaguePuuids(puuids, "DIAMOND", "II", 5);
+                    addLeaguePuuids(puuids, "DIAMOND", "III", 5);
+                    addLeaguePuuids(puuids, "DIAMOND", "IV", 5);
+                    addLeaguePuuids(puuids, "EMERALD", "I", 10);
+                    addLeaguePuuids(puuids, "EMERALD", "II", 5);
+                    addLeaguePuuids(puuids, "EMERALD", "III", 5);
+                    addLeaguePuuids(puuids, "EMERALD", "IV", 5);
+                }
+            }
         } catch (Exception e) {
-            logger.error("소환사 목록 조회 실패", e);
+            logger.error("[{}] 소환사 목록 조회 실패", rankFilter, e);
         }
         return puuids;
     }
@@ -107,6 +145,14 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     private void addPuuids(List<String> puuids, LeagueListDto league, int limit) {
         if (league == null || league.getEntries() == null) return;
         league.getEntries().stream()
+                .filter(e -> e.getPuuid() != null)
+                .limit(limit)
+                .forEach(e -> puuids.add(e.getPuuid()));
+    }
+
+    private void addLeaguePuuids(List<String> puuids, String tier, String division, int limit) {
+        List<LeagueEntryDto> entries = riotApiClient.getLeagueEntries(tier, division, 1);
+        entries.stream()
                 .filter(e -> e.getPuuid() != null)
                 .limit(limit)
                 .forEach(e -> puuids.add(e.getPuuid()));
@@ -143,7 +189,7 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     }
 
     // ── DB 저장 ────────────────────────────────────────────
-    private void saveDeckStats(Map<String, DeckStat> deckStatMap, int totalParticipants) {
+    private void saveDeckStats(Map<String, DeckStat> deckStatMap, int totalParticipants, RankFilter rankFilter) {
         List<Map.Entry<String, DeckStat>> ranked = deckStatMap.entrySet().stream()
                 .filter(e -> e.getValue().count >= MIN_SAMPLE)
                 .sorted((a, b) -> Double.compare(b.getValue().winRate(), a.getValue().winRate()))
@@ -158,9 +204,10 @@ public class MetaDeckServiceImpl implements MetaDeckService {
             String tier = assignTier(stat.winRate(), stat.top4Rate());
             String name = buildDeckName(stat.traits);
 
-            MetaDeck deck = metaDeckRepository.findBySignature(entry.getKey())
+            MetaDeck deck = metaDeckRepository.findBySignatureAndRankFilter(entry.getKey(), rankFilter)
                     .orElseGet(() -> MetaDeck.builder()
                             .signature(entry.getKey())
+                            .rankFilter(rankFilter)
                             .name(name)
                             .patchVersion(patchVersion)
                             .tier(tier)
@@ -181,11 +228,11 @@ public class MetaDeckServiceImpl implements MetaDeckService {
             metaDeckRepository.save(deck);
             saveUnitsAndTraits(deck, stat);
 
-            logger.info("덱 저장: name={} tier={} winRate={}% sample={}",
-                    name, tier, String.format("%.1f", stat.winRate()), stat.count);
+            logger.info("[{}] 덱 저장: name={} tier={} winRate={}% sample={}",
+                    rankFilter, name, tier, String.format("%.1f", stat.winRate()), stat.count);
         }
 
-        logger.info("메타 덱 집계 완료: {}개 덱 저장", ranked.size());
+        logger.info("[{}] 집계 완료: {}개 덱 저장", rankFilter, ranked.size());
     }
 
     // ── DeckUnit / DeckTrait 저장 ──────────────────────────

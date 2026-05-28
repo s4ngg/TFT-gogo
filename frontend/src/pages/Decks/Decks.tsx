@@ -6,7 +6,7 @@ import ChampionCard from '../../components/common/ChampionCard'
 import TierBadge from '../../components/common/TierBadge'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
-import type { MetaDeck } from '../Dashboard/dashboardData'
+import type { MetaDeck, RankFilter } from '../Dashboard/dashboardData'
 import type { TierBadgeValue } from '../../components/common/TierBadge'
 import { ARTIFACT_RECS, HERO_AUGMENT_DECKS, INITIAL_ARTIFACT_COUNT } from './deckListData'
 import styles from './Decks.module.css'
@@ -17,6 +17,11 @@ import styles from './Decks.module.css'
 type Tab = '덱모음' | '메타통계'
 type SortKey = 'rank' | 'winRate' | 'top4' | 'avgPlace' | 'pickRate'
 type SortDir = 'asc' | 'desc'
+
+interface RankFilterOption {
+  label: string
+  value: RankFilter
+}
 
 const TIER_ORDER: TierBadgeValue[] = ['S', 'A+', 'A', 'B', 'C', 'D']
 const TIER_COLOR: Record<TierBadgeValue, string> = {
@@ -287,7 +292,8 @@ function DeckListView({ decks }: { decks: MetaDeck[] }) {
     else { setSortKey(key); setSortDir(key === 'avgPlace' ? 'asc' : 'desc') }
   }
 
-  const filtered = sortDecks(decks.filter((d) => d.name.includes(search)), sortKey, sortDir)
+  const safeDecks = Array.isArray(decks) ? decks : []
+  const filtered = sortDecks(safeDecks.filter((d) => d.name.includes(search)), sortKey, sortDir)
 
   return (
     <>
@@ -328,13 +334,15 @@ function MetaStatsView({ decks }: { decks: MetaDeck[] }) {
     else { setSortKey(key); setSortDir(key === 'avgPlace' ? 'asc' : 'desc') }
   }
 
+  const safeDecks = Array.isArray(decks) ? decks : []
+
   return (
     <div className={styles.tableWrap}>
       <table className={styles.table}>
         <TableHead sortKey={sortKey} sortDir={sortDir} onSort={handleSort} showTier showRank />
         <tbody>
           {TIER_ORDER.map((tier) => {
-            const tierDecks = sortDecks(decks.filter((d) => d.grade === tier), sortKey, sortDir)
+            const tierDecks = sortDecks(safeDecks.filter((d) => d.grade === tier), sortKey, sortDir)
             if (tierDecks.length === 0) return null
             const color = TIER_COLOR[tier]
             return (
@@ -366,11 +374,18 @@ function MetaStatsView({ decks }: { decks: MetaDeck[] }) {
   )
 }
 
+const RANK_FILTERS: RankFilterOption[] = [
+  { label: '에메랄드+', value: 'EMERALD_PLUS' },
+  { label: '다이아+',   value: 'DIAMOND_PLUS' },
+  { label: '마스터+',   value: 'MASTER_PLUS'  },
+]
+
 /* ════════════════════════════
    메인
 ════════════════════════════ */
 function Decks() {
-  const { data: decks = [] } = useMetaSnapshot()
+  const [rankFilter, setRankFilter] = useState<RankFilter>('EMERALD_PLUS')
+  const { data: decks = [] } = useMetaSnapshot(rankFilter)
   const [tab, setTab] = useState<Tab>('덱모음')
 
   return (
@@ -381,13 +396,28 @@ function Decks() {
             <h1>덱모음</h1>
             <p>현재 패치 기준 전체 메타 덱 · 승률 · 픽률 · 평균 등수</p>
           </div>
-          <div className={styles.tabBar}>
-            <button type="button" className={tab === '덱모음' ? styles.activeTab : ''} onClick={() => setTab('덱모음')}>
-              덱모음
-            </button>
-            <button type="button" className={tab === '메타통계' ? styles.activeTab : ''} onClick={() => setTab('메타통계')}>
-              메타통계
-            </button>
+          <div className={styles.rightControls}>
+            <div className={styles.rankFilterBar}>
+              {RANK_FILTERS.map((f) => (
+                <button
+                  key={f.value}
+                  type="button"
+                  className={rankFilter === f.value ? styles.rankFilterActive : styles.rankFilterBtn}
+                  aria-pressed={rankFilter === f.value}
+                  onClick={() => setRankFilter(f.value)}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+            <div className={styles.tabBar}>
+              <button type="button" className={tab === '덱모음' ? styles.activeTab : ''} aria-pressed={tab === '덱모음'} onClick={() => setTab('덱모음')}>
+                덱모음
+              </button>
+              <button type="button" className={tab === '메타통계' ? styles.activeTab : ''} aria-pressed={tab === '메타통계'} onClick={() => setTab('메타통계')}>
+                메타통계
+              </button>
+            </div>
           </div>
         </div>
 

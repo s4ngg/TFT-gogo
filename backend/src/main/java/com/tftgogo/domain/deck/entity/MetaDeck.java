@@ -8,7 +8,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "meta_decks")
+@Table(
+    name = "meta_decks",
+    uniqueConstraints = { @UniqueConstraint(columnNames = {"signature", "rank_filter"}) }
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MetaDeck {
@@ -17,9 +20,13 @@ public class MetaDeck {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 조합 식별 키 - 집계 upsert에 사용 (ERD 외 내부 필드)
-    @Column(nullable = false, unique = true, length = 255)
+    // 조합 식별 키 - (signature, rank_filter) 복합 유니크
+    @Column(nullable = false, length = 255)
     private String signature;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "rank_filter", nullable = false, length = 20)
+    private RankFilter rankFilter;
 
     @Column(nullable = false, length = 100)
     private String name;
@@ -68,10 +75,11 @@ public class MetaDeck {
     private List<ArtifactStat> artifactStats = new ArrayList<>();
 
     @Builder
-    public MetaDeck(String signature, String name, String patchVersion, String tier,
-                    double playRate, double winRate, double top4Rate,
+    public MetaDeck(String signature, RankFilter rankFilter, String name, String patchVersion,
+                    String tier, double playRate, double winRate, double top4Rate,
                     double avgPlacement, int sampleSize) {
         this.signature = signature;
+        this.rankFilter = rankFilter;
         this.name = name;
         this.patchVersion = patchVersion;
         this.tier = tier;

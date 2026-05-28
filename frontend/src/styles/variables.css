@@ -29,4 +29,17 @@
   --cost5-bg-mid:    #8a6000;
   --cost5-bg-end:    #2a1a00;
   --cost5-glow:      rgba(240, 192, 48, 0.35);
+
+  --rank-filter-height: 28px;
+  --rank-filter-padding-x: 14px;
+  --rank-filter-radius: 14px;
+  --rank-filter-font-size: 12px;
+  --rank-filter-font-weight: 500;
+  --rank-filter-border: rgba(110, 142, 150, 0.3);
+  --rank-filter-border-hover: rgba(110, 142, 150, 0.6);
+  --rank-filter-text: #6b757e;
+  --rank-filter-text-hover: #c0c8d0;
+  --rank-filter-active: #04f3e5;
+  --rank-filter-active-bg: rgba(4, 243, 229, 0.08);
+  --transition-fast: 0.15s;
 }
