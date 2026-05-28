@@ -361,6 +361,59 @@ function normalizeGuideType(entry: GuideEntryResponse): GuideTab | undefined {
   return undefined
 }
 
+function hasText(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0
+}
+
+function hasAnyText(...values: unknown[]) {
+  return values.some(hasText)
+}
+
+function hasRenderableGuideEntry(entry: GuideEntryResponse) {
+  const guideType = normalizeGuideType(entry)
+  if (!guideType || !hasText(entry.name)) return false
+
+  const data = readDataRecord(entry)
+  const imageUrl = readImageUrl(entry, data)
+  const summary = entry.summary ?? readNullableString(data, 'summary')
+
+  if (guideType === 'traits') {
+    return hasAnyText(imageUrl, summary)
+      || readChampionRefs(data.champions).length > 0
+      || readStringArray(data, 'levels').length > 0
+      || readStringArray(data, 'tips').length > 0
+      || readNumber(data, 'count') > 0
+  }
+
+  if (guideType === 'items') {
+    return hasAnyText(
+      imageUrl,
+      readString(data, 'avgPlace', readString(data, 'avg_place')),
+      readString(data, 'pickRate', readString(data, 'pick_rate')),
+      readString(data, 'top4'),
+      readString(data, 'winRate', readString(data, 'win_rate')),
+    )
+      || readChampionRefs(data.bestUsers ?? data.best_users).length > 0
+      || readCombinations(data.combinations).length > 0
+  }
+
+  if (guideType === 'augments') {
+    return hasAnyText(
+      summary,
+      readString(data, 'avgPlace', readString(data, 'avg_place')),
+      readString(data, 'description'),
+      readString(data, 'pickRate', readString(data, 'pick_rate')),
+      readString(data, 'reward'),
+      readString(data, 'winRate', readString(data, 'win_rate')),
+    )
+      || readStringArray(data, 'tags').length > 0
+  }
+
+  return hasAnyText(imageUrl, readString(data, 'position'), readString(data, 'role'))
+    || readItemRefs(data.bestItems ?? data.best_items).length > 0
+    || readStringArray(data, 'traits').length > 0
+}
+
 function isGuideEntryList(payload: unknown): payload is GuideEntryResponse[] {
   return Array.isArray(payload) && payload.every((entry) => (
     isRecord(entry)
@@ -371,7 +424,8 @@ function isGuideEntryList(payload: unknown): payload is GuideEntryResponse[] {
 }
 
 function guideEntriesToCatalog(entries: GuideEntryResponse[], fallbackData: GuideCatalog): GuideCatalog {
-  const sortedEntries = [...entries].sort((first, second) => (
+  const validEntries = entries.filter(hasRenderableGuideEntry)
+  const sortedEntries = [...validEntries].sort((first, second) => (
     (first.sortOrder ?? first.sort_order ?? 0) - (second.sortOrder ?? second.sort_order ?? 0)
   ))
   const catalog: GuideCatalog = {
@@ -379,7 +433,7 @@ function guideEntriesToCatalog(entries: GuideEntryResponse[], fallbackData: Guid
     augmentPlans: fallbackData.augmentPlans,
     champions: [],
     items: [],
-    patchVersion: entries.map(readPatchVersion).find(Boolean) ?? fallbackData.patchVersion,
+    patchVersion: validEntries.map(readPatchVersion).find(Boolean) ?? fallbackData.patchVersion,
     rewards: fallbackData.rewards,
     traits: [],
   }
@@ -461,6 +515,13 @@ function hasGuidePayloadData(payload: unknown): boolean {
   })
 }
 
+function hasGuideCatalogData(catalog: GuideCatalog): boolean {
+  return catalog.traits.length > 0
+    || catalog.items.length > 0
+    || catalog.augments.length > 0
+    || catalog.champions.length > 0
+}
+
 function normalizeGuideCatalog(payload: unknown, fallbackData: GuideCatalog): GuideCatalog {
   if (isGuideEntryList(payload)) {
     return guideEntriesToCatalog(payload, fallbackData)
@@ -490,7 +551,12 @@ export async function getGuideCatalog(fallbackData: GuideCatalog): Promise<Guide
       return { data: fallbackData, source: 'fallback' }
     }
 
-    return { data: normalizeGuideCatalog(payload, fallbackData), source: 'api' }
+    const guideCatalog = normalizeGuideCatalog(payload, fallbackData)
+    if (!hasGuideCatalogData(guideCatalog)) {
+      return { data: fallbackData, source: 'fallback' }
+    }
+
+    return { data: guideCatalog, source: 'api' }
   } catch {
     return { data: fallbackData, source: 'fallback' }
   }

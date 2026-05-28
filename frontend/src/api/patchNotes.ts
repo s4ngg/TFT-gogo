@@ -211,10 +211,19 @@ function normalizeChange(change: PatchChangeResponse, index: number): PatchChang
   }
 }
 
+function hasPatchNoteVersion(note: PatchNoteResponse) {
+  return Boolean(readNonEmptyString(note.version))
+}
+
+function hasPatchChangeContent(change: PatchChangeResponse) {
+  return Boolean(readNonEmptyString(change.target ?? change.targetName) || readNonEmptyString(change.summary))
+}
+
 function normalizePatchNote(note: PatchNoteResponse): PatchNoteDetail {
-  const changes = note.changes ?? note.patchNoteChanges ?? []
+  const changes = (note.changes ?? note.patchNoteChanges ?? []).filter(hasPatchChangeContent)
   const publishedDate = readString(note.date ?? note.publishedAt)
   const summary = readString(note.summary)
+  const version = readNonEmptyString(note.version) ?? ''
 
   return {
     changes: changes.map(normalizeChange),
@@ -224,8 +233,8 @@ function normalizePatchNote(note: PatchNoteResponse): PatchNoteDetail {
     highlights: normalizeHighlights(note),
     imageUrl: readNonEmptyString(note.imageUrl ?? note.representativeImageUrl) ?? PATCH_NOTE_DEFAULT_IMAGE,
     status: note.status === '현재' || note.status === 'CURRENT' || note.isCurrent ? '현재' : '이전',
-    title: readString(note.title, `${readString(note.version)} 패치`),
-    version: readString(note.version),
+    title: readString(note.title, `${version} 패치`),
+    version,
   }
 }
 
@@ -238,7 +247,7 @@ function extractPatchNotes(payload: PatchNotesPayload): PatchNoteResponse[] {
 }
 
 function normalizePatchNotes(payload: PatchNotesPayload, fallbackData: PatchNoteDetail[]): PatchNotesResult {
-  const patchNotes = extractPatchNotes(payload)
+  const patchNotes = extractPatchNotes(payload).filter(hasPatchNoteVersion)
   if (patchNotes.length === 0) {
     return { data: fallbackData, source: 'fallback' }
   }
