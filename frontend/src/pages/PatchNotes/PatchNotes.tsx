@@ -18,44 +18,26 @@ import {
   Zap,
 } from 'lucide-react'
 import { communityDragonAssetUrl } from '../../api/communityDragonAssets'
+import {
+  CHANGE_CATEGORIES,
+  CHANGE_TYPE_FILTERS,
+  PATCH_CATEGORIES,
+  type ChangeCategory,
+  type ChangeType,
+  type ChangeTypeFilter,
+  type ImpactLevel,
+  type PatchCategory,
+  type PatchChange,
+  type PatchNoteDetail,
+  type PatchNoteSummary,
+} from '../../api/patchNotes'
 import { AppLayout } from '../../components/layout'
+import { usePatchNotes } from '../../hooks/usePatchNotes'
 import styles from './PatchNotes.module.css'
 
-const CHANGE_CATEGORIES = ['챔피언', '시너지', '아이템', '증강체', '시스템'] as const
-const PATCH_CATEGORIES = ['전체', ...CHANGE_CATEGORIES] as const
-const CHANGE_TYPE_FILTERS = ['전체 변경', '상향', '하향', '조정', '신규'] as const
 const PATCH_PAGE_SIZE = 5
 const SAMPLE_PAGE_COUNT = 7
 const PAGE_NUMBER_WINDOW = 5
-
-type ChangeCategory = (typeof CHANGE_CATEGORIES)[number]
-type PatchCategory = (typeof PATCH_CATEGORIES)[number]
-type ChangeType = '상향' | '하향' | '조정' | '신규'
-type ChangeTypeFilter = (typeof CHANGE_TYPE_FILTERS)[number]
-type ImpactLevel = '높음' | '중간' | '낮음'
-
-interface PatchChange {
-  id: number
-  category: ChangeCategory
-  target: string
-  type: ChangeType
-  impact: ImpactLevel
-  summary: string
-  before: string
-  after: string
-  tags: string[]
-}
-
-interface PatchHistoryItem {
-  version: string
-  date: string
-  title: string
-  status: '현재' | '이전'
-  focus: string
-  description: string
-  highlights: string[]
-  imageUrl: string
-}
 
 interface PaginationProps {
   currentPage: number
@@ -390,7 +372,7 @@ const BASE_PATCH_CHANGES: PatchChange[] = [
   },
 ]
 
-const PATCH_HISTORY: PatchHistoryItem[] = [
+const PATCH_HISTORY: PatchNoteSummary[] = [
   {
     version: '17.3',
     date: '2026.05.26',
@@ -454,7 +436,7 @@ function getBaseTarget(target: string) {
 }
 
 function getChangeImageUrl(change: PatchChange) {
-  return targetImageUrl[getBaseTarget(change.target)] ?? categoryImageUrl[change.category]
+  return change.imageUrl ?? targetImageUrl[getBaseTarget(change.target)] ?? categoryImageUrl[change.category]
 }
 
 function buildVersionedChange(change: PatchChange, version: string, patchIndex: number): PatchChange {
@@ -472,7 +454,7 @@ function buildVersionedChange(change: PatchChange, version: string, patchIndex: 
   }
 }
 
-function expandPatchSamples(changes: PatchChange[], patch: PatchHistoryItem) {
+function expandPatchSamples(changes: PatchChange[], patch: PatchNoteSummary) {
   const targetCount = PATCH_PAGE_SIZE * SAMPLE_PAGE_COUNT
   const patchIndex = PATCH_HISTORY.findIndex((historyItem) => historyItem.version === patch.version)
 
@@ -497,6 +479,11 @@ function expandPatchSamples(changes: PatchChange[], patch: PatchHistoryItem) {
     })
   })
 }
+
+const PATCH_NOTES_FALLBACK: PatchNoteDetail[] = PATCH_HISTORY.map((patch) => ({
+  ...patch,
+  changes: expandPatchSamples(BASE_PATCH_CHANGES, patch),
+}))
 
 function getCategoryCount(category: PatchCategory, changes: PatchChange[]) {
   if (category === '전체') return changes.length
@@ -556,18 +543,20 @@ function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) 
 }
 
 function PatchNotes() {
-  const [selectedPatchVersion, setSelectedPatchVersion] = useState(PATCH_HISTORY[0].version)
+  const {
+    patchNotes: patchHistory,
+    selectedPatch: selectedPatchFromQuery,
+    selectedPatchVersion,
+    setSelectedPatchVersion,
+  } = usePatchNotes({ fallbackData: PATCH_NOTES_FALLBACK })
   const [activeCategory, setActiveCategory] = useState<PatchCategory>('전체')
   const [activeChangeType, setActiveChangeType] = useState<ChangeTypeFilter>('전체 변경')
   const [highImpactOnly, setHighImpactOnly] = useState(false)
   const [expandedChangeIds, setExpandedChangeIds] = useState<number[]>([])
   const [query, setQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
-  const selectedPatch = useMemo(
-    () => PATCH_HISTORY.find((patch) => patch.version === selectedPatchVersion) ?? PATCH_HISTORY[0],
-    [selectedPatchVersion],
-  )
-  const patchChanges = useMemo(() => expandPatchSamples(BASE_PATCH_CHANGES, selectedPatch), [selectedPatch])
+  const selectedPatch = selectedPatchFromQuery ?? PATCH_NOTES_FALLBACK[0]
+  const patchChanges = selectedPatch.changes
   const highImpactCount = patchChanges.filter((change) => change.impact === '높음').length
   const buffCount = patchChanges.filter((change) => change.type === '상향').length
   const nerfCount = patchChanges.filter((change) => change.type === '하향').length
@@ -836,7 +825,7 @@ function PatchNotes() {
               </div>
               <h2>이전 패치</h2>
               <div className={styles.historyList}>
-                {PATCH_HISTORY.map((patch) => (
+                {patchHistory.map((patch) => (
                   <button
                     key={patch.version}
                     type="button"

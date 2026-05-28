@@ -896,7 +896,7 @@ function Guide() {
             <p>시너지, 아이템, 증강체, 챔피언 정보를 한 화면에서 빠르게 비교합니다.</p>
           </div>
           <div className={styles.headerStats}>
-            <StatBadge label="기준 패치" value="17.0" />
+            <StatBadge label="기준 패치" value={guideData.patchVersion} />
           </div>
         </header>
 
