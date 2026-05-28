@@ -325,6 +325,7 @@ public class MetaDeckServiceImpl implements MetaDeckService {
 
         List<UnitStat> unitStats = stat.unitStats.values().stream()
                 .sorted(Comparator.comparingInt(UnitStat::getCount).reversed())
+                .limit(10)
                 .toList();
         for (UnitStat unitStat : unitStats) {
             DeckUnit unit = DeckUnit.builder()
@@ -415,7 +416,17 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         };
     }
 
+    private static final Pattern TRAIT_SET_PATTERN = Pattern.compile("(?:set|tft)(\\d+)_(.+)");
+
     private String buildTraitIconUrl(String traitId) {
+        // Set17_ShieldTank → trait_icon_17_shieldtank.tft_set17.png
+        Matcher m = TRAIT_SET_PATTERN.matcher(traitId.toLowerCase());
+        if (m.matches()) {
+            String setNum = m.group(1);
+            String traitName = m.group(2);
+            return "https://raw.communitydragon.org/latest/game/assets/ux/traiticons/"
+                    + "trait_icon_" + setNum + "_" + traitName + ".tft_set" + setNum + ".png";
+        }
         return "https://raw.communitydragon.org/latest/game/assets/ux/traiticons/"
                 + traitId.toLowerCase() + ".png";
     }

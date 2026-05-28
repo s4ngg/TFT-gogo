@@ -12,6 +12,8 @@ import lombok.Getter;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Getter
 @Builder
@@ -82,6 +84,7 @@ public class MetaDeckResponse {
 
         List<ChampionSummary> champions = deck.getUnits().stream()
                 .sorted((a, b) -> Boolean.compare(b.isCarry(), a.isCarry()))
+                .limit(8)
                 .map(u -> ChampionSummary.builder()
                         .name(u.getChampionName())
                         .imageUrl(buildChampionImageUrl(u.getCharacterId()))
@@ -138,12 +141,16 @@ public class MetaDeckResponse {
         }
     }
 
+    private static final Pattern SET_NUM_PATTERN = Pattern.compile("tft(\\d+)_");
+
     private static String buildChampionImageUrl(String characterId) {
         if (characterId == null || characterId.isBlank()) {
             throw new IllegalArgumentException("characterId가 비어 있습니다.");
         }
         String id = characterId.toLowerCase();
+        Matcher m = SET_NUM_PATTERN.matcher(id);
+        String setTag = m.find() ? "tft_set" + m.group(1) : "tft_set17";
         return "https://raw.communitydragon.org/latest/game/assets/characters/"
-                + id + "/hud/" + id + "_square.tft.png";
+                + id + "/hud/" + id + "_square." + setTag + ".png";
     }
 }
