@@ -28,6 +28,8 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -53,6 +55,9 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     private static final long RATE_LIMIT_DELAY_MS = 1200L;
     private static final String UNKNOWN_PATCH_VERSION = "UNKNOWN";
     private static final String GLOBAL_AUGMENT_CHARACTER_ID = "GLOBAL";
+    private static final ZoneId DATA_COLLECTION_ZONE = ZoneId.of("Asia/Seoul");
+    // 선택률 최소 임계값(%) — 이 이상인 덱만 덱모음에 노출
+    private static final double MIN_PLAY_RATE = 0.5;
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final Pattern PATCH_VERSION_PATTERN = Pattern.compile("(\\d+\\.\\d+[a-zA-Z]?)");
 
@@ -68,48 +73,68 @@ public class MetaDeckServiceImpl implements MetaDeckService {
             return MetaDeckListResponse.builder()
                     .patchVersion(null)
                     .rankFilter(rankFilter)
+                    .dataStartDate(null)
                     .decks(List.of())
                     .build();
         }
 
+        // 선택률 기준 내림차순 정렬 + 최소 선택률 필터 적용
         List<MetaDeck> decks = metaDeckRepository
-                .findAllByRankFilterAndPatchVersionOrderByWinRateDesc(
-                        rankFilter, latestPatchVersion);
+                .findMetaDecksByPickRate(rankFilter, latestPatchVersion, MIN_PLAY_RATE);
         AtomicInteger rank = new AtomicInteger(1);
         List<MetaDeckResponse> responses = decks.stream()
                 .map(deck -> MetaDeckResponse.from(deck, rank.getAndIncrement()))
                 .toList();
 
+        // 가장 오래된 dataStartDate를 응답에 포함 (수집 기간 표시용)
+        LocalDate dataStartDate = decks.stream()
+                .map(MetaDeck::getDataStartDate)
+                .filter(d -> d != null)
+                .min(LocalDate::compareTo)
+                .orElse(null);
+
         return MetaDeckListResponse.builder()
                 .patchVersion(latestPatchVersion)
                 .rankFilter(rankFilter)
+                .dataStartDate(dataStartDate)
                 .decks(responses)
                 .build();
     }
 
     @Override
     public void aggregateAndSave() {
-        logger.info("전체 랭크 구간 메타 덱 집계 시작");
-        for (RankFilter rankFilter : RankFilter.values()) {
-            logger.info("[{}] 집계 시작", rankFilter);
-            aggregateForTier(rankFilter);
-        }
-        logger.info("전체 랭크 구간 집계 완료");
+        aggregateAndSave(LocalDate.now(DATA_COLLECTION_ZONE).minusDays(1));
     }
 
-    private void aggregateForTier(RankFilter rankFilter) {
+    @Override
+    public void aggregateAndSave(LocalDate dataDate) {
+        logger.info("전체 랭크 구간 메타 덱 일일 집계 시작 - date={}", dataDate);
+        for (RankFilter rankFilter : RankFilter.values()) {
+            logger.info("[{}] 집계 시작 - date={}", rankFilter, dataDate);
+            aggregateForTier(rankFilter, dataDate);
+        }
+        logger.info("전체 랭크 구간 메타 덱 일일 집계 완료 - date={}", dataDate);
+    }
+
+    private void aggregateForTier(RankFilter rankFilter, LocalDate dataDate) {
         List<String> puuids = collectPuuidsForTier(rankFilter);
         if (puuids.isEmpty()) {
             logger.warn("[{}] 수집 가능한 PUUID 없음 - 집계 중단", rankFilter);
             return;
         }
 
+        long startTimeSeconds = dataDate.atStartOfDay(DATA_COLLECTION_ZONE).toEpochSecond();
+        long endTimeSeconds = dataDate.plusDays(1).atStartOfDay(DATA_COLLECTION_ZONE).toEpochSecond();
+        logger.info("[{}] 수집 기간: {} 00:00 ~ {} 00:00 ({})",
+                rankFilter, dataDate, dataDate.plusDays(1), DATA_COLLECTION_ZONE);
+
         Map<String, PatchDeckStats> patchStatsMap = new HashMap<>();
         Set<String> processedMatchIds = new HashSet<>();
 
         for (String puuid : puuids) {
             try {
-                List<String> matchIds = riotApiClient.getMatchIds(puuid, MATCHES_PER_SUMMONER);
+                List<String> matchIds = riotApiClient.getMatchIds(
+                        puuid, MATCHES_PER_SUMMONER, startTimeSeconds, endTimeSeconds);
                 for (String matchId : matchIds) {
                     if (!processedMatchIds.add(matchId)) {
                         continue;
@@ -122,7 +147,7 @@ public class MetaDeckServiceImpl implements MetaDeckService {
 
                     String patchVersion = normalizePatchVersion(match.getInfo().getGame_version());
                     PatchDeckStats patchStats = patchStatsMap.computeIfAbsent(
-                            patchVersion, ignored -> new PatchDeckStats());
+                            patchVersion, ignored -> new PatchDeckStats(dataDate));
                     patchStats.totalParticipants += processMatch(match, patchStats.deckStatMap);
 
                     Thread.sleep(RATE_LIMIT_DELAY_MS);
@@ -142,7 +167,7 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         patchStatsMap.forEach((patchVersion, patchStats) -> {
             logger.info("[{}][{}] participants={}, deckCombinations={}",
                     rankFilter, patchVersion, patchStats.totalParticipants, patchStats.deckStatMap.size());
-            persistDeckStats(patchStats.deckStatMap, patchStats.totalParticipants, rankFilter, patchVersion);
+            persistDeckStats(patchStats.deckStatMap, patchStats.totalParticipants, rankFilter, patchVersion, patchStats.dataStartDate);
         });
     }
 
@@ -150,11 +175,12 @@ public class MetaDeckServiceImpl implements MetaDeckService {
             Map<String, DeckStat> deckStatMap,
             int totalParticipants,
             RankFilter rankFilter,
-            String patchVersion
+            String patchVersion,
+            LocalDate dataStartDate
     ) {
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.executeWithoutResult(
-                status -> saveDeckStats(deckStatMap, totalParticipants, rankFilter, patchVersion));
+                status -> saveDeckStats(deckStatMap, totalParticipants, rankFilter, patchVersion, dataStartDate));
     }
 
     private List<String> collectPuuidsForTier(RankFilter rankFilter) {
@@ -254,7 +280,8 @@ public class MetaDeckServiceImpl implements MetaDeckService {
             Map<String, DeckStat> deckStatMap,
             int totalParticipants,
             RankFilter rankFilter,
-            String patchVersion
+            String patchVersion,
+            LocalDate dataStartDate
     ) {
         if (totalParticipants == 0) {
             return;
@@ -284,11 +311,12 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                             .top4Rate(stat.top4Rate())
                             .avgPlacement(stat.avgPlacement())
                             .sampleSize(stat.count)
+                            .dataStartDate(dataStartDate)
                             .build());
 
             if (deck.getId() != null) {
                 deck.update(tier, playRate, stat.winRate(), stat.top4Rate(),
-                        stat.avgPlacement(), stat.count, patchVersion);
+                        stat.avgPlacement(), stat.count, patchVersion, dataStartDate);
                 deck.getUnits().clear();
                 deck.getTraits().clear();
                 deck.getArtifactStats().clear();
@@ -298,11 +326,13 @@ public class MetaDeckServiceImpl implements MetaDeckService {
             metaDeckRepository.save(deck);
             saveDeckDetails(deck, stat, patchVersion);
 
-            logger.info("[{}][{}] saved name={} tier={} winRate={}% sample={}",
-                    rankFilter, patchVersion, name, tier, String.format("%.1f", stat.winRate()), stat.count);
+            logger.info("[{}][{}] saved name={} tier={} pickRate={}% winRate={}% sample={}",
+                    rankFilter, patchVersion, name, tier,
+                    String.format("%.2f", playRate), String.format("%.1f", stat.winRate()), stat.count);
         }
 
-        logger.info("[{}][{}] aggregate complete: {} decks saved", rankFilter, patchVersion, ranked.size());
+        logger.info("[{}][{}] aggregate complete: {} decks saved (minPlayRate={}%)",
+                rankFilter, patchVersion, ranked.size(), MIN_PLAY_RATE);
     }
 
     private void saveDeckDetails(MetaDeck deck, DeckStat stat, String patchVersion) {
@@ -474,7 +504,12 @@ public class MetaDeckServiceImpl implements MetaDeckService {
 
     private static class PatchDeckStats {
         final Map<String, DeckStat> deckStatMap = new HashMap<>();
+        final LocalDate dataStartDate;
         int totalParticipants = 0;
+
+        PatchDeckStats(LocalDate dataStartDate) {
+            this.dataStartDate = dataStartDate;
+        }
     }
 
     private static class DeckStat {

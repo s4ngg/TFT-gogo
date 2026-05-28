@@ -496,6 +496,10 @@ function Decks() {
   const decks = metaDeckResponse?.decks ?? []
   const [tab, setTab] = useState<Tab>('덱모음')
   const { data: locale } = useCDragonLocale()
+  const patchVersion = metaDeckResponse?.patchVersion ?? '집계 대기'
+  const dataRangeLabel = metaDeckResponse?.dataStartDate
+    ? `${metaDeckResponse.dataStartDate} 이후 수집 데이터`
+    : '집계 데이터 수집 전'
 
   return (
     <AppLayout>
@@ -503,7 +507,7 @@ function Decks() {
         <div className={styles.pageHeader}>
           <div className={styles.titleBlock}>
             <h1>덱모음</h1>
-            <p>현재 패치 기준 전체 메타 덱 · 승률 · 픽률 · 평균 등수</p>
+            <p>{patchVersion} 패치 기준 · {dataRangeLabel} · 선택률순 노출</p>
           </div>
           <div className={styles.rightControls}>
             <div className={styles.rankFilterBar}>

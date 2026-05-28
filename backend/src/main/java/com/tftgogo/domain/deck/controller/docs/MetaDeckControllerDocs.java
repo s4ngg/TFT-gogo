@@ -7,8 +7,11 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import java.time.LocalDate;
 
 @Tag(name = "Meta Deck", description = "메타 덱 API")
 public interface MetaDeckControllerDocs {
@@ -21,9 +24,12 @@ public interface MetaDeckControllerDocs {
             @Parameter(description = "랭크 구간 필터", example = "EMERALD_PLUS")
             @RequestParam(defaultValue = "EMERALD_PLUS") RankFilter rankFilter);
 
-    @Operation(summary = "메타 덱 수동 집계", description = "Riot API에서 전체 랭크 구간 데이터를 즉시 수집 및 집계합니다.")
+    @Operation(summary = "메타 덱 수동 집계", description = "지정 날짜 00:00~24:00(Asia/Seoul) 구간의 Riot API 데이터를 수집 및 집계합니다. date 생략 시 어제 날짜를 집계합니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "집계 완료")
     })
-    ResponseEntity<ApiResponse<Void>> triggerAggregate();
+    ResponseEntity<ApiResponse<Void>> triggerAggregate(
+            @Parameter(description = "집계할 날짜", example = "2026-05-27")
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date);
 }

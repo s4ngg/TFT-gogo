@@ -3,6 +3,7 @@ package com.tftgogo.domain.deck.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,6 +57,10 @@ public class MetaDeck {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    // 집계에 사용된 데이터 수집 시작 날짜 (최근 N일 기준)
+    @Column(name = "data_start_date")
+    private LocalDate dataStartDate;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -77,7 +82,7 @@ public class MetaDeck {
     @Builder
     public MetaDeck(String signature, RankFilter rankFilter, String name, String patchVersion,
                     String tier, double playRate, double winRate, double top4Rate,
-                    double avgPlacement, int sampleSize) {
+                    double avgPlacement, int sampleSize, LocalDate dataStartDate) {
         this.signature = signature;
         this.rankFilter = rankFilter;
         this.name = name;
@@ -88,12 +93,14 @@ public class MetaDeck {
         this.top4Rate = top4Rate;
         this.avgPlacement = avgPlacement;
         this.sampleSize = sampleSize;
+        this.dataStartDate = dataStartDate;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
 
     public void update(String tier, double playRate, double winRate,
-                       double top4Rate, double avgPlacement, int sampleSize, String patchVersion) {
+                       double top4Rate, double avgPlacement, int sampleSize,
+                       String patchVersion, LocalDate dataStartDate) {
         this.tier = tier;
         this.playRate = playRate;
         this.winRate = winRate;
@@ -101,6 +108,7 @@ public class MetaDeck {
         this.avgPlacement = avgPlacement;
         this.sampleSize = sampleSize;
         this.patchVersion = patchVersion;
+        this.dataStartDate = dataStartDate;
         this.updatedAt = LocalDateTime.now();
     }
 }

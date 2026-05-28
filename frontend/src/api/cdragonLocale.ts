@@ -14,8 +14,19 @@ interface CDragonEntry {
   name?: string
 }
 
+interface CDragonSet {
+  champions?: CDragonEntry[]
+  traits?: CDragonEntry[]
+  augments?: CDragonEntry[]
+}
+
+interface CDragonTFTData {
+  sets?: Record<string, CDragonSet>
+  items?: CDragonEntry[]
+}
+
 export async function fetchTFTLocale(): Promise<TFTLocale> {
-  const { data } = await axiosInstance.get<Record<string, unknown>>(CDRAGON_TFT_KO_URL)
+  const { data } = await axiosInstance.get<CDragonTFTData>(CDRAGON_TFT_KO_URL)
 
   const champByApiName = new Map<string, string>()
   const traitBySuffix = new Map<string, string>()
