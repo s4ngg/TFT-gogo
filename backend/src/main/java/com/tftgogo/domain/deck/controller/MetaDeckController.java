@@ -6,7 +6,6 @@ import com.tftgogo.domain.deck.service.MetaDeckService;
 import com.tftgogo.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,8 +24,7 @@ public class MetaDeckController implements MetaDeckControllerDocs {
         return ResponseEntity.ok(ApiResponse.success("메타 덱 조회 성공", decks));
     }
 
-    // 수동 집계 트리거 (관리자 전용)
-    @PreAuthorize("hasRole('ADMIN')")
+    // 수동 집계 트리거 (관리자 전용) - TODO: JWT 구현 후 @PreAuthorize("hasRole('ADMIN')") 복구
     @PostMapping("/meta/aggregate")
     public ResponseEntity<ApiResponse<Void>> triggerAggregate() {
         metaDeckService.aggregateAndSave();
