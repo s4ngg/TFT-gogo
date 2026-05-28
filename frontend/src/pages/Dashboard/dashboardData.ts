@@ -570,7 +570,6 @@ export const partyPosts: PartyPost[] = [
 export const chatChannels: ChatChannel[] = [
   { name: '일반', users: '1,234', message: '새로운 패치 적응 중입니다!', time: '14:58' },
   { name: '덱 공략', users: '856', message: '증강 추천 부탁드려요', time: '14:57' },
-  { name: '자유 채팅', users: '2,102', message: '오늘 운 진짜 좋다 ㅋㅋ', time: '14:57' },
   { name: '파티 모집', users: '622', message: '마스터 듀오 구해요~', time: '14:56' },
   { name: '질문 & 답변', users: '741', message: '초보 운영 질문 있습니다', time: '14:56' },
 ]

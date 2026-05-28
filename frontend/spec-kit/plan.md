@@ -80,10 +80,28 @@ src/api/
   meta.ts                     # 메타 스냅샷 API
   match.ts                    # 소환사 전적 목록 API
   deck.ts                     # 덱 추천 API
+  community.ts                # 파티원 모집글 CRUD API
 ```
 
 - 모든 API 함수는 `axiosInstance` 기반으로 작성
 - React Query `useQuery` / `useMutation`과 연결
+- 실시간 채팅은 WebSocket 기반 (`wss://` 엔드포인트)으로 별도 관리
+
+---
+
+## 주요 커스텀 훅
+
+```
+src/hooks/
+  useSummoner.ts        # 소환사 검색
+  useMetaSnapshot.ts    # 메타 스냅샷
+  useSummonerDetail.ts  # 소환사 상세
+  useMatchHistory.ts    # 전적 목록
+  useDecks.ts           # 덱 목록
+  useAiRecommend.ts     # AI 덱 추천
+  usePartyPosts.ts      # 파티원 모집글 목록/필터
+  useChatChannels.ts    # 채팅 채널 목록
+```
 
 ---
 
@@ -94,6 +112,7 @@ src/api/
 | 서버 데이터 (API 응답) | React Query |
 | 전역 UI 상태 (로그인 소환사 등) | Zustand |
 | 로컬 UI 상태 (입력값, 탭 등) | useState |
+| 실시간 채팅 소켓 상태 | 로컬 useState + useEffect |
 
 ---
 

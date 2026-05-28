@@ -1,0 +1,1122 @@
+.communityPage {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
+  align-content: start;
+  gap: 15px;
+}
+
+.pageHeader {
+  grid-column: 1 / -1;
+  min-height: 72px;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  padding: 3px 2px 8px;
+}
+
+.pageHeader p,
+.pageHeader h1 {
+  margin: 0;
+}
+
+.pageHeader p {
+  color: #05e9dd;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pageHeader h1 {
+  margin-top: 5px;
+  color: #ffffff;
+  font-size: 30px;
+  font-weight: 650;
+  letter-spacing: -0.024em;
+}
+
+.pageHeader span {
+  margin-bottom: 5px;
+  color: #9ca7b1;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: linear-gradient(180deg, rgba(8, 21, 29, 0.97), rgba(5, 15, 21, 0.96));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.015), 0 18px 38px rgba(0, 0, 0, 0.18);
+}
+
+.partyPanel,
+.chatPanel {
+  min-height: 658px;
+  height: calc(100vh - 200px);
+  max-height: 900px;
+  padding: 18px;
+  overflow: hidden;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.panelHeader h2,
+.panelHeader p {
+  margin: 0;
+}
+
+.panelHeader h2 {
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.024em;
+}
+
+.panelHeader p {
+  margin-top: 7px;
+  color: #aab3bc;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.primaryButton,
+.joinButton,
+.filterTabs button,
+.messageForm button {
+  border: 1px solid rgba(5, 221, 213, 0.82);
+  border-radius: var(--radius-button);
+  color: #05f0e3;
+  background: rgba(2, 77, 82, 0.64);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primaryButton {
+  flex: 0 0 auto;
+  height: 38px;
+  padding: 0 16px;
+  font-size: 13px;
+}
+
+.toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 13px;
+  margin-top: 17px;
+}
+
+.searchBox {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 13px;
+  border: 1px solid rgba(110, 142, 150, 0.28);
+  border-radius: var(--radius-button);
+  color: #aeb8c2;
+  background: rgba(3, 15, 20, 0.94);
+}
+
+.searchBox input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: #ffffff;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.composeBox {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) 96px 112px 92px;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(112, 145, 153, 0.17);
+  border-radius: 10px;
+  background: rgba(4, 13, 18, 0.48);
+}
+
+.composeBox input,
+.composeBox select,
+.composeBox textarea {
+  min-width: 0;
+  border: 1px solid rgba(110, 142, 150, 0.26);
+  border-radius: 7px;
+  outline: 0;
+  color: var(--text-main);
+  background: rgba(3, 15, 20, 0.92);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.composeBox input,
+.composeBox select {
+  height: 34px;
+  padding: 0 10px;
+}
+
+.composeBox textarea {
+  grid-column: 1 / 4;
+  height: 42px;
+  resize: none;
+  padding: 10px;
+}
+
+.composeBox input::placeholder,
+.composeBox textarea::placeholder {
+  color: #8f9aa3;
+}
+
+.composeBox button {
+  height: 42px;
+  align-self: end;
+}
+
+.searchBox input::placeholder {
+  color: #9ea8b2;
+}
+
+.filterTabs {
+  display: flex;
+  gap: 8px;
+}
+
+.filterTabs button {
+  height: 36px;
+  min-width: 59px;
+  border-color: rgba(110, 142, 150, 0.28);
+  color: #b7bec7;
+  background: rgba(8, 20, 27, 0.84);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.filterTabs .selectedTab {
+  color: #04f3e5;
+  border-color: #05ddd5;
+  background: rgba(5, 102, 104, 0.56);
+}
+
+.partyList {
+  display: grid;
+  gap: 11px;
+  margin-top: 15px;
+}
+
+.partyCard {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) 64px;
+  gap: 13px;
+  align-items: center;
+  min-height: 118px;
+  padding: 14px;
+  border: 1px solid rgba(112, 145, 153, 0.17);
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 6% 18%, rgba(0, 238, 224, 0.07), transparent 28%),
+    linear-gradient(90deg, rgba(12, 29, 37, 0.78), rgba(6, 17, 24, 0.4));
+}
+
+.partyIcon {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    inset 0 -12px 20px rgba(0, 0, 0, 0.22);
+}
+
+.partyIcon::after {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.1);
+  transform: rotate(45deg);
+}
+
+.partyIcon svg {
+  position: relative;
+  z-index: 1;
+}
+
+.purple {
+  color: #cf6dff;
+  background: rgba(103, 35, 156, 0.58);
+}
+
+.green {
+  color: #9af038;
+  background: rgba(54, 127, 36, 0.56);
+}
+
+.cyan {
+  color: #03f1e7;
+  background: rgba(0, 134, 139, 0.55);
+}
+
+.gold {
+  color: #ffd142;
+  background: rgba(143, 98, 20, 0.58);
+}
+
+.partyContent {
+  min-width: 0;
+}
+
+.partyTitleLine {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.partyTitleLine h3 {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.018em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  word-break: keep-all;
+}
+
+.partyTitleLine span,
+.onlineBadge {
+  flex: 0 0 auto;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 9px;
+  border: 1px solid rgba(5, 221, 213, 0.35);
+  border-radius: 999px;
+  color: #06e9db;
+  background: rgba(3, 60, 65, 0.44);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.partyContent > p {
+  margin: 7px 0 0;
+  overflow: hidden;
+  color: #aab4bd;
+  font-size: 13px;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.partyMeta,
+.partyTags {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 9px;
+  overflow: hidden;
+}
+
+.partyMeta span,
+.partyTags small {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid rgba(118, 151, 160, 0.22);
+  border-radius: 5px;
+  color: #c0c8d0;
+  background: rgba(10, 22, 30, 0.76);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.partyMeta span:last-child {
+  color: #ff5b57;
+}
+
+.joinButton {
+  width: 62px;
+  height: 38px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.joinedButton {
+  color: #ffffff !important;
+  border-color: rgba(5, 221, 213, 0.5) !important;
+  background: rgba(5, 110, 115, 0.7) !important;
+}
+
+.clearSearch {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  color: #8f9aa3;
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+}
+
+.chatPanel {
+  display: flex;
+  flex-direction: column;
+}
+
+.chatLayout {
+  min-height: 0;
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 17px;
+}
+
+.channelList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.channelList button {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  padding: 11px 12px;
+  border: 1px solid rgba(112, 145, 153, 0.18);
+  border-radius: 9px;
+  color: #b8c2ca;
+  background: rgba(8, 20, 27, 0.68);
+  text-align: left;
+  cursor: pointer;
+}
+
+.channelList strong {
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.channelList span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #aab4bd;
+  font-size: 11px;
+}
+
+.channelList small {
+  overflow: hidden;
+  color: #8f9aa3;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.channelList .activeChannel {
+  border-color: rgba(5, 221, 213, 0.78);
+  background:
+    linear-gradient(90deg, rgba(0, 116, 108, 0.42), rgba(5, 48, 56, 0.56)),
+    rgba(8, 20, 27, 0.86);
+}
+
+.chatWindow {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  border: 1px solid rgba(112, 145, 153, 0.17);
+  border-radius: 10px;
+  background: rgba(4, 13, 18, 0.54);
+}
+
+.chatWindowHeader {
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 15px;
+  border-bottom: 1px solid rgba(112, 145, 153, 0.13);
+}
+
+.chatWindowHeader strong {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.chatWindowHeader span {
+  color: #9ba5ad;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.messageList {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-height: 0;
+  overflow: hidden;
+  padding: 14px;
+}
+
+.messageList article {
+  max-width: 86%;
+  padding: 10px 11px;
+  border: 1px solid rgba(112, 145, 153, 0.14);
+  border-radius: 9px;
+  background: rgba(13, 29, 38, 0.72);
+}
+
+.messageList article div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.messageList strong {
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.messageList span {
+  color: #05e9dd;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.messageList time {
+  margin-left: auto;
+  color: #7f8b95;
+  font-size: 11px;
+}
+
+.messageList p {
+  margin: 6px 0 0;
+  color: #c3cbd3;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.messageList .myMessage {
+  align-self: end;
+  border-color: rgba(5, 221, 213, 0.35);
+  background: rgba(0, 83, 88, 0.54);
+}
+
+.messageForm {
+  height: 50px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 36px;
+  align-items: center;
+  gap: 8px;
+  margin: 0 12px 12px;
+  padding: 0 8px 0 12px;
+  border: 1px solid rgba(5, 221, 213, 0.62);
+  border-radius: 8px;
+  color: #05f0e3;
+  background: rgba(2, 54, 59, 0.62);
+}
+
+.messageForm input {
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: #ffffff;
+  background: transparent;
+  font-size: 13px;
+}
+
+.messageForm input::placeholder {
+  color: #9ca7b1;
+}
+
+.messageForm button {
+  width: 36px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+button:hover {
+  filter: brightness(1.08);
+}
+
+/* ─── 메인 탭 바 ─────────────────────────────────────────────────────────── */
+
+.mainTabBar {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 4px;
+  padding: 0 2px;
+  border-bottom: 1px solid var(--border);
+}
+
+.mainTabBar button {
+  height: 40px;
+  padding: 0 18px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: #8f9aa3;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  margin-bottom: -1px;
+}
+
+.mainTabBar button:hover {
+  color: #c8d0d8;
+  filter: none;
+}
+
+.activeMainTab {
+  color: #05f3e7 !important;
+  border-bottom-color: #05f3e7 !important;
+}
+
+/* ─── 덱 공유 패널 ───────────────────────────────────────────────────────── */
+
+.deckPanel {
+  grid-column: 1 / -1;
+  min-height: calc(100vh - 200px);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.deckPanelHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.deckPanelHeader h2,
+.deckPanelHeader p {
+  margin: 0;
+}
+
+.deckPanelHeader h2 {
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.024em;
+}
+
+.deckPanelHeader p {
+  margin-top: 7px;
+  color: #aab3bc;
+  font-size: 13px;
+}
+
+/* ─── 작성 / 수정 폼 ─────────────────────────────────────────────────────── */
+
+.deckComposeForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid rgba(5, 221, 213, 0.3);
+  border-radius: 10px;
+  background: rgba(0, 60, 65, 0.18);
+}
+
+.deckComposeHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #05f3e7;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.deckComposeHeader button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  color: #8f9aa3;
+  background: transparent;
+  cursor: pointer;
+}
+
+.deckComposeRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
+.deckComposeRow input,
+.deckComposeTitle,
+.deckComposeDesc {
+  border: 1px solid rgba(110, 142, 150, 0.26);
+  border-radius: 7px;
+  outline: 0;
+  color: #ffffff;
+  background: rgba(3, 15, 20, 0.92);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.deckComposeRow input {
+  height: 36px;
+  padding: 0 11px;
+}
+
+.deckComposeRow input::placeholder,
+.deckComposeDesc::placeholder {
+  color: #8f9aa3;
+}
+
+.deckComposeDesc {
+  width: 100%;
+  height: 80px;
+  resize: none;
+  padding: 10px 11px;
+  box-sizing: border-box;
+}
+
+.deckComposeActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.cancelButton {
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid rgba(110, 142, 150, 0.3);
+  border-radius: var(--radius-button);
+  color: #8f9aa3;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ─── 정렬 / 필터 툴바 ───────────────────────────────────────────────────── */
+
+.deckToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sortTabs {
+  display: flex;
+  gap: 6px;
+}
+
+.sortTabs button {
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid rgba(110, 142, 150, 0.28);
+  border-radius: var(--radius-button);
+  color: #b7bec7;
+  background: rgba(8, 20, 27, 0.84);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sortTabs .selectedTab {
+  color: #04f3e5;
+  border-color: #05ddd5;
+  background: rgba(5, 102, 104, 0.56);
+}
+
+.bookmarkFilter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid rgba(110, 142, 150, 0.28);
+  border-radius: var(--radius-button);
+  color: #b7bec7;
+  background: rgba(8, 20, 27, 0.84);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bookmarkFilterActive {
+  color: #f7d26d;
+  border-color: rgba(247, 210, 109, 0.6);
+  background: rgba(100, 75, 10, 0.4);
+}
+
+/* ─── 게시글 그리드 ──────────────────────────────────────────────────────── */
+
+.deckGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.emptyState {
+  padding: 40px 0;
+  color: #6a7580;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* ─── 게시글 카드 ────────────────────────────────────────────────────────── */
+
+.deckCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid rgba(112, 145, 153, 0.17);
+  border-radius: 10px;
+  background: rgba(8, 19, 27, 0.72);
+}
+
+.deckCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.deckCardAuthor {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.deckCardAuthor strong {
+  color: #d8e0e8;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.deckCardAuthor time {
+  color: #6a7580;
+  font-size: 11px;
+}
+
+.tierBadge {
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 7px;
+  border: 1px solid rgba(5, 221, 213, 0.3);
+  border-radius: 999px;
+  color: #05e9dd;
+  background: rgba(3, 55, 60, 0.5);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.iconButton {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid rgba(112, 145, 153, 0.2);
+  border-radius: 6px;
+  color: #8f9aa3;
+  background: rgba(10, 22, 30, 0.6);
+  cursor: pointer;
+}
+
+.bookmarked {
+  color: #f7d26d;
+  border-color: rgba(247, 210, 109, 0.5);
+  background: rgba(100, 75, 10, 0.35);
+}
+
+.deckCardTitle {
+  margin: 0;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.018em;
+  line-height: 1.35;
+  word-break: keep-all;
+}
+
+.deckName {
+  display: inline-block;
+  height: 22px;
+  line-height: 22px;
+  padding: 0 9px;
+  border: 1px solid rgba(5, 221, 213, 0.2);
+  border-radius: 5px;
+  color: #04e8db;
+  background: rgba(0, 80, 85, 0.3);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.deckCardDesc {
+  margin: 0;
+  color: #9ba5ae;
+  font-size: 13px;
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.deckCardTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.deckCardTags small {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid rgba(118, 151, 160, 0.2);
+  border-radius: 4px;
+  color: #b8c2ca;
+  background: rgba(10, 22, 30, 0.7);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.deckCardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 4px;
+  border-top: 1px solid rgba(112, 145, 153, 0.1);
+}
+
+.deckCardActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.likeButton,
+.commentToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid rgba(112, 145, 153, 0.2);
+  border-radius: 6px;
+  color: #8f9aa3;
+  background: rgba(10, 22, 30, 0.6);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.liked {
+  color: #ff6b72;
+  border-color: rgba(255, 107, 114, 0.45);
+  background: rgba(80, 20, 22, 0.4);
+}
+
+.commentToggle:hover {
+  color: #05f3e7;
+  border-color: rgba(5, 221, 213, 0.4);
+}
+
+.deckCardEdit {
+  display: flex;
+  gap: 5px;
+}
+
+.deleteButton {
+  color: #ff5b57 !important;
+  border-color: rgba(255, 91, 87, 0.3) !important;
+}
+
+/* ─── 댓글 영역 ──────────────────────────────────────────────────────────── */
+
+.commentSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(112, 145, 153, 0.12);
+}
+
+.noComments {
+  margin: 0;
+  padding: 12px 0;
+  color: #6a7580;
+  font-size: 12px;
+  text-align: center;
+}
+
+.commentList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.commentItem {
+  padding: 10px 12px;
+  border: 1px solid rgba(112, 145, 153, 0.12);
+  border-radius: 8px;
+  background: rgba(4, 13, 18, 0.5);
+}
+
+.commentMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 5px;
+}
+
+.commentMeta strong {
+  color: #d0d8e0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.commentMeta time {
+  margin-left: auto;
+  color: #5a6570;
+  font-size: 11px;
+}
+
+.commentItem p {
+  margin: 0;
+  color: #a8b2bb;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.commentInputRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 36px;
+  gap: 6px;
+}
+
+.commentInputRow input {
+  height: 36px;
+  padding: 0 11px;
+  border: 1px solid rgba(5, 221, 213, 0.3);
+  border-radius: 7px;
+  outline: 0;
+  color: #ffffff;
+  background: rgba(2, 54, 59, 0.4);
+  font: inherit;
+  font-size: 12px;
+}
+
+.commentInputRow input::placeholder {
+  color: #6a7580;
+}
+
+.commentInputRow button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid rgba(5, 221, 213, 0.5);
+  border-radius: 7px;
+  color: #05f3e7;
+  background: rgba(2, 77, 82, 0.6);
+  cursor: pointer;
+}
+
+@media (max-height: 900px) {
+  .pageHeader {
+    min-height: 56px;
+    padding-bottom: 6px;
+  }
+
+  .pageHeader h1 {
+    font-size: 27px;
+  }
+
+  .partyPanel,
+  .chatPanel {
+    min-height: 580px;
+    height: calc(100vh - 170px);
+    padding: 15px;
+  }
+
+  .deckPanel {
+    min-height: calc(100vh - 170px);
+  }
+
+  .partyCard {
+    min-height: 102px;
+    padding: 12px;
+  }
+
+  .composeBox {
+    grid-template-columns: minmax(0, 1fr) 86px 100px 80px;
+    margin-top: 10px;
+    padding: 10px;
+  }
+
+  .composeBox input,
+  .composeBox select {
+    height: 31px;
+  }
+
+  .composeBox textarea,
+  .composeBox button {
+    height: 38px;
+  }
+
+  .partyContent > p {
+    margin-top: 5px;
+  }
+
+  .partyMeta,
+  .partyTags {
+    margin-top: 7px;
+  }
+
+  .deckGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

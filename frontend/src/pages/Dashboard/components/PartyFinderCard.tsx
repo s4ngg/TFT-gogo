@@ -17,7 +17,7 @@ function PartyFinderCard() {
     <section className={`${styles.panel} ${styles.partyPanel}`}>
       <div className={styles.sideHeading}>
         <h2>파티원 찾기</h2>
-        <button type="button" onClick={() => navigate('/party')}>
+        <button type="button" onClick={() => navigate('/community')}>
           더 보기
           <ChevronRight size={16} />
         </button>

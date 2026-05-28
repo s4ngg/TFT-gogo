@@ -17,7 +17,7 @@ const navIcons: Record<NavItem['key'], typeof Home> = {
   decks: LayoutGrid,
   ai: Bot,
   guide: Bookmark,
-  party: Users,
+  community: Users,
   patch: ClipboardList,
 }
 

@@ -1,0 +1,555 @@
+.adminCard {
+  flex: 0 0 auto;
+  overflow: hidden;
+  padding: 18px 16px 15px;
+  border: 1px solid rgba(191, 134, 58, 0.55);
+  border-radius: var(--radius-card);
+  background: linear-gradient(180deg, rgba(9, 28, 36, 0.86), rgba(7, 18, 25, 0.82));
+}
+
+.sidebarFill{
+  flex: 0 1 445px;
+  min-height: 18px;
+  max-height: 445px;
+}
+
+.adminAvatar {
+  width: 36;
+  height: 36;
+  border-Radius: "50%";
+  background: "#1e2d45";
+  display: "flex";
+  align-Items: "center";
+  justify-Content: "center";
+  font-Size: 14;
+  color: "#60a5fa";
+  font-Weight: 600;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* ── 탑바 ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  background: #0f1320;
+  border-bottom: 1px solid #1a2235;
+  flex-shrink: 0;
+}
+
+.topbarTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.topbarRight {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4ade80;
+}
+
+.statusText {
+  font-size: 13px;
+  color: #4ade80;
+}
+
+.clock {
+  font-size: 12px;
+  color: #5a6a7a;
+}
+
+/* ── 대시보드 그리드 ── */
+.dashboard {
+  flex: 1;
+  overflow-y: auto;
+  padding: 13px;
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  gap: 12px;
+  align-content: start;
+}
+
+/* ── 카드 공통 ── */
+.card {
+  background: #0f1320;
+  border: 1px solid #1a2235;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.cardLeftTop {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.cardRight {
+  grid-column: 2;
+  grid-row: 1 / 3;
+}
+
+.cardLeftBot {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+/* ── 카드 헤더 ── */
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #1a2235;
+  flex-shrink: 0;
+}
+
+.cardHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.cardHeaderLeft i {
+  font-size: 17px;
+  color: #4ade80;
+}
+
+.cardHeaderRight {
+  font-size: 12px;
+  color: #3b82f6;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.cardHeaderRight:hover {
+  color: #60a5fa;
+}
+
+.badgeNew {
+  font-size: 10px;
+  background: #2d1a1a;
+  color: #f87171;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 700;
+  margin-left: 5px;
+}
+
+/* ── 패치노트 목록 ── */
+.patchItem {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 16px;
+  border-bottom: 1px solid #111825;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.patchItem:last-child {
+  border-bottom: none;
+}
+
+.patchItem:hover {
+  background: #141928;
+}
+
+.patchVersion {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  min-width: 38px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.patchVersionGreen {
+  background: #172712;
+  color: #4ade80;
+}
+
+.patchVersionYellow {
+  background: #231d08;
+  color: #fbbf24;
+}
+
+.patchInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.patchTitle {
+  font-size: 13px;
+  color: #dde6f0;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.patchMeta {
+  font-size: 11px;
+  color: #6a7d90;
+  margin-top: 3px;
+  display: flex;
+  gap: 10px;
+}
+
+.patchStatusGreen {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  background: #172712;
+  color: #4ade80;
+}
+
+.patchStatusYellow {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  background: #231d08;
+  color: #fbbf24;
+}
+
+.patchArrow {
+  color: #4a5a6a;
+  font-size: 14px;
+}
+
+/* ── 신고 탭 ── */
+.reportTabs {
+  display: flex;
+  border-bottom: 1px solid #1a2235;
+  flex-shrink: 0;
+}
+
+.reportTab {
+  padding: 10px 16px;
+  font-size: 12px;
+  color: #8899aa;
+  cursor: pointer;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+
+.reportTabActive {
+  color: #4ade80;
+  border-bottom-color: #4ade80;
+}
+
+.tabCount {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 9px;
+  background: #2d1a1a;
+  color: #f87171;
+}
+
+.reportTabActive .tabCount {
+  background: #172712;
+  color: #4ade80;
+}
+
+/* ── 신고 유저 목록 ── */
+.reportItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #111825;
+  transition: background 0.1s;
+}
+
+.reportItem:last-child {
+  border-bottom: none;
+}
+
+.reportItem:hover {
+  background: #141928;
+}
+
+.reportAvatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #1e2d45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: #60a5fa;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.reportUser {
+  flex: 1;
+  min-width: 0;
+}
+
+.reportUsername {
+  font-size: 13px;
+  color: #dde6f0;
+  font-weight: 500;
+}
+
+.reportReason {
+  font-size: 11px;
+  color: #7a8fa0;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reportCountBox {
+  text-align: center;
+  flex-shrink: 0;
+  min-width: 32px;
+}
+
+.reportCountNum {
+  font-size: 16px;
+  font-weight: 700;
+  color: #f87171;
+  line-height: 1;
+}
+
+.reportCountLabel {
+  font-size: 10px;
+  color: #5a6a7a;
+}
+
+.reportTime {
+  font-size: 11px;
+  color: #6a7d90;
+  min-width: 50px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.reportActions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.btnWarn {
+  font-size: 11px;
+  padding: 4px 9px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: none;
+  background: #252010;
+  color: #d4a017;
+  font-weight: 500;
+  transition: background 0.1s;
+}
+
+.btnWarn:hover {
+  background: #33290f;
+}
+
+.btnBan {
+  font-size: 11px;
+  padding: 4px 9px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: none;
+  background: #251515;
+  color: #f87171;
+  font-weight: 500;
+  transition: background 0.1s;
+}
+
+.btnBan:hover {
+  background: #331c1c;
+}
+
+/* ── 서버 현황 스탯 ── */
+.statGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  padding: 13px;
+}
+
+.statGridFull {
+  grid-column: 1 / 3;
+}
+
+.statBox {
+  background: #0b0e16;
+  border: 1px solid #1a2235;
+  border-radius: 8px;
+  padding: 13px 14px;
+}
+
+.statBoxLabel {
+  font-size: 11px;
+  color: #6a7d90;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.statBoxLabel i {
+  font-size: 13px;
+}
+
+.statBoxValue {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.valueGreen {
+  color: #4ade80;
+}
+
+.valueYellow {
+  color: #fbbf24;
+}
+
+.valueBlue {
+  color: #60a5fa;
+}
+
+.statBoxSub {
+  font-size: 11px;
+  color: #6a7d90;
+  margin-top: 4px;
+}
+
+/* ── 지역별 접속 현황 ── */
+.regionSection {
+  padding: 0 13px 11px;
+}
+
+.regionHeader {
+  font-size: 11px;
+  color: #6a7d90;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.regionRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.regionName {
+  color: #8899aa;
+  font-size: 12px;
+  width: 30px;
+  flex-shrink: 0;
+}
+
+.regionBarBg {
+  flex: 1;
+  background: #0b0e16;
+  border-radius: 3px;
+  height: 5px;
+}
+
+.regionBar {
+  height: 5px;
+  border-radius: 3px;
+}
+
+.regionValue {
+  color: #a0b4c8;
+  font-size: 11px;
+  width: 56px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ── 오늘의 주요 현황 ── */
+.summarySection {
+  border-top: 1px solid #1a2235;
+  padding: 11px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.summaryTitle {
+  font-size: 11px;
+  color: #6a7d90;
+  margin-bottom: 2px;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.summaryKey {
+  color: #8899aa;
+}
+
+.summaryValue {
+  color: #dde6f0;
+  font-weight: 500;
+}
+
+/* ── 서브 페이지 빈 상태 ── */
+.emptyPage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.emptyPageIcon {
+  font-size: 38px;
+  color: #4a5a6a;
+}
+
+.emptyPageText {
+  font-size: 14px;
+  color: #7a8fa0;
+}

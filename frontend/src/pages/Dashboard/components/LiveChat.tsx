@@ -10,7 +10,7 @@ function LiveChat() {
     <section className={`${styles.panel} ${styles.chatPanel}`}>
       <div className={styles.sideHeading}>
         <h2>실시간 채팅</h2>
-        <button type="button" onClick={() => navigate('/party')}>
+        <button type="button" onClick={() => navigate('/community')}>
           더 보기
           <ChevronRight size={16} />
         </button>
@@ -29,7 +29,7 @@ function LiveChat() {
           </article>
         ))}
       </div>
-      <button type="button" className={styles.chatButton} onClick={() => navigate('/party')}>
+      <button type="button" className={styles.chatButton} onClick={() => navigate('/community')}>
         <MessageCircle size={20} />
         채팅 열기
       </button>

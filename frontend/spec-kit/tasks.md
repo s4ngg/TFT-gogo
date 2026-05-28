@@ -77,12 +77,25 @@
 - [ ] 유닛/시너지/아이템 조회 UI
 - [ ] API 연동
 
-### PR 11: Community UI + API 연동
+### PR 11: Community UI + API 연동 (파티 & 채팅)
 - [ ] 파티원 모집글 목록/필터/검색 UI
-- [ ] 모집글 작성 폼 UI (제목, 랭크 유형, 최소 티어, 모집 인원, 플레이 스타일)
+- [ ] 모집글 작성 폼 UI (제목, 랭크 유형, 최소 티어, 모집 인원, 플레이 스타일 메모)
 - [ ] 실시간 채팅 채널 목록 UI (#일반, #덱 공략, #파티 모집, #질문 & 답변)
 - [ ] 채팅 메시지 영역 UI (온라인 수, 실시간 메시지)
-- [ ] API 연동 (모집글 CRUD, 채팅 WebSocket)
+- [ ] `api/community.ts` — 모집글 CRUD API
+- [ ] `hooks/usePartyPosts.ts` — 모집글 목록/필터 훅
+- [ ] `hooks/useChatChannels.ts` — 채팅 채널 목록 훅
+- [ ] PR 11 컴포넌트에 실제 데이터 연결 (모집글 CRUD, 채팅 WebSocket)
+
+### PR 11-b: 덱 공유 게시판 UI + API 연동
+- [ ] 덱 공유 탭 UI (메인 탭 전환)
+- [ ] 게시글 목록 (최신순/인기순 정렬, 내 북마크 필터)
+- [ ] 게시글 작성/수정 폼 UI (제목, 덱 이름, 설명, 태그)
+- [ ] 좋아요 / 북마크 토글 UI
+- [ ] 댓글 목록 + 댓글 작성 UI
+- [ ] `api/deckBoard.ts` — 덱 공유 게시글 CRUD + 댓글 API
+- [ ] `hooks/useDeckPosts.ts` — 게시글 목록/필터 훅
+- [ ] PR 11-b 컴포넌트에 실제 데이터 연결
 
 ### PR 12: PatchNotes UI + API 연동
 - [ ] 최신 패치 노트 UI

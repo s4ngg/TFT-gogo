@@ -3,9 +3,10 @@ import AiRecommend from './pages/AiRecommend/AiRecommend'
 import Decks from './pages/Decks/Decks'
 import Dashboard from './pages/Dashboard/Dashboard'
 import Guide from './pages/Guide/Guide'
-import Party from './pages/Party/Party'
+import Community from './pages/Community/Community'
 import PatchNotes from './pages/PatchNotes/PatchNotes'
 import SummonerDetail from './pages/SummonerDetail/SummonerDetail'
+import AdminPage from './pages/Admin/AdminPage'
 
 function App() {
   return (
@@ -15,8 +16,9 @@ function App() {
       <Route path="/decks" element={<Decks />} />
       <Route path="/ai-recommend" element={<AiRecommend />} />
       <Route path="/guide" element={<Guide />} />
-      <Route path="/party" element={<Party />} />
+      <Route path="/community" element={<Community />} />
       <Route path="/patch-notes" element={<PatchNotes />} />
+      <Route path="/adminPage" element={<AdminPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
