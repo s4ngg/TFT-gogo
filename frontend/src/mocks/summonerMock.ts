@@ -15,7 +15,7 @@ const iImg  = (name: string) =>
 
 // ── 시너지 아이콘 ───────────────────────────────────────────
 const traitIcons = {
-  vanguard:   tIcon('ASSETS/UX/TraitIcons/Trait_Icon_12_Vanguard.TFT_Set12.tex'),
+  vanguard:   tIcon('ASSETS/UX/TraitIcons/Trait_Icon_17_Vanguard.TFT_Set17.tex'),
   darkStar:   tIcon('ASSETS/UX/TraitIcons/Trait_Icon_17_DarkStar.TFT_Set17.tex'),
   spirit:     tIcon('ASSETS/UX/TraitIcons/Trait_Icon_17_Astronaut.TFT_Set17.tex'),
   rogue:      tIcon('ASSETS/UX/TraitIcons/Trait_Icon_17_Rogue.TFT_Set17.tex'),
