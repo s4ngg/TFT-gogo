@@ -42,7 +42,10 @@ font-variant-numeric: tabular-nums;
 
 ## Colors
 
-| 토큰 | 값 | 용도 |
+> 모든 색상은 `src/styles/variables.css`에 CSS 변수로 정의하고 `var(--토큰명)`으로 참조한다.
+> 컴포넌트 CSS에 색상값 직접 하드코딩 금지.
+
+| CSS 변수명 | 값 | 용도 |
 | --- | --- | --- |
 | `--bg-main` | `#070d14` | 전체 배경 |
 | `--bg-sidebar` | `#050a10` | 사이드바 배경 |
@@ -50,20 +53,22 @@ font-variant-numeric: tabular-nums;
 | `--bg-card-soft` | `#101a27` | 부드러운 카드 배경 |
 | `--border` | `#1f2a37` | 기본 테두리 |
 | `--border-active` | `#00d4b4` | 활성/포커스 테두리 |
-| 포인트 청록 | `#05f3e7` | 활성 아이콘, CTA, 주요 버튼 |
-| 숫자 청록 | `#04ede0` | 승률 강조 |
-| 골드 | `#f7d26d` | 랭크 1~2, 티어 배지 |
-| 경고 레드 | `#ff4545` | 마감 시간 |
+| `--color-cyan` | `#05f3e7` | 활성 아이콘, CTA, 주요 버튼 |
+| `--color-cyan-num` | `#04ede0` | 승률 강조 숫자 |
+| `--color-gold` | `#f7d26d` | 랭크 1~2, 티어 배지 |
+| `--color-red` | `#ff4545` | 경고, Bot4 |
+| `--color-success` | `#4ade80` | 성공 상태 |
+| `--text-main` | `#ffffff` | 기본 텍스트 |
+| `--text-soft` | `#c6ccd8` | 보조 텍스트 |
+| `--text-muted` | `#8b92a8` | 흐린 텍스트 |
 
 ## Radius And Borders
 
-| 용도 | 값 |
-| --- | ---: |
-| 카드 radius | 12px |
-| 버튼/tab radius | 8px |
-| 메타 테이블 내부 radius | 8px |
-| 챔피언 카드 radius | 6px |
-| 작은 아이콘 radius | 6~7px |
+| CSS 변수명 | 값 | 용도 |
+| --- | ---: | --- |
+| `--radius-card` | `12px` | 카드 |
+| `--radius-button` | `8px` | 버튼, 탭, 메타 테이블 내부 |
+| _(없음)_ | `6px` | 챔피언 카드, 작은 아이콘 |
 
 ## Layout Density
 

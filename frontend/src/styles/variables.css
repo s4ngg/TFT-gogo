@@ -1,35 +1,87 @@
-/* ────────────────────────────────────────────────────
-   챔피언 코스트 색상 토큰 (TFT 게임 기준)
-   1코스트 = 회색 / 2코스트 = 초록 / 3코스트 = 파랑
-   4코스트 = 보라 / 5코스트 = 황금
-──────────────────────────────────────────────────── */
+/* Base theme tokens */
 :root {
-  --cost1-border:    #8b9198;
-  --cost1-bg-start:  #3a3d42;
-  --cost1-bg-mid:    #5a5e65;
-  --cost1-bg-end:    #2a2c30;
+  --bg-main: #070d14;
+  --bg-sidebar: #050a10;
+  --bg-card: #0b1420;
+  --bg-card-soft: #101a27;
 
-  --cost2-border:    #0bb453;
-  --cost2-bg-start:  #0a3d20;
-  --cost2-bg-mid:    #0f6b30;
-  --cost2-bg-end:    #072a16;
+  --border: #1f2a37;
+  --border-active: #00d4b4;
+  --accent: #00d4b4;
+  --accent-bright: #1fe5c8;
 
-  --cost3-border:    #2e93f0;
-  --cost3-bg-start:  #0a2a5e;
-  --cost3-bg-mid:    #1255a0;
-  --cost3-bg-end:    #071830;
+  --color-cyan: #04f3e5;
+  --color-gold: #f7d26d;
+  --color-red: #ff4945;
+  --color-success: #4ade80;
+  --color-win: #76ef33;
+  --color-purple: #a78bfa;
+  --color-star: #f9c860;
+  --color-silver: #b8c1cc;
+  --color-bronze: #cd7f32;
 
-  --cost4-border:    #c542f5;
-  --cost4-bg-start:  #3a1060;
-  --cost4-bg-mid:    #7a20b0;
-  --cost4-bg-end:    #250a40;
+  --gold: #d7a93a;
+  --danger: #ff5b57;
+  --success: #4ade80;
 
-  --cost5-border:    #f0c030;
-  --cost5-bg-start:  #4a3000;
-  --cost5-bg-mid:    #8a6000;
-  --cost5-bg-end:    #2a1a00;
-  --cost5-glow:      rgba(240, 192, 48, 0.35);
+  --text-main: #ffffff;
+  --text-ui: #d9dde3;
+  --text-soft: #c6ccd8;
+  --text-secondary: #b5bdc5;
+  --text-muted: #8b92a8;
 
+  --space-2xs: 3px;
+  --space-xs: 4px;
+  --space-sm: 6px;
+  --space-lg: 10px;
+  --space-xl: 12px;
+  --space-2xl: 16px;
+
+  --size-control-sm: 32px;
+  --size-status-banner: 50px;
+  --size-status-icon: 30px;
+
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-main: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+
+  --sidebar-width: 222px;
+  --radius-card: 12px;
+  --radius-button: 8px;
+  --chevron-col-width: 28px;
+}
+
+/* Champion cost tokens */
+:root {
+  --cost1-border: #8b9198;
+  --cost1-bg-start: #3a3d42;
+  --cost1-bg-mid: #5a5e65;
+  --cost1-bg-end: #2a2c30;
+
+  --cost2-border: #0bb453;
+  --cost2-bg-start: #0a3d20;
+  --cost2-bg-mid: #0f6b30;
+  --cost2-bg-end: #072a16;
+
+  --cost3-border: #2e93f0;
+  --cost3-bg-start: #0a2a5e;
+  --cost3-bg-mid: #1255a0;
+  --cost3-bg-end: #071830;
+
+  --cost4-border: #c542f5;
+  --cost4-bg-start: #3a1060;
+  --cost4-bg-mid: #7a20b0;
+  --cost4-bg-end: #250a40;
+
+  --cost5-border: #f0c030;
+  --cost5-bg-start: #4a3000;
+  --cost5-bg-mid: #8a6000;
+  --cost5-bg-end: #2a1a00;
+  --cost5-glow: rgba(240, 192, 48, 0.35);
+}
+
+/* Game type filter tokens */
+:root {
   --rank-filter-height: 28px;
   --rank-filter-padding-x: 14px;
   --rank-filter-radius: 14px;
@@ -39,15 +91,17 @@
   --rank-filter-border-hover: rgba(110, 142, 150, 0.6);
   --rank-filter-text: #6b757e;
   --rank-filter-text-hover: #c0c8d0;
-  --rank-filter-active: #04f3e5;
+  --rank-filter-active: var(--color-cyan);
   --rank-filter-active-bg: rgba(4, 243, 229, 0.08);
-  --text-ui: #c6ccd8;
-  --color-cyan: #05f3e7;
+  --transition-fast: 0.15s;
+}
+
+/* Status banner tokens */
+:root {
   --status-action-border: rgba(110, 142, 150, 0.28);
   --status-action-bg: rgba(8, 20, 28, 0.82);
-  --status-loading-border: rgba(5, 243, 231, 0.28);
-  --status-loading-icon-bg: rgba(5, 243, 231, 0.12);
+  --status-loading-border: rgba(4, 243, 229, 0.28);
+  --status-loading-icon-bg: rgba(4, 243, 229, 0.12);
   --status-fallback-border: rgba(255, 91, 87, 0.28);
   --status-fallback-icon-bg: rgba(255, 91, 87, 0.12);
-  --transition-fast: 0.15s;
 }
