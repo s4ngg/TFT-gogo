@@ -1,4 +1,4 @@
-import { communityDragonAssetUrl } from '../api/communityDragonAssets'
+import { communityDragonAssetUrl, tftTraitIconUrl } from '../api/communityDragonAssets'
 import type {
   SummonerProfileResponse,
   MatchSummaryResponse,
@@ -8,22 +8,21 @@ import type {
 } from '../api/summonerApi'
 
 // ── CDN 헬퍼 ───────────────────────────────────────────────
-const tIcon = (p: string) => communityDragonAssetUrl(p)
-const cImg  = (p: string) => communityDragonAssetUrl(p)
-const iImg  = (name: string) =>
+const cImg = (p: string) => communityDragonAssetUrl(p)
+const iImg = (name: string) =>
   communityDragonAssetUrl(`ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_${name}.TFT_Set13.tex`)
 
-// ── 시너지 아이콘 ───────────────────────────────────────────
+// ── 시너지 아이콘 (communityDragonAssets.ts 단일 소스) ───────
 const traitIcons = {
-  vanguard:   tIcon('ASSETS/UX/TraitIcons/Trait_Icon_17_Vanguard.TFT_Set17.tex'),
-  darkStar:   tIcon('ASSETS/UX/TraitIcons/Trait_Icon_17_DarkStar.TFT_Set17.tex'),
-  spirit:     tIcon('ASSETS/UX/TraitIcons/Trait_Icon_17_Astronaut.TFT_Set17.tex'),
-  rogue:      tIcon('ASSETS/UX/TraitIcons/Trait_Icon_17_Rogue.TFT_Set17.tex'),
-  stargazer:  tIcon('ASSETS/UX/TraitIcons/Trait_Icon_17_Stargazer.TFT_Set17.tex'),
-  guide:      tIcon('ASSETS/UX/TraitIcons/Trait_Icon_17_Shepherd.TFT_Set17.tex'),
-  sniper:     tIcon('ASSETS/UX/TraitIcons/Trait_Icon_6_Sniper.tex'),
-  replicator: tIcon('ASSETS/UX/TraitIcons/Trait_Icon_17_Replicator.TFT_Set17.tex'),
-  psyOps:     tIcon('ASSETS/UX/TraitIcons/Trait_Icon_17_PsyOps.TFT_Set17.tex'),
+  vanguard:   tftTraitIconUrl('TFT17_Vanguard'),
+  darkStar:   tftTraitIconUrl('TFT17_DarkStar'),
+  spirit:     tftTraitIconUrl('TFT17_Astronaut'),
+  rogue:      tftTraitIconUrl('TFT17_Rogue'),
+  stargazer:  tftTraitIconUrl('TFT17_Stargazer'),
+  guide:      tftTraitIconUrl('TFT17_Shepherd'),
+  sniper:     tftTraitIconUrl('TFT17_Sniper'),
+  replicator: tftTraitIconUrl('TFT17_Replicator'),
+  psyOps:     tftTraitIconUrl('TFT17_PsyOps'),
 }
 
 // ── 챔피언 이미지 ───────────────────────────────────────────
