@@ -24,6 +24,7 @@ export interface SummonerTopChampion {
 }
 
 export interface SummonerProfileResponse {
+  puuid: string
   gameName: string
   tagLine: string
   profileIconId: number

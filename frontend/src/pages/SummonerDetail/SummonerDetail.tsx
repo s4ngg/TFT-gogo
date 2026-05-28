@@ -1,7 +1,7 @@
 import { ChevronDown, ChevronUp, Coins, RefreshCcw, Search, Swords } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { communityDragonProfileIconUrl } from '../../api/communityDragonAssets'
+import { communityDragonProfileIconUrl, itemsFromUrls } from '../../api/communityDragonAssets'
 import { AppLayout } from '../../components/layout'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
 import ChampionCard from '../../components/common/ChampionCard'
@@ -18,6 +18,7 @@ const TIER_KO: Record<string, string> = {
 }
 
 type GameTypeFilter = 'ALL' | GameType
+const GAME_TYPE_FILTERS: GameTypeFilter[] = ['ALL', 'RANKED', 'NORMAL']
 
 function timeAgo(gameDateTime: number): string {
   const diffMs = Date.now() - gameDateTime
@@ -43,13 +44,6 @@ function detailRankClass(n: number) {
   return ''
 }
 
-function itemsFromUrls(urls: string[]) {
-  return urls.map((url) => ({
-    imageUrl: url,
-    name: url.split('/').pop()?.split('.')[0] ?? url,
-  }))
-}
-
 /* ── 순위 분포 바 ── */
 function RankDistribution({ dist }: { dist: number[] }) {
   const max = Math.max(...dist, 1)
@@ -72,7 +66,7 @@ function RankDistribution({ dist }: { dist: number[] }) {
 }
 
 /* ── 30게임 요약 ── */
-function RecentSummary({ matches }: { matches: MatchSummaryResponse[] }) {
+function RecentSummary({ matches, rankDist }: { matches: MatchSummaryResponse[]; rankDist?: number[] }) {
   const recent = matches.slice(0, 30)
   const top4 = recent.filter((m) => m.placement <= 4).length
   const avgPlace = recent.length > 0
@@ -98,6 +92,12 @@ function RecentSummary({ matches }: { matches: MatchSummaryResponse[] }) {
           {avgPlace}<span className={styles.summaryStatTh}>th</span> / 8
         </p>
       </div>
+      {rankDist && (
+        <div className={styles.summaryDistWrap}>
+          <p className={styles.summaryDistLabel}>순위 분포</p>
+          <RankDistribution dist={rankDist} />
+        </div>
+      )}
     </section>
   )
 }
@@ -166,25 +166,26 @@ function SummonerDetail() {
   const { data: matches = [], refetch: refetchMatches } = useMatchHistory(name, tag)
 
   const tierKo = TIER_KO[profile?.tier ?? ''] ?? profile?.tier ?? '-'
-  const winRate = profile
-    ? Math.round((profile.wins / (profile.wins + profile.losses)) * 100)
-    : 0
+  const total = profile ? (profile.wins + profile.losses) : 0
+  const winRate = total > 0 ? Math.round((profile!.wins / total) * 100) : 0
 
   const filteredMatches = gameTypeFilter === 'ALL'
     ? matches
     : matches.filter((m) => m.gameType === gameTypeFilter)
 
-  if (profile) {
-    setSummoner({
-      name,
-      tag,
-      tier: `${tierKo} ${profile.rank}`,
-      lp: profile.leaguePoints,
-      wins: profile.wins,
-      losses: profile.losses,
-      emblemKey: (profile.tier ?? '').toLowerCase(),
-    })
-  }
+  useEffect(() => {
+    if (profile) {
+      setSummoner({
+        name,
+        tag,
+        tier: `${tierKo} ${profile.rank}`,
+        lp: profile.leaguePoints,
+        wins: profile.wins,
+        losses: profile.losses,
+        emblemKey: (profile.tier ?? '').toLowerCase(),
+      })
+    }
+  }, [profile, name, tag, tierKo, setSummoner])
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
@@ -287,7 +288,7 @@ function SummonerDetail() {
 
           {/* 게임 유형 필터 */}
           <div className={styles.filterBar}>
-            {(['ALL', 'RANKED', 'NORMAL'] as GameTypeFilter[]).map((type) => (
+            {GAME_TYPE_FILTERS.map((type) => (
               <button
                 key={type}
                 type="button"
@@ -339,7 +340,7 @@ function SummonerDetail() {
                     </div>
                   </article>
                   {isOpen && (
-                    <MatchDetailPanel match={match} myPuuid="mock-puuid-player-01" />
+                    <MatchDetailPanel match={match} myPuuid={profile?.puuid ?? ''} />
                   )}
                 </div>
               )

@@ -281,6 +281,7 @@ const TIME_STEP = 3600000 * 2  // 2시간 간격
 
 // ── 소환사 프로필 mock ──────────────────────────────────────
 export const mockSummonerProfile: SummonerProfileResponse = {
+  puuid: 'mock-puuid-player-01',
   gameName: 'TFTgogo',
   tagLine: 'KR1',
   profileIconId: 29,

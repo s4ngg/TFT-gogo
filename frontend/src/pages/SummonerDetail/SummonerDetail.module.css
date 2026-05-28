@@ -255,19 +255,6 @@
   font-weight: 500;
 }
 
-.augments {
-  display: flex;
-  gap: 6px;
-}
-
-.augIcon {
-  width: 32px;
-  height: 32px;
-  border: 1px solid rgba(114, 150, 160, 0.28);
-  border-radius: 6px;
-  background: rgba(30, 50, 62, 0.8);
-}
-
 .matchChevron {
   display: flex;
   align-items: center;
@@ -653,23 +640,6 @@
   width: 16px;
   height: 16px;
   object-fit: contain;
-}
-
-.detailAugments {
-  display: flex;
-  gap: 3px;
-}
-
-.detailAugIcon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  font-size: 14px;
-  border-radius: 4px;
-  background: rgba(30, 50, 62, 0.8);
-  border: 1px solid rgba(114, 150, 160, 0.2);
 }
 
 .detailUnits {
