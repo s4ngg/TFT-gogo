@@ -133,6 +133,44 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.updateBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+/* ── 소환사 없음 ── */
+.emptyState {
+  padding: 60px 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--bg-card);
+  text-align: center;
+}
+
+.emptyTitle {
+  margin: 0 0 12px;
+  color: var(--text-main);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.emptyDesc {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .loadMoreBtn {
@@ -332,51 +370,6 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 12px;
-}
-
-/* ── 순위 분포 ── */
-.rankDist {
-  display: flex;
-  align-items: flex-end;
-  gap: 4px;
-}
-
-.rankDistItem {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-
-.rankDistBarWrap {
-  display: flex;
-  align-items: flex-end;
-  height: 60px;
-}
-
-.rankDistBar {
-  width: 14px;
-  border-radius: 3px 3px 0 0;
-  transition: height 0.3s ease;
-}
-
-.top4Bar {
-  background: var(--color-cyan);
-}
-
-.bot4Bar {
-  background: var(--color-red);
-}
-
-.rankDistNum {
-  color: var(--text-muted);
-  font-size: 10px;
-  font-weight: 600;
-}
-
-.rankDistCount {
-  color: var(--text-secondary);
-  font-size: 9px;
 }
 
 /* ── 시너지/챔피언 그리드 ── */
@@ -622,24 +615,6 @@
   flex-wrap: wrap;
 }
 
-.detailTraitBadge {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  padding: 2px 5px 2px 3px;
-  border-radius: 4px;
-  background: rgba(30, 50, 62, 0.85);
-  border: 1px solid rgba(114, 150, 160, 0.2);
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--text-ui);
-}
-
-.detailTraitIcon {
-  width: 16px;
-  height: 16px;
-  object-fit: contain;
-}
 
 .detailUnits {
   display: flex;
