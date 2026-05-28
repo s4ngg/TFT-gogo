@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n">
+                <Replace regex="(Bearer\s+[\w\-\.]+)" replacement="Bearer ***MASKED***"/>
+                <Replace regex="(password[\&quot;:\s]*[\&quot;']?)([^\s\&quot;']+)" replacement="$1***MASKED***"/>
+                <Replace regex="(token[\&quot;:\s]*[\&quot;']?)([^\s\&quot;']+)" replacement="$1***MASKED***"/>
+            </PatternLayout>
+        </Console>
+    </Appenders>
+
+    <Loggers>
+        <Logger name="com.tftgogo" level="DEBUG" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+        <Logger name="org.springframework.security" level="INFO" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+        <Logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+        <Root level="INFO">
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+</Configuration>
