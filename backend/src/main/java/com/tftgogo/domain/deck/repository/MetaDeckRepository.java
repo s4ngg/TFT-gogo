@@ -11,6 +11,7 @@ public interface MetaDeckRepository extends JpaRepository<MetaDeck, Long> {
 
     Optional<MetaDeck> findBySignature(String signature);
 
-    @Query("SELECT d FROM MetaDeck d ORDER BY d.rank ASC")
-    List<MetaDeck> findAllOrderByRank();
+    // win_rate 내림차순 정렬 (DB 레벨)
+    @Query("SELECT d FROM MetaDeck d ORDER BY d.winRate DESC")
+    List<MetaDeck> findAllOrderByWinRateDesc();
 }

@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "meta_deck")
+@Table(name = "meta_decks")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MetaDeck {
@@ -17,58 +17,82 @@ public class MetaDeck {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String signature;       // 조합 식별 키 (예: Challenger-6_Blaster-4)
+    // 조합 식별 키 - 집계 upsert에 사용 (ERD 외 내부 필드)
+    @Column(unique = true)
+    private String signature;
 
-    @Column(nullable = false)
-    private String name;            // 덱 이름
+    @Column(nullable = false, length = 100)
+    private String name;
 
-    @Column(nullable = false)
-    private String grade;           // S / A+ / A / B / C / D
+    @Column(name = "patch_version", nullable = false, length = 20)
+    private String patchVersion;
 
-    private int rank;               // 메타 순위
+    // ENUM('S','A+','A','B','C','D')
+    @Column(nullable = false, length = 5)
+    private String tier;
 
-    private double winRate;         // 1등 비율
-    private double top4Rate;        // TOP4 비율
-    private double avgPlace;        // 평균 등수
-    private double pickRate;        // 전체 대비 픽률
+    @Column(name = "play_rate", nullable = false)
+    private double playRate;
 
-    private int sampleCount;        // 집계된 게임 수
+    @Column(name = "win_rate", nullable = false)
+    private double winRate;
 
-    @OneToMany(mappedBy = "metaDeck", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<MetaDeckChampion> champions = new ArrayList<>();
+    @Column(name = "top4_rate", nullable = false)
+    private double top4Rate;
 
-    @OneToMany(mappedBy = "metaDeck", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<MetaDeckTrait> traits = new ArrayList<>();
+    @Column(name = "avg_placement", nullable = false)
+    private double avgPlacement;
 
-    @Column(nullable = false)
+    @Column(name = "sample_size", nullable = false)
+    private int sampleSize;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @OneToMany(mappedBy = "metaDeck", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DeckUnit> units = new ArrayList<>();
+
+    @OneToMany(mappedBy = "metaDeck", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DeckTrait> traits = new ArrayList<>();
+
+    @OneToMany(mappedBy = "metaDeck", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<HeroAugment> heroAugments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "metaDeck", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ArtifactStat> artifactStats = new ArrayList<>();
+
     @Builder
-    public MetaDeck(String signature, String name, String grade, int rank,
-                    double winRate, double top4Rate, double avgPlace,
-                    double pickRate, int sampleCount) {
+    public MetaDeck(String signature, String name, String patchVersion, String tier,
+                    double playRate, double winRate, double top4Rate,
+                    double avgPlacement, int sampleSize) {
         this.signature = signature;
         this.name = name;
-        this.grade = grade;
-        this.rank = rank;
+        this.patchVersion = patchVersion;
+        this.tier = tier;
+        this.playRate = playRate;
         this.winRate = winRate;
         this.top4Rate = top4Rate;
-        this.avgPlace = avgPlace;
-        this.pickRate = pickRate;
-        this.sampleCount = sampleCount;
+        this.avgPlacement = avgPlacement;
+        this.sampleSize = sampleSize;
+        this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
 
-    public void update(String grade, int rank, double winRate, double top4Rate,
-                       double avgPlace, double pickRate, int sampleCount) {
-        this.grade = grade;
-        this.rank = rank;
+    public void update(String tier, double playRate, double winRate,
+                       double top4Rate, double avgPlacement, int sampleSize, String patchVersion) {
+        this.tier = tier;
+        this.playRate = playRate;
         this.winRate = winRate;
         this.top4Rate = top4Rate;
-        this.avgPlace = avgPlace;
-        this.pickRate = pickRate;
-        this.sampleCount = sampleCount;
+        this.avgPlacement = avgPlacement;
+        this.sampleSize = sampleSize;
+        this.patchVersion = patchVersion;
         this.updatedAt = LocalDateTime.now();
     }
 }

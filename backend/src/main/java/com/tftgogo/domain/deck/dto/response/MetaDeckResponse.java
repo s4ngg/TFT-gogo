@@ -1,8 +1,8 @@
 package com.tftgogo.domain.deck.dto.response;
 
+import com.tftgogo.domain.deck.entity.DeckTrait;
+import com.tftgogo.domain.deck.entity.DeckUnit;
 import com.tftgogo.domain.deck.entity.MetaDeck;
-import com.tftgogo.domain.deck.entity.MetaDeckChampion;
-import com.tftgogo.domain.deck.entity.MetaDeckTrait;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -12,8 +12,8 @@ import java.util.List;
 @Builder
 public class MetaDeckResponse {
 
-    private int rank;
-    private String grade;
+    private int rank;           // DB 미저장 - 정렬 순위로 동적 계산
+    private String grade;       // tier 필드 매핑
     private String name;
     private String winRate;
     private String top4;
@@ -39,36 +39,41 @@ public class MetaDeckResponse {
         private int stars;
     }
 
-    public static MetaDeckResponse from(MetaDeck deck) {
+    public static MetaDeckResponse from(MetaDeck deck, int rank) {
         List<TraitSummary> traits = deck.getTraits().stream()
-                .sorted((a, b) -> Integer.compare(b.getUnitCount(), a.getUnitCount()))
+                .sorted((a, b) -> Integer.compare(b.getNumUnits(), a.getNumUnits()))
                 .map(t -> TraitSummary.builder()
                         .name(t.getTraitName())
-                        .count(t.getUnitCount())
+                        .count(t.getNumUnits())
                         .iconUrl(t.getIconUrl())
                         .tone(t.getTone())
                         .build())
                 .toList();
 
-        List<ChampionSummary> champions = deck.getChampions().stream()
-                .sorted((a, b) -> Double.compare(b.getFrequency(), a.getFrequency()))
-                .map(c -> ChampionSummary.builder()
-                        .name(c.getChampionName())
-                        .imageUrl(c.getImageUrl())
-                        .stars(c.getStars())
+        List<ChampionSummary> champions = deck.getUnits().stream()
+                .sorted((a, b) -> Boolean.compare(b.isCarry(), a.isCarry()))
+                .map(u -> ChampionSummary.builder()
+                        .name(u.getChampionName())
+                        .imageUrl(buildChampionImageUrl(u.getCharacterId()))
+                        .stars(u.getStarLevel())
                         .build())
                 .toList();
 
         return MetaDeckResponse.builder()
-                .rank(deck.getRank())
-                .grade(deck.getGrade())
+                .rank(rank)
+                .grade(deck.getTier())
                 .name(deck.getName())
                 .winRate(String.format("%.1f%%", deck.getWinRate()))
                 .top4(String.format("%.1f%%", deck.getTop4Rate()))
-                .avgPlace(String.format("%.2f", deck.getAvgPlace()))
-                .pickRate(String.format("%.1f%%", deck.getPickRate()))
+                .avgPlace(String.format("%.2f", deck.getAvgPlacement()))
+                .pickRate(String.format("%.1f%%", deck.getPlayRate()))
                 .traits(traits)
                 .champions(champions)
                 .build();
+    }
+
+    private static String buildChampionImageUrl(String characterId) {
+        return "https://raw.communitydragon.org/latest/game/assets/characters/"
+                + characterId.toLowerCase() + "/hud/" + characterId.toLowerCase() + "_square.tft.png";
     }
 }
