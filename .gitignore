@@ -6,6 +6,7 @@ logs/
 # Spring Boot
 backend/src/main/resources/application*.yml
 backend/build/
+backend/bin/
 backend/.gradle/
 
 # FastAPI

@@ -216,7 +216,7 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                     .metaDeck(deck)
                     .characterId(u.getCharacter_id())
                     .championName(extractName(u.getCharacter_id()))
-                    .cost(0)        // cost는 별도 정적 데이터 필요 (추후 추가)
+                    .cost(raritytoCost(u.getRarity()))
                     .isCarry(u.getTier() >= 2)
                     .starLevel(u.getTier())
                     .build();
@@ -244,6 +244,21 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         if (top4Rate >= 55) return "B";
         if (top4Rate >= 45) return "C";
         return "D";
+    }
+
+    // Riot API rarity → 실제 코스트 (0=1코, 1=2코, 2=3코, 4=4코, 6=5코)
+    private int raritytoCost(int rarity) {
+        return switch (rarity) {
+            case 0 -> 1;
+            case 1 -> 2;
+            case 2 -> 3;
+            case 4 -> 4;
+            case 6 -> 5;
+            default -> {
+                logger.warn("알 수 없는 rarity 값: {} — 1코스트로 처리", rarity);
+                yield 1;
+            }
+        };
     }
 
     private String buildTraitIconUrl(String traitId) {
