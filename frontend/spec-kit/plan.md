@@ -10,6 +10,7 @@
 /                              → Dashboard (기본 페이지)
 /summoner/:gameName/:tagLine   → SummonerDetail (소환사 전적 상세)
 /decks                         → Decks (덱 목록)
+/decks/:deckId                 → DeckDetail (덱 상세 — 유닛 구성, 아이템, 포지셔닝)
 /ai-recommend                  → AiRecommend (AI 덱 추천)
 /guide                         → Guide (게임 가이드)
 /community                     → Community (커뮤니티 — 파티원 찾기 + 실시간 채팅)
@@ -29,6 +30,7 @@
       <Route path="/"                                    element={<Dashboard />} />
       <Route path="/summoner/:gameName/:tagLine"         element={<SummonerDetail />} />
       <Route path="/decks"                               element={<Decks />} />
+      <Route path="/decks/:deckId"                       element={<DeckDetail />} />
       <Route path="/ai-recommend"                        element={<AiRecommend />} />
       <Route path="/guide"                               element={<Guide />} />
       <Route path="/community"                           element={<Community />} />
@@ -80,28 +82,14 @@ src/api/
   meta.ts                     # 메타 스냅샷 API
   match.ts                    # 소환사 전적 목록 API
   deck.ts                     # 덱 추천 API
-  community.ts                # 파티원 모집글 CRUD API
+  guide.ts                    # 게임 가이드 API
+  patchNotes.ts               # 패치노트 API
 ```
 
 - 모든 API 함수는 `axiosInstance` 기반으로 작성
 - React Query `useQuery` / `useMutation`과 연결
-- 실시간 채팅은 WebSocket 기반 (`wss://` 엔드포인트)으로 별도 관리
-
----
-
-## 주요 커스텀 훅
-
-```
-src/hooks/
-  useSummoner.ts        # 소환사 검색
-  useMetaSnapshot.ts    # 메타 스냅샷
-  useSummonerDetail.ts  # 소환사 상세
-  useMatchHistory.ts    # 전적 목록
-  useDecks.ts           # 덱 목록
-  useAiRecommend.ts     # AI 덱 추천
-  usePartyPosts.ts      # 파티원 모집글 목록/필터
-  useChatChannels.ts    # 채팅 채널 목록
-```
+- API 미연동 단계에서는 각 도메인 API 파일에서 mock fallback을 제공하되, 화면 컴포넌트는 API 함수와 hook을 통해서만 데이터를 받는다
+- 페이지 컴포넌트에는 대량의 샘플 데이터를 직접 두지 않고, mock/API 매핑 계층으로 분리한다
 
 ---
 
@@ -112,7 +100,6 @@ src/hooks/
 | 서버 데이터 (API 응답) | React Query |
 | 전역 UI 상태 (로그인 소환사 등) | Zustand |
 | 로컬 UI 상태 (입력값, 탭 등) | useState |
-| 실시간 채팅 소켓 상태 | 로컬 useState + useEffect |
 
 ---
 

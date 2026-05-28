@@ -1,11 +1,16 @@
 .dashboardGrid {
+  --top-row-height: 188px;
+  --grid-gap: 15px;
+  --right-top-row: 360px;
+  --right-bottom-row: 120px;
+
   width: 1273px;
   display: grid;
   grid-template-columns: minmax(250px, 267px) minmax(520px, 566px) minmax(380px, 410px);
-  grid-template-rows: 188px minmax(0, var(--snapshot-height));
+  grid-template-rows: var(--top-row-height) minmax(0, var(--snapshot-height));
   align-content: start;
   justify-content: start;
-  gap: 15px;
+  gap: var(--grid-gap);
 }
 
 .panel {
@@ -316,7 +321,7 @@
 
 .metaFilters {
   display: grid;
-  grid-template-columns: 72px 72px 78px 1fr 70px 70px 86px;
+  grid-template-columns: 72px 72px 78px minmax(0, 1fr) 56px 56px 66px;
   align-items: center;
   gap: 7px;
   margin-top: 13px;
@@ -342,8 +347,22 @@
   text-align: center;
 }
 
-.metaFilters span:first-of-type {
-  grid-column: 5;
+.metaFilterSpacer {
+  min-width: 0;
+}
+
+.metaFilters .sortFilter {
+  height: auto;
+  padding: 0;
+  border: 0;
+  color: #a8b1b9;
+  background: transparent;
+  box-shadow: none;
+  text-align: center;
+}
+
+.selectedSort {
+  color: #04f3e5 !important;
 }
 
 .selectedFilter {
@@ -366,10 +385,10 @@
 .deckRow {
   min-height: 0;
   display: grid;
-  grid-template-columns: 47px 36px minmax(194px, 210px) minmax(324px, 1fr) 68px 68px 34px;
+  grid-template-columns: 45px 32px minmax(148px, 170px) minmax(288px, 1fr) 56px 56px 58px 22px;
   align-items: center;
-  gap: 10px;
-  padding: 7px 17px 7px 10px;
+  gap: 8px;
+  padding: 7px 11px 7px 9px;
   border-bottom: 1px solid rgba(114, 145, 153, 0.13);
   background: linear-gradient(90deg, rgba(12, 29, 37, 0.78), rgba(6, 17, 24, 0.38));
 }
@@ -426,7 +445,8 @@
 }
 
 .winRate,
-.top4 {
+.top4,
+.avgPlace {
   text-align: center;
   font-size: 15px;
   font-weight: 600;
@@ -440,23 +460,30 @@
   color: #f3f5f7;
 }
 
+.avgPlace {
+  color: #d4dbe2;
+}
+
 .rowArrow {
   color: #d8dde2;
   justify-self: end;
-  margin-right: 1px;
 }
 
 .rightColumn {
+  grid-column: 3;
+  grid-row: 1 / 3;
   min-height: 0;
-  height: var(--snapshot-height);
+  height: calc(var(--top-row-height) + var(--grid-gap) + var(--snapshot-height));
   display: grid;
-  grid-template-rows: 260px 258px minmax(148px, 1fr);
+  grid-template-rows: var(--right-top-row) minmax(390px, 1fr) var(--right-bottom-row);
   gap: 14px;
 }
 
 .partyPanel,
 .chatPanel {
   min-height: 0;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   padding: 15px 12px 11px;
 }
@@ -473,13 +500,18 @@
 }
 
 .partyList {
-  overflow: hidden;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-auto-rows: minmax(0, 1fr);
+  overflow-x: hidden;
+  overflow-y: auto;
   border: 1px solid rgba(117, 149, 157, 0.16);
   border-radius: 7px;
 }
 
 .partyRow {
-  min-height: 52px;
+  min-height: 0;
   display: grid;
   grid-template-columns: 48px minmax(0, 1fr) auto;
   align-items: center;
@@ -585,23 +617,31 @@
 }
 
 .chatList {
-  margin-top: 9px;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-auto-rows: 28px;
+  align-content: start;
+  overflow-x: hidden;
+  overflow-y: auto;
+  margin-top: 10px;
+  border-top: 1px solid rgba(114, 145, 153, 0.1);
 }
 
 .chatRow {
-  height: 24px;
+  min-height: 0;
   display: grid;
-  grid-template-columns: 22px 86px 58px 1fr 46px;
+  grid-template-columns: 22px 84px 58px minmax(0, 1fr) 42px;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   border-bottom: 1px solid rgba(114, 145, 153, 0.1);
   color: #aeb7c0;
   font-size: 11px;
 }
 
 .chatRow strong {
-  width: 20px;
-  height: 20px;
+  width: 19px;
+  height: 19px;
   display: grid;
   place-items: center;
   border-radius: 5px;
@@ -614,6 +654,9 @@
   color: #f4f7f9;
   font-size: 12px;
   font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .chatRow span {
@@ -632,9 +675,11 @@
 
 .chatRow time {
   text-align: right;
+  color: #8f9aa3;
 }
 
 .chatButton {
+  flex: 0 0 auto;
   width: 100%;
   height: 35px;
   display: inline-flex;
@@ -651,19 +696,32 @@
   cursor: pointer;
 }
 
+.emptyState {
+  grid-row: 1 / -1;
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 20px;
+  color: #9ea8b2;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+}
+
 .aiPanel {
   min-height: 0;
   height: auto;
   overflow: hidden;
   display: grid;
-  grid-template-columns: 1fr 112px;
+  grid-template-columns: 1fr 92px;
   grid-template-rows: auto auto;
-  gap: 8px 12px;
-  padding: 10px 12px 10px 16px;
+  gap: 6px 10px;
+  padding: 9px 10px 9px 14px;
 }
 
 .aiPanel h2 {
-  font-size: 18px;
+  font-size: 17px;
 }
 
 .aiPanel h2 span {
@@ -671,7 +729,7 @@
 }
 
 .aiPanel p {
-  margin-top: 5px;
+  margin-top: 4px;
   font-size: 10px;
 }
 
@@ -679,7 +737,7 @@
   display: flex;
   grid-column: 1;
   align-self: start;
-  gap: 13px;
+  gap: 9px;
 }
 
 .aiOption {
@@ -687,7 +745,7 @@
   justify-items: center;
   align-content: start;
   gap: 4px;
-  min-width: 42px;
+  min-width: 36px;
   color: #9fa9b3;
   text-align: center;
   font-size: 10px;
@@ -696,8 +754,8 @@
 }
 
 .aiOptionIcon {
-  width: 26px;
-  height: 26px;
+  width: 23px;
+  height: 23px;
   display: grid;
   place-items: center;
   border: 1px solid rgba(244, 174, 37, 0.48);
@@ -725,14 +783,19 @@
   display: grid;
   place-items: center;
   align-content: center;
-  gap: 7px;
+  gap: 5px;
   border: 1px solid #03e1d7;
   border-radius: 7px;
   color: #ffffff;
   background: linear-gradient(180deg, rgba(16, 175, 173, 0.94), rgba(5, 78, 86, 0.95));
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
+}
+
+.aiPanel > button svg {
+  width: 24px;
+  height: 24px;
 }
 
 button:hover {
@@ -741,8 +804,10 @@ button:hover {
 
 @media (max-height: 980px) {
   .dashboardGrid {
-    grid-template-rows: 170px minmax(0, var(--snapshot-height));
-    gap: 12px;
+    --top-row-height: 170px;
+    --grid-gap: 12px;
+    --right-top-row: 338px;
+    --right-bottom-row: 108px;
   }
 
   .patchCard {
@@ -817,9 +882,9 @@ button:hover {
   }
 
   .deckRow {
-    grid-template-columns: 44px 34px minmax(180px, 194px) minmax(296px, 1fr) 62px 62px 30px;
+    grid-template-columns: 42px 30px minmax(136px, 154px) minmax(260px, 1fr) 52px 52px 56px 20px;
     gap: 8px;
-    padding: 6px 14px 6px 9px;
+    padding: 6px 10px 6px 8px;
   }
 
   .rankNumber {
@@ -838,12 +903,14 @@ button:hover {
   }
 
   .winRate,
-  .top4 {
+  .top4,
+  .avgPlace {
     font-size: 14px;
   }
 
   .rightColumn {
-    grid-template-rows: 252px 242px minmax(146px, 1fr);
+    height: calc(var(--top-row-height) + var(--grid-gap) + var(--snapshot-height));
+    grid-template-rows: var(--right-top-row) minmax(410px, 1fr) var(--right-bottom-row);
     gap: 12px;
   }
 
@@ -870,8 +937,12 @@ button:hover {
   }
 
   .chatRow {
-    height: 24px;
+    min-height: 0;
     grid-template-columns: 21px 76px 52px 1fr 42px;
+  }
+
+  .chatList {
+    grid-auto-rows: 26px;
   }
 
   .chatButton {
@@ -881,13 +952,13 @@ button:hover {
   .aiPanel {
     min-height: 0;
     height: auto;
-    grid-template-columns: 1fr 104px;
+    grid-template-columns: 1fr 86px;
     gap: 6px 10px;
-    padding: 9px 11px 9px 14px;
+    padding: 8px 10px 8px 13px;
   }
 
   .aiPanel > button {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .aiOptions {

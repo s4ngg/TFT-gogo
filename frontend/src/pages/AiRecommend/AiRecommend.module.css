@@ -204,12 +204,27 @@
   font-weight: 700;
 }
 
-/* ── 자주 쓴 덱 ── */
+.statCard[data-tone="purple"] strong { color: #a78bfa; }
+.statCard[data-tone="green"] strong { color: #04ede0; }
+.statCard[data-tone="gold"] strong { color: #f9c860; }
+
+/* ── 자주 쓴 덱 / 시너지 ── */
 .myDeckList { display: flex; flex-direction: column; gap: 8px; }
 
 .myDeckRow {
   display: grid;
   grid-template-columns: 22px 34px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(112, 144, 152, 0.1);
+  border-radius: 8px;
+  background: rgba(8, 20, 28, 0.6);
+}
+
+.traitRow {
+  display: grid;
+  grid-template-columns: 22px 40px 1fr auto;
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
@@ -260,10 +275,42 @@
 .augIcon { font-size: 18px; text-align: center; }
 .augName { color: #dde3e9; font-size: 13px; font-weight: 500; }
 
-.augBar { height: 6px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden; }
-.augBarFill { height: 100%; border-radius: 999px; transition: width 0.4s ease; }
+.augProgress {
+  width: 100px;
+  height: 6px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  color: #a78bfa;
+}
+
+.augProgress::-webkit-progress-bar {
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+}
+
+.augProgress::-webkit-progress-value {
+  border-radius: 999px;
+  background: #a78bfa;
+}
+
+.augProgress::-moz-progress-bar {
+  border-radius: 999px;
+  background: #a78bfa;
+}
+
+.augProgress[data-tone="best"] { color: #04ede0; }
+.augProgress[data-tone="worst"] { color: #f87171; }
+.augProgress[data-tone="best"]::-webkit-progress-value { background: #04ede0; }
+.augProgress[data-tone="worst"]::-webkit-progress-value { background: #f87171; }
+.augProgress[data-tone="best"]::-moz-progress-bar { background: #04ede0; }
+.augProgress[data-tone="worst"]::-moz-progress-bar { background: #f87171; }
 
 .augPlace { font-size: 13px; font-weight: 700; text-align: right; }
+.augPlace[data-tone="default"] { color: #c0c8d0; }
+.augPlace[data-tone="best"] { color: #04ede0; }
+.augPlace[data-tone="worst"] { color: #f87171; }
 .augGames { color: #4a5560; font-size: 12px; text-align: right; }
 
 .augTip {
@@ -280,17 +327,24 @@
 
 /* ── AI 추천 덱 ── */
 .aiDeckList {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   margin-bottom: 14px;
 }
 
 .aiDeckCard {
-  padding: 14px;
+  padding: 16px 18px;
   border: 1px solid rgba(4, 243, 229, 0.14);
   border-radius: 9px;
   background: rgba(4, 60, 66, 0.18);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.aiDeckCard:hover {
+  border-color: rgba(4, 243, 229, 0.35);
+  background: rgba(4, 60, 66, 0.28);
 }
 
 .aiDeckTop {
@@ -318,9 +372,25 @@
   white-space: nowrap;
 }
 
+.aiDeckArrow {
+  margin-left: auto;
+  color: #3a4550;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+.aiDeckCard:hover .aiDeckArrow { color: #04ede0; }
+
 .aiDeckTraits {
   display: flex;
   align-items: flex-end;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.aiDeckChampions {
+  display: flex;
+  flex-wrap: wrap;
   gap: 4px;
   margin-bottom: 10px;
 }
@@ -354,4 +424,67 @@
   color: #4a5560;
   font-size: 12px;
   line-height: 1.5;
+}
+
+/* ── 덱별 승률 성적 ── */
+.deckPerfSplit {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
+}
+
+.deckPerfCol { }
+
+.deckPerfColHead {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.deckPerfGood { color: #04ede0; }
+.deckPerfBad  { color: #f87171; }
+
+.deckPerfDivider {
+  width: 1px;
+  background: rgba(112, 144, 152, 0.14);
+  align-self: stretch;
+  margin: 0 18px;
+}
+
+.myBadTop4 { color: #f87171; }
+
+.traitEmpty {
+  margin: 0;
+  padding: 16px 0;
+  color: #4a5560;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* ── 패치 상승 배지 ── */
+.patchBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid rgba(249, 200, 96, 0.35);
+  border-radius: 4px;
+  color: #f9c860;
+  background: rgba(249, 200, 96, 0.1);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.aiDeckCardPatch {
+  border-color: rgba(249, 200, 96, 0.22);
+  background: rgba(38, 28, 4, 0.4);
+}
+
+.aiReasonPatch {
+  color: #f9c860;
+  background: rgba(249, 200, 96, 0.07);
 }

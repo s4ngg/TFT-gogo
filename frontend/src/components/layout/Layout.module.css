@@ -250,7 +250,8 @@
 
 .iconButton,
 .notificationButton,
-.profileButton {
+.profileButton,
+.loginButton {
   border: 0;
   color: #cfd3da;
   background: transparent;
@@ -289,6 +290,24 @@
   color: #ffffff;
   font-size: 13px;
   font-weight: 600;
+}
+
+.loginButton {
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 13px;
+  border: 1px solid rgba(0, 224, 210, 0.58);
+  border-radius: var(--radius-button);
+  color: #ffffff;
+  background: rgba(0, 109, 112, 0.28);
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -0.012em;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
 .profileButton span {

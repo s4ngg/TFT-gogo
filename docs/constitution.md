@@ -67,29 +67,40 @@ src/
 
 ## 디자인 토큰 (CSS 변수)
 
-`src/styles/variables.css` 기준으로 관리. 컴포넌트 내부에 색상/크기 하드코딩 금지.
+**`src/styles/variables.css` 가 유일한 소스다.**
+- `index.css` `:root`에 색상·크기 변수를 직접 추가하지 않는다
+- 컴포넌트 CSS 안에 색상·크기 하드코딩 금지 — 반드시 `var(--토큰명)` 사용
 
 ```css
 /* 배경 */
---bg-main:      #070d14;
---bg-sidebar:   #050a10;
---bg-card:      #0b1420;
---bg-card-soft: #101a27;
+--bg-main:       #070d14;
+--bg-sidebar:    #050a10;
+--bg-card:       #0b1420;
+--bg-card-soft:  #101a27;
 
 /* 테두리 */
 --border:        #1f2a37;
 --border-active: #00d4b4;
 
 /* 포인트 색상 */
---color-cyan:    #05f3e7;   /* 활성 아이콘, CTA */
---color-cyan-num:#04ede0;   /* 승률 강조 숫자 */
---color-gold:    #f7d26d;   /* 랭크 1~2, 티어 배지 */
---color-red:     #ff4545;   /* 마감 시간 경고 */
+--color-cyan:     #05f3e7;   /* 활성 아이콘, CTA, 주요 버튼 */
+--color-cyan-num: #04ede0;   /* 승률 강조 숫자 */
+--color-gold:     #f7d26d;   /* 랭크 1~2, 골드 배지 */
+--color-red:      #ff4545;   /* 경고, Bot4 */
+--color-success:  #4ade80;   /* 성공 상태 */
+
+/* 텍스트 */
+--text-main:   #ffffff;
+--text-soft:   #c6ccd8;
+--text-muted:  #8b92a8;
 
 /* 레이아웃 */
---sidebar-width: 222px;
---card-radius:   12px;
+--sidebar-width:  222px;
+--radius-card:    12px;
+--radius-button:  8px;
 ```
+
+> 새 토큰이 필요하면 `variables.css`에 먼저 추가한 뒤 사용한다.
 
 ---
 

@@ -1,27 +1,35 @@
-import { RefreshCcw, Search } from 'lucide-react'
-import { useState } from 'react'
+import { ChevronDown, ChevronUp, Coins, RefreshCcw, Search, Swords } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { communityDragonProfileIconUrl, itemsFromUrls } from '../../api/communityDragonAssets'
 import { AppLayout } from '../../components/layout'
+import TraitHexBadge from '../../components/common/TraitHexBadge'
+import ChampionCard from '../../components/common/ChampionCard'
+import useSummonerStore from '../../store/useSummonerStore'
+import { useSummonerProfile } from '../../hooks/useSummonerProfile'
+import { useMatchHistory } from '../../hooks/useMatchHistory'
+import type { MatchSummaryResponse, GameType } from '../../api/summonerApi'
 import styles from './SummonerDetail.module.css'
 
-const DUMMY_TIER = {
-  tier: '다이아몬드',
-  division: 'IV',
-  lp: 45,
-  wins: 123,
-  losses: 98,
+const TIER_KO: Record<string, string> = {
+  IRON: '아이언', BRONZE: '브론즈', SILVER: '실버', GOLD: '골드',
+  PLATINUM: '플래티넘', EMERALD: '에메랄드', DIAMOND: '다이아몬드',
+  MASTER: '마스터', GRANDMASTER: '그랜드마스터', CHALLENGER: '챌린저',
 }
 
-const DUMMY_MATCHES = [
-  { id: 1, placement: 1, lpDelta: 20, timeAgo: '3분 전', deckName: '선봉대 벡스', augments: ['실버 티켓', '전사의 방패', '퀵실버'] },
-  { id: 2, placement: 2, lpDelta: 12, timeAgo: '1시간 전', deckName: '6암흑의 별 진', augments: ['마법사의 모자', '아이오니아의 불꽃', '블루 버프'] },
-  { id: 3, placement: 4, lpDelta: 5, timeAgo: '2시간 전', deckName: '정령족 코르키 백류', augments: ['망가진 시계', '수호자의 검', '원소 주입'] },
-  { id: 4, placement: 6, lpDelta: -15, timeAgo: '3시간 전', deckName: '승격자 마스터 이', augments: ['마나 흡수', '에너지 전환', '강철 의지'] },
-  { id: 5, placement: 7, lpDelta: -20, timeAgo: '4시간 전', deckName: '별들보미 블루 (메탕)', augments: ['강철 연구소', '피의 충동', '신비한 글리프'] },
-  { id: 6, placement: 3, lpDelta: 8, timeAgo: '5시간 전', deckName: '8오소 웜풀', augments: ['황금 알계란', '시간 왜곡 포션', '지식 결정'] },
-  { id: 7, placement: 5, lpDelta: -12, timeAgo: '어제', deckName: '4그림자 암살자', augments: ['수확의 낫', '마법 진단서', '신비의 힘'] },
-  { id: 8, placement: 1, lpDelta: 22, timeAgo: '어제', deckName: '발명의 대가 하이머딩거', augments: ['세상의 파멸', '유리 대포', '적의 창'] },
-]
+type GameTypeFilter = 'ALL' | GameType
+const GAME_TYPE_FILTERS: GameTypeFilter[] = ['ALL', 'RANKED', 'NORMAL']
+
+function timeAgo(gameDateTime: number): string {
+  const diffMs = Date.now() - gameDateTime
+  const diffMin = Math.floor(diffMs / 60000)
+  if (diffMin < 1) return '방금 전'
+  if (diffMin < 60) return `${diffMin}분 전`
+  const diffHour = Math.floor(diffMin / 60)
+  if (diffHour < 24) return `${diffHour}시간 전`
+  const diffDay = Math.floor(diffHour / 24)
+  return diffDay === 1 ? '어제' : `${diffDay}일 전`
+}
 
 function placementTone(n: number) {
   if (n === 1) return styles.gold
@@ -29,87 +37,333 @@ function placementTone(n: number) {
   return styles.bot4
 }
 
+function detailRankClass(n: number) {
+  if (n === 1) return styles.detailRankGold
+  if (n === 2) return styles.detailRankSilver
+  if (n === 3) return styles.detailRankBronze
+  return ''
+}
+
+/* ── 순위 분포 바 ── */
+function RankDistribution({ dist }: { dist: number[] }) {
+  const max = Math.max(...dist, 1)
+  return (
+    <div className={styles.rankDist}>
+      {dist.map((count, i) => (
+        <div key={i} className={styles.rankDistItem}>
+          <div className={styles.rankDistBarWrap}>
+            <div
+              className={`${styles.rankDistBar} ${i < 4 ? styles.top4Bar : styles.bot4Bar}`}
+              style={{ height: `${Math.max(4, (count / max) * 56)}px` }}
+            />
+          </div>
+          <span className={styles.rankDistNum}>{i + 1}</span>
+          <span className={styles.rankDistCount}>{count}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/* ── 30게임 요약 ── */
+function RecentSummary({ matches, rankDist }: { matches: MatchSummaryResponse[]; rankDist?: number[] }) {
+  const recent = matches.slice(0, 30)
+  const top4 = recent.filter((m) => m.placement <= 4).length
+  const avgPlace = recent.length > 0
+    ? (recent.reduce((s, m) => s + m.placement, 0) / recent.length).toFixed(1)
+    : '-'
+  const top4Rate = recent.length > 0 ? ((top4 / recent.length) * 100).toFixed(1) : '0'
+  const losses = recent.length - top4
+
+  return (
+    <section className={styles.summarySection}>
+      <div className={styles.winRateDonut} style={{ '--pct': `${top4Rate}%` } as React.CSSProperties}>
+        <div className={styles.winRateInner}>
+          <strong className={styles.winRatePct}>{top4Rate}%</strong>
+        </div>
+      </div>
+      <div className={styles.summaryStats}>
+        <p className={styles.summaryStatLabel}>순방 확률</p>
+        <p className={styles.summaryStatValue}>
+          {top4}W {losses}L <span className={styles.summaryStatSub}>({top4Rate}%)</span>
+        </p>
+        <p className={styles.summaryStatLabel}>평균 순위</p>
+        <p className={styles.summaryStatValue}>
+          {avgPlace}<span className={styles.summaryStatTh}>th</span> / 8
+        </p>
+      </div>
+      {rankDist && (
+        <div className={styles.summaryDistWrap}>
+          <p className={styles.summaryDistLabel}>순위 분포</p>
+          <RankDistribution dist={rankDist} />
+        </div>
+      )}
+    </section>
+  )
+}
+
+/* ── 매치 상세 패널 ── */
+function MatchDetailPanel({ match, myPuuid }: { match: MatchSummaryResponse; myPuuid: string }) {
+  return (
+    <div className={styles.matchDetailPanel}>
+      <div className={styles.matchDetailHeader}>
+        <span>#</span><span>소환사</span><span>스테이지</span><span>시너지</span>
+        <span>챔피언</span><span>킬</span><span>잔여골드</span>
+      </div>
+      {match.participants.map((p) => {
+        const isMe = p.puuid === myPuuid
+        return (
+          <div key={p.puuid} className={`${styles.matchDetailRow} ${isMe ? styles.myMatchDetailRow : ''}`}>
+            <span className={`${styles.detailRank} ${detailRankClass(p.placement)}`}>{p.placement}위</span>
+            <div className={styles.detailPlayer}>
+              <span className={styles.detailName}>{p.riotIdGameName}</span>
+              <span className={styles.detailTag}>#{p.riotIdTagline}</span>
+            </div>
+            <span className={styles.detailStage}>{p.stage}</span>
+            <div className={styles.detailTraits}>
+              {p.traits.slice(0, 3).map((tr) => (
+                <div key={tr.traitId} className={styles.detailTraitBadge} title={tr.name}>
+                  <img src={tr.iconUrl} alt={tr.name} className={styles.detailTraitIcon} />
+                  <span>{tr.count}</span>
+                </div>
+              ))}
+            </div>
+            <div className={styles.detailUnits}>
+              {p.units.map((unit) => (
+                <ChampionCard
+                  key={unit.characterId}
+                  imageUrl={unit.imageUrl}
+                  stars={unit.stars}
+                  label=""
+                  items={itemsFromUrls(unit.itemImageUrls)}
+                  toneIndex={0}
+                />
+              ))}
+            </div>
+            <span className={styles.detailKills}><Swords size={11} />{p.playersEliminated}</span>
+            <span className={styles.detailGold}><Coins size={11} />{p.goldLeft}</span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+/* ── 메인 ── */
 function SummonerDetail() {
   const { gameName, tagLine } = useParams<{ gameName: string; tagLine: string }>()
   const [query, setQuery] = useState('')
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [visibleCount, setVisibleCount] = useState(30)
+  const [gameTypeFilter, setGameTypeFilter] = useState<GameTypeFilter>('ALL')
   const navigate = useNavigate()
+  const setSummoner = useSummonerStore((s) => s.setSummoner)
 
   const name = decodeURIComponent(gameName ?? '')
   const tag = tagLine ?? 'KR1'
-  const winRate = Math.round(DUMMY_TIER.wins / (DUMMY_TIER.wins + DUMMY_TIER.losses) * 100)
+
+  const { data: profile } = useSummonerProfile(name, tag)
+  const { data: matches = [], refetch: refetchMatches } = useMatchHistory(name, tag)
+
+  const tierKo = TIER_KO[profile?.tier ?? ''] ?? profile?.tier ?? '-'
+  const total = profile ? (profile.wins + profile.losses) : 0
+  const winRate = total > 0 ? Math.round((profile!.wins / total) * 100) : 0
+
+  const filteredMatches = gameTypeFilter === 'ALL'
+    ? matches
+    : matches.filter((m) => m.gameType === gameTypeFilter)
+
+  useEffect(() => {
+    if (profile) {
+      setSummoner({
+        name,
+        tag,
+        tier: `${tierKo} ${profile.rank}`,
+        lp: profile.leaguePoints,
+        wins: profile.wins,
+        losses: profile.losses,
+        emblemKey: (profile.tier ?? '').toLowerCase(),
+      })
+    }
+  }, [profile, name, tag, tierKo, setSummoner])
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
     const trimmed = query.trim()
     if (!trimmed) return
-    const [n = trimmed, t = 'KR1'] = trimmed.split('#')
-    navigate(`/summoner/${encodeURIComponent(n)}/${t}`)
+    const [n = trimmed, tg = 'KR1'] = trimmed.split('#')
+    navigate(`/summoner/${encodeURIComponent(n)}/${tg}`)
     setQuery('')
+  }
+
+  function handleFilterChange(filter: GameTypeFilter) {
+    setGameTypeFilter(filter)
+    setVisibleCount(30)
+    setExpandedId(null)
   }
 
   return (
     <AppLayout>
       <div className={styles.page}>
         <form className={styles.topSearch} onSubmit={handleSearch}>
-          <input
-            placeholder="소환사명#태그 검색"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          <button type="submit" aria-label="검색">
-            <Search size={20} />
-          </button>
+          <input placeholder="소환사명#태그 검색" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <button type="submit" aria-label="검색"><Search size={20} /></button>
         </form>
 
+        {/* 프로필 카드 */}
         <section className={styles.profileCard}>
+          <div className={styles.profileIconWrap}>
+            <img
+              className={styles.profileIcon}
+              src={communityDragonProfileIconUrl(profile?.profileIconId ?? 1)}
+              alt="프로필 아이콘"
+            />
+            <span className={styles.profileLevel}>{profile?.summonerLevel ?? '-'}</span>
+          </div>
           <div className={styles.emblem} />
           <div className={styles.profileInfo}>
-            <h1>
-              {name}
-              <span className={styles.tag}>#{tag}</span>
-            </h1>
+            <h1>{name}<span className={styles.tag}>#{tag}</span></h1>
             <p className={styles.tierLine}>
-              {DUMMY_TIER.tier} {DUMMY_TIER.division} · {DUMMY_TIER.lp} LP
+              {tierKo} {profile?.rank} · {profile?.leaguePoints ?? '-'} LP
             </p>
             <p className={styles.recordLine}>
-              <span>{DUMMY_TIER.wins}승 {DUMMY_TIER.losses}패</span>
+              <span>{profile?.wins ?? '-'}승 {profile?.losses ?? '-'}패</span>
               <span className={styles.winRateText}>승률 {winRate}%</span>
+              <span className={styles.avgPlaceText}>평균 {profile?.avgPlace ?? '-'}등</span>
+              <span className={styles.top4Text}>TOP4 {profile?.top4Rate ?? '-'}%</span>
             </p>
           </div>
-          <button type="button" className={styles.updateBtn}>
-            <RefreshCcw size={16} />
-            전적 업데이트
-          </button>
+          <div className={styles.profileRight}>
+            <button type="button" className={styles.updateBtn} onClick={() => refetchMatches()}>
+              <RefreshCcw size={16} />전적 업데이트
+            </button>
+            {profile && <RankDistribution dist={profile.rankDistribution} />}
+          </div>
         </section>
 
+        {/* 많이 플레이한 시너지 / 챔피언 */}
+        {profile && (
+          <div className={styles.statGrid}>
+            <section className={styles.statSection}>
+              <h2 className={styles.statSectionTitle}>많이 플레이한 시너지</h2>
+              <div className={styles.topTraitList}>
+                {(profile.topTraits ?? []).map((tr, i) => (
+                  <div key={tr.traitId} className={styles.topTraitRow}>
+                    <span className={styles.topRank}>{i + 1}</span>
+                    <TraitHexBadge count={tr.count} iconUrl={tr.iconUrl} name={tr.name} tone={tr.tone} />
+                    <span className={styles.topName}>{tr.name}</span>
+                    <span className={styles.topGames}>{tr.games}게임</span>
+                    <span className={styles.topAvg}>평균 {tr.avgPlace}등</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className={styles.statSection}>
+              <h2 className={styles.statSectionTitle}>많이 플레이한 챔피언</h2>
+              <div className={styles.topChampList}>
+                {(profile.topChampions ?? []).map((champ, i) => (
+                  <div key={champ.characterId} className={styles.topChampRow}>
+                    <span className={styles.topRank}>{i + 1}</span>
+                    <div className={styles.champThumbWrap}>
+                      <img className={styles.champThumb} src={champ.imageUrl} alt={champ.name} />
+                      <span className={styles.champCost} style={{ background: costColor(champ.cost) }}>
+                        {champ.cost}
+                      </span>
+                    </div>
+                    <span className={styles.topName}>{champ.name}</span>
+                    <span className={styles.topGames}>{champ.games}게임</span>
+                    <span className={styles.topAvg}>평균 {champ.avgPlace}등</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+        )}
+
+        {/* 매치 히스토리 */}
         <section className={styles.matchSection}>
-          <h2>최근 전적</h2>
-          <div className={styles.matchList}>
-            {DUMMY_MATCHES.map((match) => (
-              <article key={match.id} className={`${styles.matchRow} ${placementTone(match.placement)}`}>
-                <div className={styles.placementBadge}>
-                  <span>{match.placement}</span>
-                  <small>{match.placement <= 4 ? 'TOP 4' : 'BOT'}</small>
-                </div>
-                <div className={styles.matchMeta}>
-                  <p className={styles.deckName}>{match.deckName}</p>
-                  <p className={styles.timeAgo}>{match.timeAgo}</p>
-                </div>
-                <div className={styles.augments}>
-                  {match.augments.map((aug) => (
-                    <div key={aug} className={styles.augIcon} title={aug} />
-                  ))}
-                </div>
-                <div className={`${styles.lpDelta} ${match.lpDelta >= 0 ? styles.lpGain : styles.lpLoss}`}>
-                  {match.lpDelta >= 0 ? '+' : ''}{match.lpDelta} LP
-                </div>
-              </article>
+          <h2>최근 {Math.min(30, filteredMatches.length)}게임</h2>
+          <RecentSummary matches={filteredMatches} />
+
+          {/* 게임 유형 필터 */}
+          <div className={styles.filterBar}>
+            {GAME_TYPE_FILTERS.map((type) => (
+              <button
+                key={type}
+                type="button"
+                className={`${styles.filterBtn} ${gameTypeFilter === type ? styles.filterBtnActive : ''}`}
+                onClick={() => handleFilterChange(type)}
+              >
+                {type === 'ALL' ? '전체' : type === 'RANKED' ? '랭크' : '일반'}
+              </button>
             ))}
           </div>
+
+          <div className={styles.matchList}>
+            {filteredMatches.slice(0, visibleCount).map((match) => {
+              const isOpen = expandedId === match.matchId
+              return (
+                <div key={match.matchId} className={styles.matchItem}>
+                  <article
+                    className={`${styles.matchRow} ${placementTone(match.placement)} ${isOpen ? styles.matchRowOpen : ''}`}
+                    onClick={() => setExpandedId(isOpen ? null : match.matchId)}
+                  >
+                    <div className={styles.placementBadge}>
+                      <span>{match.placement}위</span>
+                    </div>
+                    <div className={styles.matchMeta}>
+                      <p className={styles.deckName}>
+                        <span className={`${styles.gameTypeBadge} ${match.gameType === 'RANKED' ? styles.gameTypeBadgeRanked : styles.gameTypeBadgeNormal}`}>
+                          {match.gameType === 'RANKED' ? '랭크' : '일반'}
+                        </span>
+                        {match.compositionName}
+                      </p>
+                      <p className={styles.timeAgo}>{timeAgo(match.gameDateTime)}</p>
+                    </div>
+                    <div className={styles.unitList}>
+                      {match.units.map((unit) => (
+                        <ChampionCard
+                          key={unit.characterId}
+                          imageUrl={unit.imageUrl}
+                          stars={unit.stars}
+                          label={unit.characterId}
+                          items={itemsFromUrls(unit.itemImageUrls)}
+                          toneIndex={0}
+                        />
+                      ))}
+                    </div>
+                    <div className={styles.matchChevron}>
+                      {isOpen
+                        ? <ChevronUp size={14} />
+                        : <ChevronDown size={14} />}
+                    </div>
+                  </article>
+                  {isOpen && (
+                    <MatchDetailPanel match={match} myPuuid={profile?.puuid ?? ''} />
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          {visibleCount < filteredMatches.length && (
+            <button
+              type="button"
+              className={styles.loadMoreBtn}
+              onClick={() => setVisibleCount((v) => v + 30)}
+            >
+              30개 더 보기 ({filteredMatches.length - visibleCount}개 남음)
+            </button>
+          )}
         </section>
       </div>
     </AppLayout>
   )
+}
+
+function costColor(cost: number) {
+  const map: Record<number, string> = { 1: '#808080', 2: '#3cb371', 3: '#4169e1', 4: '#9932cc', 5: '#ffd700' }
+  return map[cost] ?? '#808080'
 }
 
 export default SummonerDetail

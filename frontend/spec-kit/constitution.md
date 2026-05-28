@@ -70,29 +70,40 @@ src/
 
 ## 디자인 토큰 (CSS 변수)
 
-`src/styles/variables.css` 기준으로 관리. 컴포넌트 내부에 색상/크기 하드코딩 금지.
+**`src/styles/variables.css` 가 유일한 소스다.**
+- `index.css` `:root`에 색상·크기 변수를 직접 추가하지 않는다
+- 컴포넌트 CSS 안에 색상·크기 하드코딩 금지 — 반드시 `var(--토큰명)` 사용
 
 ```css
 /* 배경 */
---bg-main:      #070d14;
---bg-sidebar:   #050a10;
---bg-card:      #0b1420;
---bg-card-soft: #101a27;
+--bg-main:       #070d14;
+--bg-sidebar:    #050a10;
+--bg-card:       #0b1420;
+--bg-card-soft:  #101a27;
 
 /* 테두리 */
 --border:        #1f2a37;
 --border-active: #00d4b4;
 
 /* 포인트 색상 */
---color-cyan:    #05f3e7;   /* 활성 아이콘, CTA */
---color-cyan-num:#04ede0;   /* 승률 강조 숫자 */
---color-gold:    #f7d26d;   /* 랭크 1~2, 티어 배지 */
---color-red:     #ff4545;   /* 마감 시간 경고 */
+--color-cyan:     #05f3e7;   /* 활성 아이콘, CTA, 주요 버튼 */
+--color-cyan-num: #04ede0;   /* 승률 강조 숫자 */
+--color-gold:     #f7d26d;   /* 랭크 1~2, 골드 배지 */
+--color-red:      #ff4545;   /* 경고, Bot4 */
+--color-success:  #4ade80;   /* 성공 상태 */
+
+/* 텍스트 */
+--text-main:   #ffffff;
+--text-soft:   #c6ccd8;
+--text-muted:  #8b92a8;
 
 /* 레이아웃 */
---sidebar-width: 222px;
---card-radius:   12px;
+--sidebar-width:  222px;
+--radius-card:    12px;
+--radius-button:  8px;
 ```
+
+> 새 토큰이 필요하면 `variables.css`에 먼저 추가한 뒤 사용한다.
 
 ---
 
@@ -160,8 +171,9 @@ font-variant-numeric: tabular-nums;
 - **1 PR = 1 기능 단위** — 기능이 크면 UI / API 연동으로 나눠서 올린다
 - **파일 수 권고: 20개 이하** — 초과 시 작업 단위를 나눌 수 있는지 먼저 검토
 - **예외 허용** — 파일 수가 넘더라도 기능이 쪼개지지 않는다면 허용 (단, PR 설명에 이유 명시 필수)
-- **제목 형식**: `[feat] 소환사 검색 페이지 UI`, `[fix] 빈 결과 상태 처리`
+- **제목 형식**: `feat: 소환사 검색 페이지 UI`, `fix: 빈 결과 상태 처리`
   - 타입: `feat` / `fix` / `refactor` / `docs` / `chore` / `style`
+  - 범위 명시 가능: `chore(infra): Discord 웹훅 추가`, `fix(auth): 토큰 갱신 오류`
 - **Labels 필수** — PR 올릴 때 반드시 label 붙이기
   - 예: `feat`, `fix`, `refactor`, `docs`, `chore`
 - **Milestone 필수** — 작업이 속한 마일스톤 지정 후 PR 올리기
@@ -177,8 +189,10 @@ font-variant-numeric: tabular-nums;
 ```
 main            — 배포용 (직접 push 금지)
 develop         — 통합 브랜치
-feat/기능명      — 기능 개발  (예: feat/match-search-ui)
+feature/기능명   — 기능 개발  (예: feature/summoner-search-ui)
 fix/버그명       — 버그 수정  (예: fix/empty-state-crash)
+chore/작업명     — 설정, 문서, 기타  (예: chore/discord-notify)
+docs/작업명      — 문서 작업  (예: docs/spec-kit-update)
 ```
 
 - 작업 시작 전 `develop`에서 브랜치 생성
