@@ -309,7 +309,15 @@ function SummonerDetail() {
                     <div key={match.matchId} className={styles.matchItem}>
                       <article
                         className={`${styles.matchRow} ${placementTone(match.placement)} ${isOpen ? styles.matchRowOpen : ''}`}
+                        role="button"
+                        tabIndex={0}
                         onClick={() => setExpandedId(isOpen ? null : match.matchId)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            setExpandedId(isOpen ? null : match.matchId)
+                          }
+                        }}
                       >
                         <div className={styles.placementBadge}>
                           <span>{match.placement}위</span>
