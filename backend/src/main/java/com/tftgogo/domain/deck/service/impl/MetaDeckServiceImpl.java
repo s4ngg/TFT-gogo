@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.Comparator;
 
 @Service
 @RequiredArgsConstructor
@@ -46,9 +47,8 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                 .toList();
     }
 
-    // ── Riot API 집계 ──────────────────────────────────────
+    // ── Riot API 집계 (트랜잭션 없음 - 장시간 I/O 포함) ──────
     @Override
-    @Transactional
     public void aggregateAndSave() {
         logger.info("메타 덱 집계 시작");
 
@@ -82,6 +82,13 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         }
 
         logger.info("총 {}명 참가자 처리 완료, {}개 조합 발견", totalParticipants, deckStatMap.size());
+        // DB 저장만 트랜잭션 범위로 분리
+        persistDeckStats(deckStatMap, totalParticipants);
+    }
+
+    // ── DB 저장만 트랜잭션 ─────────────────────────────────
+    @Transactional
+    public void persistDeckStats(Map<String, DeckStat> deckStatMap, int totalParticipants) {
         saveDeckStats(deckStatMap, totalParticipants);
     }
 
@@ -113,7 +120,8 @@ public class MetaDeckServiceImpl implements MetaDeckService {
 
             List<TraitDto> activeTraits = p.getTraits().stream()
                     .filter(t -> t.getStyle() > 0)
-                    .sorted((a, b) -> Integer.compare(b.getNum_units(), a.getNum_units()))
+                    .sorted(Comparator.comparingInt(TraitDto::getNum_units).reversed()
+                            .thenComparing(TraitDto::getName))   // 동률 시 이름으로 결정적 정렬
                     .toList();
 
             if (activeTraits.isEmpty()) continue;
@@ -173,8 +181,8 @@ public class MetaDeckServiceImpl implements MetaDeckService {
             metaDeckRepository.save(deck);
             saveUnitsAndTraits(deck, stat);
 
-            logger.info("덱 저장: name={} tier={} winRate={:.1f}% sample={}",
-                    name, tier, stat.winRate(), stat.count);
+            logger.info("덱 저장: name={} tier={} winRate={}% sample={}",
+                    name, tier, String.format("%.1f", stat.winRate()), stat.count);
         }
 
         logger.info("메타 덱 집계 완료: {}개 덱 저장", ranked.size());

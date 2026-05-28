@@ -32,7 +32,7 @@ public class MatchDto {
     public static class UnitDto {
         private String character_id;   // TFT13_Jinx 형식
         private int tier;              // 별 등급
-        private List<Integer> itemNames;
+        private List<String> itemNames;
     }
 
     @Getter

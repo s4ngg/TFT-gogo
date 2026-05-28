@@ -1,5 +1,7 @@
 package com.tftgogo.global.riot;
 
+import com.tftgogo.global.exception.BusinessException;
+import com.tftgogo.global.exception.ErrorCode;
 import com.tftgogo.global.riot.config.RiotProperties;
 import com.tftgogo.global.riot.dto.LeagueListDto;
 import com.tftgogo.global.riot.dto.MatchDto;
@@ -68,10 +70,10 @@ public class RiotApiClient {
             return response.getBody();
         } catch (HttpClientErrorException.TooManyRequests e) {
             logger.warn("Riot API 레이트 리밋 초과: {}", url);
-            throw e;
+            throw new BusinessException(ErrorCode.RIOT_API_RATE_LIMIT);
         } catch (Exception e) {
             logger.error("Riot API 호출 실패: {}", url, e);
-            throw e;
+            throw new BusinessException(ErrorCode.RIOT_API_ERROR);
         }
     }
 }
