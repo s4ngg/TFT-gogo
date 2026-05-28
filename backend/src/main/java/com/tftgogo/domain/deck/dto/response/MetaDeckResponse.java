@@ -37,6 +37,7 @@ public class MetaDeckResponse {
         private String name;
         private String imageUrl;
         private int stars;
+        private int cost;
     }
 
     public static MetaDeckResponse from(MetaDeck deck, int rank) {
@@ -56,6 +57,7 @@ public class MetaDeckResponse {
                         .name(u.getChampionName())
                         .imageUrl(buildChampionImageUrl(u.getCharacterId()))
                         .stars(u.getStarLevel())
+                        .cost(u.getCost())
                         .build())
                 .toList();
 

@@ -18,7 +18,7 @@ public interface MetaDeckControllerDocs {
     })
     ResponseEntity<ApiResponse<List<MetaDeckResponse>>> getMetaDecks();
 
-    @Operation(summary = "메타 덱 수동 집계", description = "Riot API에서 데이터를 즉시 수집·집계합니다. (관리자 전용)")
+    @Operation(summary = "메타 덱 수동 집계", description = "Riot API에서 데이터를 즉시 수집·집계합니다. (JWT 구현 후 관리자 전용으로 전환 예정 — 현재 인증 비활성화 상태)")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "집계 완료")
     })

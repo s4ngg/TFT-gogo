@@ -23,7 +23,8 @@ const sortOptions: { label: string; value: MetaSortKey }[] = [
   { label: '평균 등수', value: 'avgPlace' },
 ]
 
-function toNumber(value: string) {
+function toNumber(value: string | undefined): number {
+  if (!value) return 0
   return Number(value.replace('%', ''))
 }
 
@@ -87,7 +88,7 @@ function Champions({ champions }: ChampionsProps) {
           key={`${champion.name}-${index}`}
           label={champion.name}
           stars={champion.stars}
-          toneIndex={index}
+          cost={champion.cost}
         />
       ))}
     </div>

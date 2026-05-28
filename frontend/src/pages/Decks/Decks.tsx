@@ -75,7 +75,7 @@ function DeckRow({
       <td className={styles.champCol}>
         <span className={styles.champions}>
           {deck.champions.map((c, i) => (
-            <ChampionCard key={`${c.name}-${i}`} imageUrl={c.imageUrl} items={c.items} label={c.name} stars={c.stars} toneIndex={i} />
+            <ChampionCard key={`${c.name}-${i}`} imageUrl={c.imageUrl} items={c.items} label={c.name} stars={c.stars} cost={c.cost} />
           ))}
         </span>
       </td>
@@ -172,7 +172,7 @@ function HeroAugmentSection() {
             </div>
             <div className={styles.augChamps}>
               {d.champions.map((c, i) => (
-                <ChampionCard key={c.name} imageUrl={c.imageUrl} label={c.name} stars={c.stars} toneIndex={i} />
+                <ChampionCard key={c.name} imageUrl={c.imageUrl} label={c.name} stars={c.stars} cost={c.cost} />
               ))}
             </div>
             <div className={styles.augStats}>
