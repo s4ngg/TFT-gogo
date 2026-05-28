@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type SyntheticEvent } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import {
   AlertTriangle,
@@ -21,7 +21,11 @@ import { communityDragonAssetUrl } from '../../api/communityDragonAssets'
 import {
   CHANGE_TYPE_FILTERS,
   PATCH_CATEGORIES,
+  PATCH_FALLBACK_IMAGE,
   PATCH_PAGE_SIZE,
+  getPatchChangeFallbackImageUrl,
+  getPatchChangeImageUrl,
+  getPatchImageAlt,
   type ChangeCategory,
   type ChangeType,
   type ImpactLevel,
@@ -59,34 +63,6 @@ const IMPACT_CLASS: Record<ImpactLevel, string> = {
   높음: styles.highImpact,
   중간: styles.midImpact,
   낮음: styles.lowImpact,
-}
-
-const PATCH_FALLBACK_IMAGE = '/assets/emblems/patch-meta-emblem-pink.png'
-
-const categoryImageUrl: Record<ChangeCategory, string> = {
-  챔피언: communityDragonAssetUrl('ASSETS/Characters/TFT17_Kaisa/Skins/Base/Images/TFT17_Kaisa_splash_tile_69.TFT_Set17.tex'),
-  시너지: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Challenger.TFT_Set17.tex'),
-  아이템: communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_GuinsoosRageblade.TFT_Set13.tex'),
-  증강체: communityDragonAssetUrl('ASSETS/UX/TFT/Augments/Augment_Silver.tex'),
-  시스템: PATCH_FALLBACK_IMAGE,
-}
-
-const targetImageUrl: Record<string, string> = {
-  아펠리오스: communityDragonAssetUrl('ASSETS/Characters/TFT17_Aphelios/Skins/Base/Images/TFT17_Aphelios_splash_tile_1.TFT_Set17.tex'),
-  세주아니: communityDragonAssetUrl('ASSETS/Characters/TFT17_Sejuani/Skins/Base/Images/TFT17_Sejuani_splash_tile_1.TFT_Set17.tex'),
-  럭스: communityDragonAssetUrl('ASSETS/Characters/TFT17_Lux/Skins/Base/Images/TFT17_Lux_splash_tile_1.TFT_Set17.tex'),
-  카이사: communityDragonAssetUrl('ASSETS/Characters/TFT17_Kaisa/Skins/Base/Images/TFT17_Kaisa_splash_tile_69.TFT_Set17.tex'),
-  오른: communityDragonAssetUrl('ASSETS/Characters/TFT17_Ornn/Skins/Base/Images/TFT17_Ornn_splash_tile_11.TFT_Set17.tex'),
-  학살자: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Rogue.TFT_Set17.tex'),
-  마법사: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Fateweaver.TFT_Set17.tex'),
-  감시자: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_12_Vanguard.TFT_Set12.tex'),
-  전략가: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Stargazer.TFT_Set17.tex'),
-  결투가: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Challenger.TFT_Set17.tex'),
-  '구인수의 격노검': communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_GuinsoosRageblade.TFT_Set13.tex'),
-  '워모그의 갑옷': communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_WarmogsArmor.TFT_Set13.tex'),
-  '쇼진의 창': communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_SpearOfShojin.TFT_Set13.tex'),
-  '이온 충격기': communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_IonicSpark.TFT_Set13.tex'),
-  '거인 학살자': communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_GiantSlayer.TFT_Set13.tex'),
 }
 
 const BASE_PATCH_CHANGES: PatchChange[] = [
@@ -426,19 +402,26 @@ const PATCH_HISTORY: PatchHistoryItem[] = [
   },
 ]
 
-function getBaseTarget(target: string) {
-  return target.replace(/\s샘플\s\d+$/, '')
-}
-
-function getChangeImageUrl(change: PatchChange) {
-  return targetImageUrl[getBaseTarget(change.target)] ?? categoryImageUrl[change.category]
-}
-
 function getPaginationWindow(currentPage: number, totalPages: number) {
   const windowStart = Math.floor((currentPage - 1) / PAGE_NUMBER_WINDOW) * PAGE_NUMBER_WINDOW + 1
   const windowEnd = Math.min(totalPages, windowStart + PAGE_NUMBER_WINDOW - 1)
 
   return Array.from({ length: windowEnd - windowStart + 1 }, (_, index) => windowStart + index)
+}
+
+function setFallbackImage(event: SyntheticEvent<HTMLImageElement>, fallbackUrl = PATCH_FALLBACK_IMAGE) {
+  const image = event.currentTarget
+
+  if (image.dataset.fallbackStep === 'final') return
+
+  if (image.dataset.fallbackStep === 'category') {
+    image.dataset.fallbackStep = 'final'
+    image.src = PATCH_FALLBACK_IMAGE
+    return
+  }
+
+  image.dataset.fallbackStep = 'category'
+  image.src = fallbackUrl
 }
 
 function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
@@ -451,7 +434,12 @@ function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) 
   return (
     <nav className={styles.pagination} aria-label="패치 변경사항 페이지">
       {windowStart > 1 && (
-        <button type="button" className={styles.pageMore} onClick={() => onPageChange(windowStart - 1)}>
+        <button
+          type="button"
+          className={styles.pageMore}
+          onClick={() => onPageChange(windowStart - 1)}
+          aria-label={`${windowStart - 1}페이지 묶음으로 이동`}
+        >
           이전
         </button>
       )}
@@ -463,13 +451,19 @@ function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) 
           className={currentPage === page ? styles.activePage : undefined}
           onClick={() => onPageChange(page)}
           aria-current={currentPage === page ? 'page' : undefined}
+          aria-label={`${page}페이지로 이동`}
         >
           {page}
         </button>
       ))}
 
       {windowEnd < totalPages && (
-        <button type="button" className={styles.pageMore} onClick={() => onPageChange(windowEnd + 1)}>
+        <button
+          type="button"
+          className={styles.pageMore}
+          onClick={() => onPageChange(windowEnd + 1)}
+          aria-label={`${windowEnd + 1}페이지 묶음으로 이동`}
+        >
           더보기
         </button>
       )}
@@ -542,13 +536,11 @@ function PatchNotes() {
           </div>
 
           <aside className={styles.releaseCard} aria-label="현재 패치 요약">
-            <div className={styles.releaseArt} aria-hidden="true">
+            <div className={styles.releaseArt}>
               <img
                 src={selectedPatch.imageUrl}
-                alt=""
-                onError={(event) => {
-                  event.currentTarget.src = PATCH_FALLBACK_IMAGE
-                }}
+                alt={getPatchImageAlt(`${selectedPatch.version} 패치`, '대표')}
+                onError={(event) => setFallbackImage(event)}
               />
             </div>
             <div>
@@ -605,12 +597,17 @@ function PatchNotes() {
                 <span className={styles.sectionLabel}>변경사항</span>
                 <h2>패치 상세 목록</h2>
               </div>
-              {isFetching && <span className={styles.syncLabel}>동기화 중</span>}
+              {isFetching && (
+                <span className={styles.syncLabel} role="status" aria-live="polite">
+                  동기화 중
+                </span>
+              )}
             </div>
 
             <div className={styles.toolBar}>
               <label className={styles.searchBox}>
-                <Search size={16} />
+                <Search size={16} aria-hidden="true" />
+                <span className={styles.srOnly}>패치 변경사항 검색</span>
                 <input
                   type="search"
                   value={query}
@@ -619,21 +616,23 @@ function PatchNotes() {
                 />
               </label>
               <div className={styles.filterLabel}>
-                <Filter size={15} />
+                <Filter size={15} aria-hidden="true" />
                 카테고리
               </div>
             </div>
 
-            <div className={styles.categoryTabs} aria-label="패치 변경 카테고리">
+            <div className={styles.categoryTabs} role="group" aria-label="패치 변경 카테고리">
               {PATCH_CATEGORIES.map((category) => (
                 <button
                   key={category}
                   type="button"
                   className={activeCategory === category ? styles.activeTab : undefined}
                   onClick={() => setActiveCategory(category)}
+                  aria-pressed={activeCategory === category}
+                  aria-label={`${category} 변경사항 보기, ${categoryCounts[category] ?? 0}건`}
                 >
                   {category}
-                  <span>{categoryCounts[category] ?? 0}</span>
+                  <span aria-hidden="true">{categoryCounts[category] ?? 0}</span>
                 </button>
               ))}
             </div>
@@ -655,6 +654,7 @@ function PatchNotes() {
                     type="button"
                     className={activeChangeType === type ? styles.activeTypeFilter : undefined}
                     onClick={() => setActiveChangeType(type)}
+                    aria-pressed={activeChangeType === type}
                   >
                     {type}
                   </button>
@@ -664,28 +664,32 @@ function PatchNotes() {
 
             <div className={styles.changeList}>
               {isLoading && (
-                <div className={styles.emptyState}>
+                <div className={styles.emptyState} role="status" aria-live="polite">
                   패치 정보를 불러오는 중입니다.
                 </div>
               )}
 
               {!isLoading && isError && (
-                <div className={styles.emptyState}>
+                <div className={styles.emptyState} role="alert">
                   <span>패치 정보를 불러오지 못했습니다.</span>
-                  <button type="button" onClick={refetch}>다시 시도</button>
+                  <button type="button" onClick={refetch} aria-label="패치 정보 다시 불러오기">
+                    다시 시도
+                  </button>
                 </div>
               )}
 
               {!isLoading && !isError && pagedChanges.map((change) => {
                 const CategoryIcon = CATEGORY_ICON[change.category]
                 const isExpanded = expandedChangeIds.includes(change.id)
-                const imageUrl = getChangeImageUrl(change)
+                const imageUrl = getPatchChangeImageUrl(change)
+                const detailId = `patch-change-detail-${change.id}`
+                const titleId = `patch-change-title-${change.id}`
 
                 return (
-                  <article key={change.id} className={styles.changeItem}>
+                  <article key={change.id} className={styles.changeItem} aria-labelledby={titleId}>
                     <div className={styles.changeTop}>
                       <span className={styles.categoryBadge}>
-                        <CategoryIcon size={15} />
+                        <CategoryIcon size={15} aria-hidden="true" />
                         {change.category}
                       </span>
                       <span className={`${styles.changeType} ${CHANGE_TYPE_CLASS[change.type]}`}>{change.type}</span>
@@ -696,14 +700,12 @@ function PatchNotes() {
                       <span className={styles.changeThumb}>
                         <img
                           src={imageUrl}
-                          alt=""
-                          onError={(event) => {
-                            event.currentTarget.src = PATCH_FALLBACK_IMAGE
-                          }}
+                          alt={getPatchImageAlt(change.target, change.category)}
+                          onError={(event) => setFallbackImage(event, getPatchChangeFallbackImageUrl(change))}
                         />
                       </span>
                       <div className={styles.changeText}>
-                        <h3>{change.target}</h3>
+                        <h3 id={titleId}>{change.target}</h3>
                         <p>{change.summary}</p>
                       </div>
                       <button
@@ -711,6 +713,7 @@ function PatchNotes() {
                         className={styles.detailButton}
                         onClick={() => toggleExpandedChange(change.id)}
                         aria-expanded={isExpanded}
+                        aria-controls={detailId}
                       >
                         {isExpanded ? '접기' : '상세 보기'}
                         <ChevronRight size={16} className={isExpanded ? styles.expandedArrow : undefined} />
@@ -718,7 +721,7 @@ function PatchNotes() {
                     </div>
 
                     {isExpanded && (
-                      <div className={styles.compareGrid}>
+                      <div className={styles.compareGrid} id={detailId} role="region" aria-label={`${change.target} 변경 전후 비교`}>
                         <div>
                           <span>이전</span>
                           <p>{change.before}</p>
@@ -740,7 +743,7 @@ function PatchNotes() {
               })}
 
               {!isLoading && !isError && pagedChanges.length === 0 && (
-                <div className={styles.emptyState}>
+                <div className={styles.emptyState} role="status">
                   검색 조건에 맞는 패치 변경사항이 없습니다.
                 </div>
               )}
@@ -779,14 +782,13 @@ function PatchNotes() {
                     }`}
                     onClick={() => setSelectedPatchVersion(patch.version)}
                     aria-pressed={selectedPatchVersion === patch.version}
+                    aria-label={`${patch.version} 패치 보기, ${patch.title}`}
                   >
                     <span className={styles.historyThumb}>
                       <img
                         src={patch.imageUrl}
-                        alt=""
-                        onError={(event) => {
-                          event.currentTarget.src = PATCH_FALLBACK_IMAGE
-                        }}
+                        alt={getPatchImageAlt(`${patch.version} 패치`, '히스토리')}
+                        onError={(event) => setFallbackImage(event)}
                       />
                     </span>
                     <div>
