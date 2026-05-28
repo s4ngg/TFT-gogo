@@ -462,6 +462,7 @@ function expandPatchSamples(changes: PatchChange[], patch: PatchNoteSummary) {
 
   return CHANGE_CATEGORIES.flatMap((category) => {
     const categoryChanges = changes.filter((change) => change.category === category)
+    if (categoryChanges.length === 0) return []
 
     return Array.from({ length: targetCount }, (_, index) => {
       const source = buildVersionedChange(categoryChanges[index % categoryChanges.length], patch.version, patchIndex)

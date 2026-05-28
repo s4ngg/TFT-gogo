@@ -55,6 +55,23 @@ const GUIDE_TAB_ICONS: Record<GuideTab, typeof BookOpen> = {
   traits: Shield,
 }
 
+function getNextGuideTabIndex(key: string, currentIndex: number): number | undefined {
+  const lastIndex = GUIDE_TABS.length - 1
+
+  if (key === 'ArrowLeft' || key === 'ArrowUp') {
+    return currentIndex === 0 ? lastIndex : currentIndex - 1
+  }
+
+  if (key === 'ArrowRight' || key === 'ArrowDown') {
+    return currentIndex === lastIndex ? 0 : currentIndex + 1
+  }
+
+  if (key === 'Home') return 0
+  if (key === 'End') return lastIndex
+
+  return undefined
+}
+
 function EmptyState() {
   return (
     <div className={styles.emptyState}>
@@ -217,6 +234,9 @@ function ItemIconStrip({
             onClick={(event) => {
               event.stopPropagation()
               onItemSelect(itemRef.name)
+            }}
+            onKeyDown={(event) => {
+              event.stopPropagation()
             }}
             title={`${itemRef.name} 아이템 보기`}
             type="button"
@@ -836,6 +856,7 @@ function ChampionGuideView({
               openChampionDetail(championGuide)
             }}
             onKeyDown={(event) => {
+              if (event.target !== event.currentTarget) return
               if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault()
                 openChampionDetail(championGuide)
@@ -850,6 +871,9 @@ function ChampionGuideView({
               onClick={(event) => {
                 event.stopPropagation()
                 onFavoriteToggle(championGuide.name)
+              }}
+              onKeyDown={(event) => {
+                event.stopPropagation()
               }}
               title={favoriteChampions.includes(championGuide.name) ? '즐겨찾기 해제' : '즐겨찾기 추가'}
               type="button"
@@ -944,7 +968,7 @@ function Guide() {
 
         <section className={styles.controlPanel}>
           <div className={styles.tabBar} role="tablist" aria-label="게임 가이드 탭">
-            {GUIDE_TABS.map(({ key, label, meta }) => {
+            {GUIDE_TABS.map(({ key, label, meta }, guideTabIndex) => {
               const Icon = GUIDE_TAB_ICONS[key]
 
               return (
@@ -955,7 +979,19 @@ function Guide() {
                   id={`guide-tab-${key}`}
                   key={key}
                   onClick={() => selectTab(key)}
+                  onKeyDown={(event) => {
+                    const nextTabIndex = getNextGuideTabIndex(event.key, guideTabIndex)
+                    if (nextTabIndex === undefined) return
+
+                    event.preventDefault()
+                    const nextTab = GUIDE_TABS[nextTabIndex]
+                    selectTab(nextTab.key)
+                    window.requestAnimationFrame(() => {
+                      document.getElementById(`guide-tab-${nextTab.key}`)?.focus()
+                    })
+                  }}
                   role="tab"
+                  tabIndex={activeTab === key ? 0 : -1}
                   type="button"
                 >
                   <Icon size={18} />

@@ -167,21 +167,21 @@
   align-items: center;
   gap: var(--space-sm);
   padding: 0 var(--space-xl);
-  border: 1px solid rgba(110, 142, 150, 0.28);
+  border: 1px solid var(--status-action-border);
   border-radius: var(--radius-button);
   color: var(--text-ui);
-  background: rgba(8, 20, 28, 0.82);
+  background: var(--status-action-bg);
   font-weight: 800;
   cursor: pointer;
 }
 
 .statusLoading {
-  border-color: rgba(5, 243, 231, 0.28);
+  border-color: var(--status-loading-border);
 }
 
 .statusLoading .statusIcon {
   color: var(--color-cyan);
-  background: rgba(5, 243, 231, 0.12);
+  background: var(--status-loading-icon-bg);
 }
 
 .statusLoading .statusIcon svg {
@@ -189,12 +189,12 @@
 }
 
 .statusFallback {
-  border-color: rgba(255, 91, 87, 0.28);
+  border-color: var(--status-fallback-border);
 }
 
 .statusFallback .statusIcon {
   color: var(--danger);
-  background: rgba(255, 91, 87, 0.12);
+  background: var(--status-fallback-icon-bg);
 }
 
 .summaryGrid {
@@ -207,6 +207,12 @@
 @keyframes status-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .statusLoading .statusIcon svg {
+    animation: none;
   }
 }
 

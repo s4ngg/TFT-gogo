@@ -41,5 +41,13 @@
   --rank-filter-text-hover: #c0c8d0;
   --rank-filter-active: #04f3e5;
   --rank-filter-active-bg: rgba(4, 243, 229, 0.08);
+  --text-ui: #c6ccd8;
+  --color-cyan: #05f3e7;
+  --status-action-border: rgba(110, 142, 150, 0.28);
+  --status-action-bg: rgba(8, 20, 28, 0.82);
+  --status-loading-border: rgba(5, 243, 231, 0.28);
+  --status-loading-icon-bg: rgba(5, 243, 231, 0.12);
+  --status-fallback-border: rgba(255, 91, 87, 0.28);
+  --status-fallback-icon-bg: rgba(255, 91, 87, 0.12);
   --transition-fast: 0.15s;
 }

@@ -231,11 +231,13 @@ function extractPatchNotes(payload: PatchNotesPayload): PatchNoteResponse[] {
   return []
 }
 
-function normalizePatchNotes(payload: PatchNotesPayload, fallbackData: PatchNoteDetail[]) {
+function normalizePatchNotes(payload: PatchNotesPayload, fallbackData: PatchNoteDetail[]): PatchNotesResult {
   const patchNotes = extractPatchNotes(payload)
-  if (patchNotes.length === 0) return fallbackData
+  if (patchNotes.length === 0) {
+    return { data: fallbackData, source: 'fallback' }
+  }
 
-  return patchNotes.map(normalizePatchNote)
+  return { data: patchNotes.map(normalizePatchNote), source: 'api' }
 }
 
 export async function getPatchNotes(fallbackData: PatchNoteDetail[]): Promise<PatchNotesResult> {
@@ -247,7 +249,7 @@ export async function getPatchNotes(fallbackData: PatchNoteDetail[]): Promise<Pa
       return { data: fallbackData, source: 'fallback' }
     }
 
-    return { data: normalizePatchNotes(payload, fallbackData), source: 'api' }
+    return normalizePatchNotes(payload, fallbackData)
   } catch {
     return { data: fallbackData, source: 'fallback' }
   }
