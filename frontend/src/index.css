@@ -5,37 +5,6 @@
   box-sizing: border-box;
 }
 
-:root {
-  --bg-main: #070d14;
-  --bg-sidebar: #050a10;
-  --bg-card: #0b1420;
-  --bg-card-soft: #101a27;
-  --border: #1f2a37;
-  --border-active: #00d4b4;
-  --accent: #00d4b4;
-  --accent-bright: #1fe5c8;
-  --text-main: #ffffff;
-  --text-muted: #8b92a8;
-  --text-soft: #c6ccd8;
-  --gold: #d7a93a;
-  --danger: #ff5b57;
-  --success: #4ade80;
-  --space-2xs: 3px;
-  --space-xs: 4px;
-  --space-sm: 6px;
-  --space-lg: 10px;
-  --space-xl: 12px;
-  --space-2xl: 16px;
-  --size-control-sm: 32px;
-  --size-status-banner: 50px;
-  --size-status-icon: 30px;
-  --font-size-xs: 12px;
-  --font-size-sm: 13px;
-  --radius-card: 12px;
-  --radius-button: 8px;
-  --font-main: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-}
-
 html {
   min-height: 100%;
   background: var(--bg-main);
