@@ -287,7 +287,8 @@ function DeckListView({ decks }: { decks: MetaDeck[] }) {
     else { setSortKey(key); setSortDir(key === 'avgPlace' ? 'asc' : 'desc') }
   }
 
-  const filtered = sortDecks(decks.filter((d) => d.name.includes(search)), sortKey, sortDir)
+  const safeDecks = Array.isArray(decks) ? decks : []
+  const filtered = sortDecks(safeDecks.filter((d) => d.name.includes(search)), sortKey, sortDir)
 
   return (
     <>
@@ -328,13 +329,15 @@ function MetaStatsView({ decks }: { decks: MetaDeck[] }) {
     else { setSortKey(key); setSortDir(key === 'avgPlace' ? 'asc' : 'desc') }
   }
 
+  const safeDecks = Array.isArray(decks) ? decks : []
+
   return (
     <div className={styles.tableWrap}>
       <table className={styles.table}>
         <TableHead sortKey={sortKey} sortDir={sortDir} onSort={handleSort} showTier showRank />
         <tbody>
           {TIER_ORDER.map((tier) => {
-            const tierDecks = sortDecks(decks.filter((d) => d.grade === tier), sortKey, sortDir)
+            const tierDecks = sortDecks(safeDecks.filter((d) => d.grade === tier), sortKey, sortDir)
             if (tierDecks.length === 0) return null
             const color = TIER_COLOR[tier]
             return (

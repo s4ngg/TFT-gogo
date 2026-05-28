@@ -13,7 +13,8 @@ export const getMetaDecks = async (rankFilter: RankFilter = 'EMERALD_PLUS'): Pro
     const { data } = await axiosInstance.get<ApiResponse<MetaDeck[]>>('/decks/meta', {
       params: { rankFilter },
     })
-    return data.data ?? []
+    const result = data?.data
+    return Array.isArray(result) ? result : []
   } catch {
     return mockDeckMetaResponse
   }
