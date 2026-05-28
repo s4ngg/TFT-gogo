@@ -82,10 +82,14 @@ src/api/
   meta.ts                     # 메타 스냅샷 API
   match.ts                    # 소환사 전적 목록 API
   deck.ts                     # 덱 추천 API
+  guide.ts                    # 게임 가이드 API
+  patchNotes.ts               # 패치노트 API
 ```
 
 - 모든 API 함수는 `axiosInstance` 기반으로 작성
 - React Query `useQuery` / `useMutation`과 연결
+- API 미연동 단계에서는 각 도메인 API 파일에서 mock fallback을 제공하되, 화면 컴포넌트는 API 함수와 hook을 통해서만 데이터를 받는다
+- 페이지 컴포넌트에는 대량의 샘플 데이터를 직접 두지 않고, mock/API 매핑 계층으로 분리한다
 
 ---
 
