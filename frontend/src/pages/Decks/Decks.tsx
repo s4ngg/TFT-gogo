@@ -1,15 +1,17 @@
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ChevronsUpDown, Search } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout'
 import ChampionCard from '../../components/common/ChampionCard'
 import TierBadge from '../../components/common/TierBadge'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
+import { tftItemIconUrl } from '../../api/communityDragonAssets'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
-import type { MetaDeck, RankFilter } from '../Dashboard/dashboardData'
+import type { MetaDeck, RankFilter, ItemSummary } from '../Dashboard/dashboardData'
 import type { TierBadgeValue } from '../../components/common/TierBadge'
-import { ARTIFACT_RECS, HERO_AUGMENT_DECKS, INITIAL_ARTIFACT_COUNT } from './deckListData'
 import styles from './Decks.module.css'
+
+const INITIAL_ITEM_COUNT = 4
 
 /* ════════════════════════════
    타입
@@ -121,9 +123,9 @@ function TableHead({ sortKey, sortDir, onSort, showTier = true, showRank = true 
 }
 
 /* ════════════════════════════
-   영웅 증강 섹션 (캐러셀)
+   영웅 증강 섹션 (캐러셀) — 실데이터
 ════════════════════════════ */
-function HeroAugmentSection() {
+function HeroAugmentSection({ decks }: { decks: MetaDeck[] }) {
   const scrollRef = useRef<HTMLDivElement>(null)
 
   function scrollCarousel(dir: 'left' | 'right') {
@@ -131,19 +133,23 @@ function HeroAugmentSection() {
     scrollRef.current.scrollBy({ left: dir === 'left' ? -316 : 316, behavior: 'smooth' })
   }
 
-  // 추천(true) → 왼쪽, 비추천(false) → 오른쪽
-  const sorted = [...HERO_AUGMENT_DECKS].sort((a, b) => {
-    if (a.recommended === b.recommended) return 0
-    return a.recommended ? -1 : 1
+  // 증강 데이터 있는 덱 우선 → 없는 덱 뒤
+  const sorted = [...decks].sort((a, b) => {
+    const aHas = (a.topAugments?.length ?? 0) > 0
+    const bHas = (b.topAugments?.length ?? 0) > 0
+    if (aHas === bHas) return 0
+    return aHas ? -1 : 1
   })
+
+  const isEmpty = sorted.length === 0
 
   return (
     <section className={styles.specialSection}>
       <div className={styles.specialHeader}>
         <span className={styles.specialBadge}>영웅 증강</span>
         <div className={styles.specialHeaderText}>
-          <h2>영웅 증강 특수 덱</h2>
-          <p>특정 영웅 증강을 보유했을 때만 가능한 고승률 전략</p>
+          <h2>덱별 추천 증강</h2>
+          <p>각 메타 덱에서 가장 높은 승률을 기록한 증강 조합</p>
         </div>
         <div className={styles.carouselBtns}>
           <button type="button" className={styles.carouselBtn} onClick={() => scrollCarousel('left')}>
@@ -155,124 +161,218 @@ function HeroAugmentSection() {
         </div>
       </div>
 
-      <div className={styles.augmentCarousel} ref={scrollRef}>
-        {sorted.map((d) => (
-          <article
-            key={`${d.hero}-${d.augment}`}
-            className={styles.augmentCard}
-            data-recommended={d.recommended ? 'true' : 'false'}
-          >
-            <div className={styles.augCardTop}>
-              <div>
-                <div className={styles.augHeroName}>{d.hero}</div>
-                <div className={styles.augName}>[{d.augment}]</div>
-              </div>
-              <span className={d.recommended ? styles.augRecommendBadge : styles.augNotRecommendBadge}>
-                {d.recommended ? '추천' : '비추천'}
-              </span>
-            </div>
-            <p className={styles.augDesc}>{d.description}</p>
-            <div className={styles.augTags}>
-              {d.tags.map((tag) => <span key={tag} className={styles.augTag}>{tag}</span>)}
-            </div>
-            <div className={styles.augChamps}>
-              {d.champions.map((c, i) => (
-                <ChampionCard key={c.name} imageUrl={c.imageUrl} label={c.name} stars={c.stars} cost={c.cost} />
-              ))}
-            </div>
-            <div className={styles.augStats}>
-              <div><small>승률</small><strong className={styles.winRate}>{d.winRate}</strong></div>
-              <div><small>평균 등수</small><strong className={styles.avgPlace}><span className={styles.avgHash}>#</span>{d.avgPlace}</strong></div>
-              <div><small>픽률</small><strong className={styles.pickRate}>{d.pickRate}</strong></div>
-            </div>
-          </article>
-        ))}
-      </div>
+      {isEmpty ? (
+        <p className={styles.empty}>집계 완료 후 증강 데이터가 표시됩니다</p>
+      ) : (
+        <div className={styles.augmentCarousel} ref={scrollRef}>
+          {sorted.map((deck) => {
+            const topAug = deck.topAugments?.[0]
+            const isRec = topAug?.isRecommended ?? false
+            const augName = topAug?.augmentName ?? '—'
+            const hasAugData = (deck.topAugments?.length ?? 0) > 0
+            return (
+              <article
+                key={deck.rank}
+                className={styles.augmentCard}
+                data-recommended={isRec ? 'true' : 'false'}
+              >
+                <div className={styles.augCardTop}>
+                  <div>
+                    <div className={styles.augHeroName}>{deck.name}</div>
+                    <div className={styles.augName}>[{augName}]</div>
+                  </div>
+                  <span className={isRec ? styles.augRecommendBadge : styles.augNotRecommendBadge}>
+                    {isRec ? '추천' : (hasAugData ? '비추천' : '데이터 없음')}
+                  </span>
+                </div>
+                <div className={styles.augTags}>
+                  {hasAugData
+                    ? deck.topAugments!.slice(0, 3).map((a) => (
+                        <span key={a.augmentId} className={styles.augTag}>
+                          {a.augmentName} ({a.winRate})
+                        </span>
+                      ))
+                    : deck.traits.slice(0, 3).map((t) => (
+                        <span key={t.name} className={styles.augTag}>{t.name}</span>
+                      ))
+                  }
+                </div>
+                <div className={styles.augChamps}>
+                  {deck.champions.slice(0, 4).map((c, i) => (
+                    <ChampionCard key={`${c.name}-${i}`} imageUrl={c.imageUrl} label={c.name} stars={c.stars} cost={c.cost} />
+                  ))}
+                </div>
+                <div className={styles.augStats}>
+                  <div><small>승률</small><strong className={styles.winRate}>{deck.winRate}</strong></div>
+                  <div><small>평균 등수</small><strong className={styles.avgPlace}><span className={styles.avgHash}>#</span>{deck.avgPlace}</strong></div>
+                  <div><small>픽률</small><strong className={styles.pickRate}>{deck.pickRate}</strong></div>
+                </div>
+              </article>
+            )
+          })}
+        </div>
+      )}
     </section>
   )
 }
 
 /* ════════════════════════════
-   유물 섹션 (검색 상시 노출 + 더보기)
+   유물 섹션 — 실데이터 (아이템 → 유닛 pivot)
 ════════════════════════════ */
-function ArtifactSection() {
+interface ItemUnitEntry {
+  itemId: string
+  itemName: string
+  iconUrl: string
+  itemStat: ItemSummary
+  units: { name: string; imageUrl: string; frequency: number; avgDeckWinRate: number }[]
+}
+
+function buildItemUnitEntries(decks: MetaDeck[]): ItemUnitEntry[] {
+  const map = new Map<string, {
+    itemStat: ItemSummary
+    iconUrl: string
+    unitMap: Map<string, { name: string; imageUrl: string; count: number; totalWinRate: number }>
+  }>()
+
+  decks.forEach((deck) => {
+    deck.topItems?.forEach((item) => {
+      if (!map.has(item.itemId)) {
+        map.set(item.itemId, {
+          itemStat: item,
+          iconUrl: tftItemIconUrl(item.itemId),
+          unitMap: new Map(),
+        })
+      }
+      const entry = map.get(item.itemId)!
+      const deckWinRate = parseFloat(deck.winRate)
+
+      deck.champions.forEach((champ) => {
+        if (champ.recommendedItems?.includes(item.itemId)) {
+          const existing = entry.unitMap.get(champ.name)
+          if (existing) {
+            existing.count++
+            existing.totalWinRate += deckWinRate
+          } else {
+            entry.unitMap.set(champ.name, {
+              name: champ.name,
+              imageUrl: champ.imageUrl,
+              count: 1,
+              totalWinRate: deckWinRate,
+            })
+          }
+        }
+      })
+    })
+  })
+
+  return Array.from(map.values())
+    .map(({ itemStat, iconUrl, unitMap }) => ({
+      itemId: itemStat.itemId,
+      itemName: itemStat.itemName,
+      iconUrl,
+      itemStat,
+      units: Array.from(unitMap.values())
+        .sort((a, b) => b.count - a.count || b.totalWinRate - a.totalWinRate)
+        .map((u) => ({
+          name: u.name,
+          imageUrl: u.imageUrl,
+          frequency: u.count,
+          avgDeckWinRate: u.count > 0 ? u.totalWinRate / u.count : 0,
+        })),
+    }))
+    .filter((e) => e.units.length > 0)
+    .sort((a, b) => parseFloat(b.itemStat.winRate) - parseFloat(a.itemStat.winRate))
+}
+
+function ArtifactSection({ decks }: { decks: MetaDeck[] }) {
   const [showAll, setShowAll] = useState(false)
   const [search, setSearch]   = useState('')
 
+  const entries = useMemo(() => buildItemUnitEntries(decks), [decks])
+  const hasData = entries.length > 0
+
   const searchActive = search.trim() !== ''
-  // 검색 중이면 전체에서 필터, 아니면 showAll 여부에 따라 slice
-  const allFiltered = ARTIFACT_RECS.filter((r) => !searchActive || r.itemName.includes(search))
-  const visible     = searchActive || showAll ? allFiltered : allFiltered.slice(0, INITIAL_ARTIFACT_COUNT)
-  const hiddenCount = ARTIFACT_RECS.length - INITIAL_ARTIFACT_COUNT
+  const allFiltered  = entries.filter((e) =>
+    !searchActive || e.itemName.toLowerCase().includes(search.toLowerCase()),
+  )
+  const visible     = searchActive || showAll ? allFiltered : allFiltered.slice(0, INITIAL_ITEM_COUNT)
+  const hiddenCount = allFiltered.length - INITIAL_ITEM_COUNT
 
   return (
     <section className={styles.specialSection}>
       <div className={styles.specialHeader}>
         <span className={`${styles.specialBadge} ${styles.artifactBadge}`}>
-          유물 추천
+          아이템 추천
         </span>
         <div className={styles.specialHeaderText}>
-          <h2>유물별 최적 유닛</h2>
-          <p>시너지 무관, 해당 유물 장착 시 승률이 크게 오르는 유닛</p>
+          <h2>아이템별 최적 유닛</h2>
+          <p>해당 아이템 장착 시 승률이 크게 오르는 유닛 (집계 실데이터)</p>
         </div>
-        {/* 검색 — 항상 표시 */}
         <div className={styles.artifactSearch}>
           <Search size={14} />
           <input
-            placeholder="유물 이름 검색"
+            placeholder="아이템 이름 검색"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
       </div>
 
-      <div className={styles.artifactList}>
-        {visible.length === 0 ? (
-          <p className={styles.empty}>검색 결과가 없습니다.</p>
-        ) : (
-          visible.map((rec) => (
-            <div key={rec.itemName} className={styles.artifactRow}>
-              {/* 아이템 아이콘 + 이름 */}
-              <div className={styles.artifactItem}>
-                <img src={rec.itemIcon} alt={rec.itemName} className={styles.artifactIcon} />
-                <span className={styles.artifactName}>{rec.itemName}</span>
-              </div>
-
-              {/* 유닛 목록 + 컬럼 헤더 */}
-              <div className={styles.artifactUnits}>
-                <div className={styles.artifactUnitHeader}>
-                  <span />
-                  <span>유닛</span>
-                  <span>빈도수</span>
-                  <span>승률</span>
-                  <span>평균 등수 향상</span>
-                  <span>TOP4</span>
-                </div>
-                {rec.units.map((u) => (
-                  <div key={u.name} className={styles.artifactUnit}>
-                    <img src={u.imageUrl} alt={u.name} className={styles.artifactChampImg} />
-                    <span className={styles.artifactUnitName}>{u.name}</span>
-                    <span className={`${styles.artifactStat} ${styles.artifactStatFreq}`}>{u.frequency}</span>
-                    <span className={`${styles.artifactStat} ${styles.artifactStatWin}`}>{u.winRate}</span>
-                    <span className={`${styles.artifactStat} ${styles.artifactStatImp}`}>{u.avgImprovement}</span>
-                    <span className={`${styles.artifactStat} ${styles.artifactStatTop4}`}>{u.top4}</span>
+      {!hasData ? (
+        <p className={styles.empty}>집계 완료 후 아이템 데이터가 표시됩니다</p>
+      ) : (
+        <>
+          <div className={styles.artifactList}>
+            {visible.length === 0 ? (
+              <p className={styles.empty}>검색 결과가 없습니다.</p>
+            ) : (
+              visible.map((entry) => (
+                <div key={entry.itemId} className={styles.artifactRow}>
+                  <div className={styles.artifactItem}>
+                    <img
+                      src={entry.iconUrl}
+                      alt={entry.itemName}
+                      className={styles.artifactIcon}
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '0.3' }}
+                    />
+                    <span className={styles.artifactName}>{entry.itemName}</span>
                   </div>
-                ))}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
 
-      {/* 더보기 / 접기 — 검색 중이 아닐 때만 표시 */}
-      {!searchActive && hiddenCount > 0 && (
-        <button
-          type="button"
-          className={styles.showMoreBtn}
-          onClick={() => setShowAll((v) => !v)}
-        >
-          {showAll ? '접기' : `더보기 (${hiddenCount}개 더)`}
-        </button>
+                  <div className={styles.artifactUnits}>
+                    <div className={styles.artifactUnitHeader}>
+                      <span />
+                      <span>유닛</span>
+                      <span>덱 빈도</span>
+                      <span>덱 승률</span>
+                      <span>아이템 승률</span>
+                      <span>픽률</span>
+                    </div>
+                    {entry.units.slice(0, 3).map((u) => (
+                      <div key={u.name} className={styles.artifactUnit}>
+                        <img src={u.imageUrl} alt={u.name} className={styles.artifactChampImg} />
+                        <span className={styles.artifactUnitName}>{u.name}</span>
+                        <span className={`${styles.artifactStat} ${styles.artifactStatFreq}`}>{u.frequency}덱</span>
+                        <span className={`${styles.artifactStat} ${styles.artifactStatWin}`}>{u.avgDeckWinRate.toFixed(1)}%</span>
+                        <span className={`${styles.artifactStat} ${styles.artifactStatImp}`}>{entry.itemStat.winRate}</span>
+                        <span className={`${styles.artifactStat} ${styles.artifactStatTop4}`}>{entry.itemStat.playRate}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {!searchActive && hiddenCount > 0 && (
+            <button
+              type="button"
+              className={styles.showMoreBtn}
+              onClick={() => setShowAll((v) => !v)}
+            >
+              {showAll ? '접기' : `더보기 (${hiddenCount}개 더)`}
+            </button>
+          )}
+        </>
       )}
     </section>
   )
@@ -315,8 +415,8 @@ function DeckListView({ decks }: { decks: MetaDeck[] }) {
           </tbody>
         </table>
       </div>
-      <HeroAugmentSection />
-      <ArtifactSection />
+      <HeroAugmentSection decks={safeDecks} />
+      <ArtifactSection decks={safeDecks} />
     </>
   )
 }
