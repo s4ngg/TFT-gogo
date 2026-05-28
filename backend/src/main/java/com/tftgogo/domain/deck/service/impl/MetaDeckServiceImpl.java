@@ -254,7 +254,10 @@ public class MetaDeckServiceImpl implements MetaDeckService {
             case 2 -> 3;
             case 4 -> 4;
             case 6 -> 5;
-            default -> 1;
+            default -> {
+                logger.warn("알 수 없는 rarity 값: {} — 1코스트로 처리", rarity);
+                yield 1;
+            }
         };
     }
 

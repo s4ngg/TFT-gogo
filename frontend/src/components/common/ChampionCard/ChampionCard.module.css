@@ -90,31 +90,31 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.58);
 }
 
-/* 코스트별 색상 (TFT 게임 기준) */
+/* 코스트별 색상 (TFT 게임 기준) — 색상 토큰은 variables.css 참조 */
 .cost1 {
-  border-color: #8b9198;
-  background: linear-gradient(135deg, #3a3d42, #5a5e65 50%, #2a2c30);
+  border-color: var(--cost1-border);
+  background: linear-gradient(135deg, var(--cost1-bg-start), var(--cost1-bg-mid) 50%, var(--cost1-bg-end));
 }
 
 .cost2 {
-  border-color: #0bb453;
-  background: linear-gradient(135deg, #0a3d20, #0f6b30 50%, #072a16);
+  border-color: var(--cost2-border);
+  background: linear-gradient(135deg, var(--cost2-bg-start), var(--cost2-bg-mid) 50%, var(--cost2-bg-end));
 }
 
 .cost3 {
-  border-color: #2e93f0;
-  background: linear-gradient(135deg, #0a2a5e, #1255a0 50%, #071830);
+  border-color: var(--cost3-border);
+  background: linear-gradient(135deg, var(--cost3-bg-start), var(--cost3-bg-mid) 50%, var(--cost3-bg-end));
 }
 
 .cost4 {
-  border-color: #c542f5;
-  background: linear-gradient(135deg, #3a1060, #7a20b0 50%, #250a40);
+  border-color: var(--cost4-border);
+  background: linear-gradient(135deg, var(--cost4-bg-start), var(--cost4-bg-mid) 50%, var(--cost4-bg-end));
 }
 
 .cost5 {
-  border-color: #f0c030;
-  background: linear-gradient(135deg, #4a3000, #8a6000 50%, #2a1a00);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15), 0 0 12px rgba(240, 192, 48, 0.35);
+  border-color: var(--cost5-border);
+  background: linear-gradient(135deg, var(--cost5-bg-start), var(--cost5-bg-mid) 50%, var(--cost5-bg-end));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15), 0 0 12px var(--cost5-glow);
 }
 
 /* 기존 tone 클래스 유지 (다른 컴포넌트 호환용) */
