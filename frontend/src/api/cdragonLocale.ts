@@ -1,18 +1,21 @@
+import axiosInstance from './axiosInstance'
+
 const CDRAGON_TFT_KO_URL = 'https://raw.communitydragon.org/latest/cdragon/tft/ko_kr.json'
 
 export interface TFTLocale {
-  champByApiName: Map<string, string>  // "tft17_illaoi" → "일라오이"
-  traitBySuffix: Map<string, string>   // "shieldtank" → "방패 전위"
-  itemByApiName: Map<string, string>   // "tft_item_infinityedge" → "무한의 대검"
-  augmentBySuffix: Map<string, string> // "aoerocketgrab" → 한글 증강명
+  champByApiName: Map<string, string>
+  traitBySuffix: Map<string, string>
+  itemByApiName: Map<string, string>
+  augmentBySuffix: Map<string, string>
 }
 
-type CDragonEntry = { apiName?: string; name?: string }
+interface CDragonEntry {
+  apiName?: string
+  name?: string
+}
 
 export async function fetchTFTLocale(): Promise<TFTLocale> {
-  const res = await fetch(CDRAGON_TFT_KO_URL)
-  if (!res.ok) throw new Error(`CDragon locale fetch 실패: ${res.status}`)
-  const data = await res.json()
+  const { data } = await axiosInstance.get<Record<string, unknown>>(CDRAGON_TFT_KO_URL)
 
   const champByApiName = new Map<string, string>()
   const traitBySuffix = new Map<string, string>()
@@ -66,9 +69,9 @@ export function getTraitName(name: string, locale: TFTLocale | undefined): strin
   return locale.traitBySuffix.get(name.toLowerCase()) ?? name
 }
 
-/** 아이템 전체 ID → 한글 */
-export function getItemName(itemId: string, locale: TFTLocale | undefined): string {
-  const fallback = itemId.split('_').pop() ?? itemId
+/** 아이템 전체 ID → 한글 (apiFallback: API가 제공한 원본 itemName) */
+export function getItemName(itemId: string, locale: TFTLocale | undefined, apiFallback?: string): string {
+  const fallback = apiFallback ?? itemId.split('_').pop() ?? itemId
   if (!locale) return fallback
   return locale.itemByApiName.get(itemId.toLowerCase()) ?? fallback
 }

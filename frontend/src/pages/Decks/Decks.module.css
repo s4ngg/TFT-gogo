@@ -500,7 +500,7 @@
 }
 
 .artifactDelta {
-  color: #4ade80;
+  color: var(--color-success);
   font-size: 12px;
   font-weight: 600;
 }

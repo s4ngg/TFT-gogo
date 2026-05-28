@@ -255,19 +255,21 @@ function buildItemUnitEntries(decks: MetaDeck[]): ItemUnitEntry[] {
     placementDelta: number
     winRate: string
     iconUrl: string
+    itemName: string
     unitSet: Map<string, { name: string; imageUrl: string }>
   }>()
 
   decks.forEach((deck) => {
     deck.topItems?.forEach((item) => {
       const delta = parseFloat(item.placementDelta)
-      if (delta <= 0) return
+      if (!Number.isFinite(delta) || delta <= 0) return
 
       if (!map.has(item.itemId)) {
         map.set(item.itemId, {
           placementDelta: delta,
           winRate: item.winRate,
           iconUrl: tftItemIconUrl(item.itemId),
+          itemName: item.itemName,
           unitSet: new Map(),
         })
       }
@@ -282,9 +284,9 @@ function buildItemUnitEntries(decks: MetaDeck[]): ItemUnitEntry[] {
   })
 
   return Array.from(map.entries())
-    .map(([itemId, { placementDelta, winRate, iconUrl, unitSet }]) => ({
+    .map(([itemId, { placementDelta, winRate, iconUrl, itemName, unitSet }]) => ({
       itemId,
-      itemName: itemId.split('_').pop() ?? itemId,
+      itemName,
       iconUrl,
       placementDelta,
       winRate,
@@ -302,9 +304,11 @@ function ArtifactSection({ decks, locale }: { decks: MetaDeck[]; locale: TFTLoca
   const hasData = entries.length > 0
 
   const searchActive = search.trim() !== ''
-  const allFiltered  = entries.filter((e) =>
-    !searchActive || e.itemName.toLowerCase().includes(search.toLowerCase()),
-  )
+  const allFiltered  = entries.filter((e) => {
+    if (!searchActive) return true
+    const displayName = getItemName(e.itemId, locale, e.itemName).toLowerCase()
+    return displayName.includes(search.toLowerCase())
+  })
   const visible     = searchActive || showAll ? allFiltered : allFiltered.slice(0, INITIAL_ITEM_COUNT)
   const hiddenCount = allFiltered.length - INITIAL_ITEM_COUNT
 
@@ -346,7 +350,7 @@ function ArtifactSection({ decks, locale }: { decks: MetaDeck[]; locale: TFTLoca
                       onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '0.3' }}
                     />
                     <div className={styles.artifactItemInfo}>
-                      <span className={styles.artifactName}>{getItemName(entry.itemId, locale)}</span>
+                      <span className={styles.artifactName}>{getItemName(entry.itemId, locale, entry.itemName)}</span>
                       <span className={styles.artifactDelta}>
                         등수 향상 +{entry.placementDelta.toFixed(2)}
                       </span>
