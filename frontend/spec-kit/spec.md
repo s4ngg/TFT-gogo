@@ -38,16 +38,41 @@ TFT(전략적 팀 전투) 전적 검색 서비스.
   - 평균 순위: ~th / 8
 - 최근 전적 목록을 확인할 수 있다
   - 순위 (1위~8위 형식)
-  - 덱 이름
+  - 게임 유형 배지 (랭크 / 일반) — Riot API queue_id 기준 (1100=랭크, 1090=일반)
+  - 덱 이름 (Spring 서버에서 시너지/유닛 조합을 분석해 자동 생성)
   - 게임 시간 (방금 전 / 몇 분 전 / 몇 시간 전 등)
-  - LP 변동값 (+22 LP / -9 LP)
+  - LP 변동값은 제공하지 않는다 (Riot API 미제공)
   - 유닛 이미지 및 유닛별 아이템 이미지 (최대 3개)
   - 챔피언·아이템 이미지 호버 시 이름 툴팁 표시
+- 전적 목록은 게임 유형(전체 / 랭크 / 일반)으로 필터링할 수 있다
 - 전적 행 클릭 시 해당 게임의 8명 전원 상세 정보가 펼쳐진다
-  - 순위, 소환사명, 스테이지, 시너지, 증강, 챔피언(아이템 포함), 킬수, 잔여골드
+  - 순위, 소환사명, 스테이지(Riot API의 last_round를 Spring에서 스테이지 형식으로 변환, 예: 5 → 2-1), 시너지, 챔피언(아이템 포함), 킬수, 잔여골드
+  - 순위 색상: 1위 금색, 2위 은색, 3위 동색, 4위 이하 기본색
+  - 시너지 아이콘은 Community Dragon CDN 이미지를 사용하며, 소환사 카드의 "많이 플레이한 시너지" 섹션과 동일한 이미지 소스를 공유한다
+  - 증강은 표시하지 않는다 (Riot API 공식 스키마 미포함 — 미제공 확정)
   - 내 행은 별도 하이라이트 표시
 - 전적은 30개씩 표시하며, "30개 더 보기" 버튼으로 추가 로드할 수 있다
 - 로그인 없이 누구나 검색 및 조회할 수 있다
+
+#### 데이터 요구사항 (Riot API 기반)
+
+- 소환사 정보는 다음 5개 Riot API를 조합해 Spring 서버에서 가공한 후 프론트에 단일 응답으로 내려준다
+  - `GET /riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}` → puuid, gameName, tagLine
+  - `GET /tft/summoner/v1/summoners/by-puuid/{puuid}` → profileIconId, summonerLevel
+  - `GET /tft/league/v1/by-puuid/{puuid}` → tier, rank, leaguePoints, wins, losses
+  - `GET /tft/match/v1/matches/by-puuid/{puuid}/ids` → 매치 ID 목록 (count 파라미터로 요청 수 조절)
+  - `GET /tft/match/v1/matches/{matchId}` → 매치 상세 (참가자, 유닛, 시너지 등)
+- 매치 데이터는 queue_id 1100(RANKED_TFT)과 1090(NORMAL_TFT)만 수집해 저장한다; 하이퍼롤 등 그 외 queue_id는 제외한다
+- 게임 유형은 Spring에서 queue_id를 변환해 내려준다 (1100 → 랭크, 1090 → 일반)
+- wins는 4위 이상(순방) 횟수, losses는 5~8위(4위 미만) 횟수이며, 승률(순방확률)은 wins / (wins + losses)로 계산한다
+- 순위 분포(1~8등별 게임 수)는 매치 데이터의 placement를 집계해 Spring에서 계산한다
+- 평균 순위, TOP4율은 Spring에서 최근 매치 데이터를 기반으로 계산한다
+- 덱 이름은 Spring에서 해당 게임의 시너지/유닛 조합을 분석해 자동 생성한다
+- 스테이지 표시는 Riot API의 last_round(int)를 Spring에서 변환한다 (예: 5 → 2-1)
+- 시너지 등급(tone)은 Riot API의 style(0~4)을 Spring에서 변환한다 (0=없음, 1=브론즈, 2=실버, 3=골드, 4=크로매틱)
+- 챔피언 별 수(stars)는 Riot API의 tier(int)를 그대로 사용한다
+- 챔피언·아이템·시너지 이미지는 Community Dragon CDN을 사용하며 Spring에서 URL을 조합해 내려준다
+- 증강(augments)은 Riot API 공식 스키마에 없으므로 제공하지 않는다 (UI에 표시하지 않음)
 
 ### 3. Decks — 덱 목록
 
