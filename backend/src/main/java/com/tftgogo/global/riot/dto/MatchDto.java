@@ -15,6 +15,7 @@ public class MatchDto {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class MatchInfoDto {
         private String tft_set_core_name;
+        private String game_version;
         private List<ParticipantDto> participants;
     }
 
@@ -25,6 +26,7 @@ public class MatchDto {
         private int placement;
         private List<UnitDto> units;
         private List<TraitDto> traits;
+        private List<String> augments;
     }
 
     @Getter

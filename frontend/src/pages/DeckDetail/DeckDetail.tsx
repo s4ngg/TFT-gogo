@@ -221,7 +221,8 @@ function AugmentsPanel({ deck }: { deck: MetaDeck }) {
 function DeckDetail() {
   const { deckId } = useParams<{ deckId: string }>()
   const navigate = useNavigate()
-  const { data: metaDecks = [], isLoading } = useMetaSnapshot()
+  const { data: metaDeckResponse, isLoading } = useMetaSnapshot()
+  const metaDecks = metaDeckResponse?.decks ?? []
 
   const deck = metaDecks.find((d) => String(d.rank) === deckId)
 

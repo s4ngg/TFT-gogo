@@ -10,7 +10,7 @@ import java.util.List;
 @Entity
 @Table(
     name = "meta_decks",
-    uniqueConstraints = { @UniqueConstraint(columnNames = {"signature", "rank_filter"}) }
+    uniqueConstraints = { @UniqueConstraint(columnNames = {"signature", "rank_filter", "patch_version"}) }
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

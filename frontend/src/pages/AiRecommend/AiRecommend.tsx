@@ -156,7 +156,8 @@ function AugmentAnalysis({ augments }: { augments: AiRecommendAugment[] }) {
 /* ── AI 추천 덱 ── */
 function AiRecommendedDecks({ deckReasons }: { deckReasons: AiRecommendDeckReason[] }) {
   const navigate = useNavigate()
-  const { data: metaDecks = [] } = useMetaSnapshot()
+  const { data: metaDeckResponse } = useMetaSnapshot()
+  const metaDecks = metaDeckResponse?.decks ?? []
   const topDecks = metaDecks.filter((d) => d.grade === 'S' || d.grade === 'A+').slice(0, 3)
 
   return (

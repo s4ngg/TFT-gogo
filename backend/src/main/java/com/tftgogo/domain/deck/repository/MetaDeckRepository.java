@@ -9,8 +9,12 @@ import java.util.Optional;
 
 public interface MetaDeckRepository extends JpaRepository<MetaDeck, Long> {
 
-    Optional<MetaDeck> findBySignatureAndRankFilter(String signature, RankFilter rankFilter);
+    Optional<MetaDeck> findBySignatureAndRankFilterAndPatchVersion(
+            String signature, RankFilter rankFilter, String patchVersion);
+
+    List<MetaDeck> findAllByRankFilter(RankFilter rankFilter);
 
     // win_rate 내림차순 정렬 (DB 레벨)
-    List<MetaDeck> findAllByRankFilterOrderByWinRateDesc(RankFilter rankFilter);
+    List<MetaDeck> findAllByRankFilterAndPatchVersionOrderByWinRateDesc(
+            RankFilter rankFilter, String patchVersion);
 }

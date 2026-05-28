@@ -96,7 +96,8 @@ const RANK_FILTERS: RankFilterOption[] = [
 /* ── 메인 ── */
 function MetaStats() {
   const [rankFilter, setRankFilter] = useState<RankFilter>('EMERALD_PLUS')
-  const { data: decks = [] } = useMetaSnapshot(rankFilter)
+  const { data: metaDeckResponse } = useMetaSnapshot(rankFilter)
+  const decks = metaDeckResponse?.decks ?? []
 
   const byTier = TIER_ORDER.reduce<Record<TierBadgeValue, MetaDeck[]>>(
     (acc, t) => { acc[t] = decks.filter((d) => d.grade === t); return acc },

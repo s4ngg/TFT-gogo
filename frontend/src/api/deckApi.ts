@@ -8,9 +8,21 @@ interface ApiResponse<T> {
   data: T
 }
 
-export const getMetaDecks = async (rankFilter: RankFilter = 'EMERALD_PLUS'): Promise<MetaDeck[]> => {
+export interface MetaDeckListResponse {
+  patchVersion: string | null
+  rankFilter: RankFilter
+  decks: MetaDeck[]
+}
+
+const fallbackMetaDeckListResponse: MetaDeckListResponse = {
+  patchVersion: '17.3',
+  rankFilter: 'EMERALD_PLUS',
+  decks: mockDeckMetaResponse,
+}
+
+export const getMetaDecks = async (rankFilter: RankFilter = 'EMERALD_PLUS'): Promise<MetaDeckListResponse> => {
   try {
-    const { data } = await axiosInstance.get<ApiResponse<MetaDeck[]>>('/decks/meta', {
+    const { data } = await axiosInstance.get<ApiResponse<MetaDeckListResponse>>('/decks/meta', {
       params: { rankFilter },
     })
 
@@ -18,8 +30,12 @@ export const getMetaDecks = async (rankFilter: RankFilter = 'EMERALD_PLUS'): Pro
       throw new Error(data.message ?? '메타 덱 조회 실패')
     }
 
-    return Array.isArray(data.data) ? data.data : []
+    return {
+      patchVersion: data.data?.patchVersion ?? null,
+      rankFilter: data.data?.rankFilter ?? rankFilter,
+      decks: Array.isArray(data.data?.decks) ? data.data.decks : [],
+    }
   } catch {
-    return mockDeckMetaResponse
+    return { ...fallbackMetaDeckListResponse, rankFilter }
   }
 }

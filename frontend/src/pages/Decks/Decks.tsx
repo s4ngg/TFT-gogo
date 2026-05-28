@@ -385,7 +385,8 @@ const RANK_FILTERS: RankFilterOption[] = [
 ════════════════════════════ */
 function Decks() {
   const [rankFilter, setRankFilter] = useState<RankFilter>('EMERALD_PLUS')
-  const { data: decks = [] } = useMetaSnapshot(rankFilter)
+  const { data: metaDeckResponse } = useMetaSnapshot(rankFilter)
+  const decks = metaDeckResponse?.decks ?? []
   const [tab, setTab] = useState<Tab>('덱모음')
 
   return (
