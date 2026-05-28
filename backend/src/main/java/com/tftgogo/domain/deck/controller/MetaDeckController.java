@@ -1,5 +1,6 @@
 package com.tftgogo.domain.deck.controller;
 
+import com.tftgogo.domain.deck.controller.docs.MetaDeckControllerDocs;
 import com.tftgogo.domain.deck.dto.response.MetaDeckResponse;
 import com.tftgogo.domain.deck.service.MetaDeckService;
 import com.tftgogo.global.response.ApiResponse;
@@ -12,7 +13,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/decks")
 @RequiredArgsConstructor
-public class MetaDeckController {
+public class MetaDeckController implements MetaDeckControllerDocs {
 
     private final MetaDeckService metaDeckService;
 
