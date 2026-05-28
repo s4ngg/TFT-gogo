@@ -16,6 +16,9 @@ public interface MetaDeckRepository extends JpaRepository<MetaDeck, Long> {
 
     List<MetaDeck> findAllByRankFilter(RankFilter rankFilter);
 
+    @Query("SELECT COUNT(DISTINCT d.rankFilter) FROM MetaDeck d WHERE d.dataStartDate = :dataStartDate")
+    long countAggregatedRankFiltersByDataStartDate(@Param("dataStartDate") java.time.LocalDate dataStartDate);
+
     // 선택률 기준 내림차순 정렬 + 최소 선택률 필터 (DB 레벨)
     @Query("SELECT d FROM MetaDeck d WHERE d.rankFilter = :rankFilter AND d.patchVersion = :patchVersion AND d.playRate >= :minPlayRate ORDER BY d.playRate DESC")
     List<MetaDeck> findMetaDecksByPickRate(
