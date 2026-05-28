@@ -161,17 +161,18 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         List<String> puuids = new ArrayList<>();
         try {
             switch (rankFilter) {
+                // 각 티어당 소환사 50명 × 20게임 = 1000게임 기준
                 case MASTER_PLUS -> {
-                    addPuuids(puuids, riotApiClient.getChallenger(), 10);
-                    addPuuids(puuids, riotApiClient.getGrandmaster(), 10);
+                    addPuuids(puuids, riotApiClient.getChallenger(), 20);
+                    addPuuids(puuids, riotApiClient.getGrandmaster(), 20);
                     addPuuids(puuids, riotApiClient.getMaster(), 10);
                 }
                 case DIAMOND_PLUS -> {
                     addPuuids(puuids, riotApiClient.getChallenger(), 5);
                     addPuuids(puuids, riotApiClient.getGrandmaster(), 5);
                     addPuuids(puuids, riotApiClient.getMaster(), 5);
-                    addLeaguePuuids(puuids, "DIAMOND", "I", 10);
-                    addLeaguePuuids(puuids, "DIAMOND", "II", 5);
+                    addLeaguePuuids(puuids, "DIAMOND", "I", 15);
+                    addLeaguePuuids(puuids, "DIAMOND", "II", 10);
                     addLeaguePuuids(puuids, "DIAMOND", "III", 5);
                     addLeaguePuuids(puuids, "DIAMOND", "IV", 5);
                 }
