@@ -58,7 +58,6 @@ src/
     PatchNotes/
   store/
   styles/
-    global.css
     variables.css              # 디자인 토큰 CSS 변수
 ```
 

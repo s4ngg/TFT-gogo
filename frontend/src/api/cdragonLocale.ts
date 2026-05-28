@@ -1,4 +1,5 @@
 import axiosInstance from './axiosInstance'
+import { isRecord } from './apiResponse'
 
 const CDRAGON_TFT_KO_URL = 'https://raw.communitydragon.org/latest/cdragon/tft/ko_kr.json'
 
@@ -14,19 +15,19 @@ interface CDragonEntry {
   name?: string
 }
 
-interface CDragonSet {
-  champions?: CDragonEntry[]
-  traits?: CDragonEntry[]
-  augments?: CDragonEntry[]
-}
+function readCDragonEntries(value: unknown): CDragonEntry[] {
+  if (!Array.isArray(value)) return []
 
-interface CDragonTFTData {
-  sets?: Record<string, CDragonSet>
-  items?: CDragonEntry[]
+  return value
+    .filter(isRecord)
+    .map((entry) => ({
+      apiName: typeof entry.apiName === 'string' ? entry.apiName : undefined,
+      name: typeof entry.name === 'string' ? entry.name : undefined,
+    }))
 }
 
 export async function fetchTFTLocale(): Promise<TFTLocale> {
-  const { data } = await axiosInstance.get<CDragonTFTData>(CDRAGON_TFT_KO_URL)
+  const { data } = await axiosInstance.get<Record<string, unknown>>(CDRAGON_TFT_KO_URL)
 
   const champByApiName = new Map<string, string>()
   const traitBySuffix = new Map<string, string>()
@@ -34,30 +35,32 @@ export async function fetchTFTLocale(): Promise<TFTLocale> {
   const augmentBySuffix = new Map<string, string>()
 
   // 최신 세트 자동 감지
-  const latestSetNum = Math.max(...Object.keys(data.sets ?? {}).map(Number))
-  const currentSet = data.sets?.[String(latestSetNum)]
+  const sets = isRecord(data.sets) ? data.sets : {}
+  const setNumbers = Object.keys(sets).map(Number).filter(Number.isFinite)
+  const latestSetKey = setNumbers.length > 0 ? String(Math.max(...setNumbers)) : undefined
+  const currentSet = latestSetKey && isRecord(sets[latestSetKey]) ? sets[latestSetKey] : undefined
 
-  currentSet?.champions?.forEach((c: CDragonEntry) => {
+  readCDragonEntries(currentSet?.champions).forEach((c) => {
     if (c.apiName && c.name) {
       champByApiName.set(c.apiName.toLowerCase(), c.name)
     }
   })
 
-  currentSet?.traits?.forEach((t: CDragonEntry) => {
+  readCDragonEntries(currentSet?.traits).forEach((t) => {
     if (t.apiName && t.name) {
       const suffix = t.apiName.split('_').pop()?.toLowerCase()
       if (suffix) traitBySuffix.set(suffix, t.name)
     }
   })
 
-  currentSet?.augments?.forEach((a: CDragonEntry) => {
+  readCDragonEntries(currentSet?.augments).forEach((a) => {
     if (a.apiName && a.name) {
       const suffix = a.apiName.split('_').pop()?.toLowerCase()
       if (suffix) augmentBySuffix.set(suffix, a.name)
     }
   })
 
-  data.items?.forEach((item: CDragonEntry) => {
+  readCDragonEntries(data.items).forEach((item) => {
     if (item.apiName && item.name) {
       itemByApiName.set(item.apiName.toLowerCase(), item.name)
     }

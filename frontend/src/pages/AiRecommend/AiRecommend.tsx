@@ -7,7 +7,7 @@ import TraitHexBadge from '../../components/common/TraitHexBadge'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
 import { useAiRecommendQuery } from '../../hooks/useAiRecommendQuery'
 import useSummonerStore from '../../store/useSummonerStore'
-import type { AiRecommendAugment, AiRecommendDeckReason, AiRecommendResponse, AiRecommendStats, AiRecommendTrait } from '../../api/aiRecommendApi'
+import type { AiRecommendAugment, AiRecommendDeckReason, AiRecommendStats, AiRecommendTrait } from '../../api/aiRecommendApi'
 import { mockAiRecommendation } from '../../mocks/aiRecommendMock'
 import styles from './AiRecommend.module.css'
 

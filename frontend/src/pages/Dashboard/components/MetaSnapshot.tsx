@@ -97,7 +97,7 @@ function Champions({ champions }: ChampionsProps) {
 
 function MetaSnapshot() {
   const { data: metaDeckResponse } = useMetaSnapshot()
-  const allDecks = metaDeckResponse?.decks ?? []
+  const allDecks = useMemo(() => metaDeckResponse?.decks ?? [], [metaDeckResponse?.decks])
   const [selectedFilter, setSelectedFilter] = useState<MetaFilter>('overall')
   const [sortKey, setSortKey] = useState<MetaSortKey>('winRate')
   const metaDecks = useMemo(
