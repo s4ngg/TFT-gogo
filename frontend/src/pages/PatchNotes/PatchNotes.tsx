@@ -9,6 +9,8 @@ import {
   Clock3,
   Filter,
   History,
+  Loader2,
+  RefreshCw,
   Search,
   Shield,
   Sparkles,
@@ -18,44 +20,26 @@ import {
   Zap,
 } from 'lucide-react'
 import { communityDragonAssetUrl } from '../../api/communityDragonAssets'
+import {
+  CHANGE_CATEGORIES,
+  CHANGE_TYPE_FILTERS,
+  PATCH_CATEGORIES,
+  type ChangeCategory,
+  type ChangeType,
+  type ChangeTypeFilter,
+  type ImpactLevel,
+  type PatchCategory,
+  type PatchChange,
+  type PatchNoteDetail,
+  type PatchNoteSummary,
+} from '../../api/patchNotes'
 import { AppLayout } from '../../components/layout'
+import { usePatchNotes } from '../../hooks/usePatchNotes'
 import styles from './PatchNotes.module.css'
 
-const CHANGE_CATEGORIES = ['챔피언', '시너지', '아이템', '증강체', '시스템'] as const
-const PATCH_CATEGORIES = ['전체', ...CHANGE_CATEGORIES] as const
-const CHANGE_TYPE_FILTERS = ['전체 변경', '상향', '하향', '조정', '신규'] as const
 const PATCH_PAGE_SIZE = 5
 const SAMPLE_PAGE_COUNT = 7
 const PAGE_NUMBER_WINDOW = 5
-
-type ChangeCategory = (typeof CHANGE_CATEGORIES)[number]
-type PatchCategory = (typeof PATCH_CATEGORIES)[number]
-type ChangeType = '상향' | '하향' | '조정' | '신규'
-type ChangeTypeFilter = (typeof CHANGE_TYPE_FILTERS)[number]
-type ImpactLevel = '높음' | '중간' | '낮음'
-
-interface PatchChange {
-  id: number
-  category: ChangeCategory
-  target: string
-  type: ChangeType
-  impact: ImpactLevel
-  summary: string
-  before: string
-  after: string
-  tags: string[]
-}
-
-interface PatchHistoryItem {
-  version: string
-  date: string
-  title: string
-  status: '현재' | '이전'
-  focus: string
-  description: string
-  highlights: string[]
-  imageUrl: string
-}
 
 interface PaginationProps {
   currentPage: number
@@ -390,7 +374,7 @@ const BASE_PATCH_CHANGES: PatchChange[] = [
   },
 ]
 
-const PATCH_HISTORY: PatchHistoryItem[] = [
+const PATCH_HISTORY: PatchNoteSummary[] = [
   {
     version: '17.3',
     date: '2026.05.26',
@@ -454,7 +438,7 @@ function getBaseTarget(target: string) {
 }
 
 function getChangeImageUrl(change: PatchChange) {
-  return targetImageUrl[getBaseTarget(change.target)] ?? categoryImageUrl[change.category]
+  return change.imageUrl ?? targetImageUrl[getBaseTarget(change.target)] ?? categoryImageUrl[change.category]
 }
 
 function buildVersionedChange(change: PatchChange, version: string, patchIndex: number): PatchChange {
@@ -472,12 +456,13 @@ function buildVersionedChange(change: PatchChange, version: string, patchIndex: 
   }
 }
 
-function expandPatchSamples(changes: PatchChange[], patch: PatchHistoryItem) {
+function expandPatchSamples(changes: PatchChange[], patch: PatchNoteSummary) {
   const targetCount = PATCH_PAGE_SIZE * SAMPLE_PAGE_COUNT
   const patchIndex = PATCH_HISTORY.findIndex((historyItem) => historyItem.version === patch.version)
 
   return CHANGE_CATEGORIES.flatMap((category) => {
     const categoryChanges = changes.filter((change) => change.category === category)
+    if (categoryChanges.length === 0) return []
 
     return Array.from({ length: targetCount }, (_, index) => {
       const source = buildVersionedChange(categoryChanges[index % categoryChanges.length], patch.version, patchIndex)
@@ -497,6 +482,11 @@ function expandPatchSamples(changes: PatchChange[], patch: PatchHistoryItem) {
     })
   })
 }
+
+const PATCH_NOTES_FALLBACK: PatchNoteDetail[] = PATCH_HISTORY.map((patch) => ({
+  ...patch,
+  changes: expandPatchSamples(BASE_PATCH_CHANGES, patch),
+}))
 
 function getCategoryCount(category: PatchCategory, changes: PatchChange[]) {
   if (category === '전체') return changes.length
@@ -555,19 +545,61 @@ function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) 
   )
 }
 
+function PatchStatusBanner({
+  isFallbackData,
+  isFetching,
+  onRetry,
+}: {
+  isFallbackData: boolean
+  isFetching: boolean
+  onRetry: () => void
+}) {
+  if (!isFetching && !isFallbackData) return null
+
+  return (
+    <div
+      aria-live="polite"
+      className={`${styles.statusBanner} ${isFetching ? styles.statusLoading : styles.statusFallback}`}
+    >
+      <span className={styles.statusIcon}>
+        {isFetching ? <Loader2 size={16} /> : <AlertTriangle size={16} />}
+      </span>
+      <div>
+        <strong>{isFetching ? '패치노트 데이터를 불러오는 중입니다.' : '샘플 패치노트로 표시 중입니다.'}</strong>
+        <p>
+          {isFetching
+            ? '최신 패치노트 응답을 확인하는 동안 현재 데이터를 유지합니다.'
+            : '패치노트 API 응답을 가져오지 못해 준비된 샘플 데이터를 보여주고 있습니다.'}
+        </p>
+      </div>
+      {!isFetching && (
+        <button onClick={onRetry} type="button">
+          <RefreshCw size={14} />
+          다시 시도
+        </button>
+      )}
+    </div>
+  )
+}
+
 function PatchNotes() {
-  const [selectedPatchVersion, setSelectedPatchVersion] = useState(PATCH_HISTORY[0].version)
+  const {
+    isFallbackData,
+    isFetching,
+    patchNotes: patchHistory,
+    refetchPatchNotes,
+    selectedPatch: selectedPatchFromQuery,
+    selectedPatchVersion,
+    setSelectedPatchVersion,
+  } = usePatchNotes({ fallbackData: PATCH_NOTES_FALLBACK })
   const [activeCategory, setActiveCategory] = useState<PatchCategory>('전체')
   const [activeChangeType, setActiveChangeType] = useState<ChangeTypeFilter>('전체 변경')
   const [highImpactOnly, setHighImpactOnly] = useState(false)
   const [expandedChangeIds, setExpandedChangeIds] = useState<number[]>([])
   const [query, setQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
-  const selectedPatch = useMemo(
-    () => PATCH_HISTORY.find((patch) => patch.version === selectedPatchVersion) ?? PATCH_HISTORY[0],
-    [selectedPatchVersion],
-  )
-  const patchChanges = useMemo(() => expandPatchSamples(BASE_PATCH_CHANGES, selectedPatch), [selectedPatch])
+  const selectedPatch = selectedPatchFromQuery ?? PATCH_NOTES_FALLBACK[0]
+  const patchChanges = selectedPatch.changes
   const highImpactCount = patchChanges.filter((change) => change.impact === '높음').length
   const buffCount = patchChanges.filter((change) => change.type === '상향').length
   const nerfCount = patchChanges.filter((change) => change.type === '하향').length
@@ -638,6 +670,14 @@ function PatchNotes() {
             </div>
           </aside>
         </header>
+
+        <PatchStatusBanner
+          isFallbackData={isFallbackData}
+          isFetching={isFetching}
+          onRetry={() => {
+            void refetchPatchNotes()
+          }}
+        />
 
         <section className={styles.summaryGrid} aria-label="패치 핵심 지표">
           <article className={styles.summaryCard}>
@@ -836,7 +876,7 @@ function PatchNotes() {
               </div>
               <h2>이전 패치</h2>
               <div className={styles.historyList}>
-                {PATCH_HISTORY.map((patch) => (
+                {patchHistory.map((patch) => (
                   <button
                     key={patch.version}
                     type="button"
