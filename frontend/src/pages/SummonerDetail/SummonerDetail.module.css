@@ -499,7 +499,7 @@
 
 .matchDetailHeader {
   display: grid;
-  grid-template-columns: 26px 148px 58px 116px 86px 1fr 44px 58px;
+  grid-template-columns: 26px 148px 58px 116px 1fr 44px 58px;
   gap: 8px;
   padding: 7px 16px;
   border-bottom: 1px solid rgba(112, 144, 152, 0.14);
@@ -511,7 +511,7 @@
 
 .matchDetailRow {
   display: grid;
-  grid-template-columns: 26px 148px 58px 116px 86px 1fr 44px 58px;
+  grid-template-columns: 26px 148px 58px 116px 1fr 44px 58px;
   gap: 8px;
   padding: 7px 16px;
   align-items: center;
@@ -541,6 +541,10 @@
   font-weight: 700;
   text-align: center;
 }
+
+.detailRankGold   { color: #f7d26d; }
+.detailRankSilver { color: #b8c1cc; }
+.detailRankBronze { color: #cd7f32; }
 
 .detailPlayer {
   display: flex;

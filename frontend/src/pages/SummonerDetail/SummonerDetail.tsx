@@ -8,7 +8,7 @@ import ChampionCard from '../../components/common/ChampionCard'
 import useSummonerStore from '../../store/useSummonerStore'
 import { useSummonerProfile } from '../../hooks/useSummonerProfile'
 import { useMatchHistory } from '../../hooks/useMatchHistory'
-import type { MatchSummaryResponse, MatchParticipantResponse } from '../../api/summonerApi'
+import type { MatchSummaryResponse } from '../../api/summonerApi'
 import styles from './SummonerDetail.module.css'
 
 const TIER_KO: Record<string, string> = {
@@ -92,13 +92,13 @@ function MatchDetailPanel({ match, myPuuid }: { match: MatchSummaryResponse; myP
     <div className={styles.matchDetailPanel}>
       <div className={styles.matchDetailHeader}>
         <span>#</span><span>소환사</span><span>스테이지</span><span>시너지</span>
-        <span>증강</span><span>챔피언</span><span>킬</span><span>잔여골드</span>
+        <span>챔피언</span><span>킬</span><span>잔여골드</span>
       </div>
       {match.participants.map((p) => {
         const isMe = p.puuid === myPuuid
         return (
           <div key={p.puuid} className={`${styles.matchDetailRow} ${isMe ? styles.myMatchDetailRow : ''}`}>
-            <span className={styles.detailRank}>{p.placement}위</span>
+            <span className={`${styles.detailRank} ${p.placement === 1 ? styles.detailRankGold : p.placement === 2 ? styles.detailRankSilver : p.placement === 3 ? styles.detailRankBronze : ''}`}>{p.placement}위</span>
             <div className={styles.detailPlayer}>
               <span className={styles.detailName}>{p.riotIdGameName}</span>
               <span className={styles.detailTag}>#{p.riotIdTagline}</span>
@@ -110,11 +110,6 @@ function MatchDetailPanel({ match, myPuuid }: { match: MatchSummaryResponse; myP
                   <img src={tr.iconUrl} alt={tr.name} className={styles.detailTraitIcon} />
                   <span>{tr.count}</span>
                 </div>
-              ))}
-            </div>
-            <div className={styles.detailAugments}>
-              {p.augments.slice(0, 3).map((aug, i) => (
-                <span key={i} className={styles.detailAugIcon}>{aug.replace('TFT17_Augment_', '').slice(0, 2)}</span>
               ))}
             </div>
             <div className={styles.detailUnits}>
