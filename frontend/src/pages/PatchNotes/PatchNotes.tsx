@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import {
   AlertTriangle,
@@ -18,44 +18,21 @@ import {
   Zap,
 } from 'lucide-react'
 import { communityDragonAssetUrl } from '../../api/communityDragonAssets'
+import {
+  CHANGE_TYPE_FILTERS,
+  PATCH_CATEGORIES,
+  PATCH_PAGE_SIZE,
+  type ChangeCategory,
+  type ChangeType,
+  type ImpactLevel,
+  type PatchChange,
+  type PatchHistoryItem,
+} from '../../api/patchNotes'
 import { AppLayout } from '../../components/layout'
+import { usePatchNotes } from '../../hooks/usePatchNotes'
 import styles from './PatchNotes.module.css'
 
-const CHANGE_CATEGORIES = ['챔피언', '시너지', '아이템', '증강체', '시스템'] as const
-const PATCH_CATEGORIES = ['전체', ...CHANGE_CATEGORIES] as const
-const CHANGE_TYPE_FILTERS = ['전체 변경', '상향', '하향', '조정', '신규'] as const
-const PATCH_PAGE_SIZE = 5
-const SAMPLE_PAGE_COUNT = 7
 const PAGE_NUMBER_WINDOW = 5
-
-type ChangeCategory = (typeof CHANGE_CATEGORIES)[number]
-type PatchCategory = (typeof PATCH_CATEGORIES)[number]
-type ChangeType = '상향' | '하향' | '조정' | '신규'
-type ChangeTypeFilter = (typeof CHANGE_TYPE_FILTERS)[number]
-type ImpactLevel = '높음' | '중간' | '낮음'
-
-interface PatchChange {
-  id: number
-  category: ChangeCategory
-  target: string
-  type: ChangeType
-  impact: ImpactLevel
-  summary: string
-  before: string
-  after: string
-  tags: string[]
-}
-
-interface PatchHistoryItem {
-  version: string
-  date: string
-  title: string
-  status: '현재' | '이전'
-  focus: string
-  description: string
-  highlights: string[]
-  imageUrl: string
-}
 
 interface PaginationProps {
   currentPage: number
@@ -457,61 +434,6 @@ function getChangeImageUrl(change: PatchChange) {
   return targetImageUrl[getBaseTarget(change.target)] ?? categoryImageUrl[change.category]
 }
 
-function buildVersionedChange(change: PatchChange, version: string, patchIndex: number): PatchChange {
-  if (version === PATCH_HISTORY[0].version) {
-    return change
-  }
-
-  return {
-    ...change,
-    id: patchIndex * 1000 + change.id,
-    summary: `${version} 패치 기준 ${change.summary}`,
-    before: `${change.before} · ${version} 이전 기준`,
-    after: `${change.after} · ${version} 적용 기준`,
-    tags: [version, ...change.tags.slice(0, 2)],
-  }
-}
-
-function expandPatchSamples(changes: PatchChange[], patch: PatchHistoryItem) {
-  const targetCount = PATCH_PAGE_SIZE * SAMPLE_PAGE_COUNT
-  const patchIndex = PATCH_HISTORY.findIndex((historyItem) => historyItem.version === patch.version)
-
-  return CHANGE_CATEGORIES.flatMap((category) => {
-    const categoryChanges = changes.filter((change) => change.category === category)
-
-    return Array.from({ length: targetCount }, (_, index) => {
-      const source = buildVersionedChange(categoryChanges[index % categoryChanges.length], patch.version, patchIndex)
-      const sampleRound = Math.floor(index / categoryChanges.length) + 1
-      const isOriginal = sampleRound === 1
-      const id = patchIndex * 1000 + CHANGE_CATEGORIES.indexOf(category) * targetCount + index + 1
-
-      return {
-        ...source,
-        id,
-        target: isOriginal ? source.target : `${source.target} 샘플 ${sampleRound}`,
-        summary: isOriginal ? source.summary : `${source.summary} ${sampleRound}차 샘플 기준으로 표시했습니다.`,
-        before: isOriginal ? source.before : `${source.before} · 샘플 ${sampleRound}`,
-        after: isOriginal ? source.after : `${source.after} · 샘플 ${sampleRound}`,
-        tags: isOriginal ? source.tags : [...source.tags.slice(0, 2), `샘플 ${sampleRound}`],
-      }
-    })
-  })
-}
-
-function getCategoryCount(category: PatchCategory, changes: PatchChange[]) {
-  if (category === '전체') return changes.length
-  return changes.filter((change) => change.category === category).length
-}
-
-function getTotalPages(totalItems: number) {
-  return Math.max(1, Math.ceil(totalItems / PATCH_PAGE_SIZE))
-}
-
-function getPageItems<T>(items: T[], page: number) {
-  const startIndex = (page - 1) * PATCH_PAGE_SIZE
-  return items.slice(startIndex, startIndex + PATCH_PAGE_SIZE)
-}
-
 function getPaginationWindow(currentPage: number, totalPages: number) {
   const windowStart = Math.floor((currentPage - 1) / PAGE_NUMBER_WINDOW) * PAGE_NUMBER_WINDOW + 1
   const windowEnd = Math.min(totalPages, windowStart + PAGE_NUMBER_WINDOW - 1)
@@ -556,39 +478,38 @@ function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) 
 }
 
 function PatchNotes() {
-  const [selectedPatchVersion, setSelectedPatchVersion] = useState(PATCH_HISTORY[0].version)
-  const [activeCategory, setActiveCategory] = useState<PatchCategory>('전체')
-  const [activeChangeType, setActiveChangeType] = useState<ChangeTypeFilter>('전체 변경')
-  const [highImpactOnly, setHighImpactOnly] = useState(false)
+  const {
+    selectedPatchVersion,
+    setSelectedPatchVersion,
+    activeCategory,
+    setActiveCategory,
+    activeChangeType,
+    setActiveChangeType,
+    highImpactOnly,
+    setHighImpactOnly,
+    query,
+    setQuery,
+    setCurrentPage,
+    patchHistory,
+    selectedPatch,
+    patchChanges,
+    pagedChanges,
+    totalPages,
+    safePage,
+    categoryCounts,
+    highImpactCount,
+    buffCount,
+    nerfCount,
+    isLoading,
+    isFetching,
+    isError,
+    refetch,
+  } = usePatchNotes({
+    historyFallback: PATCH_HISTORY,
+    changesFallback: BASE_PATCH_CHANGES,
+    pageSize: PATCH_PAGE_SIZE,
+  })
   const [expandedChangeIds, setExpandedChangeIds] = useState<number[]>([])
-  const [query, setQuery] = useState('')
-  const [currentPage, setCurrentPage] = useState(1)
-  const selectedPatch = useMemo(
-    () => PATCH_HISTORY.find((patch) => patch.version === selectedPatchVersion) ?? PATCH_HISTORY[0],
-    [selectedPatchVersion],
-  )
-  const patchChanges = useMemo(() => expandPatchSamples(BASE_PATCH_CHANGES, selectedPatch), [selectedPatch])
-  const highImpactCount = patchChanges.filter((change) => change.impact === '높음').length
-  const buffCount = patchChanges.filter((change) => change.type === '상향').length
-  const nerfCount = patchChanges.filter((change) => change.type === '하향').length
-
-  const filteredChanges = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase()
-
-    return patchChanges.filter((change) => {
-      const matchesCategory = activeCategory === '전체' || change.category === activeCategory
-      const matchesType = activeChangeType === '전체 변경' || change.type === activeChangeType
-      const matchesImpact = !highImpactOnly || change.impact === '높음'
-      const searchableText = [change.target, change.summary, change.category, change.type, ...change.tags].join(' ').toLowerCase()
-      const matchesQuery = !normalizedQuery || searchableText.includes(normalizedQuery)
-
-      return matchesCategory && matchesType && matchesImpact && matchesQuery
-    })
-  }, [activeCategory, activeChangeType, highImpactOnly, patchChanges, query])
-
-  const totalPages = getTotalPages(filteredChanges.length)
-  const safePage = Math.min(currentPage, totalPages)
-  const pagedChanges = useMemo(() => getPageItems(filteredChanges, safePage), [filteredChanges, safePage])
 
   const toggleExpandedChange = (id: number) => {
     setExpandedChangeIds((currentIds) => (
@@ -599,7 +520,6 @@ function PatchNotes() {
   }
 
   useEffect(() => {
-    setCurrentPage(1)
     setExpandedChangeIds([])
   }, [activeCategory, activeChangeType, highImpactOnly, query, selectedPatchVersion])
 
@@ -685,6 +605,7 @@ function PatchNotes() {
                 <span className={styles.sectionLabel}>변경사항</span>
                 <h2>패치 상세 목록</h2>
               </div>
+              {isFetching && <span className={styles.syncLabel}>동기화 중</span>}
             </div>
 
             <div className={styles.toolBar}>
@@ -712,7 +633,7 @@ function PatchNotes() {
                   onClick={() => setActiveCategory(category)}
                 >
                   {category}
-                  <span>{getCategoryCount(category, patchChanges)}</span>
+                  <span>{categoryCounts[category] ?? 0}</span>
                 </button>
               ))}
             </div>
@@ -742,7 +663,20 @@ function PatchNotes() {
             </div>
 
             <div className={styles.changeList}>
-              {pagedChanges.map((change) => {
+              {isLoading && (
+                <div className={styles.emptyState}>
+                  패치 정보를 불러오는 중입니다.
+                </div>
+              )}
+
+              {!isLoading && isError && (
+                <div className={styles.emptyState}>
+                  <span>패치 정보를 불러오지 못했습니다.</span>
+                  <button type="button" onClick={refetch}>다시 시도</button>
+                </div>
+              )}
+
+              {!isLoading && !isError && pagedChanges.map((change) => {
                 const CategoryIcon = CATEGORY_ICON[change.category]
                 const isExpanded = expandedChangeIds.includes(change.id)
                 const imageUrl = getChangeImageUrl(change)
@@ -805,7 +739,7 @@ function PatchNotes() {
                 )
               })}
 
-              {pagedChanges.length === 0 && (
+              {!isLoading && !isError && pagedChanges.length === 0 && (
                 <div className={styles.emptyState}>
                   검색 조건에 맞는 패치 변경사항이 없습니다.
                 </div>
@@ -836,7 +770,7 @@ function PatchNotes() {
               </div>
               <h2>이전 패치</h2>
               <div className={styles.historyList}>
-                {PATCH_HISTORY.map((patch) => (
+                {patchHistory.map((patch) => (
                   <button
                     key={patch.version}
                     type="button"
