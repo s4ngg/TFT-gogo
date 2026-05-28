@@ -46,8 +46,8 @@ public class MetaDeckServiceImpl implements MetaDeckService {
 
     private static final Logger logger = LogManager.getLogger(MetaDeckServiceImpl.class);
 
-    private static final int MATCHES_PER_SUMMONER = 10;
-    private static final int MIN_SAMPLE = 10;
+    private static final int MATCHES_PER_SUMMONER = 20;
+    private static final int MIN_SAMPLE = 3;
     private static final int MIN_DETAIL_SAMPLE = 2;
     private static final int SIGNATURE_TRAIT_COUNT = 3;
     private static final long RATE_LIMIT_DELAY_MS = 1200L;

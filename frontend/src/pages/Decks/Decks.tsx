@@ -38,6 +38,14 @@ const TIER_COLOR: Record<TierBadgeValue, string> = {
 ════════════════════════════ */
 function numVal(s: string) { return parseFloat(s.replace('%', '')) }
 
+function deckDisplayName(deck: MetaDeck, locale: TFTLocale | undefined): string {
+  if (!locale) return deck.name
+  const parts = deck.traits
+    .slice(0, 2)
+    .map((t) => getTraitName(t.name, locale))
+  return parts.length > 0 ? parts.join(' ') : deck.name
+}
+
 function sortDecks(decks: MetaDeck[], key: SortKey, dir: SortDir) {
   return [...decks].sort((a, b) => {
     const av = key === 'rank' ? a.rank : numVal(a[key])
@@ -75,7 +83,7 @@ function DeckRow({
       )}
       {showTier && <td><TierBadge value={deck.grade} /></td>}
       <td className={styles.nameCol}>
-        <span className={styles.deckName}>{deck.name}</span>
+        <span className={styles.deckName}>{deckDisplayName(deck, locale)}</span>
         <span className={styles.traits}>
           {deck.traits.map((t) => (
             <TraitHexBadge
@@ -149,13 +157,10 @@ function HeroAugmentSection({ decks, locale }: { decks: MetaDeck[]; locale: TFTL
     scrollRef.current.scrollBy({ left: dir === 'left' ? -316 : 316, behavior: 'smooth' })
   }
 
-  // 증강 데이터 있는 덱 우선 → 없는 덱 뒤
-  const sorted = [...decks].sort((a, b) => {
-    const aHas = (a.topAugments?.length ?? 0) > 0
-    const bHas = (b.topAugments?.length ?? 0) > 0
-    if (aHas === bHas) return 0
-    return aHas ? -1 : 1
-  })
+  // 증강 데이터 있는 덱만 표시, 승률 내림차순 정렬
+  const sorted = [...decks]
+    .filter((d) => (d.topAugments?.length ?? 0) > 0)
+    .sort((a, b) => numVal(b.winRate) - numVal(a.winRate))
 
   const isEmpty = sorted.length === 0
 
@@ -182,10 +187,9 @@ function HeroAugmentSection({ decks, locale }: { decks: MetaDeck[]; locale: TFTL
       ) : (
         <div className={styles.augmentCarousel} ref={scrollRef}>
           {sorted.map((deck) => {
-            const topAug = deck.topAugments?.[0]
-            const isRec = topAug?.isRecommended ?? false
-            const augName = topAug ? getAugmentName(topAug.augmentId, locale) : '—'
-            const hasAugData = (deck.topAugments?.length ?? 0) > 0
+            const topAug = deck.topAugments![0]
+            const isRec = topAug.isRecommended
+            const augName = getAugmentName(topAug.augmentId, locale)
             return (
               <article
                 key={deck.rank}
@@ -194,24 +198,19 @@ function HeroAugmentSection({ decks, locale }: { decks: MetaDeck[]; locale: TFTL
               >
                 <div className={styles.augCardTop}>
                   <div>
-                    <div className={styles.augHeroName}>{deck.name}</div>
+                    <div className={styles.augHeroName}>{deckDisplayName(deck, locale)}</div>
                     <div className={styles.augName}>[{augName}]</div>
                   </div>
                   <span className={isRec ? styles.augRecommendBadge : styles.augNotRecommendBadge}>
-                    {isRec ? '추천' : (hasAugData ? '비추천' : '데이터 없음')}
+                    {isRec ? '추천' : '비추천'}
                   </span>
                 </div>
                 <div className={styles.augTags}>
-                  {hasAugData
-                    ? deck.topAugments!.slice(0, 3).map((a) => (
-                        <span key={a.augmentId} className={styles.augTag}>
-                          {getAugmentName(a.augmentId, locale)} ({a.winRate})
-                        </span>
-                      ))
-                    : deck.traits.slice(0, 3).map((t) => (
-                        <span key={t.name} className={styles.augTag}>{getTraitName(t.name, locale)}</span>
-                      ))
-                  }
+                  {deck.topAugments!.slice(0, 3).map((a) => (
+                    <span key={a.augmentId} className={styles.augTag}>
+                      {getAugmentName(a.augmentId, locale)} ({a.winRate})
+                    </span>
+                  ))}
                 </div>
                 <div className={styles.augChamps}>
                   {deck.champions.slice(0, 4).map((c, i) => (
@@ -261,6 +260,7 @@ function buildItemUnitEntries(decks: MetaDeck[]): ItemUnitEntry[] {
 
   decks.forEach((deck) => {
     deck.topItems?.forEach((item) => {
+      if (!item.itemId.toLowerCase().includes('_artifact_')) return
       const delta = parseFloat(item.placementDelta)
       if (!Number.isFinite(delta) || delta <= 0) return
 
