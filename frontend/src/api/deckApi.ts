@@ -11,12 +11,14 @@ interface ApiResponse<T> {
 export interface MetaDeckListResponse {
   patchVersion: string | null
   rankFilter: RankFilter
+  dataStartDate: string | null
   decks: MetaDeck[]
 }
 
 const fallbackMetaDeckListResponse: MetaDeckListResponse = {
   patchVersion: '17.3',
   rankFilter: 'EMERALD_PLUS',
+  dataStartDate: null,
   decks: mockDeckMetaResponse,
 }
 
@@ -33,6 +35,7 @@ export const getMetaDecks = async (rankFilter: RankFilter = 'EMERALD_PLUS'): Pro
     return {
       patchVersion: data.data?.patchVersion ?? null,
       rankFilter: data.data?.rankFilter ?? rankFilter,
+      dataStartDate: data.data?.dataStartDate ?? null,
       decks: Array.isArray(data.data?.decks) ? data.data.decks : [],
     }
   } catch {
