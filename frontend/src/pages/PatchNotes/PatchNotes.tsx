@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import {
   AlertTriangle,
@@ -30,11 +30,12 @@ import {
   type ImpactLevel,
   type PatchCategory,
   type PatchChange,
+  type PatchChangeStats,
   type PatchNoteDetail,
   type PatchNoteSummary,
 } from '../../api/patchNotes'
 import { AppLayout } from '../../components/layout'
-import { usePatchNotes } from '../../hooks/usePatchNotes'
+import { usePatchChanges, usePatchNotes } from '../../hooks/usePatchNotes'
 import styles from './PatchNotes.module.css'
 
 const PATCH_PAGE_SIZE = 5
@@ -488,18 +489,8 @@ const PATCH_NOTES_FALLBACK: PatchNoteDetail[] = PATCH_HISTORY.map((patch) => ({
   changes: expandPatchSamples(BASE_PATCH_CHANGES, patch),
 }))
 
-function getCategoryCount(category: PatchCategory, changes: PatchChange[]) {
-  if (category === '전체') return changes.length
-  return changes.filter((change) => change.category === category).length
-}
-
-function getTotalPages(totalItems: number) {
-  return Math.max(1, Math.ceil(totalItems / PATCH_PAGE_SIZE))
-}
-
-function getPageItems<T>(items: T[], page: number) {
-  const startIndex = (page - 1) * PATCH_PAGE_SIZE
-  return items.slice(startIndex, startIndex + PATCH_PAGE_SIZE)
+function getCategoryCount(category: PatchCategory, stats: PatchChangeStats) {
+  return stats.categoryCounts[category] ?? 0
 }
 
 function getPaginationWindow(currentPage: number, totalPages: number) {
@@ -599,28 +590,25 @@ function PatchNotes() {
   const [query, setQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const selectedPatch = selectedPatchFromQuery ?? PATCH_NOTES_FALLBACK[0]
-  const patchChanges = selectedPatch.changes
-  const highImpactCount = patchChanges.filter((change) => change.impact === '높음').length
-  const buffCount = patchChanges.filter((change) => change.type === '상향').length
-  const nerfCount = patchChanges.filter((change) => change.type === '하향').length
-
-  const filteredChanges = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase()
-
-    return patchChanges.filter((change) => {
-      const matchesCategory = activeCategory === '전체' || change.category === activeCategory
-      const matchesType = activeChangeType === '전체 변경' || change.type === activeChangeType
-      const matchesImpact = !highImpactOnly || change.impact === '높음'
-      const searchableText = [change.target, change.summary, change.category, change.type, ...change.tags].join(' ').toLowerCase()
-      const matchesQuery = !normalizedQuery || searchableText.includes(normalizedQuery)
-
-      return matchesCategory && matchesType && matchesImpact && matchesQuery
-    })
-  }, [activeCategory, activeChangeType, highImpactOnly, patchChanges, query])
-
-  const totalPages = getTotalPages(filteredChanges.length)
-  const safePage = Math.min(currentPage, totalPages)
-  const pagedChanges = useMemo(() => getPageItems(filteredChanges, safePage), [filteredChanges, safePage])
+  const patchChangesQuery = usePatchChanges({
+    fallbackData: patchHistory.length > 0 ? patchHistory : PATCH_NOTES_FALLBACK,
+    params: {
+      category: activeCategory,
+      changeType: activeChangeType,
+      highImpactOnly,
+      page: currentPage,
+      pageSize: PATCH_PAGE_SIZE,
+      query,
+      version: selectedPatch.version,
+    },
+  })
+  const changesPage = patchChangesQuery.data.data
+  const patchChanges = changesPage.items
+  const changeStats = changesPage.stats
+  const highImpactCount = changeStats.highImpactCount
+  const buffCount = changeStats.buffCount
+  const nerfCount = changeStats.nerfCount
+  const safePage = Math.min(currentPage, changesPage.totalPages)
 
   const toggleExpandedChange = (id: number) => {
     setExpandedChangeIds((currentIds) => (
@@ -635,6 +623,10 @@ function PatchNotes() {
     setExpandedChangeIds([])
   }, [activeCategory, activeChangeType, highImpactOnly, query, selectedPatchVersion])
 
+  useEffect(() => {
+    if (currentPage > changesPage.totalPages) setCurrentPage(changesPage.totalPages)
+  }, [changesPage.totalPages, currentPage])
+
   return (
     <AppLayout>
       <div className={styles.page}>
@@ -648,7 +640,7 @@ function PatchNotes() {
             <p>{selectedPatch.description}</p>
             <div className={styles.heroMeta}>
               <span>적용일 {selectedPatch.date}</span>
-              <span>변경 {patchChanges.length}건</span>
+              <span>변경 {changeStats.totalChanges}건</span>
               <span>핵심 영향 {highImpactCount}건</span>
             </div>
           </div>
@@ -672,10 +664,11 @@ function PatchNotes() {
         </header>
 
         <PatchStatusBanner
-          isFallbackData={isFallbackData}
-          isFetching={isFetching}
+          isFallbackData={(isFallbackData || patchChangesQuery.data.source === 'fallback') && !isFetching && !patchChangesQuery.isFetching}
+          isFetching={isFetching || patchChangesQuery.isFetching}
           onRetry={() => {
             void refetchPatchNotes()
+            void patchChangesQuery.refetch()
           }}
         />
 
@@ -752,7 +745,7 @@ function PatchNotes() {
                   onClick={() => setActiveCategory(category)}
                 >
                   {category}
-                  <span>{getCategoryCount(category, patchChanges)}</span>
+                  <span>{getCategoryCount(category, changeStats)}</span>
                 </button>
               ))}
             </div>
@@ -782,7 +775,7 @@ function PatchNotes() {
             </div>
 
             <div className={styles.changeList}>
-              {pagedChanges.map((change) => {
+              {patchChanges.map((change) => {
                 const CategoryIcon = CATEGORY_ICON[change.category]
                 const isExpanded = expandedChangeIds.includes(change.id)
                 const imageUrl = getChangeImageUrl(change)
@@ -845,14 +838,14 @@ function PatchNotes() {
                 )
               })}
 
-              {pagedChanges.length === 0 && (
+              {patchChanges.length === 0 && (
                 <div className={styles.emptyState}>
                   검색 조건에 맞는 패치 변경사항이 없습니다.
                 </div>
               )}
             </div>
 
-            <Pagination currentPage={safePage} totalPages={totalPages} onPageChange={setCurrentPage} />
+            <Pagination currentPage={safePage} totalPages={changesPage.totalPages} onPageChange={setCurrentPage} />
           </section>
 
           <aside className={styles.sideRail}>

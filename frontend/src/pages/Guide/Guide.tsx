@@ -19,32 +19,27 @@ import {
 } from 'lucide-react'
 import {
   CHAMPION_PAGE_SIZE,
+  DEFAULT_GUIDE_PAGE_SIZE,
   GUIDE_TABS,
   PAGE_NUMBER_WINDOW,
   TRAIT_PAGE_SIZE,
-  getPageItems,
-  getTotalPages,
-  matchesSearch,
-  sortByMetric,
-  type AugmentGuide,
   type AugmentPlan,
   type AugmentPlanKey,
   type ChampionCostFilter,
   type ChampionGuide,
   type ChampionRef,
+  type GuideCatalog,
   type GuideTab,
   type ItemRef,
-  type ItemStatGuide,
   type MetricSortKey,
   type RecentGuide,
   type RewardRow,
   type SortDir,
-  type TraitGuide,
 } from '../../api/guide'
 import TierBadge from '../../components/common/TierBadge'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
 import { AppLayout } from '../../components/layout'
-import { useGuide } from '../../hooks/useGuide'
+import { useGuide, useGuideTabItems } from '../../hooks/useGuide'
 import { guideFallbackData } from '../../mocks/guideResponseMock'
 import styles from './Guide.module.css'
 
@@ -375,39 +370,47 @@ function ChampionDetailDialog({
 }
 
 function TraitGuideView({
+  fallbackData,
   onChampionSelect,
   query,
-  traits,
 }: {
+  fallbackData: GuideCatalog
   onChampionSelect: (championName: string) => void
   query: string
-  traits: TraitGuide[]
 }) {
   const [currentPage, setCurrentPage] = useState(1)
-  const filteredTraits = traits.filter((traitGuide) =>
-    matchesSearch(query, [
-      traitGuide.name,
-      traitGuide.summary,
-      traitGuide.type,
-      ...traitGuide.champions.map((championRef) => championRef.name),
-    ]),
-  )
-  const totalPages = getTotalPages(filteredTraits.length, TRAIT_PAGE_SIZE)
-  const safePage = Math.min(currentPage, totalPages)
-  const visibleTraits = getPageItems(filteredTraits, safePage, TRAIT_PAGE_SIZE)
+  const traitsQuery = useGuideTabItems({
+    fallbackData,
+    params: {
+      page: currentPage,
+      pageSize: TRAIT_PAGE_SIZE,
+      query,
+      tab: 'traits',
+    },
+  })
+  const pageData = traitsQuery.data.data
+  const safePage = Math.min(currentPage, pageData.totalPages)
+  const visibleTraits = pageData.items
 
   useEffect(() => {
     setCurrentPage(1)
   }, [query])
 
   useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages)
-  }, [currentPage, totalPages])
+    if (currentPage > pageData.totalPages) setCurrentPage(pageData.totalPages)
+  }, [currentPage, pageData.totalPages])
 
   return (
     <>
+      <GuideStatusBanner
+        isFallbackData={traitsQuery.data.source === 'fallback' && !traitsQuery.isFetching}
+        isFetching={traitsQuery.isFetching}
+        onRetry={() => {
+          void traitsQuery.refetch()
+        }}
+      />
       <section className={styles.traitGrid}>
-        {filteredTraits.length === 0 && <EmptyState />}
+        {visibleTraits.length === 0 && <EmptyState />}
         {visibleTraits.map((traitGuide) => (
           <article className={styles.traitCard} key={traitGuide.name}>
             <div className={styles.traitTop}>
@@ -443,35 +446,37 @@ function TraitGuideView({
           </article>
         ))}
       </section>
-      <Pagination currentPage={safePage} onPageChange={setCurrentPage} totalPages={totalPages} />
+      <Pagination currentPage={safePage} onPageChange={setCurrentPage} totalPages={pageData.totalPages} />
     </>
   )
 }
 
 function ItemStatsView({
-  items,
+  fallbackData,
   onChampionSelect,
   query,
 }: {
-  items: ItemStatGuide[]
+  fallbackData: GuideCatalog
   onChampionSelect: (championName: string) => void
   query: string
 }) {
   const [currentPage, setCurrentPage] = useState(1)
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [sortKey, setSortKey] = useState<MetricSortKey>('winRate')
-  const filteredItems = items.filter((itemStat) =>
-    matchesSearch(query, [
-      itemStat.name,
-      itemStat.category,
-      ...itemStat.bestUsers.map((championRef) => championRef.name),
-      ...itemStat.combinations.map((combination) => combination.label),
-    ]),
-  )
-  const sortedItems = sortByMetric(filteredItems, sortKey, sortDir)
-  const totalPages = getTotalPages(sortedItems.length)
-  const safePage = Math.min(currentPage, totalPages)
-  const visibleItems = getPageItems(sortedItems, safePage)
+  const itemsQuery = useGuideTabItems({
+    fallbackData,
+    params: {
+      page: currentPage,
+      pageSize: DEFAULT_GUIDE_PAGE_SIZE,
+      query,
+      sortDir,
+      sortKey,
+      tab: 'items',
+    },
+  })
+  const pageData = itemsQuery.data.data
+  const safePage = Math.min(currentPage, pageData.totalPages)
+  const visibleItems = pageData.items
 
   function handleSort(nextSortKey: MetricSortKey) {
     if (sortKey === nextSortKey) {
@@ -488,11 +493,18 @@ function ItemStatsView({
   }, [query])
 
   useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages)
-  }, [currentPage, totalPages])
+    if (currentPage > pageData.totalPages) setCurrentPage(pageData.totalPages)
+  }, [currentPage, pageData.totalPages])
 
   return (
     <>
+      <GuideStatusBanner
+        isFallbackData={itemsQuery.data.source === 'fallback' && !itemsQuery.isFetching}
+        isFetching={itemsQuery.isFetching}
+        onRetry={() => {
+          void itemsQuery.refetch()
+        }}
+      />
       <div className={styles.tableWrap}>
         <table className={styles.itemTable}>
           <thead>
@@ -578,9 +590,9 @@ function ItemStatsView({
             ))}
           </tbody>
         </table>
-        {filteredItems.length === 0 && <EmptyState />}
+        {visibleItems.length === 0 && <EmptyState />}
       </div>
-      <Pagination currentPage={safePage} onPageChange={setCurrentPage} totalPages={totalPages} />
+      <Pagination currentPage={safePage} onPageChange={setCurrentPage} totalPages={pageData.totalPages} />
 
       <section className={styles.metricCards}>
         <article>
@@ -605,12 +617,12 @@ function ItemStatsView({
 
 function AugmentGuideView({
   augmentPlans,
-  augments,
+  fallbackData,
   query,
   rewardRows,
 }: {
   augmentPlans: AugmentPlan[]
-  augments: AugmentGuide[]
+  fallbackData: GuideCatalog
   query: string
   rewardRows: RewardRow[]
 }) {
@@ -618,13 +630,20 @@ function AugmentGuideView({
   const [currentPage, setCurrentPage] = useState(1)
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [sortKey, setSortKey] = useState<MetricSortKey>('winRate')
-  const filteredAugments = augments.filter((augment) =>
-    matchesSearch(query, [augment.name, augment.description, augment.reward, augment.type, ...augment.tags]),
-  )
-  const sortedAugments = sortByMetric(filteredAugments, sortKey, sortDir)
-  const totalPages = getTotalPages(sortedAugments.length)
-  const safePage = Math.min(currentPage, totalPages)
-  const visibleAugments = getPageItems(sortedAugments, safePage)
+  const augmentsQuery = useGuideTabItems({
+    fallbackData,
+    params: {
+      page: currentPage,
+      pageSize: DEFAULT_GUIDE_PAGE_SIZE,
+      query,
+      sortDir,
+      sortKey,
+      tab: 'augments',
+    },
+  })
+  const pageData = augmentsQuery.data.data
+  const safePage = Math.min(currentPage, pageData.totalPages)
+  const visibleAugments = pageData.items
   const selectedPlan = augmentPlans.find((plan) => plan.key === planKey) ?? augmentPlans[0]
 
   function handleSort(nextSortKey: MetricSortKey) {
@@ -642,11 +661,18 @@ function AugmentGuideView({
   }, [query])
 
   useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages)
-  }, [currentPage, totalPages])
+    if (currentPage > pageData.totalPages) setCurrentPage(pageData.totalPages)
+  }, [currentPage, pageData.totalPages])
 
   return (
     <>
+      <GuideStatusBanner
+        isFallbackData={augmentsQuery.data.source === 'fallback' && !augmentsQuery.isFetching}
+        isFetching={augmentsQuery.isFetching}
+        onRetry={() => {
+          void augmentsQuery.refetch()
+        }}
+      />
       <div className={styles.augmentLayout}>
         <section className={styles.tableWrap}>
           <table className={styles.augmentTable}>
@@ -702,7 +728,7 @@ function AugmentGuideView({
               ))}
             </tbody>
           </table>
-          {filteredAugments.length === 0 && <EmptyState />}
+          {visibleAugments.length === 0 && <EmptyState />}
         </section>
 
         <aside className={styles.rewardPanel}>
@@ -721,7 +747,7 @@ function AugmentGuideView({
           </div>
         </aside>
       </div>
-      <Pagination currentPage={safePage} onPageChange={setCurrentPage} totalPages={totalPages} />
+      <Pagination currentPage={safePage} onPageChange={setCurrentPage} totalPages={pageData.totalPages} />
 
       <section className={styles.plannerPanel}>
         <div className={styles.plannerTop}>
@@ -774,14 +800,14 @@ function AugmentGuideView({
 }
 
 function ChampionGuideView({
-  champions,
+  fallbackData,
   favoriteChampions,
   onChampionOpen,
   onFavoriteToggle,
   onItemSelect,
   query,
 }: {
-  champions: ChampionGuide[]
+  fallbackData: GuideCatalog
   favoriteChampions: string[]
   onChampionOpen: (championName: string) => void
   onFavoriteToggle: (championName: string) => void
@@ -792,29 +818,27 @@ function ChampionGuideView({
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedChampion, setSelectedChampion] = useState<ChampionGuide | null>(null)
   const lastFocusedElementRef = useRef<HTMLElement | null>(null)
-  const filteredChampions = champions.filter((championGuide) => {
-    const matchesCost = costFilter === 'all' || championGuide.cost === costFilter
-    const matchesQuery = matchesSearch(query, [
-      championGuide.name,
-      championGuide.role,
-      championGuide.position,
-      ...championGuide.traits,
-      ...championGuide.bestItems.map((itemRef) => itemRef.name),
-    ])
-
-    return matchesCost && matchesQuery
+  const championsQuery = useGuideTabItems({
+    fallbackData,
+    params: {
+      cost: costFilter,
+      page: currentPage,
+      pageSize: CHAMPION_PAGE_SIZE,
+      query,
+      tab: 'champions',
+    },
   })
-  const totalPages = getTotalPages(filteredChampions.length, CHAMPION_PAGE_SIZE)
-  const safePage = Math.min(currentPage, totalPages)
-  const visibleChampions = getPageItems(filteredChampions, safePage, CHAMPION_PAGE_SIZE)
+  const pageData = championsQuery.data.data
+  const safePage = Math.min(currentPage, pageData.totalPages)
+  const visibleChampions = pageData.items
 
   useEffect(() => {
     setCurrentPage(1)
   }, [costFilter, query])
 
   useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages)
-  }, [currentPage, totalPages])
+    if (currentPage > pageData.totalPages) setCurrentPage(pageData.totalPages)
+  }, [currentPage, pageData.totalPages])
 
   function openChampionDetail(championGuide: ChampionGuide) {
     lastFocusedElementRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
@@ -833,6 +857,13 @@ function ChampionGuideView({
 
   return (
     <>
+      <GuideStatusBanner
+        isFallbackData={championsQuery.data.source === 'fallback' && !championsQuery.isFetching}
+        isFetching={championsQuery.isFetching}
+        onRetry={() => {
+          void championsQuery.refetch()
+        }}
+      />
       <div className={styles.costFilter} aria-label="챔피언 비용 필터">
         {(['all', 1, 2, 3, 4, 5] as const).map((cost) => (
           <button
@@ -847,7 +878,7 @@ function ChampionGuideView({
         ))}
       </div>
       <section className={styles.championGrid}>
-        {filteredChampions.length === 0 && <EmptyState />}
+        {visibleChampions.length === 0 && <EmptyState />}
         {visibleChampions.map((championGuide) => (
           <article
             className={styles.championCard}
@@ -914,7 +945,7 @@ function ChampionGuideView({
           </article>
         ))}
       </section>
-      <Pagination currentPage={safePage} onPageChange={setCurrentPage} totalPages={totalPages} />
+      <Pagination currentPage={safePage} onPageChange={setCurrentPage} totalPages={pageData.totalPages} />
       {selectedChampion && (
         <ChampionDetailDialog
           champion={selectedChampion}
@@ -939,10 +970,7 @@ function Guide() {
     favoriteChampions,
     guideData,
     handleFavoriteToggle,
-    isFallbackData,
-    isFetching,
     jumpToGuide,
-    refetchGuideData,
     recentGuides,
     search,
     selectTab,
@@ -1011,14 +1039,6 @@ function Guide() {
           </label>
         </section>
 
-        <GuideStatusBanner
-          isFallbackData={isFallbackData}
-          isFetching={isFetching}
-          onRetry={() => {
-            void refetchGuideData()
-          }}
-        />
-
         <GuideQuickAccess
           favoriteChampions={favoriteChampions}
           onJump={jumpToGuide}
@@ -1028,16 +1048,16 @@ function Guide() {
         {activeTab === 'traits' && (
           <div id="guide-panel-traits" role="tabpanel" aria-labelledby="guide-tab-traits">
             <TraitGuideView
+              fallbackData={guideData}
               onChampionSelect={(championName) => jumpToGuide('champions', championName, championName)}
               query={search}
-              traits={guideData.traits}
             />
           </div>
         )}
         {activeTab === 'items' && (
           <div id="guide-panel-items" role="tabpanel" aria-labelledby="guide-tab-items">
             <ItemStatsView
-              items={guideData.items}
+              fallbackData={guideData}
               onChampionSelect={(championName) => jumpToGuide('champions', championName, championName)}
               query={search}
             />
@@ -1047,7 +1067,7 @@ function Guide() {
           <div id="guide-panel-augments" role="tabpanel" aria-labelledby="guide-tab-augments">
             <AugmentGuideView
               augmentPlans={guideData.augmentPlans}
-              augments={guideData.augments}
+              fallbackData={guideData}
               query={search}
               rewardRows={guideData.rewards}
             />
@@ -1056,7 +1076,7 @@ function Guide() {
         {activeTab === 'champions' && (
           <div id="guide-panel-champions" role="tabpanel" aria-labelledby="guide-tab-champions">
             <ChampionGuideView
-              champions={guideData.champions}
+              fallbackData={guideData}
               favoriteChampions={favoriteChampions}
               onChampionOpen={(championName) => addRecentGuide({ label: championName, query: championName, tab: 'champions' })}
               onFavoriteToggle={handleFavoriteToggle}
