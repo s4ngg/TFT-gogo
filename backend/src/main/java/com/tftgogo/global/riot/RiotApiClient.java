@@ -62,28 +62,27 @@ public class RiotApiClient {
         String path = "/tft/match/v1/matches/by-puuid/{puuid}/ids";
         String url = riotProperties.getAsiaBaseUrl()
                 + "/tft/match/v1/matches/by-puuid/" + puuid + "/ids?queue=1100&count=" + count;
-        String[] ids = getByUrl(url, path, String[].class);
-        return ids != null ? Arrays.asList(ids) : List.of();
+        // getByUrl은 body가 null이면 예외를 던지므로 null 체크 불필요
+        return Arrays.asList(getByUrl(url, path, String[].class));
     }
 
-    // ── 특정 시작 시각 이후 매치 ID 목록 조회 ─────────────────
+    // ── 특정 날짜 시작 시각 이후 매치 ID 목록 조회 ────────────
     public List<String> getMatchIds(String puuid, int count, long startTimeSeconds) {
         String path = "/tft/match/v1/matches/by-puuid/{puuid}/ids";
         String url = riotProperties.getAsiaBaseUrl()
                 + "/tft/match/v1/matches/by-puuid/" + puuid + "/ids?queue=1100&count=" + count
                 + "&startTime=" + startTimeSeconds;
-        String[] ids = getByUrl(url, path, String[].class);
-        return ids != null ? Arrays.asList(ids) : List.of();
+        return Arrays.asList(getByUrl(url, path, String[].class));
     }
 
+    // ── 특정 날짜 구간 매치 ID 목록 조회 ──────────────────────
     public List<String> getMatchIds(String puuid, int count, long startTimeSeconds, long endTimeSeconds) {
         String path = "/tft/match/v1/matches/by-puuid/{puuid}/ids";
         String url = riotProperties.getAsiaBaseUrl()
                 + "/tft/match/v1/matches/by-puuid/" + puuid + "/ids?queue=1100&count=" + count
                 + "&startTime=" + startTimeSeconds
                 + "&endTime=" + endTimeSeconds;
-        String[] ids = getByUrl(url, path, String[].class);
-        return ids != null ? Arrays.asList(ids) : List.of();
+        return Arrays.asList(getByUrl(url, path, String[].class));
     }
 
     // ── 매치 상세 조회 ─────────────────────────────────────
