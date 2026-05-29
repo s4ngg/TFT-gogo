@@ -34,5 +34,8 @@ function getBaseTarget(target: string) {
 }
 
 export function getPatchChangeImageUrl(change: PatchChange) {
-  return change.imageUrl ?? targetImageUrl[getBaseTarget(change.target)] ?? categoryImageUrl[change.category]
+  const directImageUrl = change.imageUrl?.trim()
+  if (directImageUrl) return directImageUrl
+
+  return targetImageUrl[getBaseTarget(change.target)] ?? categoryImageUrl[change.category]
 }

@@ -65,6 +65,7 @@ function PatchChangeList({
                   src={imageUrl}
                   alt=""
                   onError={(event) => {
+                    event.currentTarget.onerror = null
                     event.currentTarget.src = PATCH_FALLBACK_IMAGE
                   }}
                 />

@@ -46,7 +46,7 @@ function PatchNotes() {
   const changesPage = patchChangesQuery.data.data
   const patchChanges = changesPage.items
   const changeStats = changesPage.stats
-  const safePage = Math.min(currentPage, changesPage.totalPages)
+  const safePage = Math.max(1, Math.min(currentPage, changesPage.totalPages))
 
   const toggleExpandedChange = (id: number) => {
     setExpandedChangeIds((currentIds) => (
@@ -62,6 +62,11 @@ function PatchNotes() {
   }, [activeCategory, activeChangeType, highImpactOnly, query, selectedPatchVersion])
 
   useEffect(() => {
+    if (changesPage.totalPages < 1) {
+      if (currentPage !== 1) setCurrentPage(1)
+      return
+    }
+
     if (currentPage > changesPage.totalPages) setCurrentPage(changesPage.totalPages)
   }, [changesPage.totalPages, currentPage])
 
