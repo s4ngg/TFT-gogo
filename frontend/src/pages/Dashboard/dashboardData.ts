@@ -28,6 +28,7 @@ export interface MetaDeck {
   top4: string
   avgPlace: string
   pickRate: string
+  sampleSize?: number               // 집계에 사용된 경기 수 (소규모면 통계 신뢰도 낮음)
   traits: TraitSummary[]
   champions: ChampionSummary[]
   topAugments?: AugmentSummary[]   // 덱별 추천 증강 (API 집계 후 제공)

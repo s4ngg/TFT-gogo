@@ -51,7 +51,8 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     private static final Logger logger = LogManager.getLogger(MetaDeckServiceImpl.class);
 
     private static final int MATCHES_PER_SUMMONER = 20;
-    private static final int MIN_SAMPLE = 5;
+    // 5 → 15: 소규모 표본의 노이즈 필터링 (5게임 42%승률 → 통계 무의미)
+    private static final int MIN_SAMPLE = 15;
     private static final int MIN_ITEM_SAMPLE = 1;
     private static final int MIN_AUGMENT_SAMPLE = 1;
     private static final int SIGNATURE_TRAIT_COUNT = 2;

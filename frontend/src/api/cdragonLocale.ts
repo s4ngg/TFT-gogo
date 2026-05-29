@@ -19,6 +19,7 @@ export interface ChampionDetail {
   range?: number
   abilityName?: string
   abilityDesc?: string
+  traits: string[]   // lowercase suffix, e.g. ['brawler', 'slayer']
 }
 
 interface CDragonEntry {
@@ -33,6 +34,7 @@ interface CDragonEntry {
   stats?: {
     range?: number
   }
+  traits?: string[]
 }
 
 function readCDragonEntries(value: unknown): CDragonEntry[] {
@@ -60,6 +62,9 @@ function readCDragonEntries(value: unknown): CDragonEntry[] {
               range: typeof stats.range === 'number' ? stats.range : undefined,
             }
           : undefined,
+        traits: Array.isArray(entry.traits)
+          ? (entry.traits as unknown[]).filter((t): t is string => typeof t === 'string')
+          : undefined,
       }
     })
 }
@@ -83,6 +88,10 @@ export async function fetchTFTLocale(): Promise<TFTLocale> {
     readCDragonEntries(currentSet?.champions).forEach((c) => {
       if (c.apiName && c.name) {
         const key = c.apiName.toLowerCase()
+        // traits: full ID → lowercase suffix (e.g. "TFT17_Brawler" → "brawler")
+        const traits = (c.traits ?? [])
+          .map((t) => t.split('_').pop()?.toLowerCase() ?? '')
+          .filter(Boolean)
         champByApiName.set(key, c.name)
         champDetailByApiName.set(key, {
           apiName: c.apiName,
@@ -92,6 +101,7 @@ export async function fetchTFTLocale(): Promise<TFTLocale> {
           range: c.stats?.range,
           abilityName: c.ability?.name,
           abilityDesc: c.ability?.desc,
+          traits,
         })
       }
     })

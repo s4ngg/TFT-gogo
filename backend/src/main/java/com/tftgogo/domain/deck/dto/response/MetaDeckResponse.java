@@ -26,6 +26,7 @@ public class MetaDeckResponse {
     private String top4;
     private String avgPlace;
     private String pickRate;
+    private int sampleSize;
     private List<TraitSummary> traits;
     private List<ChampionSummary> champions;
     private List<AugmentSummary> topAugments;
@@ -135,6 +136,7 @@ public class MetaDeckResponse {
                 .top4(String.format("%.1f%%", deck.getTop4Rate()))
                 .avgPlace(String.format("%.2f", deck.getAvgPlacement()))
                 .pickRate(String.format("%.1f%%", deck.getPlayRate()))
+                .sampleSize(deck.getSampleSize())
                 .traits(traits)
                 .champions(champions)
                 .topAugments(topAugments)

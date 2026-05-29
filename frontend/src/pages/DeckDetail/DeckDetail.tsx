@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ArrowLeft, Map, Swords, Sparkles, Trophy } from 'lucide-react'
+import { ArrowLeft, Map as MapIcon, Swords, Sparkles, Trophy } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AppLayout } from '../../components/layout'
 import TierBadge from '../../components/common/TierBadge'
@@ -125,7 +125,7 @@ function HexBoard({ deck, locale }: { deck: MetaDeck; locale: TFTLocale | undefi
   return (
     <section className={styles.panel}>
       <div className={styles.panelHead}>
-        <Map size={16} />
+        <MapIcon size={16} />
         <h2>추천 배치</h2>
         <span className={styles.panelSub}>위 2줄 탱커, 아래 2줄 딜러</span>
       </div>
@@ -277,6 +277,22 @@ function ItemsPanel({ deck, locale }: { deck: MetaDeck; locale: TFTLocale | unde
   )
 }
 
+/** 챔피언 목록 기반으로 트레이트별 유닛 수를 재계산 */
+function computeTraitCounts(
+  champions: ChampionSummary[],
+  locale: TFTLocale | undefined,
+): Map<string, number> {
+  const counts = new Map<string, number>()
+  if (!locale) return counts
+  champions.forEach((champ) => {
+    const detail = getChampionDetail(champ.imageUrl, locale)
+    detail?.traits.forEach((trait) => {
+      counts.set(trait, (counts.get(trait) ?? 0) + 1)
+    })
+  })
+  return counts
+}
+
 function DeckDetail() {
   const { deckId } = useParams<{ deckId: string }>()
   const navigate = useNavigate()
@@ -284,6 +300,24 @@ function DeckDetail() {
   const { data: locale } = useCDragonLocale()
   const metaDecks = metaDeckResponse?.decks ?? []
   const deck = metaDecks.find((d) => String(d.rank) === deckId)
+
+  // 챔피언 목록 기반으로 트레이트 count 재계산 (저장된 값은 첫 경기 스냅샷이라 부정확)
+  const traitCounts = useMemo(
+    () => (deck ? computeTraitCounts(deck.champions, locale) : new Map<string, number>()),
+    [deck, locale],
+  )
+
+  // 실제 챔피언 목록에 2명 이상 있는 트레이트만, 계산된 count로 갱신
+  const displayTraits = useMemo(
+    () =>
+      deck
+        ? deck.traits
+            .map((t) => ({ ...t, count: traitCounts.get(t.name) ?? t.count }))
+            .filter((t) => (traitCounts.get(t.name) ?? 0) >= 2)
+            .sort((a, b) => b.count - a.count)
+        : [],
+    [deck, traitCounts],
+  )
 
   if (isLoading) {
     return (
@@ -308,7 +342,7 @@ function DeckDetail() {
     )
   }
 
-  const traitName = deck.traits.length > 0 ? getTraitName(deck.traits[0].name, locale) : ''
+  const traitName = displayTraits.length > 0 ? getTraitName(displayTraits[0].name, locale) : ''
   const carries = deck.champions
     .filter((c) => (c.recommendedItems?.length ?? 0) > 0)
     .slice(0, 2)
@@ -348,6 +382,15 @@ function DeckDetail() {
             <small>선택률</small>
             <strong className={styles.gold}>{deck.pickRate}</strong>
           </div>
+          {deck.sampleSize != null && (
+            <>
+              <div className={styles.statDivider} />
+              <div className={styles.statItem}>
+                <small>표본 수</small>
+                <strong className={styles.muted}>n={deck.sampleSize}</strong>
+              </div>
+            </>
+          )}
         </div>
 
         <HexBoard deck={deck} locale={locale} />
@@ -358,7 +401,7 @@ function DeckDetail() {
             <h2>시너지 구성</h2>
           </div>
           <div className={styles.traitList}>
-            {deck.traits.map((trait) => (
+            {displayTraits.map((trait) => (
               <div key={trait.name} className={styles.traitItem}>
                 <TraitHexBadge
                   count={trait.count}
