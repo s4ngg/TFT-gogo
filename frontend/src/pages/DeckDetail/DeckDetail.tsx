@@ -6,7 +6,7 @@ import TierBadge from '../../components/common/TierBadge'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
 import { useCDragonLocale } from '../../hooks/useCDragonLocale'
-import { getAugmentName, getChampionDetail, getChampionName, getItemName, getTraitName } from '../../api/cdragonLocale'
+import { getAugmentName, getChampionDetail, getChampionName, getChampionShortName, getItemName, getTraitName } from '../../api/cdragonLocale'
 import type { TFTLocale } from '../../api/cdragonLocale'
 import { tftItemIconUrl } from '../../api/communityDragonAssets'
 import type { ChampionSummary, MetaDeck } from '../Dashboard/dashboardData'
@@ -308,9 +308,12 @@ function DeckDetail() {
     )
   }
 
-  const displayName = deck.traits.length > 0
-    ? deck.traits.slice(0, 2).map((t) => getTraitName(t.name, locale)).join(' ')
-    : deck.name
+  const traitName = deck.traits.length > 0 ? getTraitName(deck.traits[0].name, locale) : ''
+  const carries = deck.champions
+    .filter((c) => (c.recommendedItems?.length ?? 0) > 0)
+    .slice(0, 2)
+    .map((c) => getChampionShortName(c.imageUrl, locale, c.name))
+  const displayName = [traitName, ...carries].filter(Boolean).join(' ') || deck.name
 
   return (
     <AppLayout>

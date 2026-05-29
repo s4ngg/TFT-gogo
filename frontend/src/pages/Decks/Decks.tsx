@@ -6,7 +6,7 @@ import ChampionCard from '../../components/common/ChampionCard'
 import TierBadge from '../../components/common/TierBadge'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
 import { tftItemIconUrl } from '../../api/communityDragonAssets'
-import { getChampionName, getTraitName, getItemName, getAugmentName } from '../../api/cdragonLocale'
+import { getChampionName, getChampionShortName, getTraitName, getItemName, getAugmentName } from '../../api/cdragonLocale'
 import type { TFTLocale } from '../../api/cdragonLocale'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
 import { useCDragonLocale } from '../../hooks/useCDragonLocale'
@@ -41,10 +41,15 @@ const NON_SHOP_CHAMPION_NAMES = new Set(['ElderDragon', 'IvernMinion', 'Summon']
 function numVal(s: string) { return parseFloat(s.replace('%', '')) }
 
 function deckDisplayName(deck: MetaDeck, locale: TFTLocale | undefined): string {
-  if (!locale) return deck.name
-  const parts = deck.traits
+  // 주요 시너지 (1개) + 캐리 챔피언명 (최대 2명) — lolchess 스타일
+  const traitName = deck.traits.length > 0
+    ? getTraitName(deck.traits[0].name, locale)
+    : ''
+  const carries = deck.champions
+    .filter((c) => (c.recommendedItems?.length ?? 0) > 0)
     .slice(0, 2)
-    .map((t) => getTraitName(t.name, locale))
+    .map((c) => getChampionShortName(c.imageUrl, locale, c.name))
+  const parts = [traitName, ...carries].filter(Boolean)
   return parts.length > 0 ? parts.join(' ') : deck.name
 }
 

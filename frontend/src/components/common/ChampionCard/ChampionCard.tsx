@@ -29,7 +29,7 @@ function ChampionCard({ label, imageUrl, items = [], stars = 2, hasItem = false,
 
   return (
     <span className={`${styles.card} ${costClass ?? ''}`}>
-      <small className={styles.stars}>{'★'.repeat(stars)}</small>
+      <small className={styles.stars}>{'★'.repeat(Math.min(stars, 3))}</small>
       {imageUrl && !imageFailed ? (
         <img
           src={imageUrl}

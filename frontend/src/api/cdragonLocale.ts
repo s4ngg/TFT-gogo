@@ -123,6 +123,34 @@ export async function fetchTFTLocale(): Promise<TFTLocale> {
   }
 }
 
+// apiName(소문자) → 한국 커뮤니티 축약명
+// 풀네임이 짧은 챔피언은 제외, 보편적으로 통용되는 것만 등록
+const CHAMP_SHORT: Record<string, string> = {
+  tft17_masteryi:    '마이',
+  tft17_aurelionsol: '아우솔',
+  tft17_twistedfate: '트페',
+  tft17_blitzcrank:  '블리츠',
+  tft17_missfortune: '미포',
+  tft17_tahmkench:   '탐켄',
+}
+
+/**
+ * 덱 이름 표시용 — 축약명이 있으면 축약명, 없으면 일반 한글 이름 반환
+ * 예: 마스터 이 → 마이 / 아우렐리온 솔 → 아우솔
+ */
+export function getChampionShortName(
+  imageUrl: string,
+  locale: TFTLocale | undefined,
+  fallback: string,
+): string {
+  const apiName = getChampionApiName(imageUrl)
+  if (apiName) {
+    const abbrev = CHAMP_SHORT[apiName]
+    if (abbrev) return abbrev
+  }
+  return getChampionName(imageUrl, locale, fallback)
+}
+
 /** 챔피언 이미지 URL에서 apiName 추출 후 한글 이름 반환 */
 export function getChampionName(imageUrl: string, locale: TFTLocale | undefined, fallback: string): string {
   if (!locale) return fallback

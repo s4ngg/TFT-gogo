@@ -143,10 +143,11 @@ public class MetaDeckResponse {
     }
 
     private static int displayStarLevel(int cost, int starLevel) {
+        int capped = Math.min(starLevel, 3); // TFT 최대 3성
         if (cost >= 4) {
-            return Math.min(starLevel, 2);
+            return Math.min(capped, 2); // 4~5코스트 최대 2성
         }
-        return starLevel;
+        return capped;
     }
 
     private static List<String> parseRecommendedItems(String json) {

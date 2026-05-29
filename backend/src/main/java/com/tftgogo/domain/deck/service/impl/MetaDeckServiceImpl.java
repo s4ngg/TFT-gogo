@@ -176,10 +176,14 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         Map<String, PatchDeckStats> patchStatsMap = new HashMap<>();
         Set<String> processedMatchIds = new HashSet<>();
 
+        int puuidIndex = 0;
         for (String puuid : puuids) {
+            puuidIndex++;
             try {
                 List<String> matchIds = riotApiClient.getMatchIds(
                         puuid, MATCHES_PER_SUMMONER, startTimeSeconds, endTimeSeconds);
+                logger.info("[{}] puuid {}/{} matchIds={} uniqueTotal={}",
+                        rankFilter, puuidIndex, puuids.size(), matchIds.size(), processedMatchIds.size());
                 for (String matchId : matchIds) {
                     if (!processedMatchIds.add(matchId)) {
                         continue;
@@ -650,10 +654,11 @@ public class MetaDeckServiceImpl implements MetaDeckService {
 
     private int recommendedStarLevel(UnitStat unitStat) {
         int cost = raritytoCost(unitStat.rarity);
+        int tier = Math.min(unitStat.maxTier, 3); // TFT 최대 3성
         if (cost >= 4) {
-            return Math.min(unitStat.maxTier, 2);
+            return Math.min(tier, 2); // 4~5코스트 최대 2성
         }
-        return unitStat.maxTier;
+        return tier;
     }
 
     private String buildTraitIconUrl(String traitId) {
