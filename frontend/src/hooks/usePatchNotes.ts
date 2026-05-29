@@ -59,6 +59,7 @@ export function usePatchChanges({ fallbackData, params }: UsePatchChangesOptions
       data: getFallbackPatchChangePage(params, fallbackData),
       source: 'fallback',
     },
+    initialDataUpdatedAt: 0,
     queryFn: () => getPatchChanges(params, fallbackData),
     queryKey: ['patch-notes', params.version, 'changes', params],
     staleTime: 1000 * 60 * 5,

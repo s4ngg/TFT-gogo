@@ -89,10 +89,10 @@ export function useGuideTabItems<T extends GuideTab>({
   params,
 }: UseGuideTabItemsOptions<T>) {
   return useQuery<GuideTabPageResult<T>>({
-    initialData: {
+    initialData: () => ({
       data: getFallbackGuideTabPage(params, fallbackData),
-      source: 'fallback',
-    },
+      source: 'fallback' as const,
+    }),
     queryFn: () => getGuideTabItems(params, fallbackData),
     queryKey: ['guide', params.tab, params],
     staleTime: 1000 * 60 * 5,

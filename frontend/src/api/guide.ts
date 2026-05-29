@@ -413,6 +413,107 @@ function isGuideEntryList(payload: unknown): payload is GuideEntryResponse[] {
   ))
 }
 
+function isStringList(payload: unknown): payload is string[] {
+  return Array.isArray(payload) && payload.every((item) => typeof item === 'string')
+}
+
+function isItemRef(payload: unknown): payload is ItemRef {
+  return isRecord(payload)
+    && typeof payload.imageUrl === 'string'
+    && typeof payload.name === 'string'
+}
+
+function isChampionRef(payload: unknown): payload is ChampionRef {
+  return isRecord(payload)
+    && typeof payload.cost === 'number'
+    && typeof payload.imageUrl === 'string'
+    && typeof payload.name === 'string'
+}
+
+function isTraitGuide(payload: unknown): payload is TraitGuide {
+  return isRecord(payload)
+    && Array.isArray(payload.champions)
+    && payload.champions.every(isChampionRef)
+    && typeof payload.count === 'number'
+    && typeof payload.iconUrl === 'string'
+    && isStringList(payload.levels)
+    && typeof payload.name === 'string'
+    && typeof payload.summary === 'string'
+    && isStringList(payload.tips)
+    && typeof payload.type === 'string'
+}
+
+function isItemCombination(payload: unknown): payload is ItemStatGuide['combinations'][number] {
+  return isRecord(payload)
+    && Array.isArray(payload.items)
+    && payload.items.every(isItemRef)
+    && typeof payload.label === 'string'
+    && typeof payload.note === 'string'
+}
+
+function isItemStatGuide(payload: unknown): payload is ItemStatGuide {
+  return isRecord(payload)
+    && typeof payload.avgPlace === 'string'
+    && Array.isArray(payload.bestUsers)
+    && payload.bestUsers.every(isChampionRef)
+    && typeof payload.category === 'string'
+    && Array.isArray(payload.combinations)
+    && payload.combinations.every(isItemCombination)
+    && typeof payload.imageUrl === 'string'
+    && typeof payload.name === 'string'
+    && typeof payload.pickRate === 'string'
+    && typeof payload.top4 === 'string'
+    && typeof payload.winRate === 'string'
+}
+
+function isTierBadgeValue(payload: unknown): payload is TierBadgeValue {
+  return payload === 'S' || payload === 'A+' || payload === 'A' || payload === 'B' || payload === 'C' || payload === 'D'
+}
+
+function isAugmentGuide(payload: unknown): payload is AugmentGuide {
+  return isRecord(payload)
+    && typeof payload.avgPlace === 'string'
+    && typeof payload.description === 'string'
+    && typeof payload.name === 'string'
+    && typeof payload.pickRate === 'string'
+    && typeof payload.reward === 'string'
+    && isStringList(payload.tags)
+    && isTierBadgeValue(payload.tier)
+    && typeof payload.type === 'string'
+    && typeof payload.winRate === 'string'
+}
+
+function isChampionStats(payload: unknown): payload is ChampionGuide['stats'] {
+  return isRecord(payload)
+    && typeof payload.ad === 'number'
+    && typeof payload.armor === 'number'
+    && typeof payload.attackSpeed === 'string'
+    && typeof payload.hp === 'number'
+    && typeof payload.mana === 'string'
+    && typeof payload.mr === 'number'
+    && typeof payload.range === 'number'
+}
+
+function isChampionGuide(payload: unknown): payload is ChampionGuide {
+  return isRecord(payload)
+    && Array.isArray(payload.bestItems)
+    && payload.bestItems.every(isItemRef)
+    && readChampionCost(payload.cost) === payload.cost
+    && typeof payload.imageUrl === 'string'
+    && typeof payload.name === 'string'
+    && typeof payload.position === 'string'
+    && typeof payload.role === 'string'
+    && isChampionStats(payload.stats)
+    && isStringList(payload.traits)
+}
+
+function isGuideTabItems<T extends GuideTab>(tab: T, rawItems: unknown[]): rawItems is GuideTabItems[T] {
+  if (tab === 'traits') return rawItems.every(isTraitGuide)
+  if (tab === 'items') return rawItems.every(isItemStatGuide)
+  if (tab === 'augments') return rawItems.every(isAugmentGuide)
+  return rawItems.every(isChampionGuide)
+}
+
 function guideEntriesToCatalog(entries: GuideEntryResponse[], fallbackData: GuideCatalog): GuideCatalog {
   const sortedEntries = [...entries].sort((first, second) => (
     (first.sortOrder ?? first.sort_order ?? 0) - (second.sortOrder ?? second.sort_order ?? 0)
@@ -613,12 +714,14 @@ function normalizeGuideTabItems<T extends GuideTab>(
   tab: T,
   rawItems: unknown[],
   fallbackData: GuideCatalog,
-) {
+): GuideTabItems[T] | undefined {
   if (isGuideEntryList(rawItems)) {
     return guideEntriesToCatalog(rawItems, fallbackData)[tab] as GuideTabItems[T]
   }
 
-  return rawItems as GuideTabItems[T]
+  if (!isGuideTabItems(tab, rawItems)) return undefined
+
+  return rawItems
 }
 
 function normalizeGuideTabPage<T extends GuideTab>(
@@ -630,6 +733,8 @@ function normalizeGuideTabPage<T extends GuideTab>(
   if (!rawItems) return undefined
 
   const items = normalizeGuideTabItems(params.tab, rawItems, fallbackData)
+  if (!items) return undefined
+
   const page = readPageNumber(payload, params.page ?? 1)
   const pageSize = isRecord(payload)
     ? readOptionalNumber(payload, 'pageSize') ?? readOptionalNumber(payload, 'size') ?? params.pageSize ?? DEFAULT_GUIDE_PAGE_SIZE
