@@ -1,0 +1,54 @@
+import axiosInstance from './axiosInstance'
+import { unwrapApiResponse, type ApiResponse } from './apiResponse'
+import { getFallbackGuideTabPage } from './guideFallback'
+import { hasGuidePayloadData, normalizeGuideCatalog, normalizeGuideTabPage } from './guideNormalizers'
+import type {
+  GuideCatalog,
+  GuideCatalogResult,
+  GuideEntryResponse,
+  GuideListQuery,
+  GuideTab,
+  GuideTabPageResult,
+} from './guideTypes'
+
+export async function getGuideCatalog(fallbackData: GuideCatalog): Promise<GuideCatalogResult> {
+  try {
+    const { data } = await axiosInstance.get<
+      ApiResponse<GuideCatalog | GuideEntryResponse[]> | GuideCatalog | GuideEntryResponse[]
+    >('/guide')
+    const payload = unwrapApiResponse(data)
+
+    if (!hasGuidePayloadData(payload)) {
+      return { data: fallbackData, source: 'fallback' }
+    }
+
+    return { data: normalizeGuideCatalog(payload, fallbackData), source: 'api' }
+  } catch {
+    return { data: fallbackData, source: 'fallback' }
+  }
+}
+
+export async function getGuideTabItems<T extends GuideTab>(
+  params: GuideListQuery & { tab: T },
+  fallbackData: GuideCatalog,
+): Promise<GuideTabPageResult<T>> {
+  try {
+    const { tab, ...queryParams } = params
+    const { data } = await axiosInstance.get<ApiResponse<unknown> | unknown>(`/guide/${tab}`, {
+      params: {
+        ...queryParams,
+        cost: queryParams.cost === 'all' ? undefined : queryParams.cost,
+      },
+    })
+    const payload = unwrapApiResponse(data)
+    const page = normalizeGuideTabPage(payload, params, fallbackData)
+
+    if (!page) {
+      return { data: getFallbackGuideTabPage(params, fallbackData), source: 'fallback' }
+    }
+
+    return { data: page, source: 'api' }
+  } catch {
+    return { data: getFallbackGuideTabPage(params, fallbackData), source: 'fallback' }
+  }
+}
