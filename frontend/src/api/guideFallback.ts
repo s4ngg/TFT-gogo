@@ -65,13 +65,31 @@ export function sortByMetric<T extends SortableMetricItem>(items: T[], sortKey: 
   })
 }
 
+function normalizePositiveInteger(value: number | undefined, fallback: number) {
+  return Number.isFinite(value) && value !== undefined && value > 0
+    ? Math.floor(value)
+    : fallback
+}
+
+function normalizeNonNegativeInteger(value: number) {
+  return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0
+}
+
 export function getTotalPages(totalItems: number, pageSize = DEFAULT_GUIDE_PAGE_SIZE) {
-  return Math.max(1, Math.ceil(totalItems / pageSize))
+  const safePageSize = normalizePositiveInteger(pageSize, DEFAULT_GUIDE_PAGE_SIZE)
+  const safeTotalItems = normalizeNonNegativeInteger(totalItems)
+
+  return Math.max(1, Math.ceil(safeTotalItems / safePageSize))
 }
 
 export function getPageItems<T>(items: T[], page: number, pageSize = DEFAULT_GUIDE_PAGE_SIZE) {
-  const startIndex = (page - 1) * pageSize
-  return items.slice(startIndex, startIndex + pageSize)
+  if (items.length === 0) return []
+
+  const safePage = normalizePositiveInteger(page, 1)
+  const safePageSize = normalizePositiveInteger(pageSize, DEFAULT_GUIDE_PAGE_SIZE)
+  const startIndex = (safePage - 1) * safePageSize
+
+  return items.slice(startIndex, startIndex + safePageSize)
 }
 
 function getGuideSearchFields(tab: GuideTab, item: GuideTabItems[GuideTab][number]) {
@@ -145,8 +163,8 @@ export function getFallbackGuideTabPage<T extends GuideTab>(
   params: GuideListQuery & { tab: T },
   fallbackData: GuideCatalog,
 ): GuidePage<GuideTabItems[T][number]> {
-  const page = params.page ?? 1
-  const pageSize = params.pageSize ?? DEFAULT_GUIDE_PAGE_SIZE
+  const page = normalizePositiveInteger(params.page, 1)
+  const pageSize = normalizePositiveInteger(params.pageSize, DEFAULT_GUIDE_PAGE_SIZE)
   const items = getFallbackGuideItems(params, fallbackData)
 
   return {

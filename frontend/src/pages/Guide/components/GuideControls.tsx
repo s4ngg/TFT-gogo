@@ -88,10 +88,12 @@ function GuideControls({
         })}
       </div>
       <label className={styles.searchBox}>
-        <Search size={15} />
+        <Search size={15} aria-hidden="true" />
         <input
+          aria-label={`${activeTabLabel} 검색`}
           onChange={(event) => onSearchChange(event.target.value)}
           placeholder={`${activeTabLabel} 검색`}
+          type="search"
           value={search}
         />
       </label>

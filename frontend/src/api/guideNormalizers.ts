@@ -5,6 +5,7 @@ import { getTotalPages } from './guideFallback'
 import {
   DEFAULT_GUIDE_PAGE_SIZE,
   type AugmentGuide,
+  type AugmentPlan,
   type ChampionGuide,
   type ChampionRef,
   type GuideCatalog,
@@ -15,6 +16,7 @@ import {
   type GuideTabItems,
   type ItemRef,
   type ItemStatGuide,
+  type RewardRow,
   type TraitGuide,
 } from './guideTypes'
 
@@ -139,6 +141,18 @@ function readOptionalNumber(record: Record<string, unknown>, key: string) {
   return undefined
 }
 
+function normalizePositiveInteger(value: number | undefined, fallback: number) {
+  return Number.isFinite(value) && value !== undefined && value > 0
+    ? Math.floor(value)
+    : fallback
+}
+
+function normalizeNonNegativeInteger(value: number | undefined) {
+  return Number.isFinite(value) && value !== undefined
+    ? Math.max(0, Math.floor(value))
+    : 0
+}
+
 function readPageItems(payload: unknown): unknown[] | undefined {
   if (Array.isArray(payload)) return payload
   if (!isRecord(payload)) return undefined
@@ -246,6 +260,32 @@ function isAugmentGuide(payload: unknown): payload is AugmentGuide {
     && isTierBadgeValue(payload.tier)
     && typeof payload.type === 'string'
     && typeof payload.winRate === 'string'
+}
+
+function isRewardRow(payload: unknown): payload is RewardRow {
+  return isRecord(payload)
+    && typeof payload.condition === 'string'
+    && typeof payload.reward === 'string'
+    && typeof payload.stage === 'string'
+}
+
+function isAugmentPlanStage(payload: unknown): payload is AugmentPlan['stages'][number] {
+  return isRecord(payload)
+    && typeof payload.choice === 'string'
+    && typeof payload.focus === 'string'
+    && typeof payload.stage === 'string'
+}
+
+function isAugmentPlanKey(payload: unknown): payload is AugmentPlan['key'] {
+  return payload === 'fast8' || payload === 'reroll' || payload === 'flex'
+}
+
+function isAugmentPlan(payload: unknown): payload is AugmentPlan {
+  return isRecord(payload)
+    && isAugmentPlanKey(payload.key)
+    && typeof payload.label === 'string'
+    && Array.isArray(payload.stages)
+    && payload.stages.every(isAugmentPlanStage)
 }
 
 function isChampionStats(payload: unknown): payload is ChampionGuide['stats'] {
@@ -379,15 +419,27 @@ export function normalizeGuideCatalog(payload: unknown, fallbackData: GuideCatal
   if (!isRecord(payload)) return fallbackData
 
   return {
-    augments: Array.isArray(payload.augments) ? payload.augments : fallbackData.augments,
-    augmentPlans: Array.isArray(payload.augmentPlans) ? payload.augmentPlans : fallbackData.augmentPlans,
-    champions: Array.isArray(payload.champions) ? payload.champions : fallbackData.champions,
-    items: Array.isArray(payload.items) ? payload.items : fallbackData.items,
+    augments: Array.isArray(payload.augments) && payload.augments.every(isAugmentGuide)
+      ? payload.augments
+      : fallbackData.augments,
+    augmentPlans: Array.isArray(payload.augmentPlans) && payload.augmentPlans.every(isAugmentPlan)
+      ? payload.augmentPlans
+      : fallbackData.augmentPlans,
+    champions: Array.isArray(payload.champions) && payload.champions.every(isChampionGuide)
+      ? payload.champions
+      : fallbackData.champions,
+    items: Array.isArray(payload.items) && payload.items.every(isItemStatGuide)
+      ? payload.items
+      : fallbackData.items,
     patchVersion: typeof payload.patchVersion === 'string' && payload.patchVersion
       ? payload.patchVersion
       : fallbackData.patchVersion,
-    rewards: Array.isArray(payload.rewards) ? payload.rewards : fallbackData.rewards,
-    traits: Array.isArray(payload.traits) ? payload.traits : fallbackData.traits,
+    rewards: Array.isArray(payload.rewards) && payload.rewards.every(isRewardRow)
+      ? payload.rewards
+      : fallbackData.rewards,
+    traits: Array.isArray(payload.traits) && payload.traits.every(isTraitGuide)
+      ? payload.traits
+      : fallbackData.traits,
   }
 }
 
@@ -417,14 +469,21 @@ export function normalizeGuideTabPage<T extends GuideTab>(
   if (!items) return undefined
 
   const page = readPageNumber(payload, params.page ?? 1)
-  const pageSize = isRecord(payload)
+  const rawPageSize = isRecord(payload)
     ? readOptionalNumber(payload, 'pageSize') ?? readOptionalNumber(payload, 'size') ?? params.pageSize ?? DEFAULT_GUIDE_PAGE_SIZE
     : params.pageSize ?? DEFAULT_GUIDE_PAGE_SIZE
-  const totalItems = isRecord(payload)
+  const pageSize = normalizePositiveInteger(rawPageSize, DEFAULT_GUIDE_PAGE_SIZE)
+
+  const rawTotalItems = isRecord(payload)
     ? readOptionalNumber(payload, 'totalItems') ?? readOptionalNumber(payload, 'totalElements') ?? readOptionalNumber(payload, 'total') ?? items.length
     : items.length
+  const totalItems = normalizeNonNegativeInteger(rawTotalItems)
+
+  const rawTotalPages = isRecord(payload)
+    ? readOptionalNumber(payload, 'totalPages')
+    : undefined
   const totalPages = isRecord(payload)
-    ? readOptionalNumber(payload, 'totalPages') ?? getTotalPages(totalItems, pageSize)
+    ? normalizePositiveInteger(rawTotalPages, getTotalPages(totalItems, pageSize))
     : getTotalPages(totalItems, pageSize)
 
   return {
