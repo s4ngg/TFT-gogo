@@ -80,8 +80,8 @@ public class MetaDeckResponse {
                 .toList();
 
         List<ChampionSummary> champions = deck.getUnits().stream()
-                .sorted((a, b) -> Boolean.compare(b.isCarry(), a.isCarry()))
-                .limit(8)
+                .sorted(Comparator.comparingInt(com.tftgogo.domain.deck.entity.DeckUnit::getCost)) // 1→2→3→4→5 코스트 오름차순
+                .limit(9)
                 .map(unit -> ChampionSummary.builder()
                         .name(unit.getChampionName())
                         .imageUrl(TftAssetUrlBuilder.buildChampionImageUrl(unit.getCharacterId()))
