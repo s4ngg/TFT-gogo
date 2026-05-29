@@ -1,6 +1,7 @@
 import { Bell, ChevronDown, CircleHelp, LogIn, Mail } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { communityDragonProfileIconUrl } from '../../api/communityDragonAssets'
+import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
 import useAuthStore from '../../store/useAuthStore'
 import styles from './Layout.module.css'
 
@@ -9,12 +10,14 @@ const profileIconUrl = communityDragonProfileIconUrl(588)
 function TopBar() {
   const user = useAuthStore((state) => state.user)
   const isLoggedIn = Boolean(user)
+  const { data: metaDeckResponse } = useMetaSnapshot()
+  const patchVersion = metaDeckResponse?.patchVersion ?? '집계 대기'
 
   return (
     <header className={styles.topBar}>
       <div className={styles.patchBrief} aria-label="패치 한줄 요약">
-        <span>17.3 패치 요약</span>
-        <strong>상위권은 선봉대 벡스와 6암흑의 별 진 중심으로 압축 중</strong>
+        <span>{patchVersion} 패치 요약</span>
+        <strong>상위권 선봉대 벡스와 6악복 중심으로 압축 중</strong>
       </div>
       <div className={styles.topActions}>
         {isLoggedIn && (

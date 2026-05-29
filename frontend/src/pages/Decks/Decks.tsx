@@ -1,15 +1,20 @@
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ChevronsUpDown, Search } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout'
 import ChampionCard from '../../components/common/ChampionCard'
 import TierBadge from '../../components/common/TierBadge'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
+import { tftItemIconUrl } from '../../api/communityDragonAssets'
+import { getChampionName, getTraitName, getItemName, getAugmentName } from '../../api/cdragonLocale'
+import type { TFTLocale } from '../../api/cdragonLocale'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
-import type { MetaDeck } from '../Dashboard/dashboardData'
+import { useCDragonLocale } from '../../hooks/useCDragonLocale'
+import type { MetaDeck, RankFilter } from '../Dashboard/dashboardData'
 import type { TierBadgeValue } from '../../components/common/TierBadge'
-import { ARTIFACT_RECS, HERO_AUGMENT_DECKS, INITIAL_ARTIFACT_COUNT } from './deckListData'
 import styles from './Decks.module.css'
+
+const INITIAL_ITEM_COUNT = 4
 
 /* ════════════════════════════
    타입
@@ -17,6 +22,11 @@ import styles from './Decks.module.css'
 type Tab = '덱모음' | '메타통계'
 type SortKey = 'rank' | 'winRate' | 'top4' | 'avgPlace' | 'pickRate'
 type SortDir = 'asc' | 'desc'
+
+interface RankFilterOption {
+  label: string
+  value: RankFilter
+}
 
 const TIER_ORDER: TierBadgeValue[] = ['S', 'A+', 'A', 'B', 'C', 'D']
 const TIER_COLOR: Record<TierBadgeValue, string> = {
@@ -27,6 +37,14 @@ const TIER_COLOR: Record<TierBadgeValue, string> = {
    유틸
 ════════════════════════════ */
 function numVal(s: string) { return parseFloat(s.replace('%', '')) }
+
+function deckDisplayName(deck: MetaDeck, locale: TFTLocale | undefined): string {
+  if (!locale) return deck.name
+  const parts = deck.traits
+    .slice(0, 2)
+    .map((t) => getTraitName(t.name, locale))
+  return parts.length > 0 ? parts.join(' ') : deck.name
+}
 
 function sortDecks(decks: MetaDeck[], key: SortKey, dir: SortDir) {
   return [...decks].sort((a, b) => {
@@ -50,8 +68,8 @@ function SortIcon({ col, cur, dir }: { col: SortKey; cur: SortKey; dir: SortDir 
 
 /** 덱 행 */
 function DeckRow({
-  deck, showTier = true, showRank = true,
-}: { deck: MetaDeck; showTier?: boolean; showRank?: boolean }) {
+  deck, showTier = true, showRank = true, locale,
+}: { deck: MetaDeck; showTier?: boolean; showRank?: boolean; locale: TFTLocale | undefined }) {
   const navigate = useNavigate()
   function handleRowClick() { navigate(`/decks/${deck.rank}`) }
   return (
@@ -65,17 +83,30 @@ function DeckRow({
       )}
       {showTier && <td><TierBadge value={deck.grade} /></td>}
       <td className={styles.nameCol}>
-        <span className={styles.deckName}>{deck.name}</span>
+        <span className={styles.deckName}>{deckDisplayName(deck, locale)}</span>
         <span className={styles.traits}>
           {deck.traits.map((t) => (
-            <TraitHexBadge key={`${t.name}-${t.count}`} count={t.count} iconUrl={t.iconUrl} name={t.name} tone={t.tone} />
+            <TraitHexBadge
+              key={`${t.name}-${t.count}`}
+              count={t.count}
+              iconUrl={t.iconUrl}
+              name={getTraitName(t.name, locale)}
+              tone={t.tone}
+            />
           ))}
         </span>
       </td>
       <td className={styles.champCol}>
         <span className={styles.champions}>
           {deck.champions.map((c, i) => (
-            <ChampionCard key={`${c.name}-${i}`} imageUrl={c.imageUrl} items={c.items} label={c.name} stars={c.stars} toneIndex={i} />
+            <ChampionCard
+              key={`${c.name}-${i}`}
+              imageUrl={c.imageUrl}
+              items={c.items}
+              label={getChampionName(c.imageUrl, locale, c.name)}
+              stars={c.stars}
+              cost={c.cost}
+            />
           ))}
         </span>
       </td>
@@ -116,9 +147,9 @@ function TableHead({ sortKey, sortDir, onSort, showTier = true, showRank = true 
 }
 
 /* ════════════════════════════
-   영웅 증강 섹션 (캐러셀)
+   영웅 증강 섹션 (캐러셀) — 실데이터
 ════════════════════════════ */
-function HeroAugmentSection() {
+function HeroAugmentSection({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale | undefined }) {
   const scrollRef = useRef<HTMLDivElement>(null)
 
   function scrollCarousel(dir: 'left' | 'right') {
@@ -126,19 +157,20 @@ function HeroAugmentSection() {
     scrollRef.current.scrollBy({ left: dir === 'left' ? -316 : 316, behavior: 'smooth' })
   }
 
-  // 추천(true) → 왼쪽, 비추천(false) → 오른쪽
-  const sorted = [...HERO_AUGMENT_DECKS].sort((a, b) => {
-    if (a.recommended === b.recommended) return 0
-    return a.recommended ? -1 : 1
-  })
+  // 증강 데이터 있는 덱만 표시, 승률 내림차순 정렬
+  const sorted = [...decks]
+    .filter((d) => (d.topAugments?.length ?? 0) > 0)
+    .sort((a, b) => numVal(b.winRate) - numVal(a.winRate))
+
+  const isEmpty = sorted.length === 0
 
   return (
     <section className={styles.specialSection}>
       <div className={styles.specialHeader}>
         <span className={styles.specialBadge}>영웅 증강</span>
         <div className={styles.specialHeaderText}>
-          <h2>영웅 증강 특수 덱</h2>
-          <p>특정 영웅 증강을 보유했을 때만 가능한 고승률 전략</p>
+          <h2>덱별 추천 증강</h2>
+          <p>각 메타 덱에서 가장 높은 승률을 기록한 증강 조합</p>
         </div>
         <div className={styles.carouselBtns}>
           <button type="button" className={styles.carouselBtn} onClick={() => scrollCarousel('left')}>
@@ -150,124 +182,204 @@ function HeroAugmentSection() {
         </div>
       </div>
 
-      <div className={styles.augmentCarousel} ref={scrollRef}>
-        {sorted.map((d) => (
-          <article
-            key={`${d.hero}-${d.augment}`}
-            className={styles.augmentCard}
-            data-recommended={d.recommended ? 'true' : 'false'}
-          >
-            <div className={styles.augCardTop}>
-              <div>
-                <div className={styles.augHeroName}>{d.hero}</div>
-                <div className={styles.augName}>[{d.augment}]</div>
-              </div>
-              <span className={d.recommended ? styles.augRecommendBadge : styles.augNotRecommendBadge}>
-                {d.recommended ? '추천' : '비추천'}
-              </span>
-            </div>
-            <p className={styles.augDesc}>{d.description}</p>
-            <div className={styles.augTags}>
-              {d.tags.map((tag) => <span key={tag} className={styles.augTag}>{tag}</span>)}
-            </div>
-            <div className={styles.augChamps}>
-              {d.champions.map((c, i) => (
-                <ChampionCard key={c.name} imageUrl={c.imageUrl} label={c.name} stars={c.stars} toneIndex={i} />
-              ))}
-            </div>
-            <div className={styles.augStats}>
-              <div><small>승률</small><strong className={styles.winRate}>{d.winRate}</strong></div>
-              <div><small>평균 등수</small><strong className={styles.avgPlace}><span className={styles.avgHash}>#</span>{d.avgPlace}</strong></div>
-              <div><small>픽률</small><strong className={styles.pickRate}>{d.pickRate}</strong></div>
-            </div>
-          </article>
-        ))}
-      </div>
+      {isEmpty ? (
+        <p className={styles.empty}>집계 완료 후 증강 데이터가 표시됩니다</p>
+      ) : (
+        <div className={styles.augmentCarousel} ref={scrollRef}>
+          {sorted.map((deck) => {
+            const topAug = deck.topAugments![0]
+            const isRec = topAug.isRecommended
+            const augName = getAugmentName(topAug.augmentId, locale)
+            return (
+              <article
+                key={deck.rank}
+                className={styles.augmentCard}
+                data-recommended={isRec ? 'true' : 'false'}
+              >
+                <div className={styles.augCardTop}>
+                  <div>
+                    <div className={styles.augHeroName}>{deckDisplayName(deck, locale)}</div>
+                    <div className={styles.augName}>[{augName}]</div>
+                  </div>
+                  <span className={isRec ? styles.augRecommendBadge : styles.augNotRecommendBadge}>
+                    {isRec ? '추천' : '비추천'}
+                  </span>
+                </div>
+                <div className={styles.augTags}>
+                  {deck.topAugments!.slice(0, 3).map((a) => (
+                    <span key={a.augmentId} className={styles.augTag}>
+                      {getAugmentName(a.augmentId, locale)} ({a.winRate})
+                    </span>
+                  ))}
+                </div>
+                <div className={styles.augChamps}>
+                  {deck.champions.slice(0, 4).map((c, i) => (
+                    <ChampionCard
+                      key={`${c.name}-${i}`}
+                      imageUrl={c.imageUrl}
+                      label={getChampionName(c.imageUrl, locale, c.name)}
+                      stars={c.stars}
+                      cost={c.cost}
+                    />
+                  ))}
+                </div>
+                <div className={styles.augStats}>
+                  <div><small>승률</small><strong className={styles.winRate}>{deck.winRate}</strong></div>
+                  <div><small>평균 등수</small><strong className={styles.avgPlace}><span className={styles.avgHash}>#</span>{deck.avgPlace}</strong></div>
+                  <div><small>픽률</small><strong className={styles.pickRate}>{deck.pickRate}</strong></div>
+                </div>
+              </article>
+            )
+          })}
+        </div>
+      )}
     </section>
   )
 }
 
 /* ════════════════════════════
-   유물 섹션 (검색 상시 노출 + 더보기)
+   유물 섹션 — 실데이터 (아이템 → 유닛 pivot)
 ════════════════════════════ */
-function ArtifactSection() {
+interface ItemUnitEntry {
+  itemId: string
+  itemName: string
+  iconUrl: string
+  placementDelta: number   // 양수일수록 등수 향상 효과가 큼
+  winRate: string
+  units: { name: string; imageUrl: string }[]
+}
+
+function buildItemUnitEntries(decks: MetaDeck[]): ItemUnitEntry[] {
+  const map = new Map<string, {
+    placementDelta: number
+    winRate: string
+    iconUrl: string
+    itemName: string
+    unitSet: Map<string, { name: string; imageUrl: string }>
+  }>()
+
+  decks.forEach((deck) => {
+    deck.topItems?.forEach((item) => {
+      if (!item.itemId.toLowerCase().includes('_artifact_')) return
+      const delta = parseFloat(item.placementDelta)
+      if (!Number.isFinite(delta) || delta <= 0) return
+
+      if (!map.has(item.itemId)) {
+        map.set(item.itemId, {
+          placementDelta: delta,
+          winRate: item.winRate,
+          iconUrl: tftItemIconUrl(item.itemId),
+          itemName: item.itemName,
+          unitSet: new Map(),
+        })
+      }
+      const entry = map.get(item.itemId)!
+
+      deck.champions.forEach((champ) => {
+        if (champ.recommendedItems?.includes(item.itemId) && !entry.unitSet.has(champ.name)) {
+          entry.unitSet.set(champ.name, { name: champ.name, imageUrl: champ.imageUrl })
+        }
+      })
+    })
+  })
+
+  return Array.from(map.entries())
+    .map(([itemId, { placementDelta, winRate, iconUrl, itemName, unitSet }]) => ({
+      itemId,
+      itemName,
+      iconUrl,
+      placementDelta,
+      winRate,
+      units: Array.from(unitSet.values()),
+    }))
+    .filter((e) => e.units.length > 0)
+    .sort((a, b) => b.placementDelta - a.placementDelta)
+}
+
+function ArtifactSection({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale | undefined }) {
   const [showAll, setShowAll] = useState(false)
   const [search, setSearch]   = useState('')
 
+  const entries = useMemo(() => buildItemUnitEntries(decks), [decks])
+  const hasData = entries.length > 0
+
   const searchActive = search.trim() !== ''
-  // 검색 중이면 전체에서 필터, 아니면 showAll 여부에 따라 slice
-  const allFiltered = ARTIFACT_RECS.filter((r) => !searchActive || r.itemName.includes(search))
-  const visible     = searchActive || showAll ? allFiltered : allFiltered.slice(0, INITIAL_ARTIFACT_COUNT)
-  const hiddenCount = ARTIFACT_RECS.length - INITIAL_ARTIFACT_COUNT
+  const allFiltered  = entries.filter((e) => {
+    if (!searchActive) return true
+    const displayName = getItemName(e.itemId, locale, e.itemName).toLowerCase()
+    return displayName.includes(search.toLowerCase())
+  })
+  const visible     = searchActive || showAll ? allFiltered : allFiltered.slice(0, INITIAL_ITEM_COUNT)
+  const hiddenCount = allFiltered.length - INITIAL_ITEM_COUNT
 
   return (
     <section className={styles.specialSection}>
       <div className={styles.specialHeader}>
         <span className={`${styles.specialBadge} ${styles.artifactBadge}`}>
-          유물 추천
+          아이템 추천
         </span>
         <div className={styles.specialHeaderText}>
-          <h2>유물별 최적 유닛</h2>
-          <p>시너지 무관, 해당 유물 장착 시 승률이 크게 오르는 유닛</p>
+          <h2>아이템별 최적 유닛</h2>
+          <p>해당 아이템 장착 시 승률이 크게 오르는 유닛 (집계 실데이터)</p>
         </div>
-        {/* 검색 — 항상 표시 */}
         <div className={styles.artifactSearch}>
           <Search size={14} />
           <input
-            placeholder="유물 이름 검색"
+            placeholder="아이템 이름 검색"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
       </div>
 
-      <div className={styles.artifactList}>
-        {visible.length === 0 ? (
-          <p className={styles.empty}>검색 결과가 없습니다.</p>
-        ) : (
-          visible.map((rec) => (
-            <div key={rec.itemName} className={styles.artifactRow}>
-              {/* 아이템 아이콘 + 이름 */}
-              <div className={styles.artifactItem}>
-                <img src={rec.itemIcon} alt={rec.itemName} className={styles.artifactIcon} />
-                <span className={styles.artifactName}>{rec.itemName}</span>
-              </div>
-
-              {/* 유닛 목록 + 컬럼 헤더 */}
-              <div className={styles.artifactUnits}>
-                <div className={styles.artifactUnitHeader}>
-                  <span />
-                  <span>유닛</span>
-                  <span>빈도수</span>
-                  <span>승률</span>
-                  <span>평균 등수 향상</span>
-                  <span>TOP4</span>
-                </div>
-                {rec.units.map((u) => (
-                  <div key={u.name} className={styles.artifactUnit}>
-                    <img src={u.imageUrl} alt={u.name} className={styles.artifactChampImg} />
-                    <span className={styles.artifactUnitName}>{u.name}</span>
-                    <span className={`${styles.artifactStat} ${styles.artifactStatFreq}`}>{u.frequency}</span>
-                    <span className={`${styles.artifactStat} ${styles.artifactStatWin}`}>{u.winRate}</span>
-                    <span className={`${styles.artifactStat} ${styles.artifactStatImp}`}>{u.avgImprovement}</span>
-                    <span className={`${styles.artifactStat} ${styles.artifactStatTop4}`}>{u.top4}</span>
+      {!hasData ? (
+        <p className={styles.empty}>집계 완료 후 아이템 데이터가 표시됩니다</p>
+      ) : (
+        <>
+          <div className={styles.artifactList}>
+            {visible.length === 0 ? (
+              <p className={styles.empty}>검색 결과가 없습니다.</p>
+            ) : (
+              visible.map((entry) => (
+                <div key={entry.itemId} className={styles.artifactRow}>
+                  <div className={styles.artifactItem}>
+                    <img
+                      src={entry.iconUrl}
+                      alt={entry.itemName}
+                      className={styles.artifactIcon}
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '0.3' }}
+                    />
+                    <div className={styles.artifactItemInfo}>
+                      <span className={styles.artifactName}>{getItemName(entry.itemId, locale, entry.itemName)}</span>
+                      <span className={styles.artifactDelta}>
+                        등수 향상 +{entry.placementDelta.toFixed(2)}
+                      </span>
+                    </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
 
-      {/* 더보기 / 접기 — 검색 중이 아닐 때만 표시 */}
-      {!searchActive && hiddenCount > 0 && (
-        <button
-          type="button"
-          className={styles.showMoreBtn}
-          onClick={() => setShowAll((v) => !v)}
-        >
-          {showAll ? '접기' : `더보기 (${hiddenCount}개 더)`}
-        </button>
+                  <div className={styles.artifactUnits}>
+                    {entry.units.slice(0, 4).map((u) => (
+                      <div key={u.name} className={styles.artifactUnit}>
+                        <img src={u.imageUrl} alt={u.name} className={styles.artifactChampImg} />
+                        <span className={styles.artifactUnitName}>{getChampionName(u.imageUrl, locale, u.name)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {!searchActive && hiddenCount > 0 && (
+            <button
+              type="button"
+              className={styles.showMoreBtn}
+              onClick={() => setShowAll((v) => !v)}
+            >
+              {showAll ? '접기' : `더보기 (${hiddenCount}개 더)`}
+            </button>
+          )}
+        </>
       )}
     </section>
   )
@@ -277,7 +389,7 @@ function ArtifactSection() {
    탭 1 — 덱모음
    (순위·티어 없음 + 영웅 증강 + 유물 추천)
 ════════════════════════════ */
-function DeckListView({ decks }: { decks: MetaDeck[] }) {
+function DeckListView({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale | undefined }) {
   const [search, setSearch]   = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('winRate')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -287,7 +399,8 @@ function DeckListView({ decks }: { decks: MetaDeck[] }) {
     else { setSortKey(key); setSortDir(key === 'avgPlace' ? 'asc' : 'desc') }
   }
 
-  const filtered = sortDecks(decks.filter((d) => d.name.includes(search)), sortKey, sortDir)
+  const safeDecks = Array.isArray(decks) ? decks : []
+  const filtered = sortDecks(safeDecks.filter((d) => d.name.includes(search)), sortKey, sortDir)
 
   return (
     <>
@@ -304,13 +417,13 @@ function DeckListView({ decks }: { decks: MetaDeck[] }) {
           <tbody>
             {filtered.length === 0
               ? <tr><td colSpan={6} className={styles.empty}>검색 결과가 없습니다.</td></tr>
-              : filtered.map((d) => <DeckRow key={d.rank} deck={d} showTier={false} showRank={false} />)
+              : filtered.map((d) => <DeckRow key={d.rank} deck={d} showTier={false} showRank={false} locale={locale} />)
             }
           </tbody>
         </table>
       </div>
-      <HeroAugmentSection />
-      <ArtifactSection />
+      <HeroAugmentSection decks={safeDecks} locale={locale} />
+      <ArtifactSection decks={safeDecks} locale={locale} />
     </>
   )
 }
@@ -319,7 +432,7 @@ function DeckListView({ decks }: { decks: MetaDeck[] }) {
    탭 2 — 메타통계
    (lolchess 스타일, 티어별 수직)
 ════════════════════════════ */
-function MetaStatsView({ decks }: { decks: MetaDeck[] }) {
+function MetaStatsView({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale | undefined }) {
   const [sortKey, setSortKey] = useState<SortKey>('rank')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
 
@@ -328,13 +441,15 @@ function MetaStatsView({ decks }: { decks: MetaDeck[] }) {
     else { setSortKey(key); setSortDir(key === 'avgPlace' ? 'asc' : 'desc') }
   }
 
+  const safeDecks = Array.isArray(decks) ? decks : []
+
   return (
     <div className={styles.tableWrap}>
       <table className={styles.table}>
         <TableHead sortKey={sortKey} sortDir={sortDir} onSort={handleSort} showTier showRank />
         <tbody>
           {TIER_ORDER.map((tier) => {
-            const tierDecks = sortDecks(decks.filter((d) => d.grade === tier), sortKey, sortDir)
+            const tierDecks = sortDecks(safeDecks.filter((d) => d.grade === tier), sortKey, sortDir)
             if (tierDecks.length === 0) return null
             const color = TIER_COLOR[tier]
             return (
@@ -356,7 +471,7 @@ function MetaStatsView({ decks }: { decks: MetaDeck[] }) {
                     </span>
                   </td>
                 </tr>
-                {tierDecks.map((d) => <DeckRow key={d.rank} deck={d} showTier showRank />)}
+                {tierDecks.map((d) => <DeckRow key={d.rank} deck={d} showTier showRank locale={locale} />)}
               </>
             )
           })}
@@ -366,12 +481,25 @@ function MetaStatsView({ decks }: { decks: MetaDeck[] }) {
   )
 }
 
+const RANK_FILTERS: RankFilterOption[] = [
+  { label: '에메랄드+', value: 'EMERALD_PLUS' },
+  { label: '다이아+',   value: 'DIAMOND_PLUS' },
+  { label: '마스터+',   value: 'MASTER_PLUS'  },
+]
+
 /* ════════════════════════════
    메인
 ════════════════════════════ */
 function Decks() {
-  const { data: decks = [] } = useMetaSnapshot()
+  const [rankFilter, setRankFilter] = useState<RankFilter>('EMERALD_PLUS')
+  const { data: metaDeckResponse } = useMetaSnapshot(rankFilter)
+  const decks = metaDeckResponse?.decks ?? []
   const [tab, setTab] = useState<Tab>('덱모음')
+  const { data: locale } = useCDragonLocale()
+  const patchVersion = metaDeckResponse?.patchVersion ?? '집계 대기'
+  const dataRangeLabel = metaDeckResponse?.dataStartDate
+    ? `${metaDeckResponse.dataStartDate} 이후 수집 데이터`
+    : '집계 데이터 수집 전'
 
   return (
     <AppLayout>
@@ -379,21 +507,36 @@ function Decks() {
         <div className={styles.pageHeader}>
           <div className={styles.titleBlock}>
             <h1>덱모음</h1>
-            <p>현재 패치 기준 전체 메타 덱 · 승률 · 픽률 · 평균 등수</p>
+            <p>{patchVersion} 패치 기준 · {dataRangeLabel} · 선택률순 노출</p>
           </div>
-          <div className={styles.tabBar}>
-            <button type="button" className={tab === '덱모음' ? styles.activeTab : ''} onClick={() => setTab('덱모음')}>
-              덱모음
-            </button>
-            <button type="button" className={tab === '메타통계' ? styles.activeTab : ''} onClick={() => setTab('메타통계')}>
-              메타통계
-            </button>
+          <div className={styles.rightControls}>
+            <div className={styles.rankFilterBar}>
+              {RANK_FILTERS.map((f) => (
+                <button
+                  key={f.value}
+                  type="button"
+                  className={rankFilter === f.value ? styles.rankFilterActive : styles.rankFilterBtn}
+                  aria-pressed={rankFilter === f.value}
+                  onClick={() => setRankFilter(f.value)}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+            <div className={styles.tabBar}>
+              <button type="button" className={tab === '덱모음' ? styles.activeTab : ''} aria-pressed={tab === '덱모음'} onClick={() => setTab('덱모음')}>
+                덱모음
+              </button>
+              <button type="button" className={tab === '메타통계' ? styles.activeTab : ''} aria-pressed={tab === '메타통계'} onClick={() => setTab('메타통계')}>
+                메타통계
+              </button>
+            </div>
           </div>
         </div>
 
         {tab === '덱모음'
-          ? <DeckListView decks={decks} />
-          : <MetaStatsView decks={decks} />
+          ? <DeckListView decks={decks} locale={locale} />
+          : <MetaStatsView decks={decks} locale={locale} />
         }
       </div>
     </AppLayout>

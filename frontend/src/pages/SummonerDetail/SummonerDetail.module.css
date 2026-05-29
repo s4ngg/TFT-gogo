@@ -22,14 +22,14 @@
   padding: 0 16px;
   border: 0;
   outline: 0;
-  color: #ffffff;
+  color: var(--text-main);
   background: transparent;
   font-size: 14px;
   font-weight: 500;
 }
 
 .topSearch input::placeholder {
-  color: #c2c9cf;
+  color: var(--text-soft);
 }
 
 .topSearch button {
@@ -37,7 +37,7 @@
   place-items: center;
   border: 0;
   border-left: 1px solid rgba(0, 244, 235, 0.55);
-  color: #ffffff;
+  color: var(--text-main);
   background: linear-gradient(135deg, #075c62, #0b9898);
   cursor: pointer;
 }
@@ -74,7 +74,7 @@
   border: 1px solid var(--border);
   border-radius: 20px;
   background: rgba(0, 212, 180, 0.12);
-  color: #04f3e5;
+  color: var(--color-cyan);
   font-size: 12px;
   font-weight: 700;
 }
@@ -87,7 +87,7 @@
 
 .profileInfo h1 {
   margin: 0 0 8px;
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 28px;
   font-weight: 700;
   letter-spacing: -0.03em;
@@ -95,14 +95,14 @@
 
 .tag {
   margin-left: 4px;
-  color: #7a8896;
+  color: var(--text-muted);
   font-size: 18px;
   font-weight: 500;
 }
 
 .tierLine {
   margin: 0 0 6px;
-  color: #04f3e5;
+  color: var(--color-cyan);
   font-size: 16px;
   font-weight: 600;
 }
@@ -111,13 +111,13 @@
   display: flex;
   gap: 12px;
   margin: 0;
-  color: #b5bdc5;
+  color: var(--text-secondary);
   font-size: 14px;
   font-weight: 500;
 }
 
 .winRateText {
-  color: #76ef33;
+  color: var(--color-win);
 }
 
 .updateBtn {
@@ -128,11 +128,49 @@
   padding: 0 20px;
   border: 1px solid rgba(118, 151, 160, 0.36);
   border-radius: var(--radius-button);
-  color: #d9dde3;
+  color: var(--text-ui);
   background: rgba(14, 27, 34, 0.74);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.updateBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+/* ── 소환사 없음 ── */
+.emptyState {
+  padding: 60px 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--bg-card);
+  text-align: center;
+}
+
+.emptyTitle {
+  margin: 0 0 12px;
+  color: var(--text-main);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.emptyDesc {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .loadMoreBtn {
@@ -144,7 +182,7 @@
   padding: 12px 0;
   border: 1px solid rgba(118, 151, 160, 0.28);
   border-radius: var(--radius-button);
-  color: #b5bdc5;
+  color: var(--text-secondary);
   background: rgba(14, 27, 34, 0.6);
   font-size: 13px;
   font-weight: 600;
@@ -154,13 +192,13 @@
 
 .loadMoreBtn:hover {
   background: rgba(4, 243, 229, 0.07);
-  color: #04f3e5;
+  color: var(--color-cyan);
   border-color: rgba(4, 243, 229, 0.3);
 }
 
 .matchSection h2 {
   margin: 0 0 12px;
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 18px;
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -179,7 +217,7 @@
 
 .matchRow {
   display: grid;
-  grid-template-columns: 80px 1fr auto 90px;
+  grid-template-columns: 80px 1fr auto var(--chevron-col-width);
   align-items: center;
   gap: 20px;
   padding: 14px 20px;
@@ -201,30 +239,30 @@
 }
 
 .gold {
-  border-left-color: #f7d26d;
+  border-left-color: var(--color-gold);
   background: linear-gradient(90deg, rgba(108, 74, 25, 0.24), rgba(6, 17, 24, 0.82));
 }
 
 .gold .placementBadge span {
-  color: #f7d26d;
+  color: var(--color-gold);
 }
 
 .top4 {
-  border-left-color: #04f3e5;
+  border-left-color: var(--color-cyan);
   background: linear-gradient(90deg, rgba(0, 80, 80, 0.22), rgba(6, 17, 24, 0.82));
 }
 
 .top4 .placementBadge span {
-  color: #04f3e5;
+  color: var(--color-cyan);
 }
 
 .bot4 {
-  border-left-color: #ff4945;
+  border-left-color: var(--color-red);
   background: linear-gradient(90deg, rgba(100, 20, 20, 0.22), rgba(6, 17, 24, 0.82));
 }
 
 .bot4 .placementBadge span {
-  color: #ff4945;
+  color: var(--color-red);
 }
 
 .placementBadge {
@@ -241,7 +279,7 @@
 
 .matchMeta .deckName {
   margin: 0 0 4px;
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.015em;
@@ -249,52 +287,82 @@
 
 .matchMeta .timeAgo {
   margin: 0;
-  color: #8a939c;
+  color: var(--text-muted);
   font-size: 12px;
   font-weight: 500;
 }
 
-.augments {
+.matchChevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+/* ── 게임 유형 배지 ── */
+.gameTypeBadge {
+  display: inline-flex;
+  align-items: center;
+  height: 16px;
+  padding: 0 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  margin-right: 6px;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.gameTypeBadgeRanked {
+  background: rgba(4, 243, 229, 0.1);
+  color: var(--color-cyan);
+  border: 1px solid rgba(4, 243, 229, 0.28);
+}
+
+.gameTypeBadgeNormal {
+  background: rgba(140, 150, 160, 0.1);
+  color: var(--text-muted);
+  border: 1px solid rgba(140, 150, 160, 0.22);
+}
+
+/* ── 게임 유형 필터 ── */
+.filterBar {
   display: flex;
   gap: 6px;
+  margin-bottom: 10px;
 }
 
-.augIcon {
-  width: 32px;
-  height: 32px;
-  border: 1px solid rgba(114, 150, 160, 0.28);
-  border-radius: 6px;
-  background: rgba(30, 50, 62, 0.8);
+.filterBtn {
+  height: var(--rank-filter-height);
+  padding: 0 var(--rank-filter-padding-x);
+  border: 1px solid var(--rank-filter-border);
+  border-radius: var(--rank-filter-radius);
+  color: var(--rank-filter-text);
+  background: transparent;
+  font-size: var(--rank-filter-font-size);
+  font-weight: var(--rank-filter-font-weight);
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
 }
 
-.lpDelta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-  font-size: 16px;
-  font-weight: 700;
+.filterBtn:hover {
+  color: var(--rank-filter-text-hover);
+  border-color: var(--rank-filter-border-hover);
 }
 
-.chevron {
-  opacity: 0.5;
-}
-
-.lpGain {
-  color: #76ef33;
-}
-
-.lpLoss {
-  color: #ff4945;
+.filterBtnActive {
+  color: var(--rank-filter-active) !important;
+  border-color: var(--rank-filter-active) !important;
+  background: var(--rank-filter-active-bg) !important;
 }
 
 /* ── profileCard 확장 ── */
 .avgPlaceText {
-  color: #a78bfa;
+  color: var(--color-purple);
 }
 
 .top4Text {
-  color: #04f3e5;
+  color: var(--color-cyan);
 }
 
 .profileRight {
@@ -302,51 +370,6 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 12px;
-}
-
-/* ── 순위 분포 ── */
-.rankDist {
-  display: flex;
-  align-items: flex-end;
-  gap: 4px;
-}
-
-.rankDistItem {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-
-.rankDistBarWrap {
-  display: flex;
-  align-items: flex-end;
-  height: 60px;
-}
-
-.rankDistBar {
-  width: 14px;
-  border-radius: 3px 3px 0 0;
-  transition: height 0.3s ease;
-}
-
-.top4Bar {
-  background: #04f3e5;
-}
-
-.bot4Bar {
-  background: #ff4945;
-}
-
-.rankDistNum {
-  color: #8a939c;
-  font-size: 10px;
-  font-weight: 600;
-}
-
-.rankDistCount {
-  color: #b5bdc5;
-  font-size: 9px;
 }
 
 /* ── 시너지/챔피언 그리드 ── */
@@ -365,7 +388,7 @@
 
 .statSectionTitle {
   margin: 0 0 14px;
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -388,7 +411,7 @@
 
 .topRank {
   width: 16px;
-  color: #8a939c;
+  color: var(--text-muted);
   font-size: 12px;
   font-weight: 600;
   text-align: center;
@@ -397,7 +420,7 @@
 
 .topName {
   flex: 1;
-  color: #d9dde3;
+  color: var(--text-ui);
   font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
@@ -406,14 +429,14 @@
 }
 
 .topGames {
-  color: #8a939c;
+  color: var(--text-muted);
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
 }
 
 .topAvg {
-  color: #a78bfa;
+  color: var(--color-purple);
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
@@ -440,7 +463,7 @@
   width: 14px;
   height: 14px;
   border-radius: 3px;
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 9px;
   font-weight: 700;
   display: flex;
@@ -464,7 +487,7 @@
 }
 
 .unitStar3 .unitImg {
-  border: 2px solid #f9c860;
+  border: 2px solid var(--color-star);
   border-radius: 6px;
 }
 
@@ -481,7 +504,7 @@
   top: -9px;
   left: 50%;
   transform: translateX(-50%);
-  color: #f9c860;
+  color: var(--color-star);
   font-size: 8px;
   white-space: nowrap;
   letter-spacing: -1px;
@@ -512,11 +535,11 @@
 
 .matchDetailHeader {
   display: grid;
-  grid-template-columns: 26px 148px 58px 116px 86px 1fr 44px 58px;
+  grid-template-columns: 26px 148px 58px 116px 1fr 44px 58px;
   gap: 8px;
   padding: 7px 16px;
   border-bottom: 1px solid rgba(112, 144, 152, 0.14);
-  color: #8a939c;
+  color: var(--text-muted);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -524,7 +547,7 @@
 
 .matchDetailRow {
   display: grid;
-  grid-template-columns: 26px 148px 58px 116px 86px 1fr 44px 58px;
+  grid-template-columns: 26px 148px 58px 116px 1fr 44px 58px;
   gap: 8px;
   padding: 7px 16px;
   align-items: center;
@@ -549,11 +572,15 @@
 }
 
 .detailRank {
-  color: #8a939c;
+  color: var(--text-muted);
   font-size: 13px;
   font-weight: 700;
   text-align: center;
 }
+
+.detailRankGold   { color: var(--color-gold); }
+.detailRankSilver { color: var(--color-silver); }
+.detailRankBronze { color: var(--color-bronze); }
 
 .detailPlayer {
   display: flex;
@@ -563,7 +590,7 @@
 }
 
 .detailName {
-  color: #d9dde3;
+  color: var(--text-ui);
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
@@ -572,12 +599,12 @@
 }
 
 .detailTag {
-  color: #8a939c;
+  color: var(--text-muted);
   font-size: 10px;
 }
 
 .detailStage {
-  color: #b5bdc5;
+  color: var(--text-secondary);
   font-size: 12px;
   font-weight: 500;
 }
@@ -588,41 +615,6 @@
   flex-wrap: wrap;
 }
 
-.detailTraitBadge {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  padding: 2px 5px 2px 3px;
-  border-radius: 4px;
-  background: rgba(30, 50, 62, 0.85);
-  border: 1px solid rgba(114, 150, 160, 0.2);
-  font-size: 10px;
-  font-weight: 700;
-  color: #d9dde3;
-}
-
-.detailTraitIcon {
-  width: 16px;
-  height: 16px;
-  object-fit: contain;
-}
-
-.detailAugments {
-  display: flex;
-  gap: 3px;
-}
-
-.detailAugIcon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  font-size: 14px;
-  border-radius: 4px;
-  background: rgba(30, 50, 62, 0.8);
-  border: 1px solid rgba(114, 150, 160, 0.2);
-}
 
 .detailUnits {
   display: flex;
@@ -646,7 +638,7 @@
 }
 
 .detailUnitStar3 .detailUnitImg {
-  border-color: #f9c860;
+  border-color: var(--color-star);
 }
 
 .detailUnitStars {
@@ -654,7 +646,7 @@
   bottom: -9px;
   left: 50%;
   transform: translateX(-50%);
-  color: #f9c860;
+  color: var(--color-star);
   font-size: 7px;
   white-space: nowrap;
   letter-spacing: -1px;
@@ -667,7 +659,7 @@
   gap: 3px;
   font-size: 12px;
   font-weight: 700;
-  color: #d9dde3;
+  color: var(--text-ui);
 }
 
 .detailGold {
@@ -677,7 +669,7 @@
   gap: 3px;
   font-size: 12px;
   font-weight: 700;
-  color: #f7d26d;
+  color: var(--color-gold);
 }
 
 .detailUnitItems {
@@ -711,7 +703,7 @@
   width: 90px;
   height: 90px;
   border-radius: 50%;
-  background: conic-gradient(#04f3e5 var(--pct), rgba(255, 255, 255, 0.07) 0);
+  background: conic-gradient(var(--color-cyan) var(--pct), rgba(255, 255, 255, 0.07) 0);
   flex-shrink: 0;
 }
 
@@ -726,7 +718,7 @@
 }
 
 .winRatePct {
-  color: #04f3e5;
+  color: var(--color-cyan);
   font-size: 14px;
   font-weight: 800;
   line-height: 1;
@@ -740,14 +732,14 @@
 
 .summaryStatLabel {
   margin: 0;
-  color: #8a939c;
+  color: var(--text-muted);
   font-size: 11px;
   font-weight: 600;
 }
 
 .summaryStatValue {
   margin: 0 0 10px;
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 20px;
   font-weight: 700;
   line-height: 1.2;
@@ -758,13 +750,13 @@
 }
 
 .summaryStatSub {
-  color: #8a939c;
+  color: var(--text-muted);
   font-size: 13px;
   font-weight: 500;
 }
 
 .summaryStatTh {
-  color: #8a939c;
+  color: var(--text-muted);
   font-size: 13px;
   font-weight: 500;
 }
@@ -784,7 +776,7 @@
   border-radius: 4px;
   background: rgba(5, 12, 18, 0.96);
   border: 1px solid rgba(112, 144, 152, 0.3);
-  color: #e4e8ed;
+  color: var(--text-ui);
   font-size: 11px;
   font-weight: 500;
   white-space: nowrap;

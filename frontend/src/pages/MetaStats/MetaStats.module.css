@@ -25,6 +25,44 @@
   font-size: 13px;
 }
 
+.headerRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+/* ── 랭크 구간 필터 ── */
+.rankFilterBar {
+  display: flex;
+  gap: 6px;
+}
+
+.rankFilterBtn,
+.rankFilterActive {
+  height: var(--rank-filter-height);
+  padding: 0 var(--rank-filter-padding-x);
+  border: 1px solid var(--rank-filter-border);
+  border-radius: var(--rank-filter-radius);
+  background: transparent;
+  color: var(--rank-filter-text);
+  font-size: var(--rank-filter-font-size);
+  font-weight: var(--rank-filter-font-weight);
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.rankFilterBtn:hover {
+  color: var(--rank-filter-text-hover);
+  border-color: var(--rank-filter-border-hover);
+}
+
+.rankFilterActive {
+  border-color: var(--rank-filter-active);
+  color: var(--rank-filter-active);
+  background: var(--rank-filter-active-bg);
+}
+
 .updateBadge {
   display: flex;
   align-items: center;

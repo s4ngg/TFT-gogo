@@ -7,7 +7,7 @@ import TraitHexBadge from '../../components/common/TraitHexBadge'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
 import { useAiRecommendQuery } from '../../hooks/useAiRecommendQuery'
 import useSummonerStore from '../../store/useSummonerStore'
-import type { AiRecommendAugment, AiRecommendDeckReason, AiRecommendResponse, AiRecommendStats, AiRecommendTrait } from '../../api/aiRecommendApi'
+import type { AiRecommendAugment, AiRecommendDeckReason, AiRecommendStats, AiRecommendTrait } from '../../api/aiRecommendApi'
 import { mockAiRecommendation } from '../../mocks/aiRecommendMock'
 import styles from './AiRecommend.module.css'
 
@@ -156,7 +156,8 @@ function AugmentAnalysis({ augments }: { augments: AiRecommendAugment[] }) {
 /* ── AI 추천 덱 ── */
 function AiRecommendedDecks({ deckReasons }: { deckReasons: AiRecommendDeckReason[] }) {
   const navigate = useNavigate()
-  const { data: metaDecks = [] } = useMetaSnapshot()
+  const { data: metaDeckResponse } = useMetaSnapshot()
+  const metaDecks = metaDeckResponse?.decks ?? []
   const topDecks = metaDecks.filter((d) => d.grade === 'S' || d.grade === 'A+').slice(0, 3)
 
   return (

@@ -1,12 +1,44 @@
 import axiosInstance from './axiosInstance'
-import type { MetaDeck } from '../pages/Dashboard/dashboardData'
+import type { MetaDeck, RankFilter } from '../pages/Dashboard/dashboardData'
 import { mockDeckMetaResponse } from '../mocks/deckResponseMock'
 
-export const getMetaDecks = async (): Promise<MetaDeck[]> => {
+interface ApiResponse<T> {
+  success: boolean
+  message: string
+  data: T
+}
+
+export interface MetaDeckListResponse {
+  patchVersion: string | null
+  rankFilter: RankFilter
+  dataStartDate: string | null
+  decks: MetaDeck[]
+}
+
+const fallbackMetaDeckListResponse: MetaDeckListResponse = {
+  patchVersion: '17.3',
+  rankFilter: 'EMERALD_PLUS',
+  dataStartDate: null,
+  decks: mockDeckMetaResponse,
+}
+
+export const getMetaDecks = async (rankFilter: RankFilter = 'EMERALD_PLUS'): Promise<MetaDeckListResponse> => {
   try {
-    const { data } = await axiosInstance.get<MetaDeck[]>('/decks/meta')
-    return data
+    const { data } = await axiosInstance.get<ApiResponse<MetaDeckListResponse>>('/decks/meta', {
+      params: { rankFilter },
+    })
+
+    if (!data.success) {
+      throw new Error(data.message ?? '메타 덱 조회 실패')
+    }
+
+    return {
+      patchVersion: data.data?.patchVersion ?? null,
+      rankFilter: data.data?.rankFilter ?? rankFilter,
+      dataStartDate: data.data?.dataStartDate ?? null,
+      decks: Array.isArray(data.data?.decks) ? data.data.decks : [],
+    }
   } catch {
-    return mockDeckMetaResponse
+    return { ...fallbackMetaDeckListResponse, rankFilter }
   }
 }

@@ -1,0 +1,35 @@
+package com.tftgogo.domain.deck.controller.docs;
+
+import com.tftgogo.domain.deck.dto.response.MetaDeckListResponse;
+import com.tftgogo.domain.deck.entity.RankFilter;
+import com.tftgogo.global.response.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import java.time.LocalDate;
+
+@Tag(name = "Meta Deck", description = "메타 덱 API")
+public interface MetaDeckControllerDocs {
+
+    @Operation(summary = "메타 덱 목록 조회", description = "랭크 구간별 메타 덱 목록을 반환합니다. (EMERALD_PLUS / DIAMOND_PLUS / MASTER_PLUS)")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공")
+    })
+    ResponseEntity<ApiResponse<MetaDeckListResponse>> getMetaDecks(
+            @Parameter(description = "랭크 구간 필터", example = "EMERALD_PLUS")
+            @RequestParam(defaultValue = "EMERALD_PLUS") RankFilter rankFilter);
+
+    @Operation(summary = "메타 덱 수동 집계", description = "지정 날짜 00:00~24:00(Asia/Seoul) 구간의 Riot API 데이터를 수집 및 집계합니다. date 생략 시 어제 날짜를 집계합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "집계 완료")
+    })
+    ResponseEntity<ApiResponse<Void>> triggerAggregate(
+            @Parameter(description = "집계할 날짜", example = "2026-05-27")
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date);
+}

@@ -1,4 +1,4 @@
-import { communityDragonAssetUrl } from '../api/communityDragonAssets'
+import { communityDragonAssetUrl, tftTraitIconUrl } from '../api/communityDragonAssets'
 import type {
   SummonerProfileResponse,
   MatchSummaryResponse,
@@ -8,22 +8,22 @@ import type {
 } from '../api/summonerApi'
 
 // ── CDN 헬퍼 ───────────────────────────────────────────────
-const tIcon = (p: string) => communityDragonAssetUrl(p)
-const cImg  = (p: string) => communityDragonAssetUrl(p)
-const iImg  = (name: string) =>
+const cImg = (p: string) => communityDragonAssetUrl(p)
+const iImg = (name: string) =>
   communityDragonAssetUrl(`ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_${name}.TFT_Set13.tex`)
 
-// ── 시너지 아이콘 ───────────────────────────────────────────
+// ── 시너지 아이콘 (communityDragonAssets.ts 단일 소스) ───────
 const traitIcons = {
-  vanguard:   tIcon('ASSETS/UX/TraitIcons/Trait_Icon_12_Vanguard.TFT_Set12.tex'),
-  darkStar:   tIcon('ASSETS/UX/TraitIcons/Trait_Icon_17_DarkStar.TFT_Set17.tex'),
-  spirit:     tIcon('ASSETS/UX/TraitIcons/Trait_Icon_17_Astronaut.TFT_Set17.tex'),
-  rogue:      tIcon('ASSETS/UX/TraitIcons/Trait_Icon_17_Rogue.TFT_Set17.tex'),
-  stargazer:  tIcon('ASSETS/UX/TraitIcons/Trait_Icon_17_Stargazer.TFT_Set17.tex'),
-  guide:      tIcon('ASSETS/UX/TraitIcons/Trait_Icon_17_Shepherd.TFT_Set17.tex'),
-  sniper:     tIcon('ASSETS/UX/TraitIcons/Trait_Icon_6_Sniper.tex'),
-  replicator: tIcon('ASSETS/UX/TraitIcons/Trait_Icon_17_Replicator.TFT_Set17.tex'),
-  psyOps:     tIcon('ASSETS/UX/TraitIcons/Trait_Icon_17_PsyOps.TFT_Set17.tex'),
+  vanguard:   tftTraitIconUrl('TFT17_Vanguard'),
+  bastion:    tftTraitIconUrl('TFT17_Bastion'),
+  darkStar:   tftTraitIconUrl('TFT17_DarkStar'),
+  spirit:     tftTraitIconUrl('TFT17_Astronaut'),
+  rogue:      tftTraitIconUrl('TFT17_Rogue'),
+  stargazer:  tftTraitIconUrl('TFT17_Stargazer'),
+  guide:      tftTraitIconUrl('TFT17_Shepherd'),
+  sniper:     tftTraitIconUrl('TFT17_Sniper'),
+  replicator: tftTraitIconUrl('TFT17_Replicator'),
+  psyOps:     tftTraitIconUrl('TFT17_PsyOps'),
 }
 
 // ── 챔피언 이미지 ───────────────────────────────────────────
@@ -79,8 +79,8 @@ const it = {
 
 // ── 유닛 헬퍼 ──────────────────────────────────────────────
 const u = (
-  characterId: string, imageUrl: string, stars: 1 | 2 | 3, itemNames: string[],
-): MatchUnitResponse => ({ characterId, imageUrl, stars, itemNames })
+  characterId: string, imageUrl: string, stars: 1 | 2 | 3, itemImageUrls: string[],
+): MatchUnitResponse => ({ characterId, imageUrl, stars, itemImageUrls })
 
 // ── 시너지 헬퍼 ────────────────────────────────────────────
 const tr = (
@@ -124,7 +124,7 @@ const DECK_CONFIGS: { compositionName: string; traits: MatchTraitResponse[]; uni
     compositionName: '정령족 코르키',
     traits: [
       tr('TFT17_Astronaut', '정령족', traitIcons.spirit, 4),
-      tr('TFT17_Bastion', '요새', traitIcons.vanguard, 2, 'bronze'),
+      tr('TFT17_Bastion', '요새', traitIcons.bastion, 2, 'bronze'),
     ],
     units: [
       u('TFT17_Corki', ci.corki, 3, [it.blue, it.archangel, it.nashors]),
@@ -265,7 +265,6 @@ const FILLER_PARTICIPANTS: Omit<MatchParticipantResponse, 'placement'>[] = [
 ]
 
 const STAGE_BY_RANK = ['6-5', '6-3', '6-2', '5-6', '5-5', '5-3', '5-2', '4-6']
-const LP_MAP: Record<number, number> = { 1: 22, 2: 13, 3: 8, 4: 5, 5: -9, 6: -14, 7: -19, 8: -26 }
 
 // 90게임 배치 결과
 const PLACEMENTS_90 = [
@@ -282,6 +281,7 @@ const TIME_STEP = 3600000 * 2  // 2시간 간격
 
 // ── 소환사 프로필 mock ──────────────────────────────────────
 export const mockSummonerProfile: SummonerProfileResponse = {
+  puuid: 'mock-puuid-player-01',
   gameName: 'TFTgogo',
   tagLine: 'KR1',
   profileIconId: 29,
@@ -336,7 +336,7 @@ export const mockMatchHistory: MatchSummaryResponse[] = PLACEMENTS_90.map((place
     matchId: `KR_760001${String(i + 1).padStart(4, '0')}`,
     placement,
     gameDateTime: BASE_TIME - i * TIME_STEP,
-    lpDelta: LP_MAP[placement],
+    gameType: i % 5 === 4 ? 'NORMAL' : 'RANKED',
     compositionName: cfg.compositionName,
     traits: cfg.traits,
     units: cfg.units,

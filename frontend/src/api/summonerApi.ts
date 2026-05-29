@@ -24,6 +24,7 @@ export interface SummonerTopChampion {
 }
 
 export interface SummonerProfileResponse {
+  puuid: string
   gameName: string
   tagLine: string
   profileIconId: number
@@ -31,8 +32,8 @@ export interface SummonerProfileResponse {
   tier: string            // 'DIAMOND'
   rank: string            // 'IV'
   leaguePoints: number
-  wins: number            // 1등 횟수
-  losses: number          // 2~8등 횟수
+  wins: number            // 4위 이상(순방) 횟수
+  losses: number          // 5~8위(4위 미만) 횟수
   avgPlace: number
   top4Rate: number
   rankDistribution: number[]   // index 0 = 1등 횟수, ... index 7 = 8등 횟수
@@ -44,7 +45,7 @@ export interface MatchUnitResponse {
   characterId: string
   imageUrl: string
   stars: 1 | 2 | 3   // ChampionCard는 2|3 기본, 1성도 허용
-  itemNames: string[]
+  itemImageUrls: string[]
 }
 
 export interface MatchTraitResponse {
@@ -68,11 +69,13 @@ export interface MatchParticipantResponse {
   goldLeft: number
 }
 
+export type GameType = 'RANKED' | 'NORMAL'
+
 export interface MatchSummaryResponse {
   matchId: string
   placement: number
   gameDateTime: number    // Unix timestamp ms
-  lpDelta: number
+  gameType: GameType      // queue_id 기반 Spring 변환값 (1100→RANKED, 1090→NORMAL)
   compositionName: string
   traits: MatchTraitResponse[]
   units: MatchUnitResponse[]
@@ -91,7 +94,9 @@ export const getSummonerProfile = async (
       `/summoner/${encodeURIComponent(gameName)}/${tagLine}`,
     )
     return data
-  } catch {
+  } catch (err: unknown) {
+    const status = (err as { response?: { status?: number } })?.response?.status
+    if (status === 404) throw err
     return mockSummonerProfile
   }
 }
