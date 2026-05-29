@@ -46,6 +46,8 @@ export interface PatchNotesResult {
   source: PatchNotesSource
 }
 
+const PATCH_NOTE_DEFAULT_IMAGE = '/assets/emblems/patch-meta-emblem-pink.png'
+
 type BackendChangeCategory = 'CHAMPION' | 'TRAIT' | 'ITEM' | 'AUGMENT' | 'SYSTEM'
 type BackendChangeType = 'BUFF' | 'NERF' | 'ADJUST' | 'NEW'
 type BackendImpactLevel = 'HIGH' | 'MEDIUM' | 'LOW'
@@ -100,6 +102,13 @@ type PatchNotesPayload = PatchNoteResponse[] | {
 
 function readString(value: unknown, fallback = '') {
   return typeof value === 'string' ? value : fallback
+}
+
+function readNonEmptyString(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined
+
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : undefined
 }
 
 function readTags(value: unknown) {
@@ -196,7 +205,7 @@ function normalizeChange(change: PatchChangeResponse, index: number): PatchChang
     before: readString(change.before ?? change.beforeValue),
     category: normalizeCategory(change.category),
     id: typeof change.id === 'number' ? change.id : index + 1,
-    imageUrl: change.imageUrl ?? undefined,
+    imageUrl: readNonEmptyString(change.imageUrl),
     impact: normalizeImpact(change.impact),
     summary: readString(change.summary),
     tags: readTags(change.tags ?? change.tagsJson),
@@ -209,6 +218,9 @@ function normalizePatchNote(note: PatchNoteResponse): PatchNoteDetail {
   const changes = note.changes ?? note.patchNoteChanges ?? []
   const publishedDate = readString(note.date ?? note.publishedAt)
   const summary = readString(note.summary)
+  const imageUrl = readNonEmptyString(note.imageUrl)
+    ?? readNonEmptyString(note.representativeImageUrl)
+    ?? PATCH_NOTE_DEFAULT_IMAGE
 
   return {
     changes: changes.map(normalizeChange),
@@ -216,7 +228,7 @@ function normalizePatchNote(note: PatchNoteResponse): PatchNoteDetail {
     description: readString(note.description ?? note.content ?? summary),
     focus: readString(note.focus ?? summary),
     highlights: normalizeHighlights(note),
-    imageUrl: readString(note.imageUrl ?? note.representativeImageUrl),
+    imageUrl,
     status: note.status === '현재' || note.status === 'CURRENT' || note.isCurrent ? '현재' : '이전',
     title: readString(note.title, `${readString(note.version)} 패치`),
     version: readString(note.version),

@@ -448,17 +448,35 @@ function guideEntriesToCatalog(entries: GuideEntryResponse[], fallbackData: Guid
   return catalog
 }
 
-function normalizeGuideCatalog(payload: GuideCatalog | GuideEntryResponse[], fallbackData: GuideCatalog): GuideCatalog {
+function hasGuidePayloadData(payload: unknown): boolean {
+  if (Array.isArray(payload)) {
+    if (!isGuideEntryList(payload)) return false
+    return payload.some((entry) => normalizeGuideType(entry) !== undefined)
+  }
+
+  if (!isRecord(payload)) return false
+
+  return ['traits', 'items', 'augments', 'champions'].some((key) => {
+    const value = payload[key]
+    return Array.isArray(value) && value.length > 0
+  })
+}
+
+function normalizeGuideCatalog(payload: unknown, fallbackData: GuideCatalog): GuideCatalog {
   if (isGuideEntryList(payload)) {
     return guideEntriesToCatalog(payload, fallbackData)
   }
+
+  if (!isRecord(payload)) return fallbackData
 
   return {
     augments: Array.isArray(payload.augments) ? payload.augments : fallbackData.augments,
     augmentPlans: Array.isArray(payload.augmentPlans) ? payload.augmentPlans : fallbackData.augmentPlans,
     champions: Array.isArray(payload.champions) ? payload.champions : fallbackData.champions,
     items: Array.isArray(payload.items) ? payload.items : fallbackData.items,
-    patchVersion: payload.patchVersion || fallbackData.patchVersion,
+    patchVersion: typeof payload.patchVersion === 'string' && payload.patchVersion
+      ? payload.patchVersion
+      : fallbackData.patchVersion,
     rewards: Array.isArray(payload.rewards) ? payload.rewards : fallbackData.rewards,
     traits: Array.isArray(payload.traits) ? payload.traits : fallbackData.traits,
   }
@@ -467,7 +485,13 @@ function normalizeGuideCatalog(payload: GuideCatalog | GuideEntryResponse[], fal
 export async function getGuideCatalog(fallbackData: GuideCatalog): Promise<GuideCatalogResult> {
   try {
     const { data } = await axiosInstance.get<ApiResponse<GuideCatalog | GuideEntryResponse[]> | GuideCatalog | GuideEntryResponse[]>('/guide')
-    return { data: normalizeGuideCatalog(unwrapApiResponse(data), fallbackData), source: 'api' }
+    const payload = unwrapApiResponse(data)
+
+    if (!hasGuidePayloadData(payload)) {
+      return { data: fallbackData, source: 'fallback' }
+    }
+
+    return { data: normalizeGuideCatalog(payload, fallbackData), source: 'api' }
   } catch {
     return { data: fallbackData, source: 'fallback' }
   }
