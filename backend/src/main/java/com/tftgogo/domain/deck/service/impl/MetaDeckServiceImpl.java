@@ -49,9 +49,9 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     private static final Logger logger = LogManager.getLogger(MetaDeckServiceImpl.class);
 
     private static final int MATCHES_PER_SUMMONER = 20;
-    private static final int MIN_SAMPLE = 3;
+    private static final int MIN_SAMPLE = 5;
     private static final int MIN_DETAIL_SAMPLE = 2;
-    private static final int SIGNATURE_TRAIT_COUNT = 3;
+    private static final int SIGNATURE_TRAIT_COUNT = 2;
     private static final long RATE_LIMIT_DELAY_MS = 1200L;
     private static final String UNKNOWN_PATCH_VERSION = "UNKNOWN";
     private static final String GLOBAL_AUGMENT_CHARACTER_ID = "GLOBAL";
@@ -251,8 +251,15 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                 continue;
             }
 
+            // 6유닛 미만 = 초반 빌드업(전환 중) 조합 — 품질 저하 원인이므로 제외
+            if (participant.getUnits().size() < 6) {
+                continue;
+            }
+
+            // style >= 2 : 실버 이상 활성화된 시너지만 포함 (브론즈·비활성 제외)
+            // num_units >= 2 : 1개만 있어도 활성화되는 고유 특성(Unique) 제외
             List<TraitDto> activeTraits = participant.getTraits().stream()
-                    .filter(trait -> trait.getStyle() > 0)
+                    .filter(trait -> trait.getStyle() >= 2 && trait.getNum_units() >= 2)
                     .sorted(Comparator.comparingInt(TraitDto::getNum_units).reversed()
                             .thenComparing(TraitDto::getName))
                     .toList();
@@ -270,9 +277,11 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     }
 
     private String buildSignature(List<TraitDto> activeTraits) {
+        // 시그니처 = 상위 2개 트레잇 이름만 사용 (num_units 제외)
+        // → 같은 아키타입이 유닛 수만 다를 때 다른 덱으로 분류되는 중복 문제 해결
         return activeTraits.stream()
                 .limit(SIGNATURE_TRAIT_COUNT)
-                .map(trait -> trait.getName() + "-" + trait.getNum_units())
+                .map(TraitDto::getName)
                 .collect(Collectors.joining("_"));
     }
 
