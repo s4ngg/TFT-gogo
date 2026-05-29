@@ -1,28 +1,55 @@
 import { useMemo, useState } from 'react'
-import { ArrowLeft, Map, Trophy, Swords, Sparkles } from 'lucide-react'
+import { ArrowLeft, Map, Swords, Sparkles, Trophy } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AppLayout } from '../../components/layout'
 import TierBadge from '../../components/common/TierBadge'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
 import { useCDragonLocale } from '../../hooks/useCDragonLocale'
-import { getChampionName, getTraitName, getAugmentName } from '../../api/cdragonLocale'
+import { getAugmentName, getChampionDetail, getChampionName, getItemName, getTraitName } from '../../api/cdragonLocale'
 import type { TFTLocale } from '../../api/cdragonLocale'
 import { tftItemIconUrl } from '../../api/communityDragonAssets'
-import type { MetaDeck, ChampionSummary } from '../Dashboard/dashboardData'
+import type { ChampionSummary, MetaDeck } from '../Dashboard/dashboardData'
 import styles from './DeckDetail.module.css'
 
-/* ════════════════════════════
-   육각형 배치판 (동적)
-   - 탱커(아이템 없음)  → rows 2,3  (시각적 상단)
-   - 딜러/캐리(아이템 있음) → rows 0,1  (시각적 하단)
-   - 레벨 탭: Lv.N 선택 시 N개 유닛 표시
-════════════════════════════ */
 const BOARD_ROWS = 4
 const BOARD_COLS = 7
 
 function isCarry(champ: ChampionSummary): boolean {
   return (champ.recommendedItems?.length ?? 0) > 0
+}
+
+function getCost(champ: ChampionSummary, locale: TFTLocale | undefined): number {
+  return getChampionDetail(champ.imageUrl, locale)?.cost ?? champ.cost ?? 0
+}
+
+function costLimitForLevel(level: number): number {
+  if (level <= 6) return 3
+  if (level <= 8) return 4
+  return 5
+}
+
+function canUseAtLevel(champ: ChampionSummary, level: number, locale: TFTLocale | undefined): boolean {
+  const cost = getCost(champ, locale)
+  return cost > 0 && cost <= costLimitForLevel(level)
+}
+
+function getRange(champ: ChampionSummary, locale: TFTLocale | undefined): number {
+  return getChampionDetail(champ.imageUrl, locale)?.range ?? 1
+}
+
+function getRole(champ: ChampionSummary, locale: TFTLocale | undefined): string {
+  return getChampionDetail(champ.imageUrl, locale)?.role?.toLowerCase() ?? ''
+}
+
+function isFrontline(champ: ChampionSummary, locale: TFTLocale | undefined): boolean {
+  const role = getRole(champ, locale)
+  return getRange(champ, locale) <= 2 || role.includes('tank') || role.includes('fighter')
+}
+
+function isBackline(champ: ChampionSummary, locale: TFTLocale | undefined): boolean {
+  const role = getRole(champ, locale)
+  return getRange(champ, locale) >= 4 || role.includes('caster') || role.includes('marksman')
 }
 
 interface PlacedChamp {
@@ -31,45 +58,46 @@ interface PlacedChamp {
   col: number
 }
 
-function buildBoardPositions(visible: ChampionSummary[]): PlacedChamp[] {
-  const tanks   = visible.filter((c) => !isCarry(c))
-  const carries = visible.filter((c) => isCarry(c))
-
-  const result: PlacedChamp[] = []
-
-  // 탱커 → rows 3,2 (상단)
-  placeLine(tanks, [3, 2], result)
-  // 딜러 → rows 0,1 (하단)
-  placeLine(carries, [0, 1], result)
-
-  return result
-}
-
 function placeLine(units: ChampionSummary[], rows: number[], result: PlacedChamp[]) {
   if (units.length === 0) return
-  const rowCount = rows.length
-  const perRow   = Math.ceil(units.length / rowCount)
+
+  const perRow = Math.ceil(units.length / rows.length)
   let placed = 0
-  for (const row of rows) {
+
+  rows.forEach((row) => {
     const chunk = units.slice(placed, placed + perRow)
-    if (chunk.length === 0) break
+    if (chunk.length === 0) return
+
     const startCol = Math.floor((BOARD_COLS - chunk.length) / 2)
     chunk.forEach((champ, i) => result.push({ champ, row, col: startCol + i }))
     placed += chunk.length
-  }
+  })
+}
+
+function buildBoardPositions(visible: ChampionSummary[], locale: TFTLocale | undefined): PlacedChamp[] {
+  const frontliners = visible.filter((champ) => isFrontline(champ, locale))
+  const backliners = visible.filter((champ) => isBackline(champ, locale) && !frontliners.includes(champ))
+  const flexUnits = visible.filter((champ) => !frontliners.includes(champ) && !backliners.includes(champ))
+  const result: PlacedChamp[] = []
+
+  placeLine(frontliners, [3, 2], result)
+  placeLine(flexUnits, [2, 1], result)
+  placeLine(backliners, [0, 1], result)
+
+  return result
 }
 
 function HexBoard({ deck, locale }: { deck: MetaDeck; locale: TFTLocale | undefined }) {
   const all = deck.champions
 
-  // 우선순위 정렬: 캐리(아이템 있음) → 코스트 내림차순 → 레벨 선택 시 상위 N개 표시
   const prioritized = useMemo(() => {
     return [...all].sort((a, b) => {
-      const ac = isCarry(a), bc = isCarry(b)
+      const ac = isCarry(a)
+      const bc = isCarry(b)
       if (ac !== bc) return bc ? 1 : -1
-      return (b.cost ?? 0) - (a.cost ?? 0)
+      return getCost(b, locale) - getCost(a, locale)
     })
-  }, [all])
+  }, [all, locale])
 
   const maxLevel = Math.min(9, all.length)
   const availableLevels = useMemo(
@@ -78,9 +106,14 @@ function HexBoard({ deck, locale }: { deck: MetaDeck; locale: TFTLocale | undefi
   )
   const [level, setLevel] = useState<number>(maxLevel)
 
+  const visibleUnits = useMemo(
+    () => prioritized.filter((champ) => canUseAtLevel(champ, level, locale)).slice(0, level),
+    [prioritized, level, locale],
+  )
+
   const placed = useMemo(
-    () => buildBoardPositions(prioritized.slice(0, level)),
-    [prioritized, level],
+    () => buildBoardPositions(visibleUnits, locale),
+    [visibleUnits, locale],
   )
 
   if (all.length === 0) return null
@@ -94,12 +127,12 @@ function HexBoard({ deck, locale }: { deck: MetaDeck; locale: TFTLocale | undefi
       <div className={styles.panelHead}>
         <Map size={16} />
         <h2>추천 배치</h2>
-        <span className={styles.panelSub}>위 2줄 탱커 · 아래 2줄 딜러</span>
+        <span className={styles.panelSub}>위 2줄 탱커, 아래 2줄 딜러</span>
       </div>
       <div className={styles.boardWrap}>
         <div className={styles.board}>
           {Array.from({ length: BOARD_ROWS }, (_, vi) => {
-            const row      = BOARD_ROWS - 1 - vi
+            const row = BOARD_ROWS - 1 - vi
             const isOffset = row % 2 !== 0
             return (
               <div key={row} className={`${styles.boardRow} ${isOffset ? styles.boardRowOffset : ''}`}>
@@ -108,6 +141,7 @@ function HexBoard({ deck, locale }: { deck: MetaDeck; locale: TFTLocale | undefi
                   const itemUrls = p
                     ? (p.champ.recommendedItems ?? []).slice(0, 3).map((id) => tftItemIconUrl(id))
                     : []
+
                   return (
                     <div key={col} className={styles.hexCell}>
                       <div className={`${styles.hexOuter} ${p ? styles.hexFilled : styles.hexEmpty}`}>
@@ -121,8 +155,13 @@ function HexBoard({ deck, locale }: { deck: MetaDeck; locale: TFTLocale | undefi
                       {p && itemUrls.length > 0 && (
                         <div className={styles.hexItems}>
                           {itemUrls.map((url, idx) => (
-                            <img key={idx} src={url} alt="" className={styles.hexItemIcon}
-                              onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '0' }} />
+                            <img
+                              key={idx}
+                              src={url}
+                              alt=""
+                              className={styles.hexItemIcon}
+                              onError={(e) => { e.currentTarget.style.opacity = '0' }}
+                            />
                           ))}
                         </div>
                       )}
@@ -158,9 +197,6 @@ function HexBoard({ deck, locale }: { deck: MetaDeck; locale: TFTLocale | undefi
   )
 }
 
-/* ════════════════════════════
-   추천 증강체 (API 실데이터)
-════════════════════════════ */
 function AugmentsPanel({ deck, locale }: { deck: MetaDeck; locale: TFTLocale | undefined }) {
   const augments = deck.topAugments ?? []
   if (augments.length === 0) return null
@@ -191,39 +227,48 @@ function AugmentsPanel({ deck, locale }: { deck: MetaDeck; locale: TFTLocale | u
   )
 }
 
-/* ════════════════════════════
-   추천 아이템 (API 실데이터)
-════════════════════════════ */
-function ItemsPanel({ deck }: { deck: MetaDeck }) {
-  const items = deck.topItems ?? []
-  if (items.length === 0) return null
+function ItemsPanel({ deck, locale }: { deck: MetaDeck; locale: TFTLocale | undefined }) {
+  const carries = deck.champions
+    .filter((champ) => (champ.recommendedItems?.length ?? 0) > 0)
+    .slice(0, 3)
+  if (carries.length === 0) return null
 
   return (
     <section className={styles.panel}>
       <div className={styles.panelHead}>
         <Swords size={16} />
         <h2>추천 아이템</h2>
-        <span className={styles.panelSub}>등수 향상 효과 기준</span>
+        <span className={styles.panelSub}>캐리 유닛별 핵심 3개</span>
       </div>
       <div className={styles.itemList}>
-        {items.map((item) => (
-          <div key={item.itemId} className={styles.itemCard}>
+        {carries.map((champ) => (
+          <div key={champ.name} className={styles.itemCard}>
             <div className={styles.itemChampCol}>
               <img
-                src={tftItemIconUrl(item.itemId)}
-                alt={item.itemName}
+                src={champ.imageUrl}
+                alt={champ.name}
                 className={styles.itemChampImg}
-                onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '0.3' }}
+                onError={(e) => { e.currentTarget.style.opacity = '0.3' }}
               />
-              <span className={styles.itemChampName}>{item.itemName}</span>
+              <span className={styles.itemChampName}>
+                {getChampionName(champ.imageUrl, locale, champ.name)}
+              </span>
             </div>
             <div className={styles.coreSection}>
-              <span className={styles.itemSectionLabel}>승률</span>
-              <span style={{ color: '#04ede0', fontWeight: 700 }}>{item.winRate}</span>
-            </div>
-            <div className={styles.altSection}>
-              <span className={styles.itemSectionLabel}>픽률</span>
-              <span style={{ color: '#8e97a1' }}>{item.playRate}</span>
+              <span className={styles.itemSectionLabel}>핵심 아이템</span>
+              <div className={styles.coreItemRow}>
+                {(champ.recommendedItems ?? []).slice(0, 3).map((itemId) => (
+                  <div key={itemId} className={styles.coreItemEntry}>
+                    <img
+                      src={tftItemIconUrl(itemId)}
+                      alt={getItemName(itemId, locale)}
+                      className={styles.coreItemIcon}
+                      onError={(e) => { e.currentTarget.style.opacity = '0.3' }}
+                    />
+                    <span className={styles.coreItemName}>{getItemName(itemId, locale)}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         ))}
@@ -232,16 +277,12 @@ function ItemsPanel({ deck }: { deck: MetaDeck }) {
   )
 }
 
-/* ════════════════════════════
-   메인
-════════════════════════════ */
 function DeckDetail() {
-  const { deckId }  = useParams<{ deckId: string }>()
-  const navigate    = useNavigate()
+  const { deckId } = useParams<{ deckId: string }>()
+  const navigate = useNavigate()
   const { data: metaDeckResponse, isLoading } = useMetaSnapshot()
   const { data: locale } = useCDragonLocale()
-  const metaDecks   = metaDeckResponse?.decks ?? []
-
+  const metaDecks = metaDeckResponse?.decks ?? []
   const deck = metaDecks.find((d) => String(d.rank) === deckId)
 
   if (isLoading) {
@@ -267,7 +308,6 @@ function DeckDetail() {
     )
   }
 
-  // 덱 표시명: 상위 2 트레잇을 한국어로 변환
   const displayName = deck.traits.length > 0
     ? deck.traits.slice(0, 2).map((t) => getTraitName(t.name, locale)).join(' ')
     : deck.name
@@ -275,20 +315,16 @@ function DeckDetail() {
   return (
     <AppLayout>
       <div className={styles.page}>
-
-        {/* 뒤로가기 */}
         <button type="button" className={styles.backBtn} onClick={() => navigate('/decks')}>
           <ArrowLeft size={16} /> 덱모음으로
         </button>
 
-        {/* 헤더 */}
         <div className={styles.header}>
           <TierBadge value={deck.grade} />
           <h1 className={styles.deckName}>{displayName}</h1>
           <span className={styles.rankLabel}>메타 #{deck.rank}</span>
         </div>
 
-        {/* 스탯 */}
         <div className={styles.statsRow}>
           <div className={styles.statItem}>
             <small>승률</small>
@@ -306,37 +342,36 @@ function DeckDetail() {
           </div>
           <div className={styles.statDivider} />
           <div className={styles.statItem}>
-            <small>픽률</small>
+            <small>선택률</small>
             <strong className={styles.gold}>{deck.pickRate}</strong>
           </div>
         </div>
 
-        {/* 배치판 (동적) */}
         <HexBoard deck={deck} locale={locale} />
 
-        {/* 시너지 */}
         <section className={styles.panel}>
           <div className={styles.panelHead}>
             <Trophy size={16} />
             <h2>시너지 구성</h2>
           </div>
           <div className={styles.traitList}>
-            {deck.traits.map((t) => (
-              <div key={t.name} className={styles.traitItem}>
-                <TraitHexBadge count={t.count} iconUrl={t.iconUrl} name={getTraitName(t.name, locale)} tone={t.tone} />
-                <span className={styles.traitName}>{getTraitName(t.name, locale)}</span>
-                <span className={styles.traitCount}>{t.count}조각</span>
+            {deck.traits.map((trait) => (
+              <div key={trait.name} className={styles.traitItem}>
+                <TraitHexBadge
+                  count={trait.count}
+                  iconUrl={trait.iconUrl}
+                  name={getTraitName(trait.name, locale)}
+                  tone={trait.tone}
+                />
+                <span className={styles.traitName}>{getTraitName(trait.name, locale)}</span>
+                <span className={styles.traitCount}>{trait.count}조각</span>
               </div>
             ))}
           </div>
         </section>
 
-        {/* 추천 아이템 */}
-        <ItemsPanel deck={deck} />
-
-        {/* 추천 증강체 */}
+        <ItemsPanel deck={deck} locale={locale} />
         <AugmentsPanel deck={deck} locale={locale} />
-
       </div>
     </AppLayout>
   )

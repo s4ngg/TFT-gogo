@@ -266,7 +266,7 @@
 /* 챔피언 1명 단위 카드 */
 .itemCard {
   display: grid;
-  grid-template-columns: 80px 1fr auto;
+  grid-template-columns: 80px 1fr;
   align-items: start;
   gap: 20px;
   padding: 18px 0;

@@ -27,8 +27,20 @@ public final class TftAssetUrlBuilder {
         }
 
         String id = characterId.toLowerCase(Locale.ROOT);
+        String overrideUrl = championImageOverride(id);
+        if (overrideUrl != null) {
+            return overrideUrl;
+        }
+
         String setTag = extractSetTag(id);
         return CDN_BASE_URL + "/characters/" + id + "/hud/" + id + "_square." + setTag + ".png";
+    }
+
+    private static String championImageOverride(String id) {
+        return switch (id) {
+            case "tft17_rhaast" -> "https://ddragon.leagueoflegends.com/cdn/16.10.1/img/tft-champion/TFT17_KaynSplash_Uncentered.TFT_Set17.png";
+            default -> null;
+        };
     }
 
     public static String buildTraitIconUrl(String traitId) {

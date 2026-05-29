@@ -28,10 +28,12 @@ interface RankFilterOption {
   value: RankFilter
 }
 
-const TIER_ORDER: TierBadgeValue[] = ['S', 'A+', 'A', 'B', 'C', 'D']
+const TIER_ORDER: TierBadgeValue[] = ['S', 'A', 'B', 'C', 'D']
 const TIER_COLOR: Record<TierBadgeValue, string> = {
   S: '#04f3e5', 'A+': '#f7d26d', A: '#a78bfa', B: '#60a5fa', C: '#818cf8', D: '#6b7280',
 }
+
+const NON_SHOP_CHAMPION_NAMES = new Set(['ElderDragon', 'IvernMinion', 'Summon'])
 
 /* ════════════════════════════
    유틸
@@ -44,6 +46,15 @@ function deckDisplayName(deck: MetaDeck, locale: TFTLocale | undefined): string 
     .slice(0, 2)
     .map((t) => getTraitName(t.name, locale))
   return parts.length > 0 ? parts.join(' ') : deck.name
+}
+
+function shopChampions(deck: MetaDeck) {
+  return deck.champions.filter((champion) => !NON_SHOP_CHAMPION_NAMES.has(champion.name))
+}
+
+function isArtifactItem(itemId: string) {
+  const id = itemId.toLowerCase()
+  return id.includes('artifact') || id.includes('ornn') || id.includes('shimmerscale')
 }
 
 function sortDecks(decks: MetaDeck[], key: SortKey, dir: SortDir) {
@@ -98,7 +109,7 @@ function DeckRow({
       </td>
       <td className={styles.champCol}>
         <span className={styles.champions}>
-          {deck.champions.map((c, i) => (
+          {shopChampions(deck).slice(0, 9).map((c, i) => (
             <ChampionCard
               key={`${c.name}-${i}`}
               imageUrl={c.imageUrl}
@@ -213,7 +224,7 @@ function HeroAugmentSection({ decks, locale }: { decks: MetaDeck[]; locale: TFTL
                   ))}
                 </div>
                 <div className={styles.augChamps}>
-                  {deck.champions.slice(0, 4).map((c, i) => (
+                  {shopChampions(deck).slice(0, 4).map((c, i) => (
                     <ChampionCard
                       key={`${c.name}-${i}`}
                       imageUrl={c.imageUrl}
@@ -260,7 +271,7 @@ function buildItemUnitEntries(decks: MetaDeck[]): ItemUnitEntry[] {
 
   decks.forEach((deck) => {
     deck.topItems?.forEach((item) => {
-      if (!item.itemId.toLowerCase().includes('_artifact_')) return
+      if (!isArtifactItem(item.itemId)) return
       const delta = parseFloat(item.placementDelta)
       if (!Number.isFinite(delta) || delta <= 0) return
 
@@ -275,7 +286,7 @@ function buildItemUnitEntries(decks: MetaDeck[]): ItemUnitEntry[] {
       }
       const entry = map.get(item.itemId)!
 
-      deck.champions.forEach((champ) => {
+      shopChampions(deck).forEach((champ) => {
         if (champ.recommendedItems?.includes(item.itemId) && !entry.unitSet.has(champ.name)) {
           entry.unitSet.set(champ.name, { name: champ.name, imageUrl: champ.imageUrl })
         }
@@ -433,8 +444,8 @@ function DeckListView({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale 
    (lolchess 스타일, 티어별 수직)
 ════════════════════════════ */
 function MetaStatsView({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale | undefined }) {
-  const [sortKey, setSortKey] = useState<SortKey>('rank')
-  const [sortDir, setSortDir] = useState<SortDir>('asc')
+  const [sortKey, setSortKey] = useState<SortKey>('pickRate')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
 
   function handleSort(key: SortKey) {
     if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
@@ -446,7 +457,7 @@ function MetaStatsView({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale
   return (
     <div className={styles.tableWrap}>
       <table className={styles.table}>
-        <TableHead sortKey={sortKey} sortDir={sortDir} onSort={handleSort} showTier showRank />
+        <TableHead sortKey={sortKey} sortDir={sortDir} onSort={handleSort} showTier showRank={false} />
         <tbody>
           {TIER_ORDER.map((tier) => {
             const tierDecks = sortDecks(safeDecks.filter((d) => d.grade === tier), sortKey, sortDir)
@@ -455,7 +466,7 @@ function MetaStatsView({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale
             return (
               <>
                 <tr key={`header-${tier}`} className={styles.tierHeaderRow}>
-                  <td colSpan={8}>
+                  <td colSpan={7}>
                     <span className={styles.tierHeaderInner} style={{ borderLeftColor: color }}>
                       <TierBadge value={tier} />
                       <span className={styles.tierName} style={{ color }}>{tier} 티어</span>
@@ -471,7 +482,7 @@ function MetaStatsView({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale
                     </span>
                   </td>
                 </tr>
-                {tierDecks.map((d) => <DeckRow key={d.rank} deck={d} showTier showRank locale={locale} />)}
+                {tierDecks.map((d) => <DeckRow key={d.rank} deck={d} showTier showRank={false} locale={locale} />)}
               </>
             )
           })}
