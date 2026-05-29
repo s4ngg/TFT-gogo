@@ -201,6 +201,27 @@ TFT(전략적 팀 전투) 전적 검색 서비스.
 - 향후 `/guide`가 전체 목록을 계속 내려주는 구조라면 목록 렌더링에는 사용하지 않고 fallback 또는 메타 정보 용도로만 제한한다
 - 전체 목록 응답을 완전히 제거하려면 `/guide`를 가벼운 summary API로 유지하거나 `/guide/summary` 같은 별도 API로 분리할 수 있다
 
+#### 프론트 구조 기준
+
+- `frontend/src/pages/Guide/Guide.tsx`는 페이지 조립 계층으로 유지한다
+  - `useGuide`에서 제공하는 현재 탭, 검색어, 즐겨찾기, 최근 본 가이드, fallback 데이터를 연결한다
+  - 탭 컨트롤, 검색 입력, 빠른 이동 영역, 현재 탭에 맞는 view 컴포넌트 렌더링만 담당한다
+  - 탭별 목록 렌더링, 정렬, 필터, 페이지네이션, 상세 모달 로직은 직접 포함하지 않는다
+- `frontend/src/pages/Guide/components/`는 Guide 페이지 전용 UI를 담당한다
+  - `TraitGuideView.tsx`: 시너지 탭 조회, 카드 목록, 연결 챔피언 이동, 페이지네이션
+  - `ItemStatsView.tsx`: 아이템 통계 탭 조회, 정렬 가능한 표, 추천 챔피언/조합 표시, 페이지네이션
+  - `AugmentGuideView.tsx`: 증강체 탭 조회, 정렬 가능한 표, 보상표, 증강 선택 플랜 표시, 페이지네이션
+  - `ChampionGuideView.tsx`: 챔피언 탭 조회, 코스트 필터, 즐겨찾기, 카드 목록, 상세 모달 진입
+  - `ChampionDetailDialog.tsx`: 챔피언 상세 모달, 닫기/즐겨찾기/아이템 이동 동작
+  - `GuideQuickAccess.tsx`: 즐겨찾기와 최근 본 가이드 빠른 이동 영역
+  - `GuideShared.tsx`: Guide 내부에서만 공유되는 빈 상태, 상태 배너, 정렬 버튼, 페이지네이션, 공통 아이콘 표시 컴포넌트
+- 2개 이상 페이지에서 재사용되는 UI는 `frontend/src/components/common/`으로 이동하고, Guide 페이지에서만 쓰는 UI는 `pages/Guide/components/`에 둔다
+- `frontend/src/hooks/useGuide.ts`는 Guide 화면의 서버 상태 조회, 탭 이동, 검색어, 즐겨찾기, 최근 본 가이드 상태를 관리한다
+  - 탭별 목록 조회는 TanStack Query 기반 hook을 통해 수행하고, 컴포넌트에서 직접 `fetch` 또는 `axios`를 호출하지 않는다
+- `frontend/src/api/guide.ts`는 Guide API 요청 함수, 탭별 파라미터, 응답 타입, 응답 정규화 규칙을 담당한다
+- `frontend/src/mocks/guideResponseMock.ts`는 API 미연동 또는 오류 시 사용할 샘플/fallback 데이터만 담당한다
+- 새 Guide 탭을 추가할 때는 API 타입과 파라미터를 먼저 `api/guide.ts`에 정의하고, 조회 hook과 페이지 전용 view 컴포넌트를 분리한 뒤 `Guide.tsx`에는 탭 연결만 추가한다
+
 #### 상태 및 접근성 요구사항
 
 - 탭 전환 시 사용자가 입력한 검색어와 필터 상태는 의도한 기준에 맞춰 유지 또는 초기화되어야 하며, 기준은 구현 코드에서 일관되게 적용해야 한다
