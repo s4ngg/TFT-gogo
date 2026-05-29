@@ -134,14 +134,12 @@ export async function fetchTFTLocale(): Promise<TFTLocale> {
 }
 
 // apiName(소문자) → 한국 커뮤니티 축약명
-// 풀네임이 짧은 챔피언은 제외, 보편적으로 통용되는 것만 등록
+// 한글 음절 5글자 이상인 긴 이름만 등록 — 4글자 이하는 축약해도 어색함
+// (예: 탐 켄치=3글자·마스터 이=4글자 → 제외 / 블리츠크랭크=6글자 → 등록)
 const CHAMP_SHORT: Record<string, string> = {
-  tft17_masteryi:    '마이',
-  tft17_aurelionsol: '아우솔',
-  tft17_twistedfate: '트페',
-  tft17_blitzcrank:  '블리츠',
-  tft17_missfortune: '미포',
-  tft17_tahmkench:   '탐켄',
+  tft17_aurelionsol: '아우솔',   // 아우렐리온 솔 (6글자)
+  tft17_twistedfate: '트페',     // 트위스티드 페이트 (8글자)
+  tft17_blitzcrank:  '블리츠',  // 블리츠크랭크 (6글자)
 }
 
 /**
