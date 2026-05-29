@@ -282,6 +282,30 @@ TFT(전략적 팀 전투) 전적 검색 서비스.
 - API 연동 전에는 샘플 데이터 기반으로 실제 화면 흐름을 확인할 수 있어야 한다
 - API 연동 후에는 로딩, 빈 데이터, 에러, 재시도 상태를 사용자에게 명확히 안내해야 한다
 
+#### 프론트 구조 기준
+
+- `PatchNotes.tsx`는 페이지 상태와 데이터 연결, 페이지 전용 컴포넌트 조립만 담당한다
+  - 선택 패치 버전, 검색어, 카테고리, 변경 유형, 영향 높음 필터, 현재 페이지, 펼쳐진 변경사항 상태를 관리한다
+  - `usePatchNotes`, `usePatchChanges` 훅을 통해 API/fallback 데이터를 연결한다
+  - 상세 UI 마크업, fallback 샘플 데이터, 이미지 매핑 상수는 직접 포함하지 않는다
+- 패치노트 페이지 전용 UI는 `pages/PatchNotes/components/` 아래에서 관리한다
+  - `PatchHero`: 선택 패치의 제목, 설명, 적용일, 변경 건수, 대표 이미지 표시
+  - `PatchStatusBanner`: 로딩, fallback, 재시도 상태 표시
+  - `PatchSummaryGrid`: 상향/하향 수와 핵심 요약 카드 표시
+  - `PatchChangeFilters`: 검색어, 카테고리, 변경 유형, 영향 높음 필터 입력
+  - `PatchChangeList`: 변경사항 목록, 이미지, 태그, 상세 비교 토글 표시
+  - `PatchPagination`: 변경사항 목록 페이지 이동
+  - `PatchSideRail`: 이번 패치 핵심 요약과 패치 히스토리 선택 영역 표시
+- 패치노트 샘플 데이터는 `mocks/patchNotesMock.ts`에서 관리한다
+  - API 연결 실패 또는 API 연동 전 화면 확인을 위한 fallback 데이터를 제공한다
+  - 페이지 컴포넌트가 샘플 데이터 생성 세부 로직을 직접 알지 않도록 한다
+- 패치노트 이미지 fallback과 대상/카테고리별 이미지 매핑은 `pages/PatchNotes/patchNotesImages.ts`에서 관리한다
+  - 이미지 로딩 실패 시 기본 패치 엠블럼 이미지를 사용한다
+  - Community Dragon CDN 경로는 이미지 매핑 유틸을 통해서만 사용한다
+- API 호출과 응답 정규화는 `api/patchNotes.ts`, TanStack Query 연결은 `hooks/usePatchNotes.ts`에서 담당한다
+  - 페이지 전용 컴포넌트는 직접 `axios`를 import하지 않는다
+  - 서버 상태는 TanStack Query 훅을 통해 전달받는다
+
 #### 현재 프론트 구현 기준
 
 - 패치노트 화면은 패치 히스토리/요약 조회와 변경사항 목록 조회를 분리한다
