@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, Map as MapIcon, Swords, Sparkles, Trophy } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AppLayout } from '../../components/layout'
@@ -87,36 +87,38 @@ function buildBoardPositions(visible: ChampionSummary[], locale: TFTLocale | und
   return result
 }
 
-function HexBoard({ deck, locale }: { deck: MetaDeck; locale: TFTLocale | undefined }) {
-  const all = deck.champions
-
-  const prioritized = useMemo(() => {
-    return [...all].sort((a, b) => {
-      const ac = isCarry(a)
-      const bc = isCarry(b)
-      if (ac !== bc) return bc ? 1 : -1
-      return getCost(b, locale) - getCost(a, locale)
+/** 챔피언 목록 기반으로 트레이트별 유닛 수를 재계산 */
+function computeTraitCounts(
+  champions: ChampionSummary[],
+  locale: TFTLocale | undefined,
+): Map<string, number> {
+  const counts = new Map<string, number>()
+  if (!locale) return counts
+  champions.forEach((champ) => {
+    const detail = getChampionDetail(champ.imageUrl, locale)
+    detail?.traits.forEach((trait) => {
+      counts.set(trait, (counts.get(trait) ?? 0) + 1)
     })
-  }, [all, locale])
+  })
+  return counts
+}
 
-  const maxLevel = Math.min(9, all.length)
-  const availableLevels = useMemo(
-    () => Array.from({ length: Math.max(0, maxLevel - 4) }, (_, i) => i + 5),
-    [maxLevel],
-  )
-  const [level, setLevel] = useState<number>(maxLevel)
+/* ── HexBoard: visibleUnits·level은 부모(DeckDetail)에서 받음 ── */
+interface HexBoardProps {
+  visibleUnits: ChampionSummary[]
+  level: number
+  availableLevels: number[]
+  onLevelChange: (lv: number) => void
+  locale: TFTLocale | undefined
+}
 
-  const visibleUnits = useMemo(
-    () => prioritized.filter((champ) => canUseAtLevel(champ, level, locale)).slice(0, level),
-    [prioritized, level, locale],
-  )
-
+function HexBoard({ visibleUnits, level, availableLevels, onLevelChange, locale }: HexBoardProps) {
   const placed = useMemo(
     () => buildBoardPositions(visibleUnits, locale),
     [visibleUnits, locale],
   )
 
-  if (all.length === 0) return null
+  if (visibleUnits.length === 0) return null
 
   function champAt(row: number, col: number): PlacedChamp | undefined {
     return placed.find((p) => p.row === row && p.col === col)
@@ -185,7 +187,7 @@ function HexBoard({ deck, locale }: { deck: MetaDeck; locale: TFTLocale | undefi
                 key={lv}
                 type="button"
                 className={`${styles.levelTab} ${lv === level ? styles.levelTabActive : ''}`}
-                onClick={() => setLevel(lv)}
+                onClick={() => onLevelChange(lv)}
               >
                 Lv.{lv}
               </button>
@@ -277,22 +279,6 @@ function ItemsPanel({ deck, locale }: { deck: MetaDeck; locale: TFTLocale | unde
   )
 }
 
-/** 챔피언 목록 기반으로 트레이트별 유닛 수를 재계산 */
-function computeTraitCounts(
-  champions: ChampionSummary[],
-  locale: TFTLocale | undefined,
-): Map<string, number> {
-  const counts = new Map<string, number>()
-  if (!locale) return counts
-  champions.forEach((champ) => {
-    const detail = getChampionDetail(champ.imageUrl, locale)
-    detail?.traits.forEach((trait) => {
-      counts.set(trait, (counts.get(trait) ?? 0) + 1)
-    })
-  })
-  return counts
-}
-
 function DeckDetail() {
   const { deckId } = useParams<{ deckId: string }>()
   const navigate = useNavigate()
@@ -301,24 +287,55 @@ function DeckDetail() {
   const metaDecks = metaDeckResponse?.decks ?? []
   const deck = metaDecks.find((d) => String(d.rank) === deckId)
 
-  // 챔피언 목록 기반으로 트레이트 count 재계산 (저장된 값은 첫 경기 스냅샷이라 부정확)
-  const traitCounts = useMemo(
-    () => (deck ? computeTraitCounts(deck.champions, locale) : new Map<string, number>()),
-    [deck, locale],
+  // ── 레벨 상태 (HexBoard에서 끌어올림) ──────────────────────────
+  // deck이 없을 때는 빈 배열, 있을 때는 champions 사용
+  const all = deck?.champions ?? []
+  const maxLevel = Math.min(9, all.length || 9)
+  const availableLevels = useMemo(
+    () => Array.from({ length: Math.max(0, maxLevel - 4) }, (_, i) => i + 5),
+    [maxLevel],
+  )
+  const [level, setLevel] = useState<number>(9)
+
+  // 덱이 바뀌면 (다른 덱 상세 진입 시) 레벨을 maxLevel로 초기화
+  useEffect(() => {
+    setLevel(maxLevel)
+  }, [deck?.rank, maxLevel])
+
+  // 우선순위 정렬: 캐리 > 고코스트 순
+  const prioritized = useMemo(
+    () =>
+      [...all].sort((a, b) => {
+        const ac = isCarry(a), bc = isCarry(b)
+        if (ac !== bc) return bc ? 1 : -1
+        return getCost(b, locale) - getCost(a, locale)
+      }),
+    [all, locale],
   )
 
-  // 실제 챔피언 목록에 2명 이상 있는 트레이트만, 계산된 count로 갱신
+  // 현재 레벨에서 배치 가능한 유닛 (HexBoard·시너지 공용)
+  const visibleUnits = useMemo(
+    () => prioritized.filter((champ) => canUseAtLevel(champ, level, locale)).slice(0, level),
+    [prioritized, level, locale],
+  )
+
+  // 시너지: visibleUnits 기반 재계산 → 레벨 탭 바꾸면 자동 동기화
+  const traitCounts = useMemo(
+    () => computeTraitCounts(visibleUnits, locale),
+    [visibleUnits, locale],
+  )
   const displayTraits = useMemo(
     () =>
       deck
         ? deck.traits
-            .map((t) => ({ ...t, count: traitCounts.get(t.name) ?? t.count }))
+            .map((t) => ({ ...t, count: traitCounts.get(t.name) ?? 0 }))
             .filter((t) => (traitCounts.get(t.name) ?? 0) >= 2)
             .sort((a, b) => b.count - a.count)
         : [],
     [deck, traitCounts],
   )
 
+  // ── Early returns (hooks 이후) ───────────────────────────────
   if (isLoading) {
     return (
       <AppLayout>
@@ -342,7 +359,8 @@ function DeckDetail() {
     )
   }
 
-  const traitName = displayTraits.length > 0 ? getTraitName(displayTraits[0].name, locale) : ''
+  // 덱 이름: 저장된 traits 기준 (레벨과 무관하게 고정)
+  const traitName = deck.traits.length > 0 ? getTraitName(deck.traits[0].name, locale) : ''
   const carries = deck.champions
     .filter((c) => (c.recommendedItems?.length ?? 0) > 0)
     .slice(0, 2)
@@ -393,12 +411,21 @@ function DeckDetail() {
           )}
         </div>
 
-        <HexBoard deck={deck} locale={locale} />
+        {/* 배치판: level·visibleUnits를 부모에서 공급 */}
+        <HexBoard
+          visibleUnits={visibleUnits}
+          level={level}
+          availableLevels={availableLevels}
+          onLevelChange={setLevel}
+          locale={locale}
+        />
 
+        {/* 시너지 구성: visibleUnits 기반 → 레벨 탭 변경 시 자동 동기화 */}
         <section className={styles.panel}>
           <div className={styles.panelHead}>
             <Trophy size={16} />
             <h2>시너지 구성</h2>
+            <span className={styles.panelSub}>Lv.{level} 기준</span>
           </div>
           <div className={styles.traitList}>
             {displayTraits.map((trait) => (
