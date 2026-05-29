@@ -145,6 +145,62 @@ TFT(전략적 팀 전투) 전적 검색 서비스.
 - API 연동 전에는 실제 화면 흐름을 확인할 수 있도록 샘플 데이터 기반 UI를 제공한다
 - API 연동 후에는 로딩, 빈 데이터, 에러 상태를 사용자에게 명확히 안내해야 한다
 
+#### 현재 프론트 구현 기준
+
+- 가이드 화면의 목록 데이터는 전체 가이드 데이터를 한 번 받은 뒤 프론트에서 필터링하지 않는다
+- 각 탭은 현재 검색어, 정렬, 필터, 페이지 상태를 API 파라미터로 전달하고 서버가 반환한 페이지 결과만 렌더링한다
+- `GET /guide`는 화면 공통 메타 정보와 API 미연동 단계의 fallback 기준 데이터를 가져오는 용도로 사용한다
+  - `patchVersion`
+  - `augmentPlans`
+  - `rewards`
+  - API 실패 시 화면 유지에 사용할 샘플 데이터
+- 실제 목록 렌더링은 다음 탭별 API를 기준으로 한다
+  - `GET /guide/traits`
+  - `GET /guide/items`
+  - `GET /guide/augments`
+  - `GET /guide/champions`
+- 탭별 API는 공통적으로 `page`, `pageSize`, `query` 파라미터를 받을 수 있어야 한다
+- 아이템 탭은 추가로 `sortKey`, `sortDir` 파라미터를 받을 수 있어야 한다
+  - `sortKey`: `winRate`, `top4Rate`, `pickRate`, `avgPlacement`
+  - `sortDir`: `asc`, `desc`
+- 증강체 탭은 추가로 `sortKey`, `sortDir` 파라미터를 받을 수 있어야 한다
+  - `sortKey`: `winRate`, `pickRate`, `avgPlacement`
+  - `sortDir`: `asc`, `desc`
+- 챔피언 탭은 추가로 `cost` 파라미터를 받을 수 있어야 한다
+  - 전체 코스트 선택 시 `cost`는 전달하지 않는다
+  - 특정 코스트 선택 시 `1`~`5` 값을 전달한다
+- 탭별 API의 기본 응답 형태는 다음 구조를 기준으로 한다
+
+```json
+{
+  "items": [],
+  "page": 1,
+  "pageSize": 10,
+  "totalItems": 100,
+  "totalPages": 10
+}
+```
+
+- Spring Page 응답을 사용할 경우 다음 형태도 허용한다
+
+```json
+{
+  "content": [],
+  "number": 0,
+  "size": 10,
+  "totalElements": 100,
+  "totalPages": 10
+}
+```
+
+- Spring Page의 `number`는 0부터 시작하는 페이지 번호로 간주하며, 프론트에서는 1부터 시작하는 페이지 번호로 보정한다
+- 서버가 `items`, `content`, `data`, `results` 중 하나로 목록을 내려주면 프론트에서 페이지 목록으로 인식할 수 있다
+- 서버가 `totalItems`, `totalElements`, `total` 중 하나로 전체 개수를 내려주면 프론트에서 전체 아이템 수로 인식할 수 있다
+- 서버 API 연동 전이나 API 오류 발생 시에는 기존 샘플 데이터를 동일한 검색, 필터, 정렬, 페이지 규칙으로 잘라 fallback 화면을 표시한다
+- 백엔드 구현이 완료되면 `/guide/{tab}` API가 필터링, 정렬, 페이지네이션을 서버에서 처리해야 한다
+- 향후 `/guide`가 전체 목록을 계속 내려주는 구조라면 목록 렌더링에는 사용하지 않고 fallback 또는 메타 정보 용도로만 제한한다
+- 전체 목록 응답을 완전히 제거하려면 `/guide`를 가벼운 summary API로 유지하거나 `/guide/summary` 같은 별도 API로 분리할 수 있다
+
 #### 상태 및 접근성 요구사항
 
 - 탭 전환 시 사용자가 입력한 검색어와 필터 상태는 의도한 기준에 맞춰 유지 또는 초기화되어야 하며, 기준은 구현 코드에서 일관되게 적용해야 한다
@@ -225,6 +281,70 @@ TFT(전략적 팀 전투) 전적 검색 서비스.
 - 이미지 매핑 또는 로딩 실패 시 프로젝트 내 fallback 이미지를 사용해야 한다
 - API 연동 전에는 샘플 데이터 기반으로 실제 화면 흐름을 확인할 수 있어야 한다
 - API 연동 후에는 로딩, 빈 데이터, 에러, 재시도 상태를 사용자에게 명확히 안내해야 한다
+
+#### 현재 프론트 구현 기준
+
+- 패치노트 화면은 패치 히스토리/요약 조회와 변경사항 목록 조회를 분리한다
+- `GET /patch-notes`는 패치 버전 목록, 선택 가능한 패치 요약, 히스토리 영역 데이터를 가져오는 용도로 사용한다
+- 선택된 패치의 변경사항 목록은 다음 API를 기준으로 조회한다
+  - `GET /patch-notes/{version}/changes`
+- 변경사항 목록 API는 현재 검색어, 카테고리, 변경 유형, 영향도, 페이지 상태를 파라미터로 받아야 한다
+  - `page`: 현재 페이지 번호, 1부터 시작
+  - `pageSize`: 한 페이지 변경사항 개수, 현재 UI 기준 5
+  - `query`: 대상 이름, 태그, 설명 검색어
+  - `category`: 변경사항 카테고리
+  - `type`: 변경 유형
+  - `impact`: 영향도 필터
+- 프론트에서 서버로 전달하는 `category` 값은 다음과 같다
+  - 전체: 파라미터 생략
+  - 챔피언: `CHAMPION`
+  - 시너지: `TRAIT`
+  - 아이템: `ITEM`
+  - 증강체: `AUGMENT`
+  - 시스템: `SYSTEM`
+- 프론트에서 서버로 전달하는 `type` 값은 다음과 같다
+  - 전체 변경: 파라미터 생략
+  - 상향: `BUFF`
+  - 하향: `NERF`
+  - 조정: `ADJUST`
+  - 신규: `NEW`
+- 영향 높음만 보기 필터가 켜져 있으면 `impact=HIGH`를 전달한다
+- 변경사항 목록 API의 기본 응답 형태는 다음 구조를 기준으로 한다
+
+```json
+{
+  "items": [],
+  "page": 1,
+  "pageSize": 5,
+  "totalItems": 23,
+  "totalPages": 5,
+  "categoryCounts": {
+    "CHAMPION": 10,
+    "TRAIT": 4,
+    "ITEM": 3,
+    "AUGMENT": 2,
+    "SYSTEM": 4
+  },
+  "typeCounts": {
+    "BUFF": 8,
+    "NERF": 6,
+    "ADJUST": 7,
+    "NEW": 2
+  },
+  "highImpactCount": 4,
+  "totalChanges": 23
+}
+```
+
+- Spring Page 응답을 사용할 경우 `items` 대신 `content`를 내려줘도 된다
+- 서버가 `items`, `content`, `changes`, `patchNoteChanges`, `data`, `results` 중 하나로 목록을 내려주면 프론트에서 변경사항 목록으로 인식할 수 있다
+- 서버가 `totalItems`, `totalElements`, `total` 중 하나로 전체 개수를 내려주면 프론트에서 전체 변경사항 수로 인식할 수 있다
+- `categoryCounts`, `typeCounts`, `highImpactCount`, `totalChanges`는 선택 필드지만 백엔드에서 내려주는 것을 권장한다
+  - 이 값들이 있으면 현재 페이지가 아니라 전체 필터 결과 기준으로 요약 카운트를 정확히 표시할 수 있다
+  - 값이 없으면 프론트는 현재 응답과 fallback 데이터를 기준으로 제한적으로 계산한다
+- 서버 API 연동 전이나 API 오류 발생 시에는 기존 샘플 데이터를 동일한 검색, 필터, 페이지 규칙으로 잘라 fallback 화면을 표시한다
+- 백엔드 구현이 완료되면 `/patch-notes/{version}/changes` API가 검색, 필터, 페이지네이션을 서버에서 처리해야 한다
+- `/patch-notes`가 변경사항 전체 목록까지 내려주더라도 변경사항 목록 렌더링에는 `/patch-notes/{version}/changes`를 우선 사용한다
 
 #### 상태 및 접근성 요구사항
 
