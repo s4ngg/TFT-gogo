@@ -5,14 +5,36 @@ const CDRAGON_TFT_KO_URL = 'https://raw.communitydragon.org/latest/cdragon/tft/k
 
 export interface TFTLocale {
   champByApiName: Map<string, string>
+  champDetailByApiName: Map<string, ChampionDetail>
   traitBySuffix: Map<string, string>
   itemByApiName: Map<string, string>
   augmentBySuffix: Map<string, string>
 }
 
+export interface ChampionDetail {
+  apiName: string
+  name: string
+  cost: number
+  role?: string
+  range?: number
+  abilityName?: string
+  abilityDesc?: string
+  traits: string[]   // lowercase suffix, e.g. ['brawler', 'slayer']
+}
+
 interface CDragonEntry {
+  ability?: {
+    desc?: string
+    name?: string
+  }
   apiName?: string
+  cost?: number
   name?: string
+  role?: string
+  stats?: {
+    range?: number
+  }
+  traits?: string[]
 }
 
 function readCDragonEntries(value: unknown): CDragonEntry[] {
@@ -20,10 +42,31 @@ function readCDragonEntries(value: unknown): CDragonEntry[] {
 
   return value
     .filter(isRecord)
-    .map((entry) => ({
-      apiName: typeof entry.apiName === 'string' ? entry.apiName : undefined,
-      name: typeof entry.name === 'string' ? entry.name : undefined,
-    }))
+    .map((entry) => {
+      const ability = isRecord(entry.ability) ? entry.ability : undefined
+      const stats = isRecord(entry.stats) ? entry.stats : undefined
+
+      return {
+        ability: ability
+          ? {
+              desc: typeof ability.desc === 'string' ? ability.desc : undefined,
+              name: typeof ability.name === 'string' ? ability.name : undefined,
+            }
+          : undefined,
+        apiName: typeof entry.apiName === 'string' ? entry.apiName : undefined,
+        cost: typeof entry.cost === 'number' ? entry.cost : undefined,
+        name: typeof entry.name === 'string' ? entry.name : undefined,
+        role: typeof entry.role === 'string' ? entry.role : undefined,
+        stats: stats
+          ? {
+              range: typeof stats.range === 'number' ? stats.range : undefined,
+            }
+          : undefined,
+        traits: Array.isArray(entry.traits)
+          ? (entry.traits as unknown[]).filter((t): t is string => typeof t === 'string')
+          : undefined,
+      }
+    })
 }
 
 export async function fetchTFTLocale(): Promise<TFTLocale> {
@@ -31,6 +74,7 @@ export async function fetchTFTLocale(): Promise<TFTLocale> {
     const { data } = await axiosInstance.get<Record<string, unknown>>(CDRAGON_TFT_KO_URL)
 
     const champByApiName = new Map<string, string>()
+    const champDetailByApiName = new Map<string, ChampionDetail>()
     const traitBySuffix = new Map<string, string>()
     const itemByApiName = new Map<string, string>()
     const augmentBySuffix = new Map<string, string>()
@@ -43,7 +87,22 @@ export async function fetchTFTLocale(): Promise<TFTLocale> {
 
     readCDragonEntries(currentSet?.champions).forEach((c) => {
       if (c.apiName && c.name) {
-        champByApiName.set(c.apiName.toLowerCase(), c.name)
+        const key = c.apiName.toLowerCase()
+        // traits: full ID → lowercase suffix (e.g. "TFT17_Brawler" → "brawler")
+        const traits = (c.traits ?? [])
+          .map((t) => t.split('_').pop()?.toLowerCase() ?? '')
+          .filter(Boolean)
+        champByApiName.set(key, c.name)
+        champDetailByApiName.set(key, {
+          apiName: c.apiName,
+          name: c.name,
+          cost: c.cost ?? 0,
+          role: c.role,
+          range: c.stats?.range,
+          abilityName: c.ability?.name,
+          abilityDesc: c.ability?.desc,
+          traits,
+        })
       }
     })
 
@@ -67,19 +126,59 @@ export async function fetchTFTLocale(): Promise<TFTLocale> {
       }
     })
 
-    return { champByApiName, traitBySuffix, itemByApiName, augmentBySuffix }
+    return { champByApiName, champDetailByApiName, traitBySuffix, itemByApiName, augmentBySuffix }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'CDragon 데이터 로드 실패'
     throw new Error(`CDragon locale 조회 실패: ${message}`)
   }
 }
 
+// apiName(소문자) → 한국 커뮤니티 축약명
+// 한글 음절 5글자 이상인 긴 이름만 등록 — 4글자 이하는 축약해도 어색함
+// (예: 탐 켄치=3글자·마스터 이=4글자 → 제외 / 블리츠크랭크=6글자 → 등록)
+const CHAMP_SHORT: Record<string, string> = {
+  tft17_aurelionsol: '아우솔',   // 아우렐리온 솔 (6글자)
+  tft17_twistedfate: '트페',     // 트위스티드 페이트 (8글자)
+  tft17_blitzcrank:  '블리츠',  // 블리츠크랭크 (6글자)
+}
+
+/**
+ * 덱 이름 표시용 — 축약명이 있으면 축약명, 없으면 일반 한글 이름 반환
+ * 예: 마스터 이 → 마이 / 아우렐리온 솔 → 아우솔
+ */
+export function getChampionShortName(
+  imageUrl: string,
+  locale: TFTLocale | undefined,
+  fallback: string,
+): string {
+  const apiName = getChampionApiName(imageUrl)
+  if (apiName) {
+    const abbrev = CHAMP_SHORT[apiName]
+    if (abbrev) return abbrev
+  }
+  return getChampionName(imageUrl, locale, fallback)
+}
+
 /** 챔피언 이미지 URL에서 apiName 추출 후 한글 이름 반환 */
 export function getChampionName(imageUrl: string, locale: TFTLocale | undefined, fallback: string): string {
   if (!locale) return fallback
-  const m = imageUrl.match(/characters\/([^/]+)\//)
-  if (!m) return fallback
-  return locale.champByApiName.get(m[1]) ?? fallback
+  const apiName = getChampionApiName(imageUrl)
+  if (!apiName) return fallback
+  return locale.champByApiName.get(apiName) ?? fallback
+}
+
+export function getChampionApiName(imageUrl: string): string | undefined {
+  const match = imageUrl.match(/characters\/([^/]+)\//)
+  return match?.[1]?.toLowerCase()
+}
+
+export function getChampionDetail(
+  imageUrl: string,
+  locale: TFTLocale | undefined,
+): ChampionDetail | undefined {
+  if (!locale) return undefined
+  const apiName = getChampionApiName(imageUrl)
+  return apiName ? locale.champDetailByApiName.get(apiName) : undefined
 }
 
 /** 트레이트 이름(suffix) → 한글 */

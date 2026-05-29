@@ -20,6 +20,7 @@ import com.tftgogo.global.riot.dto.MatchDto.ParticipantDto;
 import com.tftgogo.global.riot.dto.MatchDto.TraitDto;
 import com.tftgogo.global.riot.dto.MatchDto.UnitDto;
 import com.tftgogo.global.riot.util.TftAssetUrlBuilder;
+import com.tftgogo.global.riot.util.TftShopUnitFilter;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -49,18 +51,57 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     private static final Logger logger = LogManager.getLogger(MetaDeckServiceImpl.class);
 
     private static final int MATCHES_PER_SUMMONER = 20;
-    private static final int MIN_SAMPLE = 5;
-    private static final int MIN_DETAIL_SAMPLE = 2;
+    // 5 → 15: 소규모 표본의 노이즈 필터링 (5게임 42%승률 → 통계 무의미)
+    private static final int MIN_SAMPLE = 15;
+    private static final int MIN_ITEM_SAMPLE = 1;
+    private static final int MIN_AUGMENT_SAMPLE = 1;
     private static final int SIGNATURE_TRAIT_COUNT = 2;
     // 6유닛 미만 = 플레이어가 레벨 5 이하에서 탈락한 빌드업 조합 — 집계 대상 제외
     private static final int MIN_UNIT_COUNT = 6;
     // 트레잇 실버(2) 이상만 활성 시너지로 인정 / 2유닛 이상이어야 고유 특성(Unique) 제외
     private static final int MIN_TRAIT_STYLE = 2;
     private static final int MIN_TRAIT_UNITS = 2;
+    private static final int CORE_UNIT_LIMIT = 7;
+    private static final int MIN_CORE_UNIT_COUNT = 5;
+    private static final double CORE_UNIT_SIMILARITY_THRESHOLD = 0.70;
+    private static final double BOARD_UNIT_SIMILARITY_THRESHOLD = 0.75;
+    private static final double S_TIER_RATIO = 0.10;
+    private static final double A_TIER_RATIO = 0.20;
+    private static final double B_TIER_RATIO = 0.30;
+    private static final double C_TIER_RATIO = 0.25;
     private static final long RATE_LIMIT_DELAY_MS = 1200L;
+    private static final int RECOMMENDED_CARRY_LIMIT = 3;
     private static final String UNKNOWN_PATCH_VERSION = "UNKNOWN";
     private static final String GLOBAL_AUGMENT_CHARACTER_ID = "GLOBAL";
     private static final ZoneId DATA_COLLECTION_ZONE = ZoneId.of("Asia/Seoul");
+    private static final Set<String> COMPONENT_ITEM_IDS = Set.of(
+            "tft_item_bfsword",
+            "tft_item_recurvebow",
+            "tft_item_needlesslylargerod",
+            "tft_item_tearofthegoddess",
+            "tft_item_chainvest",
+            "tft_item_negatroncloak",
+            "tft_item_giantsbelt",
+            "tft_item_sparringgloves",
+            "tft_item_spatula",
+            "tft_item_fryingpan"
+    );
+    private static final Set<String> HERO_AUGMENT_KEYWORDS = Set.of(
+            "invaderzed",
+            "shieldmaiden",
+            "heatdeath",
+            "reachforthestars",
+            "bonk",
+            "termeepnalvelocity",
+            "stellarcombo",
+            "yasuo",
+            "aatrox",
+            "mordekaiser",
+            "nasus",
+            "poppy",
+            "leona",
+            "zed"
+    );
     // 선택률 최소 임계값(%) — 이 이상인 덱만 덱모음에 노출
     private static final double MIN_PLAY_RATE = 0.5;
     private static final ObjectMapper objectMapper = new ObjectMapper();
@@ -136,10 +177,14 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         Map<String, PatchDeckStats> patchStatsMap = new HashMap<>();
         Set<String> processedMatchIds = new HashSet<>();
 
+        int puuidIndex = 0;
         for (String puuid : puuids) {
+            puuidIndex++;
             try {
                 List<String> matchIds = riotApiClient.getMatchIds(
                         puuid, MATCHES_PER_SUMMONER, startTimeSeconds, endTimeSeconds);
+                logger.info("[{}] puuid {}/{} matchIds={} uniqueTotal={}",
+                        rankFilter, puuidIndex, puuids.size(), matchIds.size(), processedMatchIds.size());
                 for (String matchId : matchIds) {
                     if (!processedMatchIds.add(matchId)) {
                         continue;
@@ -272,21 +317,120 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                 continue;
             }
 
-            String signature = buildSignature(activeTraits);
-            deckStatMap.computeIfAbsent(signature, ignored -> new DeckStat(activeTraits))
-                    .record(participant);
+            DeckProfile profile = buildDeckProfile(activeTraits, participant.getUnits());
+            DeckStat deckStat = findSimilarDeckStat(deckStatMap, profile);
+            if (deckStat == null) {
+                String signature = buildSignature(profile);
+                deckStat = new DeckStat(activeTraits, profile);
+                deckStatMap.put(signature, deckStat);
+            }
+            deckStat.record(participant);
             count++;
         }
         return count;
     }
 
-    private String buildSignature(List<TraitDto> activeTraits) {
+    private DeckProfile buildDeckProfile(List<TraitDto> activeTraits, List<UnitDto> units) {
+        return new DeckProfile(buildTraitSignature(activeTraits), buildCoreUnitIds(units), buildBoardUnitIds(units));
+    }
+
+    private String buildTraitSignature(List<TraitDto> activeTraits) {
         // 시그니처 = 상위 2개 트레잇 이름만 사용 (num_units 제외)
         // → 같은 아키타입이 유닛 수만 다를 때 다른 덱으로 분류되는 중복 문제 해결
         return activeTraits.stream()
                 .limit(SIGNATURE_TRAIT_COUNT)
                 .map(TraitDto::getName)
                 .collect(Collectors.joining("_"));
+    }
+
+    private Set<String> buildCoreUnitIds(List<UnitDto> units) {
+        List<UnitDto> sortedUnits = units.stream()
+                .filter(unit -> unit.getCharacter_id() != null && !unit.getCharacter_id().isBlank())
+                .sorted(Comparator.comparingInt(UnitDto::getRarity).reversed()
+                        .thenComparing(Comparator.comparingInt(UnitDto::getTier).reversed())
+                        .thenComparing(UnitDto::getCharacter_id))
+                .toList();
+
+        Set<String> coreUnitIds = sortedUnits.stream()
+                .filter(this::isCoreUnit)
+                .limit(CORE_UNIT_LIMIT)
+                .map(UnitDto::getCharacter_id)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        if (coreUnitIds.size() < MIN_CORE_UNIT_COUNT) {
+            sortedUnits.stream()
+                    .limit(CORE_UNIT_LIMIT)
+                    .map(UnitDto::getCharacter_id)
+                    .forEach(coreUnitIds::add);
+        }
+
+        return coreUnitIds;
+    }
+
+    private Set<String> buildBoardUnitIds(List<UnitDto> units) {
+        return units.stream()
+                .map(UnitDto::getCharacter_id)
+                .filter(characterId -> characterId != null && !characterId.isBlank())
+                .sorted()
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private boolean isCoreUnit(UnitDto unit) {
+        boolean hasItems = unit.getItemNames() != null && unit.getItemNames().stream()
+                .anyMatch(itemName -> itemName != null && !itemName.isBlank());
+        return unit.getRarity() >= 2 || unit.getTier() >= 2 || hasItems;
+    }
+
+    private DeckStat findSimilarDeckStat(Map<String, DeckStat> deckStatMap, DeckProfile profile) {
+        return deckStatMap.values().stream()
+                .filter(stat -> hasSimilarDeckProfile(stat.profile, profile))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private boolean hasSimilarDeckProfile(DeckProfile left, DeckProfile right) {
+        if (left.traitSignature.equals(right.traitSignature)
+                && hasSimilarCoreUnits(left.coreUnitIds, right.coreUnitIds)) {
+            return true;
+        }
+
+        return jaccardSimilarity(left.boardUnitIds, right.boardUnitIds) >= BOARD_UNIT_SIMILARITY_THRESHOLD;
+    }
+
+    private boolean hasSimilarCoreUnits(Set<String> left, Set<String> right) {
+        if (left.isEmpty() || right.isEmpty()) {
+            return false;
+        }
+
+        Set<String> intersection = new HashSet<>(left);
+        intersection.retainAll(right);
+
+        int smallerCoreSize = Math.min(left.size(), right.size());
+        if (intersection.size() < Math.min(MIN_CORE_UNIT_COUNT, smallerCoreSize)) {
+            return false;
+        }
+
+        Set<String> union = new HashSet<>(left);
+        union.addAll(right);
+        double similarity = (double) intersection.size() / union.size();
+        return similarity >= CORE_UNIT_SIMILARITY_THRESHOLD;
+    }
+
+    private double jaccardSimilarity(Set<String> left, Set<String> right) {
+        if (left.isEmpty() || right.isEmpty()) {
+            return 0;
+        }
+
+        Set<String> intersection = new HashSet<>(left);
+        intersection.retainAll(right);
+
+        Set<String> union = new HashSet<>(left);
+        union.addAll(right);
+        return (double) intersection.size() / union.size();
+    }
+
+    private String buildSignature(DeckProfile profile) {
+        return profile.traitSignature + "::" + String.join("_", profile.coreUnitIds);
     }
 
     private void saveDeckStats(
@@ -302,13 +446,24 @@ public class MetaDeckServiceImpl implements MetaDeckService {
 
         List<Map.Entry<String, DeckStat>> ranked = deckStatMap.entrySet().stream()
                 .filter(entry -> entry.getValue().count >= MIN_SAMPLE)
-                .sorted((a, b) -> Double.compare(b.getValue().winRate(), a.getValue().winRate()))
+                .sorted((a, b) -> {
+                    double leftPlayRate = (double) a.getValue().count / totalParticipants * 100;
+                    double rightPlayRate = (double) b.getValue().count / totalParticipants * 100;
+                    int playRateCompare = Double.compare(rightPlayRate, leftPlayRate);
+                    if (playRateCompare != 0) {
+                        return playRateCompare;
+                    }
+                    return Double.compare(a.getValue().avgPlacement(), b.getValue().avgPlacement());
+                })
                 .toList();
 
-        for (Map.Entry<String, DeckStat> entry : ranked) {
+        refreshPatchDecks(rankFilter, patchVersion);
+
+        for (int index = 0; index < ranked.size(); index++) {
+            Map.Entry<String, DeckStat> entry = ranked.get(index);
             DeckStat stat = entry.getValue();
             double playRate = (double) stat.count / totalParticipants * 100;
-            String tier = assignTier(stat.winRate(), stat.top4Rate());
+            String tier = assignTierByRatio(index, ranked.size());
             String name = buildDeckName(stat.traits);
 
             MetaDeck deck = metaDeckRepository
@@ -348,6 +503,18 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                 rankFilter, patchVersion, ranked.size(), MIN_PLAY_RATE);
     }
 
+    private void refreshPatchDecks(RankFilter rankFilter, String patchVersion) {
+        List<MetaDeck> existingDecks = metaDeckRepository.findAllByRankFilterAndPatchVersion(rankFilter, patchVersion);
+        if (existingDecks.isEmpty()) {
+            return;
+        }
+
+        metaDeckRepository.deleteAll(existingDecks);
+        metaDeckRepository.flush();
+        logger.info("[{}][{}] removed {} existing meta decks before refresh",
+                rankFilter, patchVersion, existingDecks.size());
+    }
+
     private void saveDeckDetails(MetaDeck deck, DeckStat stat, String patchVersion) {
         for (TraitDto trait : stat.traits) {
             String tone = switch (trait.getStyle()) {
@@ -370,27 +537,36 @@ public class MetaDeckServiceImpl implements MetaDeckService {
 
         // 덱 등장 횟수의 25% 미만인 유닛 = 시너지 채우기용 필러(바이엔 등) → 제외
         // 나머지를 등장 빈도 내림차순 정렬 후 최대 9개만 저장 (9레벨 풀덱 대응)
-        int minUnitFreq = Math.max(1, stat.count / 4);
+        int minUnitFreq = Math.max(1, stat.count / 10);
         List<UnitStat> unitStats = stat.unitStats.values().stream()
                 .filter(u -> u.count >= minUnitFreq)
+                .filter(this::isShopUnit)
                 .sorted(Comparator.comparingInt(UnitStat::getCount).reversed())
-                .limit(9)
+                .limit(12)
                 .toList();
+        Set<String> carryUnitIds = unitStats.stream()
+                .filter(unitStat -> !unitStat.topItems().isEmpty())
+                .sorted(Comparator.comparingInt(UnitStat::itemCount).reversed()
+                        .thenComparing(Comparator.comparingInt(UnitStat::getCount).reversed()))
+                .limit(RECOMMENDED_CARRY_LIMIT)
+                .map(unitStat -> unitStat.characterId)
+                .collect(Collectors.toSet());
         for (UnitStat unitStat : unitStats) {
+            boolean isCarry = carryUnitIds.contains(unitStat.characterId);
             DeckUnit unit = DeckUnit.builder()
                     .metaDeck(deck)
                     .characterId(unitStat.characterId)
                     .championName(extractName(unitStat.characterId))
                     .cost(raritytoCost(unitStat.rarity))
-                    .isCarry(unitStat.maxTier >= 2 && !unitStat.topItems().isEmpty())
-                    .recommendedItems(toJson(unitStat.topItems()))
-                    .starLevel(unitStat.maxTier)
+                    .isCarry(isCarry)
+                    .recommendedItems(toJson(isCarry ? unitStat.topItems() : List.of()))
+                    .starLevel(recommendedStarLevel(unitStat))
                     .build();
             deck.getUnits().add(unit);
         }
 
         List<ItemStat> itemStats = stat.itemStats.values().stream()
-                .filter(itemStat -> itemStat.count >= MIN_DETAIL_SAMPLE)
+                .filter(itemStat -> itemStat.count >= MIN_ITEM_SAMPLE)
                 .sorted(Comparator.comparingDouble(ItemStat::winRate).reversed())
                 .toList();
         for (ItemStat itemStat : itemStats) {
@@ -411,7 +587,7 @@ public class MetaDeckServiceImpl implements MetaDeckService {
 
         AtomicInteger sortOrder = new AtomicInteger(1);
         List<AugmentStat> augmentStats = stat.augmentStats.values().stream()
-                .filter(augmentStat -> augmentStat.count >= MIN_DETAIL_SAMPLE)
+                .filter(augmentStat -> augmentStat.count >= MIN_AUGMENT_SAMPLE)
                 .sorted(Comparator.comparingDouble(AugmentStat::winRate).reversed())
                 .toList();
         for (AugmentStat augmentStat : augmentStats) {
@@ -442,13 +618,25 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                 .collect(Collectors.joining(" "));
     }
 
-    private String assignTier(double winRate, double top4Rate) {
-        if (winRate >= 20) return "S";
-        if (winRate >= 16) return "A+";
-        if (winRate >= 13) return "A";
-        if (top4Rate >= 55) return "B";
-        if (top4Rate >= 45) return "C";
+    private String assignTierByRatio(int index, int totalCount) {
+        if (totalCount <= 0) {
+            return "D";
+        }
+
+        int sLimit = ratioLimit(totalCount, S_TIER_RATIO);
+        int aLimit = sLimit + ratioLimit(totalCount, A_TIER_RATIO);
+        int bLimit = aLimit + ratioLimit(totalCount, B_TIER_RATIO);
+        int cLimit = bLimit + ratioLimit(totalCount, C_TIER_RATIO);
+
+        if (index < sLimit) return "S";
+        if (index < aLimit) return "A";
+        if (index < bLimit) return "B";
+        if (index < cLimit) return "C";
         return "D";
+    }
+
+    private int ratioLimit(int totalCount, double ratio) {
+        return Math.max(1, (int) Math.ceil(totalCount * ratio));
     }
 
     private int raritytoCost(int rarity) {
@@ -463,6 +651,15 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                 yield 1;
             }
         };
+    }
+
+    private int recommendedStarLevel(UnitStat unitStat) {
+        int cost = raritytoCost(unitStat.rarity);
+        int tier = Math.min(unitStat.maxTier, 3); // TFT 최대 3성
+        if (cost >= 4) {
+            return Math.min(tier, 2); // 4~5코스트 최대 2성
+        }
+        return tier;
     }
 
     private String buildTraitIconUrl(String traitId) {
@@ -528,16 +725,25 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         }
     }
 
+    private boolean isShopUnit(UnitStat unitStat) {
+        return TftShopUnitFilter.isShopUnit(unitStat.characterId);
+    }
+
+    private record DeckProfile(String traitSignature, Set<String> coreUnitIds, Set<String> boardUnitIds) {
+    }
+
     private static class DeckStat {
         final List<TraitDto> traits;
+        final DeckProfile profile;
         final Map<String, UnitStat> unitStats = new HashMap<>();
         final Map<String, ItemStat> itemStats = new HashMap<>();
         final Map<String, AugmentStat> augmentStats = new HashMap<>();
         int count = 0, wins = 0, top4 = 0;
         double totalPlace = 0;
 
-        DeckStat(List<TraitDto> traits) {
+        DeckStat(List<TraitDto> traits, DeckProfile profile) {
             this.traits = traits;
+            this.profile = profile;
         }
 
         void record(ParticipantDto participant) {
@@ -555,8 +761,12 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                     unit.getItemNames().stream()
                             .filter(itemName -> itemName != null && !itemName.isBlank())
                             .forEach(itemName -> {
-                                unitStat.recordItem(itemName);
-                                itemStats.computeIfAbsent(itemName, ItemStat::new).record(placement);
+                                if (isRecommendedItem(itemName)) {
+                                    unitStat.recordItem(itemName);
+                                }
+                                if (isArtifactItem(itemName)) {
+                                    itemStats.computeIfAbsent(itemName, ItemStat::new).record(placement);
+                                }
                             });
                 }
             });
@@ -564,6 +774,7 @@ public class MetaDeckServiceImpl implements MetaDeckService {
             if (participant.getAugments() != null) {
                 participant.getAugments().stream()
                         .filter(augment -> augment != null && !augment.isBlank())
+                        .filter(MetaDeckServiceImpl::isHeroAugment)
                         .forEach(augment -> augmentStats.computeIfAbsent(augment, AugmentStat::new)
                                 .record(placement));
             }
@@ -572,6 +783,41 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         double winRate() { return count == 0 ? 0 : (double) wins / count * 100; }
         double top4Rate() { return count == 0 ? 0 : (double) top4 / count * 100; }
         double avgPlacement() { return count == 0 ? 0 : totalPlace / count; }
+    }
+
+    private static boolean isHeroAugment(String augmentId) {
+        String normalized = augmentId.toLowerCase()
+                .replace("_", "")
+                .replace(" ", "")
+                .replace("'", "");
+        return HERO_AUGMENT_KEYWORDS.stream().anyMatch(normalized::contains);
+    }
+
+    private static boolean isRecommendedItem(String itemId) {
+        String normalized = itemId.toLowerCase();
+        if (!normalized.startsWith("tft_item_")) {
+            return false;
+        }
+        if (COMPONENT_ITEM_IDS.contains(normalized)) {
+            return false;
+        }
+        return !normalized.contains("emptybag")
+                && !normalized.contains("radiant")
+                && !normalized.contains("artifact")
+                && !normalized.contains("ornn")
+                && !normalized.contains("support")
+                && !normalized.contains("emblem")
+                && !normalized.contains("trait")
+                && !normalized.contains("consumable")
+                && !normalized.contains("temporary");
+    }
+
+    private static boolean isArtifactItem(String itemId) {
+        String normalized = itemId.toLowerCase();
+        return !normalized.contains("emptybag")
+                && (normalized.contains("artifact")
+                || normalized.contains("ornn")
+                || normalized.contains("shimmerscale"));
     }
 
     private static class UnitStat {
@@ -593,6 +839,12 @@ public class MetaDeckServiceImpl implements MetaDeckService {
 
         void recordItem(String itemName) {
             itemCounts.merge(itemName, 1, Integer::sum);
+        }
+
+        int itemCount() {
+            return itemCounts.values().stream()
+                    .mapToInt(Integer::intValue)
+                    .sum();
         }
 
         int getCount() {

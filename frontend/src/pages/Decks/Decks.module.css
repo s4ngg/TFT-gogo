@@ -186,18 +186,22 @@
 
 /* ── 덱 행 ── */
 .deckRow {
-  border-bottom: 1px solid rgba(114, 145, 153, 0.1);
+  border-bottom: 1px solid rgba(114, 145, 153, 0.18);
   transition: background 0.12s;
   cursor: pointer;
 }
 
-.deckRow:last-child { border-bottom: none; }
-.deckRow:hover { background: rgba(18, 40, 52, 0.5); }
+.deckRow:nth-child(even) { background: rgba(255, 255, 255, 0.012); }
+.deckRow:hover { background: rgba(18, 40, 52, 0.58); }
 
 .deckRow td {
-  padding: 9px 12px;
+  padding: 13px 12px;
   vertical-align: middle;
   text-align: center;
+}
+
+.deckRow td + td {
+  border-left: 1px solid rgba(114, 145, 153, 0.08);
 }
 
 /* ── 순위 ── */
@@ -229,7 +233,13 @@
 }
 
 .traits    { display: flex; align-items: flex-end; gap: 4px; }
-.champions { display: flex; align-items: flex-end; gap: 5px; }
+.champions {
+  display: flex;
+  align-items: flex-end;
+  gap: 7px;
+  padding-left: 12px;
+  border-left: 1px solid rgba(4, 243, 229, 0.16);
+}
 
 /* ── 수치 컬럼 ── */
 .winRate  { color: #04ede0; font-size: 14px; font-weight: 700; }

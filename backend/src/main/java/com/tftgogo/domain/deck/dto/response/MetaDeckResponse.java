@@ -6,6 +6,7 @@ import com.tftgogo.domain.deck.entity.ArtifactStat;
 import com.tftgogo.domain.deck.entity.HeroAugment;
 import com.tftgogo.domain.deck.entity.MetaDeck;
 import com.tftgogo.global.riot.util.TftAssetUrlBuilder;
+import com.tftgogo.global.riot.util.TftShopUnitFilter;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -25,6 +26,7 @@ public class MetaDeckResponse {
     private String top4;
     private String avgPlace;
     private String pickRate;
+    private int sampleSize;
     private List<TraitSummary> traits;
     private List<ChampionSummary> champions;
     private List<AugmentSummary> topAugments;
@@ -55,7 +57,7 @@ public class MetaDeckResponse {
         private String augmentId;
         private String augmentName;
         private String winRate;
-        private boolean isRecommended;
+        private Boolean isRecommended;  // Boolean(wrapper) → Lombok generates getIsRecommended() → JSON key "isRecommended"
     }
 
     @Getter
@@ -79,15 +81,27 @@ public class MetaDeckResponse {
                         .build())
                 .toList();
 
-        List<ChampionSummary> champions = deck.getUnits().stream()
+        List<com.tftgogo.domain.deck.entity.DeckUnit> responseUnits = deck.getUnits().stream()
+                .filter(unit -> TftShopUnitFilter.isShopUnit(unit.getCharacterId()))
                 .sorted(Comparator.comparingInt(com.tftgogo.domain.deck.entity.DeckUnit::getCost)) // 1→2→3→4→5 코스트 오름차순
-                .limit(9)
+                .limit(12)
+                .toList();
+        List<String> carryUnitIds = responseUnits.stream()
+                .filter(unit -> !parseRecommendedItems(unit.getRecommendedItems()).isEmpty())
+                .sorted(Comparator.comparingInt(com.tftgogo.domain.deck.entity.DeckUnit::getCost).reversed())
+                .limit(3)
+                .map(com.tftgogo.domain.deck.entity.DeckUnit::getCharacterId)
+                .toList();
+
+        List<ChampionSummary> champions = responseUnits.stream()
                 .map(unit -> ChampionSummary.builder()
                         .name(unit.getChampionName())
                         .imageUrl(TftAssetUrlBuilder.buildChampionImageUrl(unit.getCharacterId()))
-                        .stars(unit.getStarLevel())
+                        .stars(displayStarLevel(unit.getCost(), unit.getStarLevel()))
                         .cost(unit.getCost())
-                        .recommendedItems(parseJsonList(unit.getRecommendedItems()))
+                        .recommendedItems(carryUnitIds.contains(unit.getCharacterId())
+                                ? parseRecommendedItems(unit.getRecommendedItems())
+                                : List.of())
                         .build())
                 .toList();
 
@@ -104,7 +118,7 @@ public class MetaDeckResponse {
 
         List<ItemSummary> topItems = deck.getArtifactStats().stream()
                 .sorted(Comparator.comparingDouble(ArtifactStat::getWinRate).reversed())
-                .limit(5)
+                .limit(20)
                 .map(stat -> ItemSummary.builder()
                         .itemId(stat.getItemId())
                         .itemName(stat.getItemName())
@@ -122,11 +136,27 @@ public class MetaDeckResponse {
                 .top4(String.format("%.1f%%", deck.getTop4Rate()))
                 .avgPlace(String.format("%.2f", deck.getAvgPlacement()))
                 .pickRate(String.format("%.1f%%", deck.getPlayRate()))
+                .sampleSize(deck.getSampleSize())
                 .traits(traits)
                 .champions(champions)
                 .topAugments(topAugments)
                 .topItems(topItems)
                 .build();
+    }
+
+    private static int displayStarLevel(int cost, int starLevel) {
+        int capped = Math.min(starLevel, 3); // TFT 최대 3성
+        if (cost >= 4) {
+            return Math.min(capped, 2); // 4~5코스트 최대 2성
+        }
+        return capped;
+    }
+
+    private static List<String> parseRecommendedItems(String json) {
+        return parseJsonList(json).stream()
+                .filter(MetaDeckResponse::isRecommendedItem)
+                .limit(3)
+                .toList();
     }
 
     private static List<String> parseJsonList(String json) {
@@ -139,5 +169,32 @@ public class MetaDeckResponse {
         } catch (Exception e) {
             return List.of();
         }
+    }
+
+    private static boolean isRecommendedItem(String itemId) {
+        String normalized = itemId.toLowerCase();
+        if (!normalized.startsWith("tft_item_")) {
+            return false;
+        }
+
+        return !normalized.contains("emptybag")
+                && !normalized.contains("radiant")
+                && !normalized.contains("artifact")
+                && !normalized.contains("ornn")
+                && !normalized.contains("support")
+                && !normalized.contains("emblem")
+                && !normalized.contains("trait")
+                && !normalized.contains("consumable")
+                && !normalized.contains("temporary")
+                && !normalized.endsWith("bfsword")
+                && !normalized.endsWith("recurvebow")
+                && !normalized.endsWith("needlesslylargerod")
+                && !normalized.endsWith("tearofthegoddess")
+                && !normalized.endsWith("chainvest")
+                && !normalized.endsWith("negatroncloak")
+                && !normalized.endsWith("giantsbelt")
+                && !normalized.endsWith("sparringgloves")
+                && !normalized.endsWith("spatula")
+                && !normalized.endsWith("fryingpan");
     }
 }

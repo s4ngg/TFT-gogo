@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import styles from './ChampionCard.module.css'
 
 const costClasses: Record<number, string> = {
@@ -24,11 +25,21 @@ export interface ChampionCardProps {
 function ChampionCard({ label, imageUrl, items = [], stars = 2, hasItem = false, cost }: ChampionCardProps) {
   const costClass = cost != null ? (costClasses[cost] ?? styles.cost1) : undefined
   const equippedItems = items.slice(0, 3)
+  const [imageFailed, setImageFailed] = useState(false)
 
   return (
     <span className={`${styles.card} ${costClass ?? ''}`}>
-      <small className={styles.stars}>{'★'.repeat(stars)}</small>
-      {imageUrl ? <img src={imageUrl} alt={label} className={styles.image} /> : <b className={styles.label}>{label}</b>}
+      <small className={styles.stars}>{'★'.repeat(Math.min(stars, 3))}</small>
+      {imageUrl && !imageFailed ? (
+        <img
+          src={imageUrl}
+          alt={label}
+          className={styles.image}
+          onError={() => setImageFailed(true)}
+        />
+      ) : (
+        <b className={styles.label}>{label}</b>
+      )}
       {equippedItems.length > 0 && (
         <span className={styles.itemTray}>
           {equippedItems.map((item) => (

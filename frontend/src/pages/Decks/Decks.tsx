@@ -6,7 +6,7 @@ import ChampionCard from '../../components/common/ChampionCard'
 import TierBadge from '../../components/common/TierBadge'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
 import { tftItemIconUrl } from '../../api/communityDragonAssets'
-import { getChampionName, getTraitName, getItemName, getAugmentName } from '../../api/cdragonLocale'
+import { getChampionName, getChampionShortName, getTraitName, getItemName, getAugmentName } from '../../api/cdragonLocale'
 import type { TFTLocale } from '../../api/cdragonLocale'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
 import { useCDragonLocale } from '../../hooks/useCDragonLocale'
@@ -28,10 +28,12 @@ interface RankFilterOption {
   value: RankFilter
 }
 
-const TIER_ORDER: TierBadgeValue[] = ['S', 'A+', 'A', 'B', 'C', 'D']
+const TIER_ORDER: TierBadgeValue[] = ['S', 'A', 'B', 'C', 'D']
 const TIER_COLOR: Record<TierBadgeValue, string> = {
   S: '#04f3e5', 'A+': '#f7d26d', A: '#a78bfa', B: '#60a5fa', C: '#818cf8', D: '#6b7280',
 }
+
+const NON_SHOP_CHAMPION_NAMES = new Set(['ElderDragon', 'IvernMinion', 'Summon'])
 
 /* ════════════════════════════
    유틸
@@ -39,11 +41,51 @@ const TIER_COLOR: Record<TierBadgeValue, string> = {
 function numVal(s: string) { return parseFloat(s.replace('%', '')) }
 
 function deckDisplayName(deck: MetaDeck, locale: TFTLocale | undefined): string {
-  if (!locale) return deck.name
-  const parts = deck.traits
+  // 주요 시너지 (1개) + 캐리 챔피언명 (최대 2명) — lolchess 스타일
+  const traitName = deck.traits.length > 0
+    ? getTraitName(deck.traits[0].name, locale)
+    : ''
+  const carries = deck.champions
+    .filter((c) => (c.recommendedItems?.length ?? 0) > 0)
     .slice(0, 2)
-    .map((t) => getTraitName(t.name, locale))
+    .map((c) => getChampionShortName(c.imageUrl, locale, c.name))
+  const parts = [traitName, ...carries].filter(Boolean)
   return parts.length > 0 ? parts.join(' ') : deck.name
+}
+
+/**
+ * 캐리 챔피언의 최고 코스트로 덱의 "최종 운영 레벨" 추정
+ * - 5코스트 캐리 → Lv.9 (후반 밸류덱)
+ * - 4코스트 캐리 → Lv.8 (4코스트 운영덱)
+ * - 3코스트 캐리 → Lv.7 (3코스트 리롤덱)
+ * - 1~2코스트 캐리 → Lv.8 (1~2코스트 리롤덱)
+ */
+function inferDeckLevel(deck: MetaDeck): number {
+  const carries = deck.champions.filter((c) => (c.recommendedItems?.length ?? 0) > 0)
+  const maxCarryCost = carries.reduce((max, c) => Math.max(max, c.cost ?? 0), 0)
+  if (maxCarryCost >= 5) return 9
+  if (maxCarryCost >= 4) return 8
+  if (maxCarryCost === 3) return 7
+  return 8 // 1~2코스트 리롤도 최종 레벨 8
+}
+
+/** 해당 레벨에서 구매 가능한 최대 코스트 */
+function costLimitForLevel(level: number): number {
+  if (level <= 6) return 3
+  if (level <= 8) return 4
+  return 5
+}
+
+function shopChampions(deck: MetaDeck) {
+  const costLimit = costLimitForLevel(inferDeckLevel(deck))
+  return deck.champions.filter(
+    (c) => !NON_SHOP_CHAMPION_NAMES.has(c.name) && (c.cost ?? 0) <= costLimit,
+  )
+}
+
+function isArtifactItem(itemId: string) {
+  const id = itemId.toLowerCase()
+  return id.includes('artifact') || id.includes('ornn') || id.includes('shimmerscale')
 }
 
 function sortDecks(decks: MetaDeck[], key: SortKey, dir: SortDir) {
@@ -98,7 +140,7 @@ function DeckRow({
       </td>
       <td className={styles.champCol}>
         <span className={styles.champions}>
-          {deck.champions.map((c, i) => (
+          {shopChampions(deck).slice(0, 9).map((c, i) => (
             <ChampionCard
               key={`${c.name}-${i}`}
               imageUrl={c.imageUrl}
@@ -213,7 +255,7 @@ function HeroAugmentSection({ decks, locale }: { decks: MetaDeck[]; locale: TFTL
                   ))}
                 </div>
                 <div className={styles.augChamps}>
-                  {deck.champions.slice(0, 4).map((c, i) => (
+                  {shopChampions(deck).slice(0, 4).map((c, i) => (
                     <ChampionCard
                       key={`${c.name}-${i}`}
                       imageUrl={c.imageUrl}
@@ -260,7 +302,7 @@ function buildItemUnitEntries(decks: MetaDeck[]): ItemUnitEntry[] {
 
   decks.forEach((deck) => {
     deck.topItems?.forEach((item) => {
-      if (!item.itemId.toLowerCase().includes('_artifact_')) return
+      if (!isArtifactItem(item.itemId)) return
       const delta = parseFloat(item.placementDelta)
       if (!Number.isFinite(delta) || delta <= 0) return
 
@@ -275,7 +317,7 @@ function buildItemUnitEntries(decks: MetaDeck[]): ItemUnitEntry[] {
       }
       const entry = map.get(item.itemId)!
 
-      deck.champions.forEach((champ) => {
+      shopChampions(deck).forEach((champ) => {
         if (champ.recommendedItems?.includes(item.itemId) && !entry.unitSet.has(champ.name)) {
           entry.unitSet.set(champ.name, { name: champ.name, imageUrl: champ.imageUrl })
         }
@@ -433,8 +475,8 @@ function DeckListView({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale 
    (lolchess 스타일, 티어별 수직)
 ════════════════════════════ */
 function MetaStatsView({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale | undefined }) {
-  const [sortKey, setSortKey] = useState<SortKey>('rank')
-  const [sortDir, setSortDir] = useState<SortDir>('asc')
+  const [sortKey, setSortKey] = useState<SortKey>('pickRate')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
 
   function handleSort(key: SortKey) {
     if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
@@ -446,7 +488,7 @@ function MetaStatsView({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale
   return (
     <div className={styles.tableWrap}>
       <table className={styles.table}>
-        <TableHead sortKey={sortKey} sortDir={sortDir} onSort={handleSort} showTier showRank />
+        <TableHead sortKey={sortKey} sortDir={sortDir} onSort={handleSort} showTier showRank={false} />
         <tbody>
           {TIER_ORDER.map((tier) => {
             const tierDecks = sortDecks(safeDecks.filter((d) => d.grade === tier), sortKey, sortDir)
@@ -455,7 +497,7 @@ function MetaStatsView({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale
             return (
               <>
                 <tr key={`header-${tier}`} className={styles.tierHeaderRow}>
-                  <td colSpan={8}>
+                  <td colSpan={7}>
                     <span className={styles.tierHeaderInner} style={{ borderLeftColor: color }}>
                       <TierBadge value={tier} />
                       <span className={styles.tierName} style={{ color }}>{tier} 티어</span>
@@ -471,7 +513,7 @@ function MetaStatsView({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale
                     </span>
                   </td>
                 </tr>
-                {tierDecks.map((d) => <DeckRow key={d.rank} deck={d} showTier showRank locale={locale} />)}
+                {tierDecks.map((d) => <DeckRow key={d.rank} deck={d} showTier showRank={false} locale={locale} />)}
               </>
             )
           })}
