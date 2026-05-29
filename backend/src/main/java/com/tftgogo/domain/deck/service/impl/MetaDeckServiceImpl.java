@@ -52,6 +52,11 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     private static final int MIN_SAMPLE = 5;
     private static final int MIN_DETAIL_SAMPLE = 2;
     private static final int SIGNATURE_TRAIT_COUNT = 2;
+    // 6유닛 미만 = 플레이어가 레벨 5 이하에서 탈락한 빌드업 조합 — 집계 대상 제외
+    private static final int MIN_UNIT_COUNT = 6;
+    // 트레잇 실버(2) 이상만 활성 시너지로 인정 / 2유닛 이상이어야 고유 특성(Unique) 제외
+    private static final int MIN_TRAIT_STYLE = 2;
+    private static final int MIN_TRAIT_UNITS = 2;
     private static final long RATE_LIMIT_DELAY_MS = 1200L;
     private static final String UNKNOWN_PATCH_VERSION = "UNKNOWN";
     private static final String GLOBAL_AUGMENT_CHARACTER_ID = "GLOBAL";
@@ -251,15 +256,14 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                 continue;
             }
 
-            // 6유닛 미만 = 초반 빌드업(전환 중) 조합 — 품질 저하 원인이므로 제외
-            if (participant.getUnits().size() < 6) {
+            // MIN_UNIT_COUNT 미만 = 초반 빌드업(전환 중) 조합 — 품질 저하 원인이므로 제외
+            if (participant.getUnits().size() < MIN_UNIT_COUNT) {
                 continue;
             }
 
-            // style >= 2 : 실버 이상 활성화된 시너지만 포함 (브론즈·비활성 제외)
-            // num_units >= 2 : 1개만 있어도 활성화되는 고유 특성(Unique) 제외
+            // MIN_TRAIT_STYLE(실버+) 이상이고 MIN_TRAIT_UNITS(2개+)인 트레잇만 활성 시너지로 인정
             List<TraitDto> activeTraits = participant.getTraits().stream()
-                    .filter(trait -> trait.getStyle() >= 2 && trait.getNum_units() >= 2)
+                    .filter(trait -> trait.getStyle() >= MIN_TRAIT_STYLE && trait.getNum_units() >= MIN_TRAIT_UNITS)
                     .sorted(Comparator.comparingInt(TraitDto::getNum_units).reversed()
                             .thenComparing(TraitDto::getName))
                     .toList();
@@ -364,10 +368,13 @@ public class MetaDeckServiceImpl implements MetaDeckService {
             deck.getTraits().add(deckTrait);
         }
 
-        // 집계는 이미 메모리에서 끝났고, 덱 상세 표시/저장에 필요한 상위 유닛만 남긴다.
+        // 덱 등장 횟수의 25% 미만인 유닛 = 시너지 채우기용 필러(바이엔 등) → 제외
+        // 나머지를 등장 빈도 내림차순 정렬 후 최대 9개만 저장 (9레벨 풀덱 대응)
+        int minUnitFreq = Math.max(1, stat.count / 4);
         List<UnitStat> unitStats = stat.unitStats.values().stream()
+                .filter(u -> u.count >= minUnitFreq)
                 .sorted(Comparator.comparingInt(UnitStat::getCount).reversed())
-                .limit(10)
+                .limit(9)
                 .toList();
         for (UnitStat unitStat : unitStats) {
             DeckUnit unit = DeckUnit.builder()
