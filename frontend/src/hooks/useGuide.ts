@@ -2,15 +2,24 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   GUIDE_TABS,
+  getFallbackGuideTabPage,
   getGuideCatalog,
+  getGuideTabItems,
   type GuideCatalogResult,
   type GuideCatalog,
+  type GuideListQuery,
   type GuideTab,
+  type GuideTabPageResult,
   type RecentGuide,
 } from '../api/guide'
 
 interface UseGuideOptions {
   fallbackData: GuideCatalog
+}
+
+interface UseGuideTabItemsOptions<T extends GuideTab> {
+  fallbackData: GuideCatalog
+  params: GuideListQuery & { tab: T }
 }
 
 export function useGuide({ fallbackData }: UseGuideOptions) {
@@ -73,4 +82,19 @@ export function useGuide({ fallbackData }: UseGuideOptions) {
     selectTab,
     setSearch,
   }
+}
+
+export function useGuideTabItems<T extends GuideTab>({
+  fallbackData,
+  params,
+}: UseGuideTabItemsOptions<T>) {
+  return useQuery<GuideTabPageResult<T>>({
+    initialData: () => ({
+      data: getFallbackGuideTabPage(params, fallbackData),
+      source: 'fallback' as const,
+    }),
+    queryFn: () => getGuideTabItems(params, fallbackData),
+    queryKey: ['guide', params.tab, params],
+    staleTime: 1000 * 60 * 5,
+  })
 }
