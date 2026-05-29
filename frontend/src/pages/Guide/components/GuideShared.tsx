@@ -14,6 +14,40 @@ import {
 } from '../../../api/guide'
 import styles from '../Guide.module.css'
 
+interface GuideStatusBannerProps {
+  isFallbackData: boolean
+  isFetching: boolean
+  onRetry: () => void
+}
+
+interface SortHeaderButtonProps {
+  active: boolean
+  direction: SortDir
+  label: string
+  onClick: () => void
+}
+
+interface GuidePaginationProps {
+  currentPage: number
+  onPageChange: (page: number) => void
+  totalPages: number
+}
+
+interface StatBadgeProps {
+  label: string
+  value: string
+}
+
+interface LinkedChampionMiniProps {
+  champion: ChampionRef
+  onSelect: (championName: string) => void
+}
+
+interface ItemIconStripProps {
+  items: ItemRef[]
+  onItemSelect?: (itemName: string) => void
+}
+
 export function EmptyState() {
   return (
     <div className={styles.emptyState}>
@@ -27,11 +61,7 @@ export function GuideStatusBanner({
   isFallbackData,
   isFetching,
   onRetry,
-}: {
-  isFallbackData: boolean
-  isFetching: boolean
-  onRetry: () => void
-}) {
+}: GuideStatusBannerProps) {
   if (!isFetching && !isFallbackData) return null
 
   return (
@@ -65,12 +95,7 @@ export function SortHeaderButton({
   direction,
   label,
   onClick,
-}: {
-  active: boolean
-  direction: SortDir
-  label: string
-  onClick: () => void
-}) {
+}: SortHeaderButtonProps) {
   return (
     <button className={styles.sortButton} onClick={onClick} type="button">
       {label}
@@ -83,11 +108,7 @@ export function GuidePagination({
   currentPage,
   onPageChange,
   totalPages,
-}: {
-  currentPage: number
-  onPageChange: (page: number) => void
-  totalPages: number
-}) {
+}: GuidePaginationProps) {
   if (totalPages <= 1) return null
 
   const windowStart = Math.floor((currentPage - 1) / PAGE_NUMBER_WINDOW) * PAGE_NUMBER_WINDOW + 1
@@ -129,7 +150,7 @@ export function GuidePagination({
   )
 }
 
-export function StatBadge({ label, value }: { label: string; value: string }) {
+export function StatBadge({ label, value }: StatBadgeProps) {
   return (
     <span className={styles.statBadge}>
       <small>{label}</small>
@@ -141,10 +162,7 @@ export function StatBadge({ label, value }: { label: string; value: string }) {
 export function LinkedChampionMini({
   champion,
   onSelect,
-}: {
-  champion: ChampionRef
-  onSelect: (championName: string) => void
-}) {
+}: LinkedChampionMiniProps) {
   return (
     <button
       className={styles.championMini}
@@ -162,10 +180,7 @@ export function LinkedChampionMini({
 export function ItemIconStrip({
   items,
   onItemSelect,
-}: {
-  items: ItemRef[]
-  onItemSelect?: (itemName: string) => void
-}) {
+}: ItemIconStripProps) {
   return (
     <span className={styles.itemIconStrip}>
       {items.map((itemRef) => (
