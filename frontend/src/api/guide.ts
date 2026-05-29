@@ -450,7 +450,8 @@ function guideEntriesToCatalog(entries: GuideEntryResponse[], fallbackData: Guid
 
 function hasGuidePayloadData(payload: unknown): boolean {
   if (Array.isArray(payload)) {
-    return isGuideEntryList(payload) && payload.length > 0
+    if (!isGuideEntryList(payload)) return false
+    return payload.some((entry) => normalizeGuideType(entry) !== undefined)
   }
 
   if (!isRecord(payload)) return false
