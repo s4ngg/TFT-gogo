@@ -105,7 +105,10 @@ function readString(value: unknown, fallback = '') {
 }
 
 function readNonEmptyString(value: unknown): string | undefined {
-  return typeof value === 'string' && value.trim() ? value : undefined
+  if (typeof value !== 'string') return undefined
+
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : undefined
 }
 
 function readTags(value: unknown) {
@@ -224,6 +227,9 @@ function normalizePatchNote(note: PatchNoteResponse): PatchNoteDetail {
   const publishedDate = readString(note.date ?? note.publishedAt)
   const summary = readString(note.summary)
   const version = readNonEmptyString(note.version) ?? ''
+  const imageUrl = readNonEmptyString(note.imageUrl)
+    ?? readNonEmptyString(note.representativeImageUrl)
+    ?? PATCH_NOTE_DEFAULT_IMAGE
 
   return {
     changes: changes.map(normalizeChange),
@@ -231,7 +237,7 @@ function normalizePatchNote(note: PatchNoteResponse): PatchNoteDetail {
     description: readString(note.description ?? note.content ?? summary),
     focus: readString(note.focus ?? summary),
     highlights: normalizeHighlights(note),
-    imageUrl: readNonEmptyString(note.imageUrl ?? note.representativeImageUrl) ?? PATCH_NOTE_DEFAULT_IMAGE,
+    imageUrl,
     status: note.status === '현재' || note.status === 'CURRENT' || note.isCurrent ? '현재' : '이전',
     title: readString(note.title, `${version} 패치`),
     version,
