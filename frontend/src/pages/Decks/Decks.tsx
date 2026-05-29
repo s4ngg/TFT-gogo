@@ -53,8 +53,34 @@ function deckDisplayName(deck: MetaDeck, locale: TFTLocale | undefined): string 
   return parts.length > 0 ? parts.join(' ') : deck.name
 }
 
+/**
+ * 캐리 챔피언의 최고 코스트로 덱의 "최종 운영 레벨" 추정
+ * - 5코스트 캐리 → Lv.9 (후반 밸류덱)
+ * - 4코스트 캐리 → Lv.8 (4코스트 운영덱)
+ * - 3코스트 캐리 → Lv.7 (3코스트 리롤덱)
+ * - 1~2코스트 캐리 → Lv.8 (1~2코스트 리롤덱)
+ */
+function inferDeckLevel(deck: MetaDeck): number {
+  const carries = deck.champions.filter((c) => (c.recommendedItems?.length ?? 0) > 0)
+  const maxCarryCost = carries.reduce((max, c) => Math.max(max, c.cost ?? 0), 0)
+  if (maxCarryCost >= 5) return 9
+  if (maxCarryCost >= 4) return 8
+  if (maxCarryCost === 3) return 7
+  return 8 // 1~2코스트 리롤도 최종 레벨 8
+}
+
+/** 해당 레벨에서 구매 가능한 최대 코스트 */
+function costLimitForLevel(level: number): number {
+  if (level <= 6) return 3
+  if (level <= 8) return 4
+  return 5
+}
+
 function shopChampions(deck: MetaDeck) {
-  return deck.champions.filter((champion) => !NON_SHOP_CHAMPION_NAMES.has(champion.name))
+  const costLimit = costLimitForLevel(inferDeckLevel(deck))
+  return deck.champions.filter(
+    (c) => !NON_SHOP_CHAMPION_NAMES.has(c.name) && (c.cost ?? 0) <= costLimit,
+  )
 }
 
 function isArtifactItem(itemId: string) {
