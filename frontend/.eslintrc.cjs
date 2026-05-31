@@ -13,14 +13,6 @@ module.exports = {
   parser: '@typescript-eslint/parser',
   plugins: ['react-refresh'],
   rules: {
-    'react-refresh/only-export-components': 'off',
+    'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
   },
-  overrides: [
-    {
-      files: ['src/App.tsx', 'src/components/**/[A-Z]*.tsx', 'src/pages/**/[A-Z]*.tsx'],
-      rules: {
-        'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
-      },
-    },
-  ],
 }
