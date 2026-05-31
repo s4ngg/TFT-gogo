@@ -266,7 +266,7 @@
 }
 
 .errorText {
-  color: #ff4545;
+  color: var(--danger);
   font-size: 13px;
   margin-top: -8px;
 }

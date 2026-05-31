@@ -43,7 +43,7 @@ function normalizeAuthResponse(payload: RawAuthResponse, fallbackEmail: string):
     const token = payload.token ?? payload.accessToken ?? payload.jwt
 
     if (!token) {
-        throw new Error('Auth response does not iclude a token')
+        throw new Error('Auth response does not include a token')
     }
 
     const userPayload = payload.user ?? payload.member ?? {}
@@ -59,23 +59,33 @@ function normalizeAuthResponse(payload: RawAuthResponse, fallbackEmail: string):
 }
 
 export async function login(request: LoginRequest) {
-    const response = await axiosInstance.post<RawAuthResponse | ApiEnvelope<RawAuthResponse>>(
-        '/members/login',
-        request,
-    )
-    const payload = unwrapResponse(response.data)
+    try {
+        const response = await axiosInstance.post<RawAuthResponse | ApiEnvelope<RawAuthResponse>>(
+            '/members/login',
+            request,
+        )
+        const payload = unwrapResponse(response.data)
 
-    return normalizeAuthResponse(payload,request.email)
+        return normalizeAuthResponse(payload, request.email)
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        throw new Error(`Login failed: ${message}`)
+    }
 }
 
 export async function signup(request: SignupRequest) {
-    const response = await axiosInstance.post<RawAuthResponse | ApiEnvelope<RawAuthResponse>>(
-        '/members/signup',
-        request,
-    )
+    try {
+        const response = await axiosInstance.post<RawAuthResponse | ApiEnvelope<RawAuthResponse>>(
+            '/members/signup',
+            request,
+        )
 
-    const payload = unwrapResponse(response.data)
+        const payload = unwrapResponse(response.data)
 
-    return normalizeAuthResponse(payload, request.email)
+        return normalizeAuthResponse(payload, request.email)
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        throw new Error(`Signup failed: ${message}`)
+    }
 }
 
