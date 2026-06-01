@@ -60,3 +60,7 @@ export function tftTraitIconUrl(traitId: string): string {
   const path = TRAIT_ICON_PATHS[traitId]
   return path ? communityDragonAssetUrl(path) : ''
 }
+
+export function tftChampSquareUrl(apiName: string): string {
+  return communityDragonAssetUrl(`ASSETS/Characters/${apiName}/HUD/${apiName}_Square.TFT_Set17.tex`)
+}

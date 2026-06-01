@@ -24,6 +24,8 @@ export interface MetaDeck {
   traits: TraitSummary[]
   champions: ChampionSummary[]
   topItems?: ItemSummary[]          // 덱별 추천 아이템 (API 집계 후 제공)
+  boardPositions?: string | null    // 관리자 배치 JSON (null = 자동 배치)
+  playGuide?: string | null         // 운영방법 JSON (null = 미작성)
 }
 
 export interface TraitSummary {

@@ -492,3 +492,37 @@
 .traitName { color: #dde3e9; font-size: 13px; font-weight: 600; }
 .traitCount { color: #5a6470; font-size: 12px; }
 
+
+/* ── 운영 방법 ── */
+.guideList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.guidePhase {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.guidePhaseLabel {
+  flex-shrink: 0;
+  width: 36px;
+  padding: 2px 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent, #04f3e5);
+  text-align: center;
+  border: 1px solid var(--accent, #04f3e5);
+  border-radius: 4px;
+  letter-spacing: 0.03em;
+}
+
+.guidePhaseText {
+  font-size: 13px;
+  color: #c8d0d8;
+  line-height: 1.65;
+  margin: 0;
+  white-space: pre-wrap;
+}

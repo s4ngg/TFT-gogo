@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Map as MapIcon, Swords, Trophy } from 'lucide-react'
+import { ArrowLeft, BookOpen, Map as MapIcon, Swords, Trophy } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AppLayout } from '../../components/layout'
 import TierBadge from '../../components/common/TierBadge'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
 import { useCDragonLocale } from '../../hooks/useCDragonLocale'
-import { getChampionDetail, getChampionName, getChampionShortName, getItemName, getTraitName } from '../../api/cdragonLocale'
+import { getChampionApiName, getChampionDetail, getChampionName, getChampionShortName, getItemName, getTraitName } from '../../api/cdragonLocale'
 import type { TFTLocale } from '../../api/cdragonLocale'
 import { tftItemIconUrl, tftItemIconOnError } from '../../api/communityDragonAssets'
 import type { ChampionSummary, MetaDeck } from '../Dashboard/dashboardData'
@@ -92,6 +92,32 @@ function computeTraitCounts(
   return counts
 }
 
+function parseBoardPositions(json: string | null | undefined, level: number): Map<string, { row: number; col: number }> {
+  if (!json) return new Map()
+  try {
+    const obj = JSON.parse(json) as Record<string, unknown>
+    // 레벨 키 형식: {"5": {imageUrl: pos}, "6": {...}}
+    const levelData = obj[String(level)]
+    if (levelData && typeof levelData === 'object') {
+      return new Map(Object.entries(levelData as Record<string, { row: number; col: number }>))
+    }
+    return new Map()
+  } catch {
+    return new Map()
+  }
+}
+
+function buildCustomBoardPositions(
+  visibleUnits: ChampionSummary[],
+  posMap: Map<string, { row: number; col: number }>,
+): PlacedChamp[] {
+  return visibleUnits.flatMap((champ) => {
+    const apiName = getChampionApiName(champ.imageUrl)
+    const pos = apiName ? posMap.get(apiName) : undefined
+    return pos ? [{ champ, row: pos.row, col: pos.col }] : []
+  })
+}
+
 /* ── HexBoard: visibleUnits·level은 부모(DeckDetail)에서 받음 ── */
 interface HexBoardProps {
   visibleUnits: ChampionSummary[]
@@ -99,12 +125,18 @@ interface HexBoardProps {
   availableLevels: number[]
   onLevelChange: (lv: number) => void
   locale: TFTLocale | undefined
+  boardPositionsJson?: string | null
 }
 
-function HexBoard({ visibleUnits, level, availableLevels, onLevelChange, locale }: HexBoardProps) {
+function HexBoard({ visibleUnits, level, availableLevels, onLevelChange, locale, boardPositionsJson }: HexBoardProps) {
+  const customPosMap = useMemo(() => parseBoardPositions(boardPositionsJson, level), [boardPositionsJson, level])
+  const hasCustom = customPosMap.size > 0
+
   const placed = useMemo(
-    () => buildBoardPositions(visibleUnits, locale),
-    [visibleUnits, locale],
+    () => hasCustom
+      ? buildCustomBoardPositions(visibleUnits, customPosMap)
+      : buildBoardPositions(visibleUnits, locale),
+    [visibleUnits, locale, hasCustom, customPosMap],
   )
 
   if (visibleUnits.length === 0) return null
@@ -188,6 +220,38 @@ function HexBoard({ visibleUnits, level, availableLevels, onLevelChange, locale 
   )
 }
 
+
+interface PlayGuide { early: string; mid: string; late: string }
+
+function PlayGuidePanel({ deck }: { deck: MetaDeck }) {
+  if (!deck.playGuide) return null
+  let guide: PlayGuide
+  try { guide = JSON.parse(deck.playGuide) as PlayGuide } catch { return null }
+  if (!guide.early && !guide.mid && !guide.late) return null
+
+  const phases: { key: keyof PlayGuide; label: string }[] = [
+    { key: 'early', label: '초반' },
+    { key: 'mid', label: '중반' },
+    { key: 'late', label: '후반' },
+  ]
+
+  return (
+    <section className={styles.panel}>
+      <div className={styles.panelHead}>
+        <BookOpen size={16} />
+        <h2>운영 방법</h2>
+      </div>
+      <div className={styles.guideList}>
+        {phases.filter((p) => guide[p.key]).map((p) => (
+          <div key={p.key} className={styles.guidePhase}>
+            <span className={styles.guidePhaseLabel}>{p.label}</span>
+            <p className={styles.guidePhaseText}>{guide[p.key]}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
 
 function ItemsPanel({ deck, locale }: { deck: MetaDeck; locale: TFTLocale | undefined }) {
   const carries = deck.champions
@@ -382,6 +446,7 @@ function DeckDetail() {
           availableLevels={availableLevels}
           onLevelChange={setLevel}
           locale={locale}
+          boardPositionsJson={deck.boardPositions}
         />
 
         {/* 시너지 구성: visibleUnits 기반 → 레벨 탭 변경 시 자동 동기화 */}
@@ -406,6 +471,8 @@ function DeckDetail() {
             ))}
           </div>
         </section>
+
+        <PlayGuidePanel deck={deck} />
 
         <ItemsPanel deck={deck} locale={locale} />
       </div>

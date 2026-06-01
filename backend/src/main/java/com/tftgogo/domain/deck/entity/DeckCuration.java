@@ -42,26 +42,42 @@ public class DeckCuration {
     @Column(name = "curator_note", columnDefinition = "TEXT")
     private String curatorNote;
 
+    // 관리자가 직접 배치한 포지션 JSON
+    // {"imageUrl": {"row":0,"col":3}, ...}
+    @Column(name = "board_positions", columnDefinition = "TEXT")
+    private String boardPositions;
+
+    // 운영방법 JSON (사용자에게 공개)
+    // {"early": "...", "mid": "...", "late": "..."}
+    @Column(name = "play_guide", columnDefinition = "TEXT")
+    private String playGuide;
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
     @Builder
     public DeckCuration(String signature, RankFilter rankFilter, String customName,
-                        boolean hidden, Integer sortPriority, String curatorNote) {
+                        boolean hidden, Integer sortPriority, String curatorNote,
+                        String boardPositions, String playGuide) {
         this.signature = signature;
         this.rankFilter = rankFilter;
         this.customName = customName;
         this.hidden = hidden;
         this.sortPriority = sortPriority;
         this.curatorNote = curatorNote;
+        this.boardPositions = boardPositions;
+        this.playGuide = playGuide;
         this.updatedAt = LocalDateTime.now();
     }
 
-    public void update(String customName, boolean hidden, Integer sortPriority, String curatorNote) {
+    public void update(String customName, boolean hidden, Integer sortPriority, String curatorNote,
+                       String boardPositions, String playGuide) {
         this.customName = customName;
         this.hidden = hidden;
         this.sortPriority = sortPriority;
         this.curatorNote = curatorNote;
+        this.boardPositions = boardPositions;
+        this.playGuide = playGuide;
         this.updatedAt = LocalDateTime.now();
     }
 }
