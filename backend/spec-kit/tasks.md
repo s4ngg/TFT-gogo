@@ -16,27 +16,35 @@
 
 ---
 
-## Immediate Backlog - 2026-06-01 기준
+## Guide/PatchNotes Immediate Backlog - 2026-06-01 기준
 
-### PR 리뷰 후속
+### PR #126 후속
 
-- [ ] PR #113: `memberApi.ts`, `AuthPage.module.css` EOF 공백 정리 후 `git diff --check` 재확인
-- [ ] PR #124: 덱모음 시너지 태그 CSS의 디자인 토큰 적용과 CSS Modules camelCase 클래스명 정리
-- [ ] PR #127: 배치판 아이템 유지, 삭제된 챔피언 편집 상태 초기화, `boardPositions` JSON 검증, 신규 CSS 토큰 적용
-- [ ] PR #126: Guide/PatchNotes API 정책 명확화 후 작성자가 아닌 팀원 승인 요청
+- [ ] Guide/PatchNotes API 정책 명확화 커밋을 확인하고 작성자가 아닌 팀원에게 승인 요청
+- [ ] `spec.md`의 Guide `cost`, `dataJson`, PatchNotes `changes` 정책을 구현 이슈 본문에 그대로 반영
 
-### 백엔드 선행 작업
+### Game Guide 백엔드 구현 순서
 
-- [ ] #129: 공개 메타 덱 수동 집계 API에 관리자 보호 적용
-- [ ] #135: 관리자 덱 조회 실패를 `BusinessException(ErrorCode.DECK_NOT_FOUND)` 기반 404로 처리
-- [ ] #136: 덱 큐레이션 JSON 요청값 검증 추가
-- [ ] #133: 최신 패치 조회 로직을 숫자 버전 기준으로 통일
-- [ ] #132: 메타 덱 집계 부분 실패 시 기존 데이터 삭제 방지
-- [ ] #137: 메타 덱 signature를 안정적인 canonical key로 생성
-- [ ] #130/#131: 메타 덱 집계 작업을 비동기 job으로 분리하고 서버 시작 시 중복 실행 방지
-- [ ] #134: 공개 메타 덱 조회 N+1 제거
+- [ ] `GuideType` enum과 가이드 Entity/Repository 설계
+- [ ] `GuideEntryResponse`, `GuidePageResponse` DTO 작성
+- [ ] 공개 조회 Service 구현: 대표 목록, 탭별 목록, 검색, 정렬, 페이지네이션, 챔피언 cost 필터
+- [ ] 공개 Controller 구현: `GET /api/guide`, `GET /api/guide/{tab}`
+- [ ] `dataJson` 저장값을 응답에서 JSON object로 변환하는 정책 적용
+- [ ] 관리자 API 초안 구현: `/api/admin/guides` 목록, 생성, 수정, 숨김 처리
+- [ ] Service 단위 테스트 작성: 공개 여부 필터, tab 검증, cost 필터, 페이지 응답
 
-### Guide/PatchNotes API 연결 계획
+### PatchNotes 백엔드 구현 순서
+
+- [ ] `PatchCategory`, `PatchChangeType`, `PatchImpact` enum과 PatchNote/PatchChange Entity/Repository 설계
+- [ ] `PatchNoteResponse`, `PatchChangeResponse`, `PatchChangePageResponse` DTO 작성
+- [ ] 공개 패치노트 목록 Service 구현: 최신순 정렬, 공개 여부 필터, 현재 패치 표시
+- [ ] 공개 변경사항 Service 구현: category/type/impact/query 필터, 페이지네이션, stats 집계
+- [ ] 공개 Controller 구현: `GET /api/patch-notes`, `GET /api/patch-notes/{version}/changes`
+- [ ] `GET /api/patch-notes`에서는 전체 변경사항을 포함하지 않고 lightweight 목록만 반환
+- [ ] 관리자 API 초안 구현: `/api/admin/patch-notes`, `/api/admin/patch-note-changes` 생성, 수정, 숨김 처리
+- [ ] Service 단위 테스트 작성: 목록 응답, 변경사항 필터, stats 계산, 현재 패치 단일성
+
+### 프론트 API 연결 계획
 
 - [ ] 프론트 `axiosInstance`의 baseURL이 `/api`이므로 프론트 API 함수는 `/guide`, `/patch-notes`처럼 `/api` prefix 없이 호출한다.
 - [ ] 백엔드 공개 Controller는 `/api/guide`, `/api/guide/{tab}`, `/api/patch-notes`, `/api/patch-notes/{version}/changes`를 제공한다.
