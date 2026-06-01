@@ -319,60 +319,6 @@ function isGuideTabItems<T extends GuideTab>(tab: T, rawItems: unknown[]): rawIt
   return rawItems.every(isChampionGuide)
 }
 
-type CatalogArrayGuard<T> = (payload: unknown) => payload is T
-
-function isCatalogArray<T>(payload: unknown, isItem: CatalogArrayGuard<T>): payload is T[] {
-  return Array.isArray(payload) && payload.every(isItem)
-}
-
-function hasValidCatalogArray<T>(
-  payload: Record<string, unknown>,
-  key: string,
-  isItem: CatalogArrayGuard<T>,
-) {
-  const value = payload[key]
-  return isCatalogArray(value, isItem) && value.length > 0
-}
-
-function hasInvalidCatalogArray<T>(
-  payload: Record<string, unknown>,
-  key: string,
-  isItem: CatalogArrayGuard<T>,
-) {
-  if (!(key in payload) || payload[key] === undefined) return false
-  return !isCatalogArray(payload[key], isItem)
-}
-
-function hasInvalidGuideCatalogArray(payload: Record<string, unknown>) {
-  return hasInvalidCatalogArray(payload, 'augments', isAugmentGuide)
-    || hasInvalidCatalogArray(payload, 'augmentPlans', isAugmentPlan)
-    || hasInvalidCatalogArray(payload, 'champions', isChampionGuide)
-    || hasInvalidCatalogArray(payload, 'items', isItemStatGuide)
-    || hasInvalidCatalogArray(payload, 'rewards', isRewardRow)
-    || hasInvalidCatalogArray(payload, 'traits', isTraitGuide)
-}
-
-function hasGuideCatalogRecordData(payload: Record<string, unknown>) {
-  if (hasInvalidGuideCatalogArray(payload)) return false
-
-  return hasValidCatalogArray(payload, 'augments', isAugmentGuide)
-    || hasValidCatalogArray(payload, 'augmentPlans', isAugmentPlan)
-    || hasValidCatalogArray(payload, 'champions', isChampionGuide)
-    || hasValidCatalogArray(payload, 'items', isItemStatGuide)
-    || hasValidCatalogArray(payload, 'rewards', isRewardRow)
-    || hasValidCatalogArray(payload, 'traits', isTraitGuide)
-}
-
-function readCatalogArray<T>(
-  payload: Record<string, unknown>,
-  key: string,
-  fallback: T[],
-  isItem: CatalogArrayGuard<T>,
-) {
-  const value = payload[key]
-  return isCatalogArray(value, isItem) ? value : fallback
-}
-
 function guideEntriesToCatalog(entries: GuideEntryResponse[], fallbackData: GuideCatalog): GuideCatalog {
   const sortedEntries = [...entries].sort((first, second) => (
     (first.sortOrder ?? first.sort_order ?? 0) - (second.sortOrder ?? second.sort_order ?? 0)
@@ -459,7 +405,10 @@ export function hasGuidePayloadData(payload: unknown): boolean {
 
   if (!isRecord(payload)) return false
 
-  return hasGuideCatalogRecordData(payload)
+  return ['traits', 'items', 'augments', 'champions'].some((key) => {
+    const value = payload[key]
+    return Array.isArray(value) && value.length > 0
+  })
 }
 
 export function normalizeGuideCatalog(payload: unknown, fallbackData: GuideCatalog): GuideCatalog {
@@ -467,18 +416,30 @@ export function normalizeGuideCatalog(payload: unknown, fallbackData: GuideCatal
     return guideEntriesToCatalog(payload, fallbackData)
   }
 
-  if (!isRecord(payload) || !hasGuideCatalogRecordData(payload)) return fallbackData
+  if (!isRecord(payload)) return fallbackData
 
   return {
-    augments: readCatalogArray(payload, 'augments', fallbackData.augments, isAugmentGuide),
-    augmentPlans: readCatalogArray(payload, 'augmentPlans', fallbackData.augmentPlans, isAugmentPlan),
-    champions: readCatalogArray(payload, 'champions', fallbackData.champions, isChampionGuide),
-    items: readCatalogArray(payload, 'items', fallbackData.items, isItemStatGuide),
+    augments: Array.isArray(payload.augments) && payload.augments.every(isAugmentGuide)
+      ? payload.augments
+      : fallbackData.augments,
+    augmentPlans: Array.isArray(payload.augmentPlans) && payload.augmentPlans.every(isAugmentPlan)
+      ? payload.augmentPlans
+      : fallbackData.augmentPlans,
+    champions: Array.isArray(payload.champions) && payload.champions.every(isChampionGuide)
+      ? payload.champions
+      : fallbackData.champions,
+    items: Array.isArray(payload.items) && payload.items.every(isItemStatGuide)
+      ? payload.items
+      : fallbackData.items,
     patchVersion: typeof payload.patchVersion === 'string' && payload.patchVersion
       ? payload.patchVersion
       : fallbackData.patchVersion,
-    rewards: readCatalogArray(payload, 'rewards', fallbackData.rewards, isRewardRow),
-    traits: readCatalogArray(payload, 'traits', fallbackData.traits, isTraitGuide),
+    rewards: Array.isArray(payload.rewards) && payload.rewards.every(isRewardRow)
+      ? payload.rewards
+      : fallbackData.rewards,
+    traits: Array.isArray(payload.traits) && payload.traits.every(isTraitGuide)
+      ? payload.traits
+      : fallbackData.traits,
   }
 }
 
