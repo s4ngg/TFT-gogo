@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout'
 import ChampionCard from '../../components/common/ChampionCard'
 import TierBadge from '../../components/common/TierBadge'
-import TraitHexBadge from '../../components/common/TraitHexBadge'
 import { tftItemIconUrl } from '../../api/communityDragonAssets'
 import { getChampionName, getChampionShortName, getTraitName, getItemName } from '../../api/cdragonLocale'
 import type { TFTLocale } from '../../api/cdragonLocale'
@@ -122,14 +121,10 @@ function DeckRow({
       <td className={styles.nameCol}>
         <span className={styles.deckName}>{deckDisplayName(deck, locale)}</span>
         <span className={styles.traits}>
-          {deck.traits.map((t) => (
-            <TraitHexBadge
-              key={`${t.name}-${t.count}`}
-              count={t.count}
-              iconUrl={t.iconUrl}
-              name={getTraitName(t.name, locale)}
-              tone={t.tone}
-            />
+          {deck.traits.slice(0, 4).map((t) => (
+            <span key={`${t.name}-${t.count}`} className={`${styles.traitTag} ${styles[`tone_${t.tone}`] ?? ''}`}>
+              {t.count} {getTraitName(t.name, locale)}
+            </span>
           ))}
         </span>
       </td>
@@ -265,7 +260,7 @@ function ArtifactSection({ decks, locale }: { decks: MetaDeck[]; locale: TFTLoca
           아이템 추천
         </span>
         <div className={styles.specialHeaderText}>
-          <h2>아이템별 최적 유닛</h2>
+          <h2>유물 아이템별 추천 유닛</h2>
           <p>해당 아이템 장착 시 승률이 크게 오르는 유닛 (집계 실데이터)</p>
         </div>
         <div className={styles.artifactSearch}>
