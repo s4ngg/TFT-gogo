@@ -487,8 +487,14 @@
   border: 1px solid rgba(112, 144, 152, 0.12);
   border-radius: 8px;
   background: rgba(8, 20, 28, 0.6);
+  min-width: 180px;
 }
 
 .traitName { color: #dde3e9; font-size: 13px; font-weight: 600; }
 .traitCount { color: #5a6470; font-size: 12px; }
+
+.traitBreakpoints { font-size: 12px; margin-left: auto; }
+.traitArrow { color: #3a4450; }
+.traitBpActive { color: #dde3e9; font-weight: 700; }
+.traitBpInactive { color: #3a4450; }
 
