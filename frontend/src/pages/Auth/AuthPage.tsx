@@ -1,4 +1,5 @@
 import { ArrowRight, LockKeyhole, Mail, UserRound } from 'lucide-react'
+import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { login as loginMember, signup as signupMember } from '../../api/memberApi'
@@ -17,6 +18,12 @@ const socialProviders = [
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+interface AuthMutationVariables {
+  email: string
+  password: string
+  summonerTag?: string
+}
+
 function parseSummonerTag(value: string) {
   const [summonerName = '', tagLine = ''] = value.split('#').map((part) => part.trim())
 
@@ -24,6 +31,40 @@ function parseSummonerTag(value: string) {
     summonerName: summonerName || undefined,
     tagLine: tagLine || undefined,
   }
+}
+
+function mapAuthError(error: unknown, isSignup: boolean) {
+  const message = error instanceof Error ? error.message : String(error)
+  const normalizedMessage = message.toLowerCase()
+
+  if (normalizedMessage.includes('network') || normalizedMessage.includes('timeout')) {
+    return '서버와 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.'
+  }
+
+  if (
+    normalizedMessage.includes('401') ||
+    normalizedMessage.includes('unauthorized') ||
+    normalizedMessage.includes('login failed')
+  ) {
+    return '이메일 또는 비밀번호가 올바르지 않습니다.'
+  }
+
+  if (
+    normalizedMessage.includes('409') ||
+    normalizedMessage.includes('conflict') ||
+    normalizedMessage.includes('already') ||
+    normalizedMessage.includes('duplicate')
+  ) {
+    return '이미 사용 중인 이메일입니다.'
+  }
+
+  if (normalizedMessage.includes('signup failed')) {
+    return '회원가입 정보를 다시 확인해 주세요.'
+  }
+
+  return isSignup
+    ? '회원가입 처리 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.'
+    : '로그인 처리 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.'
 }
 
 function AuthPage({ mode }: AuthPageProps) {
@@ -36,13 +77,28 @@ function AuthPage({ mode }: AuthPageProps) {
   const [password, setPassword] = useState('')
   const [passwordConfirm, setPasswordConfirm] = useState('')
   const [summonerTag, setSummonerTag] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // 에러 메시지 상태 — 빈 문자열이면 에러 없음
   const [emailError, setEmailError] = useState('')
   const [passwordError, setPasswordError] = useState('')
   const [passwordConfirmError, setPasswordConfirmError] = useState('')
-  const [apiError, setApiError] = useState('')
+
+  const authMutation = useMutation({
+    mutationFn: ({ email, password, summonerTag }: AuthMutationVariables) =>
+      isSignup
+        ? signupMember({
+            email,
+            password,
+            ...parseSummonerTag(summonerTag ?? ''),
+          })
+        : loginMember({ email, password }),
+    onSuccess: (auth) => {
+      setAuth(auth)
+      navigate('/', { replace: true })
+    },
+  })
+
+  const apiError = authMutation.error ? mapAuthError(authMutation.error, isSignup) : ''
 
   // 입력값 유효성 검사
   const validate = () => {
@@ -74,33 +130,20 @@ function AuthPage({ mode }: AuthPageProps) {
   }
 
   // 폼 제출 처리
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     // e.preventDefault() — 페이지 새로고침 되는 브라우저 기본 동작을 막는 것
+
+    authMutation.reset()
 
     if (!validate()) return
     // validate() 실패하면 여기서 멈추고 에러 메시지 표시
 
-    setIsSubmitting(true)
-    setApiError('')
-
-    try {
-      const trimmedEmail = email.trim()
-      const auth = isSignup
-        ? await signupMember({
-            email: trimmedEmail,
-            password,
-            ...parseSummonerTag(summonerTag),
-          })
-        : await loginMember({ email: trimmedEmail, password })
-
-      setAuth(auth)
-      navigate('/', { replace: true })
-    } catch (error) {
-      setApiError(error instanceof Error ? error.message : '인증 처리 중 오류가 발생했습니다.')
-    } finally {
-      setIsSubmitting(false)
-    }
+    authMutation.mutate({
+      email: email.trim(),
+      password,
+      summonerTag: isSignup ? summonerTag : undefined,
+    })
   }
 
   return (
@@ -206,9 +249,9 @@ function AuthPage({ mode }: AuthPageProps) {
 
             {apiError && <p className={styles.errorText}>{apiError}</p>}
 
-            <button type="submit" className={styles.submitButton} disabled={isSubmitting}>
-              {isSubmitting ? (isSignup ? '가입 중...' : '로그인 중...') : (isSignup ? '회원가입' : '로그인')}
-              {!isSubmitting && <ArrowRight size={19} />}
+            <button type="submit" className={styles.submitButton} disabled={authMutation.isPending}>
+              {authMutation.isPending ? (isSignup ? '가입 중...' : '로그인 중...') : (isSignup ? '회원가입' : '로그인')}
+              {!authMutation.isPending && <ArrowRight size={19} />}
             </button>
           </form>
 
