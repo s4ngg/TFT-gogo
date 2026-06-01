@@ -95,9 +95,9 @@ function computeTraitCounts(
 
 interface CellPosData { row: number; col: number; items?: string[] }
 
-// null이면 자동 배치, 빈 Map이면 빈 보드, 내용 있으면 관리자 배치
-function parseBoardPositions(json: string | null | undefined, level: number): Map<string, CellPosData> | null {
-  if (!json) return null  // null = 자동 배치
+// 항상 Map 반환 — null/빈 Map → 빈 보드, 내용 있으면 관리자 배치
+function parseBoardPositions(json: string | null | undefined, level: number): Map<string, CellPosData> {
+  if (!json) return new Map()  // 미설정 → 빈 보드
   try {
     const obj = JSON.parse(json) as Record<string, unknown>
     const levelData = obj[String(level)]
@@ -106,7 +106,7 @@ function parseBoardPositions(json: string | null | undefined, level: number): Ma
     }
     return new Map()  // 레벨 미설정 → 빈 보드
   } catch {
-    return null
+    return new Map()
   }
 }
 
@@ -135,12 +135,11 @@ function HexBoard({ visibleUnits, level, availableLevels, onLevelChange, locale,
   const customPosMap = useMemo(() => parseBoardPositions(boardPositionsJson, level), [boardPositionsJson, level])
 
   const placed = useMemo(() => {
-    if (customPosMap === null) return buildBoardPositions(visibleUnits, locale)  // 자동 배치
-    if (customPosMap.size === 0) return []                                       // 빈 보드
-    return buildCustomBoardPositions(visibleUnits, customPosMap)                 // 관리자 배치
-  }, [visibleUnits, locale, customPosMap])
+    if (customPosMap.size === 0) return []                        // 미설정 → 빈 보드
+    return buildCustomBoardPositions(visibleUnits, customPosMap)  // 관리자 배치
+  }, [visibleUnits, customPosMap])
 
-  if (visibleUnits.length === 0 && customPosMap === null) return null
+  if (visibleUnits.length === 0) return null
 
   function champAt(row: number, col: number): PlacedChamp | undefined {
     return placed.find((p) => p.row === row && p.col === col)
