@@ -8,7 +8,7 @@ import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
 import { useCDragonLocale } from '../../hooks/useCDragonLocale'
 import { getAugmentName, getChampionDetail, getChampionName, getChampionShortName, getItemName, getTraitName } from '../../api/cdragonLocale'
 import type { TFTLocale } from '../../api/cdragonLocale'
-import { tftItemIconUrl } from '../../api/communityDragonAssets'
+import { tftItemIconUrl, tftItemIconOnError } from '../../api/communityDragonAssets'
 import type { ChampionSummary, MetaDeck } from '../Dashboard/dashboardData'
 import { costLimitForLevel } from '../../utils/deckUtils'
 import styles from './DeckDetail.module.css'
@@ -157,7 +157,7 @@ function HexBoard({ visibleUnits, level, availableLevels, onLevelChange, locale 
                               src={url}
                               alt=""
                               className={styles.hexItemIcon}
-                              onError={(e) => { e.currentTarget.style.opacity = '0' }}
+                              onError={tftItemIconOnError}
                             />
                           ))}
                         </div>
@@ -260,7 +260,7 @@ function ItemsPanel({ deck, locale }: { deck: MetaDeck; locale: TFTLocale | unde
                       src={tftItemIconUrl(itemId)}
                       alt={getItemName(itemId, locale)}
                       className={styles.coreItemIcon}
-                      onError={(e) => { e.currentTarget.style.opacity = '0.3' }}
+                      onError={tftItemIconOnError}
                     />
                     <span className={styles.coreItemName}>{getItemName(itemId, locale)}</span>
                   </div>
@@ -297,21 +297,23 @@ function DeckDetail() {
     setLevel(maxLevel)
   }, [deck?.rank, maxLevel])
 
-  // 우선순위 정렬: 캐리 > 고코스트 순
+  // 코스트 오름차순 정렬 (빌드업 순서) → 같은 코스트 내에서는 캐리 우선
+  // 덕분에 Lv.N 탭에서 항상 N개 표시 가능 (cost 필터 없음)
   const prioritized = useMemo(
     () =>
       [...all].sort((a, b) => {
+        const ca = getCost(a, locale), cb = getCost(b, locale)
+        if (ca !== cb) return ca - cb           // 저코스트 먼저
         const ac = isCarry(a), bc = isCarry(b)
-        if (ac !== bc) return bc ? 1 : -1
-        return getCost(b, locale) - getCost(a, locale)
+        return ac === bc ? 0 : ac ? -1 : 1     // 같은 코스트에서 캐리 우선
       }),
     [all, locale],
   )
 
-  // 현재 레벨에서 배치 가능한 유닛 (HexBoard·시너지 공용)
+  // cost 필터 없이 level개만 슬라이스 → Lv.6에서 항상 6개 표시
   const visibleUnits = useMemo(
-    () => prioritized.filter((champ) => canUseAtLevel(champ, level, locale)).slice(0, level),
-    [prioritized, level, locale],
+    () => prioritized.slice(0, level),
+    [prioritized, level],
   )
 
   // 시너지: visibleUnits 기반 재계산 → 레벨 탭 바꾸면 자동 동기화
@@ -319,16 +321,18 @@ function DeckDetail() {
     () => computeTraitCounts(visibleUnits, locale),
     [visibleUnits, locale],
   )
-  const displayTraits = useMemo(
-    () =>
-      deck
-        ? deck.traits
-            .map((t) => ({ ...t, count: traitCounts.get(t.name) ?? 0 }))
-            .filter((t) => (traitCounts.get(t.name) ?? 0) >= 2)
-            .sort((a, b) => b.count - a.count)
-        : [],
-    [deck, traitCounts],
-  )
+  const displayTraits = useMemo(() => {
+    if (!deck) return []
+    const computed = deck.traits
+      .map((t) => ({ ...t, count: traitCounts.get(t.name) ?? 0 }))
+      .filter((t) => (traitCounts.get(t.name) ?? 0) >= 2)
+      .sort((a, b) => b.count - a.count)
+    // CDragon traits 미로드 또는 데이터 없음 → 저장된 API 데이터로 폴백
+    if (computed.length === 0 && deck.traits.length > 0) {
+      return [...deck.traits].sort((a, b) => b.count - a.count)
+    }
+    return computed
+  }, [deck, traitCounts])
 
   // ── Early returns (hooks 이후) ───────────────────────────────
   if (isLoading) {

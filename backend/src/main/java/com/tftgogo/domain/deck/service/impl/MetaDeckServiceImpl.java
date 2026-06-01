@@ -32,6 +32,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -70,6 +71,8 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     // (예: 정령족코르키+리븐 vs 정령족코르키+람머스 → 코어 5/7 공유 ≈ 0.56 → 병합 O)
     private static final double CORE_UNIT_SIMILARITY_THRESHOLD = 0.55;
     private static final double BOARD_UNIT_SIMILARITY_THRESHOLD = 0.65;
+    // 동일 주요 캐리 + 보드 40% 이상 공유 → 같은 아키타입으로 병합 (트레이트 시그니처가 달라도)
+    private static final double MIN_CARRY_BOARD_SIMILARITY = 0.40;
     private static final double S_TIER_RATIO = 0.10;
     private static final double A_TIER_RATIO = 0.20;
     private static final double B_TIER_RATIO = 0.30;
@@ -336,7 +339,21 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     }
 
     private DeckProfile buildDeckProfile(List<TraitDto> activeTraits, List<UnitDto> units) {
-        return new DeckProfile(buildTraitSignature(activeTraits), buildCoreUnitIds(units), buildBoardUnitIds(units));
+        return new DeckProfile(
+                buildTraitSignature(activeTraits),
+                buildCoreUnitIds(units),
+                buildBoardUnitIds(units),
+                buildPrimaryCarryId(units));
+    }
+
+    /** 아이템 2개 이상 장착 유닛 중 아이템 수 최다인 유닛 = 주요 캐리 */
+    private String buildPrimaryCarryId(List<UnitDto> units) {
+        return units.stream()
+                .filter(u -> u.getItemNames() != null && u.getItemNames().size() >= 2)
+                .max(Comparator.comparingInt(u -> u.getItemNames().size()))
+                .map(UnitDto::getCharacter_id)
+                .map(id -> id.toLowerCase(Locale.ROOT))
+                .orElse(null);
     }
 
     private String buildTraitSignature(List<TraitDto> activeTraits) {
@@ -393,11 +410,21 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     }
 
     private boolean hasSimilarDeckProfile(DeckProfile left, DeckProfile right) {
+        // 1. 트레이트 시그니처 동일 + 코어 유닛 유사 → 동일 아키타입
         if (left.traitSignature.equals(right.traitSignature)
                 && hasSimilarCoreUnits(left.coreUnitIds, right.coreUnitIds)) {
             return true;
         }
 
+        // 2. 주요 캐리가 같고 보드 40% 이상 겹침 → flex 유닛 차이로 트레이트만 달라진 변형
+        //    예: 싸움꾼_마스터이 vs N.O.V.A._마스터이 → 마스터이 기반 같은 아키타입
+        if (left.primaryCarryId != null
+                && left.primaryCarryId.equals(right.primaryCarryId)
+                && jaccardSimilarity(left.boardUnitIds, right.boardUnitIds) >= MIN_CARRY_BOARD_SIMILARITY) {
+            return true;
+        }
+
+        // 3. 보드 유닛 Jaccard 유사도 (캐리 무관)
         return jaccardSimilarity(left.boardUnitIds, right.boardUnitIds) >= BOARD_UNIT_SIMILARITY_THRESHOLD;
     }
 
@@ -733,7 +760,8 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         return TftShopUnitFilter.isShopUnit(unitStat.characterId);
     }
 
-    private record DeckProfile(String traitSignature, Set<String> coreUnitIds, Set<String> boardUnitIds) {
+    // primaryCarryId: 아이템 2개 이상 장착 유닛 중 아이템 수 최다 → 아키타입 핵심 정체성
+    private record DeckProfile(String traitSignature, Set<String> coreUnitIds, Set<String> boardUnitIds, String primaryCarryId) {
     }
 
     private static class DeckStat {
