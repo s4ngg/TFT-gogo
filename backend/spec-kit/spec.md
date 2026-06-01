@@ -101,7 +101,25 @@
 - 가이드 데이터는 패치 버전, 공개 여부, 정렬 순서를 가질 수 있어야 한다.
 - 공개 API는 사용자에게 노출 가능한 데이터만 반환해야 한다.
 - 관리자가 나중에 데이터를 수정하거나 추가할 수 있는 구조여야 한다.
-- 세부 DTO, dataJson 구조, 관리자 CRUD 계약은 별도 Guide/PatchNotes 상세 스펙에서 확정한다.
+- 게임가이드는 Riot 매치 데이터 수만 건을 실시간으로 분석해 자동 생성하기보다, 관리자 큐레이션 기반 콘텐츠 데이터로 우선 관리한다.
+- 공개 API는 프론트 `axiosInstance` 기준으로 `/api/guide`, `/api/guide/{tab}` 경로를 제공해야 한다.
+- `GET /api/guide`는 각 탭의 대표 데이터를 반환하고, 응답은 `ApiResponse<List<GuideEntryResponse>>`를 기본 계약으로 한다.
+- `GET /api/guide/{tab}`는 탭별 목록을 반환하고, 응답은 `ApiResponse<GuidePageResponse<GuideEntryResponse>>`를 기본 계약으로 한다.
+- `{tab}` 값은 `traits`, `items`, `augments`, `champions`만 허용한다.
+- 탭별 조회는 `patchVersion`, `query`, `page`, `pageSize`, `sortKey`, `sortDir`, `cost` query parameter를 지원할 수 있어야 한다.
+- `cost` 필터는 챔피언 탭에서만 의미를 가지며, 다른 탭에서는 무시하거나 검증 오류로 처리하는 정책을 구현 시 확정한다.
+- 페이지 응답은 `items`, `page`, `pageSize`, `totalItems`, `totalPages`를 포함한다.
+- `GuideEntryResponse`는 `id`, `guideType`, `targetKey`, `name`, `summary`, `imageUrl`, `patchVersion`, `sortOrder`, `dataJson`을 포함한다.
+- `guideType`은 `TRAIT`, `ITEM`, `AUGMENT`, `CHAMPION` enum으로 관리한다.
+- `dataJson`은 유형별 표시 데이터를 담는다.
+  - `TRAIT`: `type`, `count`, `levels`, `champions`, `tips`, `tone`
+  - `ITEM`: `category`, `winRate`, `top4`, `pickRate`, `avgPlace`, `bestUsers`, `combinations`
+  - `AUGMENT`: `tier`, `type`, `description`, `reward`, `tags`, `winRate`, `pickRate`, `avgPlace`
+  - `CHAMPION`: `cost`, `role`, `position`, `traits`, `bestItems`, `stats`
+- 관리자 API는 `/api/admin/guides` 아래에 둔다.
+- 관리자는 가이드 항목 목록 조회, 생성, 수정, 숨김 처리를 할 수 있어야 한다.
+- 관리자 삭제 요청은 우선 실제 삭제보다 `published = false` 숨김 처리로 설계한다.
+- 관리자가 입력한 이미지 URL 또는 Community Dragon key는 공개 응답에서 프론트가 바로 사용할 수 있는 `imageUrl`로 제공한다.
 
 ### 5. PatchNotes
 
@@ -111,7 +129,23 @@
 - 변경사항은 상향, 하향, 조정, 신규 같은 변경 타입을 가질 수 있어야 한다.
 - 공개 API는 사용자에게 노출 가능한 패치노트와 변경사항만 반환해야 한다.
 - 관리자가 나중에 패치노트와 변경사항을 수정하거나 추가할 수 있는 구조여야 한다.
-- 세부 DTO, 변경사항 통계 응답, 관리자 CRUD 계약은 별도 Guide/PatchNotes 상세 스펙에서 확정한다.
+- 패치노트는 대량 매치 데이터 집계 결과가 아니라 관리자 큐레이션 기반 공지/변경사항 데이터로 우선 관리한다.
+- 공개 API는 프론트 `axiosInstance` 기준으로 `/api/patch-notes`, `/api/patch-notes/{version}/changes` 경로를 제공해야 한다.
+- `GET /api/patch-notes`는 패치노트 목록을 반환하고, 응답은 `ApiResponse<List<PatchNoteResponse>>`를 기본 계약으로 한다.
+- `GET /api/patch-notes/{version}/changes`는 특정 버전의 변경사항 목록과 통계를 반환하고, 응답은 `ApiResponse<PatchChangePageResponse>`를 기본 계약으로 한다.
+- 변경사항 조회는 `category`, `type`, `impact`, `query`, `page`, `pageSize` query parameter를 지원한다.
+- `category`는 `CHAMPION`, `TRAIT`, `ITEM`, `AUGMENT`, `SYSTEM` enum으로 관리한다.
+- `type`은 `BUFF`, `NERF`, `ADJUST`, `NEW` enum으로 관리한다.
+- `impact`는 `HIGH`, `MEDIUM`, `LOW` enum으로 관리한다.
+- `PatchNoteResponse`는 `id`, `version`, `title`, `summary`, `description`, `focus`, `imageUrl`, `publishedAt`, `isCurrent`, `highlights`, `changes`를 포함할 수 있다.
+- `PatchChangeResponse`는 `id`, `category`, `type`, `impact`, `targetKey`, `targetName`, `summary`, `beforeValue`, `afterValue`, `imageUrl`, `tags`를 포함한다.
+- 변경사항 페이지 응답은 `items`, `page`, `pageSize`, `totalItems`, `totalPages`, `stats`를 포함한다.
+- `stats`는 `totalChanges`, `categoryCounts`, `typeCounts`, `buffCount`, `nerfCount`, `highImpactCount`를 포함한다.
+- 관리자 API는 `/api/admin/patch-notes`와 `/api/admin/patch-note-changes` 아래에 둔다.
+- 관리자는 패치노트 목록 조회, 생성, 수정, 숨김 처리를 할 수 있어야 한다.
+- 관리자는 패치노트 하위 변경사항을 생성, 수정, 숨김 처리할 수 있어야 한다.
+- 관리자 삭제 요청은 우선 실제 삭제보다 `published = false` 숨김 처리로 설계한다.
+- 현재 패치가 여러 개가 되지 않도록 `isCurrent` 변경 시 기존 현재 패치 해제 정책을 함께 적용한다.
 
 ### 6. Community
 
