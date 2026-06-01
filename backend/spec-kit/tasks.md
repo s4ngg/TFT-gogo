@@ -16,6 +16,38 @@
 
 ---
 
+## Immediate Backlog - 2026-06-01 기준
+
+### PR 리뷰 후속
+
+- [ ] PR #113: `memberApi.ts`, `AuthPage.module.css` EOF 공백 정리 후 `git diff --check` 재확인
+- [ ] PR #124: 덱모음 시너지 태그 CSS의 디자인 토큰 적용과 CSS Modules camelCase 클래스명 정리
+- [ ] PR #127: 배치판 아이템 유지, 삭제된 챔피언 편집 상태 초기화, `boardPositions` JSON 검증, 신규 CSS 토큰 적용
+- [ ] PR #126: Guide/PatchNotes API 정책 명확화 후 작성자가 아닌 팀원 승인 요청
+
+### 백엔드 선행 작업
+
+- [ ] #129: 공개 메타 덱 수동 집계 API에 관리자 보호 적용
+- [ ] #135: 관리자 덱 조회 실패를 `BusinessException(ErrorCode.DECK_NOT_FOUND)` 기반 404로 처리
+- [ ] #136: 덱 큐레이션 JSON 요청값 검증 추가
+- [ ] #133: 최신 패치 조회 로직을 숫자 버전 기준으로 통일
+- [ ] #132: 메타 덱 집계 부분 실패 시 기존 데이터 삭제 방지
+- [ ] #137: 메타 덱 signature를 안정적인 canonical key로 생성
+- [ ] #130/#131: 메타 덱 집계 작업을 비동기 job으로 분리하고 서버 시작 시 중복 실행 방지
+- [ ] #134: 공개 메타 덱 조회 N+1 제거
+
+### Guide/PatchNotes API 연결 계획
+
+- [ ] 프론트 `axiosInstance`의 baseURL이 `/api`이므로 프론트 API 함수는 `/guide`, `/patch-notes`처럼 `/api` prefix 없이 호출한다.
+- [ ] 백엔드 공개 Controller는 `/api/guide`, `/api/guide/{tab}`, `/api/patch-notes`, `/api/patch-notes/{version}/changes`를 제공한다.
+- [ ] 모든 공개 응답은 `ApiResponse<T>`와 camelCase 필드명을 사용한다.
+- [ ] Guide `cost` 필터는 `champions` 탭에서만 적용하고 다른 탭에서는 무시한다.
+- [ ] Guide `dataJson`은 공개 응답에서 문자열이 아니라 JSON object로 반환한다.
+- [ ] `GET /api/patch-notes`는 lightweight 목록만 반환하고, 변경사항 목록과 통계는 `/changes` endpoint에서 페이지 단위로 조회한다.
+- [ ] 관리자 API는 이후 `/api/admin/guides`, `/api/admin/patch-notes`, `/api/admin/patch-note-changes` 아래에 추가한다.
+
+---
+
 ## Phase 1 - 공통 기반
 
 - [ ] `ApiResponse` 사용 범위 점검

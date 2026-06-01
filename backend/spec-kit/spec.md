@@ -107,11 +107,11 @@
 - `GET /api/guide/{tab}`는 탭별 목록을 반환하고, 응답은 `ApiResponse<GuidePageResponse<GuideEntryResponse>>`를 기본 계약으로 한다.
 - `{tab}` 값은 `traits`, `items`, `augments`, `champions`만 허용한다.
 - 탭별 조회는 `patchVersion`, `query`, `page`, `pageSize`, `sortKey`, `sortDir`, `cost` query parameter를 지원할 수 있어야 한다.
-- `cost` 필터는 챔피언 탭에서만 의미를 가지며, 다른 탭에서는 무시하거나 검증 오류로 처리하는 정책을 구현 시 확정한다.
+- `cost` 필터는 챔피언 탭에서만 적용한다. 다른 탭에 전달되면 공개 API는 400 오류를 반환하지 않고 무시한다.
 - 페이지 응답은 `items`, `page`, `pageSize`, `totalItems`, `totalPages`를 포함한다.
 - `GuideEntryResponse`는 `id`, `guideType`, `targetKey`, `name`, `summary`, `imageUrl`, `patchVersion`, `sortOrder`, `dataJson`을 포함한다.
 - `guideType`은 `TRAIT`, `ITEM`, `AUGMENT`, `CHAMPION` enum으로 관리한다.
-- `dataJson`은 유형별 표시 데이터를 담는다.
+- `dataJson`은 유형별 표시 데이터를 담는다. DB 저장 방식이 문자열 또는 JSON 컬럼이어도 공개 응답에서는 문자열이 아니라 JSON object로 직렬화한다.
   - `TRAIT`: `type`, `count`, `levels`, `champions`, `tips`, `tone`
   - `ITEM`: `category`, `winRate`, `top4`, `pickRate`, `avgPlace`, `bestUsers`, `combinations`
   - `AUGMENT`: `tier`, `type`, `description`, `reward`, `tags`, `winRate`, `pickRate`, `avgPlace`
@@ -137,7 +137,8 @@
 - `category`는 `CHAMPION`, `TRAIT`, `ITEM`, `AUGMENT`, `SYSTEM` enum으로 관리한다.
 - `type`은 `BUFF`, `NERF`, `ADJUST`, `NEW` enum으로 관리한다.
 - `impact`는 `HIGH`, `MEDIUM`, `LOW` enum으로 관리한다.
-- `PatchNoteResponse`는 `id`, `version`, `title`, `summary`, `description`, `focus`, `imageUrl`, `publishedAt`, `isCurrent`, `highlights`, `changes`를 포함할 수 있다.
+- `GET /api/patch-notes`의 `PatchNoteResponse`는 목록 성능을 위해 전체 `changes`를 포함하지 않는다. 기본 필드는 `id`, `version`, `title`, `summary`, `description`, `focus`, `imageUrl`, `publishedAt`, `isCurrent`, `highlights`로 한다.
+- 패치노트 변경사항은 `/api/patch-notes/{version}/changes`에서 조회한다. 목록에서 변경사항 개수가 필요하면 `changeCount` 같은 요약 필드만 추가한다.
 - `PatchChangeResponse`는 `id`, `category`, `type`, `impact`, `targetKey`, `targetName`, `summary`, `beforeValue`, `afterValue`, `imageUrl`, `tags`를 포함한다.
 - 변경사항 페이지 응답은 `items`, `page`, `pageSize`, `totalItems`, `totalPages`, `stats`를 포함한다.
 - `stats`는 `totalChanges`, `categoryCounts`, `typeCounts`, `buffCount`, `nerfCount`, `highImpactCount`를 포함한다.
