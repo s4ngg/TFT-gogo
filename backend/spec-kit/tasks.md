@@ -16,14 +16,14 @@
 
 ---
 
-## Guide/PatchNotes Immediate Backlog - 2026-06-01 기준
+## Game Guide Immediate Backlog - 2026-06-01 기준
 
-### PR #126 후속
+### Spec PR #126 후속
 
-- [ ] Guide/PatchNotes API 정책 명확화 커밋을 확인하고 작성자가 아닌 팀원에게 승인 요청
-- [ ] `spec.md`의 Guide `cost`, `dataJson`, PatchNotes `changes` 정책을 구현 이슈 본문에 그대로 반영
+- [ ] 게임가이드 spec 변경사항을 확인하고 작성자가 아닌 팀원에게 승인 요청
+- [ ] `spec.md`의 Guide `cost`, `dataJson`, 정렬/검증 정책을 게임가이드 구현 이슈 본문에 반영
 
-### Game Guide 백엔드 구현 순서
+### 구현 PR 범위
 
 - [ ] `GuideType` enum과 가이드 Entity/Repository 설계
 - [ ] `GuideEntryResponse`, `GuidePageResponse` DTO 작성
@@ -33,7 +33,24 @@
 - [ ] 관리자 API 초안 구현: `/api/admin/guides` 목록, 생성, 수정, 숨김 처리
 - [ ] Service 단위 테스트 작성: 공개 여부 필터, tab 검증, cost 필터, 페이지 응답
 
-### PatchNotes 백엔드 구현 순서
+### 프론트 API 연결 계획
+
+- [ ] 프론트 `guideClient.ts`는 `/guide`, `/guide/{tab}`을 호출하고 백엔드 Controller는 `/api/guide`, `/api/guide/{tab}`을 제공한다.
+- [ ] `GET /api/guide`는 `ApiResponse<List<GuideEntryResponse>>`를 반환한다.
+- [ ] `GET /api/guide/{tab}`는 `ApiResponse<GuidePageResponse<GuideEntryResponse>>`를 반환한다.
+- [ ] 모든 공개 응답은 camelCase 필드명과 JSON object `dataJson`을 사용한다.
+- [ ] 게임가이드 구현 PR에는 패치노트 Entity, Controller, DTO 변경을 포함하지 않는다.
+
+---
+
+## PatchNotes Immediate Backlog - 2026-06-01 기준
+
+### Spec PR #126 후속
+
+- [ ] 패치노트 spec 변경사항을 확인하고 작성자가 아닌 팀원에게 승인 요청
+- [ ] `spec.md`의 PatchNotes 목록/변경사항 분리, stats, 정렬/검증 정책을 패치노트 구현 이슈 본문에 반영
+
+### 구현 PR 범위
 
 - [ ] `PatchCategory`, `PatchChangeType`, `PatchImpact` enum과 PatchNote/PatchChange Entity/Repository 설계
 - [ ] `PatchNoteResponse`, `PatchChangeResponse`, `PatchChangePageResponse` DTO 작성
@@ -46,13 +63,11 @@
 
 ### 프론트 API 연결 계획
 
-- [ ] 프론트 `axiosInstance`의 baseURL이 `/api`이므로 프론트 API 함수는 `/guide`, `/patch-notes`처럼 `/api` prefix 없이 호출한다.
-- [ ] 백엔드 공개 Controller는 `/api/guide`, `/api/guide/{tab}`, `/api/patch-notes`, `/api/patch-notes/{version}/changes`를 제공한다.
-- [ ] 모든 공개 응답은 `ApiResponse<T>`와 camelCase 필드명을 사용한다.
-- [ ] Guide `cost` 필터는 `champions` 탭에서만 적용하고 다른 탭에서는 무시한다.
-- [ ] Guide `dataJson`은 공개 응답에서 문자열이 아니라 JSON object로 반환한다.
+- [ ] 프론트 `patchNotes.ts`는 `/patch-notes`, `/patch-notes/{version}/changes`를 호출하고 백엔드 Controller는 `/api/patch-notes`, `/api/patch-notes/{version}/changes`를 제공한다.
+- [ ] `GET /api/patch-notes`는 `ApiResponse<List<PatchNoteResponse>>`를 반환한다.
+- [ ] `GET /api/patch-notes/{version}/changes`는 `ApiResponse<PatchChangePageResponse>`를 반환한다.
 - [ ] `GET /api/patch-notes`는 lightweight 목록만 반환하고, 변경사항 목록과 통계는 `/changes` endpoint에서 페이지 단위로 조회한다.
-- [ ] 관리자 API는 이후 `/api/admin/guides`, `/api/admin/patch-notes`, `/api/admin/patch-note-changes` 아래에 추가한다.
+- [ ] 패치노트 구현 PR에는 게임가이드 Entity, Controller, DTO 변경을 포함하지 않는다.
 
 ---
 
