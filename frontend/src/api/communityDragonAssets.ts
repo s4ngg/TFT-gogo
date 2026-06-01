@@ -1,3 +1,5 @@
+import type React from 'react'
+
 const COMMUNITY_DRAGON_BASE_URL = 'https://raw.communitydragon.org/latest/game'
 const COMMUNITY_DRAGON_RAW_BASE_URL = 'https://raw.communitydragon.org/latest'
 
@@ -18,10 +20,23 @@ export function itemsFromUrls(urls: string[]): { imageUrl: string; name: string 
 
 /**
  * Riot API itemId(예: "TFT_Item_InfinityEdge")로 CDragon 아이템 아이콘 URL 반환
+ * Set17 경로 우선 시도, onError에서 set13 fallback 적용 권장
  */
-export function tftItemIconUrl(itemId: string): string {
+export function tftItemIconUrl(itemId: string, setTag = 'tft_set17'): string {
   const normalized = itemId.toLowerCase()
-  return `${COMMUNITY_DRAGON_BASE_URL}/assets/maps/tft/icons/items/hexcore/${normalized}.tft_set13.png`
+  return `${COMMUNITY_DRAGON_BASE_URL}/assets/maps/tft/icons/items/hexcore/${normalized}.${setTag}.png`
+}
+
+/**
+ * tftItemIconUrl의 onError 핸들러 — set17 실패 시 set13 재시도, 그 후 숨김
+ */
+export function tftItemIconOnError(e: React.SyntheticEvent<HTMLImageElement>): void {
+  const img = e.currentTarget
+  if (img.src.includes('.tft_set17.')) {
+    img.src = img.src.replace('.tft_set17.', '.tft_set13.')
+  } else {
+    img.style.opacity = '0'
+  }
 }
 
 /**

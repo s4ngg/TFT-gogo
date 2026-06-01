@@ -7,7 +7,6 @@ import com.tftgogo.domain.deck.dto.response.MetaDeckResponse;
 import com.tftgogo.domain.deck.entity.ArtifactStat;
 import com.tftgogo.domain.deck.entity.DeckTrait;
 import com.tftgogo.domain.deck.entity.DeckUnit;
-import com.tftgogo.domain.deck.entity.HeroAugment;
 import com.tftgogo.domain.deck.entity.MetaDeck;
 import com.tftgogo.domain.deck.entity.RankFilter;
 import com.tftgogo.domain.deck.repository.MetaDeckRepository;
@@ -20,6 +19,7 @@ import com.tftgogo.global.riot.dto.MatchDto.ParticipantDto;
 import com.tftgogo.global.riot.dto.MatchDto.TraitDto;
 import com.tftgogo.global.riot.dto.MatchDto.UnitDto;
 import com.tftgogo.global.riot.util.TftAssetUrlBuilder;
+import com.tftgogo.global.riot.util.TftShopUnitFilter;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -31,11 +31,14 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
@@ -49,24 +52,52 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     private static final Logger logger = LogManager.getLogger(MetaDeckServiceImpl.class);
 
     private static final int MATCHES_PER_SUMMONER = 20;
-    private static final int MIN_SAMPLE = 5;
-    private static final int MIN_DETAIL_SAMPLE = 2;
+    // 15 → 10: 데이터 부족 시 덱 종류가 너무 적어지는 문제 완화
+    private static final int MIN_SAMPLE = 10;
+    private static final int MIN_ITEM_SAMPLE = 1;
+    // 덱 등장 횟수 대비 유닛 최소 출현 비율 — 이 미만이면 빌드업·필러 유닛으로 판단해 제외
+    private static final double MIN_UNIT_FREQUENCY = 0.25;
     private static final int SIGNATURE_TRAIT_COUNT = 2;
     // 6유닛 미만 = 플레이어가 레벨 5 이하에서 탈락한 빌드업 조합 — 집계 대상 제외
     private static final int MIN_UNIT_COUNT = 6;
     // 트레잇 실버(2) 이상만 활성 시너지로 인정 / 2유닛 이상이어야 고유 특성(Unique) 제외
     private static final int MIN_TRAIT_STYLE = 2;
     private static final int MIN_TRAIT_UNITS = 2;
+    private static final int CORE_UNIT_LIMIT = 7;
+    private static final int MIN_CORE_UNIT_COUNT = 5;
+    // 0.70/0.75 → 0.55/0.65: 같은 캐리에 필러·탱커 1~2개 차이인 변형 덱을 동일 아키타입으로 병합
+    // (예: 정령족코르키+리븐 vs 정령족코르키+람머스 → 코어 5/7 공유 ≈ 0.56 → 병합 O)
+    private static final double CORE_UNIT_SIMILARITY_THRESHOLD = 0.55;
+    private static final double BOARD_UNIT_SIMILARITY_THRESHOLD = 0.65;
+    // 동일 주요 캐리 + 보드 40% 이상 공유 → 같은 아키타입으로 병합 (트레이트 시그니처가 달라도)
+    private static final double MIN_CARRY_BOARD_SIMILARITY = 0.40;
+    private static final double S_TIER_RATIO = 0.10;
+    private static final double A_TIER_RATIO = 0.20;
+    private static final double B_TIER_RATIO = 0.30;
+    private static final double C_TIER_RATIO = 0.25;
     private static final long RATE_LIMIT_DELAY_MS = 1200L;
+    private static final int RECOMMENDED_CARRY_LIMIT = 3;
     private static final String UNKNOWN_PATCH_VERSION = "UNKNOWN";
-    private static final String GLOBAL_AUGMENT_CHARACTER_ID = "GLOBAL";
     private static final ZoneId DATA_COLLECTION_ZONE = ZoneId.of("Asia/Seoul");
+    private static final Set<String> COMPONENT_ITEM_IDS = Set.of(
+            "tft_item_bfsword",
+            "tft_item_recurvebow",
+            "tft_item_needlesslylargerod",
+            "tft_item_tearofthegoddess",
+            "tft_item_chainvest",
+            "tft_item_negatroncloak",
+            "tft_item_giantsbelt",
+            "tft_item_sparringgloves",
+            "tft_item_spatula",
+            "tft_item_fryingpan"
+    );
     // 선택률 최소 임계값(%) — 이 이상인 덱만 덱모음에 노출
     private static final double MIN_PLAY_RATE = 0.5;
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final Pattern PATCH_VERSION_PATTERN = Pattern.compile("(\\d+\\.\\d+[a-zA-Z]?)");
 
     private final MetaDeckRepository metaDeckRepository;
+    private final com.tftgogo.domain.deck.repository.DeckCurationRepository deckCurationRepository;
     private final RiotApiClient riotApiClient;
     private final PlatformTransactionManager transactionManager;
 
@@ -86,9 +117,34 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         // 선택률 기준 내림차순 정렬 + 최소 선택률 필터 적용
         List<MetaDeck> decks = metaDeckRepository
                 .findMetaDecksByPickRate(rankFilter, latestPatchVersion, MIN_PLAY_RATE);
+
+        // 큐레이션 적용: customName 오버라이드, 숨김 처리, sortPriority 정렬
+        Map<String, com.tftgogo.domain.deck.entity.DeckCuration> curationMap =
+                deckCurationRepository.findByRankFilter(rankFilter).stream()
+                        .collect(Collectors.toMap(
+                                com.tftgogo.domain.deck.entity.DeckCuration::getSignature,
+                                c -> c));
+
         AtomicInteger rank = new AtomicInteger(1);
         List<MetaDeckResponse> responses = decks.stream()
-                .map(deck -> MetaDeckResponse.from(deck, rank.getAndIncrement()))
+                .filter(deck -> {
+                    var curation = curationMap.get(deck.getSignature());
+                    return curation == null || !curation.isHidden();
+                })
+                .sorted((a, b) -> {
+                    var ca = curationMap.get(a.getSignature());
+                    var cb = curationMap.get(b.getSignature());
+                    Integer pa = ca != null ? ca.getSortPriority() : null;
+                    Integer pb = cb != null ? cb.getSortPriority() : null;
+                    if (pa != null && pb != null) return Integer.compare(pa, pb);
+                    if (pa != null) return -1;  // 우선순위 있는 쪽 먼저
+                    if (pb != null) return 1;
+                    return Double.compare(b.getPlayRate(), a.getPlayRate()); // 기본: pickRate 내림차순
+                })
+                .map(deck -> {
+                    var curation = curationMap.get(deck.getSignature());
+                    return MetaDeckResponse.from(deck, rank.getAndIncrement(), curation);
+                })
                 .toList();
 
         // 가장 오래된 dataStartDate를 응답에 포함 (수집 기간 표시용)
@@ -136,10 +192,14 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         Map<String, PatchDeckStats> patchStatsMap = new HashMap<>();
         Set<String> processedMatchIds = new HashSet<>();
 
+        int puuidIndex = 0;
         for (String puuid : puuids) {
+            puuidIndex++;
             try {
                 List<String> matchIds = riotApiClient.getMatchIds(
                         puuid, MATCHES_PER_SUMMONER, startTimeSeconds, endTimeSeconds);
+                logger.info("[{}] puuid {}/{} matchIds={} uniqueTotal={}",
+                        rankFilter, puuidIndex, puuids.size(), matchIds.size(), processedMatchIds.size());
                 for (String matchId : matchIds) {
                     if (!processedMatchIds.add(matchId)) {
                         continue;
@@ -272,21 +332,143 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                 continue;
             }
 
-            String signature = buildSignature(activeTraits);
-            deckStatMap.computeIfAbsent(signature, ignored -> new DeckStat(activeTraits))
-                    .record(participant);
+            DeckProfile profile = buildDeckProfile(activeTraits, participant.getUnits());
+            DeckStat deckStat = findSimilarDeckStat(deckStatMap, profile).orElseGet(() -> {
+                String signature = buildSignature(profile);
+                DeckStat newStat = new DeckStat(activeTraits, profile);
+                deckStatMap.put(signature, newStat);
+                return newStat;
+            });
+            deckStat.record(participant);
             count++;
         }
         return count;
     }
 
-    private String buildSignature(List<TraitDto> activeTraits) {
+    private DeckProfile buildDeckProfile(List<TraitDto> activeTraits, List<UnitDto> units) {
+        return new DeckProfile(
+                buildTraitSignature(activeTraits),
+                buildCoreUnitIds(units),
+                buildBoardUnitIds(units),
+                buildPrimaryCarryId(units));
+    }
+
+    /** 아이템 2개 이상 장착 유닛 중 아이템 수 최다인 유닛 = 주요 캐리 */
+    private String buildPrimaryCarryId(List<UnitDto> units) {
+        return units.stream()
+                .filter(u -> u.getItemNames() != null && u.getItemNames().size() >= 2)
+                .max(Comparator.comparingInt(u -> u.getItemNames().size()))
+                .map(UnitDto::getCharacter_id)
+                .map(id -> id.toLowerCase(Locale.ROOT))
+                .orElse(null);
+    }
+
+    private String buildTraitSignature(List<TraitDto> activeTraits) {
         // 시그니처 = 상위 2개 트레잇 이름만 사용 (num_units 제외)
         // → 같은 아키타입이 유닛 수만 다를 때 다른 덱으로 분류되는 중복 문제 해결
         return activeTraits.stream()
                 .limit(SIGNATURE_TRAIT_COUNT)
                 .map(TraitDto::getName)
                 .collect(Collectors.joining("_"));
+    }
+
+    private Set<String> buildCoreUnitIds(List<UnitDto> units) {
+        List<UnitDto> sortedUnits = units.stream()
+                .filter(unit -> unit.getCharacter_id() != null && !unit.getCharacter_id().isBlank())
+                .sorted(Comparator.comparingInt(UnitDto::getRarity).reversed()
+                        .thenComparing(Comparator.comparingInt(UnitDto::getTier).reversed())
+                        .thenComparing(UnitDto::getCharacter_id))
+                .toList();
+
+        Set<String> coreUnitIds = sortedUnits.stream()
+                .filter(this::isCoreUnit)
+                .limit(CORE_UNIT_LIMIT)
+                .map(UnitDto::getCharacter_id)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        if (coreUnitIds.size() < MIN_CORE_UNIT_COUNT) {
+            sortedUnits.stream()
+                    .limit(CORE_UNIT_LIMIT)
+                    .map(UnitDto::getCharacter_id)
+                    .forEach(coreUnitIds::add);
+        }
+
+        return coreUnitIds;
+    }
+
+    private Set<String> buildBoardUnitIds(List<UnitDto> units) {
+        return units.stream()
+                .map(UnitDto::getCharacter_id)
+                .filter(characterId -> characterId != null && !characterId.isBlank())
+                .sorted()
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private boolean isCoreUnit(UnitDto unit) {
+        boolean hasItems = unit.getItemNames() != null && unit.getItemNames().stream()
+                .anyMatch(itemName -> itemName != null && !itemName.isBlank());
+        return unit.getRarity() >= 2 || unit.getTier() >= 2 || hasItems;
+    }
+
+    private Optional<DeckStat> findSimilarDeckStat(Map<String, DeckStat> deckStatMap, DeckProfile profile) {
+        return deckStatMap.values().stream()
+                .filter(stat -> hasSimilarDeckProfile(stat.profile, profile))
+                .findFirst();
+    }
+
+    private boolean hasSimilarDeckProfile(DeckProfile left, DeckProfile right) {
+        // 1. 트레이트 시그니처 동일 + 코어 유닛 유사 → 동일 아키타입
+        if (left.traitSignature.equals(right.traitSignature)
+                && hasSimilarCoreUnits(left.coreUnitIds, right.coreUnitIds)) {
+            return true;
+        }
+
+        // 2. 주요 캐리가 같고 보드 40% 이상 겹침 → flex 유닛 차이로 트레이트만 달라진 변형
+        //    예: 싸움꾼_마스터이 vs N.O.V.A._마스터이 → 마스터이 기반 같은 아키타입
+        if (left.primaryCarryId != null
+                && left.primaryCarryId.equals(right.primaryCarryId)
+                && jaccardSimilarity(left.boardUnitIds, right.boardUnitIds) >= MIN_CARRY_BOARD_SIMILARITY) {
+            return true;
+        }
+
+        // 3. 보드 유닛 Jaccard 유사도 (캐리 무관)
+        return jaccardSimilarity(left.boardUnitIds, right.boardUnitIds) >= BOARD_UNIT_SIMILARITY_THRESHOLD;
+    }
+
+    private boolean hasSimilarCoreUnits(Set<String> left, Set<String> right) {
+        if (left.isEmpty() || right.isEmpty()) {
+            return false;
+        }
+
+        Set<String> intersection = new HashSet<>(left);
+        intersection.retainAll(right);
+
+        int smallerCoreSize = Math.min(left.size(), right.size());
+        if (intersection.size() < Math.min(MIN_CORE_UNIT_COUNT, smallerCoreSize)) {
+            return false;
+        }
+
+        Set<String> union = new HashSet<>(left);
+        union.addAll(right);
+        double similarity = (double) intersection.size() / union.size();
+        return similarity >= CORE_UNIT_SIMILARITY_THRESHOLD;
+    }
+
+    private double jaccardSimilarity(Set<String> left, Set<String> right) {
+        if (left.isEmpty() || right.isEmpty()) {
+            return 0;
+        }
+
+        Set<String> intersection = new HashSet<>(left);
+        intersection.retainAll(right);
+
+        Set<String> union = new HashSet<>(left);
+        union.addAll(right);
+        return (double) intersection.size() / union.size();
+    }
+
+    private String buildSignature(DeckProfile profile) {
+        return profile.traitSignature + "::" + String.join("_", profile.coreUnitIds);
     }
 
     private void saveDeckStats(
@@ -302,13 +484,24 @@ public class MetaDeckServiceImpl implements MetaDeckService {
 
         List<Map.Entry<String, DeckStat>> ranked = deckStatMap.entrySet().stream()
                 .filter(entry -> entry.getValue().count >= MIN_SAMPLE)
-                .sorted((a, b) -> Double.compare(b.getValue().winRate(), a.getValue().winRate()))
+                .sorted((a, b) -> {
+                    double leftPlayRate = (double) a.getValue().count / totalParticipants * 100;
+                    double rightPlayRate = (double) b.getValue().count / totalParticipants * 100;
+                    int playRateCompare = Double.compare(rightPlayRate, leftPlayRate);
+                    if (playRateCompare != 0) {
+                        return playRateCompare;
+                    }
+                    return Double.compare(a.getValue().avgPlacement(), b.getValue().avgPlacement());
+                })
                 .toList();
 
-        for (Map.Entry<String, DeckStat> entry : ranked) {
+        refreshPatchDecks(rankFilter, patchVersion);
+
+        for (int index = 0; index < ranked.size(); index++) {
+            Map.Entry<String, DeckStat> entry = ranked.get(index);
             DeckStat stat = entry.getValue();
             double playRate = (double) stat.count / totalParticipants * 100;
-            String tier = assignTier(stat.winRate(), stat.top4Rate());
+            String tier = assignTierByRatio(index, ranked.size());
             String name = buildDeckName(stat.traits);
 
             MetaDeck deck = metaDeckRepository
@@ -333,7 +526,6 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                 deck.getUnits().clear();
                 deck.getTraits().clear();
                 deck.getArtifactStats().clear();
-                deck.getHeroAugments().clear();
             }
 
             metaDeckRepository.save(deck);
@@ -346,6 +538,18 @@ public class MetaDeckServiceImpl implements MetaDeckService {
 
         logger.info("[{}][{}] aggregate complete: {} decks saved (minPlayRate={}%)",
                 rankFilter, patchVersion, ranked.size(), MIN_PLAY_RATE);
+    }
+
+    private void refreshPatchDecks(RankFilter rankFilter, String patchVersion) {
+        List<MetaDeck> existingDecks = metaDeckRepository.findAllByRankFilterAndPatchVersion(rankFilter, patchVersion);
+        if (existingDecks.isEmpty()) {
+            return;
+        }
+
+        metaDeckRepository.deleteAll(existingDecks);
+        metaDeckRepository.flush();
+        logger.info("[{}][{}] removed {} existing meta decks before refresh",
+                rankFilter, patchVersion, existingDecks.size());
     }
 
     private void saveDeckDetails(MetaDeck deck, DeckStat stat, String patchVersion) {
@@ -368,29 +572,38 @@ public class MetaDeckServiceImpl implements MetaDeckService {
             deck.getTraits().add(deckTrait);
         }
 
-        // 덱 등장 횟수의 25% 미만인 유닛 = 시너지 채우기용 필러(바이엔 등) → 제외
-        // 나머지를 등장 빈도 내림차순 정렬 후 최대 9개만 저장 (9레벨 풀덱 대응)
-        int minUnitFreq = Math.max(1, stat.count / 4);
+        // MIN_UNIT_FREQUENCY(25%) 미만 출현 유닛 = 빌드업·필러로 판단해 제외
+        // stat.count=15 기준: minUnitFreq=3 → 4게임 이상 등장한 유닛만 포함
+        int minUnitFreq = Math.max(1, (int) (stat.count * MIN_UNIT_FREQUENCY));
         List<UnitStat> unitStats = stat.unitStats.values().stream()
                 .filter(u -> u.count >= minUnitFreq)
+                .filter(this::isShopUnit)
                 .sorted(Comparator.comparingInt(UnitStat::getCount).reversed())
-                .limit(9)
+                .limit(12)
                 .toList();
+        Set<String> carryUnitIds = unitStats.stream()
+                .filter(unitStat -> !unitStat.topItems().isEmpty())
+                .sorted(Comparator.comparingInt(UnitStat::itemCount).reversed()
+                        .thenComparing(Comparator.comparingInt(UnitStat::getCount).reversed()))
+                .limit(RECOMMENDED_CARRY_LIMIT)
+                .map(unitStat -> unitStat.characterId)
+                .collect(Collectors.toSet());
         for (UnitStat unitStat : unitStats) {
+            boolean isCarry = carryUnitIds.contains(unitStat.characterId);
             DeckUnit unit = DeckUnit.builder()
                     .metaDeck(deck)
                     .characterId(unitStat.characterId)
                     .championName(extractName(unitStat.characterId))
                     .cost(raritytoCost(unitStat.rarity))
-                    .isCarry(unitStat.maxTier >= 2 && !unitStat.topItems().isEmpty())
-                    .recommendedItems(toJson(unitStat.topItems()))
-                    .starLevel(unitStat.maxTier)
+                    .isCarry(isCarry)
+                    .recommendedItems(toJson(isCarry ? unitStat.topItems() : List.of()))
+                    .starLevel(recommendedStarLevel(unitStat))
                     .build();
             deck.getUnits().add(unit);
         }
 
         List<ItemStat> itemStats = stat.itemStats.values().stream()
-                .filter(itemStat -> itemStat.count >= MIN_DETAIL_SAMPLE)
+                .filter(itemStat -> itemStat.count >= MIN_ITEM_SAMPLE)
                 .sorted(Comparator.comparingDouble(ItemStat::winRate).reversed())
                 .toList();
         for (ItemStat itemStat : itemStats) {
@@ -409,25 +622,6 @@ public class MetaDeckServiceImpl implements MetaDeckService {
             deck.getArtifactStats().add(artifactStat);
         }
 
-        AtomicInteger sortOrder = new AtomicInteger(1);
-        List<AugmentStat> augmentStats = stat.augmentStats.values().stream()
-                .filter(augmentStat -> augmentStat.count >= MIN_DETAIL_SAMPLE)
-                .sorted(Comparator.comparingDouble(AugmentStat::winRate).reversed())
-                .toList();
-        for (AugmentStat augmentStat : augmentStats) {
-            HeroAugment heroAugment = HeroAugment.builder()
-                    .metaDeck(deck)
-                    .characterId(GLOBAL_AUGMENT_CHARACTER_ID)
-                    .augmentId(augmentStat.augmentId)
-                    .augmentName(extractName(augmentStat.augmentId))
-                    .isRecommended(sortOrder.get() <= 3)
-                    .winRate(augmentStat.winRate())
-                    .top4Rate(augmentStat.top4Rate())
-                    .avgPlacement(augmentStat.avgPlacement())
-                    .sortOrder(sortOrder.getAndIncrement())
-                    .build();
-            deck.getHeroAugments().add(heroAugment);
-        }
     }
 
     private String extractName(String id) {
@@ -442,13 +636,25 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                 .collect(Collectors.joining(" "));
     }
 
-    private String assignTier(double winRate, double top4Rate) {
-        if (winRate >= 20) return "S";
-        if (winRate >= 16) return "A+";
-        if (winRate >= 13) return "A";
-        if (top4Rate >= 55) return "B";
-        if (top4Rate >= 45) return "C";
+    private String assignTierByRatio(int index, int totalCount) {
+        if (totalCount <= 0) {
+            return "D";
+        }
+
+        int sLimit = ratioLimit(totalCount, S_TIER_RATIO);
+        int aLimit = sLimit + ratioLimit(totalCount, A_TIER_RATIO);
+        int bLimit = aLimit + ratioLimit(totalCount, B_TIER_RATIO);
+        int cLimit = bLimit + ratioLimit(totalCount, C_TIER_RATIO);
+
+        if (index < sLimit) return "S";
+        if (index < aLimit) return "A";
+        if (index < bLimit) return "B";
+        if (index < cLimit) return "C";
         return "D";
+    }
+
+    private int ratioLimit(int totalCount, double ratio) {
+        return Math.max(1, (int) Math.ceil(totalCount * ratio));
     }
 
     private int raritytoCost(int rarity) {
@@ -463,6 +669,15 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                 yield 1;
             }
         };
+    }
+
+    private int recommendedStarLevel(UnitStat unitStat) {
+        int cost = raritytoCost(unitStat.rarity);
+        int tier = Math.min(unitStat.maxTier, 3); // TFT 최대 3성
+        if (cost >= 4) {
+            return Math.min(tier, 2); // 4~5코스트 최대 2성
+        }
+        return tier;
     }
 
     private String buildTraitIconUrl(String traitId) {
@@ -528,16 +743,25 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         }
     }
 
+    private boolean isShopUnit(UnitStat unitStat) {
+        return TftShopUnitFilter.isShopUnit(unitStat.characterId);
+    }
+
+    // primaryCarryId: 아이템 2개 이상 장착 유닛 중 아이템 수 최다 → 아키타입 핵심 정체성
+    private record DeckProfile(String traitSignature, Set<String> coreUnitIds, Set<String> boardUnitIds, String primaryCarryId) {
+    }
+
     private static class DeckStat {
         final List<TraitDto> traits;
+        final DeckProfile profile;
         final Map<String, UnitStat> unitStats = new HashMap<>();
         final Map<String, ItemStat> itemStats = new HashMap<>();
-        final Map<String, AugmentStat> augmentStats = new HashMap<>();
         int count = 0, wins = 0, top4 = 0;
         double totalPlace = 0;
 
-        DeckStat(List<TraitDto> traits) {
+        DeckStat(List<TraitDto> traits, DeckProfile profile) {
             this.traits = traits;
+            this.profile = profile;
         }
 
         void record(ParticipantDto participant) {
@@ -555,23 +779,48 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                     unit.getItemNames().stream()
                             .filter(itemName -> itemName != null && !itemName.isBlank())
                             .forEach(itemName -> {
-                                unitStat.recordItem(itemName);
-                                itemStats.computeIfAbsent(itemName, ItemStat::new).record(placement);
+                                if (isRecommendedItem(itemName)) {
+                                    unitStat.recordItem(itemName);
+                                }
+                                if (isArtifactItem(itemName)) {
+                                    itemStats.computeIfAbsent(itemName, ItemStat::new).record(placement);
+                                }
                             });
                 }
             });
 
-            if (participant.getAugments() != null) {
-                participant.getAugments().stream()
-                        .filter(augment -> augment != null && !augment.isBlank())
-                        .forEach(augment -> augmentStats.computeIfAbsent(augment, AugmentStat::new)
-                                .record(placement));
-            }
         }
 
         double winRate() { return count == 0 ? 0 : (double) wins / count * 100; }
         double top4Rate() { return count == 0 ? 0 : (double) top4 / count * 100; }
         double avgPlacement() { return count == 0 ? 0 : totalPlace / count; }
+    }
+
+    private static boolean isRecommendedItem(String itemId) {
+        String normalized = itemId.toLowerCase();
+        if (!normalized.startsWith("tft_item_")) {
+            return false;
+        }
+        if (COMPONENT_ITEM_IDS.contains(normalized)) {
+            return false;
+        }
+        return !normalized.contains("emptybag")
+                && !normalized.contains("radiant")
+                && !normalized.contains("artifact")
+                && !normalized.contains("ornn")
+                && !normalized.contains("support")
+                && !normalized.contains("emblem")
+                && !normalized.contains("trait")
+                && !normalized.contains("consumable")
+                && !normalized.contains("temporary");
+    }
+
+    private static boolean isArtifactItem(String itemId) {
+        String normalized = itemId.toLowerCase();
+        return !normalized.contains("emptybag")
+                && (normalized.contains("artifact")
+                || normalized.contains("ornn")
+                || normalized.contains("shimmerscale"));
     }
 
     private static class UnitStat {
@@ -593,6 +842,12 @@ public class MetaDeckServiceImpl implements MetaDeckService {
 
         void recordItem(String itemName) {
             itemCounts.merge(itemName, 1, Integer::sum);
+        }
+
+        int itemCount() {
+            return itemCounts.values().stream()
+                    .mapToInt(Integer::intValue)
+                    .sum();
         }
 
         int getCount() {
@@ -632,11 +887,4 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         }
     }
 
-    private static class AugmentStat extends PlacementStat {
-        final String augmentId;
-
-        AugmentStat(String augmentId) {
-            this.augmentId = augmentId;
-        }
-    }
 }

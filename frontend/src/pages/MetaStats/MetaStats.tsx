@@ -10,7 +10,7 @@ import type { TierBadgeValue } from '../../types/badges'
 import styles from './MetaStats.module.css'
 
 /* ── 티어 순서 및 색상 ── */
-const TIER_ORDER: TierBadgeValue[] = ['S', 'A+', 'A', 'B', 'C', 'D']
+const TIER_ORDER: TierBadgeValue[] = ['S', 'A', 'B', 'C', 'D']
 
 interface RankFilterOption {
   label: string
@@ -33,7 +33,6 @@ function DeckCard({ deck }: { deck: MetaDeck }) {
       <div className={styles.cardTop}>
         <TierBadge value={deck.grade} />
         <span className={styles.cardName}>{deck.name}</span>
-        <span className={styles.cardRank}>#{deck.rank}</span>
       </div>
       <div className={styles.cardTraits}>
         {deck.traits.slice(0, 4).map((t) => (

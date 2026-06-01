@@ -26,7 +26,6 @@ public class MatchDto {
         private int placement;
         private List<UnitDto> units;
         private List<TraitDto> traits;
-        private List<String> augments;
     }
 
     @Getter
