@@ -98,30 +98,32 @@ domain/<domain>/
 - 모든 Spring API는 `/api` prefix 아래에 둔다.
 - 공개 조회 API는 인증 없이 접근할 수 있어야 한다.
 - 관리자 API는 `/api/admin/**` 아래에 둔다.
-- 인증/회원 API는 `/api/v1/auth/**` 또는 팀에서 합의한 버전 prefix를 사용한다.
+- 현재 인증/회원 API는 기존 구현과 맞춰 `/api/v1/auth/**`를 사용한다.
+- 신규 도메인 API는 우선 `/api/{domain}` 형태를 사용하고, 큰 breaking change가 생길 때 버전 prefix 도입을 검토한다.
 - 외부 API 응답을 그대로 프론트에 전달하지 않고 백엔드 응답 DTO로 표준화한다.
 
 ---
 
-## 공개 API 큰틀
+## 주요 API 큰틀
 
-| Method | Path | 담당 도메인 | 목적 |
-| --- | --- | --- | --- |
-| `GET` | `/api/health` 또는 `/health` | `global` | 서버 상태 확인 |
-| `POST` | `/api/v1/auth/signup` | `member` | 회원가입 |
-| `POST` | `/api/v1/auth/login` | `member` | 로그인 |
-| `GET` | `/api/summoners/{gameName}/{tagLine}` | `match` | 소환사 기본/랭크 정보 조회 |
-| `GET` | `/api/summoners/{gameName}/{tagLine}/matches` | `match` | 소환사 전적 목록 조회 |
-| `POST` | `/api/summoners/{gameName}/{tagLine}/refresh` | `match` | 전적 최신화 |
-| `GET` | `/api/decks/meta` | `deck` | 메타 덱 목록 조회 |
-| `GET` | `/api/decks/{deckId}` | `deck` | 메타 덱 상세 조회 |
-| `GET` | `/api/guide` | `guide` | 게임가이드 카탈로그 조회 |
-| `GET` | `/api/guide/{tab}` | `guide` | 게임가이드 탭별 조회 |
-| `GET` | `/api/patch-notes` | `patchnote` | 패치노트 목록 조회 |
-| `GET` | `/api/patch-notes/{version}/changes` | `patchnote` | 패치 변경사항 조회 |
-| `GET` | `/api/community/posts` | `community` | 파티 모집 글 목록 조회 |
-| `POST` | `/api/community/posts` | `community` | 파티 모집 글 작성 |
-| `POST` | `/api/ai/recommend` | `ai` | AI 추천 요청 |
+| Method | Path | 담당 도메인 | 접근 | 목적 |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/health` 또는 `/health` | `global` | 공개 | 서버 상태 확인 |
+| `POST` | `/api/v1/auth/signup` | `member` | 공개 | 회원가입 |
+| `POST` | `/api/v1/auth/login` | `member` | 공개 | 로그인 |
+| `GET` | `/api/summoners/{gameName}/{tagLine}` | `match` | 공개 | 소환사 기본/랭크 정보 조회 |
+| `GET` | `/api/summoners/{gameName}/{tagLine}/matches` | `match` | 공개 | 소환사 전적 목록 조회 |
+| `POST` | `/api/summoners/{gameName}/{tagLine}/refresh` | `match` | 인증 또는 제한 필요 | 전적 최신화 |
+| `GET` | `/api/decks/meta` | `deck` | 공개 | 메타 덱 목록 조회 |
+| `GET` | `/api/decks/{deckId}` | `deck` | 공개 | 메타 덱 상세 조회 |
+| `POST` | `/api/decks/meta/aggregate` | `deck` | 관리자 | 메타 덱 집계 실행 |
+| `GET` | `/api/guide` | `guide` | 공개 | 게임가이드 카탈로그 조회 |
+| `GET` | `/api/guide/{tab}` | `guide` | 공개 | 게임가이드 탭별 조회 |
+| `GET` | `/api/patch-notes` | `patchnote` | 공개 | 패치노트 목록 조회 |
+| `GET` | `/api/patch-notes/{version}/changes` | `patchnote` | 공개 | 패치 변경사항 조회 |
+| `GET` | `/api/community/posts` | `community` | 공개 | 파티 모집 글 목록 조회 |
+| `POST` | `/api/community/posts` | `community` | 인증 필요 | 파티 모집 글 작성 |
+| `POST` | `/api/ai/recommend` | `ai` | 공개 또는 제한 필요 | AI 추천 요청 |
 
 위 경로는 팀 전체 기준 큰틀이다. 실제 구현 시 프론트 호출부와 최종 합의 후 세부 query parameter와 DTO를 확정한다.
 
@@ -158,12 +160,12 @@ domain/<domain>/
 /api/health
 /api/v1/auth/login
 /api/v1/auth/signup
-/api/summoners/**
-/api/decks/meta/**
-/api/decks/**
-/api/guide/**
-/api/patch-notes/**
-/api/community/posts/**
+GET /api/summoners/**
+GET /api/decks/meta
+GET /api/decks/{deckId}
+GET /api/guide/**
+GET /api/patch-notes/**
+GET /api/community/posts/**
 /swagger-ui/**
 /v3/api-docs/**
 ```
@@ -173,6 +175,10 @@ domain/<domain>/
 ```text
 /api/admin/**
 /api/member/**
+POST /api/decks/meta/aggregate
+POST /api/summoners/{gameName}/{tagLine}/refresh
+POST /api/community/posts
+쓰기 비용 또는 외부 API 비용이 큰 AI 추천 API
 쓰기 권한이 필요한 community API
 ```
 

@@ -22,7 +22,10 @@
 - [ ] `BusinessException` / `ErrorCode` 사용 범위 점검
 - [ ] `GlobalExceptionHandler` 오류 응답 포맷 점검
 - [ ] `SecurityConfig` 공개/보호 경로 정리
+- [ ] 공개 API의 HTTP Method 기준 허용 범위 정리
 - [ ] 관리자 API 보호 방식 점검
+- [ ] API 버전 prefix 정책 확정
+- [ ] DB 스키마 변경과 마이그레이션 관리 방식 확정
 - [ ] CORS 허용 origin과 method 점검
 - [ ] Log4j2 사용 규칙 점검
 - [ ] Swagger docs 인터페이스 작성 규칙 적용
