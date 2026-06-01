@@ -98,6 +98,26 @@ function computeTraitCounts(
   return counts
 }
 
+function parseBoardPositions(json: string | null | undefined): Map<string, { row: number; col: number }> {
+  if (!json) return new Map()
+  try {
+    const obj = JSON.parse(json) as Record<string, { row: number; col: number }>
+    return new Map(Object.entries(obj))
+  } catch {
+    return new Map()
+  }
+}
+
+function buildCustomBoardPositions(
+  visibleUnits: ChampionSummary[],
+  posMap: Map<string, { row: number; col: number }>,
+): PlacedChamp[] {
+  return visibleUnits.flatMap((champ) => {
+    const pos = posMap.get(champ.imageUrl)
+    return pos ? [{ champ, row: pos.row, col: pos.col }] : []
+  })
+}
+
 /* ── HexBoard: visibleUnits·level은 부모(DeckDetail)에서 받음 ── */
 interface HexBoardProps {
   visibleUnits: ChampionSummary[]
@@ -105,12 +125,18 @@ interface HexBoardProps {
   availableLevels: number[]
   onLevelChange: (lv: number) => void
   locale: TFTLocale | undefined
+  boardPositionsJson?: string | null
 }
 
-function HexBoard({ visibleUnits, level, availableLevels, onLevelChange, locale }: HexBoardProps) {
+function HexBoard({ visibleUnits, level, availableLevels, onLevelChange, locale, boardPositionsJson }: HexBoardProps) {
+  const customPosMap = useMemo(() => parseBoardPositions(boardPositionsJson), [boardPositionsJson])
+  const hasCustom = customPosMap.size > 0
+
   const placed = useMemo(
-    () => buildBoardPositions(visibleUnits, locale),
-    [visibleUnits, locale],
+    () => hasCustom
+      ? buildCustomBoardPositions(visibleUnits, customPosMap)
+      : buildBoardPositions(visibleUnits, locale),
+    [visibleUnits, locale, hasCustom, customPosMap],
   )
 
   if (visibleUnits.length === 0) return null
@@ -388,6 +414,7 @@ function DeckDetail() {
           availableLevels={availableLevels}
           onLevelChange={setLevel}
           locale={locale}
+          boardPositionsJson={deck.boardPositions}
         />
 
         {/* 시너지 구성: visibleUnits 기반 → 레벨 탭 변경 시 자동 동기화 */}

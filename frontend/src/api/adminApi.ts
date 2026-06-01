@@ -19,6 +19,12 @@ function adminHeaders() {
   return { 'X-Admin-Token': getAdminToken() }
 }
 
+export interface UnitInfo {
+  characterId: string
+  name: string
+  imageUrl: string
+}
+
 export interface AdminDeck {
   id: number
   signature: string
@@ -29,11 +35,18 @@ export interface AdminDeck {
   hidden: boolean
   sortPriority: number | null
   curatorNote: string | null
+  boardPositions: string | null
   grade: string
   winRate: string
   top4: string
   pickRate: string
   sampleSize: number
+  units: UnitInfo[]
+}
+
+export interface BoardPosition {
+  row: number
+  col: number
 }
 
 export interface DeckCurationRequest {
@@ -41,6 +54,7 @@ export interface DeckCurationRequest {
   hidden: boolean
   sortPriority: number | null
   curatorNote: string | null
+  boardPositions: string | null
 }
 
 export async function fetchAdminDecks(rankFilter: RankFilter = 'MASTER_PLUS'): Promise<AdminDeck[]> {

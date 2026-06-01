@@ -97,6 +97,15 @@ src/utils/
 Riot TFT-MATCH-V1 API는 `augments` 필드를 제공하지 않음 (2025년 기준 실 응답 검증).
 자동 집계 불가 → 향후 관리자 수동 큐레이션(DeckCuration 확장)으로 제공 예정.
 
+### 배치판 포지션 정책
+
+- **자동 배치**: CDragon `range`/`role` 데이터 기반으로 프론트에서 계산
+  - frontline(range ≤ 2 or tank/fighter role) → 행 2~3
+  - backline(range ≥ 4 or caster/marksman role) → 행 0~1
+- **관리자 배치**: `DeckCuration.boardPositions` JSON(`{"imageUrl": {"row":N,"col":N}}`) 우선 적용
+  - 저장되어 있으면 자동 배치 로직을 건너뜀
+  - 미지정(`null`) 시 자동 배치 폴백
+
 ---
 
 ## 상태관리 분리 기준

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { AppLayout } from '../../components/layout'
 import {
   fetchAdminDecks,
@@ -9,9 +9,169 @@ import {
   clearAdminToken,
   type AdminDeck,
   type DeckCurationRequest,
+  type UnitInfo,
 } from '../../api/adminApi'
 import type { RankFilter } from '../Dashboard/dashboardData'
 import styles from './Admin.module.css'
+
+const BOARD_ROWS = 4
+const BOARD_COLS = 7
+
+/* ── 배치판 편집 모달 ── */
+interface BoardEditorProps {
+  deck: AdminDeck
+  onClose: () => void
+  onSave: (boardPositionsJson: string | null) => Promise<void>
+}
+
+interface CellPos { row: number; col: number }
+
+function BoardEditorModal({ deck, onClose, onSave }: BoardEditorProps) {
+  const [selected, setSelected] = useState<UnitInfo | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  // imageUrl → CellPos
+  const [posMap, setPosMap] = useState<Map<string, CellPos>>(() => {
+    if (!deck.boardPositions) return new Map()
+    try {
+      const obj = JSON.parse(deck.boardPositions) as Record<string, CellPos>
+      return new Map(Object.entries(obj))
+    } catch {
+      return new Map()
+    }
+  })
+
+  // 역방향: "row-col" → imageUrl
+  const cellMap = useMemo(() => {
+    const m = new Map<string, string>()
+    posMap.forEach((pos, imageUrl) => m.set(`${pos.row}-${pos.col}`, imageUrl))
+    return m
+  }, [posMap])
+
+  function champAt(row: number, col: number): UnitInfo | undefined {
+    const url = cellMap.get(`${row}-${col}`)
+    if (!url) return undefined
+    return deck.units.find((u) => u.imageUrl === url)
+  }
+
+  function handleCellClick(row: number, col: number) {
+    const existingUrl = cellMap.get(`${row}-${col}`)
+
+    if (existingUrl) {
+      // 이미 챔피언 있음 → 제거
+      setPosMap((prev) => {
+        const next = new Map(prev)
+        next.delete(existingUrl)
+        return next
+      })
+      return
+    }
+
+    if (!selected) return
+
+    setPosMap((prev) => {
+      const next = new Map(prev)
+      // 기존 위치 제거
+      next.delete(selected.imageUrl)
+      next.set(selected.imageUrl, { row, col })
+      return next
+    })
+    setSelected(null)
+  }
+
+  const handleChampClick = useCallback((unit: UnitInfo) => {
+    setSelected((prev) => (prev?.imageUrl === unit.imageUrl ? null : unit))
+  }, [])
+
+  async function handleSave() {
+    setSaving(true)
+    const json = posMap.size > 0
+      ? JSON.stringify(Object.fromEntries(posMap))
+      : null
+    try {
+      await onSave(json)
+      onClose()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function handleClear() {
+    setPosMap(new Map())
+  }
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modalBox} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <span className={styles.modalTitle}>배치판 편집 — {deck.displayName}</span>
+          <button className={styles.modalClose} onClick={onClose}>✕</button>
+        </div>
+
+        <div className={styles.boardEditorBody}>
+          {/* 챔피언 팔레트 */}
+          <div className={styles.champPalette}>
+            <p className={styles.paletteLabel}>챔피언 선택 후 셀 클릭으로 배치</p>
+            <div className={styles.champGrid}>
+              {deck.units.map((unit) => {
+                const placed = posMap.has(unit.imageUrl)
+                const isSelected = selected?.imageUrl === unit.imageUrl
+                return (
+                  <button
+                    key={unit.imageUrl}
+                    className={`${styles.champChip} ${isSelected ? styles.champChipSelected : ''} ${placed ? styles.champChipPlaced : ''}`}
+                    onClick={() => handleChampClick(unit)}
+                    title={unit.name}
+                  >
+                    <img src={unit.imageUrl} alt={unit.name} className={styles.champChipImg} />
+                    <span className={styles.champChipName}>{unit.name}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* 헥스 그리드 */}
+          <div className={styles.editorBoard}>
+            {Array.from({ length: BOARD_ROWS }, (_, vi) => {
+              const row = BOARD_ROWS - 1 - vi
+              const isOffset = row % 2 !== 0
+              return (
+                <div
+                  key={row}
+                  className={`${styles.editorRow} ${isOffset ? styles.editorRowOffset : ''}`}
+                >
+                  {Array.from({ length: BOARD_COLS }, (_, col) => {
+                    const unit = champAt(row, col)
+                    return (
+                      <button
+                        key={col}
+                        className={`${styles.editorCell} ${unit ? styles.editorCellFilled : styles.editorCellEmpty}`}
+                        onClick={() => handleCellClick(row, col)}
+                        title={unit ? `${unit.name} 제거` : selected ? `${selected.name} 배치` : ''}
+                      >
+                        {unit && (
+                          <img src={unit.imageUrl} alt={unit.name} className={styles.editorCellImg} />
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        <div className={styles.modalFooter}>
+          <button className={styles.resetBtn} onClick={handleClear}>전체 초기화</button>
+          <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
+            {saving ? '저장중...' : '저장'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 const RANK_OPTIONS: { label: string; value: RankFilter }[] = [
   { label: '마스터+', value: 'MASTER_PLUS' },
@@ -67,6 +227,7 @@ interface DeckRowState {
   sortPriority: string
   dirty: boolean
   saving: boolean
+  boardEditorOpen: boolean
 }
 
 function DeckRow({ deck, onSaved }: { deck: AdminDeck; onSaved: (updated: AdminDeck) => void }) {
@@ -76,28 +237,38 @@ function DeckRow({ deck, onSaved }: { deck: AdminDeck; onSaved: (updated: AdminD
     sortPriority: deck.sortPriority != null ? String(deck.sortPriority) : '',
     dirty: false,
     saving: false,
+    boardEditorOpen: false,
   })
 
   function markDirty(patch: Partial<DeckRowState>) {
     setState((s) => ({ ...s, ...patch, dirty: true }))
   }
 
-  async function handleSave() {
-    setState((s) => ({ ...s, saving: true }))
-    const req: DeckCurationRequest = {
+  function buildRequest(boardPositions?: string | null): DeckCurationRequest {
+    return {
       customName: state.customName.trim() || null,
       hidden: state.hidden,
       sortPriority: state.sortPriority !== '' ? Number(state.sortPriority) : null,
       curatorNote: null,
+      boardPositions: boardPositions !== undefined ? boardPositions : deck.boardPositions,
     }
+  }
+
+  async function handleSave() {
+    setState((s) => ({ ...s, saving: true }))
     try {
-      const updated = await updateDeckCuration(deck.id, req)
+      const updated = await updateDeckCuration(deck.id, buildRequest())
       onSaved(updated)
       setState((s) => ({ ...s, dirty: false, saving: false }))
     } catch {
       setState((s) => ({ ...s, saving: false }))
       alert('저장 실패')
     }
+  }
+
+  async function handleBoardSave(boardPositionsJson: string | null) {
+    const updated = await updateDeckCuration(deck.id, buildRequest(boardPositionsJson))
+    onSaved(updated)
   }
 
   async function handleReset() {
@@ -109,67 +280,85 @@ function DeckRow({ deck, onSaved }: { deck: AdminDeck; onSaved: (updated: AdminD
       sortPriority: '',
       dirty: false,
       saving: false,
+      boardEditorOpen: false,
     })
-    onSaved({ ...deck, customName: null, displayName: deck.autoName, hidden: false, sortPriority: null })
+    onSaved({ ...deck, customName: null, displayName: deck.autoName, hidden: false, sortPriority: null, boardPositions: null })
   }
 
   return (
-    <tr className={state.hidden ? styles.hiddenRow : ''}>
-      <td>
-        <span className={styles.grade} style={{ color: TIER_COLOR[deck.grade] ?? '#fff' }}>
-          {deck.grade}
-        </span>
-      </td>
-      <td>
-        <div className={styles.nameCell}>
-          <span className={styles.autoName}>자동: {deck.autoName}</span>
+    <>
+      <tr className={state.hidden ? styles.hiddenRow : ''}>
+        <td>
+          <span className={styles.grade} style={{ color: TIER_COLOR[deck.grade] ?? '#fff' }}>
+            {deck.grade}
+          </span>
+        </td>
+        <td>
+          <div className={styles.nameCell}>
+            <span className={styles.autoName}>자동: {deck.autoName}</span>
+            <input
+              className={styles.nameInput}
+              value={state.customName}
+              onChange={(e) => markDirty({ customName: e.target.value })}
+              placeholder="커스텀 이름 (비워두면 자동 이름 사용)"
+            />
+            {state.dirty && <span className={styles.modified}>● 수정됨</span>}
+          </div>
+        </td>
+        <td className={styles.stat}>{deck.winRate}</td>
+        <td className={styles.stat}>{deck.pickRate}</td>
+        <td className={styles.stat}>n={deck.sampleSize}</td>
+        <td>
           <input
+            type="number"
             className={styles.nameInput}
-            value={state.customName}
-            onChange={(e) => markDirty({ customName: e.target.value })}
-            placeholder="커스텀 이름 (비워두면 자동 이름 사용)"
+            style={{ width: 60 }}
+            value={state.sortPriority}
+            onChange={(e) => markDirty({ sortPriority: e.target.value })}
+            placeholder="순서"
+            min={1}
           />
-          {state.dirty && <span className={styles.modified}>● 수정됨</span>}
-        </div>
-      </td>
-      <td className={styles.stat}>{deck.winRate}</td>
-      <td className={styles.stat}>{deck.pickRate}</td>
-      <td className={styles.stat}>n={deck.sampleSize}</td>
-      <td>
-        <input
-          type="number"
-          className={styles.nameInput}
-          style={{ width: 60 }}
-          value={state.sortPriority}
-          onChange={(e) => markDirty({ sortPriority: e.target.value })}
-          placeholder="순서"
-          min={1}
+        </td>
+        <td>
+          <label className={styles.toggle}>
+            <input
+              type="checkbox"
+              checked={state.hidden}
+              onChange={(e) => markDirty({ hidden: e.target.checked })}
+            />
+            <span className={styles.toggleTrack} />
+            <span className={styles.toggleThumb} />
+          </label>
+        </td>
+        <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <button
+            className={styles.saveBtn}
+            onClick={handleSave}
+            disabled={!state.dirty || state.saving}
+          >
+            {state.saving ? '저장중...' : '저장'}
+          </button>
+          <button
+            className={`${styles.boardBtn} ${deck.boardPositions ? styles.boardBtnActive : ''}`}
+            onClick={() => setState((s) => ({ ...s, boardEditorOpen: true }))}
+            title="배치판 편집"
+          >
+            배치판{deck.boardPositions ? ' ✓' : ''}
+          </button>
+          {(deck.customName != null || deck.hidden || deck.sortPriority != null) && (
+            <button className={styles.resetBtn} onClick={handleReset}>초기화</button>
+          )}
+        </td>
+      </tr>
+
+      {state.boardEditorOpen && (
+        <BoardEditorModal
+          deck={deck}
+          onClose={() => setState((s) => ({ ...s, boardEditorOpen: false }))}
+          onSave={handleBoardSave}
         />
-      </td>
-      <td>
-        <label className={styles.toggle}>
-          <input
-            type="checkbox"
-            checked={state.hidden}
-            onChange={(e) => markDirty({ hidden: e.target.checked })}
-          />
-          <span className={styles.toggleTrack} />
-          <span className={styles.toggleThumb} />
-        </label>
-      </td>
-      <td style={{ display: 'flex', gap: 6 }}>
-        <button
-          className={styles.saveBtn}
-          onClick={handleSave}
-          disabled={!state.dirty || state.saving}
-        >
-          {state.saving ? '저장중...' : '저장'}
-        </button>
-        {(deck.customName != null || deck.hidden || deck.sortPriority != null) && (
-          <button className={styles.resetBtn} onClick={handleReset}>초기화</button>
-        )}
-      </td>
-    </tr>
+      )}
+    </>
   )
 }
 
