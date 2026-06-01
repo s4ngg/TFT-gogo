@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { ChangeTypeFilter, PatchCategory } from '../../api/patchNotes'
 import { AppLayout } from '../../components/layout'
 import { usePatchChanges, usePatchNotes } from '../../hooks/usePatchNotes'
+import { useClampCurrentPage, useResettablePage } from '../../hooks/useResettablePage'
 import { patchNotesFallbackData } from '../../mocks/patchNotesMock'
 import PatchChangeFilters from './components/PatchChangeFilters'
 import PatchChangeList from './components/PatchChangeList'
@@ -29,7 +30,11 @@ function PatchNotes() {
   const [highImpactOnly, setHighImpactOnly] = useState(false)
   const [expandedChangeIds, setExpandedChangeIds] = useState<number[]>([])
   const [query, setQuery] = useState('')
-  const [currentPage, setCurrentPage] = useState(1)
+  const {
+    currentPage,
+    resetPage,
+    setCurrentPage,
+  } = useResettablePage([selectedPatchVersion])
   const selectedPatch = selectedPatchFromQuery ?? patchNotesFallbackData[0]
   const patchChangesQuery = usePatchChanges({
     fallbackData: patchHistory.length > 0 ? patchHistory : patchNotesFallbackData,
@@ -48,6 +53,48 @@ function PatchNotes() {
   const changeStats = changesPage.stats
   const safePage = Math.max(1, Math.min(currentPage, changesPage.totalPages))
 
+  useClampCurrentPage({
+    currentPage,
+    setCurrentPage,
+    totalPages: changesPage.totalPages,
+  })
+
+  function resetChangePage() {
+    resetPage()
+    setExpandedChangeIds([])
+  }
+
+  function handleCategoryChange(category: PatchCategory) {
+    if (activeCategory === category) return
+
+    setActiveCategory(category)
+    resetChangePage()
+  }
+
+  function handleChangeTypeChange(changeType: ChangeTypeFilter) {
+    if (activeChangeType === changeType) return
+
+    setActiveChangeType(changeType)
+    resetChangePage()
+  }
+
+  function handleHighImpactOnlyToggle() {
+    setHighImpactOnly((enabled) => !enabled)
+    resetChangePage()
+  }
+
+  function handleQueryChange(nextQuery: string) {
+    setQuery(nextQuery)
+    resetChangePage()
+  }
+
+  function handlePatchSelect(version: string) {
+    if (selectedPatchVersion === version) return
+
+    setSelectedPatchVersion(version)
+    resetChangePage()
+  }
+
   const toggleExpandedChange = (id: number) => {
     setExpandedChangeIds((currentIds) => (
       currentIds.includes(id)
@@ -55,20 +102,6 @@ function PatchNotes() {
         : [...currentIds, id]
     ))
   }
-
-  useEffect(() => {
-    setCurrentPage(1)
-    setExpandedChangeIds([])
-  }, [activeCategory, activeChangeType, highImpactOnly, query, selectedPatchVersion])
-
-  useEffect(() => {
-    if (changesPage.totalPages < 1) {
-      if (currentPage !== 1) setCurrentPage(1)
-      return
-    }
-
-    if (currentPage > changesPage.totalPages) setCurrentPage(changesPage.totalPages)
-  }, [changesPage.totalPages, currentPage])
 
   return (
     <AppLayout>
@@ -99,10 +132,10 @@ function PatchNotes() {
               activeCategory={activeCategory}
               activeChangeType={activeChangeType}
               highImpactOnly={highImpactOnly}
-              onCategoryChange={setActiveCategory}
-              onChangeTypeChange={setActiveChangeType}
-              onHighImpactOnlyToggle={() => setHighImpactOnly((enabled) => !enabled)}
-              onQueryChange={setQuery}
+              onCategoryChange={handleCategoryChange}
+              onChangeTypeChange={handleChangeTypeChange}
+              onHighImpactOnlyToggle={handleHighImpactOnlyToggle}
+              onQueryChange={handleQueryChange}
               query={query}
               stats={changeStats}
             />
@@ -117,7 +150,7 @@ function PatchNotes() {
           </section>
 
           <PatchSideRail
-            onPatchSelect={setSelectedPatchVersion}
+            onPatchSelect={handlePatchSelect}
             patchHistory={patchHistory}
             selectedPatch={selectedPatch}
             selectedPatchVersion={selectedPatchVersion}

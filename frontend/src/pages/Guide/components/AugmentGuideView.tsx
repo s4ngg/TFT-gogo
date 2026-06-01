@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Trophy } from 'lucide-react'
 import {
   DEFAULT_GUIDE_PAGE_SIZE,
@@ -11,6 +11,7 @@ import {
 } from '../../../api/guide'
 import TierBadge from '../../../components/common/TierBadge'
 import { useGuideTabItems } from '../../../hooks/useGuide'
+import { useClampCurrentPage, useResettablePage } from '../../../hooks/useResettablePage'
 import {
   EmptyState,
   GuidePagination,
@@ -33,9 +34,13 @@ function AugmentGuideView({
   rewardRows,
 }: AugmentGuideViewProps) {
   const [planKey, setPlanKey] = useState<AugmentPlanKey>('fast8')
-  const [currentPage, setCurrentPage] = useState(1)
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [sortKey, setSortKey] = useState<MetricSortKey>('winRate')
+  const {
+    currentPage,
+    resetPage,
+    setCurrentPage,
+  } = useResettablePage([query])
   const augmentsQuery = useGuideTabItems({
     fallbackData,
     params: {
@@ -52,6 +57,12 @@ function AugmentGuideView({
   const visibleAugments = pageData.items
   const selectedPlan = augmentPlans.find((plan) => plan.key === planKey) ?? augmentPlans[0]
 
+  useClampCurrentPage({
+    currentPage,
+    setCurrentPage,
+    totalPages: pageData.totalPages,
+  })
+
   function handleSort(nextSortKey: MetricSortKey) {
     if (sortKey === nextSortKey) {
       setSortDir((current) => (current === 'asc' ? 'desc' : 'asc'))
@@ -59,16 +70,8 @@ function AugmentGuideView({
       setSortKey(nextSortKey)
       setSortDir(nextSortKey === 'avgPlace' ? 'asc' : 'desc')
     }
-    setCurrentPage(1)
+    resetPage()
   }
-
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [query])
-
-  useEffect(() => {
-    if (currentPage > pageData.totalPages) setCurrentPage(pageData.totalPages)
-  }, [currentPage, pageData.totalPages])
 
   return (
     <>

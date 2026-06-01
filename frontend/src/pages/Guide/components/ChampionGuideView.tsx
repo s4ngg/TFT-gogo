@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Star } from 'lucide-react'
 import {
   CHAMPION_PAGE_SIZE,
@@ -7,6 +7,7 @@ import {
   type GuideCatalog,
 } from '../../../api/guide'
 import { useGuideTabItems } from '../../../hooks/useGuide'
+import { useClampCurrentPage, useResettablePage } from '../../../hooks/useResettablePage'
 import ChampionDetailDialog from './ChampionDetailDialog'
 import {
   EmptyState,
@@ -34,9 +35,13 @@ function ChampionGuideView({
   query,
 }: ChampionGuideViewProps) {
   const [costFilter, setCostFilter] = useState<ChampionCostFilter>('all')
-  const [currentPage, setCurrentPage] = useState(1)
   const [selectedChampion, setSelectedChampion] = useState<ChampionGuide | null>(null)
   const lastFocusedElementRef = useRef<HTMLElement | null>(null)
+  const {
+    currentPage,
+    resetPage,
+    setCurrentPage,
+  } = useResettablePage([query])
   const championsQuery = useGuideTabItems({
     fallbackData,
     params: {
@@ -51,13 +56,18 @@ function ChampionGuideView({
   const safePage = Math.min(currentPage, pageData.totalPages)
   const visibleChampions = pageData.items
 
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [costFilter, query])
+  useClampCurrentPage({
+    currentPage,
+    setCurrentPage,
+    totalPages: pageData.totalPages,
+  })
 
-  useEffect(() => {
-    if (currentPage > pageData.totalPages) setCurrentPage(pageData.totalPages)
-  }, [currentPage, pageData.totalPages])
+  function handleCostFilterChange(cost: ChampionCostFilter) {
+    if (costFilter === cost) return
+
+    setCostFilter(cost)
+    resetPage()
+  }
 
   function openChampionDetail(championGuide: ChampionGuide) {
     lastFocusedElementRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
@@ -88,7 +98,7 @@ function ChampionGuideView({
           <button
             className={costFilter === cost ? styles.costActive : ''}
             key={cost}
-            onClick={() => setCostFilter(cost)}
+            onClick={() => handleCostFilterChange(cost)}
             aria-pressed={costFilter === cost}
             type="button"
           >
