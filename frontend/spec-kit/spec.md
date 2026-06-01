@@ -197,9 +197,10 @@ TFT(전략적 팀 전투) 전적 검색 서비스.
 - 서버가 `items`, `content`, `data`, `results` 중 하나로 목록을 내려주면 프론트에서 페이지 목록으로 인식할 수 있다
 - 서버가 `totalItems`, `totalElements`, `total` 중 하나로 전체 개수를 내려주면 프론트에서 전체 아이템 수로 인식할 수 있다
 - 프론트는 API 응답의 `page`, `pageSize`, `totalItems`, `totalPages` 값을 렌더링 전에 안전한 정수 범위로 보정한다
-  - `page`는 최소 1로 보정한다
   - `pageSize`는 최소 1 또는 기본 페이지 크기로 보정한다
   - `totalItems`는 최소 0으로 보정한다
+  - `totalPages`는 서버값이 유효한 양의 유한 정수이면 우선 사용하고, 아니면 보정된 `totalItems`와 `pageSize`로 `max(1, ceil(totalItems / pageSize))`를 계산한다
+  - `page`는 `totalPages` 확정 후 최소 1로 보정한다
 - API가 malformed catalog 배열을 내려주면 해당 필드는 fallback 데이터로 대체한다
 - 서버 API 연동 전이나 API 오류 발생 시에는 기존 샘플 데이터를 동일한 검색, 필터, 정렬, 페이지 규칙으로 잘라 fallback 화면을 표시한다
 - 백엔드 구현이 완료되면 `/guide/{tab}` API가 필터링, 정렬, 페이지네이션을 서버에서 처리해야 한다
