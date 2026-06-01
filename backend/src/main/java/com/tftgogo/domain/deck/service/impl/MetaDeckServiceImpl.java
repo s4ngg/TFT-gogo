@@ -55,6 +55,8 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     private static final int MIN_SAMPLE = 15;
     private static final int MIN_ITEM_SAMPLE = 1;
     private static final int MIN_AUGMENT_SAMPLE = 1;
+    // 덱 등장 횟수 대비 유닛 최소 출현 비율 — 이 미만이면 빌드업·필러 유닛으로 판단해 제외
+    private static final double MIN_UNIT_FREQUENCY = 0.25;
     private static final int SIGNATURE_TRAIT_COUNT = 2;
     // 6유닛 미만 = 플레이어가 레벨 5 이하에서 탈락한 빌드업 조합 — 집계 대상 제외
     private static final int MIN_UNIT_COUNT = 6;
@@ -535,9 +537,9 @@ public class MetaDeckServiceImpl implements MetaDeckService {
             deck.getTraits().add(deckTrait);
         }
 
-        // 덱 등장 횟수의 25% 미만인 유닛 = 시너지 채우기용 필러(바이엔 등) → 제외
-        // 나머지를 등장 빈도 내림차순 정렬 후 최대 9개만 저장 (9레벨 풀덱 대응)
-        int minUnitFreq = Math.max(1, stat.count / 10);
+        // MIN_UNIT_FREQUENCY(25%) 미만 출현 유닛 = 빌드업·필러로 판단해 제외
+        // stat.count=15 기준: minUnitFreq=3 → 4게임 이상 등장한 유닛만 포함
+        int minUnitFreq = Math.max(1, (int) (stat.count * MIN_UNIT_FREQUENCY));
         List<UnitStat> unitStats = stat.unitStats.values().stream()
                 .filter(u -> u.count >= minUnitFreq)
                 .filter(this::isShopUnit)
