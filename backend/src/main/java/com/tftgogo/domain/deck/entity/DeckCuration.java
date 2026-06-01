@@ -47,13 +47,18 @@ public class DeckCuration {
     @Column(name = "board_positions", columnDefinition = "TEXT")
     private String boardPositions;
 
+    // 운영방법 JSON (사용자에게 공개)
+    // {"early": "...", "mid": "...", "late": "..."}
+    @Column(name = "play_guide", columnDefinition = "TEXT")
+    private String playGuide;
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
     @Builder
     public DeckCuration(String signature, RankFilter rankFilter, String customName,
                         boolean hidden, Integer sortPriority, String curatorNote,
-                        String boardPositions) {
+                        String boardPositions, String playGuide) {
         this.signature = signature;
         this.rankFilter = rankFilter;
         this.customName = customName;
@@ -61,16 +66,18 @@ public class DeckCuration {
         this.sortPriority = sortPriority;
         this.curatorNote = curatorNote;
         this.boardPositions = boardPositions;
+        this.playGuide = playGuide;
         this.updatedAt = LocalDateTime.now();
     }
 
     public void update(String customName, boolean hidden, Integer sortPriority, String curatorNote,
-                       String boardPositions) {
+                       String boardPositions, String playGuide) {
         this.customName = customName;
         this.hidden = hidden;
         this.sortPriority = sortPriority;
         this.curatorNote = curatorNote;
         this.boardPositions = boardPositions;
+        this.playGuide = playGuide;
         this.updatedAt = LocalDateTime.now();
     }
 }

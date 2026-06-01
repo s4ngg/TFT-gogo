@@ -11,4 +11,5 @@ public class DeckCurationRequest {
     private Integer sortPriority;   // null 허용 — null이면 기본 정렬
     private String curatorNote;
     private String boardPositions;  // JSON: {"imageUrl": {"row":N,"col":N}}
+    private String playGuide;       // JSON: {"early":"...","mid":"...","late":"..."}
 }

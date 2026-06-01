@@ -10,6 +10,7 @@ import {
   type AdminDeck,
   type DeckCurationRequest,
   type UnitInfo,
+  type PlayGuide,
 } from '../../api/adminApi'
 import type { RankFilter } from '../Dashboard/dashboardData'
 import styles from './Admin.module.css'
@@ -220,6 +221,75 @@ function TokenGate({ onSuccess }: { onSuccess: () => void }) {
   )
 }
 
+/* ── 운영방법 편집 모달 ── */
+interface PlayGuideModalProps {
+  deck: AdminDeck
+  onClose: () => void
+  onSave: (guide: string | null) => Promise<void>
+}
+
+function PlayGuideModal({ deck, onClose, onSave }: PlayGuideModalProps) {
+  const initial = (): PlayGuide => {
+    if (!deck.playGuide) return { early: '', mid: '', late: '' }
+    try { return JSON.parse(deck.playGuide) as PlayGuide } catch { return { early: '', mid: '', late: '' } }
+  }
+  const [guide, setGuide] = useState<PlayGuide>(initial)
+  const [saving, setSaving] = useState(false)
+
+  function patch(key: keyof PlayGuide, value: string) {
+    setGuide((g) => ({ ...g, [key]: value }))
+  }
+
+  async function handleSave() {
+    setSaving(true)
+    const isEmpty = !guide.early.trim() && !guide.mid.trim() && !guide.late.trim()
+    const json = isEmpty ? null : JSON.stringify(guide)
+    try {
+      await onSave(json)
+      onClose()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modalBox} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <span className={styles.modalTitle}>운영방법 편집 — {deck.displayName}</span>
+          <button className={styles.modalClose} onClick={onClose}>✕</button>
+        </div>
+
+        <div className={styles.guideEditorBody}>
+          {(['early', 'mid', 'late'] as const).map((phase) => (
+            <div key={phase} className={styles.guidePhase}>
+              <label className={styles.guideLabel}>
+                {phase === 'early' ? '초반' : phase === 'mid' ? '중반' : '후반'}
+              </label>
+              <textarea
+                className={styles.guideTextarea}
+                value={guide[phase]}
+                onChange={(e) => patch(phase, e.target.value)}
+                placeholder={`${phase === 'early' ? '초반' : phase === 'mid' ? '중반' : '후반'} 운영 방법을 입력하세요`}
+                rows={4}
+              />
+            </div>
+          ))}
+        </div>
+
+        <div className={styles.modalFooter}>
+          <button className={styles.resetBtn} onClick={() => setGuide({ early: '', mid: '', late: '' })}>
+            전체 초기화
+          </button>
+          <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
+            {saving ? '저장중...' : '저장'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ── 덱 행 ── */
 interface DeckRowState {
   customName: string
@@ -228,6 +298,7 @@ interface DeckRowState {
   dirty: boolean
   saving: boolean
   boardEditorOpen: boolean
+  guideEditorOpen: boolean
 }
 
 function DeckRow({ deck, onSaved }: { deck: AdminDeck; onSaved: (updated: AdminDeck) => void }) {
@@ -238,19 +309,21 @@ function DeckRow({ deck, onSaved }: { deck: AdminDeck; onSaved: (updated: AdminD
     dirty: false,
     saving: false,
     boardEditorOpen: false,
+    guideEditorOpen: false,
   })
 
   function markDirty(patch: Partial<DeckRowState>) {
     setState((s) => ({ ...s, ...patch, dirty: true }))
   }
 
-  function buildRequest(boardPositions?: string | null): DeckCurationRequest {
+  function buildRequest(boardPositions?: string | null, playGuide?: string | null): DeckCurationRequest {
     return {
       customName: state.customName.trim() || null,
       hidden: state.hidden,
       sortPriority: state.sortPriority !== '' ? Number(state.sortPriority) : null,
       curatorNote: null,
       boardPositions: boardPositions !== undefined ? boardPositions : deck.boardPositions,
+      playGuide: playGuide !== undefined ? playGuide : deck.playGuide,
     }
   }
 
@@ -271,6 +344,11 @@ function DeckRow({ deck, onSaved }: { deck: AdminDeck; onSaved: (updated: AdminD
     onSaved(updated)
   }
 
+  async function handleGuideSave(playGuideJson: string | null) {
+    const updated = await updateDeckCuration(deck.id, buildRequest(undefined, playGuideJson))
+    onSaved(updated)
+  }
+
   async function handleReset() {
     if (!confirm('큐레이션을 초기화하고 자동 이름으로 되돌릴까요?')) return
     await resetDeckCuration(deck.id)
@@ -281,8 +359,9 @@ function DeckRow({ deck, onSaved }: { deck: AdminDeck; onSaved: (updated: AdminD
       dirty: false,
       saving: false,
       boardEditorOpen: false,
+      guideEditorOpen: false,
     })
-    onSaved({ ...deck, customName: null, displayName: deck.autoName, hidden: false, sortPriority: null, boardPositions: null })
+    onSaved({ ...deck, customName: null, displayName: deck.autoName, hidden: false, sortPriority: null, boardPositions: null, playGuide: null })
   }
 
   return (
@@ -341,9 +420,14 @@ function DeckRow({ deck, onSaved }: { deck: AdminDeck; onSaved: (updated: AdminD
           <button
             className={`${styles.boardBtn} ${deck.boardPositions ? styles.boardBtnActive : ''}`}
             onClick={() => setState((s) => ({ ...s, boardEditorOpen: true }))}
-            title="배치판 편집"
           >
             배치판{deck.boardPositions ? ' ✓' : ''}
+          </button>
+          <button
+            className={`${styles.boardBtn} ${deck.playGuide ? styles.boardBtnActive : ''}`}
+            onClick={() => setState((s) => ({ ...s, guideEditorOpen: true }))}
+          >
+            운영방법{deck.playGuide ? ' ✓' : ''}
           </button>
           {(deck.customName != null || deck.hidden || deck.sortPriority != null) && (
             <button className={styles.resetBtn} onClick={handleReset}>초기화</button>
@@ -356,6 +440,13 @@ function DeckRow({ deck, onSaved }: { deck: AdminDeck; onSaved: (updated: AdminD
           deck={deck}
           onClose={() => setState((s) => ({ ...s, boardEditorOpen: false }))}
           onSave={handleBoardSave}
+        />
+      )}
+      {state.guideEditorOpen && (
+        <PlayGuideModal
+          deck={deck}
+          onClose={() => setState((s) => ({ ...s, guideEditorOpen: false }))}
+          onSave={handleGuideSave}
         />
       )}
     </>

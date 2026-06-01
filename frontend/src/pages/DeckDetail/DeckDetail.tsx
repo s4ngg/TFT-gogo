@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Map as MapIcon, Swords, Trophy } from 'lucide-react'
+import { ArrowLeft, BookOpen, Map as MapIcon, Swords, Trophy } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AppLayout } from '../../components/layout'
 import TierBadge from '../../components/common/TierBadge'
@@ -221,6 +221,38 @@ function HexBoard({ visibleUnits, level, availableLevels, onLevelChange, locale,
 }
 
 
+interface PlayGuide { early: string; mid: string; late: string }
+
+function PlayGuidePanel({ deck }: { deck: MetaDeck }) {
+  if (!deck.playGuide) return null
+  let guide: PlayGuide
+  try { guide = JSON.parse(deck.playGuide) as PlayGuide } catch { return null }
+  if (!guide.early && !guide.mid && !guide.late) return null
+
+  const phases: { key: keyof PlayGuide; label: string }[] = [
+    { key: 'early', label: '초반' },
+    { key: 'mid', label: '중반' },
+    { key: 'late', label: '후반' },
+  ]
+
+  return (
+    <section className={styles.panel}>
+      <div className={styles.panelHead}>
+        <BookOpen size={16} />
+        <h2>운영 방법</h2>
+      </div>
+      <div className={styles.guideList}>
+        {phases.filter((p) => guide[p.key]).map((p) => (
+          <div key={p.key} className={styles.guidePhase}>
+            <span className={styles.guidePhaseLabel}>{p.label}</span>
+            <p className={styles.guidePhaseText}>{guide[p.key]}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function ItemsPanel({ deck, locale }: { deck: MetaDeck; locale: TFTLocale | undefined }) {
   const carries = deck.champions
     .filter((champ) => (champ.recommendedItems?.length ?? 0) > 0)
@@ -439,6 +471,8 @@ function DeckDetail() {
             ))}
           </div>
         </section>
+
+        <PlayGuidePanel deck={deck} />
 
         <ItemsPanel deck={deck} locale={locale} />
       </div>
