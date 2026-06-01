@@ -89,6 +89,58 @@ TFT-gogo는 TFT 전적 검색 및 메타 가이드 서비스다.
 - 관리자 페이지 자체 구현은 이 범위에 포함하지 않는다.
 - 백엔드 API/DTO 계약 정리는 이슈 #110에서 별도로 처리한다.
 
+#### 백엔드 API 계약 초안
+
+공개 API는 사용자 화면에서 바로 사용할 수 있는 데이터만 반환한다.
+
+| Method | Path | 목적 |
+| --- | --- | --- |
+| `GET` | `/api/guide` | 공개 가이드 카탈로그 전체 조회 |
+| `GET` | `/api/guide/{tab}` | 탭별 공개 가이드 목록 조회 |
+
+- `{tab}` 값은 `traits`, `items`, `augments`, `champions` 중 하나를 사용한다.
+- 공개 API는 `published = true`인 데이터만 반환한다.
+- `patchVersion`이 없으면 최신 공개 패치 버전을 기준으로 조회한다.
+- 탭별 조회는 `query`, `page`, `pageSize`, `sortKey`, `sortDir`를 지원할 수 있다.
+- 챔피언 탭은 `cost` 필터를 추가로 지원할 수 있다.
+- 응답은 프론트의 현재 normalizer가 이해할 수 있는 구조를 우선 유지한다.
+
+관리자 API는 관리자 페이지가 완성된 뒤 연결할 수 있도록 계약만 먼저 정의한다.
+
+| Method | Path | 목적 |
+| --- | --- | --- |
+| `GET` | `/api/admin/guides` | 가이드 항목 전체 조회 |
+| `POST` | `/api/admin/guides` | 가이드 항목 생성 |
+| `PATCH` | `/api/admin/guides/{guideId}` | 가이드 항목 수정 |
+| `DELETE` | `/api/admin/guides/{guideId}` | 가이드 항목 삭제 또는 비활성화 |
+
+- 관리자 API는 `X-Admin-Token` 기반 인증을 우선 사용한다.
+- 추후 인증 체계가 정리되면 `ROLE_ADMIN` 권한으로 전환한다.
+- 삭제는 실제 삭제와 숨김 처리 중 운영 정책에 맞춰 결정한다. 초기에는 데이터 복구 가능성을 고려해 숨김 처리를 우선 검토한다.
+
+#### Guide DTO 기준
+
+초기 백엔드 계약은 범용 가이드 엔트리 형태를 우선 사용한다.
+
+| 필드 | 타입 | 설명 |
+| --- | --- | --- |
+| `id` | number | 가이드 항목 ID |
+| `guideType` | enum | `TRAIT`, `ITEM`, `AUGMENT`, `CHAMPION` |
+| `targetKey` | string | CDragon 또는 내부 기준 식별자 |
+| `name` | string | 화면 표시 이름 |
+| `summary` | string | 요약 설명 |
+| `imageUrl` | string | 대표 이미지 URL 또는 CDragon 참조 URL |
+| `patchVersion` | string | 기준 패치 버전 |
+| `dataJson` | object/string | 탭별 상세 렌더링에 필요한 확장 데이터 |
+| `published` | boolean | 공개 노출 여부 |
+| `sortOrder` | number | 관리자 지정 정렬 순서 |
+| `createdAt` | datetime | 생성 시각 |
+| `updatedAt` | datetime | 수정 시각 |
+
+- `dataJson`은 초기에는 탭별 화면 요구사항을 빠르게 수용하기 위한 확장 필드로 둔다.
+- 검색/정렬/필터에 자주 쓰이는 값은 추후 별도 컬럼으로 승격할 수 있다.
+- 프론트가 직접 계산하기 어려운 표시 순서와 노출 여부는 백엔드/관리자 데이터 기준을 따른다.
+
 ### 6. PatchNotes - 패치노트
 
 담당 범위: 패치노트 공개 화면 및 추후 관리자 연동 대비 데이터 계약.
@@ -117,6 +169,80 @@ TFT-gogo는 TFT 전적 검색 및 메타 가이드 서비스다.
 - 변경사항은 카테고리, 변경 타입, 영향도, 대상, 변경 전/후 값, 태그를 구조화해 관리해야 한다.
 - 관리자 페이지 자체 구현은 이 범위에 포함하지 않는다.
 - 백엔드 API/DTO 계약 정리는 이슈 #110에서 별도로 처리한다.
+
+#### 백엔드 API 계약 초안
+
+공개 API는 패치노트 목록과 선택한 패치 버전의 변경사항을 분리해서 제공한다.
+
+| Method | Path | 목적 |
+| --- | --- | --- |
+| `GET` | `/api/patch-notes` | 공개 패치노트 목록 조회 |
+| `GET` | `/api/patch-notes/{version}/changes` | 특정 버전 변경사항 페이지 조회 |
+
+- 공개 API는 `published = true`인 패치노트와 변경사항만 반환한다.
+- 패치노트 목록은 현재 패치가 먼저 오고, 이후 적용일 또는 정렬 순서 기준으로 정렬한다.
+- 변경사항 조회는 `category`, `type`, `impact`, `query`, `page`, `pageSize`를 지원할 수 있다.
+- `category` 값은 `CHAMPION`, `TRAIT`, `ITEM`, `AUGMENT`, `SYSTEM`을 사용한다.
+- `type` 값은 `BUFF`, `NERF`, `ADJUST`, `NEW`를 사용한다.
+- `impact` 값은 `HIGH`, `MEDIUM`, `LOW`를 사용한다.
+- 변경사항 응답에는 페이지 정보와 통계 요약을 함께 포함한다.
+
+관리자 API는 패치노트 본문과 변경사항을 관리할 수 있도록 분리한다.
+
+| Method | Path | 목적 |
+| --- | --- | --- |
+| `GET` | `/api/admin/patch-notes` | 패치노트 전체 조회 |
+| `POST` | `/api/admin/patch-notes` | 패치노트 생성 |
+| `PATCH` | `/api/admin/patch-notes/{patchNoteId}` | 패치노트 수정 |
+| `DELETE` | `/api/admin/patch-notes/{patchNoteId}` | 패치노트 삭제 또는 비활성화 |
+| `GET` | `/api/admin/patch-notes/{patchNoteId}/changes` | 관리자용 변경사항 조회 |
+| `POST` | `/api/admin/patch-notes/{patchNoteId}/changes` | 변경사항 생성 |
+| `PATCH` | `/api/admin/patch-note-changes/{changeId}` | 변경사항 수정 |
+| `DELETE` | `/api/admin/patch-note-changes/{changeId}` | 변경사항 삭제 또는 비활성화 |
+
+- 관리자 API는 `X-Admin-Token` 기반 인증을 우선 사용한다.
+- 현재 버전은 하나만 유지하는 정책을 우선 검토한다.
+- 삭제 정책은 운영 편의상 숨김 처리 또는 soft delete를 우선 검토한다.
+
+#### PatchNotes DTO 기준
+
+패치노트 요약 DTO는 목록과 히어로 영역에서 사용할 수 있어야 한다.
+
+| 필드 | 타입 | 설명 |
+| --- | --- | --- |
+| `id` | number | 패치노트 ID |
+| `version` | string | 패치 버전 |
+| `title` | string | 제목 |
+| `summary` | string | 짧은 요약 |
+| `description` | string | 상세 설명 |
+| `focus` | string | 이번 패치 핵심 문구 |
+| `representativeImageUrl` | string | 대표 이미지 |
+| `publishedAt` | date/datetime | 적용일 또는 게시일 |
+| `isCurrent` | boolean | 현재 패치 여부 |
+| `published` | boolean | 공개 노출 여부 |
+| `sortOrder` | number | 관리자 지정 정렬 순서 |
+| `highlights` | string[] | 핵심 요약 목록 |
+
+패치 변경사항 DTO는 필터링 가능한 구조를 유지해야 한다.
+
+| 필드 | 타입 | 설명 |
+| --- | --- | --- |
+| `id` | number | 변경사항 ID |
+| `category` | enum | `CHAMPION`, `TRAIT`, `ITEM`, `AUGMENT`, `SYSTEM` |
+| `type` | enum | `BUFF`, `NERF`, `ADJUST`, `NEW` |
+| `impact` | enum | `HIGH`, `MEDIUM`, `LOW` |
+| `targetKey` | string | CDragon 또는 내부 기준 식별자 |
+| `targetName` | string | 변경 대상 표시 이름 |
+| `summary` | string | 변경 요약 |
+| `beforeValue` | string | 변경 전 값 |
+| `afterValue` | string | 변경 후 값 |
+| `imageUrl` | string | 대상 이미지 URL 또는 참조 URL |
+| `tags` | string[] | 검색/분류용 태그 |
+| `sortOrder` | number | 관리자 지정 정렬 순서 |
+
+- 변경사항 페이지 응답은 `items`, `page`, `pageSize`, `totalItems`, `totalPages`, `stats`를 포함한다.
+- `stats`에는 전체 변경 수, 카테고리별 수, 변경 타입별 수, 상향/하향 수, 높은 영향도 변경 수를 포함한다.
+- 프론트 표기 언어는 프론트 normalizer에서 처리할 수 있으므로 백엔드 enum은 영문 고정값을 우선 사용한다.
 
 ### 7. Admin - 관리자 큐레이션
 
