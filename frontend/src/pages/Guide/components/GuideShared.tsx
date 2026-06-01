@@ -188,8 +188,12 @@ export function ItemIconStrip({
           <button
             className={styles.itemIconButton}
             key={itemRef.name}
-            onClick={() => {
+            onClick={(event) => {
+              event.stopPropagation()
               onItemSelect(itemRef.name)
+            }}
+            onKeyDown={(event) => {
+              event.stopPropagation()
             }}
             title={`${itemRef.name} 아이템 보기`}
             type="button"
