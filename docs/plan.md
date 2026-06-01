@@ -7,13 +7,16 @@
 ## 라우팅 구조
 
 ```
-/               → Dashboard (기본 페이지)
-/decks          → Decks (덱 목록)
-/ai-recommend   → AiRecommend (AI 덱 추천)
-/guide          → Guide (게임 가이드)
-/party          → Party (파티원 찾기)
-/patch-notes    → PatchNotes (패치 노트)
-*               → / 로 리다이렉트
+/                             → Dashboard (기본 페이지)
+/decks                        → Decks (덱 목록)
+/decks/:deckId                → DeckDetail (덱 상세)
+/ai-recommend                 → AiRecommend (AI 덱 추천)
+/guide                        → Guide (게임 가이드)
+/party                        → Party (파티원 찾기)
+/patch-notes                  → PatchNotes (패치 노트)
+/summoner/:gameName/:tagLine  → SummonerDetail (소환사 전적)
+/admin                        → Admin (관리자 덱 큐레이션)
+*                             → / 로 리다이렉트
 ```
 
 - `App.tsx`에서 React Router v6 기준으로 라우터 설정
@@ -73,14 +76,26 @@ src/components/common/
 ```
 src/api/
   axiosInstance.ts            # Axios 기본 설정 (baseURL, 인터셉터)
-  communityDragonAssets.ts    # Community Dragon URL helper
+  communityDragonAssets.ts    # Community Dragon URL helper (tftItemIconUrl 등)
+  cdragonLocale.ts            # CDragon ko_kr.json 파싱 (챔피언/트레이트/아이템 한글화)
   summoner.ts                 # 소환사 검색 API
   meta.ts                     # 메타 스냅샷 API
   deck.ts                     # 덱 추천 API
+  adminApi.ts                 # 관리자 큐레이션 API (X-Admin-Token 인증)
+
+src/utils/
+  deckUtils.ts                # costLimitForLevel 등 덱 관련 공유 유틸
 ```
 
 - 모든 API 함수는 `axiosInstance` 기반으로 작성
 - React Query `useQuery` / `useMutation`과 연결
+- CDragon 데이터: 챔피언별 코스트/레인지/트레이트 정보를 한글화 + 배치판에 활용
+- 관리자 API: `X-Admin-Token` 헤더 필수 (추후 JWT ROLE_ADMIN으로 전환)
+
+### 증강 데이터 정책
+
+Riot TFT-MATCH-V1 API는 `augments` 필드를 제공하지 않음 (2025년 기준 실 응답 검증).
+자동 집계 불가 → 향후 관리자 수동 큐레이션(DeckCuration 확장)으로 제공 예정.
 
 ---
 

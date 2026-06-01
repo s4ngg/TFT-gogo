@@ -6,6 +6,8 @@
   --bg-card-soft: #101a27;
 
   --border: #1f2a37;
+  --border-subtle: rgba(114, 145, 153, 0.18);
+  --border-faint:  rgba(114, 145, 153, 0.08);
   --border-active: #00d4b4;
   --accent: #00d4b4;
   --accent-bright: #1fe5c8;
