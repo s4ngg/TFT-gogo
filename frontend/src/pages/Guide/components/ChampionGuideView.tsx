@@ -112,42 +112,35 @@ function ChampionGuideView({
           <article
             className={styles.championCard}
             key={championGuide.name}
-            onClick={() => {
-              openChampionDetail(championGuide)
-            }}
-            onKeyDown={(event) => {
-              if (event.target !== event.currentTarget) return
-              if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault()
-                openChampionDetail(championGuide)
-              }
-            }}
-            role="button"
-            tabIndex={0}
           >
             <button
               aria-pressed={favoriteChampions.includes(championGuide.name)}
               className={`${styles.favoriteButton} ${favoriteChampions.includes(championGuide.name) ? styles.favoriteActive : ''}`}
-              onClick={(event) => {
-                event.stopPropagation()
+              onClick={() => {
                 onFavoriteToggle(championGuide.name)
-              }}
-              onKeyDown={(event) => {
-                event.stopPropagation()
               }}
               title={favoriteChampions.includes(championGuide.name) ? '즐겨찾기 해제' : '즐겨찾기 추가'}
               type="button"
             >
               <Star size={14} />
             </button>
-            <div className={styles.championPortrait}>
-              <img src={championGuide.imageUrl} alt={championGuide.name} />
-              <span>{championGuide.cost}</span>
-            </div>
-            <div className={styles.championInfo}>
-              <strong>{championGuide.name}</strong>
-              <span>{championGuide.role}</span>
-            </div>
+            <button
+              aria-label={`${championGuide.name} 상세 보기`}
+              className={styles.championDetailButton}
+              onClick={() => {
+                openChampionDetail(championGuide)
+              }}
+              type="button"
+            >
+              <span className={styles.championPortrait}>
+                <img src={championGuide.imageUrl} alt={championGuide.name} />
+                <span>{championGuide.cost}</span>
+              </span>
+              <span className={styles.championInfo}>
+                <strong>{championGuide.name}</strong>
+                <span>{championGuide.role}</span>
+              </span>
+            </button>
             <ItemIconStrip items={championGuide.bestItems} onItemSelect={onItemSelect} />
             <div className={styles.championTooltip} role="tooltip">
               <div className={styles.tooltipTop}>
@@ -159,7 +152,7 @@ function ChampionGuideView({
               </div>
               <div className={styles.tooltipItems}>
                 <b>3신기</b>
-                <ItemIconStrip items={championGuide.bestItems} onItemSelect={onItemSelect} />
+                <ItemIconStrip items={championGuide.bestItems} />
               </div>
               <dl className={styles.statGrid}>
                 <div><dt>체력</dt><dd>{championGuide.stats.hp}</dd></div>
