@@ -5,13 +5,6 @@ import type { TraitHexBadgeTone } from '../../components/common/TraitHexBadge'
 
 export type RankFilter = 'EMERALD_PLUS' | 'DIAMOND_PLUS' | 'MASTER_PLUS'
 
-export interface AugmentSummary {
-  augmentId: string
-  augmentName: string
-  winRate: string
-  isRecommended: boolean | null   // 백엔드 Boolean(nullable) 타입과 계약 일치
-}
-
 export interface ItemSummary {
   itemId: string
   itemName: string
@@ -31,7 +24,6 @@ export interface MetaDeck {
   sampleSize?: number               // 집계에 사용된 경기 수 (소규모면 통계 신뢰도 낮음)
   traits: TraitSummary[]
   champions: ChampionSummary[]
-  topAugments?: AugmentSummary[]   // 덱별 추천 증강 (API 집계 후 제공)
   topItems?: ItemSummary[]          // 덱별 추천 아이템 (API 집계 후 제공)
 }
 

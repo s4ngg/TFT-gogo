@@ -1,10 +1,8 @@
 package com.tftgogo.domain.deck.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tftgogo.domain.deck.entity.ArtifactStat;
-import com.tftgogo.domain.deck.entity.HeroAugment;
 import com.tftgogo.domain.deck.entity.MetaDeck;
 import com.tftgogo.global.riot.util.TftAssetUrlBuilder;
 import com.tftgogo.global.riot.util.TftShopUnitFilter;
@@ -30,7 +28,6 @@ public class MetaDeckResponse {
     private int sampleSize;
     private List<TraitSummary> traits;
     private List<ChampionSummary> champions;
-    private List<AugmentSummary> topAugments;
     private List<ItemSummary> topItems;
 
     @Getter
@@ -50,16 +47,6 @@ public class MetaDeckResponse {
         private int stars;
         private int cost;
         private List<String> recommendedItems;
-    }
-
-    @Getter
-    @Builder
-    public static class AugmentSummary {
-        private String augmentId;
-        private String augmentName;
-        private String winRate;
-        @JsonProperty("isRecommended")   // Boolean + @JsonProperty로 JSON 키를 명시적으로 고정
-        private Boolean isRecommended;
     }
 
     @Getter
@@ -118,17 +105,6 @@ public class MetaDeckResponse {
                         .build())
                 .toList();
 
-        List<AugmentSummary> topAugments = deck.getHeroAugments().stream()
-                .sorted(Comparator.comparingInt(HeroAugment::getSortOrder))
-                .limit(5)
-                .map(augment -> AugmentSummary.builder()
-                        .augmentId(augment.getAugmentId())
-                        .augmentName(augment.getAugmentName())
-                        .winRate(String.format("%.1f%%", augment.getWinRate()))
-                        .isRecommended(augment.isRecommended())
-                        .build())
-                .toList();
-
         List<ItemSummary> topItems = deck.getArtifactStats().stream()
                 .sorted(Comparator.comparingDouble(ArtifactStat::getWinRate).reversed())
                 .limit(20)
@@ -152,7 +128,6 @@ public class MetaDeckResponse {
                 .sampleSize(deck.getSampleSize())
                 .traits(traits)
                 .champions(champions)
-                .topAugments(topAugments)
                 .topItems(topItems)
                 .build();
     }

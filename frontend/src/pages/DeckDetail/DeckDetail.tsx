@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Map as MapIcon, Swords, Sparkles, Trophy } from 'lucide-react'
+import { ArrowLeft, Map as MapIcon, Swords, Trophy } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AppLayout } from '../../components/layout'
 import TierBadge from '../../components/common/TierBadge'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
 import { useCDragonLocale } from '../../hooks/useCDragonLocale'
-import { getAugmentName, getChampionDetail, getChampionName, getChampionShortName, getItemName, getTraitName } from '../../api/cdragonLocale'
+import { getChampionDetail, getChampionName, getChampionShortName, getItemName, getTraitName } from '../../api/cdragonLocale'
 import type { TFTLocale } from '../../api/cdragonLocale'
 import { tftItemIconUrl, tftItemIconOnError } from '../../api/communityDragonAssets'
 import type { ChampionSummary, MetaDeck } from '../Dashboard/dashboardData'
@@ -194,35 +194,6 @@ function HexBoard({ visibleUnits, level, availableLevels, onLevelChange, locale 
   )
 }
 
-function AugmentsPanel({ deck, locale }: { deck: MetaDeck; locale: TFTLocale | undefined }) {
-  const augments = deck.topAugments ?? []
-  if (augments.length === 0) return null
-
-  return (
-    <section className={styles.panel}>
-      <div className={styles.panelHead}>
-        <Sparkles size={16} />
-        <h2>추천 증강체</h2>
-        <span className={styles.panelSub}>승률 기준 상위 증강</span>
-      </div>
-      <div className={styles.augList}>
-        {augments.map((aug) => (
-          <div key={aug.augmentId} className={styles.augEntry}>
-            <span className={`${styles.augTier} ${aug.isRecommended ? styles.augTierGold : styles.augTierSilver}`}>
-              {aug.isRecommended ? '추천' : '참고'}
-            </span>
-            <div className={styles.augContent}>
-              <span className={styles.augEntryName}>
-                {getAugmentName(aug.augmentId, locale)}
-              </span>
-              <span className={styles.augEntryDesc}>승률 {aug.winRate}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  )
-}
 
 function ItemsPanel({ deck, locale }: { deck: MetaDeck; locale: TFTLocale | undefined }) {
   const carries = deck.champions
@@ -443,7 +414,6 @@ function DeckDetail() {
         </section>
 
         <ItemsPanel deck={deck} locale={locale} />
-        <AugmentsPanel deck={deck} locale={locale} />
       </div>
     </AppLayout>
   )

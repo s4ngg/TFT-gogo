@@ -7,7 +7,6 @@ import com.tftgogo.domain.deck.dto.response.MetaDeckResponse;
 import com.tftgogo.domain.deck.entity.ArtifactStat;
 import com.tftgogo.domain.deck.entity.DeckTrait;
 import com.tftgogo.domain.deck.entity.DeckUnit;
-import com.tftgogo.domain.deck.entity.HeroAugment;
 import com.tftgogo.domain.deck.entity.MetaDeck;
 import com.tftgogo.domain.deck.entity.RankFilter;
 import com.tftgogo.domain.deck.repository.MetaDeckRepository;
@@ -56,7 +55,6 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     // 15 → 10: 데이터 부족 시 덱 종류가 너무 적어지는 문제 완화
     private static final int MIN_SAMPLE = 10;
     private static final int MIN_ITEM_SAMPLE = 1;
-    private static final int MIN_AUGMENT_SAMPLE = 1;
     // 덱 등장 횟수 대비 유닛 최소 출현 비율 — 이 미만이면 빌드업·필러 유닛으로 판단해 제외
     private static final double MIN_UNIT_FREQUENCY = 0.25;
     private static final int SIGNATURE_TRAIT_COUNT = 2;
@@ -80,7 +78,6 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     private static final long RATE_LIMIT_DELAY_MS = 1200L;
     private static final int RECOMMENDED_CARRY_LIMIT = 3;
     private static final String UNKNOWN_PATCH_VERSION = "UNKNOWN";
-    private static final String GLOBAL_AUGMENT_CHARACTER_ID = "GLOBAL";
     private static final ZoneId DATA_COLLECTION_ZONE = ZoneId.of("Asia/Seoul");
     private static final Set<String> COMPONENT_ITEM_IDS = Set.of(
             "tft_item_bfsword",
@@ -93,22 +90,6 @@ public class MetaDeckServiceImpl implements MetaDeckService {
             "tft_item_sparringgloves",
             "tft_item_spatula",
             "tft_item_fryingpan"
-    );
-    private static final Set<String> HERO_AUGMENT_KEYWORDS = Set.of(
-            "invaderzed",
-            "shieldmaiden",
-            "heatdeath",
-            "reachforthestars",
-            "bonk",
-            "termeepnalvelocity",
-            "stellarcombo",
-            "yasuo",
-            "aatrox",
-            "mordekaiser",
-            "nasus",
-            "poppy",
-            "leona",
-            "zed"
     );
     // 선택률 최소 임계값(%) — 이 이상인 덱만 덱모음에 노출
     private static final double MIN_PLAY_RATE = 0.5;
@@ -545,7 +526,6 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                 deck.getUnits().clear();
                 deck.getTraits().clear();
                 deck.getArtifactStats().clear();
-                deck.getHeroAugments().clear();
             }
 
             metaDeckRepository.save(deck);
@@ -642,25 +622,6 @@ public class MetaDeckServiceImpl implements MetaDeckService {
             deck.getArtifactStats().add(artifactStat);
         }
 
-        AtomicInteger sortOrder = new AtomicInteger(1);
-        List<AugmentStat> augmentStats = stat.augmentStats.values().stream()
-                .filter(augmentStat -> augmentStat.count >= MIN_AUGMENT_SAMPLE)
-                .sorted(Comparator.comparingDouble(AugmentStat::winRate).reversed())
-                .toList();
-        for (AugmentStat augmentStat : augmentStats) {
-            HeroAugment heroAugment = HeroAugment.builder()
-                    .metaDeck(deck)
-                    .characterId(GLOBAL_AUGMENT_CHARACTER_ID)
-                    .augmentId(augmentStat.augmentId)
-                    .augmentName(extractName(augmentStat.augmentId))
-                    .isRecommended(sortOrder.get() <= 3)
-                    .winRate(augmentStat.winRate())
-                    .top4Rate(augmentStat.top4Rate())
-                    .avgPlacement(augmentStat.avgPlacement())
-                    .sortOrder(sortOrder.getAndIncrement())
-                    .build();
-            deck.getHeroAugments().add(heroAugment);
-        }
     }
 
     private String extractName(String id) {
@@ -795,7 +756,6 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         final DeckProfile profile;
         final Map<String, UnitStat> unitStats = new HashMap<>();
         final Map<String, ItemStat> itemStats = new HashMap<>();
-        final Map<String, AugmentStat> augmentStats = new HashMap<>();
         int count = 0, wins = 0, top4 = 0;
         double totalPlace = 0;
 
@@ -829,26 +789,11 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                 }
             });
 
-            if (participant.getAugments() != null) {
-                participant.getAugments().stream()
-                        .filter(augment -> augment != null && !augment.isBlank())
-                        .filter(MetaDeckServiceImpl::isHeroAugment)
-                        .forEach(augment -> augmentStats.computeIfAbsent(augment, AugmentStat::new)
-                                .record(placement));
-            }
         }
 
         double winRate() { return count == 0 ? 0 : (double) wins / count * 100; }
         double top4Rate() { return count == 0 ? 0 : (double) top4 / count * 100; }
         double avgPlacement() { return count == 0 ? 0 : totalPlace / count; }
-    }
-
-    private static boolean isHeroAugment(String augmentId) {
-        String normalized = augmentId.toLowerCase()
-                .replace("_", "")
-                .replace(" ", "")
-                .replace("'", "");
-        return HERO_AUGMENT_KEYWORDS.stream().anyMatch(normalized::contains);
     }
 
     private static boolean isRecommendedItem(String itemId) {
@@ -942,11 +887,4 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         }
     }
 
-    private static class AugmentStat extends PlacementStat {
-        final String augmentId;
-
-        AugmentStat(String augmentId) {
-            this.augmentId = augmentId;
-        }
-    }
 }

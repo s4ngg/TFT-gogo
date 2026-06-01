@@ -7,7 +7,7 @@ import ChampionCard from '../../components/common/ChampionCard'
 import TierBadge from '../../components/common/TierBadge'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
 import { tftItemIconUrl } from '../../api/communityDragonAssets'
-import { getChampionName, getChampionShortName, getTraitName, getItemName, getAugmentName } from '../../api/cdragonLocale'
+import { getChampionName, getChampionShortName, getTraitName, getItemName } from '../../api/cdragonLocale'
 import type { TFTLocale } from '../../api/cdragonLocale'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
 import { useCDragonLocale } from '../../hooks/useCDragonLocale'
@@ -180,97 +180,6 @@ function TableHead({ sortKey, sortDir, onSort, showTier = true, showRank = true 
         <Th label="픽률" col="pickRate" />
       </tr>
     </thead>
-  )
-}
-
-/* ════════════════════════════
-   영웅 증강 섹션 (캐러셀) — 실데이터
-════════════════════════════ */
-function HeroAugmentSection({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale | undefined }) {
-  const scrollRef = useRef<HTMLDivElement>(null)
-
-  function scrollCarousel(dir: 'left' | 'right') {
-    if (!scrollRef.current) return
-    scrollRef.current.scrollBy({ left: dir === 'left' ? -316 : 316, behavior: 'smooth' })
-  }
-
-  // 증강 데이터 있는 덱만 표시, 승률 내림차순 정렬
-  const sorted = [...decks]
-    .filter((d) => (d.topAugments?.length ?? 0) > 0)
-    .sort((a, b) => numVal(b.winRate) - numVal(a.winRate))
-
-  const isEmpty = sorted.length === 0
-
-  return (
-    <section className={styles.specialSection}>
-      <div className={styles.specialHeader}>
-        <span className={styles.specialBadge}>영웅 증강</span>
-        <div className={styles.specialHeaderText}>
-          <h2>덱별 추천 증강</h2>
-          <p>각 메타 덱에서 가장 높은 승률을 기록한 증강 조합</p>
-        </div>
-        <div className={styles.carouselBtns}>
-          <button type="button" className={styles.carouselBtn} onClick={() => scrollCarousel('left')}>
-            <ChevronLeft size={16} />
-          </button>
-          <button type="button" className={styles.carouselBtn} onClick={() => scrollCarousel('right')}>
-            <ChevronRight size={16} />
-          </button>
-        </div>
-      </div>
-
-      {isEmpty ? (
-        <p className={styles.empty}>집계 완료 후 증강 데이터가 표시됩니다</p>
-      ) : (
-        <div className={styles.augmentCarousel} ref={scrollRef}>
-          {sorted.map((deck) => {
-            const topAug = deck.topAugments![0]
-            const isRec = topAug.isRecommended
-            const augName = getAugmentName(topAug.augmentId, locale)
-            return (
-              <article
-                key={deck.rank}
-                className={styles.augmentCard}
-                data-recommended={isRec ? 'true' : 'false'}
-              >
-                <div className={styles.augCardTop}>
-                  <div>
-                    <div className={styles.augHeroName}>{deckDisplayName(deck, locale)}</div>
-                    <div className={styles.augName}>[{augName}]</div>
-                  </div>
-                  <span className={isRec ? styles.augRecommendBadge : styles.augNotRecommendBadge}>
-                    {isRec ? '추천' : '비추천'}
-                  </span>
-                </div>
-                <div className={styles.augTags}>
-                  {deck.topAugments!.slice(0, 3).map((a) => (
-                    <span key={a.augmentId} className={styles.augTag}>
-                      {getAugmentName(a.augmentId, locale)} ({a.winRate})
-                    </span>
-                  ))}
-                </div>
-                <div className={styles.augChamps}>
-                  {shopChampions(deck).slice(0, 4).map((c, i) => (
-                    <ChampionCard
-                      key={`${c.name}-${i}`}
-                      imageUrl={c.imageUrl}
-                      label={getChampionName(c.imageUrl, locale, c.name)}
-                      stars={c.stars}
-                      cost={c.cost}
-                    />
-                  ))}
-                </div>
-                <div className={styles.augStats}>
-                  <div><small>승률</small><strong className={styles.winRate}>{deck.winRate}</strong></div>
-                  <div><small>평균 등수</small><strong className={styles.avgPlace}><span className={styles.avgHash}>#</span>{deck.avgPlace}</strong></div>
-                  <div><small>픽률</small><strong className={styles.pickRate}>{deck.pickRate}</strong></div>
-                </div>
-              </article>
-            )
-          })}
-        </div>
-      )}
-    </section>
   )
 }
 
@@ -459,7 +368,6 @@ function DeckListView({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale 
           </tbody>
         </table>
       </div>
-      <HeroAugmentSection decks={safeDecks} locale={locale} />
       <ArtifactSection decks={safeDecks} locale={locale} />
     </>
   )
