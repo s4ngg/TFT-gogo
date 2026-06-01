@@ -42,6 +42,8 @@ public class AdminDeckResponse {
 
     // 배치판 편집 UI용 챔피언 목록
     private List<UnitInfo> units;
+    // 한글 이름 변환용 trait suffix 목록 (예: ["brawler", "assassin"])
+    private List<String> traitSuffixes;
 
     @Getter
     @Builder
@@ -69,6 +71,14 @@ public class AdminDeckResponse {
                         .build())
                 .toList();
 
+        List<String> traitSuffixes = deck.getTraits().stream()
+                .sorted((a, b) -> Integer.compare(b.getNumUnits(), a.getNumUnits()))
+                .map(t -> {
+                    String id = t.getTraitId();
+                    return id.contains("_") ? id.substring(id.lastIndexOf('_') + 1).toLowerCase() : id.toLowerCase();
+                })
+                .toList();
+
         return AdminDeckResponse.builder()
                 .id(deck.getId())
                 .signature(deck.getSignature())
@@ -87,6 +97,7 @@ public class AdminDeckResponse {
                 .pickRate(String.format("%.1f%%", deck.getPlayRate()))
                 .sampleSize(deck.getSampleSize())
                 .units(units)
+                .traitSuffixes(traitSuffixes)
                 .build();
     }
 }

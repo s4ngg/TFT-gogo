@@ -43,6 +43,7 @@ export interface AdminDeck {
   pickRate: string
   sampleSize: number
   units: UnitInfo[]
+  traitSuffixes: string[]
 }
 
 export interface BoardPosition {
@@ -66,21 +67,21 @@ export interface DeckCurationRequest {
 }
 
 export async function fetchAdminDecks(rankFilter: RankFilter = 'MASTER_PLUS'): Promise<AdminDeck[]> {
-  const { data } = await axiosInstance.get(`/api/admin/decks?rankFilter=${rankFilter}`, {
+  const { data } = await axiosInstance.get(`/admin/decks?rankFilter=${rankFilter}`, {
     headers: adminHeaders(),
   })
   return data.data
 }
 
 export async function updateDeckCuration(deckId: number, req: DeckCurationRequest): Promise<AdminDeck> {
-  const { data } = await axiosInstance.patch(`/api/admin/decks/${deckId}`, req, {
+  const { data } = await axiosInstance.patch(`/admin/decks/${deckId}`, req, {
     headers: adminHeaders(),
   })
   return data.data
 }
 
 export async function resetDeckCuration(deckId: number): Promise<void> {
-  await axiosInstance.delete(`/api/admin/decks/${deckId}/curation`, {
+  await axiosInstance.delete(`/admin/decks/${deckId}/curation`, {
     headers: adminHeaders(),
   })
 }

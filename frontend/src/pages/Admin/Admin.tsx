@@ -12,6 +12,9 @@ import {
   type UnitInfo,
   type PlayGuide,
 } from '../../api/adminApi'
+import { useCDragonLocale } from '../../hooks/useCDragonLocale'
+import { getTraitName, getChampionName } from '../../api/cdragonLocale'
+import type { TFTLocale } from '../../api/cdragonLocale'
 import type { RankFilter } from '../Dashboard/dashboardData'
 import styles from './Admin.module.css'
 
@@ -301,7 +304,18 @@ interface DeckRowState {
   guideEditorOpen: boolean
 }
 
-function DeckRow({ deck, onSaved }: { deck: AdminDeck; onSaved: (updated: AdminDeck) => void }) {
+function buildKoreanName(deck: AdminDeck, locale: TFTLocale | undefined): string {
+  if (!locale) return deck.autoName
+  const traitNames = deck.traitSuffixes.slice(0, 2).map((s) => getTraitName(s, locale)).filter(Boolean)
+  const carryNames = deck.units
+    .filter((u) => u.imageUrl)
+    .slice(-2)
+    .map((u) => getChampionName(u.imageUrl, locale, ''))
+    .filter(Boolean)
+  return [...traitNames, ...carryNames].join(' ') || deck.autoName
+}
+
+function DeckRow({ deck, onSaved, locale }: { deck: AdminDeck; onSaved: (updated: AdminDeck) => void; locale: TFTLocale | undefined }) {
   const [state, setState] = useState<DeckRowState>({
     customName: deck.customName ?? '',
     hidden: deck.hidden,
@@ -374,7 +388,7 @@ function DeckRow({ deck, onSaved }: { deck: AdminDeck; onSaved: (updated: AdminD
         </td>
         <td>
           <div className={styles.nameCell}>
-            <span className={styles.autoName}>자동: {deck.autoName}</span>
+            <span className={styles.autoName}>자동: {buildKoreanName(deck, locale)}</span>
             <input
               className={styles.nameInput}
               value={state.customName}
@@ -458,6 +472,7 @@ function AdminPage() {
   const [decks, setDecks] = useState<AdminDeck[]>([])
   const [rankFilter, setRankFilter] = useState<RankFilter>('MASTER_PLUS')
   const [loading, setLoading] = useState(true)
+  const { data: locale } = useCDragonLocale()
 
   useEffect(() => {
     setLoading(true)
@@ -509,7 +524,7 @@ function AdminPage() {
           </thead>
           <tbody>
             {decks.map((deck) => (
-              <DeckRow key={deck.id} deck={deck} onSaved={handleSaved} />
+              <DeckRow key={deck.id} deck={deck} onSaved={handleSaved} locale={locale} />
             ))}
           </tbody>
         </table>
