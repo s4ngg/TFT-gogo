@@ -267,7 +267,7 @@
 
 .errorText {
   color: var(--danger);
-  font-size: 13px;
-  margin-top: -8px;
+  font-size: var(--font-size-sm);
+  margin-top: calc(var(--space-xs) * -2);
 }
 
