@@ -98,11 +98,16 @@ function computeTraitCounts(
   return counts
 }
 
-function parseBoardPositions(json: string | null | undefined): Map<string, { row: number; col: number }> {
+function parseBoardPositions(json: string | null | undefined, level: number): Map<string, { row: number; col: number }> {
   if (!json) return new Map()
   try {
-    const obj = JSON.parse(json) as Record<string, { row: number; col: number }>
-    return new Map(Object.entries(obj))
+    const obj = JSON.parse(json) as Record<string, unknown>
+    // 레벨 키 형식: {"5": {imageUrl: pos}, "6": {...}}
+    const levelData = obj[String(level)]
+    if (levelData && typeof levelData === 'object') {
+      return new Map(Object.entries(levelData as Record<string, { row: number; col: number }>))
+    }
+    return new Map()
   } catch {
     return new Map()
   }
@@ -129,7 +134,7 @@ interface HexBoardProps {
 }
 
 function HexBoard({ visibleUnits, level, availableLevels, onLevelChange, locale, boardPositionsJson }: HexBoardProps) {
-  const customPosMap = useMemo(() => parseBoardPositions(boardPositionsJson), [boardPositionsJson])
+  const customPosMap = useMemo(() => parseBoardPositions(boardPositionsJson, level), [boardPositionsJson, level])
   const hasCustom = customPosMap.size > 0
 
   const placed = useMemo(

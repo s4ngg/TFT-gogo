@@ -15,124 +15,190 @@ import {
 import { useCDragonLocale } from '../../hooks/useCDragonLocale'
 import { getTraitName, getChampionName } from '../../api/cdragonLocale'
 import type { TFTLocale } from '../../api/cdragonLocale'
+import { tftChampSquareUrl } from '../../api/communityDragonAssets'
 import type { RankFilter } from '../Dashboard/dashboardData'
 import styles from './Admin.module.css'
 
 const BOARD_ROWS = 4
 const BOARD_COLS = 7
+const BOARD_LEVELS = [5, 6, 7, 8, 9, 10]
+const COST_COLORS: Record<number, string> = { 1: '#8e9497', 2: '#4ade80', 3: '#60a5fa', 4: '#c084fc', 5: '#f9c860' }
+
+interface CellPos { row: number; col: number }
+interface ChampInfo { apiName: string; name: string; imageUrl: string; cost: number }
+
+// level → (imageUrl → CellPos)
+type LevelBoards = Map<number, Map<string, CellPos>>
+
+function parseLevelBoards(json: string | null | undefined): LevelBoards {
+  if (!json) return new Map()
+  try {
+    const obj = JSON.parse(json) as Record<string, Record<string, CellPos>>
+    const result: LevelBoards = new Map()
+    for (const [k, posObj] of Object.entries(obj)) {
+      const lv = Number(k)
+      if (BOARD_LEVELS.includes(lv))
+        result.set(lv, new Map(Object.entries(posObj)))
+    }
+    return result
+  } catch { return new Map() }
+}
+
+function serializeLevelBoards(boards: LevelBoards): string | null {
+  const obj: Record<string, Record<string, CellPos>> = {}
+  boards.forEach((posMap, lv) => {
+    if (posMap.size > 0) obj[String(lv)] = Object.fromEntries(posMap)
+  })
+  return Object.keys(obj).length > 0 ? JSON.stringify(obj) : null
+}
 
 /* ── 배치판 편집 모달 ── */
 interface BoardEditorProps {
   deck: AdminDeck
+  locale: TFTLocale | undefined
   onClose: () => void
   onSave: (boardPositionsJson: string | null) => Promise<void>
 }
 
-interface CellPos { row: number; col: number }
-
-function BoardEditorModal({ deck, onClose, onSave }: BoardEditorProps) {
-  const [selected, setSelected] = useState<UnitInfo | null>(null)
+function BoardEditorModal({ deck, locale, onClose, onSave }: BoardEditorProps) {
+  const [activeLevel, setActiveLevel] = useState(5)
+  const [selected, setSelected] = useState<ChampInfo | null>(null)
   const [saving, setSaving] = useState(false)
+  const [levelBoards, setLevelBoards] = useState<LevelBoards>(() => parseLevelBoards(deck.boardPositions))
 
-  // imageUrl → CellPos
-  const [posMap, setPosMap] = useState<Map<string, CellPos>>(() => {
-    if (!deck.boardPositions) return new Map()
-    try {
-      const obj = JSON.parse(deck.boardPositions) as Record<string, CellPos>
-      return new Map(Object.entries(obj))
-    } catch {
-      return new Map()
-    }
-  })
+  // CDragon 전체 챔피언 → 코스트별 그룹
+  const champsByCost = useMemo<Map<number, ChampInfo[]>>(() => {
+    const map = new Map<number, ChampInfo[]>()
+    if (!locale) return map
+    locale.champDetailByApiName.forEach((detail) => {
+      if (detail.cost < 1 || detail.cost > 5) return
+      const info: ChampInfo = {
+        apiName: detail.apiName,
+        name: detail.name,
+        imageUrl: tftChampSquareUrl(detail.apiName),
+        cost: detail.cost,
+      }
+      const list = map.get(detail.cost) ?? []
+      list.push(info)
+      map.set(detail.cost, list)
+    })
+    map.forEach((list) => list.sort((a, b) => a.name.localeCompare(b.name)))
+    return map
+  }, [locale])
 
-  // 역방향: "row-col" → imageUrl
+  const posMap = levelBoards.get(activeLevel) ?? new Map<string, CellPos>()
+
   const cellMap = useMemo(() => {
     const m = new Map<string, string>()
-    posMap.forEach((pos, imageUrl) => m.set(`${pos.row}-${pos.col}`, imageUrl))
+    posMap.forEach((pos, url) => m.set(`${pos.row}-${pos.col}`, url))
     return m
   }, [posMap])
 
-  function champAt(row: number, col: number): UnitInfo | undefined {
+  function urlToChamp(url: string): ChampInfo | undefined {
+    for (const list of champsByCost.values()) {
+      const found = list.find((c) => c.imageUrl === url)
+      if (found) return found
+    }
+    return undefined
+  }
+
+  function champAt(row: number, col: number): ChampInfo | undefined {
     const url = cellMap.get(`${row}-${col}`)
-    if (!url) return undefined
-    return deck.units.find((u) => u.imageUrl === url)
+    return url ? urlToChamp(url) : undefined
+  }
+
+  function setPosMap(updater: (prev: Map<string, CellPos>) => Map<string, CellPos>) {
+    setLevelBoards((prev) => {
+      const next = new Map(prev)
+      next.set(activeLevel, updater(prev.get(activeLevel) ?? new Map()))
+      return next
+    })
   }
 
   function handleCellClick(row: number, col: number) {
     const existingUrl = cellMap.get(`${row}-${col}`)
-
     if (existingUrl) {
-      // 이미 챔피언 있음 → 제거
-      setPosMap((prev) => {
-        const next = new Map(prev)
-        next.delete(existingUrl)
-        return next
-      })
+      setPosMap((prev) => { const n = new Map(prev); n.delete(existingUrl); return n })
       return
     }
-
     if (!selected) return
-
     setPosMap((prev) => {
-      const next = new Map(prev)
-      // 기존 위치 제거
-      next.delete(selected.imageUrl)
-      next.set(selected.imageUrl, { row, col })
-      return next
+      const n = new Map(prev)
+      n.delete(selected.imageUrl)
+      n.set(selected.imageUrl, { row, col })
+      return n
     })
     setSelected(null)
   }
 
-  const handleChampClick = useCallback((unit: UnitInfo) => {
-    setSelected((prev) => (prev?.imageUrl === unit.imageUrl ? null : unit))
+  const handleChampClick = useCallback((champ: ChampInfo) => {
+    setSelected((prev) => (prev?.imageUrl === champ.imageUrl ? null : champ))
   }, [])
 
   async function handleSave() {
     setSaving(true)
-    const json = posMap.size > 0
-      ? JSON.stringify(Object.fromEntries(posMap))
-      : null
     try {
-      await onSave(json)
+      await onSave(serializeLevelBoards(levelBoards))
       onClose()
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  function handleClear() {
-    setPosMap(new Map())
+    } finally { setSaving(false) }
   }
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modalBox} onClick={(e) => e.stopPropagation()}>
+      <div className={styles.modalBox} style={{ width: 'min(1100px, 96vw)' }} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <span className={styles.modalTitle}>배치판 편집 — {deck.displayName}</span>
           <button className={styles.modalClose} onClick={onClose}>✕</button>
         </div>
 
+        {/* 레벨 탭 */}
+        <div className={styles.levelTabs}>
+          {BOARD_LEVELS.map((lv) => {
+            const hasData = (levelBoards.get(lv)?.size ?? 0) > 0
+            return (
+              <button
+                key={lv}
+                className={`${styles.levelTab} ${lv === activeLevel ? styles.levelTabActive : ''} ${hasData ? styles.levelTabHasData : ''}`}
+                onClick={() => setActiveLevel(lv)}
+              >
+                Lv.{lv}{hasData ? ' ✓' : ''}
+              </button>
+            )
+          })}
+        </div>
+
         <div className={styles.boardEditorBody}>
-          {/* 챔피언 팔레트 */}
+          {/* 챔피언 팔레트 — 코스트별 */}
           <div className={styles.champPalette}>
-            <p className={styles.paletteLabel}>챔피언 선택 후 셀 클릭으로 배치</p>
-            <div className={styles.champGrid}>
-              {deck.units.map((unit) => {
-                const placed = posMap.has(unit.imageUrl)
-                const isSelected = selected?.imageUrl === unit.imageUrl
-                return (
-                  <button
-                    key={unit.imageUrl}
-                    className={`${styles.champChip} ${isSelected ? styles.champChipSelected : ''} ${placed ? styles.champChipPlaced : ''}`}
-                    onClick={() => handleChampClick(unit)}
-                    title={unit.name}
-                  >
-                    <img src={unit.imageUrl} alt={unit.name} className={styles.champChipImg} />
-                    <span className={styles.champChipName}>{unit.name}</span>
-                  </button>
-                )
-              })}
-            </div>
+            <p className={styles.paletteLabel}>챔피언 클릭 → 셀 클릭으로 배치</p>
+            {[1, 2, 3, 4, 5].map((cost) => {
+              const list = champsByCost.get(cost) ?? []
+              if (list.length === 0) return null
+              return (
+                <div key={cost} className={styles.costGroup}>
+                  <span className={styles.costLabel} style={{ color: COST_COLORS[cost] }}>
+                    {cost}코스트
+                  </span>
+                  <div className={styles.champGrid}>
+                    {list.map((champ) => {
+                      const placed = posMap.has(champ.imageUrl)
+                      const isSelected = selected?.imageUrl === champ.imageUrl
+                      return (
+                        <button
+                          key={champ.apiName}
+                          className={`${styles.champChip} ${isSelected ? styles.champChipSelected : ''} ${placed ? styles.champChipPlaced : ''}`}
+                          onClick={() => handleChampClick(champ)}
+                          title={champ.name}
+                        >
+                          <img src={champ.imageUrl} alt={champ.name} className={styles.champChipImg} />
+                          <span className={styles.champChipName}>{champ.name}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
           </div>
 
           {/* 헥스 그리드 */}
@@ -141,22 +207,17 @@ function BoardEditorModal({ deck, onClose, onSave }: BoardEditorProps) {
               const row = BOARD_ROWS - 1 - vi
               const isOffset = row % 2 !== 0
               return (
-                <div
-                  key={row}
-                  className={`${styles.editorRow} ${isOffset ? styles.editorRowOffset : ''}`}
-                >
+                <div key={row} className={`${styles.editorRow} ${isOffset ? styles.editorRowOffset : ''}`}>
                   {Array.from({ length: BOARD_COLS }, (_, col) => {
-                    const unit = champAt(row, col)
+                    const champ = champAt(row, col)
                     return (
                       <button
                         key={col}
-                        className={`${styles.editorCell} ${unit ? styles.editorCellFilled : styles.editorCellEmpty}`}
+                        className={`${styles.editorCell} ${champ ? styles.editorCellFilled : styles.editorCellEmpty}`}
                         onClick={() => handleCellClick(row, col)}
-                        title={unit ? `${unit.name} 제거` : selected ? `${selected.name} 배치` : ''}
+                        title={champ ? `${champ.name} 제거` : selected ? `${selected.name} 배치` : ''}
                       >
-                        {unit && (
-                          <img src={unit.imageUrl} alt={unit.name} className={styles.editorCellImg} />
-                        )}
+                        {champ && <img src={champ.imageUrl} alt={champ.name} className={styles.editorCellImg} />}
                       </button>
                     )
                   })}
@@ -167,7 +228,12 @@ function BoardEditorModal({ deck, onClose, onSave }: BoardEditorProps) {
         </div>
 
         <div className={styles.modalFooter}>
-          <button className={styles.resetBtn} onClick={handleClear}>전체 초기화</button>
+          <button className={styles.resetBtn} onClick={() => setPosMap(() => new Map())}>
+            Lv.{activeLevel} 초기화
+          </button>
+          <button className={styles.resetBtn} onClick={() => setLevelBoards(new Map())}>
+            전체 초기화
+          </button>
           <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
             {saving ? '저장중...' : '저장'}
           </button>
@@ -452,6 +518,7 @@ function DeckRow({ deck, onSaved, locale }: { deck: AdminDeck; onSaved: (updated
       {state.boardEditorOpen && (
         <BoardEditorModal
           deck={deck}
+          locale={locale}
           onClose={() => setState((s) => ({ ...s, boardEditorOpen: false }))}
           onSave={handleBoardSave}
         />

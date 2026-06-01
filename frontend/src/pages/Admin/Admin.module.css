@@ -282,12 +282,40 @@
   flex-wrap: wrap;
 }
 
+/* 레벨 탭 */
+.levelTabs {
+  display: flex;
+  gap: 6px;
+  padding: 12px 24px 0;
+}
+
+.levelTab {
+  padding: 5px 14px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.levelTabActive {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.levelTabHasData {
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
 /* 챔피언 팔레트 */
 .champPalette {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  min-width: 200px;
+  gap: 8px;
+  min-width: 220px;
+  max-height: 460px;
+  overflow-y: auto;
 }
 
 .paletteLabel {
@@ -295,10 +323,22 @@
   color: var(--text-muted);
 }
 
+.costGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.costLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
 .champGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
 }
 
 .champChip {
