@@ -29,6 +29,8 @@ public class MetaDeckResponse {
     private List<TraitSummary> traits;
     private List<ChampionSummary> champions;
     private List<ItemSummary> topItems;
+    // 관리자 배치판 포지션 JSON (null = 자동 배치)
+    private String boardPositions;
 
     @Getter
     @Builder
@@ -117,6 +119,8 @@ public class MetaDeckResponse {
                         .build())
                 .toList();
 
+        String boardPositions = curation != null ? curation.getBoardPositions() : null;
+
         return MetaDeckResponse.builder()
                 .rank(rank)
                 .grade(deck.getTier())
@@ -129,6 +133,7 @@ public class MetaDeckResponse {
                 .traits(traits)
                 .champions(champions)
                 .topItems(topItems)
+                .boardPositions(boardPositions)
                 .build();
     }
 

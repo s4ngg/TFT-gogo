@@ -51,10 +51,13 @@
 - [ ] PR 4 컴포넌트에 실제 데이터 연결
 
 ### PR 6: Decks UI + API 연동
-- [ ] 덱 목록 UI 컴포넌트
-- [ ] 덱 상세 UI 컴포넌트
-- [ ] `api/decks.ts`
-- [ ] `hooks/useDecks.ts`
+- [x] 덱 목록 UI (`pages/Decks/`) — 티어 그룹핑, 랭크 필터, 챔피언·시너지·통계 표시
+- [x] 덱 상세 UI (`pages/DeckDetail/`) — 헥스 보드, 레벨 탭, 시너지, 추천 아이템
+- [x] 배치판 자동 배치 로직 (CDragon range/role 기반, `buildBoardPositions`)
+- [x] 배치판 관리자 배치 우선 적용 (`boardPositions` JSON → 자동 배치 폴백)
+- [x] `api/deckApi.ts` — 메타 덱 목록/상세 API
+- [x] `hooks/useMetaSnapshot.ts`, `hooks/useDeckQuery.ts` — React Query 연동
+- [ ] 증강 추천 — 관리자 수동 큐레이션 UI/저장 (향후 작업)
 
 ### PR 7: AiRecommend UI + API 연동
 - [ ] AI 추천 UI 컴포넌트

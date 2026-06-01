@@ -65,10 +65,12 @@ public class AdminDeckController {
                     .hidden(request.isHidden())
                     .sortPriority(request.getSortPriority())
                     .curatorNote(request.getCuratorNote())
+                    .boardPositions(request.getBoardPositions())
                     .build();
         } else {
             curation.update(request.getCustomName(), request.isHidden(),
-                    request.getSortPriority(), request.getCuratorNote());
+                    request.getSortPriority(), request.getCuratorNote(),
+                    request.getBoardPositions());
         }
 
         deckCurationRepository.save(curation);
