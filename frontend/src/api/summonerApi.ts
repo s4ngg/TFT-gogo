@@ -1,5 +1,5 @@
 import axiosInstance from './axiosInstance'
-import type { TraitHexBadgeTone } from '../components/common/TraitHexBadge'
+import type { TraitHexBadgeTone } from '../types/badges'
 import { mockSummonerProfile, mockMatchHistory } from '../mocks/summonerMock'
 
 // ── Spring이 내려줄 DTO 타입 ─────────────────────────────────

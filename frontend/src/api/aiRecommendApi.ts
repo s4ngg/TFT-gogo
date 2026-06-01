@@ -1,5 +1,5 @@
 import axiosInstance from './axiosInstance'
-import type { TraitHexBadgeTone } from '../components/common/TraitHexBadge'
+import type { TraitHexBadgeTone } from '../types/badges'
 
 export interface AiRecommendRequest {
   gameName: string

@@ -11,7 +11,7 @@ import type { TFTLocale } from '../../api/cdragonLocale'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
 import { useCDragonLocale } from '../../hooks/useCDragonLocale'
 import type { MetaDeck, RankFilter } from '../Dashboard/dashboardData'
-import type { TierBadgeValue } from '../../components/common/TierBadge'
+import type { TierBadgeValue } from '../../types/badges'
 import styles from './Decks.module.css'
 
 const INITIAL_ITEM_COUNT = 4
