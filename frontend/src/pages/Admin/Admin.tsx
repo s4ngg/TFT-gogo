@@ -90,21 +90,21 @@ function BoardEditorModal({ deck, locale, onClose, onSave }: BoardEditorProps) {
 
   const cellMap = useMemo(() => {
     const m = new Map<string, string>()
-    posMap.forEach((pos, url) => m.set(`${pos.row}-${pos.col}`, url))
+    posMap.forEach((pos, apiName) => m.set(`${pos.row}-${pos.col}`, apiName))
     return m
   }, [posMap])
 
-  function urlToChamp(url: string): ChampInfo | undefined {
+  function apiNameToChamp(apiName: string): ChampInfo | undefined {
     for (const list of champsByCost.values()) {
-      const found = list.find((c) => c.imageUrl === url)
+      const found = list.find((c) => c.apiName === apiName)
       if (found) return found
     }
     return undefined
   }
 
   function champAt(row: number, col: number): ChampInfo | undefined {
-    const url = cellMap.get(`${row}-${col}`)
-    return url ? urlToChamp(url) : undefined
+    const apiName = cellMap.get(`${row}-${col}`)
+    return apiName ? apiNameToChamp(apiName) : undefined
   }
 
   function setPosMap(updater: (prev: Map<string, CellPos>) => Map<string, CellPos>) {
@@ -116,23 +116,23 @@ function BoardEditorModal({ deck, locale, onClose, onSave }: BoardEditorProps) {
   }
 
   function handleCellClick(row: number, col: number) {
-    const existingUrl = cellMap.get(`${row}-${col}`)
-    if (existingUrl) {
-      setPosMap((prev) => { const n = new Map(prev); n.delete(existingUrl); return n })
+    const existingKey = cellMap.get(`${row}-${col}`)
+    if (existingKey) {
+      setPosMap((prev) => { const n = new Map(prev); n.delete(existingKey); return n })
       return
     }
     if (!selected) return
     setPosMap((prev) => {
       const n = new Map(prev)
-      n.delete(selected.imageUrl)
-      n.set(selected.imageUrl, { row, col })
+      n.delete(selected.apiName)
+      n.set(selected.apiName, { row, col })
       return n
     })
     setSelected(null)
   }
 
   const handleChampClick = useCallback((champ: ChampInfo) => {
-    setSelected((prev) => (prev?.imageUrl === champ.imageUrl ? null : champ))
+    setSelected((prev) => (prev?.apiName === champ.apiName ? null : champ))
   }, [])
 
   async function handleSave() {
@@ -181,8 +181,8 @@ function BoardEditorModal({ deck, locale, onClose, onSave }: BoardEditorProps) {
                   </span>
                   <div className={styles.champGrid}>
                     {list.map((champ) => {
-                      const placed = posMap.has(champ.imageUrl)
-                      const isSelected = selected?.imageUrl === champ.imageUrl
+                      const placed = posMap.has(champ.apiName)
+                      const isSelected = selected?.apiName === champ.apiName
                       return (
                         <button
                           key={champ.apiName}

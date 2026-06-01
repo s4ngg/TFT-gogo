@@ -6,7 +6,7 @@ import TierBadge from '../../components/common/TierBadge'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
 import { useCDragonLocale } from '../../hooks/useCDragonLocale'
-import { getChampionDetail, getChampionName, getChampionShortName, getItemName, getTraitName } from '../../api/cdragonLocale'
+import { getChampionApiName, getChampionDetail, getChampionName, getChampionShortName, getItemName, getTraitName } from '../../api/cdragonLocale'
 import type { TFTLocale } from '../../api/cdragonLocale'
 import { tftItemIconUrl, tftItemIconOnError } from '../../api/communityDragonAssets'
 import type { ChampionSummary, MetaDeck } from '../Dashboard/dashboardData'
@@ -118,7 +118,8 @@ function buildCustomBoardPositions(
   posMap: Map<string, { row: number; col: number }>,
 ): PlacedChamp[] {
   return visibleUnits.flatMap((champ) => {
-    const pos = posMap.get(champ.imageUrl)
+    const apiName = getChampionApiName(champ.imageUrl)
+    const pos = apiName ? posMap.get(apiName) : undefined
     return pos ? [{ champ, row: pos.row, col: pos.col }] : []
   })
 }
