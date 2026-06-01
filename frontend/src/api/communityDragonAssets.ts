@@ -58,7 +58,9 @@ const TRAIT_ICON_PATHS: Record<string, string> = {
 
 export function tftTraitIconUrl(traitId: string): string {
   const path = TRAIT_ICON_PATHS[traitId]
-  return path ? communityDragonAssetUrl(path) : ''
+  if (path) return communityDragonAssetUrl(path)
+  const traitName = traitId.replace(/^TFT\d+_/, '')
+  return communityDragonAssetUrl(`ASSETS/UX/TraitIcons/Trait_Icon_17_${traitName}.TFT_Set17.tex`)
 }
 
 export function tftChampSquareUrl(apiName: string): string {

@@ -24,6 +24,7 @@ public enum ErrorCode {
     DECK_NOT_FOUND(HttpStatus.NOT_FOUND, "덱 정보를 찾을 수 없습니다."),
 
     // ── 전적 ────────────────────────────────────────────
+    ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "소환사 계정을 찾을 수 없습니다."),
     SUMMONER_NOT_FOUND(HttpStatus.NOT_FOUND, "소환사를 찾을 수 없습니다."),
     MATCH_NOT_FOUND(HttpStatus.NOT_FOUND, "전적 정보를 찾을 수 없습니다."),
 

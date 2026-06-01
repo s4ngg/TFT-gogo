@@ -1,7 +1,7 @@
 import { ChevronDown, ChevronUp, Coins, RefreshCcw, Search, Swords } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { communityDragonProfileIconUrl, itemsFromUrls } from '../../api/communityDragonAssets'
+import { communityDragonProfileIconUrl, itemsFromUrls, tftChampSquareUrl, tftTraitIconUrl } from '../../api/communityDragonAssets'
 import { AppLayout } from '../../components/layout'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
 import ChampionCard from '../../components/common/ChampionCard'
@@ -98,17 +98,17 @@ function MatchDetailPanel({ match, myPuuid }: { match: MatchSummaryResponse; myP
                 <TraitHexBadge
                   key={tr.traitId}
                   count={tr.count}
-                  iconUrl={tr.iconUrl}
+                  iconUrl={tr.iconUrl || tftTraitIconUrl(tr.traitId)}
                   name={tr.name}
                   tone={tr.tone}
                 />
               ))}
             </div>
             <div className={styles.detailUnits}>
-              {p.units.map((unit) => (
+              {p.units.map((unit, i) => (
                 <ChampionCard
-                  key={unit.characterId}
-                  imageUrl={unit.imageUrl}
+                  key={`${unit.characterId}-${i}`}
+                  imageUrl={unit.imageUrl || tftChampSquareUrl(unit.characterId)}
                   stars={unit.stars}
                   label=""
                   items={itemsFromUrls(unit.itemImageUrls)}
@@ -332,10 +332,10 @@ function SummonerDetail() {
                           <p className={styles.timeAgo}>{timeAgo(match.gameDateTime)}</p>
                         </div>
                         <div className={styles.unitList}>
-                          {match.units.map((unit) => (
+                          {match.units.map((unit, i) => (
                             <ChampionCard
-                              key={unit.characterId}
-                              imageUrl={unit.imageUrl}
+                              key={`${unit.characterId}-${i}`}
+                              imageUrl={unit.imageUrl || tftChampSquareUrl(unit.characterId)}
                               stars={unit.stars}
                               label={unit.characterId}
                               items={itemsFromUrls(unit.itemImageUrls)}
