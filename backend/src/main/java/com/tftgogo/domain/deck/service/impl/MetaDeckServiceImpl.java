@@ -52,8 +52,8 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     private static final Logger logger = LogManager.getLogger(MetaDeckServiceImpl.class);
 
     private static final int MATCHES_PER_SUMMONER = 20;
-    // 5 → 15: 소규모 표본의 노이즈 필터링 (5게임 42%승률 → 통계 무의미)
-    private static final int MIN_SAMPLE = 15;
+    // 15 → 10: 데이터 부족 시 덱 종류가 너무 적어지는 문제 완화
+    private static final int MIN_SAMPLE = 10;
     private static final int MIN_ITEM_SAMPLE = 1;
     private static final int MIN_AUGMENT_SAMPLE = 1;
     // 덱 등장 횟수 대비 유닛 최소 출현 비율 — 이 미만이면 빌드업·필러 유닛으로 판단해 제외
@@ -66,8 +66,10 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     private static final int MIN_TRAIT_UNITS = 2;
     private static final int CORE_UNIT_LIMIT = 7;
     private static final int MIN_CORE_UNIT_COUNT = 5;
-    private static final double CORE_UNIT_SIMILARITY_THRESHOLD = 0.70;
-    private static final double BOARD_UNIT_SIMILARITY_THRESHOLD = 0.75;
+    // 0.70/0.75 → 0.55/0.65: 같은 캐리에 필러·탱커 1~2개 차이인 변형 덱을 동일 아키타입으로 병합
+    // (예: 정령족코르키+리븐 vs 정령족코르키+람머스 → 코어 5/7 공유 ≈ 0.56 → 병합 O)
+    private static final double CORE_UNIT_SIMILARITY_THRESHOLD = 0.55;
+    private static final double BOARD_UNIT_SIMILARITY_THRESHOLD = 0.65;
     private static final double S_TIER_RATIO = 0.10;
     private static final double A_TIER_RATIO = 0.20;
     private static final double B_TIER_RATIO = 0.30;
