@@ -161,10 +161,10 @@ TFT(전략적 팀 전투) 전적 검색 서비스.
   - `GET /guide/champions`
 - 탭별 API는 공통적으로 `page`, `pageSize`, `query` 파라미터를 받을 수 있어야 한다
 - 아이템 탭은 추가로 `sortKey`, `sortDir` 파라미터를 받을 수 있어야 한다
-  - `sortKey`: `winRate`, `top4Rate`, `pickRate`, `avgPlacement`
+  - `sortKey`: `winRate`, `top4`, `pickRate`, `avgPlace`
   - `sortDir`: `asc`, `desc`
 - 증강체 탭은 추가로 `sortKey`, `sortDir` 파라미터를 받을 수 있어야 한다
-  - `sortKey`: `winRate`, `pickRate`, `avgPlacement`
+  - `sortKey`: `winRate`, `pickRate`, `avgPlace`
   - `sortDir`: `asc`, `desc`
 - 챔피언 탭은 추가로 `cost` 파라미터를 받을 수 있어야 한다
   - 전체 코스트 선택 시 `cost`는 전달하지 않는다
@@ -196,6 +196,12 @@ TFT(전략적 팀 전투) 전적 검색 서비스.
 - Spring Page의 `number`는 0부터 시작하는 페이지 번호로 간주하며, 프론트에서는 1부터 시작하는 페이지 번호로 보정한다
 - 서버가 `items`, `content`, `data`, `results` 중 하나로 목록을 내려주면 프론트에서 페이지 목록으로 인식할 수 있다
 - 서버가 `totalItems`, `totalElements`, `total` 중 하나로 전체 개수를 내려주면 프론트에서 전체 아이템 수로 인식할 수 있다
+- 프론트는 API 응답의 `page`, `pageSize`, `totalItems`, `totalPages` 값을 렌더링 전에 안전한 정수 범위로 보정한다
+  - `pageSize`는 최소 1 또는 기본 페이지 크기로 보정한다
+  - `totalItems`는 최소 0으로 보정한다
+  - `totalPages`는 서버값이 유효한 양의 유한 정수이면 우선 사용하고, 아니면 보정된 `totalItems`와 `pageSize`로 `max(1, ceil(totalItems / pageSize))`를 계산한다
+  - `page`는 `totalPages` 확정 후 최소 1로 보정한다
+- API가 malformed catalog 배열을 내려주면 해당 필드는 fallback 데이터로 대체한다
 - 서버 API 연동 전이나 API 오류 발생 시에는 기존 샘플 데이터를 동일한 검색, 필터, 정렬, 페이지 규칙으로 잘라 fallback 화면을 표시한다
 - 백엔드 구현이 완료되면 `/guide/{tab}` API가 필터링, 정렬, 페이지네이션을 서버에서 처리해야 한다
 - 향후 `/guide`가 전체 목록을 계속 내려주는 구조라면 목록 렌더링에는 사용하지 않고 fallback 또는 메타 정보 용도로만 제한한다
@@ -204,10 +210,13 @@ TFT(전략적 팀 전투) 전적 검색 서비스.
 #### 프론트 구조 기준
 
 - `frontend/src/pages/Guide/Guide.tsx`는 페이지 조립 계층으로 유지한다
-  - `useGuide`에서 제공하는 현재 탭, 검색어, 즐겨찾기, 최근 본 가이드, fallback 데이터를 연결한다
-  - 탭 컨트롤, 검색 입력, 빠른 이동 영역, 현재 탭에 맞는 view 컴포넌트 렌더링만 담당한다
+  - `useGuideCatalog`에서 제공하는 공통 Guide 데이터를 연결한다
+  - `useGuidePageState`에서 제공하는 현재 탭, 검색어, 즐겨찾기, 최근 본 가이드 상태를 연결한다
+  - 헤더, 탭 컨트롤, 빠른 이동 영역, 탭 패널 조립만 담당한다
   - 탭별 목록 렌더링, 정렬, 필터, 페이지네이션, 상세 모달 로직은 직접 포함하지 않는다
 - `frontend/src/pages/Guide/components/`는 Guide 페이지 전용 UI를 담당한다
+  - `GuideControls.tsx`: 탭 컨트롤, 키보드 탭 이동, 탭별 검색 입력
+  - `GuideTabPanels.tsx`: 현재 탭에 맞는 view 컴포넌트 연결과 탭 간 이동 콜백 조립
   - `TraitGuideView.tsx`: 시너지 탭 조회, 카드 목록, 연결 챔피언 이동, 페이지네이션
   - `ItemStatsView.tsx`: 아이템 통계 탭 조회, 정렬 가능한 표, 추천 챔피언/조합 표시, 페이지네이션
   - `AugmentGuideView.tsx`: 증강체 탭 조회, 정렬 가능한 표, 보상표, 증강 선택 플랜 표시, 페이지네이션
@@ -216,11 +225,23 @@ TFT(전략적 팀 전투) 전적 검색 서비스.
   - `GuideQuickAccess.tsx`: 즐겨찾기와 최근 본 가이드 빠른 이동 영역
   - `GuideShared.tsx`: Guide 내부에서만 공유되는 빈 상태, 상태 배너, 정렬 버튼, 페이지네이션, 공통 아이콘 표시 컴포넌트
 - 2개 이상 페이지에서 재사용되는 UI는 `frontend/src/components/common/`으로 이동하고, Guide 페이지에서만 쓰는 UI는 `pages/Guide/components/`에 둔다
-- `frontend/src/hooks/useGuide.ts`는 Guide 화면의 서버 상태 조회, 탭 이동, 검색어, 즐겨찾기, 최근 본 가이드 상태를 관리한다
-  - 탭별 목록 조회는 TanStack Query 기반 hook을 통해 수행하고, 컴포넌트에서 직접 `fetch` 또는 `axios`를 호출하지 않는다
-- `frontend/src/api/guide.ts`는 Guide API 요청 함수, 탭별 파라미터, 응답 타입, 응답 정규화 규칙을 담당한다
+- `frontend/src/pages/Guide/hooks/useGuidePageState.ts`는 Guide 페이지 전용 클라이언트 상태를 담당한다
+  - 현재 탭, 검색어, 즐겨찾기 챔피언, 최근 본 가이드 상태를 관리한다
+  - 탭 이동과 가이드 간 점프 시 검색 조건 갱신 규칙을 한 곳에서 유지한다
+- `frontend/src/hooks/useGuide.ts`는 Guide 서버 상태 조회만 담당한다
+  - `useGuideCatalog`: `/guide` 카탈로그/메타 조회와 fallback 연결
+  - `useGuideTabItems`: `/guide/{tab}` 탭별 목록 조회와 fallback 페이지 연결
+  - 컴포넌트는 직접 `fetch` 또는 `axios`를 호출하지 않는다
+- `frontend/src/api/guide.ts`는 Guide API의 barrel export 진입점으로 유지한다
+- Guide API 세부 책임은 다음 파일로 분리한다
+  - `guideTypes.ts`: 탭, DTO, 응답, 쿼리 파라미터, 페이지 크기 상수
+  - `guideClient.ts`: `/guide`, `/guide/{tab}` HTTP 요청과 fallback 전환
+  - `guideNormalizers.ts`: API 응답 정규화, snake_case/camelCase 대응, 타입 가드
+  - `guideFallback.ts`: 샘플 데이터 검색, 정렬, 필터, 페이지네이션
 - `frontend/src/mocks/guideResponseMock.ts`는 API 미연동 또는 오류 시 사용할 샘플/fallback 데이터만 담당한다
-- 새 Guide 탭을 추가할 때는 API 타입과 파라미터를 먼저 `api/guide.ts`에 정의하고, 조회 hook과 페이지 전용 view 컴포넌트를 분리한 뒤 `Guide.tsx`에는 탭 연결만 추가한다
+- 새 Guide 탭을 추가할 때는 API 타입과 파라미터를 먼저 `api/guideTypes.ts`에 정의한다
+  - 필요 시 `guideClient.ts`, `guideNormalizers.ts`, `guideFallback.ts`에 탭별 처리 규칙을 추가한다
+  - 조회 hook과 페이지 전용 view 컴포넌트를 분리한 뒤 `GuideTabPanels.tsx`에 탭 연결만 추가한다
 
 #### 상태 및 접근성 요구사항
 
@@ -230,6 +251,7 @@ TFT(전략적 팀 전투) 전적 검색 서비스.
 - 최근 확인한 가이드는 사용자가 실제로 클릭하거나 상세를 확인한 항목 기준으로 갱신되어야 한다
 - 시너지 / 아이템 추천 챔피언 / 챔피언 카드 간 이동은 현재 탭과 검색 조건을 예측 가능하게 갱신해야 한다
 - 탭은 `aria-selected`, 페이지네이션은 `aria-current`, 즐겨찾기 버튼은 `aria-pressed` 상태를 제공해야 한다
+- 검색 입력은 현재 탭 기준의 명시적 접근성 레이블을 제공해야 한다
 - 챔피언 상세 모달은 열릴 때 초점이 모달 내부로 이동하고, 닫힐 때 이전 트리거로 초점이 돌아와야 한다
 - 이미지 로딩 실패 시 항목 유형에 맞는 fallback 이미지를 표시해야 한다
 
