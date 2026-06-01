@@ -46,9 +46,14 @@ export interface AiRecommendResponse {
 }
 
 export const getAiRecommendation = async (params: AiRecommendRequest) => {
-  const { data } = await axiosInstance.get<AiRecommendResponse>('/ai/recommendations', {
-    params,
-  })
+  try {
+    const { data } = await axiosInstance.get<AiRecommendResponse>('/ai/recommendations', {
+      params,
+    })
 
-  return data
+    return data
+  } catch (error: unknown) {
+    console.error('AI recommendation request failed', error)
+    throw error
+  }
 }
