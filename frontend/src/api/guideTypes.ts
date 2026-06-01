@@ -1,5 +1,4 @@
-import type { TierBadgeValue } from '../components/common/TierBadge'
-import type { TraitHexBadgeTone } from '../components/common/TraitHexBadge'
+import type { TierBadgeValue, TraitHexBadgeTone } from '../types/badges'
 
 export type GuideTab = 'traits' | 'items' | 'augments' | 'champions'
 export type ChampionCostFilter = 'all' | 1 | 2 | 3 | 4 | 5

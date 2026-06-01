@@ -1,7 +1,6 @@
 import { communityDragonAssetUrl } from '../../api/communityDragonAssets'
 import type { ChampionCardProps } from '../../components/common/ChampionCard'
-import type { TierBadgeValue } from '../../components/common/TierBadge'
-import type { TraitHexBadgeTone } from '../../components/common/TraitHexBadge'
+import type { TierBadgeValue, TraitHexBadgeTone } from '../../types/badges'
 
 export type RankFilter = 'EMERALD_PLUS' | 'DIAMOND_PLUS' | 'MASTER_PLUS'
 

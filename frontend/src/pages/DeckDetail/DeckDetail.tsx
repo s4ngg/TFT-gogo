@@ -10,7 +10,6 @@ import { getChampionDetail, getChampionName, getChampionShortName, getItemName, 
 import type { TFTLocale } from '../../api/cdragonLocale'
 import { tftItemIconUrl, tftItemIconOnError } from '../../api/communityDragonAssets'
 import type { ChampionSummary, MetaDeck } from '../Dashboard/dashboardData'
-import { costLimitForLevel } from '../../utils/deckUtils'
 import styles from './DeckDetail.module.css'
 
 const BOARD_ROWS = 4
@@ -22,11 +21,6 @@ function isCarry(champ: ChampionSummary): boolean {
 
 function getCost(champ: ChampionSummary, locale: TFTLocale | undefined): number {
   return getChampionDetail(champ.imageUrl, locale)?.cost ?? champ.cost ?? 0
-}
-
-function canUseAtLevel(champ: ChampionSummary, level: number, locale: TFTLocale | undefined): boolean {
-  const cost = getCost(champ, locale)
-  return cost > 0 && cost <= costLimitForLevel(level)
 }
 
 function getRange(champ: ChampionSummary, locale: TFTLocale | undefined): number {
@@ -255,7 +249,7 @@ function DeckDetail() {
 
   // ── 레벨 상태 (HexBoard에서 끌어올림) ──────────────────────────
   // deck이 없을 때는 빈 배열, 있을 때는 champions 사용
-  const all = deck?.champions ?? []
+  const all = useMemo(() => deck?.champions ?? [], [deck?.champions])
   const maxLevel = Math.min(9, all.length || 9)
   const availableLevels = useMemo(
     () => Array.from({ length: Math.max(0, maxLevel - 4) }, (_, i) => i + 5),

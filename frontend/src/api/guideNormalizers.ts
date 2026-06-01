@@ -1,6 +1,5 @@
 import { isRecord } from './apiResponse'
-import type { TierBadgeValue } from '../components/common/TierBadge'
-import type { TraitHexBadgeTone } from '../components/common/TraitHexBadge'
+import type { TierBadgeValue, TraitHexBadgeTone } from '../types/badges'
 import { getTotalPages } from './guideFallback'
 import {
   DEFAULT_GUIDE_PAGE_SIZE,

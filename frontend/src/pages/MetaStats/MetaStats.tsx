@@ -6,7 +6,7 @@ import TierBadge from '../../components/common/TierBadge'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
 import type { MetaDeck, RankFilter } from '../Dashboard/dashboardData'
-import type { TierBadgeValue } from '../../components/common/TierBadge'
+import type { TierBadgeValue } from '../../types/badges'
 import styles from './MetaStats.module.css'
 
 /* ── 티어 순서 및 색상 ── */

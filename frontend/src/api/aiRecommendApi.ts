@@ -1,5 +1,5 @@
 import axiosInstance from './axiosInstance'
-import type { TraitHexBadgeTone } from '../components/common/TraitHexBadge'
+import type { TraitHexBadgeTone } from '../types/badges'
 
 export interface AiRecommendRequest {
   gameName: string
@@ -46,9 +46,14 @@ export interface AiRecommendResponse {
 }
 
 export const getAiRecommendation = async (params: AiRecommendRequest) => {
-  const { data } = await axiosInstance.get<AiRecommendResponse>('/ai/recommendations', {
-    params,
-  })
+  try {
+    const { data } = await axiosInstance.get<AiRecommendResponse>('/ai/recommendations', {
+      params,
+    })
 
-  return data
+    return data
+  } catch (error: unknown) {
+    console.error('AI recommendation request failed', error)
+    throw error
+  }
 }
