@@ -1,64 +1,28 @@
-import {
-  BookOpen,
-  Package,
-  Search,
-  Shield,
-  Sparkles,
-  Swords,
-} from 'lucide-react'
-import {
-  GUIDE_TABS,
-  type GuideTab,
-} from '../../api/guide'
+import { BookOpen } from 'lucide-react'
 import { AppLayout } from '../../components/layout'
-import { useGuide } from '../../hooks/useGuide'
+import { useGuideCatalog } from '../../hooks/useGuide'
 import { guideFallbackData } from '../../mocks/guideResponseMock'
-import AugmentGuideView from './components/AugmentGuideView'
-import ChampionGuideView from './components/ChampionGuideView'
+import GuideControls from './components/GuideControls'
 import GuideQuickAccess from './components/GuideQuickAccess'
 import { StatBadge } from './components/GuideShared'
-import ItemStatsView from './components/ItemStatsView'
-import TraitGuideView from './components/TraitGuideView'
+import GuideTabPanels from './components/GuideTabPanels'
+import { useGuidePageState } from './hooks/useGuidePageState'
 import styles from './Guide.module.css'
 
-const GUIDE_TAB_ICONS: Record<GuideTab, typeof BookOpen> = {
-  augments: Sparkles,
-  champions: Swords,
-  items: Package,
-  traits: Shield,
-}
-
-function getNextGuideTabIndex(key: string, currentIndex: number): number | undefined {
-  const lastIndex = GUIDE_TABS.length - 1
-
-  if (key === 'ArrowLeft' || key === 'ArrowUp') {
-    return currentIndex === 0 ? lastIndex : currentIndex - 1
-  }
-
-  if (key === 'ArrowRight' || key === 'ArrowDown') {
-    return currentIndex === lastIndex ? 0 : currentIndex + 1
-  }
-
-  if (key === 'Home') return 0
-  if (key === 'End') return lastIndex
-
-  return undefined
-}
-
 function Guide() {
+  const { guideData } = useGuideCatalog({ fallbackData: guideFallbackData })
   const {
     activeTab,
     activeTabInfo,
     addRecentGuide,
     favoriteChampions,
-    guideData,
     handleFavoriteToggle,
     jumpToGuide,
     recentGuides,
     search,
     selectTab,
     setSearch,
-  } = useGuide({ fallbackData: guideFallbackData })
+  } = useGuidePageState()
 
   return (
     <AppLayout>
@@ -77,50 +41,13 @@ function Guide() {
           </div>
         </header>
 
-        <section className={styles.controlPanel}>
-          <div className={styles.tabBar} role="tablist" aria-label="게임 가이드 탭">
-            {GUIDE_TABS.map(({ key, label, meta }, guideTabIndex) => {
-              const Icon = GUIDE_TAB_ICONS[key]
-
-              return (
-                <button
-                  aria-controls={`guide-panel-${key}`}
-                  aria-selected={activeTab === key}
-                  className={activeTab === key ? styles.activeTab : ''}
-                  id={`guide-tab-${key}`}
-                  key={key}
-                  onClick={() => selectTab(key)}
-                  onKeyDown={(event) => {
-                    const nextTabIndex = getNextGuideTabIndex(event.key, guideTabIndex)
-                    if (nextTabIndex === undefined) return
-
-                    event.preventDefault()
-                    const nextTab = GUIDE_TABS[nextTabIndex]
-                    selectTab(nextTab.key)
-                    window.requestAnimationFrame(() => {
-                      document.getElementById(`guide-tab-${nextTab.key}`)?.focus()
-                    })
-                  }}
-                  role="tab"
-                  tabIndex={activeTab === key ? 0 : -1}
-                  type="button"
-                >
-                  <Icon size={18} />
-                  <span>{label}</span>
-                  <small>{meta}</small>
-                </button>
-              )
-            })}
-          </div>
-          <label className={styles.searchBox}>
-            <Search size={15} />
-            <input
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder={`${activeTabInfo.label} 검색`}
-              value={search}
-            />
-          </label>
-        </section>
+        <GuideControls
+          activeTab={activeTab}
+          activeTabLabel={activeTabInfo.label}
+          onSearchChange={setSearch}
+          onTabSelect={selectTab}
+          search={search}
+        />
 
         <GuideQuickAccess
           favoriteChampions={favoriteChampions}
@@ -128,46 +55,15 @@ function Guide() {
           recentGuides={recentGuides}
         />
 
-        {activeTab === 'traits' && (
-          <div id="guide-panel-traits" role="tabpanel" aria-labelledby="guide-tab-traits">
-            <TraitGuideView
-              fallbackData={guideData}
-              onChampionSelect={(championName) => jumpToGuide('champions', championName, championName)}
-              query={search}
-            />
-          </div>
-        )}
-        {activeTab === 'items' && (
-          <div id="guide-panel-items" role="tabpanel" aria-labelledby="guide-tab-items">
-            <ItemStatsView
-              fallbackData={guideData}
-              onChampionSelect={(championName) => jumpToGuide('champions', championName, championName)}
-              query={search}
-            />
-          </div>
-        )}
-        {activeTab === 'augments' && (
-          <div id="guide-panel-augments" role="tabpanel" aria-labelledby="guide-tab-augments">
-            <AugmentGuideView
-              augmentPlans={guideData.augmentPlans}
-              fallbackData={guideData}
-              query={search}
-              rewardRows={guideData.rewards}
-            />
-          </div>
-        )}
-        {activeTab === 'champions' && (
-          <div id="guide-panel-champions" role="tabpanel" aria-labelledby="guide-tab-champions">
-            <ChampionGuideView
-              fallbackData={guideData}
-              favoriteChampions={favoriteChampions}
-              onChampionOpen={(championName) => addRecentGuide({ label: championName, query: championName, tab: 'champions' })}
-              onFavoriteToggle={handleFavoriteToggle}
-              onItemSelect={(itemName) => jumpToGuide('items', itemName, itemName)}
-              query={search}
-            />
-          </div>
-        )}
+        <GuideTabPanels
+          activeTab={activeTab}
+          favoriteChampions={favoriteChampions}
+          guideData={guideData}
+          onFavoriteToggle={handleFavoriteToggle}
+          onGuideJump={jumpToGuide}
+          onRecentGuideAdd={addRecentGuide}
+          query={search}
+        />
       </div>
     </AppLayout>
   )
