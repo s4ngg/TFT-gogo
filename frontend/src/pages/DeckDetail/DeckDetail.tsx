@@ -6,7 +6,7 @@ import TierBadge from '../../components/common/TierBadge'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
 import { useCDragonLocale } from '../../hooks/useCDragonLocale'
-import { getChampionDetail, getChampionName, getChampionShortName, getItemName, getTraitName } from '../../api/cdragonLocale'
+import { getChampionDetail, getChampionName, getChampionShortName, getItemName, getTraitBreakpoints, getTraitName } from '../../api/cdragonLocale'
 import type { TFTLocale } from '../../api/cdragonLocale'
 import { tftItemIconUrl, tftItemIconOnError } from '../../api/communityDragonAssets'
 import type { ChampionSummary, MetaDeck } from '../Dashboard/dashboardData'
@@ -428,15 +428,6 @@ function DeckDetail() {
             <small>선택률</small>
             <strong className={styles.gold}>{deck.pickRate}</strong>
           </div>
-          {deck.sampleSize != null && (
-            <>
-              <div className={styles.statDivider} />
-              <div className={styles.statItem}>
-                <small>표본 수</small>
-                <strong className={styles.muted}>n={deck.sampleSize}</strong>
-              </div>
-            </>
-          )}
         </div>
 
         {/* 배치판: level·visibleUnits를 부모에서 공급 */}
@@ -457,18 +448,34 @@ function DeckDetail() {
             <span className={styles.panelSub}>Lv.{level} 기준</span>
           </div>
           <div className={styles.traitList}>
-            {displayTraits.map((trait) => (
-              <div key={trait.name} className={styles.traitItem}>
-                <TraitHexBadge
-                  count={trait.count}
-                  iconUrl={trait.iconUrl}
-                  name={getTraitName(trait.name, locale)}
-                  tone={trait.tone}
-                />
-                <span className={styles.traitName}>{getTraitName(trait.name, locale)}</span>
-                <span className={styles.traitCount}>{trait.count}조각</span>
-              </div>
-            ))}
+            {displayTraits.map((trait) => {
+              const breakpoints = getTraitBreakpoints(trait.name, locale)
+              return (
+                <div key={trait.name} className={styles.traitItem}>
+                  <TraitHexBadge
+                    count={trait.count}
+                    iconUrl={trait.iconUrl}
+                    name={getTraitName(trait.name, locale)}
+                    tone={trait.tone}
+                  />
+                  <span className={styles.traitName}>{getTraitName(trait.name, locale)}</span>
+                  {breakpoints.length > 0 ? (
+                    <span className={styles.traitBreakpoints}>
+                      {breakpoints.map((bp, i) => (
+                        <span key={bp}>
+                          {i > 0 && <span className={styles.traitArrow}> {'>'} </span>}
+                          <span className={trait.count >= bp ? styles.traitBpActive : styles.traitBpInactive}>
+                            {bp}
+                          </span>
+                        </span>
+                      ))}
+                    </span>
+                  ) : (
+                    <span className={styles.traitCount}>{trait.count}조각</span>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </section>
 

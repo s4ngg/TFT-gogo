@@ -7,6 +7,7 @@ export interface TFTLocale {
   champByApiName: Map<string, string>
   champDetailByApiName: Map<string, ChampionDetail>
   traitBySuffix: Map<string, string>
+  traitBreakpointsBySuffix: Map<string, number[]>
   itemByApiName: Map<string, string>
   augmentBySuffix: Map<string, string>
 }
@@ -35,6 +36,7 @@ interface CDragonEntry {
     range?: number
   }
   traits?: string[]
+  effects?: { minUnits?: number }[]
 }
 
 function readCDragonEntries(value: unknown): CDragonEntry[] {
@@ -65,6 +67,11 @@ function readCDragonEntries(value: unknown): CDragonEntry[] {
         traits: Array.isArray(entry.traits)
           ? (entry.traits as unknown[]).filter((t): t is string => typeof t === 'string')
           : undefined,
+        effects: Array.isArray(entry.effects)
+          ? (entry.effects as unknown[]).filter(isRecord).map((e) => ({
+              minUnits: typeof e.minUnits === 'number' ? e.minUnits : undefined,
+            }))
+          : undefined,
       }
     })
 }
@@ -76,6 +83,7 @@ export async function fetchTFTLocale(): Promise<TFTLocale> {
     const champByApiName = new Map<string, string>()
     const champDetailByApiName = new Map<string, ChampionDetail>()
     const traitBySuffix = new Map<string, string>()
+    const traitBreakpointsBySuffix = new Map<string, number[]>()
     const itemByApiName = new Map<string, string>()
     const augmentBySuffix = new Map<string, string>()
 
@@ -109,7 +117,13 @@ export async function fetchTFTLocale(): Promise<TFTLocale> {
     readCDragonEntries(currentSet?.traits).forEach((t) => {
       if (t.apiName && t.name) {
         const suffix = t.apiName.split('_').pop()?.toLowerCase()
-        if (suffix) traitBySuffix.set(suffix, t.name)
+        if (suffix) {
+          traitBySuffix.set(suffix, t.name)
+          const breakpoints = (t.effects ?? [])
+            .map((e) => e.minUnits)
+            .filter((n): n is number => typeof n === 'number' && n > 0)
+          if (breakpoints.length > 0) traitBreakpointsBySuffix.set(suffix, breakpoints)
+        }
       }
     })
 
@@ -126,7 +140,7 @@ export async function fetchTFTLocale(): Promise<TFTLocale> {
       }
     })
 
-    return { champByApiName, champDetailByApiName, traitBySuffix, itemByApiName, augmentBySuffix }
+    return { champByApiName, champDetailByApiName, traitBySuffix, traitBreakpointsBySuffix, itemByApiName, augmentBySuffix }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'CDragon 데이터 로드 실패'
     throw new Error(`CDragon locale 조회 실패: ${message}`)
@@ -179,6 +193,12 @@ export function getChampionDetail(
   if (!locale) return undefined
   const apiName = getChampionApiName(imageUrl)
   return apiName ? locale.champDetailByApiName.get(apiName) : undefined
+}
+
+/** 트레이트 suffix → 브레이크포인트 배열 (예: [2, 4, 6, 8]) */
+export function getTraitBreakpoints(name: string, locale: TFTLocale | undefined): number[] {
+  if (!locale) return []
+  return locale.traitBreakpointsBySuffix.get(name.toLowerCase()) ?? []
 }
 
 /** 트레이트 이름(suffix) → 한글 */
