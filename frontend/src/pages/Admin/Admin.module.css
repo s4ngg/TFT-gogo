@@ -388,6 +388,45 @@
   object-fit: cover;
 }
 
+/* 운영방법 편집 */
+.guideEditorBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px;
+}
+
+.guidePhase {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.guideLabel {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.guideTextarea {
+  padding: 10px 12px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  resize: vertical;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.guideTextarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
 /* 모달 푸터 */
 .modalFooter {
   display: flex;

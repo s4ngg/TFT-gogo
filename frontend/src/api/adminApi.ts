@@ -36,6 +36,7 @@ export interface AdminDeck {
   sortPriority: number | null
   curatorNote: string | null
   boardPositions: string | null
+  playGuide: string | null
   grade: string
   winRate: string
   top4: string
@@ -49,12 +50,19 @@ export interface BoardPosition {
   col: number
 }
 
+export interface PlayGuide {
+  early: string
+  mid: string
+  late: string
+}
+
 export interface DeckCurationRequest {
   customName: string | null
   hidden: boolean
   sortPriority: number | null
   curatorNote: string | null
   boardPositions: string | null
+  playGuide: string | null
 }
 
 export async function fetchAdminDecks(rankFilter: RankFilter = 'MASTER_PLUS'): Promise<AdminDeck[]> {

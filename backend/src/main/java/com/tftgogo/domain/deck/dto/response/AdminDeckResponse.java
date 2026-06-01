@@ -31,6 +31,8 @@ public class AdminDeckResponse {
     private String curatorNote;
     // 관리자 배치판 포지션 JSON (null = 자동 배치)
     private String boardPositions;
+    // 운영방법 JSON (null = 미작성)
+    private String playGuide;
 
     private String grade;
     private String winRate;
@@ -55,6 +57,7 @@ public class AdminDeckResponse {
         Integer sortPriority = curation != null ? curation.getSortPriority() : null;
         String curatorNote = curation != null ? curation.getCuratorNote() : null;
         String boardPositions = curation != null ? curation.getBoardPositions() : null;
+        String playGuide = curation != null ? curation.getPlayGuide() : null;
 
         List<UnitInfo> units = deck.getUnits().stream()
                 .filter(u -> TftShopUnitFilter.isShopUnit(u.getCharacterId()))
@@ -77,6 +80,7 @@ public class AdminDeckResponse {
                 .sortPriority(sortPriority)
                 .curatorNote(curatorNote)
                 .boardPositions(boardPositions)
+                .playGuide(playGuide)
                 .grade(deck.getTier())
                 .winRate(String.format("%.1f%%", deck.getWinRate()))
                 .top4(String.format("%.1f%%", deck.getTop4Rate()))
