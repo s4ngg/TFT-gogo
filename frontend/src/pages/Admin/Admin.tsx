@@ -15,7 +15,7 @@ import {
 import { useCDragonLocale } from '../../hooks/useCDragonLocale'
 import { getTraitName, getChampionName } from '../../api/cdragonLocale'
 import type { TFTLocale } from '../../api/cdragonLocale'
-import { tftChampSquareUrl } from '../../api/communityDragonAssets'
+import { tftChampSquareUrl, tftItemIconUrl } from '../../api/communityDragonAssets'
 import type { RankFilter } from '../Dashboard/dashboardData'
 import styles from './Admin.module.css'
 
@@ -24,8 +24,20 @@ const BOARD_COLS = 7
 const BOARD_LEVELS = [5, 6, 7, 8, 9, 10]
 const COST_COLORS: Record<number, string> = { 1: '#8e9497', 2: '#4ade80', 3: '#60a5fa', 4: '#c084fc', 5: '#f9c860' }
 
-interface CellPos { row: number; col: number }
+interface CellPos { row: number; col: number; items?: string[] }
 interface ChampInfo { apiName: string; name: string; imageUrl: string; cost: number }
+
+function isCompleteItem(key: string): boolean {
+  const k = key.toLowerCase()
+  if (!k.startsWith('tft_item_')) return false
+  return !k.includes('emptybag') && !k.includes('radiant') && !k.includes('artifact')
+    && !k.includes('support') && !k.includes('emblem') && !k.includes('trait')
+    && !k.includes('consumable') && !k.includes('temporary') && !k.includes('ornn')
+    && !k.endsWith('bfsword') && !k.endsWith('recurvebow') && !k.endsWith('needlesslylargerod')
+    && !k.endsWith('tearofthegoddess') && !k.endsWith('chainvest') && !k.endsWith('negatroncloak')
+    && !k.endsWith('giantsbelt') && !k.endsWith('sparringgloves') && !k.endsWith('spatula')
+    && !k.endsWith('fryingpan') && !k.endsWith('shimmerscale')
+}
 
 // level → (imageUrl → CellPos)
 type LevelBoards = Map<number, Map<string, CellPos>>
@@ -63,8 +75,26 @@ interface BoardEditorProps {
 function BoardEditorModal({ deck, locale, onClose, onSave }: BoardEditorProps) {
   const [activeLevel, setActiveLevel] = useState(5)
   const [selected, setSelected] = useState<ChampInfo | null>(null)
+  const [editingItemsFor, setEditingItemsFor] = useState<string | null>(null) // apiName
+  const [itemSearch, setItemSearch] = useState('')
   const [saving, setSaving] = useState(false)
   const [levelBoards, setLevelBoards] = useState<LevelBoards>(() => parseLevelBoards(deck.boardPositions))
+
+  // CDragon 아이템 목록
+  const allItems = useMemo(() => {
+    if (!locale) return []
+    return Array.from(locale.itemByApiName.entries())
+      .filter(([key]) => isCompleteItem(key))
+      .map(([key, name]) => ({ id: key, name }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [locale])
+
+  const filteredItems = useMemo(() =>
+    itemSearch.trim()
+      ? allItems.filter((it) => it.name.toLowerCase().includes(itemSearch.toLowerCase()))
+      : allItems,
+    [allItems, itemSearch],
+  )
 
   // CDragon 전체 챔피언 → 코스트별 그룹
   const champsByCost = useMemo<Map<number, ChampInfo[]>>(() => {
@@ -118,9 +148,17 @@ function BoardEditorModal({ deck, locale, onClose, onSave }: BoardEditorProps) {
   function handleCellClick(row: number, col: number) {
     const existingKey = cellMap.get(`${row}-${col}`)
     if (existingKey) {
-      setPosMap((prev) => { const n = new Map(prev); n.delete(existingKey); return n })
+      if (selected) {
+        // 챔피언 선택 중 → 기존 제거
+        setPosMap((prev) => { const n = new Map(prev); n.delete(existingKey); return n })
+      } else {
+        // 챔피언 미선택 → 아이템 편집 모드 토글
+        setEditingItemsFor((prev) => prev === existingKey ? null : existingKey)
+        setItemSearch('')
+      }
       return
     }
+    setEditingItemsFor(null)
     if (!selected) return
     setPosMap((prev) => {
       const n = new Map(prev)
@@ -129,6 +167,21 @@ function BoardEditorModal({ deck, locale, onClose, onSave }: BoardEditorProps) {
       return n
     })
     setSelected(null)
+  }
+
+  function toggleItem(apiName: string, itemId: string) {
+    setPosMap((prev) => {
+      const n = new Map(prev)
+      const pos = n.get(apiName)
+      if (!pos) return n
+      const items = pos.items ?? []
+      const has = items.includes(itemId)
+      n.set(apiName, {
+        ...pos,
+        items: has ? items.filter((i) => i !== itemId) : items.length >= 3 ? items : [...items, itemId],
+      })
+      return n
+    })
   }
 
   const handleChampClick = useCallback((champ: ChampInfo) => {
@@ -206,7 +259,8 @@ function BoardEditorModal({ deck, locale, onClose, onSave }: BoardEditorProps) {
             })}
           </div>
 
-          {/* 헥스 그리드 */}
+          {/* 헥스 그리드 + 아이템 피커 */}
+          <div className={styles.editorBoardSection}>
           <div className={styles.editorBoard}>
             {Array.from({ length: BOARD_ROWS }, (_, vi) => {
               const row = BOARD_ROWS - 1 - vi
@@ -215,27 +269,85 @@ function BoardEditorModal({ deck, locale, onClose, onSave }: BoardEditorProps) {
                 <div key={row} className={`${styles.editorRow} ${isOffset ? styles.editorRowOffset : ''}`}>
                   {Array.from({ length: BOARD_COLS }, (_, col) => {
                     const champ = champAt(row, col)
+                    const isEditingThis = champ && editingItemsFor === champ.apiName
+                    const champItems = champ ? (posMap.get(champ.apiName)?.items ?? []) : []
                     return (
-                      <button
-                        key={col}
-                        className={`${styles.editorCell} ${champ ? styles.editorCellFilled : styles.editorCellEmpty}`}
-                        onClick={() => handleCellClick(row, col)}
-                        title={champ ? `${champ.name} 제거` : selected ? `${selected.name} 배치` : ''}
-                      >
-                        {champ && (
-                          <img
-                            src={champ.imageUrl}
-                            alt={champ.name}
-                            className={styles.editorCellImg}
-                            onError={(e) => { e.currentTarget.style.opacity = '0.2' }}
-                          />
+                      <div key={col} className={styles.editorCellWrap}>
+                        <button
+                          className={`${styles.editorCell} ${champ ? styles.editorCellFilled : styles.editorCellEmpty} ${isEditingThis ? styles.editorCellEditing : ''}`}
+                          onClick={() => handleCellClick(row, col)}
+                          title={champ ? (selected ? `${champ.name} 제거` : `${champ.name} 아이템 편집`) : selected ? `${selected.name} 배치` : ''}
+                        >
+                          {champ && (
+                            <img
+                              src={champ.imageUrl}
+                              alt={champ.name}
+                              className={styles.editorCellImg}
+                              onError={(e) => { e.currentTarget.style.opacity = '0.2' }}
+                            />
+                          )}
+                        </button>
+                        {champ && champItems.length > 0 && (
+                          <div className={styles.editorCellItems}>
+                            {champItems.slice(0, 3).map((itemId) => (
+                              <img key={itemId} src={tftItemIconUrl(itemId)} alt={itemId} className={styles.editorCellItemIcon} onError={(e) => { e.currentTarget.style.display = 'none' }} />
+                            ))}
+                          </div>
                         )}
-                      </button>
+                      </div>
                     )
                   })}
                 </div>
               )
             })}
+          </div>
+
+          {/* 아이템 피커 */}
+          {editingItemsFor && (() => {
+            const editingChamp = apiNameToChamp(editingItemsFor)
+            const currentItems = posMap.get(editingItemsFor)?.items ?? []
+            return (
+              <div className={styles.itemPicker}>
+                <div className={styles.itemPickerHeader}>
+                  <span>{editingChamp?.name} 아이템 ({currentItems.length}/3)</span>
+                  <button className={styles.modalClose} onClick={() => setEditingItemsFor(null)}>✕</button>
+                </div>
+                {currentItems.length > 0 && (
+                  <div className={styles.itemPickerSelected}>
+                    {currentItems.map((id) => (
+                      <button key={id} className={styles.itemPickerChip} onClick={() => toggleItem(editingItemsFor, id)} title="클릭해서 제거">
+                        <img src={tftItemIconUrl(id)} alt={id} className={styles.itemPickerIcon} onError={(e) => { e.currentTarget.style.opacity='0.3' }} />
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <input
+                  className={styles.itemPickerSearch}
+                  placeholder="아이템 검색..."
+                  value={itemSearch}
+                  onChange={(e) => setItemSearch(e.target.value)}
+                />
+                <div className={styles.itemPickerGrid}>
+                  {filteredItems.slice(0, 40).map((item) => {
+                    const selected = currentItems.includes(item.id)
+                    const disabled = !selected && currentItems.length >= 3
+                    return (
+                      <button
+                        key={item.id}
+                        className={`${styles.itemPickerChip} ${selected ? styles.itemPickerChipSelected : ''}`}
+                        onClick={() => !disabled && toggleItem(editingItemsFor, item.id)}
+                        disabled={disabled}
+                        title={item.name}
+                      >
+                        <img src={tftItemIconUrl(item.id)} alt={item.name} className={styles.itemPickerIcon} onError={(e) => { e.currentTarget.style.opacity='0.3' }} />
+                        <span className={styles.itemPickerName}>{item.name}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })()}
           </div>
         </div>
 
