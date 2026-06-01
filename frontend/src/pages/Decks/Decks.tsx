@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ChevronsUpDown, Search } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -12,6 +13,7 @@ import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
 import { useCDragonLocale } from '../../hooks/useCDragonLocale'
 import type { MetaDeck, RankFilter } from '../Dashboard/dashboardData'
 import type { TierBadgeValue } from '../../components/common/TierBadge'
+import { costLimitForLevel } from '../../utils/deckUtils'
 import styles from './Decks.module.css'
 
 const INITIAL_ITEM_COUNT = 4
@@ -67,13 +69,6 @@ function inferDeckLevel(deck: MetaDeck): number {
   if (maxCarryCost >= 4) return 8
   if (maxCarryCost === 3) return 7
   return 8 // 1~2코스트 리롤도 최종 레벨 8
-}
-
-/** 해당 레벨에서 구매 가능한 최대 코스트 */
-function costLimitForLevel(level: number): number {
-  if (level <= 6) return 3
-  if (level <= 8) return 4
-  return 5
 }
 
 function shopChampions(deck: MetaDeck) {
@@ -495,8 +490,8 @@ function MetaStatsView({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale
             if (tierDecks.length === 0) return null
             const color = TIER_COLOR[tier]
             return (
-              <>
-                <tr key={`header-${tier}`} className={styles.tierHeaderRow}>
+              <Fragment key={tier}>
+                <tr className={styles.tierHeaderRow}>
                   <td colSpan={7}>
                     <span className={styles.tierHeaderInner} style={{ borderLeftColor: color }}>
                       <TierBadge value={tier} />
@@ -514,7 +509,7 @@ function MetaStatsView({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale
                   </td>
                 </tr>
                 {tierDecks.map((d) => <DeckRow key={d.rank} deck={d} showTier showRank={false} locale={locale} />)}
-              </>
+              </Fragment>
             )
           })}
         </tbody>

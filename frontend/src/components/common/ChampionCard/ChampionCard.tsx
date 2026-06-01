@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import styles from './ChampionCard.module.css'
 
 const costClasses: Record<number, string> = {
@@ -26,6 +26,11 @@ function ChampionCard({ label, imageUrl, items = [], stars = 2, hasItem = false,
   const costClass = cost != null ? (costClasses[cost] ?? styles.cost1) : undefined
   const equippedItems = items.slice(0, 3)
   const [imageFailed, setImageFailed] = useState(false)
+
+  // imageUrl이 바뀌면 실패 상태 초기화 (새 이미지 재시도)
+  useEffect(() => {
+    setImageFailed(false)
+  }, [imageUrl])
 
   return (
     <span className={`${styles.card} ${costClass ?? ''}`}>

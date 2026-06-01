@@ -10,6 +10,7 @@ import { getAugmentName, getChampionDetail, getChampionName, getChampionShortNam
 import type { TFTLocale } from '../../api/cdragonLocale'
 import { tftItemIconUrl } from '../../api/communityDragonAssets'
 import type { ChampionSummary, MetaDeck } from '../Dashboard/dashboardData'
+import { costLimitForLevel } from '../../utils/deckUtils'
 import styles from './DeckDetail.module.css'
 
 const BOARD_ROWS = 4
@@ -21,12 +22,6 @@ function isCarry(champ: ChampionSummary): boolean {
 
 function getCost(champ: ChampionSummary, locale: TFTLocale | undefined): number {
   return getChampionDetail(champ.imageUrl, locale)?.cost ?? champ.cost ?? 0
-}
-
-function costLimitForLevel(level: number): number {
-  if (level <= 6) return 3
-  if (level <= 8) return 4
-  return 5
 }
 
 function canUseAtLevel(champ: ChampionSummary, level: number, locale: TFTLocale | undefined): boolean {

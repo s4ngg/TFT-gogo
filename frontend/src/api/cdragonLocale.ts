@@ -143,8 +143,8 @@ const CHAMP_SHORT: Record<string, string> = {
 }
 
 /**
- * 덱 이름 표시용 — 축약명이 있으면 축약명, 없으면 일반 한글 이름 반환
- * 예: 마스터 이 → 마이 / 아우렐리온 솔 → 아우솔
+ * 덱 이름 표시용 — CHAMP_SHORT에 축약명이 있으면 반환, 없으면 getChampionName() 위임
+ * 5글자 이상인 긴 이름만 등록됨 (예: 아우렐리온 솔 → 아우솔 / 블리츠크랭크 → 블리츠)
  */
 export function getChampionShortName(
   imageUrl: string,

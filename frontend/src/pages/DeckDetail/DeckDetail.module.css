@@ -84,7 +84,7 @@
 .cyan   { color: #04ede0; }
 .purple { color: #a78bfa; }
 .gold   { color: #f9c860; }
-.muted  { color: var(--color-text-muted, #6b7280); font-size: 0.8em; }
+.muted  { color: var(--text-muted); font-size: 0.8em; }
 
 /* ── 공통 패널 ── */
 .panel {

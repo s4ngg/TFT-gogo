@@ -5,6 +5,8 @@ import java.util.Set;
 
 public final class TftShopUnitFilter {
 
+    // TODO: 시즌 변경 시 수동 업데이트 필요 — 현재 TFT 시즌 17(tft17_) 기준
+    //       새 시즌 출시 시 접두사(tft17_ → tft18_ 등)와 유닛 목록을 함께 갱신할 것
     private static final Set<String> SHOP_UNIT_IDS = Set.of(
             "tft17_aatrox",
             "tft17_ahri",

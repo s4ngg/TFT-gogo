@@ -14,6 +14,8 @@ public final class TftAssetUrlBuilder {
 
     private static final String CDN_BASE_URL = "https://raw.communitydragon.org/latest/game/assets";
     private static final String DEFAULT_SET_TAG = "tft_set17";
+    // TODO: 시즌 업데이트 시 DDragon 버전 갱신 필요 (championImageOverride에서만 사용)
+    private static final String DDRAGON_VERSION = "16.10.1";
     private static final Pattern SET_PATTERN = Pattern.compile("(?:set|tft)(\\d+)");
     private static final Pattern TRAIT_SET_PATTERN = Pattern.compile("(?:set|tft)(\\d+)_(.+)");
 
@@ -38,8 +40,9 @@ public final class TftAssetUrlBuilder {
 
     private static String championImageOverride(String id) {
         return switch (id) {
-            case "tft17_rhaast" -> "https://ddragon.leagueoflegends.com/cdn/16.10.1/img/tft-champion/TFT17_KaynSplash_Uncentered.TFT_Set17.png";
-            default -> null;
+            case "tft17_rhaast" -> "https://ddragon.leagueoflegends.com/cdn/" + DDRAGON_VERSION
+                    + "/img/tft-champion/TFT17_KaynSplash_Uncentered.TFT_Set17.png";
+            default -> null;  // null = 오버라이드 없음, 호출부에서 CDragon URL 생성
         };
     }
 

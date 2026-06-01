@@ -1,5 +1,6 @@
 package com.tftgogo.domain.deck.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tftgogo.domain.deck.entity.ArtifactStat;
@@ -57,7 +58,8 @@ public class MetaDeckResponse {
         private String augmentId;
         private String augmentName;
         private String winRate;
-        private Boolean isRecommended;  // Boolean(wrapper) → Lombok generates getIsRecommended() → JSON key "isRecommended"
+        @JsonProperty("isRecommended")   // Boolean + @JsonProperty로 JSON 키를 명시적으로 고정
+        private Boolean isRecommended;
     }
 
     @Getter

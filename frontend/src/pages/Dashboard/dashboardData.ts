@@ -9,7 +9,7 @@ export interface AugmentSummary {
   augmentId: string
   augmentName: string
   winRate: string
-  isRecommended: boolean
+  isRecommended: boolean | null   // 백엔드 Boolean(nullable) 타입과 계약 일치
 }
 
 export interface ItemSummary {

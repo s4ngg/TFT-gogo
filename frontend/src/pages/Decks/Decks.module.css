@@ -186,22 +186,22 @@
 
 /* ── 덱 행 ── */
 .deckRow {
-  border-bottom: 1px solid rgba(114, 145, 153, 0.18);
+  border-bottom: 1px solid var(--border-subtle);
   transition: background 0.12s;
   cursor: pointer;
 }
 
 .deckRow:nth-child(even) { background: rgba(255, 255, 255, 0.012); }
-.deckRow:hover { background: rgba(18, 40, 52, 0.58); }
+.deckRow:hover { background: var(--bg-card-soft); }
 
 .deckRow td {
-  padding: 13px 12px;
+  padding: var(--space-lg) var(--space-xl);
   vertical-align: middle;
   text-align: center;
 }
 
 .deckRow td + td {
-  border-left: 1px solid rgba(114, 145, 153, 0.08);
+  border-left: 1px solid var(--border-faint);
 }
 
 /* ── 순위 ── */

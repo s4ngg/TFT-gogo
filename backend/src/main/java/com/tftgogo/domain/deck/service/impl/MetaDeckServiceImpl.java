@@ -38,6 +38,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
@@ -320,12 +321,12 @@ public class MetaDeckServiceImpl implements MetaDeckService {
             }
 
             DeckProfile profile = buildDeckProfile(activeTraits, participant.getUnits());
-            DeckStat deckStat = findSimilarDeckStat(deckStatMap, profile);
-            if (deckStat == null) {
+            DeckStat deckStat = findSimilarDeckStat(deckStatMap, profile).orElseGet(() -> {
                 String signature = buildSignature(profile);
-                deckStat = new DeckStat(activeTraits, profile);
-                deckStatMap.put(signature, deckStat);
-            }
+                DeckStat newStat = new DeckStat(activeTraits, profile);
+                deckStatMap.put(signature, newStat);
+                return newStat;
+            });
             deckStat.record(participant);
             count++;
         }
@@ -383,11 +384,10 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         return unit.getRarity() >= 2 || unit.getTier() >= 2 || hasItems;
     }
 
-    private DeckStat findSimilarDeckStat(Map<String, DeckStat> deckStatMap, DeckProfile profile) {
+    private Optional<DeckStat> findSimilarDeckStat(Map<String, DeckStat> deckStatMap, DeckProfile profile) {
         return deckStatMap.values().stream()
                 .filter(stat -> hasSimilarDeckProfile(stat.profile, profile))
-                .findFirst()
-                .orElse(null);
+                .findFirst();
     }
 
     private boolean hasSimilarDeckProfile(DeckProfile left, DeckProfile right) {
