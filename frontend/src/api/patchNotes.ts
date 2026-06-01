@@ -150,6 +150,36 @@ function readRecordNumber(record: Record<string, unknown>, key: string) {
   return readNumber(record[key])
 }
 
+function normalizePositiveInteger(value: number | undefined, fallback: number) {
+  return value !== undefined && Number.isFinite(value) && value > 0
+    ? Math.floor(value)
+    : fallback
+}
+
+function normalizeNonNegativeInteger(value: number | undefined, fallback = 0) {
+  return value !== undefined && Number.isFinite(value)
+    ? Math.max(0, Math.floor(value))
+    : fallback
+}
+
+function getTotalPages(totalItems: number, pageSize: number) {
+  const safeTotalItems = normalizeNonNegativeInteger(totalItems)
+  const safePageSize = normalizePositiveInteger(pageSize, 1)
+
+  return Math.max(1, Math.ceil(safeTotalItems / safePageSize))
+}
+
+function normalizeTotalPages(value: number | undefined, totalItems: number, pageSize: number) {
+  return normalizePositiveInteger(value, getTotalPages(totalItems, pageSize))
+}
+
+function normalizePage(value: number | undefined, totalPages: number) {
+  const safeTotalPages = normalizePositiveInteger(totalPages, 1)
+  const safePage = normalizePositiveInteger(value, 1)
+
+  return Math.min(safePage, safeTotalPages)
+}
+
 function readNonEmptyString(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined
 
@@ -358,10 +388,12 @@ function readPageNumber(payload: unknown, fallbackPage: number) {
   if (!isRecord(payload)) return fallbackPage
 
   const page = readRecordNumber(payload, 'page') ?? readRecordNumber(payload, 'currentPage')
-  if (page !== undefined) return Math.max(1, page)
+  if (page !== undefined) return normalizePositiveInteger(page, 1)
 
   const zeroBasedPage = readRecordNumber(payload, 'number')
-  return zeroBasedPage !== undefined ? Math.max(1, zeroBasedPage + 1) : fallbackPage
+  return zeroBasedPage !== undefined
+    ? normalizePositiveInteger(zeroBasedPage + 1, 1)
+    : fallbackPage
 }
 
 function readStatsCount(payload: unknown, keys: string[]) {
@@ -450,16 +482,19 @@ function normalizePatchChangePage(payload: unknown, params: PatchChangesQuery): 
   if (!rawChanges) return undefined
 
   const changes = rawChanges.filter(isRecord).map((change, index) => normalizeChange(change, index))
-  const page = readPageNumber(payload, params.page)
-  const pageSize = isRecord(payload)
+  const rawPage = readPageNumber(payload, params.page)
+  const fallbackPageSize = normalizePositiveInteger(params.pageSize, 1)
+  const rawPageSize = isRecord(payload)
     ? readRecordNumber(payload, 'pageSize') ?? readRecordNumber(payload, 'size') ?? params.pageSize
     : params.pageSize
-  const totalItems = isRecord(payload)
+  const pageSize = normalizePositiveInteger(rawPageSize, fallbackPageSize)
+  const rawTotalItems = isRecord(payload)
     ? readRecordNumber(payload, 'totalItems') ?? readRecordNumber(payload, 'totalElements') ?? readRecordNumber(payload, 'total') ?? changes.length
     : changes.length
-  const totalPages = isRecord(payload)
-    ? readRecordNumber(payload, 'totalPages') ?? Math.max(1, Math.ceil(totalItems / pageSize))
-    : Math.max(1, Math.ceil(totalItems / pageSize))
+  const totalItems = normalizeNonNegativeInteger(rawTotalItems)
+  const rawTotalPages = isRecord(payload) ? readRecordNumber(payload, 'totalPages') : undefined
+  const totalPages = normalizeTotalPages(rawTotalPages, totalItems, pageSize)
+  const page = normalizePage(rawPage, totalPages)
 
   return {
     items: changes,
@@ -488,15 +523,19 @@ export function getFallbackPatchChangePage(
 
     return matchesCategory && matchesType && matchesImpact && matchesQuery
   })
-  const startIndex = (params.page - 1) * params.pageSize
+  const pageSize = normalizePositiveInteger(params.pageSize, 1)
+  const totalItems = filteredChanges.length
+  const totalPages = getTotalPages(totalItems, pageSize)
+  const page = normalizePage(params.page, totalPages)
+  const startIndex = (page - 1) * pageSize
 
   return {
-    items: filteredChanges.slice(startIndex, startIndex + params.pageSize),
-    page: params.page,
-    pageSize: params.pageSize,
+    items: filteredChanges.slice(startIndex, startIndex + pageSize),
+    page,
+    pageSize,
     stats,
-    totalItems: filteredChanges.length,
-    totalPages: Math.max(1, Math.ceil(filteredChanges.length / params.pageSize)),
+    totalItems,
+    totalPages,
   }
 }
 
@@ -536,8 +575,14 @@ export async function getPatchChanges(
   params: PatchChangesQuery,
   fallbackData: PatchNoteDetail[],
 ): Promise<PatchChangesResult> {
-  if (!params.version) {
-    return { data: getFallbackPatchChangePage(params, fallbackData), source: 'fallback' }
+  const safeParams = {
+    ...params,
+    page: normalizePositiveInteger(params.page, 1),
+    pageSize: normalizePositiveInteger(params.pageSize, 1),
+  }
+
+  if (!safeParams.version) {
+    return { data: getFallbackPatchChangePage(safeParams, fallbackData), source: 'fallback' }
   }
 
   try {
@@ -547,22 +592,22 @@ export async function getPatchChanges(
         params: {
           category: getBackendCategory(params.category),
           impact: params.highImpactOnly ? 'HIGH' : undefined,
-          page: params.page,
-          pageSize: params.pageSize,
+          page: safeParams.page,
+          pageSize: safeParams.pageSize,
           query: params.query || undefined,
           type: getBackendChangeType(params.changeType),
         },
       },
     )
     const payload = unwrapApiResponse(data)
-    const page = normalizePatchChangePage(payload, params)
+    const page = normalizePatchChangePage(payload, safeParams)
 
     if (!page) {
-      return { data: getFallbackPatchChangePage(params, fallbackData), source: 'fallback' }
+      return { data: getFallbackPatchChangePage(safeParams, fallbackData), source: 'fallback' }
     }
 
     return { data: page, source: 'api' }
   } catch {
-    return { data: getFallbackPatchChangePage(params, fallbackData), source: 'fallback' }
+    return { data: getFallbackPatchChangePage(safeParams, fallbackData), source: 'fallback' }
   }
 }
