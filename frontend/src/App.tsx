@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import AiRecommend from './pages/AiRecommend/AiRecommend'
+import Admin from './pages/Admin/Admin'
 import AuthPage from './pages/Auth/AuthPage'
 import Decks from './pages/Decks/Decks'
 import DeckDetail from './pages/DeckDetail/DeckDetail'
@@ -22,6 +23,7 @@ function App() {
       <Route path="/guide" element={<Guide />} />
       <Route path="/party" element={<Party />} />
       <Route path="/patch-notes" element={<PatchNotes />} />
+      <Route path="/admin" element={<Admin />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

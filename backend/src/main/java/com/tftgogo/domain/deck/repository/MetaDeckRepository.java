@@ -27,4 +27,10 @@ public interface MetaDeckRepository extends JpaRepository<MetaDeck, Long> {
             @Param("rankFilter") RankFilter rankFilter,
             @Param("patchVersion") String patchVersion,
             @Param("minPlayRate") double minPlayRate);
+
+    // 관리자 페이지: 최신 패치의 전체 덱 목록
+    List<MetaDeck> findByRankFilterAndPatchVersion(RankFilter rankFilter, String patchVersion);
+
+    @Query("SELECT MAX(d.patchVersion) FROM MetaDeck d WHERE d.rankFilter = :rankFilter")
+    Optional<String> findLatestPatchVersion(@Param("rankFilter") RankFilter rankFilter);
 }

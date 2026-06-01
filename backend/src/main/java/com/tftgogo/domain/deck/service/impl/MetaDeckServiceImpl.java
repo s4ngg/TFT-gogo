@@ -116,6 +116,7 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     private static final Pattern PATCH_VERSION_PATTERN = Pattern.compile("(\\d+\\.\\d+[a-zA-Z]?)");
 
     private final MetaDeckRepository metaDeckRepository;
+    private final com.tftgogo.domain.deck.repository.DeckCurationRepository deckCurationRepository;
     private final RiotApiClient riotApiClient;
     private final PlatformTransactionManager transactionManager;
 
@@ -135,9 +136,34 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         // 선택률 기준 내림차순 정렬 + 최소 선택률 필터 적용
         List<MetaDeck> decks = metaDeckRepository
                 .findMetaDecksByPickRate(rankFilter, latestPatchVersion, MIN_PLAY_RATE);
+
+        // 큐레이션 적용: customName 오버라이드, 숨김 처리, sortPriority 정렬
+        Map<String, com.tftgogo.domain.deck.entity.DeckCuration> curationMap =
+                deckCurationRepository.findByRankFilter(rankFilter).stream()
+                        .collect(Collectors.toMap(
+                                com.tftgogo.domain.deck.entity.DeckCuration::getSignature,
+                                c -> c));
+
         AtomicInteger rank = new AtomicInteger(1);
         List<MetaDeckResponse> responses = decks.stream()
-                .map(deck -> MetaDeckResponse.from(deck, rank.getAndIncrement()))
+                .filter(deck -> {
+                    var curation = curationMap.get(deck.getSignature());
+                    return curation == null || !curation.isHidden();
+                })
+                .sorted((a, b) -> {
+                    var ca = curationMap.get(a.getSignature());
+                    var cb = curationMap.get(b.getSignature());
+                    Integer pa = ca != null ? ca.getSortPriority() : null;
+                    Integer pb = cb != null ? cb.getSortPriority() : null;
+                    if (pa != null && pb != null) return Integer.compare(pa, pb);
+                    if (pa != null) return -1;  // 우선순위 있는 쪽 먼저
+                    if (pb != null) return 1;
+                    return Double.compare(b.getPlayRate(), a.getPlayRate()); // 기본: pickRate 내림차순
+                })
+                .map(deck -> {
+                    var curation = curationMap.get(deck.getSignature());
+                    return MetaDeckResponse.from(deck, rank.getAndIncrement(), curation);
+                })
                 .toList();
 
         // 가장 오래된 dataStartDate를 응답에 포함 (수집 기간 표시용)

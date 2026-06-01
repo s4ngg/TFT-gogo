@@ -73,6 +73,17 @@ public class MetaDeckResponse {
     }
 
     public static MetaDeckResponse from(MetaDeck deck, int rank) {
+        return from(deck, rank, null);
+    }
+
+    public static MetaDeckResponse from(MetaDeck deck, int rank,
+            com.tftgogo.domain.deck.entity.DeckCuration curation) {
+        // 관리자가 이름 지정한 경우 우선 사용
+        String displayName = (curation != null
+                && curation.getCustomName() != null
+                && !curation.getCustomName().isBlank())
+                ? curation.getCustomName()
+                : deck.getName();
         List<TraitSummary> traits = deck.getTraits().stream()
                 .sorted((a, b) -> Integer.compare(b.getNumUnits(), a.getNumUnits()))
                 .map(trait -> TraitSummary.builder()
@@ -133,7 +144,7 @@ public class MetaDeckResponse {
         return MetaDeckResponse.builder()
                 .rank(rank)
                 .grade(deck.getTier())
-                .name(deck.getName())
+                .name(displayName)
                 .winRate(String.format("%.1f%%", deck.getWinRate()))
                 .top4(String.format("%.1f%%", deck.getTop4Rate()))
                 .avgPlace(String.format("%.2f", deck.getAvgPlacement()))
