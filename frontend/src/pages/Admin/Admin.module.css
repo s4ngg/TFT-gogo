@@ -398,28 +398,31 @@
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  border: 2px solid var(--border-subtle);
+  border: 2px solid rgba(140, 160, 170, 0.45);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-main);
+  background: rgba(20, 35, 48, 0.9);
   padding: 0;
   overflow: hidden;
   transition: border-color 0.15s, background 0.15s;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 .editorCellEmpty:hover {
   border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, rgba(20, 35, 48, 0.9));
 }
 
 .editorCellFilled {
   border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px rgba(4, 243, 229, 0.2);
 }
 
 .editorCellFilled:hover {
   border-color: #f87171;
+  box-shadow: inset 0 0 0 1px rgba(248, 113, 113, 0.2);
 }
 
 .editorCellImg {

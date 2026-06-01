@@ -190,7 +190,12 @@ function BoardEditorModal({ deck, locale, onClose, onSave }: BoardEditorProps) {
                           onClick={() => handleChampClick(champ)}
                           title={champ.name}
                         >
-                          <img src={champ.imageUrl} alt={champ.name} className={styles.champChipImg} />
+                          <img
+                            src={champ.imageUrl}
+                            alt={champ.name}
+                            className={styles.champChipImg}
+                            onError={(e) => { e.currentTarget.parentElement!.style.display = 'none' }}
+                          />
                           <span className={styles.champChipName}>{champ.name}</span>
                         </button>
                       )
@@ -217,7 +222,14 @@ function BoardEditorModal({ deck, locale, onClose, onSave }: BoardEditorProps) {
                         onClick={() => handleCellClick(row, col)}
                         title={champ ? `${champ.name} 제거` : selected ? `${selected.name} 배치` : ''}
                       >
-                        {champ && <img src={champ.imageUrl} alt={champ.name} className={styles.editorCellImg} />}
+                        {champ && (
+                          <img
+                            src={champ.imageUrl}
+                            alt={champ.name}
+                            className={styles.editorCellImg}
+                            onError={(e) => { e.currentTarget.style.opacity = '0.2' }}
+                          />
+                        )}
                       </button>
                     )
                   })}
