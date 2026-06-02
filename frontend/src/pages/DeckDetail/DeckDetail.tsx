@@ -138,11 +138,10 @@ interface HexBoardProps {
   availableLevels: number[]
   onLevelChange: (lv: number) => void
   locale: TFTLocale | undefined
-  boardPositionsJson?: string | null
+  customPosMap: Map<string, CellPosData>
 }
 
-function HexBoard({ visibleUnits, level, availableLevels, onLevelChange, locale, boardPositionsJson }: HexBoardProps) {
-  const customPosMap = useMemo(() => parseBoardPositions(boardPositionsJson, level), [boardPositionsJson, level])
+function HexBoard({ visibleUnits, level, availableLevels, onLevelChange, locale, customPosMap }: HexBoardProps) {
 
   const placed = useMemo(() => {
     if (customPosMap.size === 0) return []                        // 미설정 → 빈 보드
@@ -355,23 +354,33 @@ function DeckDetail() {
     [prioritized, level],
   )
 
-  // 시너지: visibleUnits 기반 재계산 → 레벨 탭 바꾸면 자동 동기화
+  // 배치판 포지션 맵 (DeckDetail에서 관리 → HexBoard·시너지 공유)
+  const customPosMap = useMemo(
+    () => parseBoardPositions(deck?.boardPositions, level),
+    [deck?.boardPositions, level],
+  )
+
+  // 배치판에 실제 올라간 유닛만 → 시너지 계산 소스
+  const placedUnits = useMemo(() => {
+    if (customPosMap.size === 0) return []
+    return visibleUnits.filter((champ) => {
+      const apiName = getChampionApiName(champ.imageUrl)
+      return apiName ? customPosMap.has(apiName) : false
+    })
+  }, [visibleUnits, customPosMap])
+
+  // 시너지: 배치된 유닛 기반 재계산 → 레벨 탭 바꾸면 자동 동기화
   const traitCounts = useMemo(
-    () => computeTraitCounts(visibleUnits, locale),
-    [visibleUnits, locale],
+    () => computeTraitCounts(placedUnits, locale),
+    [placedUnits, locale],
   )
   const displayTraits = useMemo(() => {
-    if (!deck) return []
-    const computed = deck.traits
+    if (!deck || placedUnits.length === 0) return []
+    return deck.traits
       .map((t) => ({ ...t, count: traitCounts.get(t.name) ?? 0 }))
       .filter((t) => (traitCounts.get(t.name) ?? 0) >= 2)
       .sort((a, b) => b.count - a.count)
-    // CDragon traits 미로드 또는 데이터 없음 → 저장된 API 데이터로 폴백
-    if (computed.length === 0 && deck.traits.length > 0) {
-      return [...deck.traits].sort((a, b) => b.count - a.count)
-    }
-    return computed
-  }, [deck, traitCounts])
+  }, [deck, traitCounts, placedUnits.length])
 
   // ── Early returns (hooks 이후) ───────────────────────────────
   if (isLoading) {
@@ -420,11 +429,6 @@ function DeckDetail() {
 
         <div className={styles.statsRow}>
           <div className={styles.statItem}>
-            <small>승률</small>
-            <strong className={styles.green}>{deck.winRate}</strong>
-          </div>
-          <div className={styles.statDivider} />
-          <div className={styles.statItem}>
             <small>TOP 4</small>
             <strong className={styles.cyan}>{deck.top4}</strong>
           </div>
@@ -438,15 +442,6 @@ function DeckDetail() {
             <small>선택률</small>
             <strong className={styles.gold}>{deck.pickRate}</strong>
           </div>
-          {deck.sampleSize != null && (
-            <>
-              <div className={styles.statDivider} />
-              <div className={styles.statItem}>
-                <small>표본 수</small>
-                <strong className={styles.muted}>n={deck.sampleSize}</strong>
-              </div>
-            </>
-          )}
         </div>
 
         {/* 배치판: level·visibleUnits를 부모에서 공급 */}
@@ -456,11 +451,11 @@ function DeckDetail() {
           availableLevels={availableLevels}
           onLevelChange={setLevel}
           locale={locale}
-          boardPositionsJson={deck.boardPositions}
+          customPosMap={customPosMap}
         />
 
-        {/* 시너지 구성: visibleUnits 기반 → 레벨 탭 변경 시 자동 동기화 */}
-        <section className={styles.panel}>
+        {/* 시너지 구성: 배치판 기반 → 배치 미설정 시 숨김 */}
+        {displayTraits.length > 0 && <section className={styles.panel}>
           <div className={styles.panelHead}>
             <Trophy size={16} />
             <h2>시너지 구성</h2>
@@ -501,7 +496,7 @@ function DeckDetail() {
               )
             })}
           </div>
-        </section>
+        </section>}
 
         <PlayGuidePanel deck={deck} />
 
