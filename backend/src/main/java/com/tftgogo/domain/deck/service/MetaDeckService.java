@@ -9,6 +9,8 @@ public interface MetaDeckService {
 
     MetaDeckListResponse getMetaDecks(RankFilter rankFilter);
 
+    String findLatestPatchVersion(RankFilter rankFilter);
+
     void aggregateAndSave();
 
     void aggregateAndSave(LocalDate dataDate);

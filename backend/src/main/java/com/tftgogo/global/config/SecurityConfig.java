@@ -39,11 +39,13 @@ public class SecurityConfig {
                                 "/health",
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/signup",
-                                "/api/decks/meta/**",
-                                "/api/admin/**",   // AdminTokenFilter가 직접 검증
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/decks/meta")
+                        .permitAll()
+                        .requestMatchers("/api/admin/**")   // AdminTokenFilter가 직접 검증
+                        .permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(adminTokenFilter, UsernamePasswordAuthenticationFilter.class);

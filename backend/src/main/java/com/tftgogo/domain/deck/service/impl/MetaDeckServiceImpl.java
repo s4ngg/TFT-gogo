@@ -693,7 +693,8 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         return matcher.find() ? matcher.group(1) : UNKNOWN_PATCH_VERSION;
     }
 
-    private String findLatestPatchVersion(RankFilter rankFilter) {
+    @Override
+    public String findLatestPatchVersion(RankFilter rankFilter) {
         return metaDeckRepository.findAllByRankFilter(rankFilter).stream()
                 .map(MetaDeck::getPatchVersion)
                 .filter(patchVersion -> !UNKNOWN_PATCH_VERSION.equals(patchVersion))
