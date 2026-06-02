@@ -467,18 +467,39 @@ function DeckDetail() {
             <span className={styles.panelSub}>Lv.{level} 기준</span>
           </div>
           <div className={styles.traitList}>
-            {displayTraits.map((trait) => (
-              <div key={trait.name} className={styles.traitItem}>
-                <TraitHexBadge
-                  count={trait.count}
-                  iconUrl={trait.iconUrl}
-                  name={getTraitName(trait.name, locale)}
-                  tone={trait.tone}
-                />
-                <span className={styles.traitName}>{getTraitName(trait.name, locale)}</span>
-                <span className={styles.traitCount}>{trait.count}조각</span>
-              </div>
-            ))}
+            {displayTraits.map((trait) => {
+              const traitDetail = locale?.traitDetailBySuffix.get(trait.name.toLowerCase())
+              return (
+                <div key={trait.name} className={styles.traitItem}>
+                  <TraitHexBadge
+                    count={trait.count}
+                    iconUrl={trait.iconUrl}
+                    name={getTraitName(trait.name, locale)}
+                    tone={trait.tone}
+                  />
+                  <div className={styles.traitInfo}>
+                    <span className={styles.traitName}>{getTraitName(trait.name, locale)}</span>
+                    {traitDetail && traitDetail.breakpoints.length > 0 && (
+                      <div className={styles.breakpoints}>
+                        {traitDetail.breakpoints.map((bp) => {
+                          const tierClass = styles[`bp_${bp.tier}`] ?? ''
+                          const activeClass = trait.count >= bp.minUnits ? styles.bpActive : ''
+                          return (
+                            <span
+                              key={bp.minUnits}
+                              className={`${styles.bpPip} ${tierClass} ${activeClass}`}
+                            >
+                              {bp.minUnits}
+                            </span>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                  <span className={styles.traitCount}>{trait.count}조각</span>
+                </div>
+              )
+            })}
           </div>
         </section>
 

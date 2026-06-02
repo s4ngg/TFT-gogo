@@ -111,6 +111,16 @@
   --tone-bronze-color: #c6a96a;
   --tone-bronze-border: rgba(198, 169, 106, 0.2);
   --tone-bronze-bg: rgba(198, 169, 106, 0.06);
+
+  --tone-prismatic-color: #c084fc;
+  --tone-prismatic-border: rgba(192, 132, 252, 0.25);
+  --tone-prismatic-bg: rgba(192, 132, 252, 0.08);
+
+  /* Trait breakpoint pip */
+  --bp-bronze: var(--tone-bronze-color);
+  --bp-silver: var(--tone-silver-color);
+  --bp-gold: var(--tone-gold-color);
+  --bp-prismatic: var(--tone-prismatic-color);
 }
 
 /* Trait tag layout tokens */

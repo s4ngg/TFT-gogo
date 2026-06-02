@@ -3,10 +3,23 @@ import { isRecord } from './apiResponse'
 
 const CDRAGON_TFT_KO_URL = 'https://raw.communitydragon.org/latest/cdragon/tft/ko_kr.json'
 
+export type BreakpointTier = 'bronze' | 'silver' | 'gold' | 'prismatic'
+
+export interface TraitBreakpoint {
+  minUnits: number
+  tier: BreakpointTier
+}
+
+export interface TraitDetail {
+  name: string
+  breakpoints: TraitBreakpoint[]
+}
+
 export interface TFTLocale {
   champByApiName: Map<string, string>
   champDetailByApiName: Map<string, ChampionDetail>
   traitBySuffix: Map<string, string>
+  traitDetailBySuffix: Map<string, TraitDetail>
   itemByApiName: Map<string, string>
   augmentBySuffix: Map<string, string>
 }
@@ -22,6 +35,11 @@ export interface ChampionDetail {
   traits: string[]   // lowercase suffix, e.g. ['brawler', 'slayer']
 }
 
+interface CDragonTraitEffect {
+  minUnits?: number
+  style?: number   // 1=bronze 2=silver 3=gold 4=prismatic
+}
+
 interface CDragonEntry {
   ability?: {
     desc?: string
@@ -35,6 +53,14 @@ interface CDragonEntry {
     range?: number
   }
   traits?: string[]
+  effects?: CDragonTraitEffect[]
+}
+
+const STYLE_TO_TIER: Record<number, BreakpointTier> = {
+  1: 'bronze',
+  2: 'silver',
+  3: 'gold',
+  4: 'prismatic',
 }
 
 function readCDragonEntries(value: unknown): CDragonEntry[] {
@@ -65,6 +91,12 @@ function readCDragonEntries(value: unknown): CDragonEntry[] {
         traits: Array.isArray(entry.traits)
           ? (entry.traits as unknown[]).filter((t): t is string => typeof t === 'string')
           : undefined,
+        effects: Array.isArray(entry.effects)
+          ? (entry.effects as unknown[]).filter(isRecord).map((e) => ({
+              minUnits: typeof e.minUnits === 'number' ? e.minUnits : undefined,
+              style: typeof e.style === 'number' ? e.style : undefined,
+            }))
+          : undefined,
       }
     })
 }
@@ -76,6 +108,7 @@ export async function fetchTFTLocale(): Promise<TFTLocale> {
     const champByApiName = new Map<string, string>()
     const champDetailByApiName = new Map<string, ChampionDetail>()
     const traitBySuffix = new Map<string, string>()
+    const traitDetailBySuffix = new Map<string, TraitDetail>()
     const itemByApiName = new Map<string, string>()
     const augmentBySuffix = new Map<string, string>()
 
@@ -109,7 +142,15 @@ export async function fetchTFTLocale(): Promise<TFTLocale> {
     readCDragonEntries(currentSet?.traits).forEach((t) => {
       if (t.apiName && t.name) {
         const suffix = t.apiName.split('_').pop()?.toLowerCase()
-        if (suffix) traitBySuffix.set(suffix, t.name)
+        if (suffix) {
+          traitBySuffix.set(suffix, t.name)
+          const breakpoints: TraitBreakpoint[] = (t.effects ?? [])
+            .filter((e) => e.minUnits != null && e.style != null && STYLE_TO_TIER[e.style!] != null)
+            .map((e) => ({ minUnits: e.minUnits!, tier: STYLE_TO_TIER[e.style!] }))
+          if (breakpoints.length > 0) {
+            traitDetailBySuffix.set(suffix, { name: t.name, breakpoints })
+          }
+        }
       }
     })
 
@@ -126,7 +167,7 @@ export async function fetchTFTLocale(): Promise<TFTLocale> {
       }
     })
 
-    return { champByApiName, champDetailByApiName, traitBySuffix, itemByApiName, augmentBySuffix }
+    return { champByApiName, champDetailByApiName, traitBySuffix, traitDetailBySuffix, itemByApiName, augmentBySuffix }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'CDragon 데이터 로드 실패'
     throw new Error(`CDragon locale 조회 실패: ${message}`)
