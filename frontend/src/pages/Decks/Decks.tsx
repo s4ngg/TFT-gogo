@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout'
 import ChampionCard from '../../components/common/ChampionCard'
 import TierBadge from '../../components/common/TierBadge'
-import TraitHexBadge from '../../components/common/TraitHexBadge'
 import { tftItemIconUrl } from '../../api/communityDragonAssets'
 import { getChampionName, getChampionShortName, getTraitName, getItemName } from '../../api/cdragonLocale'
 import type { TFTLocale } from '../../api/cdragonLocale'
@@ -17,6 +16,13 @@ import { costLimitForLevel } from '../../utils/deckUtils'
 import styles from './Decks.module.css'
 
 const INITIAL_ITEM_COUNT = 4
+const MAX_VISIBLE_TRAITS = 4
+
+const TONE_CLASS_MAP: Record<string, string> = {
+  gold: styles.toneGold,
+  silver: styles.toneSilver,
+  bronze: styles.toneBronze,
+}
 
 /* ════════════════════════════
    타입
@@ -122,14 +128,13 @@ function DeckRow({
       <td className={styles.nameCol}>
         <span className={styles.deckName}>{deckDisplayName(deck, locale)}</span>
         <span className={styles.traits}>
-          {deck.traits.map((t) => (
-            <TraitHexBadge
+          {deck.traits.slice(0, MAX_VISIBLE_TRAITS).map((t) => (
+            <span
               key={`${t.name}-${t.count}`}
-              count={t.count}
-              iconUrl={t.iconUrl}
-              name={getTraitName(t.name, locale)}
-              tone={t.tone}
-            />
+              className={`${styles.traitTag} ${TONE_CLASS_MAP[t.tone] ?? ''}`}
+            >
+              {t.count} {getTraitName(t.name, locale)}
+            </span>
           ))}
         </span>
       </td>
@@ -265,7 +270,7 @@ function ArtifactSection({ decks, locale }: { decks: MetaDeck[]; locale: TFTLoca
           아이템 추천
         </span>
         <div className={styles.specialHeaderText}>
-          <h2>아이템별 최적 유닛</h2>
+          <h2>유물 아이템별 추천 유닛</h2>
           <p>해당 아이템 장착 시 승률이 크게 오르는 유닛 (집계 실데이터)</p>
         </div>
         <div className={styles.artifactSearch}>

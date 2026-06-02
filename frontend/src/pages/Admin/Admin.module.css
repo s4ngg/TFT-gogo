@@ -431,6 +431,123 @@
   object-fit: cover;
 }
 
+.editorCellEditing {
+  border-color: var(--color-star) !important;
+  box-shadow: 0 0 0 2px var(--tone-gold-border) !important;
+}
+
+.editorCellWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.editorCellItems {
+  display: flex;
+  gap: 1px;
+}
+
+.editorCellItemIcon {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  object-fit: cover;
+}
+
+.editorBoardSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+/* 아이템 피커 */
+.itemPicker {
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-main);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 280px;
+}
+
+.itemPickerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-star);
+}
+
+.itemPickerSelected {
+  display: flex;
+  gap: 6px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border-faint);
+}
+
+.itemPickerSearch {
+  padding: 6px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.itemPickerSearch:focus { outline: none; border-color: var(--accent); }
+
+.itemPickerGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  overflow-y: auto;
+}
+
+.itemPickerChip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-faint);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.itemPickerChip:hover:not(:disabled) { border-color: var(--accent); }
+.itemPickerChip:disabled { opacity: 0.35; cursor: default; }
+
+.itemPickerChipSelected {
+  border-color: var(--color-star);
+  background: var(--tone-gold-bg);
+}
+
+.itemPickerIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.itemPickerName {
+  font-size: 0.55rem;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.2;
+  max-width: 40px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* 운영방법 편집 */
 .guideEditorBody {
   display: flex;

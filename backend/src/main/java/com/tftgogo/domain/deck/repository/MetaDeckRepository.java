@@ -33,4 +33,7 @@ public interface MetaDeckRepository extends JpaRepository<MetaDeck, Long> {
 
     @Query("SELECT MAX(d.patchVersion) FROM MetaDeck d WHERE d.rankFilter = :rankFilter")
     Optional<String> findLatestPatchVersion(@Param("rankFilter") RankFilter rankFilter);
+
+    @Query("SELECT DISTINCT d.patchVersion FROM MetaDeck d WHERE d.rankFilter = :rankFilter")
+    List<String> findDistinctPatchVersionsByRankFilter(@Param("rankFilter") RankFilter rankFilter);
 }

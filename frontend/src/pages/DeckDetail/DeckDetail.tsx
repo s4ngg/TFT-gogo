@@ -45,6 +45,7 @@ interface PlacedChamp {
   champ: ChampionSummary
   row: number
   col: number
+  items?: string[]  // 관리자 지정 아이템 (없으면 champ.recommendedItems 사용)
 }
 
 function placeLine(units: ChampionSummary[], rows: number[], result: PlacedChamp[]) {
@@ -92,16 +93,28 @@ function computeTraitCounts(
   return counts
 }
 
-function parseBoardPositions(json: string | null | undefined, level: number): Map<string, { row: number; col: number }> {
-  if (!json) return new Map()
+interface CellPosData { row: number; col: number; items?: string[] }
+
+// 항상 Map 반환 — null/빈 Map → 빈 보드, 내용 있으면 관리자 배치
+function parseBoardPositions(json: string | null | undefined, level: number): Map<string, CellPosData> {
+  if (!json) return new Map()  // 미설정 → 빈 보드
   try {
     const obj = JSON.parse(json) as Record<string, unknown>
-    // 레벨 키 형식: {"5": {imageUrl: pos}, "6": {...}}
     const levelData = obj[String(level)]
     if (levelData && typeof levelData === 'object') {
-      return new Map(Object.entries(levelData as Record<string, { row: number; col: number }>))
+      const entries = Object.entries(levelData as Record<string, unknown>)
+        .filter((entry): entry is [string, CellPosData] => {
+          const v = entry[1]
+          return (
+            typeof v === 'object' && v !== null &&
+            typeof (v as CellPosData).row === 'number' &&
+            typeof (v as CellPosData).col === 'number' &&
+            ((v as CellPosData).items === undefined || Array.isArray((v as CellPosData).items))
+          )
+        })
+      return new Map(entries)
     }
-    return new Map()
+    return new Map()  // 레벨 미설정 → 빈 보드
   } catch {
     return new Map()
   }
@@ -109,12 +122,12 @@ function parseBoardPositions(json: string | null | undefined, level: number): Ma
 
 function buildCustomBoardPositions(
   visibleUnits: ChampionSummary[],
-  posMap: Map<string, { row: number; col: number }>,
+  posMap: Map<string, CellPosData>,
 ): PlacedChamp[] {
   return visibleUnits.flatMap((champ) => {
     const apiName = getChampionApiName(champ.imageUrl)
     const pos = apiName ? posMap.get(apiName) : undefined
-    return pos ? [{ champ, row: pos.row, col: pos.col }] : []
+    return pos ? [{ champ, row: pos.row, col: pos.col, items: pos.items }] : []
   })
 }
 
@@ -130,14 +143,11 @@ interface HexBoardProps {
 
 function HexBoard({ visibleUnits, level, availableLevels, onLevelChange, locale, boardPositionsJson }: HexBoardProps) {
   const customPosMap = useMemo(() => parseBoardPositions(boardPositionsJson, level), [boardPositionsJson, level])
-  const hasCustom = customPosMap.size > 0
 
-  const placed = useMemo(
-    () => hasCustom
-      ? buildCustomBoardPositions(visibleUnits, customPosMap)
-      : buildBoardPositions(visibleUnits, locale),
-    [visibleUnits, locale, hasCustom, customPosMap],
-  )
+  const placed = useMemo(() => {
+    if (customPosMap.size === 0) return []                        // 미설정 → 빈 보드
+    return buildCustomBoardPositions(visibleUnits, customPosMap)  // 관리자 배치
+  }, [visibleUnits, customPosMap])
 
   if (visibleUnits.length === 0) return null
 
@@ -162,7 +172,7 @@ function HexBoard({ visibleUnits, level, availableLevels, onLevelChange, locale,
                 {Array.from({ length: BOARD_COLS }, (_, col) => {
                   const p = champAt(row, col)
                   const itemUrls = p
-                    ? (p.champ.recommendedItems ?? []).slice(0, 3).map((id) => tftItemIconUrl(id))
+                    ? (p.items ?? p.champ.recommendedItems ?? []).slice(0, 3).map((id) => tftItemIconUrl(id))
                     : []
 
                   return (

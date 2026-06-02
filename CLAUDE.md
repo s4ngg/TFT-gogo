@@ -50,6 +50,17 @@ TFT(팀파이트 택티스) 전적 검색 및 메타 가이드 서비스.
 ### 스타일
 - [ ] CSS Modules 사용 (`*.module.css`) — **Tailwind 사용 절대 금지**
 - [ ] 색상/크기 하드코딩 금지 → `variables.css`의 CSS 변수 사용
+  - 새로운 색상/간격이 필요하면 `variables.css`에 토큰 추가 후 참조
+  - 기존 토큰 목록: `--color-*`, `--tone-*`, `--space-*`, `--font-size-*`, `--radius-*`
+- [ ] CSS Modules 클래스명은 **camelCase** — snake_case(`tone_gold`) 금지 → `toneGold`
+- [ ] 동적 클래스 매핑은 `Record<string, string>` 상수 Map으로 관리 (bracket notation 직접 사용 지양)
+  ```tsx
+  // ❌ 금지
+  styles[`tone_${t.tone}`]
+  // ✅ 권장
+  const TONE_CLASS_MAP: Record<string, string> = { gold: styles.toneGold, ... }
+  TONE_CLASS_MAP[t.tone]
+  ```
 - [ ] 컴포넌트 내부에 이미지 URL 하드코딩 금지 → `communityDragonAssets.ts` 사용
 
 ### TypeScript
@@ -84,6 +95,15 @@ TFT(팀파이트 택티스) 전적 검색 및 메타 가이드 서비스.
 - [ ] 성공: `ApiResponse.success("메시지", data)`
 - [ ] 실패: `ApiResponse.fail("메시지", HttpStatus)`
 - [ ] 반환 타입: `ResponseEntity<ApiResponse<T>>`
+
+### DTO 규칙
+- [ ] RequestDTO: `toEntity()` 메서드 포함
+- [ ] ResponseDTO: `from()` 또는 `of()` 정적 팩토리 메서드 사용
+- [ ] `@NotNull` / `@NotBlank`는 RequestDTO에만 사용 (ResponseDTO에 사용 금지)
+
+### 비동기 처리
+- [ ] `@Async void` 금지 → `CompletableFuture<Void>` 반환 (void는 예외 감지 불가)
+- [ ] `SimpleAsyncTaskExecutor` 금지 → `ThreadPoolTaskExecutor` 명시 설정
 
 ### 코드 품질
 - [ ] `null` 반환 금지 → `Optional + orElseThrow()` 사용
@@ -129,7 +149,8 @@ logger.error("시스템 오류", e);  // 예외 발생
 
 ## 테스트 규칙
 
-- Service 레이어만 단위 테스트
+- Service 레이어만 단위 테스트 (Controller, Entity, DTO, Repository 불필요)
 - `given/when/then` 패턴 사용
 - `@ExtendWith(MockitoExtension.class)` + `@Mock` + `@InjectMocks`
 - 실제 DB/외부 서비스 연결 없이 Mock으로 테스트
+- **테스트 메서드명은 한국어로 작성** 예) `회원이_없으면_예외를_던진다()`

@@ -16,6 +16,61 @@
 
 ---
 
+## Game Guide Immediate Backlog - 2026-06-01 기준
+
+### Spec PR #126 후속
+
+- [ ] 게임가이드 spec 변경사항을 확인하고 작성자가 아닌 팀원에게 승인 요청
+- [ ] `spec.md`의 Guide `cost`, `dataJson`, 정렬/검증 정책을 게임가이드 구현 이슈 본문에 반영
+
+### 구현 PR 범위
+
+- [ ] `GuideType` enum과 가이드 Entity/Repository 설계
+- [ ] `GuideEntryResponse`, `GuidePageResponse` DTO 작성
+- [ ] 공개 조회 Service 구현: 대표 목록, 탭별 목록, 검색, 정렬, 페이지네이션, 챔피언 cost 필터
+- [ ] 공개 Controller 구현: `GET /api/guide`, `GET /api/guide/{tab}`
+- [ ] `dataJson` 저장값을 응답에서 JSON object로 변환하는 정책 적용
+- [ ] 관리자 API 초안 구현: `/api/admin/guides` 목록, 생성, 수정, 숨김 처리
+- [ ] Service 단위 테스트 작성: 공개 여부 필터, tab 검증, cost 필터, 페이지 응답
+
+### 프론트 API 연결 계획
+
+- [ ] 프론트 `guideClient.ts`는 `/guide`, `/guide/{tab}`을 호출하고 백엔드 Controller는 `/api/guide`, `/api/guide/{tab}`을 제공한다.
+- [ ] `GET /api/guide`는 `ApiResponse<List<GuideEntryResponse>>`를 반환한다.
+- [ ] `GET /api/guide/{tab}`는 `ApiResponse<GuidePageResponse<GuideEntryResponse>>`를 반환한다.
+- [ ] 모든 공개 응답은 camelCase 필드명과 JSON object `dataJson`을 사용한다.
+- [ ] 게임가이드 구현 PR에는 패치노트 Entity, Controller, DTO 변경을 포함하지 않는다.
+
+---
+
+## PatchNotes Immediate Backlog - 2026-06-01 기준
+
+### Spec PR #126 후속
+
+- [ ] 패치노트 spec 변경사항을 확인하고 작성자가 아닌 팀원에게 승인 요청
+- [ ] `spec.md`의 PatchNotes 목록/변경사항 분리, stats, 정렬/검증 정책을 패치노트 구현 이슈 본문에 반영
+
+### 구현 PR 범위
+
+- [ ] `PatchCategory`, `PatchChangeType`, `PatchImpact` enum과 PatchNote/PatchChange Entity/Repository 설계
+- [ ] `PatchNoteResponse`, `PatchChangeResponse`, `PatchChangePageResponse` DTO 작성
+- [ ] 공개 패치노트 목록 Service 구현: 최신순 정렬, 공개 여부 필터, 현재 패치 표시
+- [ ] 공개 변경사항 Service 구현: category/type/impact/query 필터, 페이지네이션, stats 집계
+- [ ] 공개 Controller 구현: `GET /api/patch-notes`, `GET /api/patch-notes/{version}/changes`
+- [ ] `GET /api/patch-notes`에서는 전체 변경사항을 포함하지 않고 lightweight 목록만 반환
+- [ ] 관리자 API 초안 구현: `/api/admin/patch-notes`, `/api/admin/patch-note-changes` 생성, 수정, 숨김 처리
+- [ ] Service 단위 테스트 작성: 목록 응답, 변경사항 필터, stats 계산, 현재 패치 단일성
+
+### 프론트 API 연결 계획
+
+- [ ] 프론트 `patchNotes.ts`는 `/patch-notes`, `/patch-notes/{version}/changes`를 호출하고 백엔드 Controller는 `/api/patch-notes`, `/api/patch-notes/{version}/changes`를 제공한다.
+- [ ] `GET /api/patch-notes`는 `ApiResponse<List<PatchNoteResponse>>`를 반환한다.
+- [ ] `GET /api/patch-notes/{version}/changes`는 `ApiResponse<PatchChangePageResponse>`를 반환한다.
+- [ ] `GET /api/patch-notes`는 lightweight 목록만 반환하고, 변경사항 목록과 통계는 `/changes` endpoint에서 페이지 단위로 조회한다.
+- [ ] 패치노트 구현 PR에는 게임가이드 Entity, Controller, DTO 변경을 포함하지 않는다.
+
+---
+
 ## Phase 1 - 공통 기반
 
 - [ ] `ApiResponse` 사용 범위 점검
@@ -83,7 +138,7 @@
 - [ ] 가이드 데이터 관리 방식 확정
 - [ ] 패치 버전, 공개 여부, 정렬 순서 정책 확정
 - [ ] 관리자 연동 필요 범위 확정
-- [ ] 세부 API/DTO는 별도 Guide 상세 스펙에서 작성
+- [ ] 세부 API/DTO 기준은 `spec.md` Guide 섹션을 기준으로 구현 이슈에서 확정
 
 ---
 
@@ -93,7 +148,7 @@
 - [ ] 패치노트 변경사항 관리 방식 확정
 - [ ] 카테고리/변경 타입/영향도 enum 정책 확정
 - [ ] 관리자 연동 필요 범위 확정
-- [ ] 세부 API/DTO는 별도 PatchNotes 상세 스펙에서 작성
+- [ ] 세부 API/DTO 기준은 `spec.md` PatchNotes 섹션을 기준으로 구현 이슈에서 확정
 
 ---
 
