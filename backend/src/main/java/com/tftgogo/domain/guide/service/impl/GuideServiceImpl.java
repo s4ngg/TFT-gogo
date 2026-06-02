@@ -19,8 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +33,7 @@ public class GuideServiceImpl implements GuideService {
     private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int MAX_PAGE_SIZE = 100;
     private static final Set<String> SORT_KEYS = Set.of("avgPlace", "pickRate", "top4", "winRate");
+    private static final Pattern NUMBER_PATTERN = Pattern.compile("-?\\d+(?:\\.\\d+)?");
 
     private final GuideRepository guideRepository;
     private final ObjectMapper objectMapper;
@@ -61,12 +63,14 @@ public class GuideServiceImpl implements GuideService {
         validateCost(cost);
 
         List<GuideItem> filteredItems = guideRepository
-                .findByGuideTypeAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc(guideType)
+                .findFilteredGuides(
+                        guideType.name(),
+                        normalizeText(patchVersion),
+                        normalizeText(query),
+                        cost
+                )
                 .stream()
                 .map(this::toGuideItem)
-                .filter(item -> matchesPatchVersion(item.guide(), patchVersion))
-                .filter(item -> matchesQuery(item.guide(), query))
-                .filter(item -> matchesCost(guideType, item.dataJson(), cost))
                 .sorted(buildComparator(sortKey, sortDir))
                 .toList();
 
@@ -79,13 +83,7 @@ public class GuideServiceImpl implements GuideService {
                 .map(item -> GuideEntryResponse.from(item.guide(), item.dataJson()))
                 .toList();
 
-        return GuidePageResponse.<GuideEntryResponse>builder()
-                .items(responses)
-                .page(normalizedPage)
-                .pageSize(normalizedPageSize)
-                .totalItems(totalItems)
-                .totalPages(totalPages)
-                .build();
+        return GuidePageResponse.of(responses, normalizedPage, normalizedPageSize, totalItems, totalPages);
     }
 
     private GuideEntryResponse toResponse(Guide guide) {
@@ -104,7 +102,13 @@ public class GuideServiceImpl implements GuideService {
             }
             return dataJson;
         } catch (JsonProcessingException e) {
-            logger.error("Invalid guide dataJson. guideId={}, targetKey={}", guide.getId(), guide.getTargetKey(), e);
+            logger.error(
+                    "Invalid guide dataJson. guideId={}, targetKey={}, error={}",
+                    guide.getId(),
+                    guide.getTargetKey(),
+                    e.getMessage(),
+                    e
+            );
             throw new BusinessException(ErrorCode.GUIDE_INVALID_DATA);
         }
     }
@@ -143,43 +147,6 @@ public class GuideServiceImpl implements GuideService {
         if (cost != null && (cost < 1 || cost > 5)) {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
-    }
-
-    private boolean matchesPatchVersion(Guide guide, String patchVersion) {
-        return !hasText(patchVersion) || guide.getPatchVersion().equals(patchVersion);
-    }
-
-    private boolean matchesQuery(Guide guide, String query) {
-        if (!hasText(query)) {
-            return true;
-        }
-
-        String keyword = query.trim().toLowerCase(Locale.ROOT);
-        return containsIgnoreCase(guide.getName(), keyword)
-                || containsIgnoreCase(guide.getSummary(), keyword)
-                || containsIgnoreCase(guide.getTargetKey(), keyword);
-    }
-
-    private boolean matchesCost(GuideType guideType, JsonNode dataJson, Integer cost) {
-        if (guideType != GuideType.CHAMPION || cost == null) {
-            return true;
-        }
-
-        JsonNode costNode = dataJson.get("cost");
-        if (costNode == null) {
-            return false;
-        }
-        if (costNode.isInt()) {
-            return costNode.asInt() == cost;
-        }
-        if (costNode.isTextual()) {
-            try {
-                return Integer.parseInt(costNode.asText()) == cost;
-            } catch (NumberFormatException e) {
-                return false;
-            }
-        }
-        return false;
     }
 
     private Comparator<GuideItem> buildComparator(String sortKey, String sortDir) {
@@ -231,19 +198,23 @@ public class GuideServiceImpl implements GuideService {
             return null;
         }
 
-        String normalized = value.asText().replace("%", "").trim();
-        if (normalized.isBlank()) {
+        String normalized = value.asText().replaceAll("\\s+", "").replace(',', '.');
+        Matcher matcher = NUMBER_PATTERN.matcher(normalized);
+        if (!matcher.find()) {
             return null;
         }
         try {
-            return Double.parseDouble(normalized);
+            return Double.parseDouble(matcher.group());
         } catch (NumberFormatException e) {
             return null;
         }
     }
 
-    private boolean containsIgnoreCase(String value, String keyword) {
-        return value != null && value.toLowerCase(Locale.ROOT).contains(keyword);
+    private String normalizeText(String value) {
+        if (!hasText(value)) {
+            return null;
+        }
+        return value.trim();
     }
 
     private boolean hasText(String value) {

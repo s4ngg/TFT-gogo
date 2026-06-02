@@ -14,4 +14,20 @@ public class GuidePageResponse<T> {
     private int pageSize;
     private long totalItems;
     private int totalPages;
+
+    public static <T> GuidePageResponse<T> of(
+            List<T> items,
+            int page,
+            int pageSize,
+            long totalItems,
+            int totalPages
+    ) {
+        return GuidePageResponse.<T>builder()
+                .items(items)
+                .page(page)
+                .pageSize(pageSize)
+                .totalItems(totalItems)
+                .totalPages(totalPages)
+                .build();
+    }
 }

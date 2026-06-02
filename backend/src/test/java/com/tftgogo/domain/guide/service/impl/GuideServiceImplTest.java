@@ -17,6 +17,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,11 +34,12 @@ class GuideServiceImplTest {
 
     @Test
     void 챔피언_탭은_cost_필터를_적용한다() {
+        // given
         Guide fourCostChampion = championGuide("kaisa", "카이사", 4, 1);
-        Guide twoCostChampion = championGuide("jinx", "징크스", 2, 2);
-        when(guideRepository.findByGuideTypeAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc(GuideType.CHAMPION))
-                .thenReturn(List.of(fourCostChampion, twoCostChampion));
+        when(guideRepository.findFilteredGuides(GuideType.CHAMPION.name(), null, null, 4))
+                .thenReturn(List.of(fourCostChampion));
 
+        // when
         GuidePageResponse<?> response = guideService.getGuideTabItems(
                 "champions",
                 null,
@@ -49,15 +51,19 @@ class GuideServiceImplTest {
                 4
         );
 
+        // then
         assertThat(response.getItems()).hasSize(1);
+        verify(guideRepository).findFilteredGuides(GuideType.CHAMPION.name(), null, null, 4);
     }
 
     @Test
     void dataJson은_JSON_object로_응답한다() {
+        // given
         Guide champion = championGuide("kaisa", "카이사", 4, 1);
-        when(guideRepository.findByGuideTypeAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc(GuideType.CHAMPION))
+        when(guideRepository.findFilteredGuides(GuideType.CHAMPION.name(), null, null, null))
                 .thenReturn(List.of(champion));
 
+        // when
         GuidePageResponse<?> response = guideService.getGuideTabItems(
                 "champions",
                 null,
@@ -69,6 +75,7 @@ class GuideServiceImplTest {
                 null
         );
 
+        // then
         Object firstItem = response.getItems().get(0);
         assertThat(firstItem)
                 .hasFieldOrPropertyWithValue("name", "카이사")
@@ -78,6 +85,7 @@ class GuideServiceImplTest {
 
     @Test
     void 지원하지_않는_탭은_예외를_던진다() {
+        // given, when, then
         assertThatThrownBy(() -> guideService.getGuideTabItems(
                 "unknown",
                 null,
@@ -90,6 +98,31 @@ class GuideServiceImplTest {
         )).isInstanceOf(BusinessException.class);
     }
 
+    @Test
+    void 퍼센트_문자열_정렬은_공백과_기호를_허용한다() {
+        // given
+        Guide lowTop4Champion = championGuideWithTop4("kaisa", "카이사", "% 15 . 5", 1);
+        Guide highTop4Champion = championGuideWithTop4("jinx", "징크스", "20.5%", 2);
+        when(guideRepository.findFilteredGuides(GuideType.CHAMPION.name(), null, null, null))
+                .thenReturn(List.of(lowTop4Champion, highTop4Champion));
+
+        // when
+        GuidePageResponse<?> response = guideService.getGuideTabItems(
+                "champions",
+                null,
+                null,
+                1,
+                10,
+                "top4",
+                "desc",
+                null
+        );
+
+        // then
+        assertThat(response.getItems().get(0))
+                .hasFieldOrPropertyWithValue("name", "징크스");
+    }
+
     private Guide championGuide(String targetKey, String name, int cost, int sortOrder) {
         return Guide.builder()
                 .guideType(GuideType.CHAMPION)
@@ -98,6 +131,21 @@ class GuideServiceImplTest {
                 .summary(name + " 요약")
                 .imageUrl("https://example.com/" + targetKey + ".png")
                 .dataJson("{\"cost\":" + cost + ",\"role\":\"캐리\",\"traits\":[\"도전자\"],\"bestItems\":[],\"stats\":{}}")
+                .patchVersion("17.0")
+                .sortOrder(sortOrder)
+                .active(true)
+                .build();
+    }
+
+    private Guide championGuideWithTop4(String targetKey, String name, String top4, int sortOrder) {
+        return Guide.builder()
+                .guideType(GuideType.CHAMPION)
+                .targetKey(targetKey)
+                .name(name)
+                .summary(name + " 요약")
+                .imageUrl("https://example.com/" + targetKey + ".png")
+                .dataJson("{\"cost\":4,\"top4\":\"" + top4 + "\",\"role\":\"캐리\",\"traits\":[\"도전자\"],"
+                        + "\"bestItems\":[],\"stats\":{}}")
                 .patchVersion("17.0")
                 .sortOrder(sortOrder)
                 .active(true)
