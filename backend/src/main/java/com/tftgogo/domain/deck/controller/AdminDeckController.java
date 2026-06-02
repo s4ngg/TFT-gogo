@@ -14,7 +14,6 @@ import com.tftgogo.global.exception.ErrorCode;
 import com.tftgogo.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -56,17 +55,14 @@ public class AdminDeckController {
         return ResponseEntity.ok(ApiResponse.success("관리자 덱 목록 조회 성공", responses));
     }
 
-    /** 수동 집계 트리거 — #129: admin 경로로 이동하여 인증 강제 */
+    /** 수동 집계 트리거 — #129: admin 경로로 이동하여 인증 강제, #130: 비동기 처리 202 Accepted */
     @PostMapping("/meta/aggregate")
     public ResponseEntity<ApiResponse<Void>> triggerAggregate(
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        if (date == null) {
-            metaDeckService.aggregateAndSave();
-        } else {
-            metaDeckService.aggregateAndSave(date);
-        }
-        return ResponseEntity.ok(ApiResponse.success("집계가 완료되었습니다."));
+        LocalDate targetDate = (date != null) ? date : java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).minusDays(1);
+        metaDeckService.aggregateAndSaveAsync(targetDate);
+        return ResponseEntity.accepted().body(ApiResponse.success("집계가 시작되었습니다."));
     }
 
     /** 특정 덱 큐레이션 저장/수정 — #135: BusinessException, #136: JSON 검증 */

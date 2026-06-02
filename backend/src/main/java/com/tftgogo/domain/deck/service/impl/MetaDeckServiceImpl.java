@@ -23,6 +23,7 @@ import com.tftgogo.global.riot.util.TftShopUnitFilter;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +41,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -50,6 +53,9 @@ import java.util.stream.Collectors;
 public class MetaDeckServiceImpl implements MetaDeckService {
 
     private static final Logger logger = LogManager.getLogger(MetaDeckServiceImpl.class);
+
+    /** 동시 집계 방지 lock */
+    private final AtomicBoolean aggregating = new AtomicBoolean(false);
 
     private static final int MATCHES_PER_SUMMONER = 20;
     // 15 → 10: 데이터 부족 시 덱 종류가 너무 적어지는 문제 완화
@@ -170,12 +176,27 @@ public class MetaDeckServiceImpl implements MetaDeckService {
 
     @Override
     public void aggregateAndSave(LocalDate dataDate) {
-        logger.info("전체 랭크 구간 메타 덱 일일 집계 시작 - date={}", dataDate);
-        for (RankFilter rankFilter : RankFilter.values()) {
-            logger.info("[{}] 집계 시작 - date={}", rankFilter, dataDate);
-            aggregateForTier(rankFilter, dataDate);
+        if (!aggregating.compareAndSet(false, true)) {
+            logger.warn("집계 이미 실행 중 - 중복 요청 skip (date={})", dataDate);
+            return;
         }
-        logger.info("전체 랭크 구간 메타 덱 일일 집계 완료 - date={}", dataDate);
+        try {
+            logger.info("전체 랭크 구간 메타 덱 일일 집계 시작 - date={}", dataDate);
+            for (RankFilter rankFilter : RankFilter.values()) {
+                logger.info("[{}] 집계 시작 - date={}", rankFilter, dataDate);
+                aggregateForTier(rankFilter, dataDate);
+            }
+            logger.info("전체 랭크 구간 메타 덱 일일 집계 완료 - date={}", dataDate);
+        } finally {
+            aggregating.set(false);
+        }
+    }
+
+    @Async("aggregationExecutor")
+    @Override
+    public CompletableFuture<Void> aggregateAndSaveAsync(LocalDate dataDate) {
+        aggregateAndSave(dataDate);
+        return CompletableFuture.completedFuture(null);
     }
 
     private void aggregateForTier(RankFilter rankFilter, LocalDate dataDate) {

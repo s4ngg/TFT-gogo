@@ -5,6 +5,7 @@ import com.tftgogo.domain.deck.entity.RankFilter;
 
 import java.time.LocalDate;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 public interface MetaDeckService {
 
@@ -15,4 +16,6 @@ public interface MetaDeckService {
     void aggregateAndSave();
 
     void aggregateAndSave(LocalDate dataDate);
+
+    CompletableFuture<Void> aggregateAndSaveAsync(LocalDate dataDate);
 }
