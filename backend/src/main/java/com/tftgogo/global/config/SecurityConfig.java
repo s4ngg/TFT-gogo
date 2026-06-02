@@ -42,6 +42,8 @@ public class SecurityConfig {
                                 "/api/decks/meta/**",
                                 "/api/guide",
                                 "/api/guide/**",
+                                "/api/patch-notes",
+                                "/api/patch-notes/**",
                                 "/api/admin/**",   // AdminTokenFilter가 직접 검증
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
