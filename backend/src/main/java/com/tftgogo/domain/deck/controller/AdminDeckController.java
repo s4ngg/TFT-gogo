@@ -39,7 +39,7 @@ public class AdminDeckController {
     public ResponseEntity<ApiResponse<List<AdminDeckResponse>>> listDecks(
             @RequestParam(defaultValue = "MASTER_PLUS") RankFilter rankFilter) {
 
-        String latestPatch = metaDeckService.findLatestPatchVersion(rankFilter);
+        String latestPatch = metaDeckService.findLatestPatchVersion(rankFilter).orElse(null);
         if (latestPatch == null) {
             return ResponseEntity.ok(ApiResponse.success("관리자 덱 목록 조회 성공", List.of()));
         }

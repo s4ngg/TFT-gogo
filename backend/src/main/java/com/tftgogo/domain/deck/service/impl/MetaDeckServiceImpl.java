@@ -104,8 +104,8 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     @Override
     @Transactional(readOnly = true)
     public MetaDeckListResponse getMetaDecks(RankFilter rankFilter) {
-        String latestPatchVersion = findLatestPatchVersion(rankFilter);
-        if (latestPatchVersion == null) {
+        Optional<String> latestPatchOpt = findLatestPatchVersion(rankFilter);
+        if (latestPatchOpt.isEmpty()) {
             return MetaDeckListResponse.builder()
                     .patchVersion(null)
                     .rankFilter(rankFilter)
@@ -113,6 +113,7 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                     .decks(List.of())
                     .build();
         }
+        String latestPatchVersion = latestPatchOpt.get();
 
         // 선택률 기준 내림차순 정렬 + 최소 선택률 필터 적용
         List<MetaDeck> decks = metaDeckRepository
@@ -694,12 +695,10 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     }
 
     @Override
-    public String findLatestPatchVersion(RankFilter rankFilter) {
-        return metaDeckRepository.findAllByRankFilter(rankFilter).stream()
-                .map(MetaDeck::getPatchVersion)
+    public Optional<String> findLatestPatchVersion(RankFilter rankFilter) {
+        return metaDeckRepository.findDistinctPatchVersionsByRankFilter(rankFilter).stream()
                 .filter(patchVersion -> !UNKNOWN_PATCH_VERSION.equals(patchVersion))
-                .max(this::comparePatchVersions)
-                .orElse(null);
+                .max(this::comparePatchVersions);
     }
 
     private int comparePatchVersions(String left, String right) {
