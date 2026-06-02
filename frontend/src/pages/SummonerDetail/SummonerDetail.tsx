@@ -8,7 +8,7 @@ import ChampionCard from '../../components/common/ChampionCard'
 import useSummonerStore from '../../store/useSummonerStore'
 import { useSummonerProfile } from '../../hooks/useSummonerProfile'
 import { useMatchHistory } from '../../hooks/useMatchHistory'
-import type { MatchSummaryResponse, GameType } from '../../api/summonerApi'
+import type { MatchSummaryResponse, MatchTraitResponse, GameType } from '../../api/summonerApi'
 import styles from './SummonerDetail.module.css'
 
 const TIER_KO: Record<string, string> = {
@@ -162,6 +162,49 @@ function SummonerDetail() {
   const total = profile ? (profile.wins + profile.losses) : 0
   const winRate = total > 0 ? Math.round((profile!.wins / total) * 100) : 0
 
+  const recentMatches = matches.slice(0, 30)
+  const computedAvgPlace = recentMatches.length > 0
+    ? Math.round(recentMatches.reduce((s, m) => s + m.placement, 0) / recentMatches.length * 10) / 10
+    : 0
+  const computedTop4Rate = recentMatches.length > 0
+    ? Math.round(recentMatches.filter(m => m.placement <= 4).length / recentMatches.length * 1000) / 10
+    : 0
+
+  const topTraits = (() => {
+    const map = new Map<string, { traitId: string; name: string; tone: MatchTraitResponse['tone']; count: number; games: number; totalPlace: number }>()
+    for (const m of matches) {
+      for (const tr of m.traits) {
+        if (tr.traitId.toLowerCase().includes('unique')) continue
+        const entry = map.get(tr.traitId)
+        if (entry) { entry.games++; entry.totalPlace += m.placement; entry.count = Math.max(entry.count, tr.count) }
+        else map.set(tr.traitId, { traitId: tr.traitId, name: tr.name, tone: tr.tone, count: tr.count, games: 1, totalPlace: m.placement })
+      }
+    }
+    return [...map.values()]
+      .sort((a, b) => b.games - a.games).slice(0, 5)
+      .map(t => ({ ...t, avgPlace: Math.round(t.totalPlace / t.games * 10) / 10 }))
+  })()
+
+  const topChampions = (() => {
+    const map = new Map<string, { characterId: string; name: string; imageUrl: string; games: number; totalPlace: number }>()
+    for (const m of matches) {
+      for (const u of m.units) {
+        const entry = map.get(u.characterId)
+        if (entry) { entry.games++; entry.totalPlace += m.placement }
+        else map.set(u.characterId, {
+          characterId: u.characterId,
+          name: u.characterId.replace(/^TFT\d+_/i, ''),
+          imageUrl: u.imageUrl || tftChampSquareUrl(u.characterId),
+          games: 1,
+          totalPlace: m.placement,
+        })
+      }
+    }
+    return [...map.values()]
+      .sort((a, b) => b.games - a.games).slice(0, 5)
+      .map(c => ({ ...c, avgPlace: Math.round(c.totalPlace / c.games * 10) / 10 }))
+  })()
+
   const filteredMatches = gameTypeFilter === 'ALL'
     ? matches
     : matches.filter((m) => m.gameType === gameTypeFilter)
@@ -231,8 +274,8 @@ function SummonerDetail() {
                 <p className={styles.recordLine}>
                   <span>{profile?.wins ?? '-'}승 {profile?.losses ?? '-'}패</span>
                   <span className={styles.winRateText}>승률 {winRate}%</span>
-                  <span className={styles.avgPlaceText}>평균 {profile?.avgPlace ?? '-'}등</span>
-                  <span className={styles.top4Text}>TOP4 {profile?.top4Rate ?? '-'}%</span>
+                  <span className={styles.avgPlaceText}>평균 {computedAvgPlace || '-'}등</span>
+                  <span className={styles.top4Text}>TOP4 {computedTop4Rate || '-'}%</span>
                 </p>
               </div>
               <div className={styles.profileRight}>
@@ -249,12 +292,12 @@ function SummonerDetail() {
             </section>
 
             {/* 많이 플레이한 시너지 / 챔피언 */}
-            {profile && (
+            {matches.length > 0 && (
               <div className={styles.statGrid}>
                 <section className={styles.statSection}>
                   <h2 className={styles.statSectionTitle}>많이 플레이한 시너지</h2>
                   <div className={styles.topTraitList}>
-                    {(profile.topTraits ?? []).map((tr, i) => (
+                    {topTraits.map((tr, i) => (
                       <div key={tr.traitId} className={styles.topTraitRow}>
                         <span className={styles.topRank}>{i + 1}</span>
                         <TraitHexBadge count={tr.count} iconUrl={tftTraitIconUrl(tr.traitId)} name={tr.name} tone={tr.tone} />
@@ -269,14 +312,11 @@ function SummonerDetail() {
                 <section className={styles.statSection}>
                   <h2 className={styles.statSectionTitle}>많이 플레이한 챔피언</h2>
                   <div className={styles.topChampList}>
-                    {(profile.topChampions ?? []).map((champ, i) => (
+                    {topChampions.map((champ, i) => (
                       <div key={champ.characterId} className={styles.topChampRow}>
                         <span className={styles.topRank}>{i + 1}</span>
                         <div className={styles.champThumbWrap}>
                           <img className={styles.champThumb} src={champ.imageUrl} alt={champ.name} />
-                          <span className={styles.champCost} style={{ background: costColor(champ.cost) }}>
-                            {champ.cost}
-                          </span>
                         </div>
                         <span className={styles.topName}>{champ.name}</span>
                         <span className={styles.topGames}>{champ.games}게임</span>
@@ -378,9 +418,5 @@ function SummonerDetail() {
   )
 }
 
-function costColor(cost: number) {
-  const map: Record<number, string> = { 1: '#808080', 2: '#3cb371', 3: '#4169e1', 4: '#9932cc', 5: '#ffd700' }
-  return map[cost] ?? '#808080'
-}
 
 export default SummonerDetail

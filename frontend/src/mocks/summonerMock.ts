@@ -291,24 +291,6 @@ export const mockSummonerProfile: SummonerProfileResponse = {
   leaguePoints: 45,
   wins: 256,
   losses: 137,
-  avgPlace: 3.6,
-  top4Rate: 67,
-  rankDistribution: [18, 22, 21, 20, 19, 17, 16, 10],
-  topTraits: [
-    { traitId: 'TFT17_Vanguard', name: '선봉대', count: 4, iconUrl: traitIcons.vanguard, tone: 'gold', games: 32, avgPlace: 3.2 },
-    { traitId: 'TFT17_DarkStar', name: '암흑의 별', count: 6, iconUrl: traitIcons.darkStar, tone: 'gold', games: 28, avgPlace: 3.6 },
-    { traitId: 'TFT17_Astronaut', name: '정령족', count: 4, iconUrl: traitIcons.spirit, tone: 'gold', games: 21, avgPlace: 3.9 },
-    { traitId: 'TFT17_Rogue', name: '습격자', count: 6, iconUrl: traitIcons.rogue, tone: 'gold', games: 18, avgPlace: 4.1 },
-    { traitId: 'TFT17_Stargazer', name: '별돌보미', count: 4, iconUrl: traitIcons.stargazer, tone: 'gold', games: 14, avgPlace: 4.3 },
-  ],
-  topChampions: [
-    { characterId: 'TFT17_Vex', name: '벡스', imageUrl: ci.vex, cost: 4, games: 38, avgPlace: 3.1 },
-    { characterId: 'TFT17_Jhin', name: '진', imageUrl: ci.jhin, cost: 4, games: 31, avgPlace: 3.4 },
-    { characterId: 'TFT17_Corki', name: '코르키', imageUrl: ci.corki, cost: 3, games: 26, avgPlace: 3.7 },
-    { characterId: 'TFT17_MasterYi', name: '마스터 이', imageUrl: ci.masterYi, cost: 4, games: 22, avgPlace: 3.9 },
-    { characterId: 'TFT17_Lulu', name: '룰루', imageUrl: ci.lulu, cost: 3, games: 19, avgPlace: 4.0 },
-    { characterId: 'TFT17_Akali', name: '아칼리', imageUrl: ci.akali, cost: 3, games: 17, avgPlace: 4.2 },
-  ],
 }
 
 // ── 매치 히스토리 mock (90게임) ─────────────────────────────
