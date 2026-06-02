@@ -77,9 +77,9 @@ v1.2 (2026-06-01 팀 spec-kit 병합)
 
 ## **3.3 Rate Limit 정책**
 
-- 429 응답 수신 시: 고정 간격(Thread.sleep) 대기 후 재시도 (현재 구현)
+- 429 응답 수신 시: `BusinessException(ErrorCode.RIOT_API_RATE_LIMIT)` throw — 재시도 없음 (현재 구현)
 
-- 권장 개선안: 429 응답 헤더의 Retry-After 값을 파싱하여 정확한 대기 시간 적용
+- 권장 개선안: 429 응답 헤더의 Retry-After 값을 파싱하여 정확한 대기 시간 후 재시도 적용
 
 - 로드맵 우선순위: 중간
 
@@ -99,6 +99,8 @@ v1.2 (2026-06-01 팀 spec-kit 병합)
 
 ## **4.2 SummonerDTO (tft-summoner-v1)**
 
+아래는 우리 서비스가 실제로 매핑하여 사용하는 필드 목록입니다.
+
 | **필드명** | **타입** | **필수** | **설명** |
 | --- | --- | --- | --- |
 | puuid | string | O | 암호화된 PUUID. 정확히 78자 |
@@ -106,7 +108,7 @@ v1.2 (2026-06-01 팀 spec-kit 병합)
 | summonerLevel | long | O | 소환사 레벨 |
 | revisionDate | long | O | 마지막 수정일 (epoch milliseconds) |
 
-*이 DTO에는 id(encryptedSummonerId)와 accountId 필드가 없습니다. 총 4개 필드가 전부입니다.*
+*Riot API tft-summoner-v1 응답에는 `id`(encryptedSummonerId), `accountId` 등 추가 필드가 포함될 수 있습니다. 우리 서비스는 화면 표시에 필요한 위 4개 필드만 사용하며, 나머지 필드는 `SummonerDto`의 `@JsonIgnoreProperties(ignoreUnknown = true)` 설정으로 자동 무시합니다.*
 
 ## **4.3 LeagueEntryDTO (tft-league-v1)**
 
@@ -135,6 +137,7 @@ GET /tft/match/v1/matches/by-puuid/{puuid}/ids
 | --- | --- | --- | --- | --- |
 | start | int | 0 | 0 | 시작 인덱스. 기본값 사용 |
 | count | int | 20 | 30 | 반환할 매치 ID 수. 30개로 고정 |
+| queue | int | - | 미사용 | Riot API 지원 파라미터이나 사용하지 않음. 큐타입 필터링은 매치 상세 InfoDto.queue_id 기준으로 서버에서 처리 |
 | startTime | long | - | 미사용 | 필터 시작 시각. 사용하지 않음 |
 | endTime | long | - | 미사용 | 필터 종료 시각. 사용하지 않음 |
 
@@ -300,11 +303,11 @@ winRate = wins / (wins + losses) * 100
 
 "Version 14.12.639.9834 (Sep 10 2024/11:11:11) [PUBLIC] <Releases/14.12>"
 
-- 주요 버전(예: 14.12) 추출: Releases/ 뒤 문자열 또는 앞부분 "Version X.Y" 파싱
+- 주요 버전(예: 14.12) 추출: 정규식 `(\d+\.\d+[a-zA-Z]?)` 으로 첫 번째 매칭값 사용
 
-- 두 팀이 동일한 파싱 규칙을 사용해야 집계 기준과 전적 표시 기준이 일치합니다.
+- 구현 위치: `MetaDeckServiceImpl.normalizePatchVersion()` — 덱 집계 팀 서버에서 이미 운영 중
 
-- 파싱 구현 공유 여부 및 기준 협의 필요 (미결)
+- 전적 검색 팀도 동일한 정규식을 적용해야 패치 기준이 일치합니다. (구현 완료)
 
 # **8. 에러 처리**
 
@@ -316,7 +319,7 @@ winRate = wins / (wins + losses) * 100
 | 401 | API Key 없음 또는 만료 | 서버 로그 기록, 관리자 알림 |
 | 403 | API Key 권한 없음 | 서버 로그 기록 |
 | 404 | 소환사 또는 매치 없음 | 사용자에게 검색 결과 없음 표시 |
-| 429 | Rate Limit 초과 | 고정 대기 후 재시도. 개선안: Retry-After 헤더 파싱 |
+| 429 | Rate Limit 초과 | `BusinessException(ErrorCode.RIOT_API_RATE_LIMIT)` throw, 재시도 없음. 개선안: Retry-After 헤더 파싱 후 재시도 |
 | 500 / 503 | Riot 서버 오류 | 일시적 오류 안내, 재시도 유도 |
 
 ## **8.2 부분 실패 처리**
@@ -334,11 +337,11 @@ winRate = wins / (wins + losses) * 100
 | **항목** | **우선순위** | **비고** |
 | --- | --- | --- |
 | **API 경로 단수→복수 통일** | **높음** | `/api/summoner/**` → `/api/summoners/**` (SummonerController, SecurityConfig, summonerApi.ts 동시 변경 필요) |
-| Rate Limit — Retry-After 헤더 파싱 적용 | 중간 | 현재: 고정 sleep |
+| Rate Limit — Retry-After 헤더 파싱 후 재시도 적용 | 중간 | 현재: 예외 throw만, 재시도 없음 |
 | 전적 최신화 엔드포인트 구현 | 중간 | `POST /api/summoners/{gameName}/{tagLine}/refresh` 미구현 |
 | 게임 유형(gameType) 변환 정책 확정 | 중간 | queue_id → RANKED/NORMAL 레이블 매핑 기준 명문화 필요 |
 | 스테이지 변환 정책 확정 | 중간 | 현재 임시로 level 값 사용 중. 실제 라운드 번호 표기 방식 협의 필요 |
-| game_version 파싱 규칙 공유 여부 협의 | 높음 | 두 팀 기준 불일치 시 UI 오류 가능 |
+| ~~game_version 파싱 규칙 공유 여부 협의~~ | ~~높음~~ | 완료 — `normalizePatchVersion()` 정규식 `(\d+\.\d+[a-zA-Z]?)` 양 팀 공유 기준 확정 |
 | 집계 결과 조회용 내부 API 엔드포인트 정의 | 미정 | 집계 팀과 협의 후 문서화 |
 | Data Dragon 버전 동기화 방식 | 낮음 | profileIconId → 아이콘 이미지 URL 조합 기준 |
 
