@@ -432,8 +432,8 @@
 }
 
 .editorCellEditing {
-  border-color: #f9c860 !important;
-  box-shadow: 0 0 0 2px rgba(249,200,96,0.3) !important;
+  border-color: var(--color-star) !important;
+  box-shadow: 0 0 0 2px var(--tone-gold-border) !important;
 }
 
 .editorCellWrap {
@@ -480,7 +480,7 @@
   align-items: center;
   font-size: 0.8rem;
   font-weight: 600;
-  color: #f9c860;
+  color: var(--color-star);
 }
 
 .itemPickerSelected {
@@ -526,8 +526,8 @@
 .itemPickerChip:disabled { opacity: 0.35; cursor: default; }
 
 .itemPickerChipSelected {
-  border-color: #f9c860;
-  background: rgba(249,200,96,0.1);
+  border-color: var(--color-star);
+  background: var(--tone-gold-bg);
 }
 
 .itemPickerIcon {

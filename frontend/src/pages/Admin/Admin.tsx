@@ -149,8 +149,10 @@ function BoardEditorModal({ deck, locale, onClose, onSave }: BoardEditorProps) {
     const existingKey = cellMap.get(`${row}-${col}`)
     if (existingKey) {
       if (selected) {
-        // 챔피언 선택 중 → 기존 제거
+        // 챔피언 선택 중 → 기존 제거 + 해당 챔피언 편집 중이었으면 피커도 닫기
         setPosMap((prev) => { const n = new Map(prev); n.delete(existingKey); return n })
+        setEditingItemsFor((prev) => prev === existingKey ? null : prev)
+        setItemSearch('')
       } else {
         // 챔피언 미선택 → 아이템 편집 모드 토글
         setEditingItemsFor((prev) => prev === existingKey ? null : existingKey)
@@ -162,8 +164,9 @@ function BoardEditorModal({ deck, locale, onClose, onSave }: BoardEditorProps) {
     if (!selected) return
     setPosMap((prev) => {
       const n = new Map(prev)
+      const prevPos = n.get(selected.apiName)
       n.delete(selected.apiName)
-      n.set(selected.apiName, { row, col })
+      n.set(selected.apiName, { row, col, items: prevPos?.items })
       return n
     })
     setSelected(null)

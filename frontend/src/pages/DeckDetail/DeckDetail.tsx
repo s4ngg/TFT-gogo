@@ -102,7 +102,17 @@ function parseBoardPositions(json: string | null | undefined, level: number): Ma
     const obj = JSON.parse(json) as Record<string, unknown>
     const levelData = obj[String(level)]
     if (levelData && typeof levelData === 'object') {
-      return new Map(Object.entries(levelData as Record<string, CellPosData>))
+      const entries = Object.entries(levelData as Record<string, unknown>)
+        .filter((entry): entry is [string, CellPosData] => {
+          const v = entry[1]
+          return (
+            typeof v === 'object' && v !== null &&
+            typeof (v as CellPosData).row === 'number' &&
+            typeof (v as CellPosData).col === 'number' &&
+            ((v as CellPosData).items === undefined || Array.isArray((v as CellPosData).items))
+          )
+        })
+      return new Map(entries)
     }
     return new Map()  // 레벨 미설정 → 빈 보드
   } catch {
