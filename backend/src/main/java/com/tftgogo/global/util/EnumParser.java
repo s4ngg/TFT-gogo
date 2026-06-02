@@ -11,6 +11,9 @@ public final class EnumParser {
     }
 
     public static <E extends Enum<E>> E from(Class<E> enumType, String value) {
+        if (value == null || value.isBlank()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
         try {
             return Enum.valueOf(enumType, value.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
