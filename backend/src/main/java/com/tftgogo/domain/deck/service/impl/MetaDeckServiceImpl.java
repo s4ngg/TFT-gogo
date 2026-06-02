@@ -530,6 +530,13 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                 })
                 .toList();
 
+        // #132: 집계 결과가 없으면 기존 데이터를 보호하고 저장 건너뜀
+        if (ranked.isEmpty()) {
+            logger.warn("[{}][{}] 집계 결과 없음 (totalParticipants={}) — 기존 데이터 유지",
+                    rankFilter, patchVersion, totalParticipants);
+            return;
+        }
+
         refreshPatchDecks(rankFilter, patchVersion);
 
         for (int index = 0; index < ranked.size(); index++) {

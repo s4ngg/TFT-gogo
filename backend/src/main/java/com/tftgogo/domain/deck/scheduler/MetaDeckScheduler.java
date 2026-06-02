@@ -3,6 +3,7 @@ package com.tftgogo.domain.deck.scheduler;
 import com.tftgogo.domain.deck.entity.RankFilter;
 import com.tftgogo.domain.deck.repository.MetaDeckRepository;
 import com.tftgogo.domain.deck.service.MetaDeckService;
+import com.tftgogo.global.config.MetaDeckProperties;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,9 +24,14 @@ public class MetaDeckScheduler {
 
     private final MetaDeckService metaDeckService;
     private final MetaDeckRepository metaDeckRepository;
+    private final MetaDeckProperties metaDeckProperties;
 
     @EventListener(ApplicationReadyEvent.class)
     public void aggregateOnStartupIfMissing() {
+        if (!metaDeckProperties.isStartupAggregate()) {
+            logger.info("서버 시작 자동 집계 비활성화 (app.meta-deck.startup-aggregate=false)");
+            return;
+        }
         LocalDate targetDate = LocalDate.now(SCHEDULE_ZONE).minusDays(1);
         aggregateIfMissing(targetDate, "서버 시작");
     }
