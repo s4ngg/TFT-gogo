@@ -232,7 +232,25 @@
   white-space: nowrap;
 }
 
-.traits    { display: flex; align-items: flex-end; gap: 4px; }
+.traits    { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+
+.traitTag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: var(--space-3xs) 7px;
+  border-radius: var(--radius-xs);
+  font-size: var(--font-size-2xs);
+  font-weight: 600;
+  background: var(--bg-faint);
+  color: var(--text-muted);
+  border: 1px solid var(--border-faint);
+  white-space: nowrap;
+}
+
+.toneGold   { color: var(--tone-gold-color); border-color: var(--tone-gold-border); background: var(--tone-gold-bg); }
+.toneSilver { color: var(--tone-silver-color); border-color: var(--tone-silver-border); background: var(--tone-silver-bg); }
+.toneBronze { color: var(--tone-bronze-color); border-color: var(--tone-bronze-border); background: var(--tone-bronze-bg); }
 .champions {
   display: flex;
   align-items: flex-end;

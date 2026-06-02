@@ -43,9 +43,15 @@ public class SecurityConfig {
                                 "/api/admin/**",
                                 "/api/match/**",
                                 "/api/summoners/**",
+                                  "/api/guide",
+                                "/api/guide/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/decks/meta")
+                        .permitAll()
+                        .requestMatchers("/api/admin/**")   // AdminTokenFilter가 직접 검증
+                        .permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(adminTokenFilter, UsernamePasswordAuthenticationFilter.class);
