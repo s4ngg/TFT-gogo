@@ -1,6 +1,7 @@
 package com.tftgogo.global.config;
 
 import com.tftgogo.global.riot.config.RiotProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -12,6 +13,7 @@ import java.util.concurrent.Executor;
 
 @Configuration
 @EnableAsync
+@EnableConfigurationProperties(MetaDeckProperties.class)
 public class AppConfig {
 
     @Bean
