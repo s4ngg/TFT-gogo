@@ -19,6 +19,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -32,6 +34,7 @@ public class RiotApiClient {
     private static final int MAX_RETRY_COUNT = 3;
     private static final long MIN_REQUEST_INTERVAL_MS = 1300L;
     private static final long DEFAULT_RATE_LIMIT_WAIT_MS = 120_000L;
+    private static final long RATE_LIMIT_WAIT_CAP_MS = 30_000L;
 
     private final RiotProperties riotProperties;
     private final RestTemplate restTemplate;
@@ -70,7 +73,7 @@ public class RiotApiClient {
         String url = riotProperties.getAsiaBaseUrl()
                 + "/riot/account/v1/accounts/by-riot-id/"
                 + encodePathSegment(gameName) + "/" + encodePathSegment(tagLine);
-        return getByUrl(url, path, AccountDto.class);
+        return getByUrl(url, path, AccountDto.class, ErrorCode.ACCOUNT_NOT_FOUND);
     }
 
     // ── 소환사 정보 조회 (tft-summoner-v1, kr) ──────────────
@@ -78,15 +81,15 @@ public class RiotApiClient {
         String path = "/tft/summoner/v1/summoners/by-puuid/{puuid}";
         String url = riotProperties.getKrBaseUrl()
                 + "/tft/summoner/v1/summoners/by-puuid/" + puuid;
-        return getByUrl(url, path, SummonerDto.class);
+        return getByUrl(url, path, SummonerDto.class, ErrorCode.SUMMONER_NOT_FOUND);
     }
 
     // ── 소환사 랭크 정보 조회 (tft-league-v1, kr) ────────────
-    // RANKED_TFT 큐타입 항목만 반환. 배치 미완료 시 Optional.empty()
+    // RANKED_TFT 큐타입 항목만 반환. 배치 미완료·미배치 시 Optional.empty()
     public Optional<LeagueEntryDto> getLeagueByPuuid(String puuid) {
         String path = "/tft/league/v1/by-puuid/{puuid}";
         String url = riotProperties.getKrBaseUrl() + "/tft/league/v1/by-puuid/" + puuid;
-        LeagueEntryDto[] entries = getByUrl(url, path, LeagueEntryDto[].class);
+        LeagueEntryDto[] entries = getByUrl(url, path, LeagueEntryDto[].class, null);
         if (entries == null) return Optional.empty();
         return Stream.of(entries)
                 .filter(e -> "RANKED_TFT".equals(e.getQueueType()))
@@ -99,7 +102,7 @@ public class RiotApiClient {
         String url = riotProperties.getAsiaBaseUrl()
                 + "/tft/match/v1/matches/by-puuid/" + puuid
                 + "/ids?count=" + count + "&start=" + start;
-        String[] ids = getByUrl(url, path, String[].class);
+        String[] ids = getByUrl(url, path, String[].class, ErrorCode.RIOT_API_ERROR);
         return ids != null ? Arrays.asList(ids) : List.of();
     }
 
@@ -111,7 +114,7 @@ public class RiotApiClient {
                 + "/ids?queue=1100&count=" + count
                 + "&startTime=" + startTime
                 + "&endTime=" + endTime;
-        String[] ids = getByUrl(url, path, String[].class);
+        String[] ids = getByUrl(url, path, String[].class, ErrorCode.RIOT_API_ERROR);
         return ids != null ? Arrays.asList(ids) : List.of();
     }
 
@@ -119,16 +122,17 @@ public class RiotApiClient {
     public MatchDto getMatch(String matchId) {
         String path = "/tft/match/v1/matches/{matchId}";
         String url = riotProperties.getAsiaBaseUrl() + "/tft/match/v1/matches/" + matchId;
-        return getByUrl(url, path, MatchDto.class);
+        return getByUrl(url, path, MatchDto.class, ErrorCode.MATCH_NOT_FOUND);
     }
 
     // ── 공통 GET (baseUrl 분기용) ───────────────────────────
     private <T> T get(String path, String baseUrl, Class<T> responseType) {
-        return getByUrl(baseUrl + path, path, responseType);
+        return getByUrl(baseUrl + path, path, responseType, ErrorCode.RIOT_API_ERROR);
     }
 
     // ── 공통 GET — 1,300ms 최소 간격 + Retry-After 파싱 재시도 (최대 3회) ──
-    private <T> T getByUrl(String url, String logPath, Class<T> responseType) {
+    // notFoundCode=null 이면 404 시 예외 없이 null 반환 (league 미배치 등 정상 케이스)
+    private <T> T getByUrl(String url, String logPath, Class<T> responseType, ErrorCode notFoundCode) {
         for (int attempt = 1; attempt <= MAX_RETRY_COUNT; attempt++) {
             try {
                 waitForRequestWindow();
@@ -146,8 +150,12 @@ public class RiotApiClient {
             } catch (BusinessException e) {
                 throw e;
             } catch (HttpClientErrorException.NotFound e) {
-                logger.warn("Riot API 404 — 소환사 없음: endpoint={}", logPath);
-                throw new BusinessException(ErrorCode.ACCOUNT_NOT_FOUND);
+                if (notFoundCode == null) {
+                    logger.warn("Riot API 404 (정상 케이스): endpoint={}", logPath);
+                    return null;
+                }
+                logger.warn("Riot API 404: endpoint={}", logPath);
+                throw new BusinessException(notFoundCode);
             } catch (HttpClientErrorException.TooManyRequests e) {
                 if (attempt == MAX_RETRY_COUNT) {
                     logger.warn("Riot API rate limit exceeded after retries: endpoint={}", logPath);
@@ -180,15 +188,17 @@ public class RiotApiClient {
                 ? e.getResponseHeaders().getFirst("Retry-After")
                 : null;
 
+        long waitMs;
         if (retryAfter == null || retryAfter.isBlank()) {
-            return DEFAULT_RATE_LIMIT_WAIT_MS;
+            waitMs = DEFAULT_RATE_LIMIT_WAIT_MS;
+        } else {
+            try {
+                waitMs = Math.max(1, Long.parseLong(retryAfter)) * 1000L;
+            } catch (NumberFormatException ignored) {
+                waitMs = DEFAULT_RATE_LIMIT_WAIT_MS;
+            }
         }
-
-        try {
-            return Math.max(1, Long.parseLong(retryAfter)) * 1000L;
-        } catch (NumberFormatException ignored) {
-            return DEFAULT_RATE_LIMIT_WAIT_MS;
-        }
+        return Math.min(waitMs, RATE_LIMIT_WAIT_CAP_MS);
     }
 
     private void sleep(long waitMs) {
@@ -201,6 +211,6 @@ public class RiotApiClient {
     }
 
     private static String encodePathSegment(String value) {
-        return value.replace(" ", "%20").replace("#", "%23");
+        return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
     }
 }

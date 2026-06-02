@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -53,6 +54,7 @@ public class MatchDetailResponse {
                 .tftGameType(info.getTft_game_type())
                 .participants(info.getParticipants() == null ? List.of() :
                         info.getParticipants().stream()
+                                .sorted(Comparator.comparingInt(MatchDto.ParticipantDto::getPlacement))
                                 .map(ParticipantDetail::of)
                                 .collect(Collectors.toList()))
                 .build();

@@ -16,6 +16,7 @@ import com.tftgogo.global.riot.dto.SummonerDto;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -24,6 +25,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.Executor;
 
 @Service
 @RequiredArgsConstructor
@@ -38,16 +40,25 @@ public class SummonerServiceImpl implements SummonerService {
 
     private final RiotApiClient riotApiClient;
 
+    @Qualifier("riotApiExecutor")
+    private final Executor riotApiExecutor;
+
     @Override
     public MatchSearchResponse search(String gameName, String tagLine) {
         AccountDto account = riotApiClient.getAccount(gameName, tagLine);
         String puuid = account.getPuuid();
 
         CompletableFuture<SummonerDto> summonerFuture = CompletableFuture.supplyAsync(
-                () -> riotApiClient.getSummoner(puuid));
+                () -> riotApiClient.getSummoner(puuid), riotApiExecutor);
         CompletableFuture<Optional<LeagueEntryDto>> leagueFuture = CompletableFuture
-                .supplyAsync(() -> riotApiClient.getLeagueByPuuid(puuid))
+                .supplyAsync(() -> riotApiClient.getLeagueByPuuid(puuid), riotApiExecutor)
                 .exceptionally(e -> {
+                    Throwable cause = e.getCause() != null ? e.getCause() : e;
+                    if (cause instanceof BusinessException be &&
+                            (be.getErrorCode() == ErrorCode.RIOT_API_RATE_LIMIT
+                                    || be.getErrorCode() == ErrorCode.RIOT_API_ERROR)) {
+                        throw new CompletionException(cause);
+                    }
                     logger.warn("league 조회 실패, unranked 처리: puuid={}", puuid, e);
                     return Optional.empty();
                 });
@@ -94,6 +105,9 @@ public class SummonerServiceImpl implements SummonerService {
                         .filter(p -> puuid.equals(p.getPuuid()))
                         .findFirst()
                         .ifPresent(p -> result.add(MatchSummaryResponse.of(matchId, info, p)));
+            } catch (BusinessException e) {
+                if (e.getErrorCode() == ErrorCode.RIOT_API_RATE_LIMIT) throw e;
+                logger.warn("매치 상세 조회 실패, 건너뜀: matchId={}", matchId, e);
             } catch (Exception e) {
                 logger.warn("매치 상세 조회 실패, 건너뜀: matchId={}", matchId, e);
             }

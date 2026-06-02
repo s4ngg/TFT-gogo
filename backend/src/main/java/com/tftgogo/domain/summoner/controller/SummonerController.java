@@ -58,7 +58,7 @@ public class SummonerController implements SummonerControllerDocs {
 
         int[] rankDist = new int[8];
         matchList.forEach(m -> {
-            int idx = Math.min(m.getPlacement() - 1, 7);
+            int idx = Math.max(0, Math.min(m.getPlacement() - 1, 7));
             rankDist[idx]++;
         });
 

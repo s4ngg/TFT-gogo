@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -72,26 +73,30 @@ public class MatchSummaryResponse {
                 .playersEliminated(participant.getPlayers_eliminated())
                 .timeEliminated(participant.getTime_eliminated())
                 .totalDamageToPlayers(participant.getTotal_damage_to_players())
-                .traits(participant.getTraits().stream()
-                        .map(t -> TraitSummary.builder()
-                                .name(t.getName())
-                                .numUnits(t.getNum_units())
-                                .style(t.getStyle())
-                                .tierCurrent(t.getTier_current())
-                                .tierTotal(t.getTier_total())
-                                .build())
-                        .collect(Collectors.toList()))
-                .units(participant.getUnits().stream()
-                        .map(u -> UnitSummary.builder()
-                                .characterId(u.getCharacter_id())
-                                .name(u.getName())
-                                .tier(u.getTier())
-                                .rarity(u.getRarity())
-                                .itemNames(u.getItemNames() == null ? List.of() : u.getItemNames())
-                                .build())
-                        .collect(Collectors.toList()))
+                .traits(participant.getTraits() == null ? List.of() :
+                        participant.getTraits().stream()
+                                .filter(t -> t.getStyle() > 0)
+                                .map(t -> TraitSummary.builder()
+                                        .name(t.getName())
+                                        .numUnits(t.getNum_units())
+                                        .style(t.getStyle())
+                                        .tierCurrent(t.getTier_current())
+                                        .tierTotal(t.getTier_total())
+                                        .build())
+                                .collect(Collectors.toList()))
+                .units(participant.getUnits() == null ? List.of() :
+                        participant.getUnits().stream()
+                                .map(u -> UnitSummary.builder()
+                                        .characterId(u.getCharacter_id())
+                                        .name(u.getName())
+                                        .tier(u.getTier())
+                                        .rarity(u.getRarity())
+                                        .itemNames(u.getItemNames() == null ? List.of() : u.getItemNames())
+                                        .build())
+                                .collect(Collectors.toList()))
                 .participants(info.getParticipants() == null ? List.of() :
                         info.getParticipants().stream()
+                                .sorted(Comparator.comparingInt(MatchDto.ParticipantDto::getPlacement))
                                 .map(p -> ParticipantSummary.builder()
                                         .puuid(p.getPuuid())
                                         .riotIdGameName(p.getRiotIdGameName())

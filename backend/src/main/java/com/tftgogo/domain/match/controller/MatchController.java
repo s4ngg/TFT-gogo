@@ -5,6 +5,8 @@ import com.tftgogo.domain.match.dto.response.MatchDetailResponse;
 import com.tftgogo.domain.match.dto.response.MatchSearchResponse;
 import com.tftgogo.domain.match.dto.response.MatchSummaryResponse;
 import com.tftgogo.domain.summoner.service.SummonerService;
+import com.tftgogo.global.exception.BusinessException;
+import com.tftgogo.global.exception.ErrorCode;
 import com.tftgogo.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +37,9 @@ public class MatchController implements MatchControllerDocs {
     public ResponseEntity<ApiResponse<List<MatchSummaryResponse>>> getMatches(
             @PathVariable("puuid") String puuid,
             @RequestParam(name = "start", defaultValue = "0") int start) {
+        if (start < 0) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
         List<MatchSummaryResponse> response = summonerService.getMatches(puuid, start);
         return ResponseEntity.ok(ApiResponse.success("매치 목록 조회 성공", response));
     }
