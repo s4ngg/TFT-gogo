@@ -44,7 +44,7 @@
 
 .profileCard {
   display: grid;
-  grid-template-columns: 80px 120px 1fr auto;
+  grid-template-columns: 80px 300px 1fr auto;
   align-items: center;
   gap: 24px;
   padding: 24px 28px;
@@ -80,9 +80,9 @@
 }
 
 .emblem {
-  width: 120px;
-  height: 110px;
-  background: url("/assets/ranks/platinum-emblem.png") center / contain no-repeat;
+  width: 300px;
+  height: 300px;
+  background: center / contain no-repeat;
 }
 
 .profileInfo h1 {

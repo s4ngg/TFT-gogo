@@ -33,9 +33,17 @@
   height: 14px;
   object-fit: contain;
   object-position: center;
-  filter: brightness(0) saturate(100%) opacity(0.9);
+  filter: brightness(0) invert(1) opacity(0.9);
   transform: translateY(-0.2px) scale(1.08);
   transform-origin: center;
+}
+
+.iconFallback {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
 }
 
 .silver .icon {
