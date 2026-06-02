@@ -50,6 +50,17 @@ TFT(팀파이트 택티스) 전적 검색 및 메타 가이드 서비스.
 ### 스타일
 - [ ] CSS Modules 사용 (`*.module.css`) — **Tailwind 사용 절대 금지**
 - [ ] 색상/크기 하드코딩 금지 → `variables.css`의 CSS 변수 사용
+  - 새로운 색상/간격이 필요하면 `variables.css`에 토큰 추가 후 참조
+  - 기존 토큰 목록: `--color-*`, `--tone-*`, `--space-*`, `--font-size-*`, `--radius-*`
+- [ ] CSS Modules 클래스명은 **camelCase** — snake_case(`tone_gold`) 금지 → `toneGold`
+- [ ] 동적 클래스 매핑은 `Record<string, string>` 상수 Map으로 관리 (bracket notation 직접 사용 지양)
+  ```tsx
+  // ❌ 금지
+  styles[`tone_${t.tone}`]
+  // ✅ 권장
+  const TONE_CLASS_MAP: Record<string, string> = { gold: styles.toneGold, ... }
+  TONE_CLASS_MAP[t.tone]
+  ```
 - [ ] 컴포넌트 내부에 이미지 URL 하드코딩 금지 → `communityDragonAssets.ts` 사용
 
 ### TypeScript
