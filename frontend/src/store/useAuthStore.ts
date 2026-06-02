@@ -1,15 +1,46 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
-interface AuthState {
-  user: unknown
-  setUser: (user: unknown) => void
-  clearUser: () => void
+export interface AuthUser {
+  email: string
+  id?: number | string
+  nickname?: string
+  profileIconId?: number
+  summonerName?: string
+  tagLine?: string
+  tier?: string
 }
 
-const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  setUser: (user) => set({ user }),
-  clearUser: () => set({ user: null }),
-}))
+interface AuthPayload {
+  token: string
+  user: AuthUser
+}
+
+interface AuthState {
+  token: string | null
+  user: AuthUser | null
+  setAuth: (auth: AuthPayload) => void
+  setUser: (user: AuthUser | null) => void
+  clearAuth: () => void
+}
+
+const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      token: null,
+      user: null,
+      setAuth: ({ token, user }) => set({ token, user }),
+      setUser: (user) => set({ user }),
+      clearAuth: () => set({ token: null, user: null }),
+    }),
+    {
+      name: 'tftgogo-auth',
+      partialize: (state) => ({
+        token: state.token,
+        user: state.user,
+      }),
+    },
+  ),
+)
 
 export default useAuthStore
