@@ -2,6 +2,12 @@ import axiosInstance from './axiosInstance'
 import type { TraitHexBadgeTone } from '../types/badges'
 import { mockSummonerProfile, mockMatchHistory } from '../mocks/summonerMock'
 
+interface ApiResponse<T> {
+  success: boolean
+  message: string
+  data: T
+}
+
 // ── Spring이 내려줄 DTO 타입 ─────────────────────────────────
 
 export interface SummonerTopTrait {
@@ -64,7 +70,6 @@ export interface MatchParticipantResponse {
   stage: string
   traits: MatchTraitResponse[]
   units: MatchUnitResponse[]
-  augments: string[]
   playersEliminated: number
   goldLeft: number
 }
@@ -79,7 +84,6 @@ export interface MatchSummaryResponse {
   compositionName: string
   traits: MatchTraitResponse[]
   units: MatchUnitResponse[]
-  augments: string[]
   participants: MatchParticipantResponse[]
 }
 
@@ -90,10 +94,10 @@ export const getSummonerProfile = async (
   tagLine: string,
 ): Promise<SummonerProfileResponse> => {
   try {
-    const { data } = await axiosInstance.get<SummonerProfileResponse>(
-      `/summoner/${encodeURIComponent(gameName)}/${tagLine}`,
+    const { data } = await axiosInstance.get<ApiResponse<SummonerProfileResponse>>(
+      `/summoners/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`,
     )
-    return data
+    return data.data
   } catch (err: unknown) {
     const status = (err as { response?: { status?: number } })?.response?.status
     if (status === 404) throw err
@@ -107,11 +111,11 @@ export const getMatchHistory = async (
   count = 90,
 ): Promise<MatchSummaryResponse[]> => {
   try {
-    const { data } = await axiosInstance.get<MatchSummaryResponse[]>(
-      `/summoner/${encodeURIComponent(gameName)}/${tagLine}/matches`,
+    const { data } = await axiosInstance.get<ApiResponse<MatchSummaryResponse[]>>(
+      `/summoners/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}/matches`,
       { params: { count } },
     )
-    return data
+    return data.data
   } catch {
     return mockMatchHistory
   }

@@ -45,6 +45,7 @@
 
   --font-size-xs: 12px;
   --font-size-sm: 13px;
+  --font-size-icon-fallback: 8px;
   --font-main: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 
   --sidebar-width: 222px;
