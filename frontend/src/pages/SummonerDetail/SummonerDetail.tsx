@@ -1,7 +1,7 @@
 import { ChevronDown, ChevronUp, Coins, RefreshCcw, Search, Swords } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { communityDragonProfileIconUrl, itemsFromUrls, tftChampSquareUrl, tftTraitIconUrl } from '../../api/communityDragonAssets'
+import { communityDragonProfileIconUrl, itemsFromUrls, tftChampSquareUrl, tftTierEmblemUrl, tftTraitIconUrl } from '../../api/communityDragonAssets'
 import { AppLayout } from '../../components/layout'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
 import ChampionCard from '../../components/common/ChampionCard'
@@ -98,7 +98,7 @@ function MatchDetailPanel({ match, myPuuid }: { match: MatchSummaryResponse; myP
                 <TraitHexBadge
                   key={tr.traitId}
                   count={tr.count}
-                  iconUrl={tr.iconUrl || tftTraitIconUrl(tr.traitId)}
+                  iconUrl={tftTraitIconUrl(tr.traitId)}
                   name={tr.name}
                   tone={tr.tone}
                 />
@@ -217,7 +217,10 @@ function SummonerDetail() {
                 />
                 <span className={styles.profileLevel}>{profile?.summonerLevel ?? '-'}</span>
               </div>
-              <div className={styles.emblem} />
+              <div
+                className={styles.emblem}
+                style={profile?.tier ? { backgroundImage: `url(${tftTierEmblemUrl(profile.tier)})` } : undefined}
+              />
               <div className={styles.profileInfo}>
                 <h1>{name}<span className={styles.tag}>#{tag}</span></h1>
                 <p className={styles.tierLine}>
@@ -252,7 +255,7 @@ function SummonerDetail() {
                     {(profile.topTraits ?? []).map((tr, i) => (
                       <div key={tr.traitId} className={styles.topTraitRow}>
                         <span className={styles.topRank}>{i + 1}</span>
-                        <TraitHexBadge count={tr.count} iconUrl={tr.iconUrl} name={tr.name} tone={tr.tone} />
+                        <TraitHexBadge count={tr.count} iconUrl={tftTraitIconUrl(tr.traitId)} name={tr.name} tone={tr.tone} />
                         <span className={styles.topName}>{tr.name}</span>
                         <span className={styles.topGames}>{tr.games}게임</span>
                         <span className={styles.topAvg}>평균 {tr.avgPlace}등</span>

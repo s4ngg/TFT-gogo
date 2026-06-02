@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.Locale;
 
 @RestController
 @RequestMapping("/api/summoners")
@@ -151,7 +152,7 @@ public class SummonerController implements SummonerControllerDocs {
         for (MatchSummaryResponse match : matchList) {
             Set<String> seen = new HashSet<>();
             for (MatchSummaryResponse.TraitSummary trait : match.getTraits()) {
-                if (trait.getStyle() > 0 && seen.add(trait.getName())) {
+                if (trait.getStyle() > 0 && seen.add(trait.getName()) && isStandardTrait(trait.getName())) {
                     String key = trait.getName();
                     gameCount.merge(key, 1, Integer::sum);
                     totalPlace.merge(key, match.getPlacement(), Integer::sum);
@@ -220,6 +221,11 @@ public class SummonerController implements SummonerControllerDocs {
                             .build();
                 })
                 .collect(Collectors.toList());
+    }
+
+    private static boolean isStandardTrait(String traitName) {
+        String lower = traitName.toLowerCase(Locale.ROOT);
+        return !lower.contains("unique") && lower.length() > 4;
     }
 
     private static int rarityCost(int rarity) {
