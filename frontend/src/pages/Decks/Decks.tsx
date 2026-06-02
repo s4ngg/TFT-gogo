@@ -28,7 +28,7 @@ const TONE_CLASS_MAP: Record<string, string> = {
    타입
 ════════════════════════════ */
 type Tab = '덱모음' | '메타통계'
-type SortKey = 'rank' | 'winRate' | 'top4' | 'avgPlace' | 'pickRate'
+type SortKey = 'rank' | 'top4' | 'avgPlace' | 'pickRate'
 type SortDir = 'asc' | 'desc'
 
 interface RankFilterOption {
@@ -152,7 +152,6 @@ function DeckRow({
           ))}
         </span>
       </td>
-      <td className={styles.winRate}>{deck.winRate}</td>
       <td className={styles.top4}>{deck.top4}</td>
       <td className={styles.avgPlace}><span className={styles.avgHash}>#</span>{deck.avgPlace}</td>
       <td className={styles.pickRate}>{deck.pickRate}</td>
@@ -179,7 +178,6 @@ function TableHead({ sortKey, sortDir, onSort, showTier = true, showRank = true 
         {showTier && <th>티어</th>}
         <th className={styles.nameCol}>덱 이름 / 시너지</th>
         <th className={styles.champCol}>챔피언 구성</th>
-        <Th label="승률" col="winRate" />
         <Th label="TOP 4" col="top4" />
         <Th label="평균 등수" col="avgPlace" />
         <Th label="픽률" col="pickRate" />
@@ -342,7 +340,7 @@ function ArtifactSection({ decks, locale }: { decks: MetaDeck[]; locale: TFTLoca
 ════════════════════════════ */
 function DeckListView({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale | undefined }) {
   const [search, setSearch]   = useState('')
-  const [sortKey, setSortKey] = useState<SortKey>('winRate')
+  const [sortKey, setSortKey] = useState<SortKey>('avgPlace')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
 
   function handleSort(key: SortKey) {
