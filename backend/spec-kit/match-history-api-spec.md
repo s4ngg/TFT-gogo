@@ -77,11 +77,11 @@ v1.2 (2026-06-01 팀 spec-kit 병합)
 
 ## **3.3 Rate Limit 정책**
 
-- 429 응답 수신 시: `BusinessException(ErrorCode.RIOT_API_RATE_LIMIT)` throw — 재시도 없음 (현재 구현)
+- 최소 요청 간격: 1,300ms 고정 간격 유지 (스로틀링 방어, `waitForRequestWindow()`)
 
-- 권장 개선안: 429 응답 헤더의 Retry-After 값을 파싱하여 정확한 대기 시간 후 재시도 적용
+- 429 응답 수신 시: `Retry-After` 헤더 파싱 → 해당 시간만큼 sleep 후 재시도. 헤더 없거나 파싱 실패 시 기본 120초 대기 (현재 구현)
 
-- 로드맵 우선순위: 중간
+- 최대 재시도: 3회. 초과 시 `BusinessException(ErrorCode.RIOT_API_RATE_LIMIT)` throw (현재 구현)
 
 *덱 집계 추천 팀의 수집 서버는 별도 API Key를 사용하므로, Rate Limit 버킷이 분리됩니다. 동일 Key 공유 시 상호 간섭이 발생하므로 Key를 반드시 분리해야 합니다.*
 
@@ -137,7 +137,7 @@ GET /tft/match/v1/matches/by-puuid/{puuid}/ids
 | --- | --- | --- | --- | --- |
 | start | int | 0 | 0 | 시작 인덱스. 기본값 사용 |
 | count | int | 20 | 30 | 반환할 매치 ID 수. 30개로 고정 |
-| queue | int | - | 미사용 | Riot API 지원 파라미터이나 사용하지 않음. 큐타입 필터링은 매치 상세 InfoDto.queue_id 기준으로 서버에서 처리 |
+| queue | int | - | 미사용 | 전적 검색은 미사용 (일반+랭크 모두 수집 후 InfoDto.queue_id로 서버 필터링). 덱 집계 스케줄러는 별도 Key로 queue=1100 사용 |
 | startTime | long | - | 미사용 | 필터 시작 시각. 사용하지 않음 |
 | endTime | long | - | 미사용 | 필터 종료 시각. 사용하지 않음 |
 
@@ -319,7 +319,7 @@ winRate = wins / (wins + losses) * 100
 | 401 | API Key 없음 또는 만료 | 서버 로그 기록, 관리자 알림 |
 | 403 | API Key 권한 없음 | 서버 로그 기록 |
 | 404 | 소환사 또는 매치 없음 | 사용자에게 검색 결과 없음 표시 |
-| 429 | Rate Limit 초과 | `BusinessException(ErrorCode.RIOT_API_RATE_LIMIT)` throw, 재시도 없음. 개선안: Retry-After 헤더 파싱 후 재시도 |
+| 429 | Rate Limit 초과 | `Retry-After` 헤더 파싱 후 대기 → 최대 3회 재시도. 초과 시 `BusinessException(ErrorCode.RIOT_API_RATE_LIMIT)` throw |
 | 500 / 503 | Riot 서버 오류 | 일시적 오류 안내, 재시도 유도 |
 
 ## **8.2 부분 실패 처리**
@@ -337,11 +337,11 @@ winRate = wins / (wins + losses) * 100
 | **항목** | **우선순위** | **비고** |
 | --- | --- | --- |
 | **API 경로 단수→복수 통일** | **높음** | `/api/summoner/**` → `/api/summoners/**` (SummonerController, SecurityConfig, summonerApi.ts 동시 변경 필요) |
-| Rate Limit — Retry-After 헤더 파싱 후 재시도 적용 | 중간 | 현재: 예외 throw만, 재시도 없음 |
+| ~~Rate Limit — Retry-After 헤더 파싱 후 재시도 적용~~ | ~~중간~~ | 완료 — Retry-After 파싱 + 최대 3회 재시도 + 1,300ms 최소 간격 구현 |
 | 전적 최신화 엔드포인트 구현 | 중간 | `POST /api/summoners/{gameName}/{tagLine}/refresh` 미구현 |
 | 게임 유형(gameType) 변환 정책 확정 | 중간 | queue_id → RANKED/NORMAL 레이블 매핑 기준 명문화 필요 |
 | 스테이지 변환 정책 확정 | 중간 | 현재 임시로 level 값 사용 중. 실제 라운드 번호 표기 방식 협의 필요 |
-| ~~game_version 파싱 규칙 공유 여부 협의~~ | ~~높음~~ | 완료 — `normalizePatchVersion()` 정규식 `(\d+\.\d+[a-zA-Z]?)` 양 팀 공유 기준 확정 |
+| game_version 파싱 팀 간 표준화/공유 확인 | 중간 | 구현됨 — `normalizePatchVersion()` 정규식 `(\d+\.\d+[a-zA-Z]?)` 덱 집계 팀 운영 중. 전적 검색 팀 적용 및 양 팀 기준 공유 확인 미결 |
 | 집계 결과 조회용 내부 API 엔드포인트 정의 | 미정 | 집계 팀과 협의 후 문서화 |
 | Data Dragon 버전 동기화 방식 | 낮음 | profileIconId → 아이콘 이미지 URL 조합 기준 |
 
