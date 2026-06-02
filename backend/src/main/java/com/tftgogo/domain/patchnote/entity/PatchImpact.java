@@ -1,9 +1,6 @@
 package com.tftgogo.domain.patchnote.entity;
 
-import com.tftgogo.global.exception.BusinessException;
-import com.tftgogo.global.exception.ErrorCode;
-
-import java.util.Locale;
+import com.tftgogo.global.util.EnumParser;
 
 public enum PatchImpact {
     HIGH,
@@ -11,10 +8,6 @@ public enum PatchImpact {
     LOW;
 
     public static PatchImpact from(String value) {
-        try {
-            return PatchImpact.valueOf(value.trim().toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT);
-        }
+        return EnumParser.from(PatchImpact.class, value);
     }
 }
