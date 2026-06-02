@@ -1,9 +1,9 @@
 package com.tftgogo.domain.patchnote.repository;
 
-import com.tftgogo.domain.patchnote.entity.PatchCategory;
+import com.tftgogo.domain.patchnote.entity.PatchChangeCategory;
 import com.tftgogo.domain.patchnote.entity.PatchChange;
 import com.tftgogo.domain.patchnote.entity.PatchChangeType;
-import com.tftgogo.domain.patchnote.entity.PatchImpact;
+import com.tftgogo.domain.patchnote.entity.PatchChangeImpact;
 import com.tftgogo.domain.patchnote.entity.PatchNote;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -50,9 +50,9 @@ public interface PatchChangeRepository extends JpaRepository<PatchChange, Long> 
             """)
     List<PatchChange> findFilteredChanges(
             @Param("patchNote") PatchNote patchNote,
-            @Param("category") PatchCategory category,
+            @Param("category") PatchChangeCategory category,
             @Param("changeType") PatchChangeType changeType,
-            @Param("impact") PatchImpact impact,
+            @Param("impact") PatchChangeImpact impact,
             @Param("query") String query
     );
 }

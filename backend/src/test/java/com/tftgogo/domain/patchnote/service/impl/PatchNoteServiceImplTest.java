@@ -3,10 +3,10 @@ package com.tftgogo.domain.patchnote.service.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tftgogo.domain.patchnote.dto.response.PatchChangePageResponse;
 import com.tftgogo.domain.patchnote.dto.response.PatchNoteResponse;
-import com.tftgogo.domain.patchnote.entity.PatchCategory;
+import com.tftgogo.domain.patchnote.entity.PatchChangeCategory;
 import com.tftgogo.domain.patchnote.entity.PatchChange;
 import com.tftgogo.domain.patchnote.entity.PatchChangeType;
-import com.tftgogo.domain.patchnote.entity.PatchImpact;
+import com.tftgogo.domain.patchnote.entity.PatchChangeImpact;
 import com.tftgogo.domain.patchnote.entity.PatchNote;
 import com.tftgogo.domain.patchnote.repository.PatchChangeRepository;
 import com.tftgogo.domain.patchnote.repository.PatchNoteRepository;
@@ -85,17 +85,17 @@ class PatchNoteServiceImplTest {
     void 변경사항_조회는_필터와_stats를_분리해서_응답한다() {
         // given
         PatchNote patchNote = patchNote("17.0", true);
-        PatchChange buff = patchChange(patchNote, PatchCategory.CHAMPION, PatchChangeType.BUFF, PatchImpact.HIGH, "카이사", 1);
-        PatchChange nerf = patchChange(patchNote, PatchCategory.ITEM, PatchChangeType.NERF, PatchImpact.LOW, "죽음검", 2);
+        PatchChange buff = patchChange(patchNote, PatchChangeCategory.CHAMPION, PatchChangeType.BUFF, PatchChangeImpact.HIGH, "카이사", 1);
+        PatchChange nerf = patchChange(patchNote, PatchChangeCategory.ITEM, PatchChangeType.NERF, PatchChangeImpact.LOW, "죽음검", 2);
         when(patchNoteRepository.findByVersionAndActiveTrueAndDeletedAtIsNull("17.0"))
                 .thenReturn(Optional.of(patchNote));
         when(patchChangeRepository.findByPatchNoteAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchNote))
                 .thenReturn(List.of(buff, nerf));
         when(patchChangeRepository.findFilteredChanges(
                 patchNote,
-                PatchCategory.CHAMPION,
+                PatchChangeCategory.CHAMPION,
                 PatchChangeType.BUFF,
-                PatchImpact.HIGH,
+                PatchChangeImpact.HIGH,
                 "카이사"
         )).thenReturn(List.of(buff));
 
@@ -118,9 +118,9 @@ class PatchNoteServiceImplTest {
         assertThat(response.getStats().getHighImpactCount()).isEqualTo(1L);
         verify(patchChangeRepository).findFilteredChanges(
                 patchNote,
-                PatchCategory.CHAMPION,
+                PatchChangeCategory.CHAMPION,
                 PatchChangeType.BUFF,
-                PatchImpact.HIGH,
+                PatchChangeImpact.HIGH,
                 "카이사"
         );
     }
@@ -167,8 +167,8 @@ class PatchNoteServiceImplTest {
     void 변경사항_조회는_두번째_페이지를_페이지크기만큼_잘라서_응답한다() {
         // given
         PatchNote patchNote = patchNote("17.0", true);
-        PatchChange buff = patchChange(patchNote, PatchCategory.CHAMPION, PatchChangeType.BUFF, PatchImpact.HIGH, "카이사", 1);
-        PatchChange nerf = patchChange(patchNote, PatchCategory.ITEM, PatchChangeType.NERF, PatchImpact.LOW, "죽음검", 2);
+        PatchChange buff = patchChange(patchNote, PatchChangeCategory.CHAMPION, PatchChangeType.BUFF, PatchChangeImpact.HIGH, "카이사", 1);
+        PatchChange nerf = patchChange(patchNote, PatchChangeCategory.ITEM, PatchChangeType.NERF, PatchChangeImpact.LOW, "죽음검", 2);
         when(patchNoteRepository.findByVersionAndActiveTrueAndDeletedAtIsNull("17.0"))
                 .thenReturn(Optional.of(patchNote));
         when(patchChangeRepository.findByPatchNoteAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchNote))
@@ -237,14 +237,14 @@ class PatchNoteServiceImplTest {
     void 필터_결과가_없으면_빈_items와_정상_페이지_메타를_응답한다() {
         // given
         PatchNote patchNote = patchNote("17.0", true);
-        PatchChange buff = patchChange(patchNote, PatchCategory.CHAMPION, PatchChangeType.BUFF, PatchImpact.HIGH, "카이사", 1);
+        PatchChange buff = patchChange(patchNote, PatchChangeCategory.CHAMPION, PatchChangeType.BUFF, PatchChangeImpact.HIGH, "카이사", 1);
         when(patchNoteRepository.findByVersionAndActiveTrueAndDeletedAtIsNull("17.0"))
                 .thenReturn(Optional.of(patchNote));
         when(patchChangeRepository.findByPatchNoteAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchNote))
                 .thenReturn(List.of(buff));
         when(patchChangeRepository.findFilteredChanges(
                 patchNote,
-                PatchCategory.ITEM,
+                PatchChangeCategory.ITEM,
                 null,
                 null,
                 null
@@ -307,9 +307,9 @@ class PatchNoteServiceImplTest {
 
     private PatchChange patchChange(
             PatchNote patchNote,
-            PatchCategory category,
+            PatchChangeCategory category,
             PatchChangeType type,
-            PatchImpact impact,
+            PatchChangeImpact impact,
             String targetName,
             int sortOrder
     ) {

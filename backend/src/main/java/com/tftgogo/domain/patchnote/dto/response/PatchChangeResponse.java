@@ -1,9 +1,9 @@
 package com.tftgogo.domain.patchnote.dto.response;
 
-import com.tftgogo.domain.patchnote.entity.PatchCategory;
+import com.tftgogo.domain.patchnote.entity.PatchChangeCategory;
 import com.tftgogo.domain.patchnote.entity.PatchChange;
 import com.tftgogo.domain.patchnote.entity.PatchChangeType;
-import com.tftgogo.domain.patchnote.entity.PatchImpact;
+import com.tftgogo.domain.patchnote.entity.PatchChangeImpact;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -14,9 +14,9 @@ import java.util.List;
 public class PatchChangeResponse {
 
     private Long id;
-    private PatchCategory category;
+    private PatchChangeCategory category;
     private PatchChangeType type;
-    private PatchImpact impact;
+    private PatchChangeImpact impact;
     private String targetKey;
     private String targetName;
     private String summary;

@@ -36,7 +36,7 @@ public class PatchChange {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private PatchCategory category;
+    private PatchChangeCategory category;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "change_type", nullable = false, length = 20)
@@ -44,7 +44,7 @@ public class PatchChange {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private PatchImpact impact;
+    private PatchChangeImpact impact;
 
     @Column(name = "target_key", nullable = false, length = 100)
     private String targetKey;
@@ -83,8 +83,8 @@ public class PatchChange {
     private LocalDateTime deletedAt;
 
     @Builder
-    public PatchChange(PatchNote patchNote, PatchCategory category, PatchChangeType changeType,
-                       PatchImpact impact, String targetKey, String targetName, String summary,
+    public PatchChange(PatchNote patchNote, PatchChangeCategory category, PatchChangeType changeType,
+                       PatchChangeImpact impact, String targetKey, String targetName, String summary,
                        String beforeValue, String afterValue, String imageUrl, String tagsJson,
                        int sortOrder, boolean active) {
         this.patchNote = patchNote;

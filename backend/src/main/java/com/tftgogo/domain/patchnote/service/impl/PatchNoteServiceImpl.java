@@ -7,10 +7,10 @@ import com.tftgogo.domain.patchnote.dto.response.PatchChangePageResponse;
 import com.tftgogo.domain.patchnote.dto.response.PatchChangeResponse;
 import com.tftgogo.domain.patchnote.dto.response.PatchChangeStatsResponse;
 import com.tftgogo.domain.patchnote.dto.response.PatchNoteResponse;
-import com.tftgogo.domain.patchnote.entity.PatchCategory;
+import com.tftgogo.domain.patchnote.entity.PatchChangeCategory;
 import com.tftgogo.domain.patchnote.entity.PatchChange;
 import com.tftgogo.domain.patchnote.entity.PatchChangeType;
-import com.tftgogo.domain.patchnote.entity.PatchImpact;
+import com.tftgogo.domain.patchnote.entity.PatchChangeImpact;
 import com.tftgogo.domain.patchnote.entity.PatchNote;
 import com.tftgogo.domain.patchnote.repository.PatchChangeRepository;
 import com.tftgogo.domain.patchnote.repository.PatchChangeRepository.PatchChangeCount;
@@ -71,9 +71,9 @@ public class PatchNoteServiceImpl implements PatchNoteService {
     ) {
         PatchNote patchNote = patchNoteRepository.findByVersionAndActiveTrueAndDeletedAtIsNull(version)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PATCH_NOTE_NOT_FOUND));
-        PatchCategory parsedCategory = parseCategory(category);
+        PatchChangeCategory parsedCategory = parseCategory(category);
         PatchChangeType parsedType = parseType(type);
-        PatchImpact parsedImpact = parseImpact(impact);
+        PatchChangeImpact parsedImpact = parseImpact(impact);
         int normalizedPage = normalizePage(page);
         int normalizedPageSize = normalizePageSize(pageSize);
 
@@ -139,7 +139,7 @@ public class PatchNoteServiceImpl implements PatchNoteService {
     private PatchChangeStatsResponse buildStats(List<PatchChange> changes) {
         Map<String, Long> categoryCounts = new LinkedHashMap<>();
         categoryCounts.put("ALL", (long) changes.size());
-        for (PatchCategory category : PatchCategory.values()) {
+        for (PatchChangeCategory category : PatchChangeCategory.values()) {
             categoryCounts.put(category.name(), 0L);
         }
 
@@ -152,7 +152,7 @@ public class PatchNoteServiceImpl implements PatchNoteService {
         for (PatchChange change : changes) {
             categoryCounts.merge(change.getCategory().name(), 1L, Long::sum);
             typeCounts.merge(change.getChangeType().name(), 1L, Long::sum);
-            if (change.getImpact() == PatchImpact.HIGH) {
+            if (change.getImpact() == PatchChangeImpact.HIGH) {
                 highImpactCount++;
             }
         }
@@ -202,11 +202,11 @@ public class PatchNoteServiceImpl implements PatchNoteService {
         logger.error("Invalid patch note JSON. field={}, ownerId={}", fieldName, ownerId);
     }
 
-    private PatchCategory parseCategory(String category) {
+    private PatchChangeCategory parseCategory(String category) {
         if (!hasText(category)) {
             return null;
         }
-        return PatchCategory.from(category);
+        return PatchChangeCategory.from(category);
     }
 
     private PatchChangeType parseType(String type) {
@@ -216,11 +216,11 @@ public class PatchNoteServiceImpl implements PatchNoteService {
         return PatchChangeType.from(type);
     }
 
-    private PatchImpact parseImpact(String impact) {
+    private PatchChangeImpact parseImpact(String impact) {
         if (!hasText(impact)) {
             return null;
         }
-        return PatchImpact.from(impact);
+        return PatchChangeImpact.from(impact);
     }
 
     private int normalizePage(Integer page) {

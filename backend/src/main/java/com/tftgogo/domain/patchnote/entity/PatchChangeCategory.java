@@ -2,14 +2,14 @@ package com.tftgogo.domain.patchnote.entity;
 
 import com.tftgogo.global.util.EnumParser;
 
-public enum PatchCategory {
+public enum PatchChangeCategory {
     CHAMPION,
     TRAIT,
     ITEM,
     AUGMENT,
     SYSTEM;
 
-    public static PatchCategory from(String value) {
-        return EnumParser.from(PatchCategory.class, value);
+    public static PatchChangeCategory from(String value) {
+        return EnumParser.from(PatchChangeCategory.class, value);
     }
 }
