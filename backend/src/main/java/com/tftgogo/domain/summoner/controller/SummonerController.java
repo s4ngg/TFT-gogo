@@ -37,8 +37,7 @@ public class SummonerController implements SummonerControllerDocs {
     public ResponseEntity<ApiResponse<List<SummonerMatchItem>>> getMatches(
             @PathVariable("gameName") String gameName,
             @PathVariable("tagLine") String tagLine) {
-        MatchSearchResponse result = summonerService.search(gameName, tagLine);
-        List<SummonerMatchItem> matches = result.getMatchList().stream()
+        List<SummonerMatchItem> matches = summonerService.getMatchesByRiotId(gameName, tagLine).stream()
                 .map(this::toMatchItem)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(ApiResponse.success("매치 조회 성공", matches));

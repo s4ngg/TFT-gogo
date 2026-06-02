@@ -208,7 +208,7 @@ function SummonerDetail() {
         ) : (
           <>
             {/* 프로필 카드 */}
-            <section className={styles.profileCard}>
+            <section className={`${styles.profileCard} ${!profile?.tier ? styles.profileCardNoEmblem : ''}`}>
               <div className={styles.profileIconWrap}>
                 <img
                   className={styles.profileIcon}
@@ -217,10 +217,12 @@ function SummonerDetail() {
                 />
                 <span className={styles.profileLevel}>{profile?.summonerLevel ?? '-'}</span>
               </div>
-              <div
-                className={styles.emblem}
-                style={profile?.tier ? { backgroundImage: `url(${tftTierEmblemUrl(profile.tier)})` } : undefined}
-              />
+              {profile?.tier && (
+                <div
+                  className={styles.emblem}
+                  style={{ backgroundImage: `url(${tftTierEmblemUrl(profile.tier)})` }}
+                />
+              )}
               <div className={styles.profileInfo}>
                 <h1>{name}<span className={styles.tag}>#{tag}</span></h1>
                 <p className={styles.tierLine}>
