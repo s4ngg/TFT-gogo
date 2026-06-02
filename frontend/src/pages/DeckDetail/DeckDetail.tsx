@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, BookOpen, Map as MapIcon, Swords, Trophy } from 'lucide-react'
+import { ArrowLeft, BookOpen, Map as MapIcon, Swords, Trophy, Zap } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AppLayout } from '../../components/layout'
 import TierBadge from '../../components/common/TierBadge'
@@ -9,7 +9,7 @@ import { useCDragonLocale } from '../../hooks/useCDragonLocale'
 import { getChampionApiName, getChampionDetail, getChampionName, getChampionShortName, getItemName, getTraitName } from '../../api/cdragonLocale'
 import type { TFTLocale } from '../../api/cdragonLocale'
 import { tftItemIconUrl, tftItemIconOnError } from '../../api/communityDragonAssets'
-import type { ChampionSummary, MetaDeck } from '../Dashboard/dashboardData'
+import type { ChampionSummary, MetaDeck, HeroAugmentSummary } from '../Dashboard/dashboardData'
 import styles from './DeckDetail.module.css'
 
 const BOARD_ROWS = 4
@@ -320,6 +320,37 @@ function ItemsPanel({ deck, locale }: { deck: MetaDeck; locale: TFTLocale | unde
   )
 }
 
+function HeroAugmentsPanel({ augments }: { augments: HeroAugmentSummary[] }) {
+  if (augments.length === 0) return null
+  return (
+    <section className={styles.panel}>
+      <div className={styles.panelHead}>
+        <Zap size={16} />
+        <h2>영웅 증강</h2>
+        <span className={styles.panelSub}>해금 증강 효과</span>
+      </div>
+      <div className={styles.heroAugList}>
+        {augments.map((aug) => (
+          <div key={`${aug.championId}-${aug.augmentName}`} className={styles.heroAugEntry}>
+            <div className={styles.heroAugChamp}>
+              {aug.imageUrl && (
+                <img
+                  src={aug.imageUrl}
+                  alt={aug.championName}
+                  className={styles.heroAugChampImg}
+                  onError={(e) => { e.currentTarget.style.opacity = '0.3' }}
+                />
+              )}
+              <span className={styles.heroAugChampName}>{aug.championName}</span>
+            </div>
+            <div className={styles.heroAugBadge}>{aug.augmentName}</div>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function DeckDetail() {
   const { deckId } = useParams<{ deckId: string }>()
   const navigate = useNavigate()
@@ -508,6 +539,8 @@ function DeckDetail() {
             })}
           </div>
         </section>}
+
+        <HeroAugmentsPanel augments={deck.heroAugments ?? []} />
 
         <PlayGuidePanel deck={deck} />
 

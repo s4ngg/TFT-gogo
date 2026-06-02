@@ -11,6 +11,7 @@ import {
   type DeckCurationRequest,
   type UnitInfo,
   type PlayGuide,
+  type HeroAugmentEntry,
 } from '../../api/adminApi'
 import { useCDragonLocale } from '../../hooks/useCDragonLocale'
 import { getTraitName, getChampionName } from '../../api/cdragonLocale'
@@ -486,6 +487,111 @@ function PlayGuideModal({ deck, onClose, onSave }: PlayGuideModalProps) {
   )
 }
 
+/* ── 영웅 증강 편집 모달 ── */
+interface HeroAugmentModalProps {
+  deck: AdminDeck
+  locale: TFTLocale | undefined
+  onClose: () => void
+  onSave: (json: string | null) => Promise<void>
+}
+
+function HeroAugmentModal({ deck, locale, onClose, onSave }: HeroAugmentModalProps) {
+  const parseEntries = (): HeroAugmentEntry[] => {
+    if (!deck.heroAugments) return []
+    try { return JSON.parse(deck.heroAugments) as HeroAugmentEntry[] } catch { return [] }
+  }
+  const [entries, setEntries] = useState<HeroAugmentEntry[]>(parseEntries)
+  const [saving, setSaving] = useState(false)
+
+  // 덱에 속한 챔피언 목록
+  const deckChamps = useMemo(() =>
+    deck.units.map((u) => ({
+      championId: u.characterId.toLowerCase(),
+      championName: getChampionName(u.imageUrl, locale, u.name),
+      imageUrl: u.imageUrl,
+    })),
+    [deck.units, locale],
+  )
+
+  function addEntry() {
+    const first = deckChamps[0]
+    setEntries((prev) => [
+      ...prev,
+      { championId: first?.championId ?? '', championName: first?.championName ?? '', augmentName: '' },
+    ])
+  }
+
+  function removeEntry(idx: number) {
+    setEntries((prev) => prev.filter((_, i) => i !== idx))
+  }
+
+  function patchEntry(idx: number, patch: Partial<HeroAugmentEntry>) {
+    setEntries((prev) => prev.map((e, i) => i === idx ? { ...e, ...patch } : e))
+  }
+
+  function handleChampChange(idx: number, championId: string) {
+    const champ = deckChamps.find((c) => c.championId === championId)
+    patchEntry(idx, { championId, championName: champ?.championName ?? championId })
+  }
+
+  async function handleSave() {
+    setSaving(true)
+    const valid = entries.filter((e) => e.augmentName.trim())
+    const json = valid.length > 0 ? JSON.stringify(valid) : null
+    try {
+      await onSave(json)
+      onClose()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modalBox} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <span className={styles.modalTitle}>영웅 증강 편집 — {deck.displayName}</span>
+          <button className={styles.modalClose} onClick={onClose}>✕</button>
+        </div>
+
+        <div className={styles.heroAugEditorBody}>
+          {entries.length === 0 && (
+            <p className={styles.heroAugEmpty}>등록된 영웅 증강이 없습니다. 추가 버튼을 눌러 입력하세요.</p>
+          )}
+          {entries.map((entry, idx) => (
+            <div key={idx} className={styles.heroAugEditorRow}>
+              <select
+                className={styles.heroAugSelect}
+                value={entry.championId}
+                onChange={(e) => handleChampChange(idx, e.target.value)}
+              >
+                {deckChamps.map((c) => (
+                  <option key={c.championId} value={c.championId}>{c.championName}</option>
+                ))}
+              </select>
+              <input
+                className={styles.heroAugInput}
+                placeholder="증강 이름 (예: 화약 소녀)"
+                value={entry.augmentName}
+                onChange={(e) => patchEntry(idx, { augmentName: e.target.value })}
+              />
+              <button className={styles.heroAugRemoveBtn} onClick={() => removeEntry(idx)}>✕</button>
+            </div>
+          ))}
+        </div>
+
+        <div className={styles.modalFooter}>
+          <button className={styles.boardBtn} onClick={addEntry}>+ 증강 추가</button>
+          <button className={styles.resetBtn} onClick={() => setEntries([])}>전체 초기화</button>
+          <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
+            {saving ? '저장중...' : '저장'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ── 덱 행 ── */
 interface DeckRowState {
   customName: string
@@ -495,6 +601,7 @@ interface DeckRowState {
   saving: boolean
   boardEditorOpen: boolean
   guideEditorOpen: boolean
+  heroAugEditorOpen: boolean
 }
 
 function buildKoreanName(deck: AdminDeck, locale: TFTLocale | undefined): string {
@@ -517,13 +624,18 @@ function DeckRow({ deck, onSaved, locale }: { deck: AdminDeck; onSaved: (updated
     saving: false,
     boardEditorOpen: false,
     guideEditorOpen: false,
+    heroAugEditorOpen: false,
   })
 
   function markDirty(patch: Partial<DeckRowState>) {
     setState((s) => ({ ...s, ...patch, dirty: true }))
   }
 
-  function buildRequest(boardPositions?: string | null, playGuide?: string | null): DeckCurationRequest {
+  function buildRequest(
+    boardPositions?: string | null,
+    playGuide?: string | null,
+    heroAugments?: string | null,
+  ): DeckCurationRequest {
     return {
       customName: state.customName.trim() || null,
       hidden: state.hidden,
@@ -531,6 +643,7 @@ function DeckRow({ deck, onSaved, locale }: { deck: AdminDeck; onSaved: (updated
       curatorNote: null,
       boardPositions: boardPositions !== undefined ? boardPositions : deck.boardPositions,
       playGuide: playGuide !== undefined ? playGuide : deck.playGuide,
+      heroAugments: heroAugments !== undefined ? heroAugments : deck.heroAugments,
     }
   }
 
@@ -556,6 +669,11 @@ function DeckRow({ deck, onSaved, locale }: { deck: AdminDeck; onSaved: (updated
     onSaved(updated)
   }
 
+  async function handleHeroAugSave(heroAugmentsJson: string | null) {
+    const updated = await updateDeckCuration(deck.id, buildRequest(undefined, undefined, heroAugmentsJson))
+    onSaved(updated)
+  }
+
   async function handleReset() {
     if (!confirm('큐레이션을 초기화하고 자동 이름으로 되돌릴까요?')) return
     await resetDeckCuration(deck.id)
@@ -567,8 +685,9 @@ function DeckRow({ deck, onSaved, locale }: { deck: AdminDeck; onSaved: (updated
       saving: false,
       boardEditorOpen: false,
       guideEditorOpen: false,
+      heroAugEditorOpen: false,
     })
-    onSaved({ ...deck, customName: null, displayName: deck.autoName, hidden: false, sortPriority: null, boardPositions: null, playGuide: null })
+    onSaved({ ...deck, customName: null, displayName: deck.autoName, hidden: false, sortPriority: null, boardPositions: null, playGuide: null, heroAugments: null })
   }
 
   return (
@@ -636,6 +755,12 @@ function DeckRow({ deck, onSaved, locale }: { deck: AdminDeck; onSaved: (updated
           >
             운영방법{deck.playGuide ? ' ✓' : ''}
           </button>
+          <button
+            className={`${styles.boardBtn} ${deck.heroAugments ? styles.boardBtnActive : ''}`}
+            onClick={() => setState((s) => ({ ...s, heroAugEditorOpen: true }))}
+          >
+            영웅증강{deck.heroAugments ? ' ✓' : ''}
+          </button>
           {(deck.customName != null || deck.hidden || deck.sortPriority != null) && (
             <button className={styles.resetBtn} onClick={handleReset}>초기화</button>
           )}
@@ -655,6 +780,14 @@ function DeckRow({ deck, onSaved, locale }: { deck: AdminDeck; onSaved: (updated
           deck={deck}
           onClose={() => setState((s) => ({ ...s, guideEditorOpen: false }))}
           onSave={handleGuideSave}
+        />
+      )}
+      {state.heroAugEditorOpen && (
+        <HeroAugmentModal
+          deck={deck}
+          locale={locale}
+          onClose={() => setState((s) => ({ ...s, heroAugEditorOpen: false }))}
+          onSave={handleHeroAugSave}
         />
       )}
     </>

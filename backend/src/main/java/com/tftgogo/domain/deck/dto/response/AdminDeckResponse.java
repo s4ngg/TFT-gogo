@@ -33,6 +33,8 @@ public class AdminDeckResponse {
     private String boardPositions;
     // 운영방법 JSON (null = 미작성)
     private String playGuide;
+    // 영웅 증강 JSON (null = 미작성)
+    private String heroAugments;
 
     private String grade;
     private String winRate;
@@ -60,6 +62,7 @@ public class AdminDeckResponse {
         String curatorNote = curation != null ? curation.getCuratorNote() : null;
         String boardPositions = curation != null ? curation.getBoardPositions() : null;
         String playGuide = curation != null ? curation.getPlayGuide() : null;
+        String heroAugments = curation != null ? curation.getHeroAugments() : null;
 
         List<UnitInfo> units = deck.getUnits().stream()
                 .filter(u -> TftShopUnitFilter.isShopUnit(u.getCharacterId()))
@@ -91,6 +94,7 @@ public class AdminDeckResponse {
                 .curatorNote(curatorNote)
                 .boardPositions(boardPositions)
                 .playGuide(playGuide)
+                .heroAugments(heroAugments)
                 .grade(deck.getTier())
                 .winRate(String.format("%.1f%%", deck.getWinRate()))
                 .top4(String.format("%.1f%%", deck.getTop4Rate()))

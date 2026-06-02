@@ -12,4 +12,5 @@ public class DeckCurationRequest {
     private String curatorNote;
     private String boardPositions;  // JSON: {"imageUrl": {"row":N,"col":N}}
     private String playGuide;       // JSON: {"early":"...","mid":"...","late":"..."}
+    private String heroAugments;    // JSON: [{"championId":"tft17_jinx","championName":"징크스","augmentName":"화약 소녀"}]
 }

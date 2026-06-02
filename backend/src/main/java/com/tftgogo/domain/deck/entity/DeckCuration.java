@@ -52,13 +52,18 @@ public class DeckCuration {
     @Column(name = "play_guide", columnDefinition = "TEXT")
     private String playGuide;
 
+    // 영웅 증강 JSON (관리자 직접 입력 — Riot API 미제공)
+    // [{"championId":"tft17_jinx","championName":"징크스","augmentName":"화약 소녀"}, ...]
+    @Column(name = "hero_augments", columnDefinition = "TEXT")
+    private String heroAugments;
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
     @Builder
     public DeckCuration(String signature, RankFilter rankFilter, String customName,
                         boolean hidden, Integer sortPriority, String curatorNote,
-                        String boardPositions, String playGuide) {
+                        String boardPositions, String playGuide, String heroAugments) {
         this.signature = signature;
         this.rankFilter = rankFilter;
         this.customName = customName;
@@ -67,17 +72,19 @@ public class DeckCuration {
         this.curatorNote = curatorNote;
         this.boardPositions = boardPositions;
         this.playGuide = playGuide;
+        this.heroAugments = heroAugments;
         this.updatedAt = LocalDateTime.now();
     }
 
     public void update(String customName, boolean hidden, Integer sortPriority, String curatorNote,
-                       String boardPositions, String playGuide) {
+                       String boardPositions, String playGuide, String heroAugments) {
         this.customName = customName;
         this.hidden = hidden;
         this.sortPriority = sortPriority;
         this.curatorNote = curatorNote;
         this.boardPositions = boardPositions;
         this.playGuide = playGuide;
+        this.heroAugments = heroAugments;
         this.updatedAt = LocalDateTime.now();
     }
 }
