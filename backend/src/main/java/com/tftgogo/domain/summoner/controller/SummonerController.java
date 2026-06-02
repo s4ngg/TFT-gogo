@@ -12,9 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
-import java.util.Locale;
 
 @RestController
 @RequestMapping("/api/summoners")
@@ -46,21 +45,6 @@ public class SummonerController implements SummonerControllerDocs {
     private SummonerDetailResponse buildDetail(MatchSearchResponse result) {
         var profile = result.getProfile();
         var rankInfo = result.getRankInfo();
-        var matchList = result.getMatchList();
-
-        int wins = (int) matchList.stream().filter(m -> m.getPlacement() <= 4).count();
-        int losses = matchList.size() - wins;
-        double avgPlace = matchList.isEmpty() ? 0.0
-                : matchList.stream().mapToInt(MatchSummaryResponse::getPlacement).average().orElse(0.0);
-        double top4Rate = matchList.isEmpty() ? 0.0
-                : (double) wins / matchList.size() * 100.0;
-
-        int[] rankDist = new int[8];
-        matchList.forEach(m -> {
-            int idx = Math.max(0, Math.min(m.getPlacement() - 1, 7));
-            rankDist[idx]++;
-        });
-
         return SummonerDetailResponse.builder()
                 .puuid(profile.getPuuid())
                 .gameName(profile.getGameName())
@@ -70,13 +54,8 @@ public class SummonerController implements SummonerControllerDocs {
                 .tier(rankInfo.isUnranked() ? null : rankInfo.getTier())
                 .rank(rankInfo.isUnranked() ? null : rankInfo.getRank())
                 .leaguePoints(rankInfo.isUnranked() ? 0 : rankInfo.getLeaguePoints())
-                .wins(wins)
-                .losses(losses)
-                .avgPlace(Math.round(avgPlace * 10.0) / 10.0)
-                .top4Rate(Math.round(top4Rate * 10.0) / 10.0)
-                .rankDistribution(rankDist)
-                .topTraits(buildTopTraits(matchList))
-                .topChampions(buildTopChampions(matchList))
+                .wins(rankInfo.isUnranked() ? 0 : rankInfo.getWins())
+                .losses(rankInfo.isUnranked() ? 0 : rankInfo.getLosses())
                 .build();
     }
 
@@ -140,101 +119,6 @@ public class SummonerController implements SummonerControllerDocs {
                 .units(units)
                 .participants(participants)
                 .build();
-    }
-
-    private List<SummonerDetailResponse.TopTraitDto> buildTopTraits(List<MatchSummaryResponse> matchList) {
-        Map<String, Integer> gameCount = new LinkedHashMap<>();
-        Map<String, Integer> totalPlace = new HashMap<>();
-        Map<String, Integer> totalUnits = new HashMap<>();
-        Map<String, Integer> totalStyle = new HashMap<>();
-
-        for (MatchSummaryResponse match : matchList) {
-            Set<String> seen = new HashSet<>();
-            for (MatchSummaryResponse.TraitSummary trait : match.getTraits()) {
-                if (trait.getStyle() > 0 && seen.add(trait.getName()) && isStandardTrait(trait.getName())) {
-                    String key = trait.getName();
-                    gameCount.merge(key, 1, Integer::sum);
-                    totalPlace.merge(key, match.getPlacement(), Integer::sum);
-                    totalUnits.merge(key, trait.getNumUnits(), Integer::sum);
-                    totalStyle.merge(key, trait.getStyle(), Integer::sum);
-                }
-            }
-        }
-
-        return gameCount.entrySet().stream()
-                .sorted((a, b) -> b.getValue() - a.getValue())
-                .limit(5)
-                .map(e -> {
-                    String id = e.getKey();
-                    int games = e.getValue();
-                    double avg = (double) totalPlace.get(id) / games;
-                    int count = Math.round((float) totalUnits.get(id) / games);
-                    int style = Math.round((float) totalStyle.get(id) / games);
-                    return SummonerDetailResponse.TopTraitDto.builder()
-                            .traitId(id)
-                            .name(id.replaceAll("(?i)^(TFT|Set)\\d+_", ""))
-                            .count(count)
-                            .iconUrl(TftAssetUrlBuilder.buildTraitIconUrl(id))
-                            .tone(styleToTone(style))
-                            .games(games)
-                            .avgPlace(Math.round(avg * 10.0) / 10.0)
-                            .build();
-                })
-                .collect(Collectors.toList());
-    }
-
-    private List<SummonerDetailResponse.TopChampionDto> buildTopChampions(List<MatchSummaryResponse> matchList) {
-        Map<String, Integer> gameCount = new LinkedHashMap<>();
-        Map<String, Integer> totalPlace = new HashMap<>();
-        Map<String, String> displayName = new HashMap<>();
-        Map<String, Integer> rarityMap = new HashMap<>();
-
-        for (MatchSummaryResponse match : matchList) {
-            Set<String> seen = new HashSet<>();
-            for (MatchSummaryResponse.UnitSummary unit : match.getUnits()) {
-                if (seen.add(unit.getCharacterId())) {
-                    String key = unit.getCharacterId();
-                    gameCount.merge(key, 1, Integer::sum);
-                    totalPlace.merge(key, match.getPlacement(), Integer::sum);
-                    displayName.putIfAbsent(key, unit.getName().isBlank() ? key : unit.getName());
-                    rarityMap.putIfAbsent(key, unit.getRarity());
-                }
-            }
-        }
-
-        return gameCount.entrySet().stream()
-                .sorted((a, b) -> b.getValue() - a.getValue())
-                .limit(5)
-                .map(e -> {
-                    String id = e.getKey();
-                    int games = e.getValue();
-                    double avg = (double) totalPlace.get(id) / games;
-                    int cost = rarityCost(rarityMap.getOrDefault(id, 0));
-                    return SummonerDetailResponse.TopChampionDto.builder()
-                            .characterId(id)
-                            .name(displayName.getOrDefault(id, id))
-                            .imageUrl(TftAssetUrlBuilder.buildChampionImageUrl(id))
-                            .cost(cost)
-                            .games(games)
-                            .avgPlace(Math.round(avg * 10.0) / 10.0)
-                            .build();
-                })
-                .collect(Collectors.toList());
-    }
-
-    private static boolean isStandardTrait(String traitName) {
-        String lower = traitName.toLowerCase(Locale.ROOT);
-        return !lower.contains("unique") && lower.length() > 4;
-    }
-
-    private static int rarityCost(int rarity) {
-        return switch (rarity) {
-            case 1 -> 2;
-            case 2 -> 3;
-            case 4 -> 4;
-            case 6 -> 5;
-            default -> 1;
-        };
     }
 
     private static String styleToTone(int style) {
