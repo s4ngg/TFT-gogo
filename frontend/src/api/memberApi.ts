@@ -88,4 +88,3 @@ export async function signup(request: SignupRequest) {
         throw new Error(`Signup failed: ${message}`)
     }
 }
-
