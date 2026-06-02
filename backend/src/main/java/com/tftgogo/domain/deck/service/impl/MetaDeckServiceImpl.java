@@ -40,6 +40,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -50,6 +52,9 @@ import java.util.stream.Collectors;
 public class MetaDeckServiceImpl implements MetaDeckService {
 
     private static final Logger logger = LogManager.getLogger(MetaDeckServiceImpl.class);
+
+    /** 동시 집계 방지 lock */
+    private final AtomicBoolean aggregating = new AtomicBoolean(false);
 
     private static final int MATCHES_PER_SUMMONER = 20;
     // 15 → 10: 데이터 부족 시 덱 종류가 너무 적어지는 문제 완화
@@ -100,12 +105,13 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     private final com.tftgogo.domain.deck.repository.DeckCurationRepository deckCurationRepository;
     private final RiotApiClient riotApiClient;
     private final PlatformTransactionManager transactionManager;
+    private final AsyncAggregationRunner asyncAggregationRunner;
 
     @Override
     @Transactional(readOnly = true)
     public MetaDeckListResponse getMetaDecks(RankFilter rankFilter) {
-        String latestPatchVersion = findLatestPatchVersion(rankFilter);
-        if (latestPatchVersion == null) {
+        Optional<String> latestPatchOpt = findLatestPatchVersion(rankFilter);
+        if (latestPatchOpt.isEmpty()) {
             return MetaDeckListResponse.builder()
                     .patchVersion(null)
                     .rankFilter(rankFilter)
@@ -113,6 +119,7 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                     .decks(List.of())
                     .build();
         }
+        String latestPatchVersion = latestPatchOpt.get();
 
         // 선택률 기준 내림차순 정렬 + 최소 선택률 필터 적용
         List<MetaDeck> decks = metaDeckRepository
@@ -169,12 +176,40 @@ public class MetaDeckServiceImpl implements MetaDeckService {
 
     @Override
     public void aggregateAndSave(LocalDate dataDate) {
-        logger.info("전체 랭크 구간 메타 덱 일일 집계 시작 - date={}", dataDate);
-        for (RankFilter rankFilter : RankFilter.values()) {
-            logger.info("[{}] 집계 시작 - date={}", rankFilter, dataDate);
-            aggregateForTier(rankFilter, dataDate);
+        if (!aggregating.compareAndSet(false, true)) {
+            logger.warn("집계 이미 실행 중 - 중복 요청 skip (date={})", dataDate);
+            return;
         }
-        logger.info("전체 랭크 구간 메타 덱 일일 집계 완료 - date={}", dataDate);
+        try {
+            logger.info("전체 랭크 구간 메타 덱 일일 집계 시작 - date={}", dataDate);
+            for (RankFilter rankFilter : RankFilter.values()) {
+                logger.info("[{}] 집계 시작 - date={}", rankFilter, dataDate);
+                aggregateForTier(rankFilter, dataDate);
+            }
+            logger.info("전체 랭크 구간 메타 덱 일일 집계 완료 - date={}", dataDate);
+        } finally {
+            aggregating.set(false);
+        }
+    }
+
+    @Override
+    public CompletableFuture<Void> aggregateAndSaveAsync(LocalDate dataDate) {
+        if (!aggregating.compareAndSet(false, true)) {
+            logger.warn("집계 이미 실행 중 - 비동기 요청 skip (date={})", dataDate);
+            return CompletableFuture.completedFuture(null);
+        }
+        return asyncAggregationRunner.run(() -> {
+            try {
+                logger.info("전체 랭크 구간 메타 덱 일일 집계 시작 - date={}", dataDate);
+                for (RankFilter rankFilter : RankFilter.values()) {
+                    logger.info("[{}] 집계 시작 - date={}", rankFilter, dataDate);
+                    aggregateForTier(rankFilter, dataDate);
+                }
+                logger.info("전체 랭크 구간 메타 덱 일일 집계 완료 - date={}", dataDate);
+            } finally {
+                aggregating.set(false);
+            }
+        });
     }
 
     private void aggregateForTier(RankFilter rankFilter, LocalDate dataDate) {
@@ -693,12 +728,11 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         return matcher.find() ? matcher.group(1) : UNKNOWN_PATCH_VERSION;
     }
 
-    private String findLatestPatchVersion(RankFilter rankFilter) {
-        return metaDeckRepository.findAllByRankFilter(rankFilter).stream()
-                .map(MetaDeck::getPatchVersion)
+    @Override
+    public Optional<String> findLatestPatchVersion(RankFilter rankFilter) {
+        return metaDeckRepository.findDistinctPatchVersionsByRankFilter(rankFilter).stream()
                 .filter(patchVersion -> !UNKNOWN_PATCH_VERSION.equals(patchVersion))
-                .max(this::comparePatchVersions)
-                .orElse(null);
+                .max(this::comparePatchVersions);
     }
 
     private int comparePatchVersions(String left, String right) {
