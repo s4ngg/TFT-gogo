@@ -98,6 +98,21 @@
   --transition-fast: 0.15s;
 }
 
+/* Trait tone tokens */
+:root {
+  --tone-gold-color: var(--color-star);
+  --tone-gold-border: rgba(249, 200, 96, 0.25);
+  --tone-gold-bg: rgba(249, 200, 96, 0.08);
+
+  --tone-silver-color: #a0aec0;
+  --tone-silver-border: rgba(160, 174, 192, 0.2);
+  --tone-silver-bg: rgba(160, 174, 192, 0.06);
+
+  --tone-bronze-color: #c6a96a;
+  --tone-bronze-border: rgba(198, 169, 106, 0.2);
+  --tone-bronze-bg: rgba(198, 169, 106, 0.06);
+}
+
 /* Status banner tokens */
 :root {
   --status-action-border: rgba(110, 142, 150, 0.28);

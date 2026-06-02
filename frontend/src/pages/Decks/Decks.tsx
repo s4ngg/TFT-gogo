@@ -16,6 +16,13 @@ import { costLimitForLevel } from '../../utils/deckUtils'
 import styles from './Decks.module.css'
 
 const INITIAL_ITEM_COUNT = 4
+const MAX_VISIBLE_TRAITS = 4
+
+const TONE_CLASS_MAP: Record<string, string> = {
+  gold: styles.toneGold,
+  silver: styles.toneSilver,
+  bronze: styles.toneBronze,
+}
 
 /* ════════════════════════════
    타입
@@ -121,8 +128,11 @@ function DeckRow({
       <td className={styles.nameCol}>
         <span className={styles.deckName}>{deckDisplayName(deck, locale)}</span>
         <span className={styles.traits}>
-          {deck.traits.slice(0, 4).map((t) => (
-            <span key={`${t.name}-${t.count}`} className={`${styles.traitTag} ${styles[`tone_${t.tone}`] ?? ''}`}>
+          {deck.traits.slice(0, MAX_VISIBLE_TRAITS).map((t) => (
+            <span
+              key={`${t.name}-${t.count}`}
+              className={`${styles.traitTag} ${TONE_CLASS_MAP[t.tone] ?? ''}`}
+            >
               {t.count} {getTraitName(t.name, locale)}
             </span>
           ))}

@@ -248,9 +248,9 @@
   white-space: nowrap;
 }
 
-.tone_gold   { color: #f9c860; border-color: rgba(249,200,96,0.25); background: rgba(249,200,96,0.08); }
-.tone_silver { color: #a0aec0; border-color: rgba(160,174,192,0.2); background: rgba(160,174,192,0.06); }
-.tone_bronze { color: #c6a96a; border-color: rgba(198,169,106,0.2); background: rgba(198,169,106,0.06); }
+.toneGold   { color: var(--tone-gold-color); border-color: var(--tone-gold-border); background: var(--tone-gold-bg); }
+.toneSilver { color: var(--tone-silver-color); border-color: var(--tone-silver-border); background: var(--tone-silver-bg); }
+.toneBronze { color: var(--tone-bronze-color); border-color: var(--tone-bronze-border); background: var(--tone-bronze-bg); }
 .champions {
   display: flex;
   align-items: flex-end;
