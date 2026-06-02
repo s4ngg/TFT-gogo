@@ -23,7 +23,6 @@ import com.tftgogo.global.riot.util.TftShopUnitFilter;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
@@ -106,6 +105,7 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     private final com.tftgogo.domain.deck.repository.DeckCurationRepository deckCurationRepository;
     private final RiotApiClient riotApiClient;
     private final PlatformTransactionManager transactionManager;
+    private final AsyncAggregationRunner asyncAggregationRunner;
 
     @Override
     @Transactional(readOnly = true)
@@ -192,11 +192,24 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         }
     }
 
-    @Async("aggregationExecutor")
     @Override
     public CompletableFuture<Void> aggregateAndSaveAsync(LocalDate dataDate) {
-        aggregateAndSave(dataDate);
-        return CompletableFuture.completedFuture(null);
+        if (!aggregating.compareAndSet(false, true)) {
+            logger.warn("집계 이미 실행 중 - 비동기 요청 skip (date={})", dataDate);
+            return CompletableFuture.completedFuture(null);
+        }
+        return asyncAggregationRunner.run(() -> {
+            try {
+                logger.info("전체 랭크 구간 메타 덱 일일 집계 시작 - date={}", dataDate);
+                for (RankFilter rankFilter : RankFilter.values()) {
+                    logger.info("[{}] 집계 시작 - date={}", rankFilter, dataDate);
+                    aggregateForTier(rankFilter, dataDate);
+                }
+                logger.info("전체 랭크 구간 메타 덱 일일 집계 완료 - date={}", dataDate);
+            } finally {
+                aggregating.set(false);
+            }
+        });
     }
 
     private void aggregateForTier(RankFilter rankFilter, LocalDate dataDate) {
