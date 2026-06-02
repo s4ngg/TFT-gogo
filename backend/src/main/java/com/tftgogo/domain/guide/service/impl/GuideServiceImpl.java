@@ -30,6 +30,7 @@ public class GuideServiceImpl implements GuideService {
 
     private static final Logger logger = LogManager.getLogger(GuideServiceImpl.class);
     private static final int DEFAULT_PAGE = 1;
+    private static final int MAX_PAGE = 10_000;
     private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int MAX_PAGE_SIZE = 100;
     private static final Set<String> SORT_KEYS = Set.of("avgPlace", "pickRate", "top4", "winRate");
@@ -76,8 +77,9 @@ public class GuideServiceImpl implements GuideService {
 
         long totalItems = filteredItems.size();
         int totalPages = Math.max(1, (int) Math.ceil((double) totalItems / normalizedPageSize));
-        int fromIndex = Math.min((normalizedPage - 1) * normalizedPageSize, filteredItems.size());
-        int toIndex = Math.min(fromIndex + normalizedPageSize, filteredItems.size());
+        long fromIndexLong = Math.min((long) (normalizedPage - 1) * normalizedPageSize, filteredItems.size());
+        int fromIndex = (int) fromIndexLong;
+        int toIndex = (int) Math.min(fromIndexLong + normalizedPageSize, filteredItems.size());
 
         List<GuideEntryResponse> responses = filteredItems.subList(fromIndex, toIndex).stream()
                 .map(item -> GuideEntryResponse.from(item.guide(), item.dataJson()))
@@ -117,7 +119,7 @@ public class GuideServiceImpl implements GuideService {
         if (page == null) {
             return DEFAULT_PAGE;
         }
-        if (page < 1) {
+        if (page < 1 || page > MAX_PAGE) {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
         return page;

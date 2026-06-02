@@ -99,6 +99,21 @@ class GuideServiceImplTest {
     }
 
     @Test
+    void 최대_페이지를_초과하면_예외를_던진다() {
+        // given, when, then
+        assertThatThrownBy(() -> guideService.getGuideTabItems(
+                "champions",
+                null,
+                null,
+                10_001,
+                10,
+                null,
+                null,
+                null
+        )).isInstanceOf(BusinessException.class);
+    }
+
+    @Test
     void 퍼센트_문자열_정렬은_공백과_기호를_허용한다() {
         // given
         Guide lowTop4Champion = championGuideWithTop4("kaisa", "카이사", "% 15 . 5", 1);
