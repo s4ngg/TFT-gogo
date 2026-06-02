@@ -212,7 +212,7 @@ function BoardEditorModal({ deck, locale, onClose, onSave }: BoardEditorProps) {
               <button
                 key={lv}
                 className={`${styles.levelTab} ${lv === activeLevel ? styles.levelTabActive : ''} ${hasData ? styles.levelTabHasData : ''}`}
-                onClick={() => setActiveLevel(lv)}
+                onClick={() => { setActiveLevel(lv); setEditingItemsFor(null) }}
               >
                 Lv.{lv}{hasData ? ' ✓' : ''}
               </button>
@@ -329,12 +329,12 @@ function BoardEditorModal({ deck, locale, onClose, onSave }: BoardEditorProps) {
                 />
                 <div className={styles.itemPickerGrid}>
                   {filteredItems.slice(0, 40).map((item) => {
-                    const selected = currentItems.includes(item.id)
-                    const disabled = !selected && currentItems.length >= 3
+                    const isSelected = currentItems.includes(item.id)
+                    const disabled = !isSelected && currentItems.length >= 3
                     return (
                       <button
                         key={item.id}
-                        className={`${styles.itemPickerChip} ${selected ? styles.itemPickerChipSelected : ''}`}
+                        className={`${styles.itemPickerChip} ${isSelected ? styles.itemPickerChipSelected : ''}`}
                         onClick={() => !disabled && toggleItem(editingItemsFor, item.id)}
                         disabled={disabled}
                         title={item.name}
