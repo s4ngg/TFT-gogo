@@ -113,6 +113,14 @@
   --tone-bronze-bg: rgba(198, 169, 106, 0.06);
 }
 
+/* Trait tag layout tokens */
+:root {
+  --font-size-2xs: 11px;
+  --space-3xs: 2px;
+  --radius-xs: 4px;
+  --bg-faint: rgba(255, 255, 255, 0.06);
+}
+
 /* Status banner tokens */
 :root {
   --status-action-border: rgba(110, 142, 150, 0.28);
