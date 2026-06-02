@@ -96,6 +96,15 @@ TFT(팀파이트 택티스) 전적 검색 및 메타 가이드 서비스.
 - [ ] 실패: `ApiResponse.fail("메시지", HttpStatus)`
 - [ ] 반환 타입: `ResponseEntity<ApiResponse<T>>`
 
+### DTO 규칙
+- [ ] RequestDTO: `toEntity()` 메서드 포함
+- [ ] ResponseDTO: `from()` 또는 `of()` 정적 팩토리 메서드 사용
+- [ ] `@NotNull` / `@NotBlank`는 RequestDTO에만 사용 (ResponseDTO에 사용 금지)
+
+### 비동기 처리
+- [ ] `@Async void` 금지 → `CompletableFuture<Void>` 반환 (void는 예외 감지 불가)
+- [ ] `SimpleAsyncTaskExecutor` 금지 → `ThreadPoolTaskExecutor` 명시 설정
+
 ### 코드 품질
 - [ ] `null` 반환 금지 → `Optional + orElseThrow()` 사용
 - [ ] `System.out.println` 금지 → Log4j2 Logger 사용
@@ -140,7 +149,8 @@ logger.error("시스템 오류", e);  // 예외 발생
 
 ## 테스트 규칙
 
-- Service 레이어만 단위 테스트
+- Service 레이어만 단위 테스트 (Controller, Entity, DTO, Repository 불필요)
 - `given/when/then` 패턴 사용
 - `@ExtendWith(MockitoExtension.class)` + `@Mock` + `@InjectMocks`
 - 실제 DB/외부 서비스 연결 없이 Mock으로 테스트
+- **테스트 메서드명은 한국어로 작성** 예) `회원이_없으면_예외를_던진다()`
