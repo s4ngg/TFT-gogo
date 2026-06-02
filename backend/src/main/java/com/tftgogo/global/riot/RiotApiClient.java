@@ -85,15 +85,22 @@ public class RiotApiClient {
     }
 
     // ── 소환사 랭크 정보 조회 (tft-league-v1, kr) ────────────
-    // RANKED_TFT 큐타입 항목만 반환. 배치 미완료·미배치 시 Optional.empty()
+    // RANKED_TFT 큐타입 항목만 반환. 배치 미완료·미배치(404) 시 Optional.empty()
     public Optional<LeagueEntryDto> getLeagueByPuuid(String puuid) {
         String path = "/tft/league/v1/by-puuid/{puuid}";
         String url = riotProperties.getKrBaseUrl() + "/tft/league/v1/by-puuid/" + puuid;
-        LeagueEntryDto[] entries = getByUrl(url, path, LeagueEntryDto[].class, null);
-        if (entries == null) return Optional.empty();
-        return Stream.of(entries)
-                .filter(e -> "RANKED_TFT".equals(e.getQueueType()))
-                .findFirst();
+        try {
+            LeagueEntryDto[] entries = getByUrl(url, path, LeagueEntryDto[].class, ErrorCode.LEAGUE_NOT_FOUND);
+            return Stream.of(entries)
+                    .filter(e -> "RANKED_TFT".equals(e.getQueueType()))
+                    .findFirst();
+        } catch (BusinessException e) {
+            if (e.getErrorCode() == ErrorCode.LEAGUE_NOT_FOUND) {
+                logger.warn("Riot API 404 — league not found (unranked): puuid={}", puuid);
+                return Optional.empty();
+            }
+            throw e;
+        }
     }
 
     // ── 매치 ID 목록 (start 오프셋 지원, 큐 무관 — 전적 검색용) ──
@@ -131,7 +138,6 @@ public class RiotApiClient {
     }
 
     // ── 공통 GET — 1,300ms 최소 간격 + Retry-After 파싱 재시도 (최대 3회) ──
-    // notFoundCode=null 이면 404 시 예외 없이 null 반환 (league 미배치 등 정상 케이스)
     private <T> T getByUrl(String url, String logPath, Class<T> responseType, ErrorCode notFoundCode) {
         for (int attempt = 1; attempt <= MAX_RETRY_COUNT; attempt++) {
             try {
@@ -150,10 +156,6 @@ public class RiotApiClient {
             } catch (BusinessException e) {
                 throw e;
             } catch (HttpClientErrorException.NotFound e) {
-                if (notFoundCode == null) {
-                    logger.warn("Riot API 404 (정상 케이스): endpoint={}", logPath);
-                    return null;
-                }
                 logger.warn("Riot API 404: endpoint={}", logPath);
                 throw new BusinessException(notFoundCode);
             } catch (HttpClientErrorException.TooManyRequests e) {

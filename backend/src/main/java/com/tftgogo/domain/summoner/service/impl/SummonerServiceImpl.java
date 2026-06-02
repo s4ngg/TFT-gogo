@@ -13,7 +13,6 @@ import com.tftgogo.global.riot.dto.AccountDto;
 import com.tftgogo.global.riot.dto.LeagueEntryDto;
 import com.tftgogo.global.riot.dto.MatchDto;
 import com.tftgogo.global.riot.dto.SummonerDto;
-import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -28,7 +27,6 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 
 @Service
-@RequiredArgsConstructor
 public class SummonerServiceImpl implements SummonerService {
 
     private static final Logger logger = LogManager.getLogger(SummonerServiceImpl.class);
@@ -39,9 +37,13 @@ public class SummonerServiceImpl implements SummonerService {
             "https://ddragon.leagueoflegends.com/cdn/latest/img/profileicon/%d.png";
 
     private final RiotApiClient riotApiClient;
-
-    @Qualifier("riotApiExecutor")
     private final Executor riotApiExecutor;
+
+    public SummonerServiceImpl(RiotApiClient riotApiClient,
+                               @Qualifier("riotApiExecutor") Executor riotApiExecutor) {
+        this.riotApiClient = riotApiClient;
+        this.riotApiExecutor = riotApiExecutor;
+    }
 
     @Override
     public MatchSearchResponse search(String gameName, String tagLine) {
@@ -101,7 +103,9 @@ public class SummonerServiceImpl implements SummonerService {
                 if (info == null || !VALID_QUEUE_IDS.contains(info.getQueue_id())) {
                     continue;
                 }
-                info.getParticipants().stream()
+                List<MatchDto.ParticipantDto> participants = info.getParticipants();
+                if (participants == null || participants.isEmpty()) continue;
+                participants.stream()
                         .filter(p -> puuid.equals(p.getPuuid()))
                         .findFirst()
                         .ifPresent(p -> result.add(MatchSummaryResponse.of(matchId, info, p)));
