@@ -507,6 +507,29 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         return profile.traitSignature + "::" + String.join("_", profile.coreUnitIds);
     }
 
+    /**
+     * #137: 병합된 전체 샘플의 unitFrequency 기준으로 core unit을 재선정해 canonical signature 생성.
+     * 최초 관측 샘플 기준 buildSignature()와 달리 집계 순서에 무관하게 동일한 signature 보장.
+     */
+    private String buildCanonicalSignature(DeckStat stat) {
+        // 빈도 내림차순 → rarity/tier 순 정렬로 core unit 후보 선정
+        List<String> frequencySortedIds = stat.unitFrequency.entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed()
+                        .thenComparing(Map.Entry.comparingByKey()))
+                .map(Map.Entry::getKey)
+                .toList();
+
+        Set<String> canonicalCoreIds = frequencySortedIds.stream()
+                .limit(CORE_UNIT_LIMIT)
+                .collect(Collectors.toCollection(TreeSet::new));
+
+        if (canonicalCoreIds.size() < MIN_CORE_UNIT_COUNT) {
+            frequencySortedIds.forEach(canonicalCoreIds::add);
+        }
+
+        return stat.profile.traitSignature + "::" + String.join("_", canonicalCoreIds);
+    }
+
     private void saveDeckStats(
             Map<String, DeckStat> deckStatMap,
             int totalParticipants,
@@ -547,10 +570,13 @@ public class MetaDeckServiceImpl implements MetaDeckService {
             String tier = assignTierByRatio(index, ranked.size());
             String name = buildDeckName(stat.traits);
 
+            // #137: 병합된 전체 샘플 기준 빈도로 core unit 재선정 → canonical signature 재계산
+            String canonicalSignature = buildCanonicalSignature(stat);
+
             MetaDeck deck = metaDeckRepository
-                    .findBySignatureAndRankFilterAndPatchVersion(entry.getKey(), rankFilter, patchVersion)
+                    .findBySignatureAndRankFilterAndPatchVersion(canonicalSignature, rankFilter, patchVersion)
                     .orElseGet(() -> MetaDeck.builder()
-                            .signature(entry.getKey())
+                            .signature(canonicalSignature)
                             .rankFilter(rankFilter)
                             .name(name)
                             .patchVersion(patchVersion)
@@ -798,6 +824,8 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         final DeckProfile profile;
         final Map<String, UnitStat> unitStats = new HashMap<>();
         final Map<String, ItemStat> itemStats = new HashMap<>();
+        // #137: 병합된 전체 샘플 기준 유닛 등장 빈도 집계 → frequency 기반 signature 재계산에 사용
+        final Map<String, Integer> unitFrequency = new HashMap<>();
         int count = 0, wins = 0, top4 = 0;
         double totalPlace = 0;
 
@@ -814,6 +842,10 @@ public class MetaDeckServiceImpl implements MetaDeckService {
             if (placement <= 4) top4++;
 
             participant.getUnits().forEach(unit -> {
+                String characterId = unit.getCharacter_id();
+                if (characterId != null && !characterId.isBlank()) {
+                    unitFrequency.merge(characterId, 1, Integer::sum);
+                }
                 UnitStat unitStat = unitStats.computeIfAbsent(unit.getCharacter_id(), UnitStat::new);
                 unitStat.record(unit);
 
