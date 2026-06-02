@@ -66,3 +66,8 @@ export function tftTraitIconUrl(traitId: string): string {
 export function tftChampSquareUrl(apiName: string): string {
   return communityDragonAssetUrl(`ASSETS/Characters/${apiName}/HUD/${apiName}_Square.TFT_Set17.tex`)
 }
+
+export function tftTierEmblemUrl(tier: string): string {
+  const t = tier.toLowerCase()
+  return `${COMMUNITY_DRAGON_RAW_BASE_URL}/plugins/rcp-be-lol-game-data/global/default/v1/ranked-emblems/emblem-${t}.png`
+}

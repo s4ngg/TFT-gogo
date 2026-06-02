@@ -21,6 +21,29 @@ public class SummonerDetailResponse {
     private double avgPlace;
     private double top4Rate;
     private int[] rankDistribution;
-    private List<Object> topTraits;
-    private List<Object> topChampions;
+    private List<TopTraitDto> topTraits;
+    private List<TopChampionDto> topChampions;
+
+    @Getter
+    @Builder
+    public static class TopTraitDto {
+        private String traitId;
+        private String name;
+        private int count;
+        private String iconUrl;
+        private String tone;
+        private int games;
+        private double avgPlace;
+    }
+
+    @Getter
+    @Builder
+    public static class TopChampionDto {
+        private String characterId;
+        private String name;
+        private String imageUrl;
+        private int cost;
+        private int games;
+        private double avgPlace;
+    }
 }

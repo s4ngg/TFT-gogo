@@ -12,7 +12,7 @@ function TraitHexBadge({ count, iconUrl, name, tone = 'gold' }: TraitHexBadgePro
   return (
     <span className={`${styles.badge} ${styles[tone]}`} title={name}>
       <i className={styles.icon}>
-        <img src={iconUrl} alt="" />
+        <img src={iconUrl} alt="" onError={(e) => { e.currentTarget.style.opacity = '0' }} />
       </i>
       <b className={styles.count}>{count}</b>
     </span>
