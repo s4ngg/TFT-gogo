@@ -1,11 +1,13 @@
-package com.tftgogo.domain.match.controller;
+package com.tftgogo.domain.summoner.controller;
 
 import com.tftgogo.domain.match.dto.response.MatchSearchResponse;
 import com.tftgogo.domain.match.dto.response.MatchSummaryResponse;
-import com.tftgogo.domain.match.service.SummonerService;
+import com.tftgogo.global.riot.util.TftAssetUrlBuilder;
+import com.tftgogo.domain.summoner.controller.docs.SummonerControllerDocs;
+import com.tftgogo.domain.summoner.dto.response.SummonerDetailResponse;
+import com.tftgogo.domain.summoner.dto.response.SummonerMatchItem;
+import com.tftgogo.domain.summoner.service.SummonerService;
 import com.tftgogo.global.response.ApiResponse;
-import lombok.Builder;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,30 +18,32 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/summoners")
 @RequiredArgsConstructor
-public class SummonerController {
+public class SummonerController implements SummonerControllerDocs {
 
     private final SummonerService summonerService;
 
+    @Override
     @GetMapping("/{gameName}/{tagLine}")
-    public ResponseEntity<ApiResponse<SummonerDetailDto>> getSummoner(
+    public ResponseEntity<ApiResponse<SummonerDetailResponse>> getSummoner(
             @PathVariable("gameName") String gameName,
             @PathVariable("tagLine") String tagLine) {
         MatchSearchResponse result = summonerService.search(gameName, tagLine);
         return ResponseEntity.ok(ApiResponse.success("소환사 조회 성공", buildDetail(result)));
     }
 
+    @Override
     @GetMapping("/{gameName}/{tagLine}/matches")
-    public ResponseEntity<ApiResponse<List<FrontendMatchDto>>> getMatches(
+    public ResponseEntity<ApiResponse<List<SummonerMatchItem>>> getMatches(
             @PathVariable("gameName") String gameName,
             @PathVariable("tagLine") String tagLine) {
         MatchSearchResponse result = summonerService.search(gameName, tagLine);
-        List<FrontendMatchDto> matches = result.getMatchList().stream()
-                .map(this::toFrontendMatch)
+        List<SummonerMatchItem> matches = result.getMatchList().stream()
+                .map(this::toMatchItem)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(ApiResponse.success("매치 조회 성공", matches));
     }
 
-    private SummonerDetailDto buildDetail(MatchSearchResponse result) {
+    private SummonerDetailResponse buildDetail(MatchSearchResponse result) {
         var profile = result.getProfile();
         var rankInfo = result.getRankInfo();
         var matchList = result.getMatchList();
@@ -57,7 +61,7 @@ public class SummonerController {
             rankDist[idx]++;
         });
 
-        return SummonerDetailDto.builder()
+        return SummonerDetailResponse.builder()
                 .puuid(profile.getPuuid())
                 .gameName(profile.getGameName())
                 .tagLine(profile.getTagLine())
@@ -76,47 +80,47 @@ public class SummonerController {
                 .build();
     }
 
-    private FrontendMatchDto toFrontendMatch(MatchSummaryResponse m) {
-        List<FrontendMatchDto.TraitDto> traits = m.getTraits().stream()
+    private SummonerMatchItem toMatchItem(MatchSummaryResponse m) {
+        List<SummonerMatchItem.TraitDto> traits = m.getTraits().stream()
                 .filter(t -> t.getStyle() > 0)
-                .map(t -> FrontendMatchDto.TraitDto.builder()
+                .map(t -> SummonerMatchItem.TraitDto.builder()
                         .traitId(t.getName())
                         .name(t.getName())
-                        .iconUrl("")
+                        .iconUrl(TftAssetUrlBuilder.buildTraitIconUrl(t.getName()))
                         .count(t.getNumUnits())
                         .tone(styleToTone(t.getStyle()))
                         .build())
                 .collect(Collectors.toList());
 
-        List<FrontendMatchDto.UnitDto> units = m.getUnits().stream()
-                .map(u -> FrontendMatchDto.UnitDto.builder()
+        List<SummonerMatchItem.UnitDto> units = m.getUnits().stream()
+                .map(u -> SummonerMatchItem.UnitDto.builder()
                         .characterId(u.getCharacterId())
-                        .imageUrl("")
+                        .imageUrl(TftAssetUrlBuilder.buildChampionImageUrl(u.getCharacterId()))
                         .stars(u.getTier())
                         .itemImageUrls(List.of())
                         .build())
                 .collect(Collectors.toList());
 
-        List<FrontendMatchDto.ParticipantDto> participants = m.getParticipants().stream()
-                .map(p -> FrontendMatchDto.ParticipantDto.builder()
+        List<SummonerMatchItem.ParticipantDto> participants = m.getParticipants().stream()
+                .map(p -> SummonerMatchItem.ParticipantDto.builder()
                         .puuid(p.getPuuid())
                         .riotIdGameName(p.getRiotIdGameName())
                         .riotIdTagline(p.getRiotIdTagline())
                         .placement(p.getPlacement())
                         .stage(String.valueOf(p.getLevel()))
                         .traits(p.getTraits().stream()
-                                .map(t -> FrontendMatchDto.TraitDto.builder()
+                                .map(t -> SummonerMatchItem.TraitDto.builder()
                                         .traitId(t.getName())
                                         .name(t.getName())
-                                        .iconUrl("")
+                                        .iconUrl(TftAssetUrlBuilder.buildTraitIconUrl(t.getName()))
                                         .count(t.getNumUnits())
                                         .tone(styleToTone(t.getStyle()))
                                         .build())
                                 .collect(Collectors.toList()))
                         .units(p.getUnits().stream()
-                                .map(u -> FrontendMatchDto.UnitDto.builder()
+                                .map(u -> SummonerMatchItem.UnitDto.builder()
                                         .characterId(u.getCharacterId())
-                                        .imageUrl("")
+                                        .imageUrl(TftAssetUrlBuilder.buildChampionImageUrl(u.getCharacterId()))
                                         .stars(u.getTier())
                                         .itemImageUrls(List.of())
                                         .build())
@@ -126,7 +130,7 @@ public class SummonerController {
                         .build())
                 .collect(Collectors.toList());
 
-        return FrontendMatchDto.builder()
+        return SummonerMatchItem.builder()
                 .matchId(m.getMatchId())
                 .placement(m.getPlacement())
                 .gameDateTime(m.getGameDatetime())
@@ -145,71 +149,5 @@ public class SummonerController {
             case 4 -> "prismatic";
             default -> "bronze";
         };
-    }
-
-    @Getter
-    @Builder
-    public static class SummonerDetailDto {
-        private String puuid;
-        private String gameName;
-        private String tagLine;
-        private int profileIconId;
-        private long summonerLevel;
-        private String tier;
-        private String rank;
-        private int leaguePoints;
-        private int wins;
-        private int losses;
-        private double avgPlace;
-        private double top4Rate;
-        private int[] rankDistribution;
-        private List<Object> topTraits;
-        private List<Object> topChampions;
-    }
-
-    @Getter
-    @Builder
-    public static class FrontendMatchDto {
-        private String matchId;
-        private int placement;
-        private long gameDateTime;
-        private String gameType;
-        private String compositionName;
-        private List<TraitDto> traits;
-        private List<UnitDto> units;
-        private List<ParticipantDto> participants;
-
-        @Getter
-        @Builder
-        public static class TraitDto {
-            private String traitId;
-            private String name;
-            private String iconUrl;
-            private int count;
-            private String tone;
-        }
-
-        @Getter
-        @Builder
-        public static class UnitDto {
-            private String characterId;
-            private String imageUrl;
-            private int stars;
-            private List<String> itemImageUrls;
-        }
-
-        @Getter
-        @Builder
-        public static class ParticipantDto {
-            private String puuid;
-            private String riotIdGameName;
-            private String riotIdTagline;
-            private int placement;
-            private String stage;
-            private List<TraitDto> traits;
-            private List<UnitDto> units;
-            private int playersEliminated;
-            private int goldLeft;
-        }
     }
 }

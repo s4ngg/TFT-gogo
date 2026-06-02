@@ -1,5 +1,6 @@
 package com.tftgogo.domain.match.controller.docs;
 
+import com.tftgogo.domain.match.dto.response.MatchDetailResponse;
 import com.tftgogo.domain.match.dto.response.MatchSearchResponse;
 import com.tftgogo.domain.match.dto.response.MatchSummaryResponse;
 import com.tftgogo.global.response.ApiResponse;
@@ -45,5 +46,19 @@ public interface MatchControllerDocs {
             @PathVariable("puuid") String puuid,
             @Parameter(description = "시작 인덱스 (0부터, 30 단위 증가)", example = "30")
             @RequestParam(name = "start", defaultValue = "0") int start
+    );
+
+    @Operation(
+            summary = "매치 상세 조회",
+            description = "matchId 기준으로 해당 게임에 참가한 8인 전체 데이터를 조회합니다. queue_id가 1090·1100이 아닌 경우 오류를 반환합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "매치를 찾을 수 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429", description = "Riot API Rate Limit 초과")
+    })
+    ResponseEntity<ApiResponse<MatchDetailResponse>> getMatchDetail(
+            @Parameter(description = "Riot 매치 ID", example = "KR_7654321098", required = true)
+            @PathVariable("matchId") String matchId
     );
 }

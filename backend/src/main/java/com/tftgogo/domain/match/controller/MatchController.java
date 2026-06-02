@@ -1,9 +1,10 @@
 package com.tftgogo.domain.match.controller;
 
 import com.tftgogo.domain.match.controller.docs.MatchControllerDocs;
+import com.tftgogo.domain.match.dto.response.MatchDetailResponse;
 import com.tftgogo.domain.match.dto.response.MatchSearchResponse;
 import com.tftgogo.domain.match.dto.response.MatchSummaryResponse;
-import com.tftgogo.domain.match.service.SummonerService;
+import com.tftgogo.domain.summoner.service.SummonerService;
 import com.tftgogo.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -36,5 +37,12 @@ public class MatchController implements MatchControllerDocs {
             @RequestParam(name = "start", defaultValue = "0") int start) {
         List<MatchSummaryResponse> response = summonerService.getMatches(puuid, start);
         return ResponseEntity.ok(ApiResponse.success("매치 목록 조회 성공", response));
+    }
+
+    @GetMapping("/detail/{matchId}")
+    public ResponseEntity<ApiResponse<MatchDetailResponse>> getMatchDetail(
+            @PathVariable("matchId") String matchId) {
+        MatchDetailResponse response = summonerService.getMatchDetail(matchId);
+        return ResponseEntity.ok(ApiResponse.success("매치 상세 조회 성공", response));
     }
 }
