@@ -27,6 +27,10 @@ public enum ErrorCode {
     GUIDE_INVALID_TAB(HttpStatus.BAD_REQUEST, "지원하지 않는 게임가이드 탭입니다."),
     GUIDE_INVALID_DATA(HttpStatus.INTERNAL_SERVER_ERROR, "게임가이드 데이터 형식이 올바르지 않습니다."),
 
+    // ── 패치노트 ───────────────────────────────────────
+    PATCH_NOTE_NOT_FOUND(HttpStatus.NOT_FOUND, "패치노트를 찾을 수 없습니다."),
+    PATCH_NOTE_INVALID_DATA(HttpStatus.INTERNAL_SERVER_ERROR, "패치노트 데이터 형식이 올바르지 않습니다."),
+
     // ── 전적 ────────────────────────────────────────────
     SUMMONER_NOT_FOUND(HttpStatus.NOT_FOUND, "소환사를 찾을 수 없습니다."),
     MATCH_NOT_FOUND(HttpStatus.NOT_FOUND, "전적 정보를 찾을 수 없습니다."),
