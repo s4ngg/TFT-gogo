@@ -6,6 +6,7 @@ import com.tftgogo.domain.deck.service.MetaDeckService;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -24,8 +25,16 @@ public class MetaDeckScheduler {
     private final MetaDeckService metaDeckService;
     private final MetaDeckRepository metaDeckRepository;
 
+    /** #131: application.yml의 app.meta-deck.startup-aggregate=true/false로 서버 시작 집계 on/off */
+    @Value("${app.meta-deck.startup-aggregate:false}")
+    private boolean startupAggregateEnabled;
+
     @EventListener(ApplicationReadyEvent.class)
     public void aggregateOnStartupIfMissing() {
+        if (!startupAggregateEnabled) {
+            logger.info("서버 시작 자동 집계 비활성화 (app.meta-deck.startup-aggregate=false)");
+            return;
+        }
         LocalDate targetDate = LocalDate.now(SCHEDULE_ZONE).minusDays(1);
         aggregateIfMissing(targetDate, "서버 시작");
     }
