@@ -13,6 +13,7 @@ import com.tftgogo.domain.patchnote.entity.PatchChangeType;
 import com.tftgogo.domain.patchnote.entity.PatchImpact;
 import com.tftgogo.domain.patchnote.entity.PatchNote;
 import com.tftgogo.domain.patchnote.repository.PatchChangeRepository;
+import com.tftgogo.domain.patchnote.repository.PatchChangeRepository.PatchChangeCount;
 import com.tftgogo.domain.patchnote.repository.PatchNoteRepository;
 import com.tftgogo.domain.patchnote.service.PatchNoteService;
 import com.tftgogo.global.exception.BusinessException;
@@ -38,6 +39,7 @@ public class PatchNoteServiceImpl implements PatchNoteService {
     private static final int MAX_PAGE = 10_000;
     private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int MAX_PAGE_SIZE = 100;
+    private static final String LIKE_ESCAPE = "\\";
 
     private final PatchNoteRepository patchNoteRepository;
     private final PatchChangeRepository patchChangeRepository;
@@ -45,9 +47,15 @@ public class PatchNoteServiceImpl implements PatchNoteService {
 
     @Override
     public List<PatchNoteResponse> getPatchNotes() {
-        return patchNoteRepository.findByActiveTrueAndDeletedAtIsNullOrderByCurrentDescPublishedAtDescIdDesc()
-                .stream()
-                .map(this::toPatchNoteResponse)
+        List<PatchNote> patchNotes = patchNoteRepository
+                .findByActiveTrueAndDeletedAtIsNullOrderByCurrentDescPublishedAtDescIdDesc();
+        Map<Long, Long> changeCounts = getChangeCounts(patchNotes);
+
+        return patchNotes.stream()
+                .map(patchNote -> toPatchNoteResponse(
+                        patchNote,
+                        changeCounts.getOrDefault(patchNote.getId(), 0L)
+                ))
                 .toList();
     }
 
@@ -101,11 +109,23 @@ public class PatchNoteServiceImpl implements PatchNoteService {
         );
     }
 
-    private PatchNoteResponse toPatchNoteResponse(PatchNote patchNote) {
+    private Map<Long, Long> getChangeCounts(List<PatchNote> patchNotes) {
+        if (patchNotes.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Long, Long> changeCounts = new LinkedHashMap<>();
+        for (PatchChangeCount count : patchChangeRepository.countByPatchNotes(patchNotes)) {
+            changeCounts.put(count.getPatchNoteId(), count.getChangeCount());
+        }
+        return changeCounts;
+    }
+
+    private PatchNoteResponse toPatchNoteResponse(PatchNote patchNote, long changeCount) {
         return PatchNoteResponse.from(
                 patchNote,
                 parseStringArray(patchNote.getHighlightsJson(), "highlightsJson", patchNote.getId()),
-                patchChangeRepository.countByPatchNoteAndActiveTrueAndDeletedAtIsNull(patchNote)
+                changeCount
         );
     }
 
@@ -137,14 +157,14 @@ public class PatchNoteServiceImpl implements PatchNoteService {
             }
         }
 
-        return PatchChangeStatsResponse.builder()
-                .totalChanges(changes.size())
-                .categoryCounts(categoryCounts)
-                .typeCounts(typeCounts)
-                .buffCount(typeCounts.get(PatchChangeType.BUFF.name()))
-                .nerfCount(typeCounts.get(PatchChangeType.NERF.name()))
-                .highImpactCount(highImpactCount)
-                .build();
+        return PatchChangeStatsResponse.of(
+                changes.size(),
+                categoryCounts,
+                typeCounts,
+                typeCounts.get(PatchChangeType.BUFF.name()),
+                typeCounts.get(PatchChangeType.NERF.name()),
+                highImpactCount
+        );
     }
 
     private List<String> parseStringArray(String json, String fieldName, Long ownerId) {
@@ -227,7 +247,10 @@ public class PatchNoteServiceImpl implements PatchNoteService {
         if (!hasText(value)) {
             return null;
         }
-        return value.trim();
+        return value.trim()
+                .replace(LIKE_ESCAPE, LIKE_ESCAPE + LIKE_ESCAPE)
+                .replace("%", LIKE_ESCAPE + "%")
+                .replace("_", LIKE_ESCAPE + "_");
     }
 
     private boolean hasText(String value) {

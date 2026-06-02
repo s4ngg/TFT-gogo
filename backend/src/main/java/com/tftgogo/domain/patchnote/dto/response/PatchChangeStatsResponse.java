@@ -15,4 +15,22 @@ public class PatchChangeStatsResponse {
     private long buffCount;
     private long nerfCount;
     private long highImpactCount;
+
+    public static PatchChangeStatsResponse of(
+            long totalChanges,
+            Map<String, Long> categoryCounts,
+            Map<String, Long> typeCounts,
+            long buffCount,
+            long nerfCount,
+            long highImpactCount
+    ) {
+        return PatchChangeStatsResponse.builder()
+                .totalChanges(totalChanges)
+                .categoryCounts(categoryCounts)
+                .typeCounts(typeCounts)
+                .buffCount(buffCount)
+                .nerfCount(nerfCount)
+                .highImpactCount(highImpactCount)
+                .build();
+    }
 }

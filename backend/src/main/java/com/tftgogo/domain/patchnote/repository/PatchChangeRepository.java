@@ -13,7 +13,21 @@ import java.util.List;
 
 public interface PatchChangeRepository extends JpaRepository<PatchChange, Long> {
 
-    long countByPatchNoteAndActiveTrueAndDeletedAtIsNull(PatchNote patchNote);
+    interface PatchChangeCount {
+        Long getPatchNoteId();
+
+        Long getChangeCount();
+    }
+
+    @Query("""
+            SELECT c.patchNote.id AS patchNoteId, COUNT(c) AS changeCount
+            FROM PatchChange c
+            WHERE c.patchNote IN :patchNotes
+              AND c.active = true
+              AND c.deletedAt IS NULL
+            GROUP BY c.patchNote.id
+            """)
+    List<PatchChangeCount> countByPatchNotes(@Param("patchNotes") List<PatchNote> patchNotes);
 
     List<PatchChange> findByPatchNoteAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc(PatchNote patchNote);
 
@@ -28,9 +42,9 @@ public interface PatchChangeRepository extends JpaRepository<PatchChange, Long> 
               AND (:impact IS NULL OR c.impact = :impact)
               AND (
                     :query IS NULL
-                    OR LOWER(c.targetKey) LIKE LOWER(CONCAT('%', :query, '%'))
-                    OR LOWER(c.targetName) LIKE LOWER(CONCAT('%', :query, '%'))
-                    OR LOWER(c.summary) LIKE LOWER(CONCAT('%', :query, '%'))
+                    OR LOWER(c.targetKey) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+                    OR LOWER(c.targetName) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+                    OR LOWER(c.summary) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
               )
             ORDER BY c.sortOrder ASC, c.id ASC
             """)
