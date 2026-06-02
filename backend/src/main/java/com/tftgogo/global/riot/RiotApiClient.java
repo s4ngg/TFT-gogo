@@ -89,12 +89,7 @@ public class RiotApiClient {
                 .findFirst();
     }
 
-    // ── 소환사 PUUID로 최근 매치 ID 목록 조회 ─────────────────
-    public List<String> getMatchIds(String puuid, int count) {
-        return getMatchIds(puuid, count, 0);
-    }
-
-    // ── 매치 ID 목록 (start 오프셋 지원 — 더보기용) ──────────
+    // ── 매치 ID 목록 (start 오프셋 지원, 큐 무관 — 전적 검색용) ──
     public List<String> getMatchIds(String puuid, int count, int start) {
         String path = "/tft/match/v1/matches/by-puuid/{puuid}/ids";
         String url = riotProperties.getAsiaBaseUrl()

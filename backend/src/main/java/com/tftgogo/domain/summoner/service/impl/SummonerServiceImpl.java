@@ -68,7 +68,7 @@ public class SummonerServiceImpl implements SummonerService {
                 .map(RankInfoResponse::of)
                 .orElseGet(RankInfoResponse::unranked);
 
-        List<String> matchIds = riotApiClient.getMatchIds(puuid, MATCH_COUNT);
+        List<String> matchIds = riotApiClient.getMatchIds(puuid, MATCH_COUNT, 0);
         List<MatchSummaryResponse> matchList = buildMatchList(puuid, matchIds);
 
         String recentWinRate = calculateWinRate(matchList);
@@ -104,7 +104,7 @@ public class SummonerServiceImpl implements SummonerService {
     @Override
     public List<MatchSummaryResponse> getMatchesByRiotId(String gameName, String tagLine) {
         String puuid = riotApiClient.getAccount(gameName, tagLine).getPuuid();
-        List<String> matchIds = riotApiClient.getMatchIds(puuid, MATCH_COUNT);
+        List<String> matchIds = riotApiClient.getMatchIds(puuid, MATCH_COUNT, 0);
         return buildMatchList(puuid, matchIds);
     }
 
