@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
@@ -415,11 +416,12 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                         .thenComparing(UnitDto::getCharacter_id))
                 .toList();
 
+        // #137: TreeSet으로 알파벳 정렬 보장 → 집계 순서와 무관하게 동일 signature 생성
         Set<String> coreUnitIds = sortedUnits.stream()
                 .filter(this::isCoreUnit)
                 .limit(CORE_UNIT_LIMIT)
                 .map(UnitDto::getCharacter_id)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+                .collect(Collectors.toCollection(TreeSet::new));
 
         if (coreUnitIds.size() < MIN_CORE_UNIT_COUNT) {
             sortedUnits.stream()
@@ -435,8 +437,7 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         return units.stream()
                 .map(UnitDto::getCharacter_id)
                 .filter(characterId -> characterId != null && !characterId.isBlank())
-                .sorted()
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 
     private boolean isCoreUnit(UnitDto unit) {

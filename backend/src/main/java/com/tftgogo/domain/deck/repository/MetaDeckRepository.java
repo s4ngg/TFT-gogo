@@ -2,6 +2,7 @@ package com.tftgogo.domain.deck.repository;
 
 import com.tftgogo.domain.deck.entity.MetaDeck;
 import com.tftgogo.domain.deck.entity.RankFilter;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -21,7 +22,8 @@ public interface MetaDeckRepository extends JpaRepository<MetaDeck, Long> {
     @Query("SELECT COUNT(DISTINCT d.rankFilter) FROM MetaDeck d WHERE d.dataStartDate = :dataStartDate")
     long countAggregatedRankFiltersByDataStartDate(@Param("dataStartDate") java.time.LocalDate dataStartDate);
 
-    // 선택률 기준 내림차순 정렬 + 최소 선택률 필터 (DB 레벨)
+    // #134: @EntityGraph로 units, traits, artifactStats, heroAugments 한 번에 fetch → N+1 제거
+    @EntityGraph(attributePaths = {"units", "traits", "artifactStats", "heroAugments"})
     @Query("SELECT d FROM MetaDeck d WHERE d.rankFilter = :rankFilter AND d.patchVersion = :patchVersion AND d.playRate >= :minPlayRate ORDER BY d.playRate DESC")
     List<MetaDeck> findMetaDecksByPickRate(
             @Param("rankFilter") RankFilter rankFilter,
