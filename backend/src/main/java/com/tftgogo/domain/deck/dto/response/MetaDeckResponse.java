@@ -33,6 +33,8 @@ public class MetaDeckResponse {
     private String boardPositions;
     // 운영방법 JSON (null = 미작성)
     private String playGuide;
+    // 영웅 증강 목록 (관리자 직접 입력)
+    private List<HeroAugmentSummary> heroAugments;
 
     @Getter
     @Builder
@@ -51,6 +53,15 @@ public class MetaDeckResponse {
         private int stars;
         private int cost;
         private List<String> recommendedItems;
+    }
+
+    @Getter
+    @Builder
+    public static class HeroAugmentSummary {
+        private String championId;    // e.g. "tft17_jinx"
+        private String championName;  // e.g. "징크스"
+        private String augmentName;   // e.g. "화약 소녀"
+        private String imageUrl;      // 챔피언 이미지 URL
     }
 
     @Getter
@@ -123,6 +134,8 @@ public class MetaDeckResponse {
 
         String boardPositions = curation != null ? curation.getBoardPositions() : null;
         String playGuide = curation != null ? curation.getPlayGuide() : null;
+        List<HeroAugmentSummary> heroAugments = parseHeroAugments(
+                curation != null ? curation.getHeroAugments() : null);
 
         return MetaDeckResponse.builder()
                 .rank(rank)
@@ -138,6 +151,7 @@ public class MetaDeckResponse {
                 .topItems(topItems)
                 .boardPositions(boardPositions)
                 .playGuide(playGuide)
+                .heroAugments(heroAugments)
                 .build();
     }
 
@@ -163,6 +177,30 @@ public class MetaDeckResponse {
 
         try {
             return MAPPER.readValue(json, new TypeReference<List<String>>() {});
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<HeroAugmentSummary> parseHeroAugments(String json) {
+        if (json == null || json.isBlank() || "[]".equals(json)) return List.of();
+        try {
+            List<java.util.Map<String, String>> raw =
+                    MAPPER.readValue(json, new TypeReference<List<java.util.Map<String, String>>>() {});
+            return raw.stream()
+                    .filter(m -> m.get("augmentName") != null)
+                    .map(m -> {
+                        String championId = m.getOrDefault("championId", "");
+                        return HeroAugmentSummary.builder()
+                                .championId(championId)
+                                .championName(m.getOrDefault("championName", ""))
+                                .augmentName(m.get("augmentName"))
+                                .imageUrl(championId.isBlank() ? ""
+                                        : TftAssetUrlBuilder.buildChampionImageUrl(championId))
+                                .build();
+                    })
+                    .toList();
         } catch (Exception e) {
             return List.of();
         }

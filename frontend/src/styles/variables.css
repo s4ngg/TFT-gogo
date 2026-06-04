@@ -24,7 +24,14 @@
 
   --gold: #d7a93a;
   --danger: #ff5b57;
+  --danger-bg: rgba(255, 91, 87, 0.12);
+  --danger-border: rgba(255, 91, 87, 0.30);
   --success: #4ade80;
+
+  /* 영웅 증강 뱃지 */
+  --color-purple-light: #c4b5fd;
+  --hero-aug-badge-border: rgba(167, 139, 250, 0.45);
+  --hero-aug-badge-bg: rgba(167, 139, 250, 0.10);
 
   --text-main: #ffffff;
   --text-ui: #d9dde3;

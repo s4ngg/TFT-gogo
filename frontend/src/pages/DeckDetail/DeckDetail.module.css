@@ -547,6 +547,59 @@
 }
 
 
+/* ════════════════════════════
+   영웅 증강
+════════════════════════════ */
+.heroAugList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.heroAugEntry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px 10px 10px;
+  border: 1px solid rgba(112, 144, 152, 0.12);
+  border-radius: 8px;
+  background: rgba(8, 20, 28, 0.6);
+}
+
+.heroAugChamp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 48px;
+}
+
+.heroAugChampImg {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 2px solid rgba(4, 243, 229, 0.3);
+}
+
+.heroAugChampName {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.heroAugBadge {
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--hero-aug-badge-border);
+  background: var(--hero-aug-badge-bg);
+  color: var(--color-purple-light);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 /* ── 운영 방법 ── */
 .guideList {
   display: flex;

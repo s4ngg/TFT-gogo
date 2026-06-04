@@ -25,6 +25,12 @@ export interface UnitInfo {
   imageUrl: string
 }
 
+export interface HeroAugmentEntry {
+  championId: string    // e.g. "tft17_jinx"
+  championName: string  // e.g. "징크스"
+  augmentName: string   // e.g. "화약 소녀"
+}
+
 export interface AdminDeck {
   id: number
   signature: string
@@ -37,6 +43,7 @@ export interface AdminDeck {
   curatorNote: string | null
   boardPositions: string | null
   playGuide: string | null
+  heroAugments: string | null   // JSON string
   grade: string
   winRate: string
   top4: string
@@ -64,6 +71,7 @@ export interface DeckCurationRequest {
   curatorNote: string | null
   boardPositions: string | null
   playGuide: string | null
+  heroAugments: string | null   // JSON string
 }
 
 export async function fetchAdminDecks(rankFilter: RankFilter = 'MASTER_PLUS'): Promise<AdminDeck[]> {
