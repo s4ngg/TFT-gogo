@@ -16,58 +16,70 @@
 
 ---
 
-## Game Guide Immediate Backlog - 2026-06-01 기준
+## Game Guide Immediate Backlog - 2026-06-04 기준
 
 ### Spec PR #126 후속
 
 - [ ] 게임가이드 spec 변경사항을 확인하고 작성자가 아닌 팀원에게 승인 요청
-- [ ] `spec.md`의 Guide `cost`, `dataJson`, 정렬/검증 정책을 게임가이드 구현 이슈 본문에 반영
+- [x] `spec.md`의 Guide `cost`, `dataJson`, 정렬/검증 정책을 게임가이드 구현 이슈 본문에 반영
 
 ### 구현 PR 범위
 
-- [ ] `GuideType` enum과 가이드 Entity/Repository 설계
-- [ ] `GuideEntryResponse`, `GuidePageResponse` DTO 작성
-- [ ] 공개 조회 Service 구현: 대표 목록, 탭별 목록, 검색, 정렬, 페이지네이션, 챔피언 cost 필터
-- [ ] 공개 Controller 구현: `GET /api/guide`, `GET /api/guide/{tab}`
-- [ ] `dataJson` 저장값을 응답에서 JSON object로 변환하는 정책 적용
+- [x] `GuideType` enum과 가이드 Entity/Repository 설계
+- [x] `GuideEntryResponse`, `GuidePageResponse` DTO 작성
+- [x] 공개 조회 Service 구현: 대표 목록, 탭별 목록, 검색, 정렬, 페이지네이션, 챔피언 cost 필터
+- [x] 공개 Controller 구현: `GET /api/guide`, `GET /api/guide/{tab}`
+- [x] `dataJson` 저장값을 응답에서 JSON object로 변환하는 정책 적용
 - [ ] 관리자 API 초안 구현: `/api/admin/guides` 목록, 생성, 수정, 숨김 처리
-- [ ] Service 단위 테스트 작성: 공개 여부 필터, tab 검증, cost 필터, 페이지 응답
+- [x] Service 단위 테스트 작성: tab 검증, cost 필터, JSON object 응답, 페이지/정렬 검증
 
 ### 프론트 API 연결 계획
 
-- [ ] 프론트 `guideClient.ts`는 `/guide`, `/guide/{tab}`을 호출하고 백엔드 Controller는 `/api/guide`, `/api/guide/{tab}`을 제공한다.
-- [ ] `GET /api/guide`는 `ApiResponse<List<GuideEntryResponse>>`를 반환한다.
-- [ ] `GET /api/guide/{tab}`는 `ApiResponse<GuidePageResponse<GuideEntryResponse>>`를 반환한다.
-- [ ] 모든 공개 응답은 camelCase 필드명과 JSON object `dataJson`을 사용한다.
+- [x] 프론트 `guideClient.ts`는 `/guide`, `/guide/{tab}`을 호출하고 백엔드 Controller는 `/api/guide`, `/api/guide/{tab}`을 제공한다.
+- [x] `GET /api/guide`는 `ApiResponse<List<GuideEntryResponse>>`를 반환한다.
+- [x] `GET /api/guide/{tab}`는 `ApiResponse<GuidePageResponse<GuideEntryResponse>>`를 반환한다.
+- [x] 모든 공개 응답은 camelCase 필드명과 JSON object `dataJson`을 사용한다.
 - [ ] 게임가이드 구현 PR에는 패치노트 Entity, Controller, DTO 변경을 포함하지 않는다.
+
+### 관리자 API 진입 전 확정할 정책
+
+- [ ] `patchVersion` 생략 시 공개 Guide API가 사용할 기준 패치 결정: 최신 active 패치 또는 운영자가 current로 지정한 패치
+- [ ] Guide `query` 검색어 LIKE escape 적용
+- [ ] soft delete row와 동일한 `guideType + targetKey + patchVersion` 생성 요청 처리 정책 확정
 
 ---
 
-## PatchNotes Immediate Backlog - 2026-06-01 기준
+## PatchNotes Immediate Backlog - 2026-06-04 기준
 
 ### Spec PR #126 후속
 
 - [ ] 패치노트 spec 변경사항을 확인하고 작성자가 아닌 팀원에게 승인 요청
-- [ ] `spec.md`의 PatchNotes 목록/변경사항 분리, stats, 정렬/검증 정책을 패치노트 구현 이슈 본문에 반영
+- [x] `spec.md`의 PatchNotes 목록/변경사항 분리, stats, 정렬/검증 정책을 패치노트 구현 이슈 본문에 반영
 
 ### 구현 PR 범위
 
-- [ ] `PatchCategory`, `PatchChangeType`, `PatchImpact` enum과 PatchNote/PatchChange Entity/Repository 설계
-- [ ] `PatchNoteResponse`, `PatchChangeResponse`, `PatchChangePageResponse` DTO 작성
-- [ ] 공개 패치노트 목록 Service 구현: 최신순 정렬, 공개 여부 필터, 현재 패치 표시
-- [ ] 공개 변경사항 Service 구현: category/type/impact/query 필터, 페이지네이션, stats 집계
-- [ ] 공개 Controller 구현: `GET /api/patch-notes`, `GET /api/patch-notes/{version}/changes`
-- [ ] `GET /api/patch-notes`에서는 전체 변경사항을 포함하지 않고 lightweight 목록만 반환
+- [x] `PatchCategory`, `PatchChangeType`, `PatchImpact` enum과 PatchNote/PatchChange Entity/Repository 설계
+- [x] `PatchNoteResponse`, `PatchChangeResponse`, `PatchChangePageResponse` DTO 작성
+- [x] 공개 패치노트 목록 Service 구현: 최신순 정렬, 공개 여부 필터, 현재 패치 표시
+- [x] 공개 변경사항 Service 구현: category/type/impact/query 필터, 페이지네이션, stats 집계
+- [x] 공개 Controller 구현: `GET /api/patch-notes`, `GET /api/patch-notes/{version}/changes`
+- [x] `GET /api/patch-notes`에서는 전체 변경사항을 포함하지 않고 lightweight 목록만 반환
 - [ ] 관리자 API 초안 구현: `/api/admin/patch-notes`, `/api/admin/patch-note-changes` 생성, 수정, 숨김 처리
-- [ ] Service 단위 테스트 작성: 목록 응답, 변경사항 필터, stats 계산, 현재 패치 단일성
+- [x] Service 단위 테스트 작성: 목록 응답, 변경사항 필터, stats 계산, 페이지/검증 오류
 
 ### 프론트 API 연결 계획
 
-- [ ] 프론트 `patchNotes.ts`는 `/patch-notes`, `/patch-notes/{version}/changes`를 호출하고 백엔드 Controller는 `/api/patch-notes`, `/api/patch-notes/{version}/changes`를 제공한다.
-- [ ] `GET /api/patch-notes`는 `ApiResponse<List<PatchNoteResponse>>`를 반환한다.
-- [ ] `GET /api/patch-notes/{version}/changes`는 `ApiResponse<PatchChangePageResponse>`를 반환한다.
-- [ ] `GET /api/patch-notes`는 lightweight 목록만 반환하고, 변경사항 목록과 통계는 `/changes` endpoint에서 페이지 단위로 조회한다.
+- [x] 프론트 `patchNotes.ts`는 `/patch-notes`, `/patch-notes/{version}/changes`를 호출하고 백엔드 Controller는 `/api/patch-notes`, `/api/patch-notes/{version}/changes`를 제공한다.
+- [x] `GET /api/patch-notes`는 `ApiResponse<List<PatchNoteResponse>>`를 반환한다.
+- [x] `GET /api/patch-notes/{version}/changes`는 `ApiResponse<PatchChangePageResponse>`를 반환한다.
+- [x] `GET /api/patch-notes`는 lightweight 목록만 반환하고, 변경사항 목록과 통계는 `/changes` endpoint에서 페이지 단위로 조회한다.
 - [ ] 패치노트 구현 PR에는 게임가이드 Entity, Controller, DTO 변경을 포함하지 않는다.
+
+### 관리자 API 진입 전 확정할 정책
+
+- [ ] `isCurrent`는 active 패치노트 중 동시에 하나만 유지
+- [ ] `highlightsJson`, `tagsJson` JSON string array 검증
+- [ ] soft delete row와 동일한 `version` 생성 요청 처리 정책 확정
 
 ---
 
