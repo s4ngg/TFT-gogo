@@ -9,7 +9,7 @@ import type { ChampionSummary, MetaDeck, TraitSummary } from '../dashboardData'
 import styles from '../Dashboard.module.css'
 
 type MetaFilter = 'overall' | 'upper' | 'master'
-type MetaSortKey = 'winRate' | 'top4' | 'avgPlace'
+type MetaSortKey = 'top4' | 'avgPlace'
 
 const metaFilters: { label: string; value: MetaFilter }[] = [
   { label: '종합', value: 'overall' },
@@ -18,7 +18,6 @@ const metaFilters: { label: string; value: MetaFilter }[] = [
 ]
 
 const sortOptions: { label: string; value: MetaSortKey }[] = [
-  { label: '승률', value: 'winRate' },
   { label: 'TOP 4', value: 'top4' },
   { label: '평균 등수', value: 'avgPlace' },
 ]
@@ -99,7 +98,7 @@ function MetaSnapshot() {
   const { data: metaDeckResponse } = useMetaSnapshot()
   const allDecks = useMemo(() => metaDeckResponse?.decks ?? [], [metaDeckResponse?.decks])
   const [selectedFilter, setSelectedFilter] = useState<MetaFilter>('overall')
-  const [sortKey, setSortKey] = useState<MetaSortKey>('winRate')
+  const [sortKey, setSortKey] = useState<MetaSortKey>('top4')
   const metaDecks = useMemo(
     () => sortMetaDecks(filterMetaDecks(allDecks, selectedFilter), sortKey).slice(0, 8),
     [allDecks, selectedFilter, sortKey],
@@ -159,7 +158,6 @@ function MetaSnapshot() {
                 <Traits values={deck.traits} />
               </div>
               <Champions champions={deck.champions} />
-              <b className={styles.winRate}>{deck.winRate}</b>
               <b className={styles.top4}>{deck.top4}</b>
               <b className={styles.avgPlace}>{deck.avgPlace}</b>
               <ChevronRight className={styles.rowArrow} size={22} />
