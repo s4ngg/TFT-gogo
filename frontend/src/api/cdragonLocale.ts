@@ -145,8 +145,10 @@ export async function fetchTFTLocale(): Promise<TFTLocale> {
         if (suffix) {
           traitBySuffix.set(suffix, t.name)
           const breakpoints: TraitBreakpoint[] = (t.effects ?? [])
-            .filter((e) => e.minUnits != null && e.style != null && STYLE_TO_TIER[e.style!] != null)
-            .map((e) => ({ minUnits: e.minUnits!, tier: STYLE_TO_TIER[e.style!] }))
+            .filter((e): e is CDragonTraitEffect & { minUnits: number; style: number } =>
+              e.minUnits != null && e.style != null && STYLE_TO_TIER[e.style] != null,
+            )
+            .map((e) => ({ minUnits: e.minUnits, tier: STYLE_TO_TIER[e.style] }))
           if (breakpoints.length > 0) {
             traitDetailBySuffix.set(suffix, { name: t.name, breakpoints })
           }

@@ -16,6 +16,10 @@ function deduplicateDecks(decks: MetaDeck[]): MetaDeck[] {
   )
 
   // B: 같은 traitGroup → avgPlacement(낮을수록 좋음) 최선 1개만
+  const toAvg = (d: MetaDeck): number => {
+    const n = parseFloat(d.avgPlace)
+    return Number.isFinite(n) ? n : Infinity  // NaN·undefined → 최하위로 처리
+  }
   const grouped = new Map<string, MetaDeck>()
   for (const deck of filtered) {
     const traitGroup = deck.traits
@@ -23,9 +27,7 @@ function deduplicateDecks(decks: MetaDeck[]): MetaDeck[] {
       .sort()
       .join('|')
     const existing = grouped.get(traitGroup)
-    const deckAvg  = parseFloat(deck.avgPlace)
-    const existAvg = existing ? parseFloat(existing.avgPlace) : Infinity
-    if (!existing || deckAvg < existAvg) grouped.set(traitGroup, deck)
+    if (!existing || toAvg(deck) < toAvg(existing)) grouped.set(traitGroup, deck)
   }
 
   return Array.from(grouped.values()).sort((a, b) => a.rank - b.rank)

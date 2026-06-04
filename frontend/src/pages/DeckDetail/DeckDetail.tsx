@@ -15,6 +15,14 @@ import styles from './DeckDetail.module.css'
 const BOARD_ROWS = 4
 const BOARD_COLS = 7
 
+// CSS Modules에서 동적 클래스 접근을 Record 상수로 대체 (lint 안전, 타입 안정성)
+const BP_TIER_STYLES: Record<string, string> = {
+  bronze:    styles.bpBronze,
+  silver:    styles.bpSilver,
+  gold:      styles.bpGold,
+  prismatic: styles.bpPrismatic,
+}
+
 function isCarry(champ: ChampionSummary): boolean {
   return (champ.recommendedItems?.length ?? 0) > 0
 }
@@ -375,12 +383,15 @@ function DeckDetail() {
     [placedUnits, locale],
   )
   const displayTraits = useMemo(() => {
-    if (!deck || placedUnits.length === 0) return []
+    if (!deck) return []
+    // 관리자 배치 미설정 → 덱에 저장된 traits 그대로 표시 (시너지 패널 숨김 방지)
+    if (customPosMap.size === 0) return deck.traits
+    if (placedUnits.length === 0) return []
     return deck.traits
       .map((t) => ({ ...t, count: traitCounts.get(t.name) ?? 0 }))
       .filter((t) => (traitCounts.get(t.name) ?? 0) >= 2)
       .sort((a, b) => b.count - a.count)
-  }, [deck, traitCounts, placedUnits.length])
+  }, [deck, traitCounts, placedUnits.length, customPosMap.size])
 
   // ── Early returns (hooks 이후) ───────────────────────────────
   if (isLoading) {
@@ -477,7 +488,7 @@ function DeckDetail() {
                     {traitDetail && traitDetail.breakpoints.length > 0 && (
                       <div className={styles.breakpoints}>
                         {traitDetail.breakpoints.map((bp) => {
-                          const tierClass = styles[`bp_${bp.tier}`] ?? ''
+                          const tierClass = BP_TIER_STYLES[bp.tier] ?? ''
                           const activeClass = trait.count >= bp.minUnits ? styles.bpActive : ''
                           return (
                             <span

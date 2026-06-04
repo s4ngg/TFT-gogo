@@ -341,7 +341,7 @@ function ArtifactSection({ decks, locale }: { decks: MetaDeck[]; locale: TFTLoca
 function DeckListView({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale | undefined }) {
   const [search, setSearch]   = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('avgPlace')
-  const [sortDir, setSortDir] = useState<SortDir>('desc')
+  const [sortDir, setSortDir] = useState<SortDir>('asc')  // avgPlace: 낮을수록 좋은 등수
 
   function handleSort(key: SortKey) {
     if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))

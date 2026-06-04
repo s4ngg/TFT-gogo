@@ -520,27 +520,27 @@
   transition: color 0.12s, background 0.12s, border-color 0.12s;
 }
 
-.bp_bronze { border-color: var(--tone-bronze-border); }
-.bp_silver { border-color: var(--tone-silver-border); }
-.bp_gold   { border-color: var(--tone-gold-border); }
-.bp_prismatic { border-color: var(--tone-prismatic-border); }
+.bpBronze    { border-color: var(--tone-bronze-border); }
+.bpSilver    { border-color: var(--tone-silver-border); }
+.bpGold      { border-color: var(--tone-gold-border); }
+.bpPrismatic { border-color: var(--tone-prismatic-border); }
 
-.bpPip.bpActive.bp_bronze {
+.bpPip.bpActive.bpBronze {
   color: var(--bp-bronze);
   background: var(--tone-bronze-bg);
   border-color: var(--tone-bronze-border);
 }
-.bpPip.bpActive.bp_silver {
+.bpPip.bpActive.bpSilver {
   color: var(--bp-silver);
   background: var(--tone-silver-bg);
   border-color: var(--tone-silver-border);
 }
-.bpPip.bpActive.bp_gold {
+.bpPip.bpActive.bpGold {
   color: var(--bp-gold);
   background: var(--tone-gold-bg);
   border-color: var(--tone-gold-border);
 }
-.bpPip.bpActive.bp_prismatic {
+.bpPip.bpActive.bpPrismatic {
   color: var(--bp-prismatic);
   background: var(--tone-prismatic-bg);
   border-color: var(--tone-prismatic-border);
