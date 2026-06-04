@@ -585,7 +585,16 @@ function HeroAugmentModal({ deck, locale, onClose, onSave }: HeroAugmentModalPro
         </div>
 
         <div className={styles.modalFooter}>
-          {saveError && <span className={styles.saveErrorMsg}>{saveError}</span>}
+          {saveError && (
+            <span
+              className={styles.saveErrorMsg}
+              role="alert"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              {saveError}
+            </span>
+          )}
           <button className={styles.boardBtn} onClick={addEntry}>+ 증강 추가</button>
           <button className={styles.resetBtn} onClick={() => setEntries([])}>전체 초기화</button>
           <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
