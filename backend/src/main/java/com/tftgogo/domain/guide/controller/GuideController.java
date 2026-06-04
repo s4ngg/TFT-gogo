@@ -30,14 +30,14 @@ public class GuideController implements GuideControllerDocs {
 
     @GetMapping("/{tab}")
     public ResponseEntity<ApiResponse<GuidePageResponse<GuideEntryResponse>>> getGuideTabItems(
-            @PathVariable String tab,
-            @RequestParam(required = false) String patchVersion,
-            @RequestParam(required = false) String query,
-            @RequestParam(required = false) Integer page,
-            @RequestParam(required = false) Integer pageSize,
-            @RequestParam(required = false) String sortKey,
-            @RequestParam(required = false) String sortDir,
-            @RequestParam(required = false) Integer cost) {
+            @PathVariable("tab") String tab,
+            @RequestParam(name = "patchVersion", required = false) String patchVersion,
+            @RequestParam(name = "query", required = false) String query,
+            @RequestParam(name = "page", required = false) Integer page,
+            @RequestParam(name = "pageSize", required = false) Integer pageSize,
+            @RequestParam(name = "sortKey", required = false) String sortKey,
+            @RequestParam(name = "sortDir", required = false) String sortDir,
+            @RequestParam(name = "cost", required = false) Integer cost) {
         GuidePageResponse<GuideEntryResponse> response = guideService.getGuideTabItems(
                 tab,
                 patchVersion,
