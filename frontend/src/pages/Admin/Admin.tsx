@@ -502,6 +502,7 @@ function HeroAugmentModal({ deck, locale, onClose, onSave }: HeroAugmentModalPro
   }
   const [entries, setEntries] = useState<HeroAugmentEntry[]>(parseEntries)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   // 덱에 속한 챔피언 목록
   const deckChamps = useMemo(() =>
@@ -536,11 +537,14 @@ function HeroAugmentModal({ deck, locale, onClose, onSave }: HeroAugmentModalPro
 
   async function handleSave() {
     setSaving(true)
+    setSaveError('')
     const valid = entries.filter((e) => e.augmentName.trim())
     const json = valid.length > 0 ? JSON.stringify(valid) : null
     try {
       await onSave(json)
       onClose()
+    } catch {
+      setSaveError('저장에 실패했습니다. 다시 시도해 주세요.')
     } finally {
       setSaving(false)
     }
@@ -581,6 +585,7 @@ function HeroAugmentModal({ deck, locale, onClose, onSave }: HeroAugmentModalPro
         </div>
 
         <div className={styles.modalFooter}>
+          {saveError && <span className={styles.saveErrorMsg}>{saveError}</span>}
           <button className={styles.boardBtn} onClick={addEntry}>+ 증강 추가</button>
           <button className={styles.resetBtn} onClick={() => setEntries([])}>전체 초기화</button>
           <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>

@@ -590,10 +590,18 @@
 /* 모달 푸터 */
 .modalFooter {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: 8px;
   padding: 16px 24px;
   border-top: 1px solid var(--border-subtle);
+}
+
+.saveErrorMsg {
+  margin-right: auto;
+  color: var(--danger);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
 }
 
 /* ── 영웅 증강 편집 ── */
@@ -654,10 +662,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 91, 87, 0.12);
-  border: 1px solid rgba(255, 91, 87, 0.3);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
   border-radius: 5px;
-  color: #ff5b57;
-  font-size: 12px;
+  color: var(--danger);
+  font-size: var(--font-size-xs);
   cursor: pointer;
 }

@@ -583,7 +583,7 @@
 }
 
 .heroAugChampName {
-  color: #8e97a1;
+  color: var(--text-muted);
   font-size: 10px;
   font-weight: 600;
   white-space: nowrap;
@@ -592,10 +592,10 @@
 .heroAugBadge {
   padding: 4px 12px;
   border-radius: 6px;
-  border: 1px solid rgba(167, 139, 250, 0.45);
-  background: rgba(167, 139, 250, 0.1);
-  color: #c4b5fd;
-  font-size: 13px;
+  border: 1px solid var(--hero-aug-badge-border);
+  background: var(--hero-aug-badge-bg);
+  color: var(--color-purple-light);
+  font-size: var(--font-size-sm);
   font-weight: 600;
   white-space: nowrap;
 }

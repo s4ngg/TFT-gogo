@@ -33,15 +33,16 @@ public class AdminDeckServiceImpl implements AdminDeckService {
     @Override
     @Transactional(readOnly = true)
     public List<AdminDeckResponse> getAdminDecks(RankFilter rankFilter) {
-        String latestPatch = metaDeckService.findLatestPatchVersion(rankFilter).orElse(null);
-        if (latestPatch == null) return List.of();
+        return metaDeckService.findLatestPatchVersion(rankFilter)
+                .map(patch -> buildAdminResponses(rankFilter, patch))
+                .orElse(List.of());
+    }
 
-        List<MetaDeck> decks = metaDeckRepository.findByRankFilterAndPatchVersion(rankFilter, latestPatch);
-
+    private List<AdminDeckResponse> buildAdminResponses(RankFilter rankFilter, String patch) {
+        List<MetaDeck> decks = metaDeckRepository.findByRankFilterAndPatchVersion(rankFilter, patch);
         Map<String, DeckCuration> curationMap = deckCurationRepository
                 .findByRankFilter(rankFilter).stream()
                 .collect(Collectors.toMap(DeckCuration::getSignature, Function.identity()));
-
         return decks.stream()
                 .map(deck -> AdminDeckResponse.from(deck, curationMap.get(deck.getSignature())))
                 .toList();
