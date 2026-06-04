@@ -19,12 +19,23 @@
 - 지침 파일을 최신화할 때는 변경 후보와 범위를 먼저 정리하고, 확인된 내용만 반영한다.
 - 지침 변경 내용을 공유할 때는 전체 파일보다 신규 항목, 변경 항목, diff를 우선 제시한다.
 
-## 참고 문서 우선순위
+## 참조 문서 (작업별 호출 — 목록 외 파일은 열지 않는다)
 
-- 저장소 루트의 `AGENTS.md`를 최우선 지침으로 삼는다.
-- CodeRabbit 대응 작업은 `docs/ai-harness/coderabbit-fix-prompt.md`와 `docs/ai-harness/coderabbit-decision-workflow.md`를 함께 확인한다.
-- 프론트 UI, 레이아웃, 에셋 작업은 `docs/team-share/frontend/` 문서를 먼저 확인한다.
-- 스펙 기반 작업은 관련 `docs/spec.md`, `docs/plan.md`, `docs/tasks.md`, `docs/checklist.md` 또는 각 영역의 `spec-kit/` 문서를 확인한다.
+| 작업 | 참조 파일 |
+|------|----------|
+| PR 리뷰 | `docs/for-ai/review.md` |
+| 프론트엔드 코드 작성/수정 | `docs/for-ai/spec-frontend.md` |
+| 백엔드 코드 작성/수정 | `docs/for-ai/spec-backend.md` |
+| AI 서버 코드 작성/수정 | `docs/for-ai/spec-ai.md` |
+| 기능 스펙 확인 | `docs/for-ai/spec/_common.md` + 해당 도메인 파일 |
+| CodeRabbit 수정 | `docs/for-ai/coderabbit-fix-prompt.md` |
+| CodeRabbit 판단 흐름 | `docs/for-ai/coderabbit-decision-workflow.md` |
+| 프론트 UI/레이아웃/에셋 | `docs/team-share/frontend/` |
+
+## 절대 열지 않는 폴더
+
+`docs/for-humans/` — 어떤 작업에서도 열지 않는다.
+
 - `CLAUDE.md`는 코드리뷰 관점의 보조 자료로만 사용하고, Codex 작업 지침은 AGENTS.md를 우선한다.
 
 ## CodeRabbit 코멘트 수정 원칙
