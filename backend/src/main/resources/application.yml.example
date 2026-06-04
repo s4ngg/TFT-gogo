@@ -32,3 +32,7 @@ riot:
   api-key: ${RIOT_API_KEY}          # Riot 개발자 포털에서 발급
   kr-base-url: https://kr.api.riotgames.com
   asia-base-url: https://asia.api.riotgames.com
+
+jwt:
+  secret: ${JWT_SECRET}             # 최소 32자 이상
+  access-token-expiration-millis: ${JWT_ACCESS_TOKEN_EXPIRATION_MILLIS:3600000}
