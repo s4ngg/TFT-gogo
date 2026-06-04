@@ -20,6 +20,6 @@ TFT(팀파이트 택티스) 전적 검색 및 메타 가이드 서비스.
 | PR 영역 | 컨벤션 파일 |
 |---------|-----------|
 | 리뷰 출력 형식 + PR 규칙 | `docs/for-ai/review.md` |
-| 프론트엔드 체크리스트 | `docs/for-ai/spec-frontend.md` |
-| 백엔드 체크리스트 | `docs/for-ai/spec-backend.md` |
-| AI 서버 체크리스트 | `docs/for-ai/spec-ai.md` |
+| 프론트엔드 체크리스트 | `docs/for-ai/frontend/conventions.md` |
+| 백엔드 체크리스트 | `docs/for-ai/backend/conventions.md` |
+| AI 서버 체크리스트 | `docs/for-ai/ai-server/conventions.md` |

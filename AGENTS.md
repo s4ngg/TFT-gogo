@@ -24,13 +24,13 @@
 | 작업 | 참조 파일 |
 |------|----------|
 | PR 리뷰 | `docs/for-ai/review.md` |
-| 프론트엔드 코드 작성/수정 | `docs/for-ai/spec-frontend.md` |
-| 백엔드 코드 작성/수정 | `docs/for-ai/spec-backend.md` |
-| AI 서버 코드 작성/수정 | `docs/for-ai/spec-ai.md` |
+| 프론트엔드 코드 작성/수정 | `docs/for-ai/frontend/conventions.md` |
+| 백엔드 코드 작성/수정 | `docs/for-ai/backend/conventions.md` |
+| AI 서버 코드 작성/수정 | `docs/for-ai/ai-server/conventions.md` |
 | 기능 스펙 확인 | `docs/for-ai/spec/_common.md` + 해당 도메인 파일 |
 | CodeRabbit 수정 | `docs/for-ai/coderabbit-fix-prompt.md` |
 | CodeRabbit 판단 흐름 | `docs/for-ai/coderabbit-decision-workflow.md` |
-| 프론트 UI/레이아웃/에셋 | `docs/team-share/frontend/` |
+| 프론트 UI/레이아웃/에셋 | `docs/for-humans/frontend/` |
 
 ## 절대 열지 않는 폴더
 
@@ -74,7 +74,7 @@
 - CSS Modules 클래스명은 camelCase를 사용하고, 전역 스타일은 전역 CSS 파일에서만 관리한다.
 - Vite 환경변수는 `VITE_` 접두사를 사용하고 `.env` 파일은 커밋하지 않는다.
 - 홈/대시보드성 화면은 넓은 랜딩 페이지보다 정보 밀도 높은 게임 대시보드 인상을 우선한다.
-- 새 공통 컴포넌트나 고정 에셋을 추가하면 관련 README 또는 `docs/team-share/frontend/` 문서 갱신 필요성을 검토한다.
+- 새 공통 컴포넌트나 고정 에셋을 추가하면 관련 README 또는 `docs/for-humans/frontend/` 문서 갱신 필요성을 검토한다.
 
 ## Backend 컨벤션
 
