@@ -30,7 +30,7 @@
 | 기능 스펙 확인 | `docs/for-ai/spec/_common.md` + 해당 도메인 파일 |
 | CodeRabbit 수정 | `docs/for-ai/coderabbit-fix-prompt.md` |
 | CodeRabbit 판단 흐름 | `docs/for-ai/coderabbit-decision-workflow.md` |
-| 프론트 UI/레이아웃/에셋 | `docs/for-humans/frontend/` |
+| 프론트 UI/레이아웃/에셋 | `docs/for-ai/frontend/conventions.md` |
 
 ## 절대 열지 않는 폴더
 

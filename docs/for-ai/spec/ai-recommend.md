@@ -3,7 +3,7 @@
 <purpose>
 AI-powered deck recommendation based on current units and items.
 Page: AiRecommend (/ai-recommend).
-Backend: ai-server (FastAPI) — see spec-ai.md for ai-server conventions.
+Backend: ai-server (FastAPI) — see docs/for-ai/ai-server/conventions.md for ai-server conventions.
 </purpose>
 
 <routes>
