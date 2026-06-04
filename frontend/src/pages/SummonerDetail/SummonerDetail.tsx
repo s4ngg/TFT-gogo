@@ -148,8 +148,8 @@ function SummonerDetail() {
   const navigate = useNavigate()
   const setSummoner = useSummonerStore((s) => s.setSummoner)
 
-  const name = decodeURIComponent(gameName ?? '')
-  const tag = tagLine ?? 'KR1'
+  const name = gameName ?? ''
+  const tag = tagLine ?? ''
 
   const { data: profile, isError: profileNotFound } = useSummonerProfile(name, tag)
   const {
@@ -183,9 +183,11 @@ function SummonerDetail() {
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
     const trimmed = query.trim()
-    if (!trimmed) return
-    const [n = trimmed, tg = 'KR1'] = trimmed.split('#')
-    navigate(`/summoner/${encodeURIComponent(n)}/${tg}`)
+    const hashIndex = trimmed.indexOf('#')
+    if (hashIndex <= 0 || hashIndex === trimmed.length - 1) return
+    const n = trimmed.slice(0, hashIndex)
+    const tg = trimmed.slice(hashIndex + 1)
+    navigate(`/summoner/${encodeURIComponent(n)}/${encodeURIComponent(tg)}`)
     setQuery('')
   }
 

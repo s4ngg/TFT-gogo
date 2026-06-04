@@ -15,7 +15,7 @@ export function getRiotEndpoint(key: RiotEndpointKey) {
 }
 
 export function getAccountByRiotId(gameName: string, tagLine: string) {
-  return axiosInstance.get(`${RIOT_ENDPOINTS.accountByRiotId}/${gameName}/${tagLine}`)
+  return axiosInstance.get(`${RIOT_ENDPOINTS.accountByRiotId}/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`)
 }
 
 export function getSummonerByPuuid(puuid: string) {
