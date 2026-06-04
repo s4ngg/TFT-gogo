@@ -352,13 +352,14 @@ function HeroAugmentsPanel({ augments }: { augments: HeroAugmentSummary[] }) {
 }
 
 const VALID_RANK_FILTERS = ['MASTER_PLUS', 'DIAMOND_PLUS', 'EMERALD_PLUS'] as const
+type ValidRankFilter = typeof VALID_RANK_FILTERS[number]
 
 function DeckDetail() {
   const { deckId, rankFilter: rankFilterParam } = useParams<{ deckId: string; rankFilter: string }>()
   const navigate = useNavigate()
   // URL 파라미터 검증 — 잘못된 값이면 기본값으로 fallback
-  const rankFilter = (VALID_RANK_FILTERS as readonly string[]).includes(rankFilterParam ?? '')
-    ? (rankFilterParam as typeof VALID_RANK_FILTERS[number])
+  const rankFilter: ValidRankFilter = (VALID_RANK_FILTERS as readonly string[]).includes(rankFilterParam ?? '')
+    ? (rankFilterParam as ValidRankFilter)
     : 'EMERALD_PLUS'
   const { data: metaDeckResponse, isLoading } = useMetaSnapshot(rankFilter)
   const { data: locale } = useCDragonLocale()
