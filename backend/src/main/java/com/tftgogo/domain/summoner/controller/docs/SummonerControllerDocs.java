@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
@@ -33,7 +34,7 @@ public interface SummonerControllerDocs {
 
     @Operation(
             summary = "소환사 매치 목록 조회",
-            description = "gameName#tagLine 기준으로 최근 30 매치 목록을 반환합니다."
+            description = "gameName#tagLine 기준으로 매치 목록을 30개씩 반환합니다. start로 offset 지정 가능."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
@@ -44,6 +45,8 @@ public interface SummonerControllerDocs {
             @Parameter(description = "소환사 게임 이름", example = "Hide on bush", required = true)
             @PathVariable("gameName") String gameName,
             @Parameter(description = "소환사 태그라인", example = "KR1", required = true)
-            @PathVariable("tagLine") String tagLine
+            @PathVariable("tagLine") String tagLine,
+            @Parameter(description = "조회 시작 오프셋 (기본값 0)", example = "30")
+            @RequestParam(defaultValue = "0") int start
     );
 }

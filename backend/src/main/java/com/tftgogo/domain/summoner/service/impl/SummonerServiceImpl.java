@@ -120,9 +120,9 @@ public class SummonerServiceImpl implements SummonerService {
     }
 
     @Override
-    public List<MatchSummaryResponse> getMatchesByRiotId(String gameName, String tagLine) {
+    public List<MatchSummaryResponse> getMatchesByRiotId(String gameName, String tagLine, int start) {
         String puuid = riotApiClient.getAccount(gameName, tagLine).getPuuid();
-        List<String> matchIds = riotApiClient.getMatchIds(puuid, MATCH_COUNT, 0);
+        List<String> matchIds = riotApiClient.getMatchIds(puuid, MATCH_COUNT, start);
         return buildMatchList(puuid, matchIds);
     }
 

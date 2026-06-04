@@ -1,6 +1,7 @@
 import { ClipboardList, Search } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { parseSummonerInput, summonerPath } from '../../../utils/summonerSearch'
 import styles from '../Dashboard.module.css'
 
 function PatchMetaCard() {
@@ -28,12 +29,9 @@ function SummonerSearchCard() {
   const navigate = useNavigate()
 
   function handleSearch(input: string) {
-    const trimmed = input.trim()
-    const hashIndex = trimmed.indexOf('#')
-    if (hashIndex <= 0 || hashIndex === trimmed.length - 1) return
-    const name = trimmed.slice(0, hashIndex)
-    const tag = trimmed.slice(hashIndex + 1)
-    navigate(`/summoner/${encodeURIComponent(name)}/${encodeURIComponent(tag)}`)
+    const parsed = parseSummonerInput(input)
+    if (!parsed) return
+    navigate(summonerPath(parsed.gameName, parsed.tagLine))
   }
 
   return (

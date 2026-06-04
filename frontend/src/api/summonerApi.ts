@@ -108,12 +108,12 @@ export const getSummonerProfile = async (
 export const getMatchHistory = async (
   gameName: string,
   tagLine: string,
-  count = 90,
+  start = 0,
 ): Promise<MatchSummaryResponse[]> => {
   try {
     const { data } = await axiosInstance.get<ApiResponse<MatchSummaryResponse[]>>(
       `/summoners/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}/matches`,
-      { params: { count } },
+      { params: { start } },
     )
     return data.data
   } catch {

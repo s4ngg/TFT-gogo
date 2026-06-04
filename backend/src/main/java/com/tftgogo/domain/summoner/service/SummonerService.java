@@ -14,5 +14,5 @@ public interface SummonerService {
 
     MatchDetailResponse getMatchDetail(String matchId);
 
-    List<MatchSummaryResponse> getMatchesByRiotId(String gameName, String tagLine);
+    List<MatchSummaryResponse> getMatchesByRiotId(String gameName, String tagLine, int start);
 }

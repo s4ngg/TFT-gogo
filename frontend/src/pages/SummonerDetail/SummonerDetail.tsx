@@ -8,7 +8,9 @@ import ChampionCard from '../../components/common/ChampionCard'
 import useSummonerStore from '../../store/useSummonerStore'
 import { useSummonerProfile } from '../../hooks/useSummonerProfile'
 import { useMatchHistory } from '../../hooks/useMatchHistory'
+import { getMatchHistory } from '../../api/summonerApi'
 import type { MatchSummaryResponse, GameType } from '../../api/summonerApi'
+import { parseSummonerInput, summonerPath } from '../../utils/summonerSearch'
 import styles from './SummonerDetail.module.css'
 
 const TIER_KO: Record<string, string> = {
@@ -143,7 +145,10 @@ function SummonerDetail() {
   const { gameName, tagLine } = useParams<{ gameName: string; tagLine: string }>()
   const [query, setQuery] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [visibleCount, setVisibleCount] = useState(30)
+  const [allMatches, setAllMatches] = useState<MatchSummaryResponse[]>([])
+  const [nextStart, setNextStart] = useState(30)
+  const [hasMore, setHasMore] = useState(false)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [gameTypeFilter, setGameTypeFilter] = useState<GameTypeFilter>('ALL')
   const navigate = useNavigate()
   const setSummoner = useSummonerStore((s) => s.setSummoner)
@@ -153,18 +158,33 @@ function SummonerDetail() {
 
   const { data: profile, isError: profileNotFound } = useSummonerProfile(name, tag)
   const {
-    data: matches = [],
+    data: initialMatches = [],
     refetch: refetchMatches,
     isRefetching: isMatchesRefetching,
   } = useMatchHistory(name, tag)
+
+  useEffect(() => {
+    setAllMatches(initialMatches)
+    setHasMore(initialMatches.length === 30)
+    setNextStart(30)
+  }, [initialMatches])
+
+  async function handleLoadMore() {
+    setIsLoadingMore(true)
+    const more = await getMatchHistory(name, tag, nextStart)
+    setAllMatches((prev) => [...prev, ...more])
+    setHasMore(more.length === 30)
+    setNextStart((prev) => prev + 30)
+    setIsLoadingMore(false)
+  }
 
   const tierKo = TIER_KO[profile?.tier ?? ''] ?? profile?.tier ?? '-'
   const total = profile ? (profile.wins + profile.losses) : 0
   const winRate = total > 0 ? Math.round((profile!.wins / total) * 100) : 0
 
   const filteredMatches = gameTypeFilter === 'ALL'
-    ? matches
-    : matches.filter((m) => m.gameType === gameTypeFilter)
+    ? allMatches
+    : allMatches.filter((m) => m.gameType === gameTypeFilter)
 
   useEffect(() => {
     if (profile) {
@@ -182,18 +202,14 @@ function SummonerDetail() {
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
-    const trimmed = query.trim()
-    const hashIndex = trimmed.indexOf('#')
-    if (hashIndex <= 0 || hashIndex === trimmed.length - 1) return
-    const n = trimmed.slice(0, hashIndex)
-    const tg = trimmed.slice(hashIndex + 1)
-    navigate(`/summoner/${encodeURIComponent(n)}/${encodeURIComponent(tg)}`)
+    const parsed = parseSummonerInput(query)
+    if (!parsed) return
+    navigate(summonerPath(parsed.gameName, parsed.tagLine))
     setQuery('')
   }
 
   function handleFilterChange(filter: GameTypeFilter) {
     setGameTypeFilter(filter)
-    setVisibleCount(30)
     setExpandedId(null)
   }
 
@@ -310,7 +326,7 @@ function SummonerDetail() {
               </div>
 
               <div className={styles.matchList}>
-                {filteredMatches.slice(0, visibleCount).map((match) => {
+                {filteredMatches.map((match) => {
                   const isOpen = expandedId === match.matchId
                   return (
                     <div key={match.matchId} className={styles.matchItem}>
@@ -363,13 +379,14 @@ function SummonerDetail() {
                   )
                 })}
               </div>
-              {visibleCount < filteredMatches.length && (
+              {hasMore && (
                 <button
                   type="button"
                   className={styles.loadMoreBtn}
-                  onClick={() => setVisibleCount((v) => v + 30)}
+                  onClick={handleLoadMore}
+                  disabled={isLoadingMore}
                 >
-                  30개 더 보기 ({filteredMatches.length - visibleCount}개 남음)
+                  {isLoadingMore ? '불러오는 중...' : '30개 더 보기'}
                 </button>
               )}
             </section>
