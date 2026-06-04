@@ -154,3 +154,22 @@ logger.error("시스템 오류", e);  // 예외 발생
 - `@ExtendWith(MockitoExtension.class)` + `@Mock` + `@InjectMocks`
 - 실제 DB/외부 서비스 연결 없이 Mock으로 테스트
 - **테스트 메서드명은 한국어로 작성** 예) `회원이_없으면_예외를_던진다()`
+
+---
+
+## 작업 전 필수 참조 규칙
+
+> **코드 수정 전, 작업 영역에 따라 아래 문서를 반드시 먼저 읽는다.**
+
+### 프론트엔드 (`frontend/`) 작업 시
+
+1. `frontend/spec-kit/spec.md` — 해당 페이지/기능의 요구사항 섹션
+2. `frontend/spec-kit/constitution.md` — 기술 스택, 폴더 구조, 코딩 컨벤션
+3. `frontend/spec-kit/design-tokens.md` — 색상·폰트·간격 (CSS 변수 관련 작업 시)
+4. `frontend/spec-kit/checklist.md` — 기능별 완료 조건 (PR 전 통과 필수)
+
+### 백엔드 (`backend/`) 작업 시
+
+1. `docs/spec.md` — 해당 기능의 비즈니스 요구사항 섹션
+2. `docs/constitution.md` — 팀 개발 프로세스 및 컨벤션
+3. `docs/checklist.md` — 기능별 완료 조건 (PR 전 통과 필수)

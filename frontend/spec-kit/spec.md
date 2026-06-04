@@ -70,7 +70,7 @@ TFT(전략적 팀 전투) 전적 검색 서비스.
 - 매치 데이터는 queue_id 1100(RANKED_TFT)과 1090(NORMAL_TFT)만 수집해 저장한다; 하이퍼롤 등 그 외 queue_id는 제외한다
 - 게임 유형은 Spring에서 queue_id를 변환해 내려준다 (1100 → 랭크, 1090 → 일반)
 - wins는 4위 이상(순방) 횟수, losses는 5~8위(4위 미만) 횟수이며, 승률(순방확률)은 wins / (wins + losses)로 계산한다
-- 평균 순위, TOP4율은 Spring에서 최근 매치 데이터를 기반으로 계산한다
+- 평균 순위, TOP4율은 프론트에서 최근 30게임 matches 기반으로 계산한다
 - 덱 이름은 Spring에서 해당 게임의 시너지/유닛 조합을 분석해 자동 생성한다
 - 스테이지 표시는 Riot API의 last_round(int)를 Spring에서 변환한다 (예: 5 → 2-1)
 - 시너지 등급(tone)은 Riot API의 style(0~4)을 Spring에서 변환한다 (0=없음, 1=브론즈, 2=실버, 3=골드, 4=크로매틱)

@@ -1,4 +1,4 @@
-﻿# Frontend Design Tokens
+# Frontend Design Tokens
 
 기준 화면은 `etc/최종.png`입니다.
 폰트와 숫자, 간격이 깨지면 전체 인상이 바로 달라지기 때문에 팀원 페이지에서도 아래 값을 우선 기준으로 맞춥니다.

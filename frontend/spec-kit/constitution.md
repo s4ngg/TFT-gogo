@@ -152,6 +152,12 @@ font-variant-numeric: tabular-nums;
 - 컴포넌트 내부에 이미지 URL 하드코딩 금지
 - 커스텀 이미지 추가 시 이 문서와 `frontend/public/assets/README.md`에 기록
 
+**파티원 찾기 아이콘 기준**
+
+파티원 찾기 카드의 보라/초록/청록/골드 아이콘은 실제 챔피언이나 아이템이 아니라 모집 유형을 빠르게 구분하는 UI 배지다.
+Community Dragon 이미지보다 CSS + lucide 아이콘 조합이 적합하다.
+단, 게임 가이드·덱 추천·메타 스냅샷처럼 실제 TFT 정보를 보여주는 영역은 Community Dragon 이미지를 우선 사용한다.
+
 ---
 
 ## 코딩 컨벤션
@@ -177,6 +183,8 @@ font-variant-numeric: tabular-nums;
   - 예: `feat`, `fix`, `refactor`, `docs`, `chore`
 - **Milestone 필수** — 작업이 속한 마일스톤 지정 후 PR 올리기
   - 예: `Phase 1 - 기반 세팅`, `Phase 2 - 페이지 구현`
+- **작업 시작 전** `spec.md` 해당 기능 섹션 확인 필수
+- **PR 올리기 전** `checklist.md` 해당 기능 체크리스트 통과 필수
 - **셀프 머지 금지** — 최소 1명 리뷰 후 머지
 - **리뷰어 응답**: 24시간 내 원칙
 - **main 브랜치 직접 push 금지**
