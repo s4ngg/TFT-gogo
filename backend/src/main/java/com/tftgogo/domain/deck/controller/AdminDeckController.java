@@ -6,6 +6,7 @@ import com.tftgogo.domain.deck.entity.RankFilter;
 import com.tftgogo.domain.deck.service.AdminDeckService;
 import com.tftgogo.domain.deck.service.MetaDeckService;
 import com.tftgogo.global.response.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -48,7 +49,7 @@ public class AdminDeckController {
     @PatchMapping("/{deckId}")
     public ResponseEntity<ApiResponse<AdminDeckResponse>> updateCuration(
             @PathVariable Long deckId,
-            @RequestBody DeckCurationRequest request) {
+            @RequestBody @Valid DeckCurationRequest request) {
 
         AdminDeckResponse response = adminDeckService.updateCuration(deckId, request);
         return ResponseEntity.ok(ApiResponse.success("큐레이션 저장 완료", response));
