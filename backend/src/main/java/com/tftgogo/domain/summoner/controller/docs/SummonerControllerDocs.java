@@ -17,7 +17,7 @@ public interface SummonerControllerDocs {
 
     @Operation(
             summary = "소환사 상세 조회",
-            description = "gameName#tagLine 기준으로 소환사 프로필·랭크·최근 30 매치 통합 응답을 반환합니다."
+            description = "gameName#tagLine 기준으로 소환사 프로필과 랭크 정보(티어·LP·승패)를 반환합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
