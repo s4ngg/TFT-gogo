@@ -109,12 +109,24 @@ function SortIcon({ col, cur, dir }: { col: SortKey; cur: SortKey; dir: SortDir 
     : <ChevronDown size={12} className={`${styles.sortIcon} ${styles.sortActive}`} />
 }
 
+/** API의 recommendedItems(ID 배열)를 ChampionCard의 items 포맷으로 변환 */
+function resolveItems(
+  c: { items?: { imageUrl: string; name: string }[]; recommendedItems?: string[] },
+  locale: TFTLocale | undefined,
+): { imageUrl: string; name: string }[] {
+  if (c.items && c.items.length > 0) return c.items
+  return (c.recommendedItems ?? []).map((id) => ({
+    imageUrl: tftItemIconUrl(id),
+    name: getItemName(id, locale),
+  }))
+}
+
 /** 덱 행 */
 function DeckRow({
-  deck, showTier = true, showRank = true, locale,
-}: { deck: MetaDeck; showTier?: boolean; showRank?: boolean; locale: TFTLocale | undefined }) {
+  deck, showTier = true, showRank = true, locale, rankFilter,
+}: { deck: MetaDeck; showTier?: boolean; showRank?: boolean; locale: TFTLocale | undefined; rankFilter: RankFilter }) {
   const navigate = useNavigate()
-  function handleRowClick() { navigate(`/decks/${deck.rank}`) }
+  function handleRowClick() { navigate(`/decks/${rankFilter}/${deck.rank}`) }
   return (
     <tr className={styles.deckRow} onClick={handleRowClick}>
       {showRank && (
@@ -144,7 +156,7 @@ function DeckRow({
             <ChampionCard
               key={`${c.name}-${i}`}
               imageUrl={c.imageUrl}
-              items={c.items}
+              items={resolveItems(c, locale)}
               label={getChampionName(c.imageUrl, locale, c.name)}
               stars={c.stars}
               cost={c.cost}
@@ -338,7 +350,7 @@ function ArtifactSection({ decks, locale }: { decks: MetaDeck[]; locale: TFTLoca
    탭 1 — 덱모음
    (순위·티어 없음 + 영웅 증강 + 유물 추천)
 ════════════════════════════ */
-function DeckListView({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale | undefined }) {
+function DeckListView({ decks, locale, rankFilter }: { decks: MetaDeck[]; locale: TFTLocale | undefined; rankFilter: RankFilter }) {
   const [search, setSearch]   = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('avgPlace')
   const [sortDir, setSortDir] = useState<SortDir>('asc')  // avgPlace: 낮을수록 좋은 등수
@@ -366,7 +378,7 @@ function DeckListView({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale 
           <tbody>
             {filtered.length === 0
               ? <tr><td colSpan={6} className={styles.empty}>검색 결과가 없습니다.</td></tr>
-              : filtered.map((d) => <DeckRow key={d.rank} deck={d} showTier={false} showRank={false} locale={locale} />)
+              : filtered.map((d) => <DeckRow key={d.rank} deck={d} showTier={false} showRank={false} locale={locale} rankFilter={rankFilter} />)
             }
           </tbody>
         </table>
@@ -380,7 +392,7 @@ function DeckListView({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale 
    탭 2 — 메타통계
    (lolchess 스타일, 티어별 수직)
 ════════════════════════════ */
-function MetaStatsView({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale | undefined }) {
+function MetaStatsView({ decks, locale, rankFilter }: { decks: MetaDeck[]; locale: TFTLocale | undefined; rankFilter: RankFilter }) {
   const [sortKey, setSortKey] = useState<SortKey>('pickRate')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
 
@@ -419,7 +431,7 @@ function MetaStatsView({ decks, locale }: { decks: MetaDeck[]; locale: TFTLocale
                     </span>
                   </td>
                 </tr>
-                {tierDecks.map((d) => <DeckRow key={d.rank} deck={d} showTier showRank={false} locale={locale} />)}
+                {tierDecks.map((d) => <DeckRow key={d.rank} deck={d} showTier showRank={false} locale={locale} rankFilter={rankFilter} />)}
               </Fragment>
             )
           })}
@@ -483,8 +495,8 @@ function Decks() {
         </div>
 
         {tab === '덱모음'
-          ? <DeckListView decks={decks} locale={locale} />
-          : <MetaStatsView decks={decks} locale={locale} />
+          ? <DeckListView decks={decks} locale={locale} rankFilter={rankFilter} />
+          : <MetaStatsView decks={decks} locale={locale} rankFilter={rankFilter} />
         }
       </div>
     </AppLayout>

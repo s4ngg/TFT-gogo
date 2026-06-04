@@ -152,9 +152,9 @@ interface HexBoardProps {
 function HexBoard({ visibleUnits, level, availableLevels, onLevelChange, locale, customPosMap }: HexBoardProps) {
 
   const placed = useMemo(() => {
-    if (customPosMap.size === 0) return []                        // 미설정 → 빈 보드
-    return buildCustomBoardPositions(visibleUnits, customPosMap)  // 관리자 배치
-  }, [visibleUnits, customPosMap])
+    if (customPosMap.size === 0) return buildBoardPositions(visibleUnits, locale)  // 미설정 → range/role 기반 자동 배치
+    return buildCustomBoardPositions(visibleUnits, customPosMap)                   // 관리자 배치 우선
+  }, [visibleUnits, customPosMap, locale])
 
   if (visibleUnits.length === 0) return null
 
@@ -351,10 +351,16 @@ function HeroAugmentsPanel({ augments }: { augments: HeroAugmentSummary[] }) {
   )
 }
 
+const VALID_RANK_FILTERS = ['MASTER_PLUS', 'DIAMOND_PLUS', 'EMERALD_PLUS'] as const
+
 function DeckDetail() {
-  const { deckId } = useParams<{ deckId: string }>()
+  const { deckId, rankFilter: rankFilterParam } = useParams<{ deckId: string; rankFilter: string }>()
   const navigate = useNavigate()
-  const { data: metaDeckResponse, isLoading } = useMetaSnapshot()
+  // URL 파라미터 검증 — 잘못된 값이면 기본값으로 fallback
+  const rankFilter = (VALID_RANK_FILTERS as readonly string[]).includes(rankFilterParam ?? '')
+    ? (rankFilterParam as typeof VALID_RANK_FILTERS[number])
+    : 'EMERALD_PLUS'
+  const { data: metaDeckResponse, isLoading } = useMetaSnapshot(rankFilter)
   const { data: locale } = useCDragonLocale()
   const metaDecks = metaDeckResponse?.decks ?? []
   const deck = metaDecks.find((d) => String(d.rank) === deckId)
