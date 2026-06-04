@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import styles from './TraitHexBadge.module.css'
 import type { TraitHexBadgeTone } from '../../../types/badges'
 
@@ -9,10 +10,19 @@ export interface TraitHexBadgeProps {
 }
 
 function TraitHexBadge({ count, iconUrl, name, tone = 'gold' }: TraitHexBadgeProps) {
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    setFailed(false)
+  }, [iconUrl, name])
+
   return (
     <span className={`${styles.badge} ${styles[tone]}`} title={name}>
       <i className={styles.icon}>
-        <img src={iconUrl} alt="" />
+        {failed
+          ? <span className={styles.iconFallback}>{name.charAt(0).toUpperCase()}</span>
+          : <img src={iconUrl} alt="" onError={() => setFailed(true)} />
+        }
       </i>
       <b className={styles.count}>{count}</b>
     </span>

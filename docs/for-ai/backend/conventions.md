@@ -1,0 +1,70 @@
+<spec domain="backend">
+
+<stack>Java · Spring Boot · JPA · Log4j2</stack>
+
+<conventions>
+
+<exception>
+- Do not create domain-specific Exception classes.
+- Use BusinessException(ErrorCode.XXX) pattern.
+- All exceptions must be handled in GlobalExceptionHandler.
+</exception>
+
+<response>
+- All API responses must use ApiResponse&lt;T&gt;.
+- Return type: ResponseEntity&lt;ApiResponse&lt;T&gt;&gt;
+- Success: ApiResponse.success("message", data)
+- Failure: ApiResponse.fail("message", HttpStatus)
+</response>
+
+<dto>
+- RequestDTO may include a toEntity() method.
+- ResponseDTO must use from() or of() static factory methods.
+- @NotNull / @NotBlank annotations are allowed only on RequestDTO, not ResponseDTO.
+</dto>
+
+<async>
+- @Async void is forbidden. Return CompletableFuture&lt;Void&gt; instead (void cannot propagate exceptions).
+- SimpleAsyncTaskExecutor is forbidden. Configure an explicit ThreadPoolTaskExecutor.
+</async>
+
+<code-quality>
+- Do not return null. Use Optional + orElseThrow().
+- System.out.println is forbidden. Use Log4j2 Logger.
+- java.util.Random is forbidden. Use SecureRandom.
+- Avoid @Value injection. Prefer @ConfigurationProperties.
+- Do not filter large datasets with Java streams. Apply conditions at the DB query level.
+</code-quality>
+
+<security>
+- Never store passwords or auth codes in plain text. Use BCrypt.
+- Never log JWT tokens.
+</security>
+
+<structure>
+- Service implementations go in service/impl/.
+- Swagger annotations belong only in XxxControllerDocs interface; Controller implements it.
+</structure>
+
+</conventions>
+
+<logging>
+<declaration>private static final Logger logger = LogManager.getLogger(Xxx.class);</declaration>
+<levels>
+- logger.info  — normal flow (success cases)
+- logger.warn  — abnormal but system continues (failures, bad requests)
+- logger.error — exception occurred (include exception object)
+</levels>
+<forbidden>passwords, JWT tokens, auth codes</forbidden>
+</logging>
+
+<testing>
+- Unit-test the Service layer only. Controller, Entity, DTO, Repository tests are not required.
+- Use given/when/then pattern.
+- Annotations: @ExtendWith(MockitoExtension.class), @Mock, @InjectMocks
+- No real DB or external service connections. Use Mocks.
+- Test method names should be written in Korean per team convention.
+  Example: 회원이_없으면_예외를_던진다()
+</testing>
+
+</spec>

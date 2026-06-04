@@ -3,9 +3,11 @@ package com.tftgogo.global.riot;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import com.tftgogo.global.riot.config.RiotProperties;
+import com.tftgogo.global.riot.dto.AccountDto;
 import com.tftgogo.global.riot.dto.LeagueEntryDto;
 import com.tftgogo.global.riot.dto.LeagueListDto;
 import com.tftgogo.global.riot.dto.MatchDto;
+import com.tftgogo.global.riot.dto.SummonerDto;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -17,9 +19,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 @Component
 @RequiredArgsConstructor
@@ -29,26 +34,32 @@ public class RiotApiClient {
     private static final int MAX_RETRY_COUNT = 3;
     private static final long MIN_REQUEST_INTERVAL_MS = 1300L;
     private static final long DEFAULT_RATE_LIMIT_WAIT_MS = 120_000L;
+    private static final long RATE_LIMIT_WAIT_CAP_MS = 30_000L;
 
     private final RiotProperties riotProperties;
     private final RestTemplate restTemplate;
     private long lastRequestAt = 0L;
 
+    // ── Challenger 리그 조회 ────────────────────────────────
     public LeagueListDto getChallenger() {
         return get("/tft/league/v1/challenger?queue=RANKED_TFT",
                 riotProperties.getKrBaseUrl(), LeagueListDto.class);
     }
 
+    // ── Grandmaster 리그 조회 ───────────────────────────────
     public LeagueListDto getGrandmaster() {
         return get("/tft/league/v1/grandmaster?queue=RANKED_TFT",
                 riotProperties.getKrBaseUrl(), LeagueListDto.class);
     }
 
+    // ── Master 리그 조회 ────────────────────────────────────
     public LeagueListDto getMaster() {
         return get("/tft/league/v1/master?queue=RANKED_TFT",
                 riotProperties.getKrBaseUrl(), LeagueListDto.class);
     }
 
+    // ── 특정 티어/디비전 소환사 목록 조회 ──────────────────────
+    // tier: DIAMOND/EMERALD, division: I/II/III/IV
     public List<LeagueEntryDto> getLeagueEntries(String tier, String division, int page) {
         String path = "/tft/league/v1/entries/" + tier + "/" + division
                 + "?queue=RANKED_TFT&page=" + page;
@@ -56,41 +67,78 @@ public class RiotApiClient {
         return entries != null ? Arrays.asList(entries) : List.of();
     }
 
-    public List<String> getMatchIds(String puuid, int count) {
-        String path = "/tft/match/v1/matches/by-puuid/{puuid}/ids";
+    // ── 소환사 계정 조회 (account-v1, asia) ────────────────
+    public AccountDto getAccount(String gameName, String tagLine) {
+        String path = "/riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}";
         String url = riotProperties.getAsiaBaseUrl()
-                + "/tft/match/v1/matches/by-puuid/" + puuid + "/ids?queue=1100&count=" + count;
-        return Arrays.asList(getByUrl(url, path, String[].class));
+                + "/riot/account/v1/accounts/by-riot-id/"
+                + encodePathSegment(gameName) + "/" + encodePathSegment(tagLine);
+        return getByUrl(url, path, AccountDto.class, ErrorCode.ACCOUNT_NOT_FOUND);
     }
 
-    public List<String> getMatchIds(String puuid, int count, long startTimeSeconds) {
-        String path = "/tft/match/v1/matches/by-puuid/{puuid}/ids";
-        String url = riotProperties.getAsiaBaseUrl()
-                + "/tft/match/v1/matches/by-puuid/" + puuid + "/ids?queue=1100&count=" + count
-                + "&startTime=" + startTimeSeconds;
-        return Arrays.asList(getByUrl(url, path, String[].class));
+    // ── 소환사 정보 조회 (tft-summoner-v1, kr) ──────────────
+    public SummonerDto getSummoner(String puuid) {
+        String path = "/tft/summoner/v1/summoners/by-puuid/{puuid}";
+        String url = riotProperties.getKrBaseUrl()
+                + "/tft/summoner/v1/summoners/by-puuid/" + puuid;
+        return getByUrl(url, path, SummonerDto.class, ErrorCode.SUMMONER_NOT_FOUND);
     }
 
-    public List<String> getMatchIds(String puuid, int count, long startTimeSeconds, long endTimeSeconds) {
-        String path = "/tft/match/v1/matches/by-puuid/{puuid}/ids";
-        String url = riotProperties.getAsiaBaseUrl()
-                + "/tft/match/v1/matches/by-puuid/" + puuid + "/ids?queue=1100&count=" + count
-                + "&startTime=" + startTimeSeconds
-                + "&endTime=" + endTimeSeconds;
-        return Arrays.asList(getByUrl(url, path, String[].class));
+    // ── 소환사 랭크 정보 조회 (tft-league-v1, kr) ────────────
+    // RANKED_TFT 큐타입 항목만 반환. 배치 미완료·미배치(404) 시 Optional.empty()
+    public Optional<LeagueEntryDto> getLeagueByPuuid(String puuid) {
+        String path = "/tft/league/v1/by-puuid/{puuid}";
+        String url = riotProperties.getKrBaseUrl() + "/tft/league/v1/by-puuid/" + puuid;
+        try {
+            LeagueEntryDto[] entries = getByUrl(url, path, LeagueEntryDto[].class, ErrorCode.LEAGUE_NOT_FOUND);
+            return Stream.of(entries)
+                    .filter(e -> "RANKED_TFT".equals(e.getQueueType()))
+                    .findFirst();
+        } catch (BusinessException e) {
+            if (e.getErrorCode() == ErrorCode.LEAGUE_NOT_FOUND) {
+                logger.warn("Riot API 404 — league not found (unranked): puuid={}", puuid);
+                return Optional.empty();
+            }
+            throw e;
+        }
     }
 
+    // ── 매치 ID 목록 (start 오프셋 지원, 큐 무관 — 전적 검색용) ──
+    public List<String> getMatchIds(String puuid, int count, int start) {
+        String path = "/tft/match/v1/matches/by-puuid/{puuid}/ids";
+        String url = riotProperties.getAsiaBaseUrl()
+                + "/tft/match/v1/matches/by-puuid/" + puuid
+                + "/ids?count=" + count + "&start=" + start;
+        String[] ids = getByUrl(url, path, String[].class, ErrorCode.RIOT_API_ERROR);
+        return ids != null ? Arrays.asList(ids) : List.of();
+    }
+
+    // ── 매치 ID 목록 (시간 범위 필터, queue=1100 — 덱 집계용) ──
+    public List<String> getMatchIds(String puuid, int count, long startTime, long endTime) {
+        String path = "/tft/match/v1/matches/by-puuid/{puuid}/ids";
+        String url = riotProperties.getAsiaBaseUrl()
+                + "/tft/match/v1/matches/by-puuid/" + puuid
+                + "/ids?queue=1100&count=" + count
+                + "&startTime=" + startTime
+                + "&endTime=" + endTime;
+        String[] ids = getByUrl(url, path, String[].class, ErrorCode.RIOT_API_ERROR);
+        return ids != null ? Arrays.asList(ids) : List.of();
+    }
+
+    // ── 매치 상세 조회 ─────────────────────────────────────
     public MatchDto getMatch(String matchId) {
         String path = "/tft/match/v1/matches/{matchId}";
         String url = riotProperties.getAsiaBaseUrl() + "/tft/match/v1/matches/" + matchId;
-        return getByUrl(url, path, MatchDto.class);
+        return getByUrl(url, path, MatchDto.class, ErrorCode.MATCH_NOT_FOUND);
     }
 
+    // ── 공통 GET (baseUrl 분기용) ───────────────────────────
     private <T> T get(String path, String baseUrl, Class<T> responseType) {
-        return getByUrl(baseUrl + path, path, responseType);
+        return getByUrl(baseUrl + path, path, responseType, ErrorCode.RIOT_API_ERROR);
     }
 
-    private <T> T getByUrl(String url, String logPath, Class<T> responseType) {
+    // ── 공통 GET — 1,300ms 최소 간격 + Retry-After 파싱 재시도 (최대 3회) ──
+    private <T> T getByUrl(String url, String logPath, Class<T> responseType, ErrorCode notFoundCode) {
         for (int attempt = 1; attempt <= MAX_RETRY_COUNT; attempt++) {
             try {
                 waitForRequestWindow();
@@ -107,18 +155,20 @@ public class RiotApiClient {
 
             } catch (BusinessException e) {
                 throw e;
+            } catch (HttpClientErrorException.NotFound e) {
+                logger.warn("Riot API 404: endpoint={}", logPath);
+                throw new BusinessException(notFoundCode);
             } catch (HttpClientErrorException.TooManyRequests e) {
                 if (attempt == MAX_RETRY_COUNT) {
                     logger.warn("Riot API rate limit exceeded after retries: endpoint={}", logPath);
                     throw new BusinessException(ErrorCode.RIOT_API_RATE_LIMIT);
                 }
-
                 long waitMs = getRateLimitWaitMs(e);
                 logger.warn("Riot API rate limit exceeded: endpoint={}, retry={}/{}, waitMs={}",
                         logPath, attempt, MAX_RETRY_COUNT, waitMs);
                 sleep(waitMs);
             } catch (Exception e) {
-                logger.error("Riot API request failed: endpoint={}", logPath, e);
+                logger.error("Riot API 호출 실패: endpoint={}", logPath, e);
                 throw new BusinessException(ErrorCode.RIOT_API_ERROR);
             }
         }
@@ -140,15 +190,17 @@ public class RiotApiClient {
                 ? e.getResponseHeaders().getFirst("Retry-After")
                 : null;
 
+        long waitMs;
         if (retryAfter == null || retryAfter.isBlank()) {
-            return DEFAULT_RATE_LIMIT_WAIT_MS;
+            waitMs = DEFAULT_RATE_LIMIT_WAIT_MS;
+        } else {
+            try {
+                waitMs = Math.max(1, Long.parseLong(retryAfter)) * 1000L;
+            } catch (NumberFormatException ignored) {
+                waitMs = DEFAULT_RATE_LIMIT_WAIT_MS;
+            }
         }
-
-        try {
-            return Math.max(1, Long.parseLong(retryAfter)) * 1000L;
-        } catch (NumberFormatException ignored) {
-            return DEFAULT_RATE_LIMIT_WAIT_MS;
-        }
+        return Math.min(waitMs, RATE_LIMIT_WAIT_CAP_MS);
     }
 
     private void sleep(long waitMs) {
@@ -158,5 +210,9 @@ public class RiotApiClient {
             Thread.currentThread().interrupt();
             throw new BusinessException(ErrorCode.RIOT_API_ERROR);
         }
+    }
+
+    private static String encodePathSegment(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
     }
 }

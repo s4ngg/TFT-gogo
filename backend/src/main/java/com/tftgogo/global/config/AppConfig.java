@@ -24,6 +24,17 @@ public class AppConfig {
         return new RestTemplate(factory);
     }
 
+    @Bean(name = "riotApiExecutor")
+    public Executor riotApiExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(4);
+        executor.setMaxPoolSize(8);
+        executor.setQueueCapacity(50);
+        executor.setThreadNamePrefix("riot-api-");
+        executor.initialize();
+        return executor;
+    }
+
     @Bean(name = "aggregationExecutor")
     public Executor aggregationExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
