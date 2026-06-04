@@ -10,7 +10,7 @@ import { getChampionName, getChampionShortName, getTraitName, getItemName } from
 import type { TFTLocale } from '../../api/cdragonLocale'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
 import { useCDragonLocale } from '../../hooks/useCDragonLocale'
-import type { MetaDeck, RankFilter } from '../Dashboard/dashboardData'
+import type { ChampionSummary, MetaDeck, RankFilter } from '../Dashboard/dashboardData'
 import type { TierBadgeValue } from '../../types/badges'
 import { costLimitForLevel } from '../../utils/deckUtils'
 import styles from './Decks.module.css'
@@ -110,10 +110,7 @@ function SortIcon({ col, cur, dir }: { col: SortKey; cur: SortKey; dir: SortDir 
 }
 
 /** API의 recommendedItems(ID 배열)를 ChampionCard의 items 포맷으로 변환 */
-function resolveItems(
-  c: { items?: { imageUrl: string; name: string }[]; recommendedItems?: string[] },
-  locale: TFTLocale | undefined,
-): { imageUrl: string; name: string }[] {
+function resolveItems(c: ChampionSummary, locale: TFTLocale | undefined): ChampionSummary['items'] {
   if (c.items && c.items.length > 0) return c.items
   return (c.recommendedItems ?? []).map((id) => ({
     imageUrl: tftItemIconUrl(id),
