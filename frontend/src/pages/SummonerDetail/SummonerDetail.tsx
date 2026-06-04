@@ -172,9 +172,12 @@ function SummonerDetail() {
 
   const topTraits = (() => {
     const map = new Map<string, { traitId: string; name: string; tone: MatchTraitResponse['tone']; count: number; games: number; totalPlace: number }>()
-    for (const m of matches) {
+    const seen = new Set<string>()
+    for (const m of recentMatches) {
       for (const tr of m.traits) {
         if (tr.traitId.toLowerCase().includes('unique')) continue
+        if (seen.has(tr.traitId)) continue
+        seen.add(tr.traitId)
         const entry = map.get(tr.traitId)
         if (entry) { entry.games++; entry.totalPlace += m.placement; entry.count = Math.max(entry.count, tr.count) }
         else map.set(tr.traitId, { traitId: tr.traitId, name: tr.name, tone: tr.tone, count: tr.count, games: 1, totalPlace: m.placement })
@@ -187,8 +190,11 @@ function SummonerDetail() {
 
   const topChampions = (() => {
     const map = new Map<string, { characterId: string; name: string; imageUrl: string; games: number; totalPlace: number }>()
-    for (const m of matches) {
+    const seen = new Set<string>()
+    for (const m of recentMatches) {
       for (const u of m.units) {
+        if (seen.has(u.characterId)) continue
+        seen.add(u.characterId)
         const entry = map.get(u.characterId)
         if (entry) { entry.games++; entry.totalPlace += m.placement }
         else map.set(u.characterId, {
@@ -274,8 +280,8 @@ function SummonerDetail() {
                 <p className={styles.recordLine}>
                   <span>{profile?.wins ?? '-'}승 {profile?.losses ?? '-'}패</span>
                   <span className={styles.winRateText}>승률 {winRate}%</span>
-                  <span className={styles.avgPlaceText}>평균 {computedAvgPlace || '-'}등</span>
-                  <span className={styles.top4Text}>TOP4 {computedTop4Rate || '-'}%</span>
+                  <span className={styles.avgPlaceText}>평균 {recentMatches.length > 0 ? computedAvgPlace : '-'}등</span>
+                  <span className={styles.top4Text}>TOP4 {recentMatches.length > 0 ? computedTop4Rate : '-'}%</span>
                 </p>
               </div>
               <div className={styles.profileRight}>

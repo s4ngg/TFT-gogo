@@ -1,6 +1,6 @@
 import axiosInstance from './axiosInstance'
 import type { TraitHexBadgeTone } from '../types/badges'
-import { mockSummonerProfile, mockMatchHistory } from '../mocks/summonerMock'
+import { mockSummonerProfile } from '../mocks/summonerMock'
 
 interface ApiResponse<T> {
   success: boolean
@@ -93,6 +93,6 @@ export const getMatchHistory = async (
     )
     return data.data
   } catch {
-    return mockMatchHistory
+    return []
   }
 }
