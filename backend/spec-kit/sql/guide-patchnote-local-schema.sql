@@ -2,6 +2,9 @@
 -- Run this against the tftgogo MySQL database before applying the seed file.
 -- This is a manual SQL baseline until the team adopts Flyway, Liquibase, or another migration tool.
 
+/*!40101 SET NAMES utf8mb4 */;
+/*!40101 SET CHARACTER SET utf8mb4 */;
+
 CREATE TABLE IF NOT EXISTS guides (
     id BIGINT NOT NULL AUTO_INCREMENT,
     guide_type VARCHAR(20) NOT NULL,

@@ -2,6 +2,9 @@
 -- Apply after guide-patchnote-local-schema.sql.
 -- The seed uses patch version 17.3 to match the current frontend fallback sample set.
 
+/*!40101 SET NAMES utf8mb4 */;
+/*!40101 SET CHARACTER SET utf8mb4 */;
+
 START TRANSACTION;
 
 INSERT INTO guides (
@@ -130,13 +133,14 @@ INSERT INTO guides (
     40,
     TRUE
 )
+AS new_guide
 ON DUPLICATE KEY UPDATE
-    name = VALUES(name),
-    summary = VALUES(summary),
-    image_url = VALUES(image_url),
-    data_json = VALUES(data_json),
-    sort_order = VALUES(sort_order),
-    is_active = VALUES(is_active),
+    name = new_guide.name,
+    summary = new_guide.summary,
+    image_url = new_guide.image_url,
+    data_json = new_guide.data_json,
+    sort_order = new_guide.sort_order,
+    is_active = new_guide.is_active,
     deleted_at = NULL,
     updated_at = CURRENT_TIMESTAMP(6);
 
@@ -163,17 +167,18 @@ INSERT INTO patch_notes (
     '["현재 패치 1건 노출 확인", "카테고리/타입/영향도 필터 확인", "Riot API 키 없이 공개 API smoke test"]',
     TRUE
 )
+AS new_patch_note
 ON DUPLICATE KEY UPDATE
     id = LAST_INSERT_ID(id),
-    title = VALUES(title),
-    summary = VALUES(summary),
-    description = VALUES(description),
-    focus = VALUES(focus),
-    image_url = VALUES(image_url),
-    published_at = VALUES(published_at),
-    is_current = VALUES(is_current),
-    highlights_json = VALUES(highlights_json),
-    is_active = VALUES(is_active),
+    title = new_patch_note.title,
+    summary = new_patch_note.summary,
+    description = new_patch_note.description,
+    focus = new_patch_note.focus,
+    image_url = new_patch_note.image_url,
+    published_at = new_patch_note.published_at,
+    is_current = new_patch_note.is_current,
+    highlights_json = new_patch_note.highlights_json,
+    is_active = new_patch_note.is_active,
     deleted_at = NULL,
     updated_at = CURRENT_TIMESTAMP(6);
 

@@ -2,6 +2,9 @@
 -- This removes only the seed rows created by guide-patchnote-local-seed.sql.
 -- Run this against the tftgogo MySQL database only when you want to clean the local smoke data.
 
+/*!40101 SET NAMES utf8mb4 */;
+/*!40101 SET CHARACTER SET utf8mb4 */;
+
 START TRANSACTION;
 
 SET @patch_note_173_id = (
