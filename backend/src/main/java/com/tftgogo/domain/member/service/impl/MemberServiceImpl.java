@@ -11,6 +11,7 @@ import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import com.tftgogo.global.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,12 +28,13 @@ public class MemberServiceImpl implements MemberService {
     @Override
     @Transactional
     public AuthResponse signup(SignupRequest request) {
-        if (memberRepository.existsByEmail(request.getEmail())) {
+        String encodedPassword = passwordEncoder.encode(request.getPassword());
+        Member member;
+        try {
+            member = memberRepository.save(request.toEntity(encodedPassword));
+        } catch (DataIntegrityViolationException e) {
             throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
-
-        String encodedPassword = passwordEncoder.encode(request.getPassword());
-        Member member = memberRepository.save(request.toEntity(encodedPassword));
         String accessToken = jwtTokenProvider.createAccessToken(member.getUserId());
 
         return AuthResponse.of(accessToken, MemberResponse.from(member));

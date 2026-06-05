@@ -24,7 +24,7 @@ public class Member {
     @Column(name = "user_id")
     private Long userId;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false, length = 255, unique = true)
     private String email;
 
     @Column(name = "password_hash", length = 255)
