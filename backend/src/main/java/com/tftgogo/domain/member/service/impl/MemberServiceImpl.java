@@ -31,7 +31,7 @@ public class MemberServiceImpl implements MemberService {
         String encodedPassword = passwordEncoder.encode(request.getPassword());
         Member member;
         try {
-            member = memberRepository.save(request.toEntity(encodedPassword));
+            member = memberRepository.saveAndFlush(request.toEntity(encodedPassword));
         } catch (DataIntegrityViolationException e) {
             throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
