@@ -57,11 +57,19 @@ docs/for-humans/backend/sql/guide-patchnote-local-reset.sql
 
 ## 로컬 MySQL 준비
 
-이미 로컬 MySQL이 있다면 `tftgogo` 데이터베이스만 있으면 된다.
+이미 로컬 MySQL이 있다면 `tftgogo` 데이터베이스와 로컬 검증용 계정만 준비하면 된다.
+
+| 항목 | 기본값 |
+| --- | --- |
+| 데이터베이스 | `tftgogo` |
+| 사용자 | `tftuser` |
+| 비밀번호 | `tftpass` |
 
 ```powershell
-mysql --default-character-set=utf8mb4 -u root -p -e "CREATE DATABASE IF NOT EXISTS tftgogo CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+mysql --default-character-set=utf8mb4 -u root -p -e "CREATE DATABASE IF NOT EXISTS tftgogo CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE USER IF NOT EXISTS 'tftuser'@'localhost' IDENTIFIED BY 'tftpass'; GRANT ALL PRIVILEGES ON tftgogo.* TO 'tftuser'@'localhost'; FLUSH PRIVILEGES;"
 ```
+
+`CREATE USER IF NOT EXISTS`는 이미 존재하는 계정의 비밀번호를 바꾸지 않는다. 기존 `tftuser` 비밀번호를 초기화해야 할 때만 별도로 `ALTER USER`를 실행한다.
 
 `docker-compose.yml`의 MySQL만 쓰고 싶다면 전체 compose를 올리지 말고 MySQL과 Redis만 올린다. 현재 `backend/Dockerfile`, `ai-server/Dockerfile`은 없으므로 전체 compose 기동은 이 단계의 확인 방법이 아니다.
 
@@ -78,7 +86,7 @@ mysql --default-character-set=utf8mb4 -u tftuser -p tftgogo -e "source ./docs/fo
 mysql --default-character-set=utf8mb4 -u tftuser -p tftgogo -e "source ./docs/for-humans/backend/sql/guide-patchnote-local-seed.sql"
 ```
 
-로컬 MySQL 계정이 다르면 `-u tftuser` 부분만 본인 계정으로 바꾼다.
+로컬 MySQL 계정이 다르면 `-u tftuser` 부분과 `application-local.yml`의 username/password를 본인 환경에 맞춘다.
 
 적용 후 최소 확인 쿼리는 다음과 같다.
 
