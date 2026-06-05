@@ -29,20 +29,20 @@ public interface GuideControllerDocs {
     })
     ResponseEntity<ApiResponse<GuidePageResponse<GuideEntryResponse>>> getGuideTabItems(
             @Parameter(description = "가이드 탭", example = "champions")
-            @PathVariable String tab,
-            @Parameter(description = "패치 버전", example = "17.0")
-            @RequestParam(required = false) String patchVersion,
+            @PathVariable("tab") String tab,
+            @Parameter(description = "패치 버전", example = "17.3")
+            @RequestParam(name = "patchVersion", required = false) String patchVersion,
             @Parameter(description = "검색어", example = "카이사")
-            @RequestParam(required = false) String query,
+            @RequestParam(name = "query", required = false) String query,
             @Parameter(description = "페이지 번호", example = "1")
-            @RequestParam(required = false) Integer page,
+            @RequestParam(name = "page", required = false) Integer page,
             @Parameter(description = "페이지 크기", example = "10")
-            @RequestParam(required = false) Integer pageSize,
+            @RequestParam(name = "pageSize", required = false) Integer pageSize,
             @Parameter(description = "정렬 기준(avgPlace, pickRate, top4, winRate)", example = "avgPlace")
-            @RequestParam(required = false) String sortKey,
+            @RequestParam(name = "sortKey", required = false) String sortKey,
             @Parameter(description = "정렬 방향(asc, desc)", example = "asc")
-            @RequestParam(required = false) String sortDir,
+            @RequestParam(name = "sortDir", required = false) String sortDir,
             @Parameter(description = "챔피언 코스트 필터", example = "4")
-            @RequestParam(required = false) Integer cost
+            @RequestParam(name = "cost", required = false) Integer cost
     );
 }

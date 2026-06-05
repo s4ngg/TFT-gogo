@@ -21,9 +21,31 @@ frontend/dist/
 .idea/
 .vscode/
 *.iml
+.project
+.classpath
+.settings/
+
+# Eclipse (backend)
+backend/.project
+backend/.classpath
+backend/.settings/
+
+# 루트 레벨 임시 패키지 (도구 실행 잔여물)
+/node_modules/
+/package.json
+/package-lock.json
+
+# 임시 스크립트 / 작업 파일 (루트 레벨)
+/parse_comments.py
+/screenshot.mjs
+/pr138_comments.json
+SESSION_GUIDE.md
+.taskAll/
+.task_logs/
 
 # 개인 로컬 전용 파일
 CLAUDE.local.md
 TASK_PROGRESS.md
+.claude/settings.local.json
 
 

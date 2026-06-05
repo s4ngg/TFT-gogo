@@ -24,7 +24,14 @@
 
   --gold: #d7a93a;
   --danger: #ff5b57;
+  --danger-bg: rgba(255, 91, 87, 0.12);
+  --danger-border: rgba(255, 91, 87, 0.30);
   --success: #4ade80;
+
+  /* 영웅 증강 뱃지 */
+  --color-purple-light: #c4b5fd;
+  --hero-aug-badge-border: rgba(167, 139, 250, 0.45);
+  --hero-aug-badge-bg: rgba(167, 139, 250, 0.10);
 
   --text-main: #ffffff;
   --text-ui: #d9dde3;
@@ -45,6 +52,7 @@
 
   --font-size-xs: 12px;
   --font-size-sm: 13px;
+  --font-size-icon-fallback: 8px;
   --font-main: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 
   --sidebar-width: 222px;
@@ -111,6 +119,16 @@
   --tone-bronze-color: #c6a96a;
   --tone-bronze-border: rgba(198, 169, 106, 0.2);
   --tone-bronze-bg: rgba(198, 169, 106, 0.06);
+
+  --tone-prismatic-color: #c084fc;
+  --tone-prismatic-border: rgba(192, 132, 252, 0.25);
+  --tone-prismatic-bg: rgba(192, 132, 252, 0.08);
+
+  /* Trait breakpoint pip */
+  --bp-bronze: var(--tone-bronze-color);
+  --bp-silver: var(--tone-silver-color);
+  --bp-gold: var(--tone-gold-color);
+  --bp-prismatic: var(--tone-prismatic-color);
 }
 
 /* Trait tag layout tokens */

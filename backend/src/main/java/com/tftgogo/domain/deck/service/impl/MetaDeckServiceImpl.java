@@ -40,6 +40,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -50,6 +53,9 @@ import java.util.stream.Collectors;
 public class MetaDeckServiceImpl implements MetaDeckService {
 
     private static final Logger logger = LogManager.getLogger(MetaDeckServiceImpl.class);
+
+    /** 동시 집계 방지 lock */
+    private final AtomicBoolean aggregating = new AtomicBoolean(false);
 
     private static final int MATCHES_PER_SUMMONER = 20;
     // 15 → 10: 데이터 부족 시 덱 종류가 너무 적어지는 문제 완화
@@ -100,12 +106,13 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     private final com.tftgogo.domain.deck.repository.DeckCurationRepository deckCurationRepository;
     private final RiotApiClient riotApiClient;
     private final PlatformTransactionManager transactionManager;
+    private final AsyncAggregationRunner asyncAggregationRunner;
 
     @Override
     @Transactional(readOnly = true)
     public MetaDeckListResponse getMetaDecks(RankFilter rankFilter) {
-        String latestPatchVersion = findLatestPatchVersion(rankFilter);
-        if (latestPatchVersion == null) {
+        Optional<String> latestPatchOpt = findLatestPatchVersion(rankFilter);
+        if (latestPatchOpt.isEmpty()) {
             return MetaDeckListResponse.builder()
                     .patchVersion(null)
                     .rankFilter(rankFilter)
@@ -113,6 +120,7 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                     .decks(List.of())
                     .build();
         }
+        String latestPatchVersion = latestPatchOpt.get();
 
         // 선택률 기준 내림차순 정렬 + 최소 선택률 필터 적용
         List<MetaDeck> decks = metaDeckRepository
@@ -169,12 +177,40 @@ public class MetaDeckServiceImpl implements MetaDeckService {
 
     @Override
     public void aggregateAndSave(LocalDate dataDate) {
-        logger.info("전체 랭크 구간 메타 덱 일일 집계 시작 - date={}", dataDate);
-        for (RankFilter rankFilter : RankFilter.values()) {
-            logger.info("[{}] 집계 시작 - date={}", rankFilter, dataDate);
-            aggregateForTier(rankFilter, dataDate);
+        if (!aggregating.compareAndSet(false, true)) {
+            logger.warn("집계 이미 실행 중 - 중복 요청 skip (date={})", dataDate);
+            return;
         }
-        logger.info("전체 랭크 구간 메타 덱 일일 집계 완료 - date={}", dataDate);
+        try {
+            logger.info("전체 랭크 구간 메타 덱 일일 집계 시작 - date={}", dataDate);
+            for (RankFilter rankFilter : RankFilter.values()) {
+                logger.info("[{}] 집계 시작 - date={}", rankFilter, dataDate);
+                aggregateForTier(rankFilter, dataDate);
+            }
+            logger.info("전체 랭크 구간 메타 덱 일일 집계 완료 - date={}", dataDate);
+        } finally {
+            aggregating.set(false);
+        }
+    }
+
+    @Override
+    public CompletableFuture<Void> aggregateAndSaveAsync(LocalDate dataDate) {
+        if (!aggregating.compareAndSet(false, true)) {
+            logger.warn("집계 이미 실행 중 - 비동기 요청 skip (date={})", dataDate);
+            return CompletableFuture.completedFuture(null);
+        }
+        return asyncAggregationRunner.run(() -> {
+            try {
+                logger.info("전체 랭크 구간 메타 덱 일일 집계 시작 - date={}", dataDate);
+                for (RankFilter rankFilter : RankFilter.values()) {
+                    logger.info("[{}] 집계 시작 - date={}", rankFilter, dataDate);
+                    aggregateForTier(rankFilter, dataDate);
+                }
+                logger.info("전체 랭크 구간 메타 덱 일일 집계 완료 - date={}", dataDate);
+            } finally {
+                aggregating.set(false);
+            }
+        });
     }
 
     private void aggregateForTier(RankFilter rankFilter, LocalDate dataDate) {
@@ -380,11 +416,12 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                         .thenComparing(UnitDto::getCharacter_id))
                 .toList();
 
+        // #137: TreeSet으로 알파벳 정렬 보장 → 집계 순서와 무관하게 동일 signature 생성
         Set<String> coreUnitIds = sortedUnits.stream()
                 .filter(this::isCoreUnit)
                 .limit(CORE_UNIT_LIMIT)
                 .map(UnitDto::getCharacter_id)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+                .collect(Collectors.toCollection(TreeSet::new));
 
         if (coreUnitIds.size() < MIN_CORE_UNIT_COUNT) {
             sortedUnits.stream()
@@ -400,8 +437,7 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         return units.stream()
                 .map(UnitDto::getCharacter_id)
                 .filter(characterId -> characterId != null && !characterId.isBlank())
-                .sorted()
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 
     private boolean isCoreUnit(UnitDto unit) {
@@ -471,6 +507,29 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         return profile.traitSignature + "::" + String.join("_", profile.coreUnitIds);
     }
 
+    /**
+     * #137: 병합된 전체 샘플의 unitFrequency 기준으로 core unit을 재선정해 canonical signature 생성.
+     * 최초 관측 샘플 기준 buildSignature()와 달리 집계 순서에 무관하게 동일한 signature 보장.
+     */
+    private String buildCanonicalSignature(DeckStat stat) {
+        // 빈도 내림차순 → rarity/tier 순 정렬로 core unit 후보 선정
+        List<String> frequencySortedIds = stat.unitFrequency.entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed()
+                        .thenComparing(Map.Entry.comparingByKey()))
+                .map(Map.Entry::getKey)
+                .toList();
+
+        Set<String> canonicalCoreIds = frequencySortedIds.stream()
+                .limit(CORE_UNIT_LIMIT)
+                .collect(Collectors.toCollection(TreeSet::new));
+
+        if (canonicalCoreIds.size() < MIN_CORE_UNIT_COUNT) {
+            frequencySortedIds.forEach(canonicalCoreIds::add);
+        }
+
+        return stat.profile.traitSignature + "::" + String.join("_", canonicalCoreIds);
+    }
+
     private void saveDeckStats(
             Map<String, DeckStat> deckStatMap,
             int totalParticipants,
@@ -495,6 +554,13 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                 })
                 .toList();
 
+        // #132: 집계 결과가 없으면 기존 데이터를 보호하고 저장 건너뜀
+        if (ranked.isEmpty()) {
+            logger.warn("[{}][{}] 집계 결과 없음 (totalParticipants={}) — 기존 데이터 유지",
+                    rankFilter, patchVersion, totalParticipants);
+            return;
+        }
+
         refreshPatchDecks(rankFilter, patchVersion);
 
         for (int index = 0; index < ranked.size(); index++) {
@@ -504,10 +570,13 @@ public class MetaDeckServiceImpl implements MetaDeckService {
             String tier = assignTierByRatio(index, ranked.size());
             String name = buildDeckName(stat.traits);
 
+            // #137: 병합된 전체 샘플 기준 빈도로 core unit 재선정 → canonical signature 재계산
+            String canonicalSignature = buildCanonicalSignature(stat);
+
             MetaDeck deck = metaDeckRepository
-                    .findBySignatureAndRankFilterAndPatchVersion(entry.getKey(), rankFilter, patchVersion)
+                    .findBySignatureAndRankFilterAndPatchVersion(canonicalSignature, rankFilter, patchVersion)
                     .orElseGet(() -> MetaDeck.builder()
-                            .signature(entry.getKey())
+                            .signature(canonicalSignature)
                             .rankFilter(rankFilter)
                             .name(name)
                             .patchVersion(patchVersion)
@@ -693,12 +762,11 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         return matcher.find() ? matcher.group(1) : UNKNOWN_PATCH_VERSION;
     }
 
-    private String findLatestPatchVersion(RankFilter rankFilter) {
-        return metaDeckRepository.findAllByRankFilter(rankFilter).stream()
-                .map(MetaDeck::getPatchVersion)
+    @Override
+    public Optional<String> findLatestPatchVersion(RankFilter rankFilter) {
+        return metaDeckRepository.findDistinctPatchVersionsByRankFilter(rankFilter).stream()
                 .filter(patchVersion -> !UNKNOWN_PATCH_VERSION.equals(patchVersion))
-                .max(this::comparePatchVersions)
-                .orElse(null);
+                .max(this::comparePatchVersions);
     }
 
     private int comparePatchVersions(String left, String right) {
@@ -756,6 +824,8 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         final DeckProfile profile;
         final Map<String, UnitStat> unitStats = new HashMap<>();
         final Map<String, ItemStat> itemStats = new HashMap<>();
+        // #137: 병합된 전체 샘플 기준 유닛 등장 빈도 집계 → frequency 기반 signature 재계산에 사용
+        final Map<String, Integer> unitFrequency = new HashMap<>();
         int count = 0, wins = 0, top4 = 0;
         double totalPlace = 0;
 
@@ -772,6 +842,10 @@ public class MetaDeckServiceImpl implements MetaDeckService {
             if (placement <= 4) top4++;
 
             participant.getUnits().forEach(unit -> {
+                String characterId = unit.getCharacter_id();
+                if (characterId != null && !characterId.isBlank()) {
+                    unitFrequency.merge(characterId, 1, Integer::sum);
+                }
                 UnitStat unitStat = unitStats.computeIfAbsent(unit.getCharacter_id(), UnitStat::new);
                 unitStat.record(unit);
 

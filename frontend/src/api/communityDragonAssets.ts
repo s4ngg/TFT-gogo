@@ -58,9 +58,16 @@ const TRAIT_ICON_PATHS: Record<string, string> = {
 
 export function tftTraitIconUrl(traitId: string): string {
   const path = TRAIT_ICON_PATHS[traitId]
-  return path ? communityDragonAssetUrl(path) : ''
+  if (path) return communityDragonAssetUrl(path)
+  const traitName = traitId.replace(/^(?:TFT|Set)\d+_/i, '')
+  return communityDragonAssetUrl(`ASSETS/UX/TraitIcons/Trait_Icon_17_${traitName}.TFT_Set17.tex`)
 }
 
 export function tftChampSquareUrl(apiName: string): string {
   return communityDragonAssetUrl(`ASSETS/Characters/${apiName}/HUD/${apiName}_Square.TFT_Set17.tex`)
+}
+
+export function tftTierEmblemUrl(tier: string): string {
+  const t = tier.toLowerCase()
+  return `${COMMUNITY_DRAGON_RAW_BASE_URL}/plugins/rcp-fe-lol-static-assets/global/default/ranked-emblem/emblem-${t}.png`
 }

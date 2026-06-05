@@ -12,6 +12,13 @@ export interface ItemSummary {
   placementDelta: string
 }
 
+export interface HeroAugmentSummary {
+  championId: string
+  championName: string
+  augmentName: string
+  imageUrl: string
+}
+
 export interface MetaDeck {
   rank: number
   grade: TierBadgeValue
@@ -26,6 +33,7 @@ export interface MetaDeck {
   topItems?: ItemSummary[]          // 덱별 추천 아이템 (API 집계 후 제공)
   boardPositions?: string | null    // 관리자 배치 JSON (null = 자동 배치)
   playGuide?: string | null         // 운영방법 JSON (null = 미작성)
+  heroAugments?: HeroAugmentSummary[] // 영웅 증강 목록 (관리자 직접 입력)
 }
 
 export interface TraitSummary {

@@ -42,12 +42,20 @@ public class SecurityConfig {
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/signup",
                                 "/api/decks/meta/**",
+                                "/api/admin/**",
+                                "/api/match/**",
+                                "/api/summoners/**",
                                 "/api/guide",
                                 "/api/guide/**",
-                                "/api/admin/**",   // AdminTokenFilter가 직접 검증
+                                "/api/patch-notes",
+                                "/api/patch-notes/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/decks/meta")
+                        .permitAll()
+                        .requestMatchers("/api/admin/**")   // AdminTokenFilter가 직접 검증
+                        .permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

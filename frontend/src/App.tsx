@@ -18,7 +18,7 @@ function App() {
       <Route path="/signup" element={<AuthPage mode="signup" />} />
       <Route path="/summoner/:gameName/:tagLine" element={<SummonerDetail />} />
       <Route path="/decks" element={<Decks />} />
-      <Route path="/decks/:deckId" element={<DeckDetail />} />
+      <Route path="/decks/:rankFilter/:deckId" element={<DeckDetail />} />
       <Route path="/ai-recommend" element={<AiRecommend />} />
       <Route path="/guide" element={<Guide />} />
       <Route path="/party" element={<Party />} />

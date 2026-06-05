@@ -21,7 +21,8 @@ public interface MetaDeckRepository extends JpaRepository<MetaDeck, Long> {
     @Query("SELECT COUNT(DISTINCT d.rankFilter) FROM MetaDeck d WHERE d.dataStartDate = :dataStartDate")
     long countAggregatedRankFiltersByDataStartDate(@Param("dataStartDate") java.time.LocalDate dataStartDate);
 
-    // 선택률 기준 내림차순 정렬 + 최소 선택률 필터 (DB 레벨)
+    // #134: default_batch_fetch_size로 N+1 제어 (application.yml 설정)
+    // 다중 @OneToMany List 동시 join fetch → MultipleBagFetchException + 카테시안 곱 위험으로 @EntityGraph 미사용
     @Query("SELECT d FROM MetaDeck d WHERE d.rankFilter = :rankFilter AND d.patchVersion = :patchVersion AND d.playRate >= :minPlayRate ORDER BY d.playRate DESC")
     List<MetaDeck> findMetaDecksByPickRate(
             @Param("rankFilter") RankFilter rankFilter,
@@ -33,4 +34,7 @@ public interface MetaDeckRepository extends JpaRepository<MetaDeck, Long> {
 
     @Query("SELECT MAX(d.patchVersion) FROM MetaDeck d WHERE d.rankFilter = :rankFilter")
     Optional<String> findLatestPatchVersion(@Param("rankFilter") RankFilter rankFilter);
+
+    @Query("SELECT DISTINCT d.patchVersion FROM MetaDeck d WHERE d.rankFilter = :rankFilter")
+    List<String> findDistinctPatchVersionsByRankFilter(@Param("rankFilter") RankFilter rankFilter);
 }
