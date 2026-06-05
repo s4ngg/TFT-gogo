@@ -109,13 +109,16 @@
 - 공개 API는 사용자에게 노출 가능한 데이터만 반환해야 한다.
 - 관리자가 나중에 데이터를 수정하거나 추가할 수 있는 구조여야 한다.
 - 게임가이드는 Riot 매치 데이터 수만 건을 실시간으로 분석해 자동 생성하기보다, 관리자 큐레이션 기반 콘텐츠 데이터로 우선 관리한다.
+- 게임가이드 데이터는 우선 `guides` 테이블에 큐레이션 row로 저장한다. `guideType + targetKey + patchVersion` 조합은 하나의 가이드 항목을 식별한다.
 - 프론트 API 함수는 `axiosInstance` baseURL `/api`를 기준으로 `/guide`, `/guide/{tab}`을 호출하고, 백엔드 Controller는 `/api/guide`, `/api/guide/{tab}` 경로를 제공한다.
 - `GET /api/guide`는 각 탭의 대표 데이터를 반환하고, 응답은 `ApiResponse<List<GuideEntryResponse>>`를 기본 계약으로 한다.
 - `GET /api/guide/{tab}`는 탭별 목록을 반환하고, 응답은 `ApiResponse<GuidePageResponse<GuideEntryResponse>>`를 기본 계약으로 한다.
+- `patchVersion`이 생략된 공개 조회는 여러 패치 버전의 데이터를 섞어 반환하지 않는다. 기본 조회 기준은 최신 active 패치 또는 운영자가 current로 지정한 패치 중 하나로 확정해 적용한다.
 - `{tab}` 값은 `traits`, `items`, `augments`, `champions`만 허용한다.
 - 탭별 조회는 `patchVersion`, `query`, `page`, `pageSize`, `sortKey`, `sortDir`, `cost` query parameter를 지원할 수 있어야 한다.
 - `cost` 필터는 챔피언 탭에서만 적용한다. 다른 탭에 전달되면 공개 API는 400 오류를 반환하지 않고 무시한다.
 - `sortKey`는 `avgPlace`, `pickRate`, `top4`, `winRate`를 허용하고, `sortDir`은 `asc`, `desc`를 허용한다.
+- DB `LIKE` 검색에 사용하는 `query`는 `%`, `_`, `\` 같은 와일드카드 문자를 escape해 의도하지 않은 확장 검색을 피한다.
 - `{tab}`, `sortKey`, `sortDir`, `page`, `pageSize`가 허용 범위를 벗어나면 400 계열 검증 오류로 처리한다.
 - 페이지 응답은 `items`, `page`, `pageSize`, `totalItems`, `totalPages`를 포함한다.
 - `GuideEntryResponse`는 `id`, `guideType`, `targetKey`, `name`, `summary`, `imageUrl`, `patchVersion`, `sortOrder`, `dataJson`을 포함한다.
@@ -127,7 +130,9 @@
   - `CHAMPION`: `cost`, `role`, `position`, `traits`, `bestItems`, `stats`
 - 관리자 API는 `/api/admin/guides` 아래에 둔다.
 - 관리자는 가이드 항목 목록 조회, 생성, 수정, 숨김 처리를 할 수 있어야 한다.
-- 관리자 삭제 요청은 우선 실제 삭제보다 `published = false` 숨김 처리로 설계한다.
+- 관리자 생성/수정 시 `dataJson`은 JSON object로 파싱 가능한지 저장 전에 검증한다.
+- 관리자 생성 시 같은 `guideType + targetKey + patchVersion` 조합이 이미 있으면 새 row를 무조건 만들기보다 기존 row 수정 또는 soft delete row 복구 정책을 우선 적용한다.
+- 관리자 삭제 요청은 우선 실제 삭제보다 `isActive = false` 또는 `deletedAt` 기반 soft delete로 설계한다.
 - 관리자가 입력한 이미지 URL 또는 Community Dragon key는 공개 응답에서 프론트가 바로 사용할 수 있는 `imageUrl`로 제공한다.
 
 ### 5. PatchNotes
@@ -140,6 +145,7 @@
 - 공개 API는 사용자에게 노출 가능한 패치노트와 변경사항만 반환해야 한다.
 - 관리자가 나중에 패치노트와 변경사항을 수정하거나 추가할 수 있는 구조여야 한다.
 - 패치노트는 대량 매치 데이터 집계 결과가 아니라 관리자 큐레이션 기반 공지/변경사항 데이터로 우선 관리한다.
+- 패치노트 데이터는 우선 `patch_notes`, `patch_changes` 테이블에 큐레이션 row로 저장한다. `patch_notes.version`은 하나의 패치노트를 식별한다.
 - 프론트 API 함수는 `axiosInstance` baseURL `/api`를 기준으로 `/patch-notes`, `/patch-notes/{version}/changes`를 호출하고, 백엔드 Controller는 `/api/patch-notes`, `/api/patch-notes/{version}/changes` 경로를 제공한다.
 - `GET /api/patch-notes`는 패치노트 목록을 반환하고, 응답은 `ApiResponse<List<PatchNoteResponse>>`를 기본 계약으로 한다.
 - `GET /api/patch-notes/{version}/changes`는 특정 버전의 변경사항 목록과 통계를 반환하고, 응답은 `ApiResponse<PatchChangePageResponse>`를 기본 계약으로 한다.
@@ -160,7 +166,9 @@
 - 관리자 API는 `/api/admin/patch-notes`와 `/api/admin/patch-note-changes` 아래에 둔다.
 - 관리자는 패치노트 목록 조회, 생성, 수정, 숨김 처리를 할 수 있어야 한다.
 - 관리자는 패치노트 하위 변경사항을 생성, 수정, 숨김 처리할 수 있어야 한다.
-- 관리자 삭제 요청은 우선 실제 삭제보다 `published = false` 숨김 처리로 설계한다.
+- 관리자 생성/수정 시 `highlightsJson`, `tagsJson`은 JSON string array로 파싱 가능한지 저장 전에 검증한다.
+- 관리자 생성 시 같은 `version`의 패치노트가 이미 있으면 새 row를 무조건 만들기보다 기존 row 수정 또는 soft delete row 복구 정책을 우선 적용한다.
+- 관리자 삭제 요청은 우선 실제 삭제보다 `isActive = false` 또는 `deletedAt` 기반 soft delete로 설계한다.
 - 현재 패치가 여러 개가 되지 않도록 `isCurrent` 변경 시 기존 현재 패치 해제 정책을 함께 적용한다.
 
 ### 6. Community

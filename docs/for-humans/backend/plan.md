@@ -52,8 +52,8 @@ backend/
 | `member` | 회원가입, 로그인, 인증/권한, 사용자 식별 | 인증 API와 권한 모델 |
 | `match` | 소환사 검색, 전적 조회, 매치 상세 가공 | Riot API 연동 핵심 |
 | `deck` | 메타 덱 집계, 덱 목록/상세, 관리자 큐레이션 | 현재 구현 중심 |
-| `guide` | 게임가이드 공개 데이터, 관리자 큐레이션 가능 데이터 | 추후 구현 |
-| `patchnote` | 패치노트 목록, 변경사항, 관리자 큐레이션 가능 데이터 | 추후 구현 |
+| `guide` | 게임가이드 공개 데이터, 관리자 큐레이션 가능 데이터 | 공개 API/로컬 DB smoke 완료, 관리자 API 예정 |
+| `patchnote` | 패치노트 목록, 변경사항, 관리자 큐레이션 가능 데이터 | 공개 API/로컬 DB smoke 완료, 관리자 API 예정 |
 | `community` | 파티 모집, 게시글, 채팅 연동 | 추후 구현 |
 | `ai` | AI 추천 요청 중계, AI 결과 표준화 | ai-server 연동 |
 | `global` | 공통 설정, 응답, 예외, 보안, Riot Client | 전 도메인 공통 |
@@ -144,6 +144,9 @@ domain/<domain>/
 | `POST` | `/api/admin/patch-notes` | `patchnote` | 패치노트 생성 |
 | `PATCH` | `/api/admin/patch-notes/{patchNoteId}` | `patchnote` | 패치노트 수정 |
 | `DELETE` | `/api/admin/patch-notes/{patchNoteId}` | `patchnote` | 패치노트 숨김/삭제 |
+| `POST` | `/api/admin/patch-note-changes` | `patchnote` | 패치 변경사항 생성 |
+| `PATCH` | `/api/admin/patch-note-changes/{changeId}` | `patchnote` | 패치 변경사항 수정 |
+| `DELETE` | `/api/admin/patch-note-changes/{changeId}` | `patchnote` | 패치 변경사항 숨김/삭제 |
 | `GET` | `/api/admin/community/posts` | `community` | 관리자용 모집글 목록 조회 |
 | `PATCH` | `/api/admin/community/posts/{postId}` | `community` | 모집글 상태 관리 |
 
@@ -208,6 +211,8 @@ POST /api/community/posts
 1. 자동 수집/집계 데이터의 품질 한계를 관리자가 보완한다.
 2. 공개 여부, 표시 이름, 정렬 순서, 관리자 메모 등을 별도 레이어로 저장한다.
 3. 공개 API는 자동 데이터와 큐레이션 데이터를 결합해 반환한다.
+4. Guide/PatchNotes처럼 자동 집계보다 큐레이션이 우선인 콘텐츠는 도메인 테이블에 active row로 저장하고, 관리자 API에서 생성/수정/soft delete한다.
+5. 여러 패치 버전이 쌓이는 콘텐츠 API는 기본 조회에서 서로 다른 패치 데이터를 섞지 않는다.
 
 ### AI 추천 연동
 
@@ -223,8 +228,8 @@ POST /api/community/posts
 - `member`: 사용자, 인증 정보, 권한.
 - `match`: 소환사, 매치, 참가자, 유닛, 아이템, 시너지.
 - `deck`: 메타 덱, 덱 유닛, 덱 특성, 추천 아이템, 관리자 큐레이션.
-- `guide`: 가이드 항목, 가이드 유형, 패치 버전, 공개 여부.
-- `patchnote`: 패치노트, 변경사항, 변경 카테고리, 공개 여부.
+- `guide`: 가이드 항목, 가이드 유형, 패치 버전, 공개 여부, JSON 표시 데이터.
+- `patchnote`: 패치노트, 변경사항, 변경 카테고리, 현재 패치 여부, 공개 여부.
 - `community`: 모집글, 댓글 또는 채팅 연계 식별자, 모집 상태.
 
 세부 컬럼은 각 도메인 구현 이슈에서 확정한다. 팀 전체 plan 문서에는 테이블 책임과 관계의 큰 방향만 둔다.
@@ -237,8 +242,8 @@ POST /api/community/posts
 2. Riot API 연동과 전적 조회 기반 확보.
 3. 메타 덱 집계와 관리자 큐레이션 안정화.
 4. 프론트 주요 화면이 의존하는 공개 API 계약 확정.
-5. 게임가이드 콘텐츠 도메인의 공개 API와 관리자 연동 준비.
-6. 패치노트 콘텐츠 도메인의 공개 API와 관리자 연동 준비.
+5. 게임가이드 콘텐츠 도메인의 공개 API와 로컬 DB smoke 완료 후 관리자 API로 큐레이션 입력 흐름을 연결한다.
+6. 패치노트 콘텐츠 도메인의 공개 API와 로컬 DB smoke 완료 후 관리자 API로 큐레이션 입력 흐름을 연결한다.
 7. Community 같은 게시성 도메인의 관리자 연동 준비.
 8. AI 추천 연동 안정화.
 9. 테스트, Swagger, 운영 로그 정리.

@@ -128,7 +128,10 @@ Spring Page 응답 시 `items` 대신 `content` 허용.
 - 시너지, 아이템, 증강체, 챔피언 기본 정보는 Community Dragon JSON 기준
 - API 연동 전/오류 시 `guideFallback.ts` 샘플 데이터로 fallback
 - 가이드 데이터는 관리자 큐레이션 기반으로 관리 (`/api/admin/guides`)
-- 관리자 삭제: 실제 삭제보다 `published = false` 숨김 처리 우선
+- 로컬 DB smoke 기준 테이블은 `guides`이며, `guideType + targetKey + patchVersion` 조합을 하나의 가이드 항목으로 본다
+- `patchVersion` 생략 조회는 여러 패치 버전 데이터를 섞지 않는다
+- 관리자 생성/수정 시 `dataJson`은 JSON object로 검증한다
+- 관리자 삭제: 실제 삭제보다 `isActive = false` 또는 `deletedAt` 기반 soft delete 우선
 
 ---
 

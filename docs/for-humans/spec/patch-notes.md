@@ -102,8 +102,11 @@
 ## 데이터 정책
 
 - 패치노트는 관리자 큐레이션 기반 (`/api/admin/patch-notes`, `/api/admin/patch-note-changes`)
+- 로컬 DB smoke 기준 테이블은 `patch_notes`, `patch_changes`이며, `patch_notes.version`을 하나의 패치노트 식별자로 본다
 - `isCurrent` 변경 시 기존 현재 패치 자동 해제
-- 관리자 삭제: `published = false` 숨김 처리 우선
+- 관리자 생성/수정 시 `highlightsJson`, `tagsJson`은 JSON string array로 검증한다
+- 같은 `version` 생성 요청은 새 row를 무조건 만들기보다 기존 row 수정 또는 soft delete row 복구 정책을 우선 적용한다
+- 관리자 삭제: 실제 삭제보다 `isActive = false` 또는 `deletedAt` 기반 soft delete 우선
 
 ---
 
