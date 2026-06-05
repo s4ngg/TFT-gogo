@@ -445,6 +445,11 @@ function normalizePatchChangeStats(payload: unknown, changes: PatchChange[], tot
   }
 }
 
+function readPatchChangeStatsPayload(payload: unknown) {
+  if (!isRecord(payload)) return payload
+  return isRecord(payload.stats) ? payload.stats : payload
+}
+
 function normalizePatchChangePage(payload: unknown, params: PatchChangesQuery): PatchChangePage | undefined {
   const rawChanges = readPatchChangeItems(payload)
   if (!rawChanges) return undefined
@@ -465,7 +470,7 @@ function normalizePatchChangePage(payload: unknown, params: PatchChangesQuery): 
     items: changes,
     page,
     pageSize,
-    stats: normalizePatchChangeStats(payload, changes, totalItems),
+    stats: normalizePatchChangeStats(readPatchChangeStatsPayload(payload), changes, totalItems),
     totalItems,
     totalPages,
   }
