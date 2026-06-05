@@ -6,10 +6,23 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface GuideRepository extends JpaRepository<Guide, Long> {
 
-    List<Guide> findByActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc();
+    List<Guide> findByPatchVersionAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc(String patchVersion);
+
+    @Query(value = """
+            SELECT g.patch_version
+            FROM guides g
+            WHERE g.is_active = true
+              AND g.deleted_at IS NULL
+            ORDER BY CAST(SUBSTRING_INDEX(g.patch_version, '.', 1) AS UNSIGNED) DESC,
+                     CAST(SUBSTRING_INDEX(g.patch_version, '.', -1) AS UNSIGNED) DESC,
+                     g.patch_version DESC
+            LIMIT 1
+            """, nativeQuery = true)
+    Optional<String> findLatestPatchVersion();
 
     @Query(value = """
             SELECT *
@@ -20,9 +33,9 @@ public interface GuideRepository extends JpaRepository<Guide, Long> {
               AND (:patchVersion IS NULL OR g.patch_version = :patchVersion)
               AND (
                     :query IS NULL
-                    OR LOWER(g.name) LIKE LOWER(CONCAT('%', :query, '%'))
-                    OR LOWER(g.summary) LIKE LOWER(CONCAT('%', :query, '%'))
-                    OR LOWER(g.target_key) LIKE LOWER(CONCAT('%', :query, '%'))
+                    OR LOWER(g.name) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\\\'
+                    OR LOWER(g.summary) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\\\'
+                    OR LOWER(g.target_key) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\\\'
               )
               AND (
                     :cost IS NULL
