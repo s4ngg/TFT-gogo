@@ -43,10 +43,10 @@ public class MemberServiceImpl implements MemberService {
     @Override
     public AuthResponse login(LoginRequest request) {
         Member member = memberRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_LOGIN_CREDENTIALS));
 
         if (!passwordEncoder.matches(request.getPassword(), member.getPasswordHash())) {
-            throw new BusinessException(ErrorCode.INVALID_PASSWORD);
+            throw new BusinessException(ErrorCode.INVALID_LOGIN_CREDENTIALS);
         }
 
         String accessToken = jwtTokenProvider.createAccessToken(member.getUserId());
