@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import assert from 'node:assert/strict'
+import { describe, it } from 'node:test'
 
-import { readPatchChangeStatsPayload } from '../patchNotes'
+import { readPatchChangeStatsPayload } from '../patchNoteStatsPayload'
 
 function toRecord(value: unknown): Record<string, unknown> {
   if (typeof value !== 'object' || value === null) {
@@ -28,10 +29,10 @@ describe('readPatchChangeStatsPayload', () => {
     const result = readPatchChangeStatsPayload(payload)
     const stats = toRecord(result)
 
-    expect(result).toBe(payload.stats)
-    expect(stats.totalChanges).toBe(12)
-    expect(stats.categoryCounts).toEqual({ CHAMPION: 5 })
-    expect(stats.typeCounts).toEqual({ BUFF: 7 })
+    assert.equal(result, payload.stats)
+    assert.equal(stats.totalChanges, 12)
+    assert.deepEqual(stats.categoryCounts, { CHAMPION: 5 })
+    assert.deepEqual(stats.typeCounts, { BUFF: 7 })
   })
 
   it('payload.stats가 없으면 top-level payload를 반환한다', () => {
@@ -48,23 +49,23 @@ describe('readPatchChangeStatsPayload', () => {
     const result = readPatchChangeStatsPayload(payload)
     const stats = toRecord(result)
 
-    expect(result).toBe(payload)
-    expect(stats.totalChanges).toBe(8)
-    expect(stats.categoryCounts).toEqual({ ITEM: 3 })
-    expect(stats.typeCounts).toEqual({ NERF: 2 })
+    assert.equal(result, payload)
+    assert.equal(stats.totalChanges, 8)
+    assert.deepEqual(stats.categoryCounts, { ITEM: 3 })
+    assert.deepEqual(stats.typeCounts, { NERF: 2 })
   })
 
   it('payload가 null 또는 undefined이면 원본 값을 반환한다', () => {
-    expect(readPatchChangeStatsPayload(null)).toBe(null)
-    expect(readPatchChangeStatsPayload(undefined)).toBe(undefined)
+    assert.equal(readPatchChangeStatsPayload(null), null)
+    assert.equal(readPatchChangeStatsPayload(undefined), undefined)
   })
 
   it('payload가 객체가 아니면 원본 값을 반환한다', () => {
     const textPayload = 'stats'
     const arrayPayload = ['stats']
 
-    expect(readPatchChangeStatsPayload(textPayload)).toBe(textPayload)
-    expect(readPatchChangeStatsPayload(arrayPayload)).toBe(arrayPayload)
+    assert.equal(readPatchChangeStatsPayload(textPayload), textPayload)
+    assert.equal(readPatchChangeStatsPayload(arrayPayload), arrayPayload)
   })
 
   it('payload.stats가 객체가 아니면 top-level payload를 반환한다', () => {
@@ -82,9 +83,9 @@ describe('readPatchChangeStatsPayload', () => {
     const result = readPatchChangeStatsPayload(payload)
     const stats = toRecord(result)
 
-    expect(result).toBe(payload)
-    expect(stats.totalChanges).toBe(5)
-    expect(stats.categoryCounts).toEqual({ CHAMPION: 2 })
-    expect(stats.typeCounts).toEqual({ BUFF: 1 })
+    assert.equal(result, payload)
+    assert.equal(stats.totalChanges, 5)
+    assert.deepEqual(stats.categoryCounts, { CHAMPION: 2 })
+    assert.deepEqual(stats.typeCounts, { BUFF: 1 })
   })
 })

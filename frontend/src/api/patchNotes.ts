@@ -1,5 +1,6 @@
 import axiosInstance from './axiosInstance'
 import { isRecord, unwrapApiResponse, type ApiResponse } from './apiResponse'
+import { readPatchChangeStatsPayload } from './patchNoteStatsPayload'
 
 export const CHANGE_CATEGORIES = ['챔피언', '시너지', '아이템', '증강체', '시스템'] as const
 export const PATCH_CATEGORIES = ['전체', ...CHANGE_CATEGORIES] as const
@@ -443,11 +444,6 @@ function normalizePatchChangeStats(payload: unknown, changes: PatchChange[], tot
     totalChanges,
     typeCounts,
   }
-}
-
-export function readPatchChangeStatsPayload(payload: unknown): unknown {
-  if (!isRecord(payload)) return payload
-  return isRecord(payload.stats) ? payload.stats : payload
 }
 
 function normalizePatchChangePage(payload: unknown, params: PatchChangesQuery): PatchChangePage | undefined {
