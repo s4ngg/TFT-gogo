@@ -445,7 +445,7 @@ function normalizePatchChangeStats(payload: unknown, changes: PatchChange[], tot
   }
 }
 
-function readPatchChangeStatsPayload(payload: unknown) {
+export function readPatchChangeStatsPayload(payload: unknown): unknown {
   if (!isRecord(payload)) return payload
   return isRecord(payload.stats) ? payload.stats : payload
 }
