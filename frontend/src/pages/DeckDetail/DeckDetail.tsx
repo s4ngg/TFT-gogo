@@ -152,9 +152,20 @@ interface HexBoardProps {
 function HexBoard({ visibleUnits, level, availableLevels, onLevelChange, locale, customPosMap }: HexBoardProps) {
 
   const placed = useMemo(() => {
-    if (customPosMap.size === 0) return []                        // 미설정 → 빈 보드
-    return buildCustomBoardPositions(visibleUnits, customPosMap)  // 관리자 배치
-  }, [visibleUnits, customPosMap])
+    // 관리자 배치 없음 → 전체 자동 배치
+    if (customPosMap.size === 0) return buildBoardPositions(visibleUnits, locale)
+
+    // 부분 매핑 검증 — visibleUnits 중 매핑 누락된 유닛이 있으면 자동 배치로 fallback
+    // (일부만 매핑된 상태로 커스텀 배치를 쓰면 미매핑 유닛이 보드에서 사라짐)
+    const allMapped = visibleUnits.every((c) => {
+      const apiName = getChampionApiName(c.imageUrl)
+      return apiName ? customPosMap.has(apiName) : false
+    })
+    if (!allMapped) return buildBoardPositions(visibleUnits, locale)
+
+    // 전체 매핑 확인 → 관리자 배치 사용
+    return buildCustomBoardPositions(visibleUnits, customPosMap)
+  }, [visibleUnits, customPosMap, locale])
 
   if (visibleUnits.length === 0) return null
 
@@ -351,10 +362,19 @@ function HeroAugmentsPanel({ augments }: { augments: HeroAugmentSummary[] }) {
   )
 }
 
+const VALID_RANK_FILTERS = ['MASTER_PLUS', 'DIAMOND_PLUS', 'EMERALD_PLUS'] as const
+type ValidRankFilter = typeof VALID_RANK_FILTERS[number]
+
+function isValidRankFilter(v: string | undefined): v is ValidRankFilter {
+  return VALID_RANK_FILTERS.includes(v as ValidRankFilter)
+}
+
 function DeckDetail() {
-  const { deckId } = useParams<{ deckId: string }>()
+  const { deckId, rankFilter: rankFilterParam } = useParams<{ deckId: string; rankFilter: string }>()
   const navigate = useNavigate()
-  const { data: metaDeckResponse, isLoading } = useMetaSnapshot()
+  // URL 파라미터 타입 가드 — 잘못된 값이면 기본값으로 fallback
+  const rankFilter: ValidRankFilter = isValidRankFilter(rankFilterParam) ? rankFilterParam : 'EMERALD_PLUS'
+  const { data: metaDeckResponse, isLoading } = useMetaSnapshot(rankFilter)
   const { data: locale } = useCDragonLocale()
   const metaDecks = metaDeckResponse?.decks ?? []
   const deck = metaDecks.find((d) => String(d.rank) === deckId)
