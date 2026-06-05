@@ -36,7 +36,14 @@ public class JwtTokenProvider {
 
     public boolean validateToken(String token) {
         try {
-            parseClaims(token);
+            Claims claims = parseClaims(token);
+            String subject = claims.getSubject();
+
+            if ((subject == null) || subject.isBlank()){
+                return false;
+            }
+
+            Long.valueOf(subject);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             return false;
