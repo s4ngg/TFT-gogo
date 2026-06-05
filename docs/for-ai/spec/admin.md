@@ -1,20 +1,33 @@
 <spec domain="admin">
 
 <purpose>
-Admin-only deck curation page. Compensates for automatic aggregation limitations.
+Admin-only curation and maintenance surface.
 Page: Admin (/admin).
 </purpose>
 
 <routes>
-- /admin → admin deck management dashboard
+- /admin -> admin management dashboard
 </routes>
 
 <api>
 <backend>
-- GET    /api/admin/decks                    — list all decks with curation state
-- POST   /api/admin/decks/meta/aggregate     — trigger meta deck re-aggregation
-- PATCH  /api/admin/decks/{deckId}           — update curation (name, hidden, order, positions)
-- DELETE /api/admin/decks/{deckId}/curation  — reset curation data for a deck
+- GET    /api/admin/decks                    -> list all decks with curation state
+- POST   /api/admin/decks/meta/aggregate     -> trigger meta deck re-aggregation
+- PATCH  /api/admin/decks/{deckId}           -> update deck curation
+- DELETE /api/admin/decks/{deckId}/curation  -> reset deck curation data
+
+- GET    /api/admin/guides                   -> list guide entries
+- POST   /api/admin/guides                   -> create guide entry
+- PATCH  /api/admin/guides/{guideId}         -> update guide entry
+- DELETE /api/admin/guides/{guideId}         -> soft delete guide entry
+
+- GET    /api/admin/patch-notes               -> list patch notes
+- POST   /api/admin/patch-notes               -> create patch note
+- PATCH  /api/admin/patch-notes/{patchNoteId} -> update patch note
+- DELETE /api/admin/patch-notes/{patchNoteId} -> soft delete patch note
+- POST   /api/admin/patch-note-changes        -> create patch change
+- PATCH  /api/admin/patch-note-changes/{changeId} -> update patch change
+- DELETE /api/admin/patch-note-changes/{changeId} -> soft delete patch change
 </backend>
 <frontend>
 - frontend/src/api/adminApi.ts
@@ -23,19 +36,43 @@ Page: Admin (/admin).
 
 <auth>
 - Authentication: X-Admin-Token request header.
+- Current implementation uses AdminTokenFilter for /api/admin/**.
+- Swagger uses the X-Admin-Token API key security scheme.
 - Future plan: migrate to ROLE_ADMIN-based Spring Security.
 - Never expose admin endpoints without the token check.
+- Admin auth failure response shape is a known follow-up item until it uses the common ApiResponse format.
 </auth>
 
 <business-rules>
+- Admin APIs are curation tools. They should not bypass public-domain validation rules.
+- Admin delete operations should prefer soft delete when the domain table has isActive/deletedAt.
+- Request validation belongs in Request DTOs and Service-level guards for important invariants.
+- Swagger annotations belong in XxxControllerDocs interfaces, not directly in Controllers.
+</business-rules>
+
+<deck-curation>
 - Admin can override the auto-generated deck name.
 - Admin can hide a deck (marks as hidden; does NOT delete the data).
 - Admin can set manual display order for decks.
 - Admin can assign hex-board positions per champion per deck level.
-  - If positions are set, deck detail uses them instead of CDragon auto-layout.
-  - Positions are stored per deck signature so they survive re-aggregation.
+- If positions are set, deck detail uses them instead of CDragon auto-layout.
+- Positions are stored per deck signature so they survive re-aggregation.
 - Curation data key: deck signature (top-2 trait combination).
-</business-rules>
+</deck-curation>
+
+<guide-curation>
+- Admin can create, update, list, and soft delete guide entries.
+- guideType + targetKey + patchVersion identifies one guide entry.
+- dataJson must be a JSON object.
+- active=false hides an entry from public guide responses.
+</guide-curation>
+
+<patch-note-curation>
+- Admin can create, update, list, and soft delete patch notes.
+- Admin can create, update, and soft delete patch changes.
+- isCurrent must stay unique among active, non-deleted patch notes.
+- highlightsJson and tagsJson must be JSON string arrays.
+</patch-note-curation>
 
 <frontend-structure>
 - frontend/src/pages/Admin/
