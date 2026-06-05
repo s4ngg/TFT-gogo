@@ -9,6 +9,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -51,6 +52,16 @@ public class GlobalExceptionHandler {
                         message,
                         ErrorCode.INVALID_INPUT.getStatus()
                 ));
+    }
+
+    // ── enum / 타입 변환 실패 (@RequestParam, @PathVariable) ──
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Void>> handleTypeMismatchException(MethodArgumentTypeMismatchException e) {
+        String message = String.format("'%s' 파라미터에 유효하지 않은 값입니다: %s", e.getName(), e.getValue());
+        logger.warn("TypeMismatchException - param: {}, value: {}", e.getName(), e.getValue());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.fail(message, HttpStatus.BAD_REQUEST));
     }
 
     // ── 그 외 예상치 못한 예외 ─────────────────────────────
