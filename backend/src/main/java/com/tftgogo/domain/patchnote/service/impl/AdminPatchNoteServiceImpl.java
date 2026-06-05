@@ -22,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -55,7 +56,7 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public PatchNoteResponse createPatchNote(AdminPatchNoteRequest request) {
         validateUniqueVersion(request.getVersion(), null);
         if (request.isCurrent()) {
@@ -80,7 +81,7 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public PatchNoteResponse updatePatchNote(Long patchNoteId, AdminPatchNoteRequest request) {
         PatchNote patchNote = findPatchNote(patchNoteId);
         validateUniqueVersion(request.getVersion(), patchNoteId);
