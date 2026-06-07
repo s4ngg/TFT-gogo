@@ -30,6 +30,7 @@ public enum ErrorCode {
 
     // ── 패치노트 ───────────────────────────────────────
     PATCH_NOTE_NOT_FOUND(HttpStatus.NOT_FOUND, "패치노트를 찾을 수 없습니다."),
+    PATCH_CHANGE_NOT_FOUND(HttpStatus.NOT_FOUND, "패치 변경사항을 찾을 수 없습니다."),
     PATCH_NOTE_INVALID_DATA(HttpStatus.INTERNAL_SERVER_ERROR, "패치노트 데이터 형식이 올바르지 않습니다."),
 
     // ── 전적 ────────────────────────────────────────────
