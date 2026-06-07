@@ -1,6 +1,7 @@
 package com.tftgogo.domain.guide.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tftgogo.domain.guide.dto.response.GuideEntryResponse;
 import com.tftgogo.domain.guide.dto.response.GuidePageResponse;
 import com.tftgogo.domain.guide.entity.Guide;
 import com.tftgogo.domain.guide.entity.GuideType;
@@ -14,9 +15,11 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -36,7 +39,8 @@ class GuideServiceImplTest {
     void 챔피언_탭은_cost_필터를_적용한다() {
         // given
         Guide fourCostChampion = championGuide("kaisa", "카이사", 4, 1);
-        when(guideRepository.findFilteredGuides(GuideType.CHAMPION.name(), null, null, 4))
+        when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
+        when(guideRepository.findFilteredGuides(GuideType.CHAMPION.name(), "17.0", null, 4))
                 .thenReturn(List.of(fourCostChampion));
 
         // when
@@ -53,14 +57,15 @@ class GuideServiceImplTest {
 
         // then
         assertThat(response.getItems()).hasSize(1);
-        verify(guideRepository).findFilteredGuides(GuideType.CHAMPION.name(), null, null, 4);
+        verify(guideRepository).findFilteredGuides(GuideType.CHAMPION.name(), "17.0", null, 4);
     }
 
     @Test
     void dataJson은_JSON_object로_응답한다() {
         // given
         Guide champion = championGuide("kaisa", "카이사", 4, 1);
-        when(guideRepository.findFilteredGuides(GuideType.CHAMPION.name(), null, null, null))
+        when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
+        when(guideRepository.findFilteredGuides(GuideType.CHAMPION.name(), "17.0", null, null))
                 .thenReturn(List.of(champion));
 
         // when
@@ -81,6 +86,83 @@ class GuideServiceImplTest {
                 .hasFieldOrPropertyWithValue("name", "카이사")
                 .extracting("dataJson")
                 .satisfies(dataJson -> assertThat(dataJson.toString()).contains("\"cost\":4"));
+    }
+
+    @Test
+    void 카탈로그는_최신_패치버전만_조회한다() {
+        // given
+        Guide latestChampion = championGuide("jinx", "징크스", 4, 1, "17.1");
+        when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.1"));
+        when(guideRepository.findByPatchVersionAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc("17.1"))
+                .thenReturn(List.of(latestChampion));
+
+        // when
+        List<GuideEntryResponse> response = guideService.getGuideCatalog();
+
+        // then
+        assertThat(response).hasSize(1);
+        assertThat(response.get(0).getPatchVersion()).isEqualTo("17.1");
+        verify(guideRepository)
+                .findByPatchVersionAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc("17.1");
+    }
+
+    @Test
+    void 명시한_패치버전은_최신_패치_조회없이_사용한다() {
+        // given
+        Guide champion = championGuide("kaisa", "카이사", 4, 1);
+        when(guideRepository.findFilteredGuides(GuideType.CHAMPION.name(), "17.0", null, null))
+                .thenReturn(List.of(champion));
+
+        // when
+        GuidePageResponse<?> response = guideService.getGuideTabItems(
+                "champions",
+                "17.0",
+                null,
+                1,
+                10,
+                null,
+                null,
+                null
+        );
+
+        // then
+        assertThat(response.getItems()).hasSize(1);
+        verify(guideRepository, never()).findLatestPatchVersion();
+        verify(guideRepository).findFilteredGuides(GuideType.CHAMPION.name(), "17.0", null, null);
+    }
+
+    @Test
+    void 검색어는_LIKE_와일드카드를_escape한다() {
+        // given
+        Guide champion = championGuide("kaisa", "카이사", 4, 1);
+        when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
+        when(guideRepository.findFilteredGuides(
+                GuideType.CHAMPION.name(),
+                "17.0",
+                "카이사\\_\\%\\\\",
+                null
+        )).thenReturn(List.of(champion));
+
+        // when
+        GuidePageResponse<?> response = guideService.getGuideTabItems(
+                "champions",
+                null,
+                "카이사_%\\",
+                1,
+                10,
+                null,
+                null,
+                null
+        );
+
+        // then
+        assertThat(response.getItems()).hasSize(1);
+        verify(guideRepository).findFilteredGuides(
+                GuideType.CHAMPION.name(),
+                "17.0",
+                "카이사\\_\\%\\\\",
+                null
+        );
     }
 
     @Test
@@ -118,7 +200,8 @@ class GuideServiceImplTest {
         // given
         Guide lowTop4Champion = championGuideWithTop4("kaisa", "카이사", "% 15 . 5", 1);
         Guide highTop4Champion = championGuideWithTop4("jinx", "징크스", "20.5%", 2);
-        when(guideRepository.findFilteredGuides(GuideType.CHAMPION.name(), null, null, null))
+        when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
+        when(guideRepository.findFilteredGuides(GuideType.CHAMPION.name(), "17.0", null, null))
                 .thenReturn(List.of(lowTop4Champion, highTop4Champion));
 
         // when
@@ -139,6 +222,10 @@ class GuideServiceImplTest {
     }
 
     private Guide championGuide(String targetKey, String name, int cost, int sortOrder) {
+        return championGuide(targetKey, name, cost, sortOrder, "17.0");
+    }
+
+    private Guide championGuide(String targetKey, String name, int cost, int sortOrder, String patchVersion) {
         return Guide.builder()
                 .guideType(GuideType.CHAMPION)
                 .targetKey(targetKey)
@@ -146,7 +233,7 @@ class GuideServiceImplTest {
                 .summary(name + " 요약")
                 .imageUrl("https://example.com/" + targetKey + ".png")
                 .dataJson("{\"cost\":" + cost + ",\"role\":\"캐리\",\"traits\":[\"도전자\"],\"bestItems\":[],\"stats\":{}}")
-                .patchVersion("17.0")
+                .patchVersion(patchVersion)
                 .sortOrder(sortOrder)
                 .active(true)
                 .build();
