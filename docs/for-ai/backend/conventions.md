@@ -39,6 +39,8 @@
 <security>
 - Never store passwords or auth codes in plain text. Use BCrypt.
 - Never log JWT tokens.
+- Bind JWT settings with `@ConfigurationProperties` using `jwt.secret` and `jwt.access-token-expiration-millis`.
+- Validate JWT secret at startup as nonblank and at least 32 characters, and validate token expiration as positive.
 </security>
 
 <structure>
