@@ -93,3 +93,57 @@ export async function resetDeckCuration(deckId: number): Promise<void> {
     headers: adminHeaders(),
   })
 }
+
+// ── 영웅증강 덱 ────────────────────────────────────────────────────────────
+
+export interface HeroAugmentDeckItem {
+  id: number
+  name: string
+  description: string | null
+  champions: string | null
+  traits: string | null
+  boardPositions: string | null
+  heroAugments: string | null
+  recommended: boolean
+  sortOrder: number
+  grade: string | null
+}
+
+export interface HeroAugmentDeckPayload {
+  name: string
+  description: string | null
+  champions: string | null
+  traits: string | null
+  boardPositions: string | null
+  heroAugments: string | null
+  recommended: boolean
+  sortOrder: number
+  grade: string | null
+}
+
+export async function fetchAdminHeroAugmentDecks(): Promise<HeroAugmentDeckItem[]> {
+  const { data } = await axiosInstance.get('/admin/hero-augment-decks', {
+    headers: adminHeaders(),
+  })
+  return data.data
+}
+
+export async function createHeroAugmentDeck(payload: HeroAugmentDeckPayload): Promise<HeroAugmentDeckItem> {
+  const { data } = await axiosInstance.post('/admin/hero-augment-decks', payload, {
+    headers: adminHeaders(),
+  })
+  return data.data
+}
+
+export async function updateHeroAugmentDeck(id: number, payload: HeroAugmentDeckPayload): Promise<HeroAugmentDeckItem> {
+  const { data } = await axiosInstance.put(`/admin/hero-augment-decks/${id}`, payload, {
+    headers: adminHeaders(),
+  })
+  return data.data
+}
+
+export async function deleteHeroAugmentDeck(id: number): Promise<void> {
+  await axiosInstance.delete(`/admin/hero-augment-decks/${id}`, {
+    headers: adminHeaders(),
+  })
+}

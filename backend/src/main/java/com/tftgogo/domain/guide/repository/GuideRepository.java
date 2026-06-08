@@ -1,6 +1,7 @@
 package com.tftgogo.domain.guide.repository;
 
 import com.tftgogo.domain.guide.entity.Guide;
+import com.tftgogo.domain.guide.entity.GuideType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -23,6 +24,37 @@ public interface GuideRepository extends JpaRepository<Guide, Long> {
             LIMIT 1
             """, nativeQuery = true)
     Optional<String> findLatestPatchVersion();
+
+    Optional<Guide> findByIdAndDeletedAtIsNull(Long id);
+
+    // Soft-deleted guide rows intentionally keep reserving this unique key.
+    boolean existsByGuideTypeAndTargetKeyAndPatchVersion(
+            GuideType guideType,
+            String targetKey,
+            String patchVersion
+    );
+
+    boolean existsByGuideTypeAndTargetKeyAndPatchVersionAndIdNot(
+            GuideType guideType,
+            String targetKey,
+            String patchVersion,
+            Long id
+    );
+
+    @Query("""
+            SELECT g
+            FROM Guide g
+            WHERE g.deletedAt IS NULL
+              AND (:guideType IS NULL OR g.guideType = :guideType)
+              AND (:patchVersion IS NULL OR g.patchVersion = :patchVersion)
+              AND (:active IS NULL OR g.active = :active)
+            ORDER BY g.patchVersion DESC, g.guideType ASC, g.sortOrder ASC, g.id ASC
+            """)
+    List<Guide> findAdminGuides(
+            @Param("guideType") GuideType guideType,
+            @Param("patchVersion") String patchVersion,
+            @Param("active") Boolean active
+    );
 
     @Query(value = """
             SELECT *

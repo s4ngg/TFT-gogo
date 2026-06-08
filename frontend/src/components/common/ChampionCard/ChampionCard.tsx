@@ -48,7 +48,20 @@ function ChampionCard({ label, imageUrl, items = [], stars = 2, hasItem = false,
       {equippedItems.length > 0 && (
         <span className={styles.itemTray}>
           {equippedItems.map((item) => (
-            <img className={styles.itemIcon} src={item.imageUrl} alt={item.name} key={item.name} />
+            <img
+              className={styles.itemIcon}
+              src={item.imageUrl}
+              alt={item.name}
+              key={item.name}
+              onError={(e) => {
+                const img = e.currentTarget
+                if (img.src.includes('.tft_set17.')) {
+                  img.src = img.src.replace('.tft_set17.', '.tft_set13.')
+                } else {
+                  img.style.opacity = '0'
+                }
+              }}
+            />
           ))}
         </span>
       )}

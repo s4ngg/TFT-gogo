@@ -85,6 +85,25 @@ public class Guide {
         this.active = active;
     }
 
+    public void update(GuideType guideType, String targetKey, String name, String summary,
+                       String imageUrl, String dataJson, String patchVersion, int sortOrder,
+                       boolean active) {
+        this.guideType = guideType;
+        this.targetKey = targetKey;
+        this.name = name;
+        this.summary = summary;
+        this.imageUrl = imageUrl;
+        this.dataJson = dataJson;
+        this.patchVersion = patchVersion;
+        this.sortOrder = sortOrder;
+        this.active = active;
+    }
+
+    public void softDelete() {
+        this.active = false;
+        this.deletedAt = LocalDateTime.now();
+    }
+
     @PrePersist
     protected void onCreate() {
         LocalDateTime now = LocalDateTime.now();
