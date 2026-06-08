@@ -9,7 +9,7 @@ import DeckRow from './DeckRow'
 import TableHead from './TableHead'
 import styles from '../Decks.module.css'
 
-const TIER_ORDER: TierBadgeValue[] = ['S', 'A', 'B', 'C', 'D']
+const TIER_ORDER: TierBadgeValue[] = ['S', 'A+', 'A', 'B', 'C', 'D']
 const TIER_COLOR: Record<TierBadgeValue, string> = {
   S: '#04f3e5', 'A+': '#f7d26d', A: '#a78bfa', B: '#60a5fa', C: '#818cf8', D: '#6b7280',
 }
