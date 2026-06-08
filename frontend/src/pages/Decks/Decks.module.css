@@ -160,7 +160,10 @@
 }
 
 .nameCol { text-align: left !important; padding-left: 10px !important; min-width: 190px; }
-.champCol { text-align: left !important; }
+.champCol {
+  text-align: left !important;
+  padding-bottom: 20px !important;
+}
 
 .sortTh { cursor: pointer; user-select: none; }
 .sortTh:hover { color: #c0c8d0; }
@@ -312,278 +315,91 @@
   white-space: nowrap;
 }
 
-.artifactBadge {
-  border-color: rgba(249, 200, 96, 0.35);
-  color: #f9c860;
-  background: rgba(249, 200, 96, 0.18);
+.heroAugBadge {
+  border-color: rgba(167, 139, 250, 0.4);
+  color: #c4b5fd;
+  background: rgba(167, 139, 250, 0.12);
 }
 
 /* ════════════════════════════
-   영웅 증강 — 캐러셀
+   영웅증강 덱 그리드
 ════════════════════════════ */
-
-/* 내비게이션 버튼 */
-.carouselBtns {
-  display: flex;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.carouselBtn {
+.haDeckGrid {
   display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border: 1px solid rgba(110, 142, 150, 0.28);
-  border-radius: 6px;
-  background: rgba(8, 20, 28, 0.8);
-  color: #8e97a1;
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
 }
 
-.carouselBtn:hover {
-  border-color: rgba(4, 243, 229, 0.4);
-  color: #04f3e5;
-}
-
-/* 가로 스크롤 트랙 */
-.augmentCarousel {
+.haDeckCard {
   display: flex;
+  flex-direction: column;
   gap: 12px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  padding-bottom: 10px;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(4, 243, 229, 0.25) rgba(10, 22, 30, 0.5);
-}
-
-.augmentCarousel::-webkit-scrollbar        { height: 4px; }
-.augmentCarousel::-webkit-scrollbar-track  { background: rgba(10, 22, 30, 0.5); border-radius: 2px; }
-.augmentCarousel::-webkit-scrollbar-thumb  { background: rgba(4, 243, 229, 0.25); border-radius: 2px; }
-
-/* 카드 (고정 폭으로 캐러셀 동작) */
-.augmentCard {
-  flex: 0 0 290px;
-  scroll-snap-align: start;
   padding: 16px 18px;
-  border: 1px solid rgba(4, 243, 229, 0.14);
+  border: 1px solid rgba(167, 139, 250, 0.18);
   border-radius: 10px;
-  background: linear-gradient(180deg, rgba(5, 50, 58, 0.28), rgba(6, 16, 22, 0.96));
+  background: linear-gradient(180deg, rgba(8, 21, 29, 0.96), rgba(5, 15, 21, 0.96));
   transition: border-color 0.15s;
 }
 
-.augmentCard:hover                         { border-color: rgba(4, 243, 229, 0.32); }
-.augmentCard[data-recommended="false"]     { border-color: rgba(248, 113, 113, 0.14); }
-.augmentCard[data-recommended="false"]:hover { border-color: rgba(248, 113, 113, 0.3); }
+.haDeckCard:hover {
+  border-color: rgba(167, 139, 250, 0.36);
+}
 
-.augCardTop {
+.haDeckCardHead {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
   gap: 8px;
-  margin-bottom: 10px;
 }
 
-.augHeroName { color: #fff; font-size: 15px; font-weight: 700; }
-.augName     { color: #04f3e5; font-size: 13px; font-weight: 600; }
-
-/* 추천 / 비추천 배지 */
-.augRecommendBadge {
-  flex-shrink: 0;
-  padding: 3px 8px;
-  border: 1px solid rgba(4, 243, 229, 0.35);
-  border-radius: 4px;
-  background: rgba(4, 243, 229, 0.1);
-  color: #04f3e5;
-  font-size: 11px;
+.haDeckName {
+  color: #fff;
+  font-size: 15px;
   font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
-.augNotRecommendBadge {
-  flex-shrink: 0;
-  padding: 3px 8px;
-  border: 1px solid rgba(248, 113, 113, 0.3);
-  border-radius: 4px;
-  background: rgba(248, 113, 113, 0.08);
-  color: #f87171;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.augDesc {
-  margin: 0 0 10px;
-  color: #8e97a1;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.augTags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-bottom: 12px;
-}
-
-.augTag {
-  padding: 2px 8px;
-  border: 1px solid rgba(110, 142, 150, 0.22);
-  border-radius: 4px;
-  color: #7a8790;
-  background: rgba(10, 22, 30, 0.8);
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.augChamps {
+.haDeckChamps {
   display: flex;
   align-items: flex-end;
   gap: 6px;
-  margin-bottom: 14px;
+  flex-wrap: wrap;
+  padding-bottom: 4px;
 }
 
-.augStats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(112, 144, 152, 0.1);
-  text-align: center;
-}
-
-.augStats small   { display: block; margin-bottom: 3px; color: #5a6470; font-size: 11px; }
-.augStats strong  { display: block; font-size: 15px; font-weight: 700; }
-
-/* ════════════════════════════
-   유물 섹션
-════════════════════════════ */
-.artifactSearch {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 34px;
-  padding: 0 12px;
-  border: 1px solid rgba(110, 142, 150, 0.3);
-  border-radius: 7px;
-  color: #8e97a1;
-  background: rgba(5, 14, 20, 0.9);
-  flex-shrink: 0;
-}
-
-.artifactSearch input {
-  width: 160px;
-  border: none;
-  outline: none;
-  color: #fff;
-  background: transparent;
-  font-size: 13px;
-}
-
-.artifactSearch input::placeholder { color: #5a6470; }
-
-.artifactList {
+.haDeckAugments {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 5px;
 }
 
-.artifactRow {
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  align-items: center;
-  gap: 16px;
-  padding: 14px 18px;
-  border: 1px solid rgba(112, 144, 152, 0.14);
-  border-radius: 10px;
-  background: rgba(8, 20, 28, 0.8);
-}
-
-.artifactItem {
+.haDeckAugRow {
   display: flex;
-  flex-direction: row;
   align-items: center;
-  gap: 12px;
-  min-width: 200px;
+  gap: 6px;
 }
 
-.artifactItemInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.artifactIcon {
-  width: 48px;
-  height: 48px;
-  border-radius: 8px;
-  border: 1px solid rgba(249, 200, 96, 0.3);
-  object-fit: cover;
+.haDeckAugIcon {
   flex-shrink: 0;
+  color: #c4b5fd;
 }
 
-.artifactName {
-  color: #f9c860;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.artifactDelta {
-  color: var(--color-success);
+.haDeckAugChamp {
+  color: #dde3e9;
   font-size: 12px;
   font-weight: 600;
-}
-
-.artifactUnits {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.artifactUnit {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
-.artifactChampImg {
-  width: 40px;
-  height: 40px;
-  border-radius: 6px;
-  object-fit: cover;
-}
-
-.artifactUnitName {
-  color: #8e97a1;
-  font-size: 11px;
-  text-align: center;
-  max-width: 48px;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* 더보기 버튼 */
-.showMoreBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  margin-top: 10px;
-  padding: 10px;
-  border: 1px solid rgba(112, 144, 152, 0.18);
-  border-radius: 8px;
-  background: rgba(8, 20, 28, 0.5);
-  color: #6b7580;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
+.haDeckAugName {
+  color: #c4b5fd;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
-.showMoreBtn:hover {
-  border-color: rgba(4, 243, 229, 0.3);
-  color: #04f3e5;
-  background: rgba(4, 243, 229, 0.04);
+.haDeckDesc {
+  margin: 0;
+  color: #6b757e;
+  font-size: 12px;
+  line-height: 1.55;
 }
