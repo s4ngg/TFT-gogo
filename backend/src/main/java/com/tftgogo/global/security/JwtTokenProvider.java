@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -34,20 +35,23 @@ public class JwtTokenProvider {
         return Long.valueOf(subject);
     }
 
-    public boolean validateToken(String token) {
+    public Optional<Long> getUserIdIfValid(String token) {
         try {
             Claims claims = parseClaims(token);
             String subject = claims.getSubject();
 
-            if ((subject == null) || subject.isBlank()){
-                return false;
+            if (subject == null || subject.isBlank()) {
+                return Optional.empty();
             }
 
-            Long.valueOf(subject);
-            return true;
+            return Optional.of(Long.valueOf(subject));
         } catch (JwtException | IllegalArgumentException e) {
-            return false;
+            return Optional.empty();
         }
+    }
+
+    public boolean validateToken(String token) {
+        return getUserIdIfValid(token).isPresent();
     }
 
     private Claims parseClaims(String token) {
