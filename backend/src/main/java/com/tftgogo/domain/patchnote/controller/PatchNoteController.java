@@ -30,13 +30,13 @@ public class PatchNoteController implements PatchNoteControllerDocs {
 
     @GetMapping("/{version}/changes")
     public ResponseEntity<ApiResponse<PatchChangePageResponse>> getPatchChanges(
-            @PathVariable String version,
-            @RequestParam(required = false) String category,
-            @RequestParam(required = false) String type,
-            @RequestParam(required = false) String impact,
-            @RequestParam(required = false) String query,
-            @RequestParam(required = false) Integer page,
-            @RequestParam(required = false) Integer pageSize) {
+            @PathVariable("version") String version,
+            @RequestParam(name = "category", required = false) String category,
+            @RequestParam(name = "type", required = false) String type,
+            @RequestParam(name = "impact", required = false) String impact,
+            @RequestParam(name = "query", required = false) String query,
+            @RequestParam(name = "page", required = false) Integer page,
+            @RequestParam(name = "pageSize", required = false) Integer pageSize) {
         PatchChangePageResponse response = patchNoteService.getPatchChanges(
                 version,
                 category,

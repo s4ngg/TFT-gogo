@@ -102,6 +102,30 @@ public class PatchChange {
         this.active = active;
     }
 
+    public void update(PatchNote patchNote, PatchChangeCategory category, PatchChangeType changeType,
+                       PatchChangeImpact impact, String targetKey, String targetName, String summary,
+                       String beforeValue, String afterValue, String imageUrl, String tagsJson,
+                       int sortOrder) {
+        this.patchNote = patchNote;
+        this.category = category;
+        this.changeType = changeType;
+        this.impact = impact;
+        this.targetKey = targetKey;
+        this.targetName = targetName;
+        this.summary = summary;
+        this.beforeValue = beforeValue;
+        this.afterValue = afterValue;
+        this.imageUrl = imageUrl;
+        this.tagsJson = tagsJson;
+        this.sortOrder = sortOrder;
+    }
+
+    public void softDelete() {
+        LocalDateTime now = LocalDateTime.now();
+        this.active = false;
+        this.deletedAt = now;
+    }
+
     @PrePersist
     protected void onCreate() {
         LocalDateTime now = LocalDateTime.now();

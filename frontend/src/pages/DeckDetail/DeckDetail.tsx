@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, BookOpen, Map as MapIcon, Swords, Trophy } from 'lucide-react'
+import { ArrowLeft, BookOpen, Map as MapIcon, Swords, Trophy, Zap } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AppLayout } from '../../components/layout'
 import TierBadge from '../../components/common/TierBadge'
@@ -9,11 +9,19 @@ import { useCDragonLocale } from '../../hooks/useCDragonLocale'
 import { getChampionApiName, getChampionDetail, getChampionName, getChampionShortName, getItemName, getTraitName } from '../../api/cdragonLocale'
 import type { TFTLocale } from '../../api/cdragonLocale'
 import { tftItemIconUrl, tftItemIconOnError } from '../../api/communityDragonAssets'
-import type { ChampionSummary, MetaDeck } from '../Dashboard/dashboardData'
+import type { ChampionSummary, MetaDeck, HeroAugmentSummary } from '../Dashboard/dashboardData'
 import styles from './DeckDetail.module.css'
 
 const BOARD_ROWS = 4
 const BOARD_COLS = 7
+
+// CSS Modules에서 동적 클래스 접근을 Record 상수로 대체 (lint 안전, 타입 안정성)
+const BP_TIER_STYLES: Record<string, string> = {
+  bronze:    styles.bpBronze,
+  silver:    styles.bpSilver,
+  gold:      styles.bpGold,
+  prismatic: styles.bpPrismatic,
+}
 
 function isCarry(champ: ChampionSummary): boolean {
   return (champ.recommendedItems?.length ?? 0) > 0
@@ -138,16 +146,26 @@ interface HexBoardProps {
   availableLevels: number[]
   onLevelChange: (lv: number) => void
   locale: TFTLocale | undefined
-  boardPositionsJson?: string | null
+  customPosMap: Map<string, CellPosData>
 }
 
-function HexBoard({ visibleUnits, level, availableLevels, onLevelChange, locale, boardPositionsJson }: HexBoardProps) {
-  const customPosMap = useMemo(() => parseBoardPositions(boardPositionsJson, level), [boardPositionsJson, level])
+function HexBoard({ visibleUnits, level, availableLevels, onLevelChange, locale, customPosMap }: HexBoardProps) {
 
   const placed = useMemo(() => {
-    if (customPosMap.size === 0) return []                        // 미설정 → 빈 보드
-    return buildCustomBoardPositions(visibleUnits, customPosMap)  // 관리자 배치
-  }, [visibleUnits, customPosMap])
+    // 관리자 배치 없음 → 전체 자동 배치
+    if (customPosMap.size === 0) return buildBoardPositions(visibleUnits, locale)
+
+    // 부분 매핑 검증 — visibleUnits 중 매핑 누락된 유닛이 있으면 자동 배치로 fallback
+    // (일부만 매핑된 상태로 커스텀 배치를 쓰면 미매핑 유닛이 보드에서 사라짐)
+    const allMapped = visibleUnits.every((c) => {
+      const apiName = getChampionApiName(c.imageUrl)
+      return apiName ? customPosMap.has(apiName) : false
+    })
+    if (!allMapped) return buildBoardPositions(visibleUnits, locale)
+
+    // 전체 매핑 확인 → 관리자 배치 사용
+    return buildCustomBoardPositions(visibleUnits, customPosMap)
+  }, [visibleUnits, customPosMap, locale])
 
   if (visibleUnits.length === 0) return null
 
@@ -313,10 +331,50 @@ function ItemsPanel({ deck, locale }: { deck: MetaDeck; locale: TFTLocale | unde
   )
 }
 
+function HeroAugmentsPanel({ augments }: { augments: HeroAugmentSummary[] }) {
+  if (augments.length === 0) return null
+  return (
+    <section className={styles.panel}>
+      <div className={styles.panelHead}>
+        <Zap size={16} />
+        <h2>영웅 증강</h2>
+        <span className={styles.panelSub}>해금 증강 효과</span>
+      </div>
+      <div className={styles.heroAugList}>
+        {augments.map((aug) => (
+          <div key={`${aug.championId}-${aug.augmentName}`} className={styles.heroAugEntry}>
+            <div className={styles.heroAugChamp}>
+              {aug.imageUrl && (
+                <img
+                  src={aug.imageUrl}
+                  alt={aug.championName}
+                  className={styles.heroAugChampImg}
+                  onError={(e) => { e.currentTarget.style.opacity = '0.3' }}
+                />
+              )}
+              <span className={styles.heroAugChampName}>{aug.championName}</span>
+            </div>
+            <div className={styles.heroAugBadge}>{aug.augmentName}</div>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+const VALID_RANK_FILTERS = ['MASTER_PLUS', 'DIAMOND_PLUS', 'EMERALD_PLUS'] as const
+type ValidRankFilter = typeof VALID_RANK_FILTERS[number]
+
+function isValidRankFilter(v: string | undefined): v is ValidRankFilter {
+  return VALID_RANK_FILTERS.includes(v as ValidRankFilter)
+}
+
 function DeckDetail() {
-  const { deckId } = useParams<{ deckId: string }>()
+  const { deckId, rankFilter: rankFilterParam } = useParams<{ deckId: string; rankFilter: string }>()
   const navigate = useNavigate()
-  const { data: metaDeckResponse, isLoading } = useMetaSnapshot()
+  // URL 파라미터 타입 가드 — 잘못된 값이면 기본값으로 fallback
+  const rankFilter: ValidRankFilter = isValidRankFilter(rankFilterParam) ? rankFilterParam : 'EMERALD_PLUS'
+  const { data: metaDeckResponse, isLoading } = useMetaSnapshot(rankFilter)
   const { data: locale } = useCDragonLocale()
   const metaDecks = metaDeckResponse?.decks ?? []
   const deck = metaDecks.find((d) => String(d.rank) === deckId)
@@ -355,23 +413,36 @@ function DeckDetail() {
     [prioritized, level],
   )
 
-  // 시너지: visibleUnits 기반 재계산 → 레벨 탭 바꾸면 자동 동기화
+  // 배치판 포지션 맵 (DeckDetail에서 관리 → HexBoard·시너지 공유)
+  const customPosMap = useMemo(
+    () => parseBoardPositions(deck?.boardPositions, level),
+    [deck?.boardPositions, level],
+  )
+
+  // 배치판에 실제 올라간 유닛만 → 시너지 계산 소스
+  const placedUnits = useMemo(() => {
+    if (customPosMap.size === 0) return []
+    return visibleUnits.filter((champ) => {
+      const apiName = getChampionApiName(champ.imageUrl)
+      return apiName ? customPosMap.has(apiName) : false
+    })
+  }, [visibleUnits, customPosMap])
+
+  // 시너지: 배치된 유닛 기반 재계산 → 레벨 탭 바꾸면 자동 동기화
   const traitCounts = useMemo(
-    () => computeTraitCounts(visibleUnits, locale),
-    [visibleUnits, locale],
+    () => computeTraitCounts(placedUnits, locale),
+    [placedUnits, locale],
   )
   const displayTraits = useMemo(() => {
     if (!deck) return []
-    const computed = deck.traits
+    // 관리자 배치 미설정 → 덱에 저장된 traits 그대로 표시 (시너지 패널 숨김 방지)
+    if (customPosMap.size === 0) return deck.traits
+    if (placedUnits.length === 0) return []
+    return deck.traits
       .map((t) => ({ ...t, count: traitCounts.get(t.name) ?? 0 }))
       .filter((t) => (traitCounts.get(t.name) ?? 0) >= 2)
       .sort((a, b) => b.count - a.count)
-    // CDragon traits 미로드 또는 데이터 없음 → 저장된 API 데이터로 폴백
-    if (computed.length === 0 && deck.traits.length > 0) {
-      return [...deck.traits].sort((a, b) => b.count - a.count)
-    }
-    return computed
-  }, [deck, traitCounts])
+  }, [deck, traitCounts, placedUnits.length, customPosMap.size])
 
   // ── Early returns (hooks 이후) ───────────────────────────────
   if (isLoading) {
@@ -420,11 +491,6 @@ function DeckDetail() {
 
         <div className={styles.statsRow}>
           <div className={styles.statItem}>
-            <small>승률</small>
-            <strong className={styles.green}>{deck.winRate}</strong>
-          </div>
-          <div className={styles.statDivider} />
-          <div className={styles.statItem}>
             <small>TOP 4</small>
             <strong className={styles.cyan}>{deck.top4}</strong>
           </div>
@@ -438,15 +504,6 @@ function DeckDetail() {
             <small>선택률</small>
             <strong className={styles.gold}>{deck.pickRate}</strong>
           </div>
-          {deck.sampleSize != null && (
-            <>
-              <div className={styles.statDivider} />
-              <div className={styles.statItem}>
-                <small>표본 수</small>
-                <strong className={styles.muted}>n={deck.sampleSize}</strong>
-              </div>
-            </>
-          )}
         </div>
 
         {/* 배치판: level·visibleUnits를 부모에서 공급 */}
@@ -456,31 +513,54 @@ function DeckDetail() {
           availableLevels={availableLevels}
           onLevelChange={setLevel}
           locale={locale}
-          boardPositionsJson={deck.boardPositions}
+          customPosMap={customPosMap}
         />
 
-        {/* 시너지 구성: visibleUnits 기반 → 레벨 탭 변경 시 자동 동기화 */}
-        <section className={styles.panel}>
+        {/* 시너지 구성: 배치판 기반 → 배치 미설정 시 숨김 */}
+        {displayTraits.length > 0 && <section className={styles.panel}>
           <div className={styles.panelHead}>
             <Trophy size={16} />
             <h2>시너지 구성</h2>
             <span className={styles.panelSub}>Lv.{level} 기준</span>
           </div>
           <div className={styles.traitList}>
-            {displayTraits.map((trait) => (
-              <div key={trait.name} className={styles.traitItem}>
-                <TraitHexBadge
-                  count={trait.count}
-                  iconUrl={trait.iconUrl}
-                  name={getTraitName(trait.name, locale)}
-                  tone={trait.tone}
-                />
-                <span className={styles.traitName}>{getTraitName(trait.name, locale)}</span>
-                <span className={styles.traitCount}>{trait.count}조각</span>
-              </div>
-            ))}
+            {displayTraits.map((trait) => {
+              const traitDetail = locale?.traitDetailBySuffix.get(trait.name.toLowerCase())
+              return (
+                <div key={trait.name} className={styles.traitItem}>
+                  <TraitHexBadge
+                    count={trait.count}
+                    iconUrl={trait.iconUrl}
+                    name={getTraitName(trait.name, locale)}
+                    tone={trait.tone}
+                  />
+                  <div className={styles.traitInfo}>
+                    <span className={styles.traitName}>{getTraitName(trait.name, locale)}</span>
+                    {traitDetail && traitDetail.breakpoints.length > 0 && (
+                      <div className={styles.breakpoints}>
+                        {traitDetail.breakpoints.map((bp) => {
+                          const tierClass = BP_TIER_STYLES[bp.tier] ?? ''
+                          const activeClass = trait.count >= bp.minUnits ? styles.bpActive : ''
+                          return (
+                            <span
+                              key={bp.minUnits}
+                              className={`${styles.bpPip} ${tierClass} ${activeClass}`}
+                            >
+                              {bp.minUnits}
+                            </span>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                  <span className={styles.traitCount}>{trait.count}조각</span>
+                </div>
+              )
+            })}
           </div>
-        </section>
+        </section>}
+
+        <HeroAugmentsPanel augments={deck.heroAugments ?? []} />
 
         <PlayGuidePanel deck={deck} />
 

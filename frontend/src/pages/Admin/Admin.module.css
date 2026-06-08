@@ -590,8 +590,82 @@
 /* 모달 푸터 */
 .modalFooter {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: 8px;
   padding: 16px 24px;
   border-top: 1px solid var(--border-subtle);
+}
+
+.saveErrorMsg {
+  margin-right: auto;
+  color: var(--danger);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+/* ── 영웅 증강 편집 ── */
+.heroAugEditorBody {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.heroAugEmpty {
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+  padding: 20px 0;
+}
+
+.heroAugEditorRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.heroAugSelect {
+  flex: 0 0 120px;
+  height: 36px;
+  padding: 0 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text-ui);
+  font-size: 13px;
+}
+
+.heroAugInput {
+  flex: 1;
+  height: 36px;
+  padding: 0 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text-ui);
+  font-size: 13px;
+}
+
+.heroAugInput:focus,
+.heroAugSelect:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.heroAugRemoveBtn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  border-radius: 5px;
+  color: var(--danger);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
 }

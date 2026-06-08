@@ -29,19 +29,19 @@ public interface PatchNoteControllerDocs {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "패치노트 없음")
     })
     ResponseEntity<ApiResponse<PatchChangePageResponse>> getPatchChanges(
-            @Parameter(description = "패치 버전", example = "17.0")
-            @PathVariable String version,
+            @Parameter(description = "패치 버전", example = "17.3")
+            @PathVariable("version") String version,
             @Parameter(description = "변경 카테고리(CHAMPION, TRAIT, ITEM, AUGMENT, SYSTEM)", example = "CHAMPION")
-            @RequestParam(required = false) String category,
+            @RequestParam(name = "category", required = false) String category,
             @Parameter(description = "변경 유형(BUFF, NERF, ADJUST, NEW)", example = "BUFF")
-            @RequestParam(required = false) String type,
+            @RequestParam(name = "type", required = false) String type,
             @Parameter(description = "영향도(HIGH, MEDIUM, LOW)", example = "HIGH")
-            @RequestParam(required = false) String impact,
+            @RequestParam(name = "impact", required = false) String impact,
             @Parameter(description = "검색어", example = "카이사")
-            @RequestParam(required = false) String query,
+            @RequestParam(name = "query", required = false) String query,
             @Parameter(description = "페이지 번호", example = "1")
-            @RequestParam(required = false) Integer page,
+            @RequestParam(name = "page", required = false) Integer page,
             @Parameter(description = "페이지 크기", example = "10")
-            @RequestParam(required = false) Integer pageSize
+            @RequestParam(name = "pageSize", required = false) Integer pageSize
     );
 }
