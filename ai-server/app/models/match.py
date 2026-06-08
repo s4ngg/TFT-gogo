@@ -91,3 +91,10 @@ class MetaDeck(BaseModel):
     top4_rate: str
     avg_place: str
     pick_rate: str
+
+
+class AnalyzeWithMetaRequest(BaseModel):
+    summoner_name: str
+    tag_line: str
+    matches: list[MatchRecord]
+    meta_decks: list[MetaDeck]

@@ -6,6 +6,7 @@
 """
 import json
 import logging
+import re
 
 from openai import AsyncOpenAI
 
@@ -97,6 +98,7 @@ async def generate_reasons(
             max_tokens=400,
         )
         content = response.choices[0].message.content or ""
+        content = re.sub(r"```json\s*|\s*```", "", content).strip()
         raw = json.loads(content)
         return [
             DeckReason(

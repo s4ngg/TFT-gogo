@@ -5,6 +5,7 @@ import com.tftgogo.domain.ai.dto.AiRecommendResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -24,10 +25,16 @@ public class AiServerClient {
 
     public AiServerClient(
             @Value("${ai.server.url:http://localhost:8000}") String aiServerUrl,
+            @Value("${ai.server.timeout-seconds:10}") int timeoutSeconds,
             ObjectMapper objectMapper
     ) {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(timeoutSeconds * 1000);
+        factory.setReadTimeout(timeoutSeconds * 1000);
+
         this.restClient = RestClient.builder()
                 .baseUrl(aiServerUrl)
+                .requestFactory(factory)
                 .build();
         this.objectMapper = objectMapper;
     }

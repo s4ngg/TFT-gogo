@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.models.match import AnalyzeRequest, AnalyzeResponse, MetaDeck
+from app.models.match import AnalyzeRequest, AnalyzeResponse, AnalyzeWithMetaRequest
 from app.services import analyzer, recommender
 
 router = APIRouter(prefix="/analyze", tags=["analyze"])
@@ -26,21 +26,19 @@ async def analyze_matches(request: AnalyzeRequest) -> AnalyzeResponse:
 
 
 @router.post("/with-meta", response_model=AnalyzeResponse)
-async def analyze_with_meta(
-    request: AnalyzeRequest,
-    meta_decks: list[MetaDeck],
-) -> AnalyzeResponse:
+async def analyze_with_meta(request: AnalyzeWithMetaRequest) -> AnalyzeResponse:
     """
     전적 데이터 + 현재 메타 덱을 함께 받아 완전한 AI 추천 결과를 반환한다.
 
     Spring 백엔드가 메타 덱 목록도 함께 전달하는 경우 사용.
+    단일 JSON 바디로 수신: { summoner_name, tag_line, matches, meta_decks }
     """
     result = analyzer.analyze(request)
     good_traits = result["good_traits"]
     stats = result["stats"]
 
     # 메타 덱 중 내 스타일과 잘 맞는 덱 순위 재정렬
-    ranked_decks = recommender.rank_meta_decks(meta_decks, good_traits)
+    ranked_decks = recommender.rank_meta_decks(request.meta_decks, good_traits)
 
     stats_summary = (
         f"평균 {stats.avg_place}등, TOP4율 {stats.top4_rate}, "

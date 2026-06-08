@@ -6,9 +6,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * AI 추천 서비스.
@@ -55,31 +52,9 @@ public class AiRecommendService {
         // Map<String, Object> requestBody = buildRequestBody(gameName, tagLine, matches, metaDecks);
         // return aiServerClient.analyzeWithMeta(requestBody);
 
-        // 팀원 코드 완성 전 임시: AI 서버 연동 테스트용 빈 요청
-        logger.info("AI 추천 요청 - gameName: {}, tagLine: {}", gameName, tagLine);
-        Map<String, Object> dummyRequest = new HashMap<>();
-        dummyRequest.put("summoner_name", gameName);
-        dummyRequest.put("tag_line", tagLine);
-        dummyRequest.put("matches", List.of());
-        dummyRequest.put("meta_decks", List.of());
-        return aiServerClient.analyzeWithMeta(dummyRequest);
+        // TODO 구현 전: 전적 데이터 없이는 AI 분석 불가 — 프론트 fallback 유도
+        logger.info("AI 추천 요청 - gameName: {}, tagLine: {} (팀원 전적 API 연동 전)", gameName, tagLine);
+        return null;
     }
 
-    /**
-     * AI 서버 요청 바디 구성 헬퍼.
-     * 팀원 전적 API 완성 후 실제 데이터로 채운다.
-     */
-    private Map<String, Object> buildRequestBody(
-            String gameName,
-            String tagLine,
-            List<Map<String, Object>> matches,
-            List<Map<String, Object>> metaDecks
-    ) {
-        Map<String, Object> body = new HashMap<>();
-        body.put("summoner_name", gameName);
-        body.put("tag_line", tagLine);
-        body.put("matches", matches);
-        body.put("meta_decks", metaDecks);
-        return body;
-    }
 }
