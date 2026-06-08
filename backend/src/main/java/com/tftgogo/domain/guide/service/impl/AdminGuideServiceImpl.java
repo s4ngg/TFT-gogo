@@ -14,6 +14,7 @@ import com.tftgogo.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,7 +58,11 @@ public class AdminGuideServiceImpl implements AdminGuideService {
                 .active(request.resolveActive(true))
                 .build();
 
-        return toResponse(guideRepository.save(guide));
+        try {
+            return toResponse(guideRepository.saveAndFlush(guide));
+        } catch (DataIntegrityViolationException e) {
+            throw new BusinessException(ErrorCode.GUIDE_ALREADY_EXISTS);
+        }
     }
 
     @Override
@@ -84,7 +89,12 @@ public class AdminGuideServiceImpl implements AdminGuideService {
                 request.resolveActive(guide.isActive())
         );
 
-        return toResponse(guide);
+        try {
+            guideRepository.flush();
+            return toResponse(guide);
+        } catch (DataIntegrityViolationException e) {
+            throw new BusinessException(ErrorCode.GUIDE_ALREADY_EXISTS);
+        }
     }
 
     @Override
@@ -138,13 +148,18 @@ public class AdminGuideServiceImpl implements AdminGuideService {
     }
 
     private JsonNode parseDataJson(Guide guide) {
+        String rawDataJson = guide.getDataJson();
+        if (rawDataJson == null || rawDataJson.trim().isEmpty()) {
+            throw new BusinessException(ErrorCode.GUIDE_INVALID_DATA);
+        }
+
         try {
-            JsonNode dataJson = objectMapper.readTree(guide.getDataJson());
+            JsonNode dataJson = objectMapper.readTree(rawDataJson);
             if (dataJson == null || !dataJson.isObject()) {
                 throw new BusinessException(ErrorCode.GUIDE_INVALID_DATA);
             }
             return dataJson;
-        } catch (JsonProcessingException e) {
+        } catch (JsonProcessingException | IllegalArgumentException e) {
             logger.error(
                     "Invalid guide dataJson. guideId={}, targetKey={}, error={}",
                     guide.getId(),

@@ -43,7 +43,7 @@ Page: Guide (/guide).
 - AdminGuideRequest uses guideType, targetKey, name, summary, imageUrl, dataJson, patchVersion, sortOrder, active.
 - Admin writes validate dataJson as a JSON object, trim required text fields, require sortOrder >= 0, and default active to true on create when omitted.
 - Admin responses include active, createdAt, updatedAt, and deletedAt in addition to the public guide fields.
-- Admin delete uses soft delete through isActive/deletedAt. Do not hard delete guide rows.
+- Admin delete uses soft delete through active/deletedAt. Do not hard delete guide rows.
 - Data originates from CDragon (traits, champions) where possible; use communityDragonAssets.ts helpers for frontend images.
 - guideFallback.ts provides static fallback when the backend is unreachable.
 - guideNormalizers.ts must be applied before passing data to components; do not use raw API responses directly.

@@ -45,7 +45,7 @@ Page: Admin (/admin).
 
 <business-rules>
 - Admin APIs are curation tools. They should not bypass public-domain validation rules.
-- Admin delete operations should prefer soft delete when the domain table has isActive/deletedAt.
+- Admin delete operations should prefer soft delete when the domain table has active/deletedAt.
 - Request validation belongs in Request DTOs and Service-level guards for important invariants.
 - Swagger annotations belong in XxxControllerDocs interfaces, not directly in Controllers.
 </business-rules>
@@ -63,6 +63,7 @@ Page: Admin (/admin).
 <guide-curation>
 - Admin can create, update, list, and soft delete guide entries.
 - guideType + targetKey + patchVersion identifies one guide entry.
+- Soft-deleted guide rows still reserve guideType + targetKey + patchVersion unless the schema changes.
 - dataJson must be a JSON object.
 - active=false hides an entry from public guide responses.
 </guide-curation>

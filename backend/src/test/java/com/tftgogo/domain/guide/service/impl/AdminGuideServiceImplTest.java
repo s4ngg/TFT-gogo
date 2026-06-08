@@ -8,6 +8,7 @@ import com.tftgogo.domain.guide.entity.Guide;
 import com.tftgogo.domain.guide.entity.GuideType;
 import com.tftgogo.domain.guide.repository.GuideRepository;
 import com.tftgogo.global.exception.BusinessException;
+import com.tftgogo.global.exception.ErrorCode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -15,6 +16,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
@@ -23,6 +25,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -70,14 +73,14 @@ class AdminGuideServiceImplTest {
                 "tft17_jinx",
                 "17.3"
         )).thenReturn(false);
-        when(guideRepository.save(any(Guide.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(guideRepository.saveAndFlush(any(Guide.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // when
         AdminGuideResponse response = adminGuideService.createGuide(request);
 
         // then
         ArgumentCaptor<Guide> guideCaptor = ArgumentCaptor.forClass(Guide.class);
-        verify(guideRepository).save(guideCaptor.capture());
+        verify(guideRepository).saveAndFlush(guideCaptor.capture());
         Guide savedGuide = guideCaptor.getValue();
         assertThat(savedGuide.getTargetKey()).isEqualTo("tft17_jinx");
         assertThat(savedGuide.getName()).isEqualTo("징크스");
@@ -104,7 +107,8 @@ class AdminGuideServiceImplTest {
 
         // when, then
         assertThatThrownBy(() -> adminGuideService.createGuide(request))
-                .isInstanceOf(BusinessException.class);
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.GUIDE_ALREADY_EXISTS));
     }
 
     @Test
@@ -120,7 +124,33 @@ class AdminGuideServiceImplTest {
         );
         // when, then
         assertThatThrownBy(() -> adminGuideService.createGuide(request))
-                .isInstanceOf(BusinessException.class);
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
+    }
+
+    @Test
+    void 생성_중_DB_중복_제약이_발생하면_GUIDE_ALREADY_EXISTS로_변환한다() throws Exception {
+        // given
+        AdminGuideRequest request = request(
+                GuideType.CHAMPION,
+                "tft17_jinx",
+                "징크스",
+                "17.3",
+                dataJson("{\"cost\":4}"),
+                true
+        );
+        when(guideRepository.existsByGuideTypeAndTargetKeyAndPatchVersion(
+                GuideType.CHAMPION,
+                "tft17_jinx",
+                "17.3"
+        )).thenReturn(false);
+        when(guideRepository.saveAndFlush(any(Guide.class)))
+                .thenThrow(new DataIntegrityViolationException("duplicate guide"));
+
+        // when, then
+        assertThatThrownBy(() -> adminGuideService.createGuide(request))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.GUIDE_ALREADY_EXISTS));
     }
 
     @Test
@@ -151,6 +181,36 @@ class AdminGuideServiceImplTest {
         assertThat(guide.getName()).isEqualTo("카이사");
         assertThat(guide.isActive()).isFalse();
         assertThat(response.getDataJson().get("role").asText()).isEqualTo("carry");
+        verify(guideRepository).flush();
+    }
+
+    @Test
+    void 수정_중_DB_중복_제약이_발생하면_GUIDE_ALREADY_EXISTS로_변환한다() throws Exception {
+        // given
+        Guide guide = guide(1L, GuideType.CHAMPION, "tft17_jinx", "징크스", "17.3", true);
+        AdminGuideRequest request = request(
+                GuideType.CHAMPION,
+                "tft17_kaisa",
+                "카이사",
+                "17.3",
+                dataJson("{\"cost\":4,\"role\":\"carry\"}"),
+                false
+        );
+        when(guideRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(guide));
+        when(guideRepository.existsByGuideTypeAndTargetKeyAndPatchVersionAndIdNot(
+                GuideType.CHAMPION,
+                "tft17_kaisa",
+                "17.3",
+                1L
+        )).thenReturn(false);
+        doThrow(new DataIntegrityViolationException("duplicate guide"))
+                .when(guideRepository)
+                .flush();
+
+        // when, then
+        assertThatThrownBy(() -> adminGuideService.updateGuide(1L, request))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.GUIDE_ALREADY_EXISTS));
     }
 
     @Test
@@ -168,7 +228,21 @@ class AdminGuideServiceImplTest {
 
         // when, then
         assertThatThrownBy(() -> adminGuideService.updateGuide(1L, request))
-                .isInstanceOf(BusinessException.class);
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.GUIDE_NOT_FOUND));
+    }
+
+    @Test
+    void 저장된_dataJson이_null이면_GUIDE_INVALID_DATA로_변환한다() {
+        // given
+        Guide guide = guide(1L, GuideType.CHAMPION, "tft17_jinx", "징크스", "17.3", true);
+        ReflectionTestUtils.setField(guide, "dataJson", null);
+        when(guideRepository.findAdminGuides(null, null, null)).thenReturn(List.of(guide));
+
+        // when, then
+        assertThatThrownBy(() -> adminGuideService.getAdminGuides(null, null, null))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.GUIDE_INVALID_DATA));
     }
 
     @Test

@@ -15,6 +15,7 @@ public interface GuideRepository extends JpaRepository<Guide, Long> {
 
     Optional<Guide> findByIdAndDeletedAtIsNull(Long id);
 
+    // Soft-deleted guide rows intentionally keep reserving this unique key.
     boolean existsByGuideTypeAndTargetKeyAndPatchVersion(
             GuideType guideType,
             String targetKey,

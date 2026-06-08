@@ -41,7 +41,7 @@ Page: PatchNotes (/patch-notes).
 - Local DB smoke data lives in patch_notes and patch_changes. patch_notes.version identifies one patch note.
 - Admin endpoints are protected by X-Admin-Token through /api/admin/**.
 - Admin writes use /api/admin/patch-notes and /api/admin/patch-note-changes.
-- Admin delete uses soft delete through isActive/deletedAt. Do not hard delete patch note or patch change rows.
+- Admin delete uses soft delete through active/deletedAt. Do not hard delete patch note or patch change rows.
 - highlightsJson and tagsJson must validate as JSON string arrays.
 - isCurrent must stay unique among active, non-deleted patch notes.
 - When a patch note is created or updated with current=true, existing active current patch notes must be unset.
