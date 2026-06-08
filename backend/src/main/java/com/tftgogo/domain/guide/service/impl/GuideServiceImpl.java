@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -35,15 +36,20 @@ public class GuideServiceImpl implements GuideService {
     private static final int MAX_PAGE_SIZE = 100;
     private static final Set<String> SORT_KEYS = Set.of("avgPlace", "pickRate", "top4", "winRate");
     private static final Pattern NUMBER_PATTERN = Pattern.compile("-?\\d+(?:\\.\\d+)?");
+    private static final String LIKE_ESCAPE = "\\";
 
     private final GuideRepository guideRepository;
     private final ObjectMapper objectMapper;
 
     @Override
     public List<GuideEntryResponse> getGuideCatalog() {
-        return guideRepository.findByActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc().stream()
-                .map(this::toResponse)
-                .toList();
+        return guideRepository.findLatestPatchVersion()
+                .map(patchVersion -> guideRepository
+                        .findByPatchVersionAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchVersion)
+                        .stream()
+                        .map(this::toResponse)
+                        .toList())
+                .orElseGet(List::of);
     }
 
     @Override
@@ -63,11 +69,16 @@ public class GuideServiceImpl implements GuideService {
         validateSort(sortKey, sortDir);
         validateCost(cost);
 
+        Optional<String> resolvedPatchVersion = resolvePatchVersion(patchVersion);
+        if (resolvedPatchVersion.isEmpty()) {
+            return GuidePageResponse.of(List.of(), normalizedPage, normalizedPageSize, 0, 1);
+        }
+
         List<GuideItem> filteredItems = guideRepository
                 .findFilteredGuides(
                         guideType.name(),
-                        normalizeText(patchVersion),
-                        normalizeText(query),
+                        resolvedPatchVersion.get(),
+                        normalizeSearchQuery(query),
                         cost
                 )
                 .stream()
@@ -212,11 +223,21 @@ public class GuideServiceImpl implements GuideService {
         }
     }
 
-    private String normalizeText(String value) {
+    private Optional<String> resolvePatchVersion(String patchVersion) {
+        if (hasText(patchVersion)) {
+            return Optional.of(patchVersion.trim());
+        }
+        return guideRepository.findLatestPatchVersion();
+    }
+
+    private String normalizeSearchQuery(String value) {
         if (!hasText(value)) {
             return null;
         }
-        return value.trim();
+        return value.trim()
+                .replace(LIKE_ESCAPE, LIKE_ESCAPE + LIKE_ESCAPE)
+                .replace("%", LIKE_ESCAPE + "%")
+                .replace("_", LIKE_ESCAPE + "_");
     }
 
     private boolean hasText(String value) {

@@ -86,6 +86,31 @@ public class PatchNote {
         this.active = active;
     }
 
+    public void update(String version, String title, String summary, String description,
+                       String focus, String imageUrl, LocalDateTime publishedAt,
+                       boolean current, String highlightsJson) {
+        this.version = version;
+        this.title = title;
+        this.summary = summary;
+        this.description = description;
+        this.focus = focus;
+        this.imageUrl = imageUrl;
+        this.publishedAt = publishedAt;
+        this.current = current;
+        this.highlightsJson = highlightsJson;
+    }
+
+    public void markNotCurrent() {
+        this.current = false;
+    }
+
+    public void softDelete() {
+        LocalDateTime now = LocalDateTime.now();
+        this.active = false;
+        this.current = false;
+        this.deletedAt = now;
+    }
+
     @PrePersist
     protected void onCreate() {
         LocalDateTime now = LocalDateTime.now();

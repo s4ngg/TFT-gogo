@@ -29,7 +29,7 @@ Loaded alongside every feature spec file. Defines shared utilities, asset helper
 
 <data-types>
 - gameName + tagLine together identify a summoner (not summonerId alone).
-- patch version format: "14.x" strings used as keys across deck, guide, and patch-note domains.
+- patch version format: major.minor string values such as "17.3" are used as keys across deck, guide, and patch-note domains.
 - CDragon trait data is used for synergy calculation; do not re-implement synergy logic in components.
 </data-types>
 

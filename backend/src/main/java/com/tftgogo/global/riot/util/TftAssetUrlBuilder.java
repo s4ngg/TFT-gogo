@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -18,6 +19,24 @@ public final class TftAssetUrlBuilder {
     private static final String DDRAGON_VERSION = "16.10.1";
     private static final Pattern SET_PATTERN = Pattern.compile("(?:set|tft)(\\d+)");
     private static final Pattern TRAIT_SET_PATTERN = Pattern.compile("(?:set|tft)(\\d+)_(.+)");
+
+    /**
+     * CDragon 실제 경로가 traitId 규칙과 다른 예외 목록.
+     * 프론트 communityDragonAssets.ts의 TRAIT_ICON_PATHS와 동일하게 유지해야 함.
+     * key: traitId 소문자, value: CDN_BASE_URL 이후 경로 (소문자)
+     */
+    private static final Map<String, String> TRAIT_ICON_OVERRIDES = Map.ofEntries(
+        Map.entry("tft17_vanguard",   "/ux/traiticons/trait_icon_12_vanguard.tft_set12.png"),
+        Map.entry("tft17_sniper",     "/ux/traiticons/trait_icon_6_sniper.png"),
+        Map.entry("tft17_bastion",    "/ux/traiticons/trait_icon_9_bastion.png"),
+        Map.entry("tft17_darkstar",   "/ux/traiticons/trait_icon_17_darkstar.tft_set17.png"),
+        Map.entry("tft17_astronaut",  "/ux/traiticons/trait_icon_17_astronaut.tft_set17.png"),
+        Map.entry("tft17_rogue",      "/ux/traiticons/trait_icon_17_rogue.tft_set17.png"),
+        Map.entry("tft17_stargazer",  "/ux/traiticons/trait_icon_17_stargazer.tft_set17.png"),
+        Map.entry("tft17_shepherd",   "/ux/traiticons/trait_icon_17_shepherd.tft_set17.png"),
+        Map.entry("tft17_replicator", "/ux/traiticons/trait_icon_17_replicator.tft_set17.png"),
+        Map.entry("tft17_psyops",     "/ux/traiticons/trait_icon_17_psyops.tft_set17.png")
+    );
 
     private TftAssetUrlBuilder() {
     }
@@ -53,6 +72,12 @@ public final class TftAssetUrlBuilder {
         }
 
         String id = traitId.toLowerCase(Locale.ROOT);
+
+        String override = TRAIT_ICON_OVERRIDES.get(id);
+        if (override != null) {
+            return CDN_BASE_URL + override;
+        }
+
         Matcher matcher = TRAIT_SET_PATTERN.matcher(id);
         if (matcher.matches()) {
             String setNum = matcher.group(1);
