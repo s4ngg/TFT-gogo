@@ -16,8 +16,8 @@ export interface SummonerProfileResponse {
   tagLine: string
   profileIconId: number
   summonerLevel: number
-  tier: string
-  rank: string
+  tier: string | null
+  rank: string | null
   leaguePoints: number
   wins: number
   losses: number

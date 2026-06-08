@@ -172,8 +172,8 @@ function SummonerDetail() {
 
   const topTraits = (() => {
     const map = new Map<string, { traitId: string; name: string; tone: MatchTraitResponse['tone']; count: number; games: number; totalPlace: number }>()
-    const seen = new Set<string>()
     for (const m of recentMatches) {
+      const seen = new Set<string>()
       for (const tr of m.traits) {
         if (tr.traitId.toLowerCase().includes('unique')) continue
         if (seen.has(tr.traitId)) continue
@@ -190,8 +190,8 @@ function SummonerDetail() {
 
   const topChampions = (() => {
     const map = new Map<string, { characterId: string; name: string; imageUrl: string; games: number; totalPlace: number }>()
-    const seen = new Set<string>()
     for (const m of recentMatches) {
+      const seen = new Set<string>()
       for (const u of m.units) {
         if (seen.has(u.characterId)) continue
         seen.add(u.characterId)
