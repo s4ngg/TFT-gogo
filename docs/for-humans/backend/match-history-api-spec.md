@@ -45,11 +45,10 @@ v1.2 (2026-06-01 팀 spec-kit 병합)
 
 | **Method** | **Path** | **접근** | **목적** |
 | --- | --- | --- | --- |
-| `GET` | `/api/summoners/{gameName}/{tagLine}` | 공개 | 소환사 기본/랭크 정보 조회 |
-| `GET` | `/api/summoners/{gameName}/{tagLine}/matches` | 공개 | 소환사 전적 목록 조회 |
-| `POST` | `/api/summoners/{gameName}/{tagLine}/refresh` | 인증 또는 제한 필요 | 전적 최신화 |
-
-> ⚠️ **경로 불일치 주의**: 현재 구현(`SummonerController.java`)은 `/api/summoner/**` (단수)를 사용한다. 팀 표준은 `/api/summoners/**` (복수)다. SecurityConfig permitAll 경로 및 프론트 `summonerApi.ts` 호출 경로와 함께 일괄 변경이 필요하다. (미결 — §9 참조)
+| `GET` | `/api/summoners/{gameName}/{tagLine}` | 공개 | 소환사 프로필/랭크 정보 조회 |
+| `GET` | `/api/match/{puuid}/matches?start={int}&count={int}` | 공개 | 소환사 전적 목록 조회 |
+| `GET` | `/api/match/detail/{matchId}` | 공개 | 매치 상세 조회 (8인 전체) |
+| `POST` | `/api/summoners/{gameName}/{tagLine}/refresh` | 인증 또는 제한 필요 | 전적 최신화 (미구현) |
 
 # **3. Riot API 호출 설계**
 
@@ -77,11 +76,13 @@ v1.2 (2026-06-01 팀 spec-kit 병합)
 
 ## **3.3 Rate Limit 정책**
 
+**글로벌 쓰로틀 (모든 Riot API 공통)**
 - 최소 요청 간격: 1,300ms 고정 간격 유지 (스로틀링 방어, `waitForRequestWindow()`)
-
 - 429 응답 수신 시: `Retry-After` 헤더 파싱 → 해당 시간만큼 sleep 후 재시도. 헤더 없거나 파싱 실패 시 기본 120초 대기 (현재 구현)
-
 - 최대 재시도: 3회. 초과 시 `BusinessException(ErrorCode.RIOT_API_RATE_LIMIT)` throw (현재 구현)
+
+**전적 목록 조회 내부 쓰로틀 (`MatchServiceImpl.getMatches()`)**
+- 매치 상세 1건 조회 후 200ms sleep 적용 — 매치 ID N개를 순차 호출할 때 연속 요청에 의한 Rate Limit 초과 방지 목적
 
 *덱 집계 추천 팀의 수집 서버는 별도 API Key를 사용하므로, Rate Limit 버킷이 분리됩니다. 동일 Key 공유 시 상호 간섭이 발생하므로 Key를 반드시 분리해야 합니다.*
 
@@ -336,12 +337,14 @@ winRate = wins / (wins + losses) * 100
 
 | **항목** | **우선순위** | **비고** |
 | --- | --- | --- |
-| **API 경로 단수→복수 통일** | **높음** | `/api/summoner/**` → `/api/summoners/**` (SummonerController, SecurityConfig, summonerApi.ts 동시 변경 필요) |
-| ~~Rate Limit — Retry-After 헤더 파싱 후 재시도 적용~~ | ~~중간~~ | 완료 — Retry-After 파싱 + 최대 3회 재시도 + 1,300ms 최소 간격 구현 |
+| ~~API 경로 단수→복수 통일~~ | ~~높음~~ **완료** | `/api/summoners/**` 복수로 구현 완료 |
+| ~~Rate Limit — Retry-After 헤더 파싱 후 재시도 적용~~ | ~~중간~~ **완료** | Retry-After 파싱 + 최대 3회 재시도 + 1,300ms 최소 간격 + 200ms 매치별 쓰로틀 구현 |
 | 전적 최신화 엔드포인트 구현 | 중간 | `POST /api/summoners/{gameName}/{tagLine}/refresh` 미구현 |
 | 게임 유형(gameType) 변환 정책 확정 | 중간 | queue_id → RANKED/NORMAL 레이블 매핑 기준 명문화 필요 |
-| 스테이지 변환 정책 확정 | 중간 | 현재 임시로 level 값 사용 중. 실제 라운드 번호 표기 방식 협의 필요 |
-| game_version 파싱 팀 간 표준화/공유 확인 | 중간 | 구현됨 — `normalizePatchVersion()` 정규식 `(\d+\.\d+[a-zA-Z]?)` 덱 집계 팀 운영 중. 전적 검색 팀 적용 및 양 팀 기준 공유 확인 미결 |
+| 스테이지 변환 정책 확정 | 중간 | 현재 `ParticipantDto.stage = String.valueOf(level)` 임시값. 실제 라운드 번호 표기 방식 협의 필요 |
+| compositionName 자동 생성 | 중간 | 현재 항상 빈 문자열 반환 — 시너지/유닛 조합 분석 로직 미구현 |
+| itemImageUrls 아이템 이미지 URL 매핑 | 중간 | 현재 항상 빈 배열 반환 — 아이템 ID → CDragon URL 변환 미구현 |
+| game_version 파싱 팀 간 표준화/공유 확인 | 중간 | 구현됨 — `normalizePatchVersion()` 정규식 `(\d+\.\d+[a-zA-Z]?)` 운영 중 |
 | 집계 결과 조회용 내부 API 엔드포인트 정의 | 미정 | 집계 팀과 협의 후 문서화 |
 | Data Dragon 버전 동기화 방식 | 낮음 | profileIconId → 아이콘 이미지 URL 조합 기준 |
 
