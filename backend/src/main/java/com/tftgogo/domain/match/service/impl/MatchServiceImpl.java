@@ -42,6 +42,8 @@ public class MatchServiceImpl implements MatchService {
 
     @Override
     public List<SummonerMatchItemDto> getMatches(String puuid, int start, int count) {
+        if (start < 0) throw new IllegalArgumentException("start는 0 이상이어야 합니다: " + start);
+        if (count < 0) throw new IllegalArgumentException("count는 0 이상이어야 합니다: " + count);
         List<String> matchIds = riotApiClient.getMatchIds(puuid, count, start);
         return buildMatchList(puuid, matchIds).stream()
                 .map(SummonerMatchItemDto::from)
