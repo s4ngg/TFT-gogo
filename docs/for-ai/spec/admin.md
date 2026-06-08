@@ -18,6 +18,7 @@ Page: Admin (/admin).
 
 - GET    /api/admin/guides                   -> list guide entries
 - POST   /api/admin/guides                   -> create guide entry
+- POST   /api/admin/guides/import/cdragon    -> import champion/trait guide entries from Community Dragon
 - PATCH  /api/admin/guides/{guideId}         -> update guide entry
 - DELETE /api/admin/guides/{guideId}         -> soft delete guide entry
 
@@ -62,7 +63,9 @@ Page: Admin (/admin).
 
 <guide-curation>
 - Admin can create, update, list, and soft delete guide entries.
+- Admin can import CDragon champion/trait guide entries into the same guides table.
 - guideType + targetKey + patchVersion identifies one guide entry.
+- Import updates active/non-deleted rows with the same guideType + targetKey + patchVersion and creates missing rows.
 - Soft-deleted guide rows still reserve guideType + targetKey + patchVersion unless the schema changes.
 - dataJson must be a JSON object.
 - active=false hides an entry from public guide responses.
