@@ -30,6 +30,17 @@
 - Vite env vars must use VITE_ prefix. Never commit .env files.
 </file-structure>
 
+<page-structure>
+- A page file (pages/&lt;PageName&gt;/&lt;PageName&gt;.tsx) must contain ONLY the top-level page component.
+  It composes child components and connects hooks — no business logic or sub-component definitions inside.
+- Sub-components used only in one page → pages/&lt;PageName&gt;/components/&lt;ComponentName&gt;.tsx
+- Sub-components used in 2+ pages → components/common/&lt;ComponentName&gt;.tsx
+- Business logic (data fetching, transformation, side effects) → custom hook in pages/&lt;PageName&gt;/hooks/ or src/hooks/
+- Pure utility/helper functions (formatters, parsers, calculators) → pages/&lt;PageName&gt;/utils/ or src/utils/
+- BAD:  defining HexBoard, PlayGuidePanel, ItemsPanel as functions inside DeckDetail.tsx
+- GOOD: each extracted to pages/DeckDetail/components/HexBoard.tsx etc.
+</page-structure>
+
 <state-and-http>
 - Server state: TanStack Query only. Do not fetch with useEffect + useState.
 - Global client state: Zustand only. Do not store server data in Zustand.
