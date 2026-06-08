@@ -955,7 +955,7 @@ function HaFormModal({ initial, onClose, onSaved }: HaFormModalProps) {
 }
 
 /* ── 영웅증강 덱 관리 ── */
-function HeroAugmentDeckManager() {
+export function HeroAugmentDeckManager() {
   const [decks, setDecks] = useState<HeroAugmentDeckItem[]>([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<HeroAugmentDeckItem | null | 'new'>(null)
@@ -1037,7 +1037,7 @@ function HeroAugmentDeckManager() {
 type AdminTab = 'decks' | 'heroAugmentDecks'
 
 /* ── 메인 관리 페이지 ── */
-function AdminPage() {
+export function AdminPage() {
   const [decks, setDecks] = useState<AdminDeck[]>([])
   const [rankFilter, setRankFilter] = useState<RankFilter>('MASTER_PLUS')
   const [loading, setLoading] = useState(true)

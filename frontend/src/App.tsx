@@ -1,6 +1,10 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import AiRecommend from './pages/AiRecommend/AiRecommend'
-import Admin from './pages/Admin/Admin'
+import AdminLogin from './pages/Admin/AdminLogin'
+import AdminDecks from './pages/Admin/AdminDecks'
+import AdminHeroAugments from './pages/Admin/AdminHeroAugments'
+import AdminMembers from './pages/Admin/AdminMembers'
+import AdminCommunity from './pages/Admin/AdminCommunity'
 import AuthPage from './pages/Auth/AuthPage'
 import Decks from './pages/Decks/Decks'
 import DeckDetail from './pages/DeckDetail/DeckDetail'
@@ -9,10 +13,12 @@ import Guide from './pages/Guide/Guide'
 import Party from './pages/Party/Party'
 import PatchNotes from './pages/PatchNotes/PatchNotes'
 import SummonerDetail from './pages/SummonerDetail/SummonerDetail'
+import AdminLayout from './layouts/AdminLayout'
 
 function App() {
   return (
     <Routes>
+      {/* 일반 페이지 */}
       <Route path="/" element={<Dashboard />} />
       <Route path="/login" element={<AuthPage mode="login" />} />
       <Route path="/signup" element={<AuthPage mode="signup" />} />
@@ -23,11 +29,19 @@ function App() {
       <Route path="/guide" element={<Guide />} />
       <Route path="/party" element={<Party />} />
       <Route path="/patch-notes" element={<PatchNotes />} />
-      <Route path="/admin" element={<Admin />} />
+
+      {/* 관리자 로그인 (레이아웃 없음) */}
+      <Route path="/admin" element={<AdminLogin />} />
+
+      {/* 관리자 전용 레이아웃 */}
+      <Route path="/admin/decks" element={<AdminLayout><AdminDecks /></AdminLayout>} />
+      <Route path="/admin/hero-augments" element={<AdminLayout><AdminHeroAugments /></AdminLayout>} />
+      <Route path="/admin/members" element={<AdminLayout><AdminMembers /></AdminLayout>} />
+      <Route path="/admin/community" element={<AdminLayout><AdminCommunity /></AdminLayout>} />
+
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }
 
 export default App
-
