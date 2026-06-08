@@ -1,6 +1,6 @@
 import axiosInstance from './axiosInstance'
 import type { TraitHexBadgeTone } from '../types/badges'
-import { mockSummonerProfile, mockMatchHistory } from '../mocks/summonerMock'
+import { mockSummonerProfile } from '../mocks/summonerMock'
 
 interface ApiResponse<T> {
   success: boolean
@@ -10,41 +10,17 @@ interface ApiResponse<T> {
 
 // ── Spring이 내려줄 DTO 타입 ─────────────────────────────────
 
-export interface SummonerTopTrait {
-  traitId: string
-  name: string
-  count: number
-  iconUrl: string
-  tone: TraitHexBadgeTone
-  games: number
-  avgPlace: number
-}
-
-export interface SummonerTopChampion {
-  characterId: string
-  name: string
-  imageUrl: string
-  cost: number
-  games: number
-  avgPlace: number
-}
-
 export interface SummonerProfileResponse {
   puuid: string
   gameName: string
   tagLine: string
   profileIconId: number
   summonerLevel: number
-  tier: string            // 'DIAMOND'
-  rank: string            // 'IV'
+  tier: string | null
+  rank: string | null
   leaguePoints: number
-  wins: number            // 4위 이상(순방) 횟수
-  losses: number          // 5~8위(4위 미만) 횟수
-  avgPlace: number
-  top4Rate: number
-  rankDistribution: number[]   // index 0 = 1등 횟수, ... index 7 = 8등 횟수
-  topTraits: SummonerTopTrait[]
-  topChampions: SummonerTopChampion[]
+  wins: number
+  losses: number
 }
 
 export interface MatchUnitResponse {
@@ -113,10 +89,10 @@ export const getMatchHistory = async (
   try {
     const { data } = await axiosInstance.get<ApiResponse<MatchSummaryResponse[]>>(
       `/summoners/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}/matches`,
-      { params: { count } },
+      { params: { count }, timeout: 120000 },
     )
     return data.data
   } catch {
-    return mockMatchHistory
+    return []
   }
 }
