@@ -1,18 +1,11 @@
 package com.tftgogo.domain.summoner.service;
 
-import com.tftgogo.domain.match.dto.response.MatchDetailResponse;
-import com.tftgogo.domain.match.dto.response.MatchSearchResponse;
-import com.tftgogo.domain.match.dto.response.MatchSummaryResponse;
-
-import java.util.List;
+import com.tftgogo.domain.match.dto.response.RankInfoResponse;
+import com.tftgogo.domain.match.dto.response.SummonerProfileResponse;
+import com.tftgogo.domain.summoner.dto.response.SummonerDetailResponse;
 
 public interface SummonerService {
-
-    MatchSearchResponse search(String gameName, String tagLine);
-
-    List<MatchSummaryResponse> getMatches(String puuid, int start);
-
-    MatchDetailResponse getMatchDetail(String matchId);
-
-    List<MatchSummaryResponse> getMatchesByRiotId(String gameName, String tagLine);
+    SummonerProfileResponse getProfile(String gameName, String tagLine);
+    RankInfoResponse getRank(String puuid);
+    SummonerDetailResponse getDetail(String gameName, String tagLine);
 }
