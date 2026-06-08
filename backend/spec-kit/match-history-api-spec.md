@@ -168,7 +168,7 @@ GET /tft/match/v1/matches/{matchId}
 | game_datetime | long | 게임 시작 시각 (epoch ms) |
 | game_length | float | 게임 길이 (초) |
 | game_version | string | 패치 버전 문자열. 덱 집계 팀과 공유하는 기준 필드 |
-| queue_id | int | 큐타입 필터링 기준 (3.5 참조) |
+| queue_id | int | 큐타입 필터링 기준 (4.5 참조) |
 | tft_set_number | int | TFT 세트 번호 |
 | tft_set_core_name | string | 세트 내부 코어명 |
 | tft_game_type | string | 게임 타입 |
