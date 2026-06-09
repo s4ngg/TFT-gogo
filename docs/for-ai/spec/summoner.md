@@ -21,7 +21,7 @@ Detailed human spec: docs/for-humans/spec/summoner.md
       traits: [ { traitId, name, iconUrl, count, tone(bronze|silver|gold|prismatic) } ],
       units:  [ { characterId, imageUrl, stars, itemImageUrls } ],
       participants: [ { puuid, riotIdGameName, riotIdTagline, placement, stage, traits, units, playersEliminated, goldLeft } ] }
-  — start 기본값 0, count 기본값 20. Riot API 호출 간 200ms 쓰로틀. queue 1090·1100만 포함.
+  — start 기본값 0, count 기본값 20. queue 1100(랭크)·1090(일반) 각각 병렬 조회 후 LinkedHashSet 병합 (랭크 순서 우선). 각 매치 상세 조회 시 200ms 쓰로틀.
 
 - GET /api/match/detail/{matchId}
   → MatchDetailResponse — 매치에 참가한 8인 전체 상세 데이터
@@ -45,20 +45,23 @@ Detailed human spec: docs/for-humans/spec/summoner.md
 - Trait activation tone: Riot API `style` (0–4) → 0=none, 1=bronze, 2=silver, 3=gold, 4=chromatic.
 - LP change and augments are not provided by Riot API — never fabricate these values.
 - CDragon image fallback: if registered URL missing, auto-generate `Trait_Icon_17_{TraitName}.TFT_Set17.tex` pattern.
-- Match list: count 파라미터로 배치 크기 지정 (기본값 20). "더 보기" 버튼 클릭 시 start를 count 단위로 증가시켜 추가 요청. 내부적으로 matchId 조회 후 각 매치 상세 조회 시 200ms 쓰로틀 적용 (Riot API rate limit 대응).
+- Match list: count 파라미터로 배치 크기 지정 (기본값 20). "더 보기" 버튼 클릭 시 start를 count 단위로 증가. getNextPageParam 조건: lastPage.length > 0이면 다음 페이지 존재로 간주. 200ms 쓰로틀 적용.
 - Game type filter: 전체 / 랭크 / 일반 — applied client-side on fetched match list.
 - Expanding a match row shows all 8 participants: placement, summonerName, stage (last_round → Spring notation), traits, units, kills, gold_left.
 - My row in expanded view is highlighted in teal.
 - stage conversion: last_round integer → Spring round notation (e.g., 5 → 2-1).
 - Non-existent summoner search → show empty state message.
 - Search input: split('#') 후 gameName·tagLine 양쪽 모두 trim(). "닉네임 # KR1" 형태 입력 허용.
-- 429 rate limit: 프로필 조회 또는 전적 갱신 시 429 응답 → RateLimitState 컴포넌트 표시. Retry-After 초 카운트다운 (기본값 120초, 0이 되면 "다시 검색할 수 있습니다" 표시).
+- 429 rate limit:
+  - 프로필 조회 또는 전적 갱신(POST /refresh) 429 → RateLimitState 컴포넌트 표시. Retry-After 초 카운트다운 (기본값 120초, 0이 되면 "다시 검색할 수 있습니다" 표시).
+  - 전적 목록 조회(GET /api/match/{puuid}/matches) 429 → matchRateLimited 플래그 → 목록 하단 에러 메시지 표시 ("전적 갱신에 실패했습니다. 잠시 후 다시 시도해주세요."). Retry-After 카운트다운 없음.
 </business-rules>
 
 <frontend-structure>
 - frontend/src/pages/SummonerDetail/SummonerDetail.tsx — main page component
 - frontend/src/api/summonerApi.ts                      — API calls
 - frontend/src/api/communityDragonAssets.ts            — CDragon image URL helpers
+- frontend/src/hooks/useMatchHistory.ts                — useInfiniteQuery 기반 전적 목록 페이지네이션 훅
 </frontend-structure>
 
 <open-issues>

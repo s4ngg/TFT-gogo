@@ -132,11 +132,11 @@ public class RiotApiClient {
     }
 
     // ── RiotQueue 전용 — 스로틀 없는 매치ID 목록 조회 (RiotQueue가 100ms 간격 보장) ──
-    public List<String> getMatchIdsForQueue(String puuid, int count, int start) {
+    public List<String> getMatchIdsForQueue(String puuid, int count, int start, int queue) {
         String path = "/tft/match/v1/matches/by-puuid/{puuid}/ids";
         String url = riotProperties.getAsiaBaseUrl()
                 + "/tft/match/v1/matches/by-puuid/" + puuid
-                + "/ids?count=" + count + "&start=" + start;
+                + "/ids?queue=" + queue + "&count=" + count + "&start=" + start;
         String[] ids = executeRequest(url, path, String[].class, ErrorCode.RIOT_API_ERROR);
         return ids != null ? Arrays.asList(ids) : List.of();
     }
