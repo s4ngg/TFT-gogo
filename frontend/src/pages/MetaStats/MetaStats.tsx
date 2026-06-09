@@ -19,7 +19,6 @@ interface RankFilterOption {
 
 const TIER_META: Record<TierBadgeValue, { color: string; label: string }> = {
   S:   { color: '#04f3e5', label: '최상위 픽 · 강력 추천' },
-  'A+': { color: '#f7d26d', label: '상위권 안정적 덱' },
   A:   { color: '#a78bfa', label: '중상위권 범용 덱' },
   B:   { color: '#60a5fa', label: '중위권 상황 의존적' },
   C:   { color: '#818cf8', label: '하위권 전문 운영 필요' },
@@ -100,7 +99,7 @@ function MetaStats() {
 
   const byTier = TIER_ORDER.reduce<Record<TierBadgeValue, MetaDeck[]>>(
     (acc, t) => { acc[t] = decks.filter((d) => d.grade === t); return acc },
-    { S: [], 'A+': [], A: [], B: [], C: [], D: [] },
+    { S: [], A: [], B: [], C: [], D: [] },
   )
 
   return (

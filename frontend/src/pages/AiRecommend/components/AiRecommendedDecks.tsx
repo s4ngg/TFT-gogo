@@ -15,7 +15,7 @@ function AiRecommendedDecks({ deckReasons }: AiRecommendedDecksProps) {
   const navigate = useNavigate()
   const { data: metaDeckResponse } = useMetaSnapshot()
   const metaDecks = metaDeckResponse?.decks ?? []
-  const topDecks = metaDecks.filter((d) => d.grade === 'S' || d.grade === 'A+').slice(0, 3)
+  const topDecks = metaDecks.filter((d) => d.grade === 'S' || d.grade === 'A').slice(0, 3)
 
   return (
     <section className={styles.panel}>

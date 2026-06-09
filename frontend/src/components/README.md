@@ -16,7 +16,7 @@
 
 | 컴포넌트 | 경로 | 용도 |
 | --- | --- | --- |
-| `TierBadge` | `components/common/TierBadge` | 메타 티어 `S`, `A+`, `A` 등급 배지 |
+| `TierBadge` | `components/common/TierBadge` | 메타 티어 `S`, `A`, `B`, `C`, `D` 등급 배지 |
 | `ChampionCard` | `components/common/ChampionCard` | TFT 챔피언 카드, 별 등급, 추천 아이템 슬롯 |
 | `TraitHexBadge` | `components/common/TraitHexBadge` | 시너지/특성 육각 배지 |
 
