@@ -50,7 +50,8 @@ backend/
 | 도메인 | 역할 | 설계 수준 |
 | --- | --- | --- |
 | `member` | 회원가입, 로그인, 인증/권한, 사용자 식별 | 인증 API와 권한 모델 |
-| `match` | 소환사 검색, 전적 조회, 매치 상세 가공 | Riot API 연동 핵심 |
+| `summoner` | 소환사 프로필/랭크 조회 | Riot account·summoner·league API 연동 |
+| `match` | 전적 목록, 매치 상세 가공 | Riot match API 연동 핵심 |
 | `deck` | 메타 덱 집계, 덱 목록/상세, 관리자 큐레이션 | 현재 구현 중심 |
 | `guide` | 게임가이드 공개 데이터, 관리자 큐레이션 가능 데이터 | 공개 API/로컬 DB smoke 완료, 관리자 API 예정 |
 | `patchnote` | 패치노트 목록, 변경사항, 관리자 큐레이션 가능 데이터 | 공개 API/로컬 DB smoke 완료, 관리자 API 예정 |
@@ -111,9 +112,10 @@ domain/<domain>/
 | `GET` | `/api/health` 또는 `/health` | `global` | 공개 | 서버 상태 확인 |
 | `POST` | `/api/v1/auth/signup` | `member` | 공개 | 회원가입 |
 | `POST` | `/api/v1/auth/login` | `member` | 공개 | 로그인 |
-| `GET` | `/api/summoners/{gameName}/{tagLine}` | `match` | 공개 | 소환사 기본/랭크 정보 조회 |
-| `GET` | `/api/summoners/{gameName}/{tagLine}/matches` | `match` | 공개 | 소환사 전적 목록 조회 |
-| `POST` | `/api/summoners/{gameName}/{tagLine}/refresh` | `match` | 인증 또는 제한 필요 | 전적 최신화 |
+| `GET` | `/api/summoners/{gameName}/{tagLine}` | `summoner` | 공개 | 소환사 프로필/랭크 정보 조회 |
+| `GET` | `/api/match/{puuid}/matches?start&count` | `match` | 공개 | 소환사 전적 목록 조회 |
+| `GET` | `/api/match/detail/{matchId}` | `match` | 공개 | 매치 상세 조회 (8인 전체) |
+| `POST` | `/api/summoners/{gameName}/{tagLine}/refresh` | `summoner` | 인증 또는 제한 필요 | 전적 최신화 (미구현) |
 | `GET` | `/api/decks/meta` | `deck` | 공개 | 메타 덱 목록 조회 |
 | `GET` | `/api/decks/{deckId}` | `deck` | 공개 | 메타 덱 상세 조회 |
 | `POST` | `/api/decks/meta/aggregate` | `deck` | 관리자 | 메타 덱 집계 실행 |
@@ -164,6 +166,7 @@ domain/<domain>/
 /api/v1/auth/login
 /api/v1/auth/signup
 GET /api/summoners/**
+GET /api/match/**
 GET /api/decks/meta
 GET /api/decks/{deckId}
 GET /api/guide/**

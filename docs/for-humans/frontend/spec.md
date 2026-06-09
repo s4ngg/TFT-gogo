@@ -59,24 +59,30 @@ TFT(전략적 팀 전투) 전적 검색 서비스.
   - 로딩 중 / 빈 결과 / API 에러 상태를 명확히 구분한다
 - 로그인 없이 누구나 검색 및 조회할 수 있다
 
-#### 데이터 요구사항 (Riot API 기반)
+#### 데이터 요구사항 (백엔드 API 기반)
 
-- 소환사 정보는 다음 5개 Riot API를 조합해 Spring 서버에서 가공한 후 프론트에 단일 응답으로 내려준다
-  - `GET /riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}` → puuid, gameName, tagLine
-  - `GET /tft/summoner/v1/summoners/by-puuid/{puuid}` → profileIconId, summonerLevel
-  - `GET /tft/league/v1/by-puuid/{puuid}` → tier, rank, leaguePoints, wins, losses
-  - `GET /tft/match/v1/matches/by-puuid/{puuid}/ids` → 매치 ID 목록 (count 파라미터로 요청 수 조절)
-  - `GET /tft/match/v1/matches/{matchId}` → 매치 상세 (참가자, 유닛, 시너지 등)
-- 매치 데이터는 queue_id 1100(RANKED_TFT)과 1090(NORMAL_TFT)만 수집해 저장한다; 하이퍼롤 등 그 외 queue_id는 제외한다
-- 게임 유형은 Spring에서 queue_id를 변환해 내려준다 (1100 → 랭크, 1090 → 일반)
-- wins는 4위 이상(순방) 횟수, losses는 5~8위(4위 미만) 횟수이며, 승률(순방확률)은 wins / (wins + losses)로 계산한다
-- 평균 순위, TOP4율은 Spring에서 최근 매치 데이터를 기반으로 계산한다
-- 덱 이름은 Spring에서 해당 게임의 시너지/유닛 조합을 분석해 자동 생성한다
-- 스테이지 표시는 Riot API의 last_round(int)를 Spring에서 변환한다 (예: 5 → 2-1)
-- 시너지 등급(tone)은 Riot API의 style(0~4)을 Spring에서 변환한다 (0=없음, 1=브론즈, 2=실버, 3=골드, 4=크로매틱)
-- 챔피언 별 수(stars)는 Riot API의 tier(int)를 그대로 사용한다
-- 챔피언·아이템·시너지 이미지는 Community Dragon CDN을 사용하며 Spring에서 URL을 조합해 내려준다
-- 증강(augments)은 Riot API 공식 스키마에 없으므로 제공하지 않는다 (UI에 표시하지 않음)
+프론트는 2개의 분리된 API를 순차적으로 호출한다:
+
+**① `GET /api/summoners/{gameName}/{tagLine}`** → `SummonerDetailResponse`
+  - 포함: puuid, gameName, tagLine, profileIconId, summonerLevel, tier, rank, leaguePoints, wins, losses
+  - 언랭크 소환사: tier/rank=null, leaguePoints/wins/losses=0
+  - 매치 데이터 미포함 — 프로필 먼저 렌더링 후 매치 별도 요청
+
+**② `GET /api/match/{puuid}/matches?start={int}&count={int}`** → `List<SummonerMatchItemDto>`
+  - 포함: matchId, placement, gameDateTime, gameType, traits, units, participants
+  - start/count로 페이지네이션 ("더 보기" 클릭 시 start 증가)
+  - queue_id 1100(랭크) / 1090(일반)만 포함
+
+**프론트 계산 항목** (서버 미제공 — 전적 목록 수신 후 프론트에서 계산)
+- 승률(순방확률): placement ≤ 4를 Win으로 계산 (wins / (wins + losses))
+- 평균 순위, TOP4율: placement 기반 집계
+- 최근 N게임 요약: 전적 목록에서 집계
+
+**Spring 서버 변환 항목**
+- 시너지 tone: Riot `style`(0~4) → 0=없음, 1=브론즈, 2=실버, 3=골드, 4=크로매틱
+- 챔피언 stars: Riot `tier`(int) 그대로 사용
+- 이미지 URL: Community Dragon CDN 기반으로 Spring에서 조합해 내려줌
+- 증강(augments): Riot API 공식 스키마 미포함 — 제공하지 않음 (UI 미표시)
 
 ### 3. Decks — 덱 목록
 

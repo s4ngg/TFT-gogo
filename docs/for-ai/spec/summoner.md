@@ -12,8 +12,19 @@ Detailed human spec: docs/for-humans/spec/summoner.md
 
 <api>
 <backend>
-- GET /api/summoners/{gameName}/{tagLine}         — summoner profile (profileIconId, level, tier, rank, LP, wins, losses)
-- GET /api/summoners/{gameName}/{tagLine}/matches — match list (placement, units, traits, gameDatetime, gameType, queueId)
+- GET /api/summoners/{gameName}/{tagLine}
+  → SummonerDetailResponse { puuid, gameName, tagLine, profileIconId, summonerLevel, tier, rank, leaguePoints, wins, losses }
+  — 매치 데이터 미포함. unranked 시 tier/rank=null, leaguePoints/wins/losses=0
+
+- GET /api/match/{puuid}/matches?start={int}&count={int}
+  → List&lt;SummonerMatchItemDto&gt; { matchId, placement, gameDateTime, gameType, compositionName,
+      traits: [ { traitId, name, iconUrl, count, tone(bronze|silver|gold|prismatic) } ],
+      units:  [ { characterId, imageUrl, stars, itemImageUrls } ],
+      participants: [ { puuid, riotIdGameName, riotIdTagline, placement, stage, traits, units, playersEliminated, goldLeft } ] }
+  — start 기본값 0, count 기본값 20. Riot API 호출 간 200ms 쓰로틀. queue 1090·1100만 포함.
+
+- GET /api/match/detail/{matchId}
+  → MatchDetailResponse — 매치에 참가한 8인 전체 상세 데이터
 </backend>
 <frontend>
 - frontend/src/api/summonerApi.ts               — getSummonerProfile, getMatchHistory
@@ -30,7 +41,7 @@ Detailed human spec: docs/for-humans/spec/summoner.md
 - Trait activation tone: Riot API `style` (0–4) → 0=none, 1=bronze, 2=silver, 3=gold, 4=chromatic.
 - LP change and augments are not provided by Riot API — never fabricate these values.
 - CDragon image fallback: if registered URL missing, auto-generate `Trait_Icon_17_{TraitName}.TFT_Set17.tex` pattern.
-- Match list: load 30 at a time; "30개 더 보기" button appends next batch.
+- Match list: count 파라미터로 배치 크기 지정 (기본값 20). "더 보기" 버튼 클릭 시 start를 count 단위로 증가시켜 추가 요청. 내부적으로 matchId 조회 후 각 매치 상세 조회 시 200ms 쓰로틀 적용 (Riot API rate limit 대응).
 - Game type filter: 전체 / 랭크 / 일반 — applied client-side on fetched match list.
 - Expanding a match row shows all 8 participants: placement, summonerName, stage (last_round → Spring notation), traits, units, kills, gold_left.
 - My row in expanded view is highlighted in teal.
@@ -46,9 +57,10 @@ Detailed human spec: docs/for-humans/spec/summoner.md
 
 <open-issues>
 - POST /api/summoners/{gameName}/{tagLine}/refresh (match refresh endpoint) — not yet implemented
-- Duplicate Riot API calls when loading profile + matches simultaneously (rate limit risk)
-- stage conversion policy not yet finalized
-- gameType label conversion policy not yet finalized
+- stage 필드: 현재 ParticipantDto.stage = String.valueOf(level) 임시값 — Spring round notation 변환 미구현
+- gameType label 변환 정책 미확정 (queue_id → "랭크"/"일반" 등)
+- SummonerMatchItemDto.compositionName 항상 빈 문자열 — 추후 구현 필요
+- itemImageUrls 항상 빈 리스트 — Riot API 아이템 ID → 이미지 URL 변환 미구현
 </open-issues>
 
 </spec>
