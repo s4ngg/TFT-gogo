@@ -145,6 +145,7 @@ public class AdminDeckServiceImpl implements AdminDeckService {
     }
 
     private int toInt(Object value) {
+        if (value == null) throw new BusinessException(ErrorCode.INVALID_INPUT);
         if (value instanceof Integer i) return i;
         if (value instanceof Number n) return n.intValue();
         throw new BusinessException(ErrorCode.INVALID_INPUT);
