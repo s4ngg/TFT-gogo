@@ -44,6 +44,18 @@ services:
       - redis
     environment:
       SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/tftgogo?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      SPRING_DATASOURCE_USERNAME: tftuser
+      SPRING_DATASOURCE_PASSWORD: tftpass
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQL8Dialect
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      RIOT_API_KEY: local-smoke-disabled
+      ADMIN_SECRET_TOKEN: local-admin-token
+      META_DECK_STARTUP_AGGREGATE: "false"
+      JWT_SECRET: local-jwt-secret-key-for-tft-gogo-dev-123456
+      JWT_ACCESS_TOKEN_EXPIRATION_MILLIS: 3600000
 
   ai-server:
     build:
