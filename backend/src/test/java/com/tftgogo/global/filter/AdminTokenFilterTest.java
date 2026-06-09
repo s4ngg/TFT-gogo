@@ -1,24 +1,36 @@
 package com.tftgogo.global.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
 class AdminTokenFilterTest {
 
-    @Autowired
-    MockMvc mockMvc;
+    private MockMvc mockMvc;
 
-    @Autowired
-    ObjectMapper objectMapper;
+    @RestController
+    static class DummyController {
+        @GetMapping("/api/admin/decks")
+        public String dummy() { return "ok"; }
+    }
+
+    @BeforeEach
+    void setUp() {
+        AdminTokenFilter filter = new AdminTokenFilter(new ObjectMapper());
+        ReflectionTestUtils.setField(filter, "adminSecretToken", "test-secret");
+
+        mockMvc = MockMvcBuilders.standaloneSetup(new DummyController())
+                .addFilter(filter, "/api/admin/*")
+                .build();
+    }
 
     @Test
     void 토큰이_없으면_401과_ApiResponse_형식을_반환한다() throws Exception {

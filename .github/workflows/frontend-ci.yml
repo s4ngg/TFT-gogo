@@ -4,9 +4,15 @@ on:
   push:
     paths:
       - 'frontend/**'
+      - '.github/workflows/**'
   pull_request:
     paths:
       - 'frontend/**'
+      - '.github/workflows/**'
+
+concurrency:
+  group: frontend-ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -36,3 +42,8 @@ jobs:
         run: |
           cd frontend
           npm run lint
+
+      - name: Test
+        run: |
+          cd frontend
+          npm run test
