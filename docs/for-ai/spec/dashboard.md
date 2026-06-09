@@ -11,10 +11,11 @@ Pages: Dashboard (/), MetaStats.
 
 <api>
 <backend>
-- GET /api/match/search?gameName=&tagLine=        — search summoner by name/tag (redirects to /summoner/:gameName/:tagLine)
+- 검색 자체는 별도 API 없음. 입력된 gameName#tagLine을 /summoner/:gameName/:tagLine으로 프론트엔드 라우팅.
+- 소환사 데이터 조회: GET /api/summoners/{gameName}/{tagLine} (summoner.md 참조)
 </backend>
 <frontend>
-- frontend/src/api/riotApi.ts     — Riot API proxy wrappers
+- frontend/src/api/summonerApi.ts — getSummonerProfile (검색 결과 페이지에서 사용)
 </frontend>
 </api>
 

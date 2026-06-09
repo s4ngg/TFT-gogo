@@ -31,9 +31,6 @@
   color: #ffd744;
 }
 
-.badge[data-tier="A+"] {
-  font-size: 15px;
-}
 
 .badge[data-tier="B"] {
   border-color: rgba(59, 130, 246, 0.9);

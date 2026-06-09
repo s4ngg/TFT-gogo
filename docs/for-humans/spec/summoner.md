@@ -70,21 +70,31 @@
 
 ## 데이터 요구사항 (Riot API)
 
-백엔드는 아래 5개 Riot API를 조합해 단일 응답으로 가공:
+백엔드는 아래 5개 Riot API를 조합하여 **2개의 분리된 엔드포인트**로 제공:
+
+**① GET /api/summoners/{gameName}/{tagLine}** — 소환사 프로필 + 랭크 (단계 1~3)
 
 | 단계 | API | 목적 |
 |------|-----|------|
 | 1 | account-v1 `GET /riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}` | puuid, gameName, tagLine |
 | 2 | tft-summoner-v1 `GET /tft/summoner/v1/summoners/by-puuid/{puuid}` | profileIconId, summonerLevel |
 | 3 | tft-league-v1 `GET /tft/league/v1/by-puuid/{puuid}` | tier, rank, leaguePoints, wins, losses |
-| 4 | tft-match-v1 (IDs) `GET /tft/match/v1/matches/by-puuid/{puuid}/ids` | 매치 ID 목록 (count=30) |
-| 5 | tft-match-v1 (상세) `GET /tft/match/v1/matches/{matchId}` | 참가자, 유닛, 시너지 등 |
 
 - 2단계·3단계는 PUUID 공통이므로 병렬 호출 가능
+- 비배치(언랭크) 소환사: tier/rank=null, leaguePoints/wins/losses=0
+
+**② GET /api/match/{puuid}/matches?start={int}&count={int}** — 전적 목록 (단계 4~5)
+
+| 단계 | API | 목적 |
+|------|-----|------|
+| 4 | tft-match-v1 (IDs) `GET /tft/match/v1/matches/by-puuid/{puuid}/ids` | 매치 ID 목록 |
+| 5 | tft-match-v1 (상세) `GET /tft/match/v1/matches/{matchId}` | 참가자, 유닛, 시너지 등 |
+
+- start 기본값 0, count 기본값 20. 매치 상세 호출 간 200ms 쓰로틀 적용
 - queue_id 1100(랭크) / 1090(일반)만 수집. 하이퍼롤 등 그 외 제외
 - wins = placement ≤ 4 횟수, losses = placement > 4 횟수
 - Riot API의 `win` 필드(1위 여부)는 사용하지 않음 — 반드시 placement로 직접 판정
-- LeagueEntryDTO의 wins/losses는 Riot 서버 전체 누적값 — 최근 30게임 승률 계산에 사용하지 않음
+- LeagueEntryDTO의 wins/losses는 Riot 서버 전체 누적값 — 최근 게임 승률 계산에 사용하지 않음
 - 시너지 tone: Riot API `style`(0~4) → Spring 변환 (0=없음, 1=브론즈, 2=실버, 3=골드, 4=크로매틱)
 - 챔피언 별수: Riot API `tier`(int) 그대로 사용
 - LP 변동값, 증강: Riot API 미제공 — 임의 생성하지 않음
@@ -95,7 +105,9 @@
 
 | 항목 | 우선순위 |
 |------|---------|
-| API 경로 단수→복수 통일 `/api/summoner/**` → `/api/summoners/**` | 높음 |
+| ~~API 경로 단수→복수 통일~~ `/api/summoners/**` | ~~높음~~ **완료** |
 | 전적 최신화 엔드포인트 구현 `POST /api/summoners/{gameName}/{tagLine}/refresh` | 중간 |
 | 게임 유형(gameType) 변환 정책 확정 | 중간 |
-| 스테이지 변환 정책 확정 | 중간 |
+| 스테이지 변환 정책 확정 (현재 level 임시값 사용 중) | 중간 |
+| compositionName 자동 생성 (현재 빈 문자열) | 낮음 |
+| itemImageUrls 아이템 이미지 URL 매핑 (현재 빈 배열) | 낮음 |

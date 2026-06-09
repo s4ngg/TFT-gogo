@@ -3,6 +3,8 @@ import AiRecommend from './pages/AiRecommend/AiRecommend'
 import AdminLogin from './pages/Admin/AdminLogin'
 import AdminDecks from './pages/Admin/AdminDecks'
 import AdminHeroAugments from './pages/Admin/AdminHeroAugments'
+import AdminGuides from './pages/Admin/AdminGuides'
+import AdminPatchNotes from './pages/Admin/AdminPatchNotes'
 import AdminMembers from './pages/Admin/AdminMembers'
 import AdminCommunity from './pages/Admin/AdminCommunity'
 import AuthPage from './pages/Auth/AuthPage'
@@ -36,6 +38,8 @@ function App() {
       {/* 관리자 전용 레이아웃 */}
       <Route path="/admin/decks" element={<AdminLayout><AdminDecks /></AdminLayout>} />
       <Route path="/admin/hero-augments" element={<AdminLayout><AdminHeroAugments /></AdminLayout>} />
+      <Route path="/admin/guides" element={<AdminLayout><AdminGuides /></AdminLayout>} />
+      <Route path="/admin/patch-notes" element={<AdminLayout><AdminPatchNotes /></AdminLayout>} />
       <Route path="/admin/members" element={<AdminLayout><AdminMembers /></AdminLayout>} />
       <Route path="/admin/community" element={<AdminLayout><AdminCommunity /></AdminLayout>} />
 

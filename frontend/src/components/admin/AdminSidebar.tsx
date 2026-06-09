@@ -35,7 +35,6 @@ function AdminSidebar() {
             className={({ isActive }) =>
               `${styles.navItem} ${isActive ? styles.active : ''} ${!ready ? styles.disabled : ''}`
             }
-            onClick={!ready ? (e) => e.preventDefault() : undefined}
           >
             <Icon size={20} strokeWidth={2} />
             <span>{label}</span>

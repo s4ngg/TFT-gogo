@@ -11,13 +11,12 @@ import styles from '../Decks.module.css'
 
 const TIER_ORDER: TierBadgeValue[] = ['S', 'A', 'B', 'C', 'D']
 const TIER_COLOR: Record<TierBadgeValue, string> = {
-  S: '#04f3e5', 'A+': '#f7d26d', A: '#a78bfa', B: '#60a5fa', C: '#818cf8', D: '#6b7280',
+  S: '#04f3e5', A: '#a78bfa', B: '#60a5fa', C: '#818cf8', D: '#6b7280',
 }
 
 const TIER_DESC: Record<TierBadgeValue, string> = {
   S: '최상위 픽 · 강력 추천',
-  'A+': '상위권 안정적 덱',
-  A: '중상위권 범용 덱',
+  A: '상위권 안정적 덱',
   B: '중위권 상황 의존적',
   C: '하위권 전문 운영 필요',
   D: '비추천 · 낮은 안정성',

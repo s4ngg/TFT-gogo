@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fetchAdminDecks, setAdminToken, clearAdminToken } from '../../api/adminApi'
+import pageStyles from './AdminLogin.module.css'
 import styles from './Admin.module.css'
 
 function AdminLogin() {
@@ -21,7 +22,7 @@ function AdminLogin() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-main)', display: 'grid', placeItems: 'center' }}>
+    <div className={pageStyles.loginPage}>
       <form className={styles.tokenForm} onSubmit={handleSubmit}>
         <h2 className={styles.title}>관리자 인증</h2>
         <label className={styles.tokenLabel}>Admin Token</label>

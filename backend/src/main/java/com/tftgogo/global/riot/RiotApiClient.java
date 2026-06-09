@@ -132,6 +132,23 @@ public class RiotApiClient {
         return getByUrl(url, path, MatchDto.class, ErrorCode.MATCH_NOT_FOUND);
     }
 
+    // ── RiotQueue 전용 — 스로틀 없는 매치ID 목록 조회 (RiotQueue가 100ms 간격 보장) ──
+    public List<String> getMatchIdsForQueue(String puuid, int count, int start) {
+        String path = "/tft/match/v1/matches/by-puuid/{puuid}/ids";
+        String url = riotProperties.getAsiaBaseUrl()
+                + "/tft/match/v1/matches/by-puuid/" + puuid
+                + "/ids?count=" + count + "&start=" + start;
+        String[] ids = executeRequest(url, path, String[].class, ErrorCode.RIOT_API_ERROR);
+        return ids != null ? Arrays.asList(ids) : List.of();
+    }
+
+    // ── RiotQueue 전용 — 스로틀 없는 매치 상세 조회 (RiotQueue가 100ms 간격 보장) ──
+    public MatchDto getMatchForQueue(String matchId) {
+        String path = "/tft/match/v1/matches/{matchId}";
+        String url = riotProperties.getAsiaBaseUrl() + "/tft/match/v1/matches/" + matchId;
+        return executeRequest(url, path, MatchDto.class, ErrorCode.MATCH_NOT_FOUND);
+    }
+
     // ── 공통 GET (baseUrl 분기용) ───────────────────────────
     private <T> T get(String path, String baseUrl, Class<T> responseType) {
         return getByUrl(baseUrl + path, path, responseType, ErrorCode.RIOT_API_ERROR);
@@ -139,10 +156,14 @@ public class RiotApiClient {
 
     // ── 공통 GET — 1,300ms 최소 간격 + Retry-After 파싱 재시도 (최대 3회) ──
     private <T> T getByUrl(String url, String logPath, Class<T> responseType, ErrorCode notFoundCode) {
+        waitForRequestWindow();
+        return executeRequest(url, logPath, responseType, notFoundCode);
+    }
+
+    // ── HTTP 실행 + Retry-After 재시도 (최대 3회, 스로틀 없음) ──
+    private <T> T executeRequest(String url, String logPath, Class<T> responseType, ErrorCode notFoundCode) {
         for (int attempt = 1; attempt <= MAX_RETRY_COUNT; attempt++) {
             try {
-                waitForRequestWindow();
-
                 HttpHeaders headers = new HttpHeaders();
                 headers.set("X-Riot-Token", riotProperties.getApiKey());
                 HttpEntity<Void> entity = new HttpEntity<>(headers);

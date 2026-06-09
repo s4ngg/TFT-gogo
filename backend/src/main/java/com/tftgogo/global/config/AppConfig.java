@@ -46,4 +46,15 @@ public class AppConfig {
         executor.initialize();
         return executor;
     }
+
+    @Bean(name = "matchCollectionExecutor")
+    public Executor matchCollectionExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(5);
+        executor.setMaxPoolSize(5);
+        executor.setQueueCapacity(200);
+        executor.setThreadNamePrefix("match-collect-");
+        executor.initialize();
+        return executor;
+    }
 }
