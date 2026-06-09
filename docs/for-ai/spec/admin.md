@@ -18,6 +18,7 @@ Page: Admin (/admin).
 
 - GET    /api/admin/guides                   -> list guide entries
 - POST   /api/admin/guides                   -> create guide entry
+- POST   /api/admin/guides/import/cdragon    -> Community Dragon에서 챔피언/특성 가이드 항목을 가져옵니다
 - PATCH  /api/admin/guides/{guideId}         -> update guide entry
 - DELETE /api/admin/guides/{guideId}         -> soft delete guide entry
 
@@ -62,7 +63,9 @@ Page: Admin (/admin).
 
 <guide-curation>
 - Admin can create, update, list, and soft delete guide entries.
+- 관리자는 CDragon 챔피언/특성 가이드 항목을 동일한 guides 테이블로 가져올 수 있다.
 - guideType + targetKey + patchVersion identifies one guide entry.
+- Import는 동일한 guideType + targetKey + patchVersion을 가진 미삭제 행의 콘텐츠를 수정하되 기존 active 상태는 유지하고, 없는 행은 active=true로 새로 생성한다.
 - Soft-deleted guide rows still reserve guideType + targetKey + patchVersion unless the schema changes.
 - dataJson must be a JSON object.
 - active=false hides an entry from public guide responses.
