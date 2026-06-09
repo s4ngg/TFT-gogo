@@ -13,8 +13,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
@@ -24,6 +27,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -39,21 +43,19 @@ class GuideCdragonImportServiceImplTest {
     @Mock
     private RestTemplate restTemplate;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-    private final CommunityDragonProperties communityDragonProperties = new CommunityDragonProperties();
+    @Spy
+    private ObjectMapper objectMapper = new ObjectMapper();
 
+    @Spy
+    private CommunityDragonProperties communityDragonProperties = new CommunityDragonProperties();
+
+    @InjectMocks
     private GuideCdragonImportServiceImpl guideCdragonImportService;
 
     @BeforeEach
     void setUp() {
         communityDragonProperties.setTftKoKrUrl("https://example.com/cdragon/tft/ko_kr.json");
         communityDragonProperties.setAssetBaseUrl("https://raw.communitydragon.org/latest/game");
-        guideCdragonImportService = new GuideCdragonImportServiceImpl(
-                guideRepository,
-                restTemplate,
-                objectMapper,
-                communityDragonProperties
-        );
     }
 
     @Test
@@ -71,7 +73,7 @@ class GuideCdragonImportServiceImplTest {
                 any(String.class),
                 any(String.class)
         )).thenReturn(false);
-        when(guideRepository.save(any(Guide.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(guideRepository.saveAndFlush(any(Guide.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // when
         GuideImportResponse response = guideCdragonImportService.importGuides(request(true, true));
@@ -84,7 +86,7 @@ class GuideCdragonImportServiceImplTest {
         assertThat(response.getImportedCount()).isEqualTo(2);
 
         ArgumentCaptor<Guide> guideCaptor = ArgumentCaptor.forClass(Guide.class);
-        verify(guideRepository, times(2)).save(guideCaptor.capture());
+        verify(guideRepository, times(2)).saveAndFlush(guideCaptor.capture());
         List<Guide> savedGuides = guideCaptor.getAllValues();
 
         Guide championGuide = savedGuides.stream()
@@ -152,7 +154,37 @@ class GuideCdragonImportServiceImplTest {
         assertThat(response.getCreatedCount()).isZero();
         assertThat(response.getUpdatedCount()).isZero();
         assertThat(response.getSkippedCount()).isEqualTo(1);
-        verify(guideRepository, never()).save(any(Guide.class));
+        verify(guideRepository, never()).saveAndFlush(any(Guide.class));
+    }
+
+    @Test
+    void concurrent_create_conflict_updates_existing_active_guide() {
+        // given
+        Guide existingGuide = guide(GuideType.CHAMPION, "TFT17_Briar", "釉뚮씪?댁뼱", "17.3");
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonJson());
+        when(guideRepository.findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
+                GuideType.CHAMPION,
+                "TFT17_Briar",
+                "17.3"
+        )).thenReturn(Optional.empty(), Optional.of(existingGuide));
+        when(guideRepository.existsByGuideTypeAndTargetKeyAndPatchVersion(
+                GuideType.CHAMPION,
+                "TFT17_Briar",
+                "17.3"
+        )).thenReturn(false);
+        doThrow(new DataIntegrityViolationException("duplicate guide"))
+                .when(guideRepository)
+                .saveAndFlush(any(Guide.class));
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request(true, false));
+
+        // then
+        assertThat(response.getCreatedCount()).isZero();
+        assertThat(response.getUpdatedCount()).isEqualTo(1);
+        assertThat(response.getSkippedCount()).isZero();
+        assertThat(existingGuide.getDataJson()).contains("\"ability\"");
     }
 
     @Test

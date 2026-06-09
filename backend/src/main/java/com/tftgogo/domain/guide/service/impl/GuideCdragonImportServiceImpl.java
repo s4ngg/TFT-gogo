@@ -17,6 +17,7 @@ import com.tftgogo.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClientException;
@@ -288,17 +289,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                 )
                 .ifPresentOrElse(
                         guide -> {
-                            guide.update(
-                                    candidate.guideType(),
-                                    candidate.targetKey(),
-                                    candidate.name(),
-                                    candidate.summary(),
-                                    candidate.imageUrl(),
-                                    writeJson(candidate.dataJson()),
-                                    candidate.patchVersion(),
-                                    candidate.sortOrder(),
-                                    true
-                            );
+                            updateGuide(guide, candidate);
                             counter.updatedCount++;
                         },
                         () -> createOrSkipGuide(candidate, counter)
@@ -327,8 +318,56 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                 .active(true)
                 .build();
 
-        guideRepository.save(guide);
-        counter.createdCount++;
+        try {
+            guideRepository.saveAndFlush(guide);
+            counter.createdCount++;
+        } catch (DataIntegrityViolationException e) {
+            handleConcurrentCreate(candidate, counter, e);
+        }
+    }
+
+    private void handleConcurrentCreate(
+            GuideCandidate candidate,
+            ImportCounter counter,
+            DataIntegrityViolationException exception
+    ) {
+        guideRepository
+                .findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
+                        candidate.guideType(),
+                        candidate.targetKey(),
+                        candidate.patchVersion()
+                )
+                .ifPresentOrElse(
+                        guide -> {
+                            updateGuide(guide, candidate);
+                            counter.updatedCount++;
+                        },
+                        () -> {
+                            if (guideRepository.existsByGuideTypeAndTargetKeyAndPatchVersion(
+                                    candidate.guideType(),
+                                    candidate.targetKey(),
+                                    candidate.patchVersion()
+                            )) {
+                                counter.skippedCount++;
+                                return;
+                            }
+                            throw exception;
+                        }
+                );
+    }
+
+    private void updateGuide(Guide guide, GuideCandidate candidate) {
+        guide.update(
+                candidate.guideType(),
+                candidate.targetKey(),
+                candidate.name(),
+                candidate.summary(),
+                candidate.imageUrl(),
+                writeJson(candidate.dataJson()),
+                candidate.patchVersion(),
+                candidate.sortOrder(),
+                true
+        );
     }
 
     private String writeJson(JsonNode dataJson) {

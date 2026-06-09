@@ -48,6 +48,7 @@ Page: Guide (/guide).
 - Admin CDragon import writes into the same guides contract as manual admin curation.
 - CDragon import currently supports CHAMPION and TRAIT guide rows first; ITEM/AUGMENT import requires a separate filtering policy.
 - CDragon import is upsert-based for active/non-deleted rows: same guideType + targetKey + patchVersion updates existing rows and creates missing rows.
+- If a soft-deleted row already reserves the same key, CDragon import skips that key instead of recreating it.
 - Data originates from CDragon (traits, champions) where possible; use communityDragonAssets.ts helpers for frontend images.
 - guideFallback.ts provides static fallback when the backend is unreachable.
 - guideNormalizers.ts must be applied before passing data to components; do not use raw API responses directly.
