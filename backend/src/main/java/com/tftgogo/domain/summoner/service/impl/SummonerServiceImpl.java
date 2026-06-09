@@ -4,6 +4,7 @@ import com.tftgogo.domain.match.dto.response.RankInfoResponse;
 import com.tftgogo.domain.match.dto.response.SummonerProfileResponse;
 import com.tftgogo.domain.match.entity.CachedRank;
 import com.tftgogo.domain.match.repository.CachedRankRepository;
+import com.tftgogo.domain.match.service.MatchCollectionService;
 import com.tftgogo.domain.summoner.dto.response.SummonerDetailResponse;
 import com.tftgogo.domain.summoner.entity.CachedSummoner;
 import com.tftgogo.domain.summoner.repository.CachedSummonerRepository;
@@ -31,13 +32,16 @@ public class SummonerServiceImpl implements SummonerService {
     private final RiotApiClient riotApiClient;
     private final CachedSummonerRepository cachedSummonerRepository;
     private final CachedRankRepository cachedRankRepository;
+    private final MatchCollectionService matchCollectionService;
 
     public SummonerServiceImpl(RiotApiClient riotApiClient,
                                CachedSummonerRepository cachedSummonerRepository,
-                               CachedRankRepository cachedRankRepository) {
+                               CachedRankRepository cachedRankRepository,
+                               MatchCollectionService matchCollectionService) {
         this.riotApiClient = riotApiClient;
         this.cachedSummonerRepository = cachedSummonerRepository;
         this.cachedRankRepository = cachedRankRepository;
+        this.matchCollectionService = matchCollectionService;
     }
 
     @Override
@@ -120,6 +124,22 @@ public class SummonerServiceImpl implements SummonerService {
     public SummonerDetailResponse getDetail(String gameName, String tagLine) {
         SummonerProfileResponse profile = getProfile(gameName, tagLine);
         RankInfoResponse rankInfo = getRank(profile.getPuuid());
+        return SummonerDetailResponse.from(profile, rankInfo);
+    }
+
+    @Override
+    public SummonerDetailResponse refresh(String gameName, String tagLine) {
+        cachedSummonerRepository
+                .findByGameNameIgnoreCaseAndTagLineIgnoreCase(gameName, tagLine)
+                .ifPresent(cs -> {
+                    cachedRankRepository.deleteById(cs.getPuuid());
+                    cachedSummonerRepository.deleteById(cs.getPuuid());
+                });
+
+        SummonerProfileResponse profile = fetchAndCacheSummoner(gameName, tagLine);
+        RankInfoResponse rankInfo = fetchAndCacheRank(profile.getPuuid());
+        matchCollectionService.refreshMatches(profile.getPuuid());
+
         return SummonerDetailResponse.from(profile, rankInfo);
     }
 

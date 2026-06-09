@@ -23,4 +23,13 @@ public class SummonerController implements SummonerControllerDocs {
         SummonerDetailResponse detail = summonerService.getDetail(gameName, tagLine);
         return ResponseEntity.ok(ApiResponse.success("소환사 조회 성공", detail));
     }
+
+    @Override
+    @PostMapping("/{gameName}/{tagLine}/refresh")
+    public ResponseEntity<ApiResponse<SummonerDetailResponse>> refreshSummoner(
+            @PathVariable("gameName") String gameName,
+            @PathVariable("tagLine") String tagLine) {
+        SummonerDetailResponse detail = summonerService.refresh(gameName, tagLine);
+        return ResponseEntity.ok(ApiResponse.success("전적 갱신 성공", detail));
+    }
 }

@@ -1,6 +1,7 @@
 import { ChevronDown, ChevronUp, Coins, RefreshCcw, Search, Swords } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { communityDragonProfileIconUrl, itemsFromUrls, tftChampSquareUrl, tftTierEmblemUrl, tftTraitIconUrl } from '../../api/communityDragonAssets'
 import { AppLayout } from '../../components/layout'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
@@ -9,6 +10,8 @@ import useSummonerStore from '../../store/useSummonerStore'
 import { useSummonerProfile } from '../../hooks/useSummonerProfile'
 import { useMatchHistory } from '../../hooks/useMatchHistory'
 import type { MatchSummaryResponse, MatchTraitResponse, GameType } from '../../api/summonerApi'
+import { refreshSummoner } from '../../api/summonerApi'
+import ProfileSkeleton from './components/ProfileSkeleton'
 import styles from './SummonerDetail.module.css'
 
 const TIER_KO: Record<string, string> = {
@@ -144,17 +147,17 @@ function SummonerDetail() {
   const [query, setQuery] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [gameTypeFilter, setGameTypeFilter] = useState<GameTypeFilter>('ALL')
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const setSummoner = useSummonerStore((s) => s.setSummoner)
 
   const name = decodeURIComponent(gameName ?? '')
   const tag = tagLine ?? 'KR1'
 
-  const { data: profile, isError: profileNotFound } = useSummonerProfile(name, tag)
+  const { data: profile, isError: profileNotFound, isLoading: profileLoading } = useSummonerProfile(name, tag)
   const {
     data: matchData,
-    refetch: refetchMatches,
-    isFetching: isMatchesRefetching,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
@@ -232,6 +235,18 @@ function SummonerDetail() {
     }
   }, [profile, name, tag, tierKo, setSummoner])
 
+  async function handleRefresh() {
+    if (!name || !tag || isRefreshing) return
+    setIsRefreshing(true)
+    try {
+      await refreshSummoner(name, tag)
+      await queryClient.invalidateQueries({ queryKey: ['summoner', 'profile', name, tag] })
+      await queryClient.invalidateQueries({ queryKey: ['summoner', 'matches'] })
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
+
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
     const trimmed = query.trim()
@@ -254,7 +269,9 @@ function SummonerDetail() {
           <button type="submit" aria-label="검색"><Search size={20} /></button>
         </form>
 
-        {profileNotFound ? (
+        {profileLoading ? (
+          <ProfileSkeleton />
+        ) : profileNotFound ? (
           <EmptyState name={name} tag={tag} />
         ) : (
           <>
@@ -290,11 +307,11 @@ function SummonerDetail() {
                 <button
                   type="button"
                   className={styles.updateBtn}
-                  onClick={() => refetchMatches()}
-                  disabled={isMatchesRefetching}
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
                 >
-                  <RefreshCcw size={16} className={isMatchesRefetching ? styles.spin : ''} />
-                  {isMatchesRefetching ? '갱신 중...' : '전적 업데이트'}
+                  <RefreshCcw size={16} className={isRefreshing ? styles.spin : ''} />
+                  {isRefreshing ? '갱신 중...' : '전적 업데이트'}
                 </button>
               </div>
             </section>

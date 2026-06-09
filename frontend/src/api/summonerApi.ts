@@ -82,6 +82,18 @@ export const getSummonerProfile = async (
   }
 }
 
+export const refreshSummoner = async (
+  gameName: string,
+  tagLine: string,
+): Promise<SummonerProfileResponse> => {
+  const { data } = await axiosInstance.post<ApiResponse<SummonerProfileResponse>>(
+    `/summoners/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}/refresh`,
+    null,
+    { timeout: 90_000 },
+  )
+  return data.data
+}
+
 export const getMatchHistory = async (
   puuid: string,
   start = 0,

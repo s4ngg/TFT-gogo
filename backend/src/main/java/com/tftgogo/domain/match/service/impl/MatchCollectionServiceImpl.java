@@ -205,6 +205,21 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
     }
 
     @Override
+    public void refreshMatches(String puuid) {
+        List<String> matchIds = fetchMatchIds(puuid, 0, 20);
+        if (matchIds.isEmpty()) return;
+
+        Set<String> cachedIds = new HashSet<>(cachedMatchRepository.findMatchIdsByMatchIdIn(matchIds));
+        List<String> toFetch = matchIds.stream()
+                .filter(id -> !cachedIds.contains(id))
+                .collect(Collectors.toList());
+
+        if (!toFetch.isEmpty()) {
+            collectInBackground(puuid, toFetch);
+        }
+    }
+
+    @Override
     public CollectionStatusResponse getStatus(String puuid) {
         long collected = cachedMatchRepository.countByParticipantPuuid(puuid);
         boolean running = inProgressMap.getOrDefault(puuid, false);
