@@ -28,13 +28,19 @@ public class MemberServiceImpl implements MemberService {
     @Override
     @Transactional
     public AuthResponse signup(SignupRequest request) {
+        if (memberRepository.existsByEmail(request.getEmail())) {
+            throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
+        }
+
         String encodedPassword = passwordEncoder.encode(request.getPassword());
         Member member;
+
         try {
             member = memberRepository.saveAndFlush(request.toEntity(encodedPassword));
         } catch (DataIntegrityViolationException e) {
             throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
+
         String accessToken = jwtTokenProvider.createAccessToken(member.getUserId());
 
         return AuthResponse.of(accessToken, MemberResponse.from(member));
