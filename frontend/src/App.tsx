@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Route, Routes } from 'react-router-dom'
 import AiRecommend from './pages/AiRecommend/AiRecommend'
 import AdminLogin from './pages/Admin/AdminLogin'
 import AdminDecks from './pages/Admin/AdminDecks'
@@ -16,6 +16,7 @@ import Party from './pages/Party/Party'
 import PatchNotes from './pages/PatchNotes/PatchNotes'
 import SummonerDetail from './pages/SummonerDetail/SummonerDetail'
 import AdminLayout from './layouts/AdminLayout'
+import NotFound from './pages/NotFound/NotFound'
 
 function App() {
   return (
@@ -43,7 +44,7 @@ function App() {
       <Route path="/admin/members" element={<AdminLayout><AdminMembers /></AdminLayout>} />
       <Route path="/admin/community" element={<AdminLayout><AdminCommunity /></AdminLayout>} />
 
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   )
 }
