@@ -155,7 +155,7 @@ export interface GuideEntryResponse {
   target_key?: string | null
 }
 
-export type GuideDataSource = 'api' | 'fallback'
+export type GuideDataSource = 'api' | 'fallback' | 'placeholder'
 
 export interface GuideCatalogResult {
   data: GuideCatalog
