@@ -145,13 +145,6 @@
   cursor: not-allowed;
 }
 
-.refreshError {
-  margin: 0;
-  font-size: var(--font-size-xs);
-  color: var(--danger);
-  text-align: right;
-}
-
 @keyframes spin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
