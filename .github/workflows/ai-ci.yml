@@ -4,9 +4,15 @@ on:
   push:
     paths:
       - 'ai-server/**'
+      - '.github/workflows/**'
   pull_request:
     paths:
       - 'ai-server/**'
+      - '.github/workflows/**'
+
+concurrency:
+  group: ai-ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -18,7 +24,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: Install dependencies
         run: |
@@ -29,11 +35,9 @@ jobs:
       - name: Lint with ruff
         run: |
           cd ai-server
-          pip install ruff
           ruff check .
 
       - name: Run tests
         run: |
           cd ai-server
-          pip install pytest
           pytest

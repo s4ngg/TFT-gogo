@@ -45,6 +45,7 @@ SESSION_GUIDE.md
 
 # 개인 로컬 전용 파일
 CLAUDE.local.md
+backend/src/main/resources/log4j2.xml
 TASK_PROGRESS.md
 .claude/settings.local.json
 

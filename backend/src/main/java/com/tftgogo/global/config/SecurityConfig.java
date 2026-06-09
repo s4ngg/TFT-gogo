@@ -37,12 +37,13 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth ->
-                        auth.requestMatchers(
+                        auth
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/decks/meta").permitAll()
+                        .requestMatchers(
                                 "/health",
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/signup",
-                                "/api/decks/meta/**",
-                                "/api/admin/**",
+                                "/api/admin/**",        // AdminTokenFilter가 직접 검증
                                 "/api/match/**",
                                 "/api/summoners/**",
                                 "/api/guide",
@@ -52,10 +53,6 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/decks/meta")
-                        .permitAll()
-                        .requestMatchers("/api/admin/**")   // AdminTokenFilter가 직접 검증
-                        .permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

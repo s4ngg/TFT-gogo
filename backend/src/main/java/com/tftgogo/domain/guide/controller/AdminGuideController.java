@@ -2,9 +2,12 @@ package com.tftgogo.domain.guide.controller;
 
 import com.tftgogo.domain.guide.controller.docs.AdminGuideControllerDocs;
 import com.tftgogo.domain.guide.dto.request.AdminGuideRequest;
+import com.tftgogo.domain.guide.dto.request.GuideCdragonImportRequest;
 import com.tftgogo.domain.guide.dto.response.AdminGuideResponse;
+import com.tftgogo.domain.guide.dto.response.GuideImportResponse;
 import com.tftgogo.domain.guide.entity.GuideType;
 import com.tftgogo.domain.guide.service.AdminGuideService;
+import com.tftgogo.domain.guide.service.GuideCdragonImportService;
 import com.tftgogo.global.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +31,7 @@ import java.util.List;
 public class AdminGuideController implements AdminGuideControllerDocs {
 
     private final AdminGuideService adminGuideService;
+    private final GuideCdragonImportService guideCdragonImportService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<AdminGuideResponse>>> getAdminGuides(
@@ -44,6 +48,13 @@ public class AdminGuideController implements AdminGuideControllerDocs {
         AdminGuideResponse response = adminGuideService.createGuide(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("관리자 게임가이드 생성 성공", response));
+    }
+
+    @PostMapping("/import/cdragon")
+    public ResponseEntity<ApiResponse<GuideImportResponse>> importCdragonGuides(
+            @RequestBody @Valid GuideCdragonImportRequest request) {
+        GuideImportResponse response = guideCdragonImportService.importGuides(request);
+        return ResponseEntity.ok(ApiResponse.success("Community Dragon 게임가이드 import 성공", response));
     }
 
     @PatchMapping("/{guideId}")
