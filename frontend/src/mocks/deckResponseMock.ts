@@ -82,7 +82,7 @@ export const mockDeckMetaResponse: MetaDeck[] = [
   },
   {
     rank: 2,
-    grade: 'A+',
+    grade: 'A',
     name: '4습격자 진',
     winRate: '49.7%',
     top4: '68.1%',
