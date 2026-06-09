@@ -18,9 +18,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -66,9 +68,10 @@ public class RiotApiClient {
     // ── 소환사 계정 조회 (account-v1, asia) ────────────────
     public AccountDto getAccount(String gameName, String tagLine) {
         String path = "/riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}";
-        String url = riotProperties.getAsiaBaseUrl()
-                + "/riot/account/v1/accounts/by-riot-id/"
-                + gameName + "/" + tagLine;
+        String url = UriComponentsBuilder
+                .fromHttpUrl(riotProperties.getAsiaBaseUrl() + path)
+                .buildAndExpand(Map.of("gameName", gameName, "tagLine", tagLine))
+                .toUriString();
         return getByUrl(url, path, AccountDto.class, ErrorCode.ACCOUNT_NOT_FOUND);
     }
 

@@ -174,6 +174,7 @@ function SummonerDetail() {
   const [gameTypeFilter, setGameTypeFilter] = useState<GameTypeFilter>('ALL')
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [refreshRateLimitSeconds, setRefreshRateLimitSeconds] = useState(0)
+  const [refreshError, setRefreshError] = useState<string | null>(null)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const setSummoner = useSummonerStore((s) => s.setSummoner)
@@ -272,15 +273,20 @@ function SummonerDetail() {
   async function handleRefresh() {
     if (!name || !tag || isRefreshing) return
     setIsRefreshing(true)
+    setRefreshError(null)
     try {
       await refreshSummoner(name, tag)
       await queryClient.invalidateQueries({ queryKey: ['summoner', 'profile', name, tag] })
-      await queryClient.invalidateQueries({ queryKey: ['summoner', 'matches'] })
+      await queryClient.invalidateQueries({ queryKey: ['summoner', 'matches', profile?.puuid] })
     } catch (err: unknown) {
       const status = (err as HttpError)?.response?.status
       if (status === 429) {
         const retryAfter = (err as HttpError)?.response?.headers?.['retry-after']
         setRefreshRateLimitSeconds(Math.max(1, Number(retryAfter ?? 120) || 120))
+      } else if (status === 404) {
+        setRefreshError('소환사 정보를 찾을 수 없습니다.')
+      } else {
+        setRefreshError('갱신 중 오류가 발생했습니다.')
       }
     } finally {
       setIsRefreshing(false)
@@ -355,6 +361,7 @@ function SummonerDetail() {
                   <RefreshCcw size={16} className={isRefreshing ? styles.spin : ''} />
                   {isRefreshing ? '갱신 중...' : '전적 업데이트'}
                 </button>
+                {refreshError && <p className={styles.refreshError}>{refreshError}</p>}
               </div>
             </section>
 
