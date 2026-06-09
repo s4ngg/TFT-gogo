@@ -22,13 +22,13 @@ jobs:
           filters: |
             frontend:
               - 'frontend/**'
-              - '.github/workflows/frontend-ci.yml'
+              - '.github/workflows/**'
             backend:
               - 'backend/**'
-              - '.github/workflows/backend-ci.yml'
+              - '.github/workflows/**'
             ai-server:
               - 'ai-server/**'
-              - '.github/workflows/ai-ci.yml'
+              - '.github/workflows/**'
 
   frontend-ci:
     needs: detect-changes
@@ -97,12 +97,17 @@ jobs:
     steps:
       - name: Check results
         run: |
+          detect_result="${{ needs.detect-changes.result }}"
           frontend_result="${{ needs.frontend-ci.result }}"
           backend_result="${{ needs.backend-ci.result }}"
           ai_result="${{ needs.ai-server-ci.result }}"
 
           failed=false
 
+          if [[ "$detect_result" == "failure" || "$detect_result" == "cancelled" ]]; then
+            echo "detect-changes failed: $detect_result"
+            failed=true
+          fi
           if [[ "$frontend_result" == "failure" || "$frontend_result" == "cancelled" ]]; then
             echo "Frontend CI failed: $frontend_result"
             failed=true
