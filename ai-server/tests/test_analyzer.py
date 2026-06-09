@@ -4,8 +4,6 @@ analyzer.py 단위 테스트
 given / when / then 패턴으로 작성.
 외부 의존성(OpenAI, DB) 없이 순수 로직만 테스트.
 """
-import pytest
-
 from app.models.match import AnalyzeRequest, MatchRecord, TraitInfo, UnitInfo
 from app.services.analyzer import compute_recent_stats, compute_trait_stats, analyze
 
@@ -45,9 +43,6 @@ def _make_request(matches: list[MatchRecord]) -> AnalyzeRequest:
 # ── compute_recent_stats 테스트 ──────────────────────────────────────────
 
 def test_최근_통계_빈_매치_목록():
-    # given
-    request = _make_request([])
-
     # when
     stats = compute_recent_stats([])
 

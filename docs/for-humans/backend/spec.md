@@ -83,11 +83,15 @@
 ### 2. Summoner/Match
 
 - 사용자는 Riot ID 형식의 `gameName`과 `tagLine`으로 소환사를 검색할 수 있어야 한다.
-- 백엔드는 Riot Account, Summoner, League, Match API를 조합해 소환사 정보를 제공한다.
-- 소환사 응답에는 기본 정보, 랭크 정보, 승패, 승률, 평균 순위, TOP4 같은 화면 핵심 지표가 포함되어야 한다.
-- 사용자는 최근 전적 목록을 조회할 수 있어야 한다.
+- 백엔드는 Riot Account, Summoner, League API를 조합해 소환사 프로필/랭크 정보를 단일 응답(`SummonerDetailResponse`)으로 제공한다.
+  - 포함 필드: puuid, gameName, tagLine, profileIconId, summonerLevel, tier, rank, leaguePoints, wins, losses
+  - 승률·평균 순위·TOP4율 등 매치 기반 통계는 이 응답에 포함하지 않는다 — 프론트가 전적 목록을 받아 계산한다.
+  - 언랭크(비배치) 소환사: tier/rank=null, leaguePoints/wins/losses=0
+- 전적 목록은 `/api/match/{puuid}/matches?start&count` 별도 엔드포인트로 제공한다.
+  - start/count 파라미터로 페이지네이션. 매치 상세 조회 간 200ms 쓰로틀 적용.
+  - queue_id 1090/1100만 포함. 각 매치는 `SummonerMatchItemDto`로 반환.
 - 전적 목록은 랭크/일반 게임 유형을 구분할 수 있어야 한다.
-- 사용자는 전적 최신화를 요청할 수 있어야 한다.
+- 사용자는 전적 최신화를 요청할 수 있어야 한다 (미구현).
 - 매치 상세는 참가자, 순위, 스테이지, 시너지, 유닛, 아이템, 킬 수, 잔여 골드 등 프론트가 표시할 수 있는 형태로 가공해야 한다.
 - Riot API에서 제공하지 않는 LP 변동값과 증강 정보는 임의 생성하지 않는다.
 

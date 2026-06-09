@@ -51,6 +51,7 @@ frontend/src/
 
 - GET    /api/admin/guides                        → 가이드 목록
 - POST   /api/admin/guides                        → 가이드 생성
+- POST   /api/admin/guides/import/cdragon         → CDragon에서 챔피언/특성 가이드 항목 가져오기
 - PATCH  /api/admin/guides/{guideId}              → 가이드 수정
 - DELETE /api/admin/guides/{guideId}              → 가이드 소프트삭제
 
@@ -93,6 +94,9 @@ frontend/src/
 
 <guide-curation>
 - guideType + targetKey + patchVersion으로 가이드 항목 식별
+- 관리자는 CDragon 챔피언/특성 가이드 항목을 동일한 guides 테이블로 가져올 수 있다.
+- Import는 동일한 guideType + targetKey + patchVersion을 가진 미삭제 행의 콘텐츠를 수정하되 기존 active 상태는 유지하고, 없는 행은 active=true로 새로 생성한다.
+- 소프트삭제된 행도 guideType + targetKey + patchVersion을 점유한다.
 - dataJson은 유효한 JSON 객체여야 함
 - active=false이면 일반 사용자에게 노출 안 됨
 </guide-curation>
