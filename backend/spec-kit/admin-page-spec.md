@@ -126,7 +126,7 @@ frontend/src/
   "heroAugments": "JSON string | null",
   "recommended": true,
   "sortOrder": 0,
-  "grade": "S | A+ | A | B | C | D | null"
+  "grade": "S | A | B | C | D | null"
 }
 
 // HeroAugmentDeckItem (응답)

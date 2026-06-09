@@ -105,7 +105,7 @@ frontend/src/
 
 <hero-augment-deck>
 - 영웅증강 덱은 MetaDeck과 독립적인 별도 엔티티
-- grade: S / A+ / A / B / C / D
+- grade: S / A / B / C / D
 - recommended=true인 덱만 공개 API에서 노출
 - champions, heroAugments 필드는 JSON string으로 저장
 </hero-augment-deck>
