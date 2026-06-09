@@ -25,6 +25,10 @@ Detailed human spec: docs/for-humans/spec/summoner.md
 
 - GET /api/match/detail/{matchId}
   → MatchDetailResponse — 매치에 참가한 8인 전체 상세 데이터
+
+- POST /api/summoners/{gameName}/{tagLine}/refresh
+  → SummonerProfileResponse — Riot API에서 최신 데이터를 가져와 캐시 갱신. 타임아웃 90초.
+  — 429 응답 시 `Retry-After` 헤더 포함 (초 단위). 기본값 120초.
 </backend>
 <frontend>
 - frontend/src/api/summonerApi.ts               — getSummonerProfile, getMatchHistory
@@ -47,6 +51,8 @@ Detailed human spec: docs/for-humans/spec/summoner.md
 - My row in expanded view is highlighted in teal.
 - stage conversion: last_round integer → Spring round notation (e.g., 5 → 2-1).
 - Non-existent summoner search → show empty state message.
+- Search input: split('#') 후 gameName·tagLine 양쪽 모두 trim(). "닉네임 # KR1" 형태 입력 허용.
+- 429 rate limit: 프로필 조회 또는 전적 갱신 시 429 응답 → RateLimitState 컴포넌트 표시. Retry-After 초 카운트다운 (기본값 120초, 0이 되면 "다시 검색할 수 있습니다" 표시).
 </business-rules>
 
 <frontend-structure>
@@ -56,7 +62,6 @@ Detailed human spec: docs/for-humans/spec/summoner.md
 </frontend-structure>
 
 <open-issues>
-- POST /api/summoners/{gameName}/{tagLine}/refresh (match refresh endpoint) — not yet implemented
 - stage 필드: 현재 ParticipantDto.stage = String.valueOf(level) 임시값 — Spring round notation 변환 미구현
 - gameType label 변환 정책 미확정 (queue_id → "랭크"/"일반" 등)
 - SummonerMatchItemDto.compositionName 항상 빈 문자열 — 추후 구현 필요

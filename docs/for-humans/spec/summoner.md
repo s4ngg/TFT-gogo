@@ -46,6 +46,8 @@
 - 게임 유형 필터: 전체 / 랭크 / 일반
 - 30개씩 표시, "30개 더 보기" 버튼으로 추가 로드
 - 존재하지 않는 소환사 검색 시 빈 상태(Empty State) 안내 표시
+- 검색 입력 시 `#` 기준으로 분리 후 gameName·tagLine 양쪽 공백 trim (예: "닉네임 # KR1" 입력 허용)
+- Riot API 429 과호출 시 RateLimitState 표시 — Retry-After 초 카운트다운 (기본 120초)
 
 ---
 
@@ -106,7 +108,7 @@
 | 항목 | 우선순위 |
 |------|---------|
 | ~~API 경로 단수→복수 통일~~ `/api/summoners/**` | ~~높음~~ **완료** |
-| 전적 최신화 엔드포인트 구현 `POST /api/summoners/{gameName}/{tagLine}/refresh` | 중간 |
+| ~~전적 최신화 엔드포인트 구현 `POST /api/summoners/{gameName}/{tagLine}/refresh`~~ | ~~중간~~ **완료** |
 | 게임 유형(gameType) 변환 정책 확정 | 중간 |
 | 스테이지 변환 정책 확정 (현재 level 임시값 사용 중) | 중간 |
 | compositionName 자동 생성 (현재 빈 문자열) | 낮음 |

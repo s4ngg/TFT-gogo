@@ -24,12 +24,14 @@ public class GlobalExceptionHandler {
                 e.getErrorCode().name(),
                 e.getErrorCode().getStatus()
         );
-        return ResponseEntity
-                .status(e.getErrorCode().getStatus())
-                .body(ApiResponse.fail(
-                        e.getErrorCode().getMessage(),
-                        e.getErrorCode().getStatus()
-                ));
+        ResponseEntity.BodyBuilder builder = ResponseEntity.status(e.getErrorCode().getStatus());
+        if (e.getRetryAfterSeconds() > 0) {
+            builder.header("Retry-After", String.valueOf(e.getRetryAfterSeconds()));
+        }
+        return builder.body(ApiResponse.fail(
+                e.getErrorCode().getMessage(),
+                e.getErrorCode().getStatus()
+        ));
     }
 
     // ── @Valid 검증 실패 ───────────────────────────────────

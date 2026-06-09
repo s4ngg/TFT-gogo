@@ -19,8 +19,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -31,10 +29,8 @@ import java.util.stream.Stream;
 public class RiotApiClient {
 
     private static final Logger logger = LogManager.getLogger(RiotApiClient.class);
-    private static final int MAX_RETRY_COUNT = 3;
     private static final long MIN_REQUEST_INTERVAL_MS = 1300L;
-    private static final long DEFAULT_RATE_LIMIT_WAIT_MS = 120_000L;
-    private static final long RATE_LIMIT_WAIT_CAP_MS = 30_000L;
+    private static final int DEFAULT_RETRY_AFTER_SECONDS = 120;
 
     private final RiotProperties riotProperties;
     private final RestTemplate restTemplate;
@@ -72,7 +68,7 @@ public class RiotApiClient {
         String path = "/riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}";
         String url = riotProperties.getAsiaBaseUrl()
                 + "/riot/account/v1/accounts/by-riot-id/"
-                + encodePathSegment(gameName) + "/" + encodePathSegment(tagLine);
+                + gameName + "/" + tagLine;
         return getByUrl(url, path, AccountDto.class, ErrorCode.ACCOUNT_NOT_FOUND);
     }
 
@@ -160,41 +156,32 @@ public class RiotApiClient {
         return executeRequest(url, logPath, responseType, notFoundCode);
     }
 
-    // ── HTTP 실행 + Retry-After 재시도 (최대 3회, 스로틀 없음) ──
+    // ── HTTP 실행 (스로틀 없음) ──
     private <T> T executeRequest(String url, String logPath, Class<T> responseType, ErrorCode notFoundCode) {
-        for (int attempt = 1; attempt <= MAX_RETRY_COUNT; attempt++) {
-            try {
-                HttpHeaders headers = new HttpHeaders();
-                headers.set("X-Riot-Token", riotProperties.getApiKey());
-                HttpEntity<Void> entity = new HttpEntity<>(headers);
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("X-Riot-Token", riotProperties.getApiKey());
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-                ResponseEntity<T> response = restTemplate.exchange(
-                        url, HttpMethod.GET, entity, responseType);
+            ResponseEntity<T> response = restTemplate.exchange(
+                    url, HttpMethod.GET, entity, responseType);
 
-                return Optional.ofNullable(response.getBody())
-                        .orElseThrow(() -> new BusinessException(ErrorCode.RIOT_API_ERROR));
+            return Optional.ofNullable(response.getBody())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.RIOT_API_ERROR));
 
-            } catch (BusinessException e) {
-                throw e;
-            } catch (HttpClientErrorException.NotFound e) {
-                logger.warn("Riot API 404: endpoint={}", logPath);
-                throw new BusinessException(notFoundCode);
-            } catch (HttpClientErrorException.TooManyRequests e) {
-                if (attempt == MAX_RETRY_COUNT) {
-                    logger.warn("Riot API rate limit exceeded after retries: endpoint={}", logPath);
-                    throw new BusinessException(ErrorCode.RIOT_API_RATE_LIMIT);
-                }
-                long waitMs = getRateLimitWaitMs(e);
-                logger.warn("Riot API rate limit exceeded: endpoint={}, retry={}/{}, waitMs={}",
-                        logPath, attempt, MAX_RETRY_COUNT, waitMs);
-                sleep(waitMs);
-            } catch (Exception e) {
-                logger.error("Riot API 호출 실패: endpoint={}", logPath, e);
-                throw new BusinessException(ErrorCode.RIOT_API_ERROR);
-            }
+        } catch (BusinessException e) {
+            throw e;
+        } catch (HttpClientErrorException.NotFound e) {
+            logger.warn("Riot API 404: endpoint={}", logPath);
+            throw new BusinessException(notFoundCode);
+        } catch (HttpClientErrorException.TooManyRequests e) {
+            int retryAfterSeconds = parseRetryAfterSeconds(e);
+            logger.warn("Riot API rate limit exceeded: endpoint={}, retryAfterSeconds={}", logPath, retryAfterSeconds);
+            throw new BusinessException(ErrorCode.RIOT_API_RATE_LIMIT, retryAfterSeconds);
+        } catch (Exception e) {
+            logger.error("Riot API 호출 실패: endpoint={}", logPath, e);
+            throw new BusinessException(ErrorCode.RIOT_API_ERROR);
         }
-
-        throw new BusinessException(ErrorCode.RIOT_API_ERROR);
     }
 
     private synchronized void waitForRequestWindow() {
@@ -206,22 +193,16 @@ public class RiotApiClient {
         lastRequestAt = System.currentTimeMillis();
     }
 
-    private long getRateLimitWaitMs(HttpClientErrorException.TooManyRequests e) {
+    private int parseRetryAfterSeconds(HttpClientErrorException.TooManyRequests e) {
         String retryAfter = e.getResponseHeaders() != null
                 ? e.getResponseHeaders().getFirst("Retry-After")
                 : null;
-
-        long waitMs;
-        if (retryAfter == null || retryAfter.isBlank()) {
-            waitMs = DEFAULT_RATE_LIMIT_WAIT_MS;
-        } else {
-            try {
-                waitMs = Math.max(1, Long.parseLong(retryAfter)) * 1000L;
-            } catch (NumberFormatException ignored) {
-                waitMs = DEFAULT_RATE_LIMIT_WAIT_MS;
-            }
+        if (retryAfter == null || retryAfter.isBlank()) return DEFAULT_RETRY_AFTER_SECONDS;
+        try {
+            return Math.max(1, Integer.parseInt(retryAfter.trim()));
+        } catch (NumberFormatException ignored) {
+            return DEFAULT_RETRY_AFTER_SECONDS;
         }
-        return Math.min(waitMs, RATE_LIMIT_WAIT_CAP_MS);
     }
 
     private void sleep(long waitMs) {
@@ -233,7 +214,4 @@ public class RiotApiClient {
         }
     }
 
-    private static String encodePathSegment(String value) {
-        return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
-    }
 }

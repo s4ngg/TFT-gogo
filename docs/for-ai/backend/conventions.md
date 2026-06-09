@@ -8,6 +8,8 @@
 - Do not create domain-specific Exception classes.
 - Use BusinessException(ErrorCode.XXX) pattern.
 - All exceptions must be handled in GlobalExceptionHandler.
+- For Riot API 429 rate limit, use BusinessException(ErrorCode.RIOT_API_RATE_LIMIT, retryAfterSeconds).
+  GlobalExceptionHandler automatically sets the Retry-After response header when retryAfterSeconds > 0.
 </exception>
 
 <response>
