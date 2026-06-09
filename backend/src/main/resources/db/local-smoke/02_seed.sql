@@ -94,6 +94,13 @@ ON DUPLICATE KEY UPDATE
     is_active = VALUES(is_active),
     deleted_at = NULL;
 
+UPDATE patch_notes
+SET is_current = 0
+WHERE is_current = 1
+  AND is_active = 1
+  AND deleted_at IS NULL
+  AND version <> '17.3';
+
 INSERT INTO patch_notes (
     version,
     title,

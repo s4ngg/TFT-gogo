@@ -67,7 +67,8 @@ services:
     depends_on:
       - postgres
     env_file:
-      - ./ai-server/.env
+      - path: ./ai-server/.env
+        required: false
 
   frontend:
     build:
