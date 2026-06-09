@@ -366,7 +366,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                 writeJson(candidate.dataJson()),
                 candidate.patchVersion(),
                 candidate.sortOrder(),
-                true
+                guide.isActive()
         );
     }
 

@@ -188,6 +188,29 @@ class GuideCdragonImportServiceImplTest {
     }
 
     @Test
+    void import_updates_existing_hidden_guide_without_publishing_it() {
+        // given
+        Guide hiddenGuide = guide(GuideType.CHAMPION, "TFT17_Briar", "TFT17_Briar", "17.3", false);
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonJson());
+        when(guideRepository.findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
+                GuideType.CHAMPION,
+                "TFT17_Briar",
+                "17.3"
+        )).thenReturn(Optional.of(hiddenGuide));
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request(true, false));
+
+        // then
+        assertThat(response.getCreatedCount()).isZero();
+        assertThat(response.getUpdatedCount()).isEqualTo(1);
+        assertThat(hiddenGuide.isActive()).isFalse();
+        assertThat(hiddenGuide.getDataJson()).contains("\"ability\"");
+        verify(guideRepository, never()).saveAndFlush(any(Guide.class));
+    }
+
+    @Test
     void 요청한_세트가_CDragon에_없으면_INVALID_INPUT을_던진다() {
         // given
         when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
@@ -237,6 +260,10 @@ class GuideCdragonImportServiceImplTest {
     }
 
     private Guide guide(GuideType guideType, String targetKey, String name, String patchVersion) {
+        return guide(guideType, targetKey, name, patchVersion, true);
+    }
+
+    private Guide guide(GuideType guideType, String targetKey, String name, String patchVersion, boolean active) {
         return Guide.builder()
                 .guideType(guideType)
                 .targetKey(targetKey)
@@ -246,7 +273,7 @@ class GuideCdragonImportServiceImplTest {
                 .dataJson("{\"cost\":1}")
                 .patchVersion(patchVersion)
                 .sortOrder(0)
-                .active(true)
+                .active(active)
                 .build();
     }
 

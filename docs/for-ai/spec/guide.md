@@ -47,7 +47,7 @@ Page: Guide (/guide).
 - Admin delete uses soft delete through active/deletedAt. Do not hard delete guide rows.
 - Admin CDragon import writes into the same guides contract as manual admin curation.
 - CDragon import currently supports CHAMPION and TRAIT guide rows first; ITEM/AUGMENT import requires a separate filtering policy.
-- CDragon import is upsert-based for active/non-deleted rows: same guideType + targetKey + patchVersion updates existing rows and creates missing rows.
+- CDragon import is upsert-based for non-deleted rows: same guideType + targetKey + patchVersion updates existing rows while preserving active state, and creates missing rows as active.
 - If a soft-deleted row already reserves the same key, CDragon import skips that key instead of recreating it.
 - Data originates from CDragon (traits, champions) where possible; use communityDragonAssets.ts helpers for frontend images.
 - guideFallback.ts provides static fallback when the backend is unreachable.
@@ -68,7 +68,7 @@ Page: Guide (/guide).
 <validation>
 - Service-layer unit tests are the primary backend verification target.
 - Admin guide tests should cover list filtering, create, update, duplicate prevention, invalid dataJson, not found, and soft delete.
-- CDragon import tests should cover create, update, skipped soft-deleted key behavior, and missing set/mutator input.
+- CDragon import tests should cover create, update, active state preservation, skipped soft-deleted key behavior, and missing set/mutator input.
 - Public guide tests should continue to cover tab parsing, pagination bounds, cost filtering, dataJson object response, metric sorting, latest patch fallback, and LIKE escaping.
 </validation>
 
