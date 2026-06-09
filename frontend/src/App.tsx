@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Route, Routes } from 'react-router-dom'
 import AiRecommend from './pages/AiRecommend/AiRecommend'
 import Admin from './pages/Admin/Admin'
 import AuthPage from './pages/Auth/AuthPage'
@@ -9,6 +9,7 @@ import Guide from './pages/Guide/Guide'
 import Party from './pages/Party/Party'
 import PatchNotes from './pages/PatchNotes/PatchNotes'
 import SummonerDetail from './pages/SummonerDetail/SummonerDetail'
+import NotFound from './pages/NotFound/NotFound'
 
 function App() {
   return (
@@ -24,7 +25,7 @@ function App() {
       <Route path="/party" element={<Party />} />
       <Route path="/patch-notes" element={<PatchNotes />} />
       <Route path="/admin" element={<Admin />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   )
 }
