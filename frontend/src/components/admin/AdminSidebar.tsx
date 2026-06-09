@@ -28,19 +28,30 @@ function AdminSidebar() {
       </div>
 
       <nav className={styles.navList}>
-        {NAV_ITEMS.map(({ path, label, icon: Icon, ready }) => (
-          <NavLink
-            key={path}
-            to={path}
-            className={({ isActive }) =>
-              `${styles.navItem} ${isActive ? styles.active : ''} ${!ready ? styles.disabled : ''}`
-            }
-          >
-            <Icon size={20} strokeWidth={2} />
-            <span>{label}</span>
-            {!ready && <span className={styles.badge}>준비 중</span>}
-          </NavLink>
-        ))}
+        {NAV_ITEMS.map(({ path, label, icon: Icon, ready }) =>
+          ready ? (
+            <NavLink
+              key={path}
+              to={path}
+              className={({ isActive }) =>
+                `${styles.navItem} ${isActive ? styles.active : ''}`
+              }
+            >
+              <Icon size={20} strokeWidth={2} />
+              <span>{label}</span>
+            </NavLink>
+          ) : (
+            <div
+              key={path}
+              className={`${styles.navItem} ${styles.disabled}`}
+              aria-disabled="true"
+            >
+              <Icon size={20} strokeWidth={2} />
+              <span>{label}</span>
+              <span className={styles.badge}>준비 중</span>
+            </div>
+          )
+        )}
       </nav>
 
       <div className={styles.fill} />

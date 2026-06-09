@@ -36,13 +36,15 @@ function App() {
       {/* 관리자 로그인 (레이아웃 없음) */}
       <Route path="/admin" element={<AdminLogin />} />
 
-      {/* 관리자 전용 레이아웃 */}
-      <Route path="/admin/decks" element={<AdminLayout><AdminDecks /></AdminLayout>} />
-      <Route path="/admin/hero-augments" element={<AdminLayout><AdminHeroAugments /></AdminLayout>} />
-      <Route path="/admin/guides" element={<AdminLayout><AdminGuides /></AdminLayout>} />
-      <Route path="/admin/patch-notes" element={<AdminLayout><AdminPatchNotes /></AdminLayout>} />
-      <Route path="/admin/members" element={<AdminLayout><AdminMembers /></AdminLayout>} />
-      <Route path="/admin/community" element={<AdminLayout><AdminCommunity /></AdminLayout>} />
+      {/* 관리자 전용 레이아웃 (중첩 라우트) */}
+      <Route element={<AdminLayout />}>
+        <Route path="/admin/decks" element={<AdminDecks />} />
+        <Route path="/admin/hero-augments" element={<AdminHeroAugments />} />
+        <Route path="/admin/guides" element={<AdminGuides />} />
+        <Route path="/admin/patch-notes" element={<AdminPatchNotes />} />
+        <Route path="/admin/members" element={<AdminMembers />} />
+        <Route path="/admin/community" element={<AdminCommunity />} />
+      </Route>
 
       <Route path="*" element={<NotFound />} />
     </Routes>
