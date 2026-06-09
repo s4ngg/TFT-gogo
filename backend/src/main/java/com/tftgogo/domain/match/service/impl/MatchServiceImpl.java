@@ -93,7 +93,6 @@ public class MatchServiceImpl implements MatchService {
     }
 
     private void saveToCache(String matchId, MatchDto matchDto) {
-        if (cachedMatchRepository.existsById(matchId)) return;
         try {
             MatchDto.MatchInfoDto info = matchDto.getInfo();
             Set<String> puuids = info.getParticipants() == null ? Set.of() :

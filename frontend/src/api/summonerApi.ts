@@ -93,7 +93,9 @@ export const getMatchHistory = async (
       { params: { start, count }, timeout: 60_000 },
     )
     return data.data
-  } catch {
-    return []
+  } catch (err: unknown) {
+    const status = (err as { response?: { status?: number } })?.response?.status
+    if (status === 404 || status === 204) return []
+    throw err
   }
 }

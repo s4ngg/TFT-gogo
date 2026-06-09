@@ -10,7 +10,7 @@ import java.util.List;
 
 public interface CachedMatchRepository extends JpaRepository<CachedMatch, String> {
 
-    @Query("SELECT cm FROM CachedMatch cm JOIN cm.participantPuuids p WHERE p = :puuid ORDER BY cm.gameDatetime DESC")
+    @Query("SELECT cm FROM CachedMatch cm JOIN cm.participantPuuids p WHERE p = :puuid ORDER BY cm.gameDatetime DESC, cm.matchId DESC")
     List<CachedMatch> findByParticipantPuuid(@Param("puuid") String puuid, Pageable pageable);
 
     @Query("SELECT COUNT(cm) FROM CachedMatch cm JOIN cm.participantPuuids p WHERE p = :puuid")

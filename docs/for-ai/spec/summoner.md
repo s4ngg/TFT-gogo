@@ -27,7 +27,7 @@ Detailed human spec: docs/for-humans/spec/summoner.md
   → MatchDetailResponse — 매치에 참가한 8인 전체 상세 데이터
 </backend>
 <frontend>
-- frontend/src/api/summonerApi.ts               — getSummonerProfile, getMatchHistory (분리 작업 대기 중)
+- frontend/src/api/summonerApi.ts               — getSummonerProfile, getMatchHistory
 - frontend/src/api/communityDragonAssets.ts     — tftChampSquareUrl, tftTraitIconUrl (CDragon CDN)
 - frontend/src/pages/SummonerDetail/SummonerDetail.tsx
 </frontend>

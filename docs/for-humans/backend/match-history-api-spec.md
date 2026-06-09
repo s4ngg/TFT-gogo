@@ -81,8 +81,8 @@ v1.2 (2026-06-01 팀 spec-kit 병합)
 - 429 응답 수신 시: `Retry-After` 헤더 파싱 → 해당 시간만큼 sleep 후 재시도. 헤더 없거나 파싱 실패 시 기본 120초 대기 (현재 구현)
 - 최대 재시도: 3회. 초과 시 `BusinessException(ErrorCode.RIOT_API_RATE_LIMIT)` throw (현재 구현)
 
-**전적 목록 조회 내부 쓰로틀 (`MatchServiceImpl.getMatches()`)**
-- 매치 상세 1건 조회 후 200ms sleep 적용 — 매치 ID N개를 순차 호출할 때 연속 요청에 의한 Rate Limit 초과 방지 목적
+**전적 목록 조회 쓰로틀 (`MatchCollectionServiceImpl` / `RiotQueue`)**
+- DB 캐시 우선 조회 후 미수집 매치만 RiotQueue(100ms 고정 간격 단일 워커)를 통해 수집 — 수집은 백그라운드에서 진행되며, `getMatches()`는 Riot API를 순차 직접 호출하지 않습니다.
 
 *덱 집계 추천 팀의 수집 서버는 별도 API Key를 사용하므로, Rate Limit 버킷이 분리됩니다. 동일 Key 공유 시 상호 간섭이 발생하므로 Key를 반드시 분리해야 합니다.*
 
