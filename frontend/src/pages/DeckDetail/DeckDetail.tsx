@@ -33,11 +33,24 @@ function DeckDetail() {
   const deck = metaDecks.find((d) => String(d.rank) === deckId)
 
   const all = useMemo(() => deck?.champions ?? [], [deck?.champions])
-  const maxLevel = Math.min(9, all.length || 9)
-  const availableLevels = useMemo(
-    () => Array.from({ length: Math.max(0, maxLevel - 4) }, (_, i) => i + 5),
-    [maxLevel],
-  )
+
+  const availableLevels = useMemo(() => {
+    if (deck?.boardPositions) {
+      try {
+        const obj = JSON.parse(deck.boardPositions) as Record<string, unknown>
+        return Object.keys(obj)
+          .map(Number)
+          .filter((n) => n >= 5 && n <= 9)
+          .sort((a, b) => a - b)
+      } catch {
+        // fall through to champion-count based logic
+      }
+    }
+    const maxLevel = Math.min(9, all.length)
+    return Array.from({ length: Math.max(0, maxLevel - 4) }, (_, i) => i + 5)
+  }, [deck?.boardPositions, all.length])
+
+  const maxLevel = availableLevels.length > 0 ? availableLevels[availableLevels.length - 1] : 5
   const [level, setLevel] = useState<number>(9)
 
   useEffect(() => {
@@ -99,7 +112,7 @@ function DeckDetail() {
     return (
       <AppLayout>
         <div className={styles.page}>
-          <button type="button" className={styles.backBtn} onClick={() => navigate('/decks')}>
+          <button type="button" className={styles.backBtn} onClick={() => navigate(`/decks`)}>
             <ArrowLeft size={16} /> 덱모음으로
           </button>
           <p className={styles.notFound}>덱 정보를 찾을 수 없어요.</p>
