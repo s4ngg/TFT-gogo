@@ -42,7 +42,6 @@ function PatchNotes() {
   } = usePatchNotesPageState({
     fallbackData: patchNotesFallbackData,
     patchHistory,
-    selectedPatch,
     selectedPatchVersion,
   })
 

@@ -4,7 +4,7 @@ import type { MetricSortKey, SortDir } from '../../../api/guide'
 interface UseGuideMetricSortOptions {
   initialSortDir?: SortDir
   initialSortKey?: MetricSortKey
-  onSortChange?: () => void
+  onSortChange?: (sortKey: MetricSortKey, sortDir: SortDir) => void
 }
 
 export function useGuideMetricSort({
@@ -16,14 +16,20 @@ export function useGuideMetricSort({
   const [sortKey, setSortKey] = useState<MetricSortKey>(initialSortKey)
 
   function handleSort(nextSortKey: MetricSortKey) {
+    let newSortKey = sortKey
+    let newSortDir = sortDir
+
     if (sortKey === nextSortKey) {
-      setSortDir((current) => (current === 'asc' ? 'desc' : 'asc'))
+      newSortDir = sortDir === 'asc' ? 'desc' : 'asc'
+      setSortDir(newSortDir)
     } else {
-      setSortKey(nextSortKey)
-      setSortDir(nextSortKey === 'avgPlace' ? 'asc' : 'desc')
+      newSortKey = nextSortKey
+      newSortDir = nextSortKey === 'avgPlace' ? 'asc' : 'desc'
+      setSortKey(newSortKey)
+      setSortDir(newSortDir)
     }
 
-    onSortChange?.()
+    onSortChange?.(newSortKey, newSortDir)
   }
 
   return {

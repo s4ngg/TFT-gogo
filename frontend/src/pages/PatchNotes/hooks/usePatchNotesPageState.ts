@@ -13,14 +13,12 @@ const PATCH_PAGE_SIZE = 5
 interface UsePatchNotesPageStateOptions {
   fallbackData: PatchNoteDetail[]
   patchHistory: PatchNoteDetail[]
-  selectedPatch: PatchNoteDetail
   selectedPatchVersion: string
 }
 
 export function usePatchNotesPageState({
   fallbackData,
   patchHistory,
-  selectedPatch,
   selectedPatchVersion,
 }: UsePatchNotesPageStateOptions) {
   const [activeCategory, setActiveCategory] = useState<PatchCategory>(PATCH_CATEGORIES[0])
@@ -38,7 +36,7 @@ export function usePatchNotesPageState({
       page: currentPage,
       pageSize: PATCH_PAGE_SIZE,
       query,
-      version: selectedPatch.version,
+      version: selectedPatchVersion,
     },
   })
   const changesPage = patchChangesQuery.data.data
