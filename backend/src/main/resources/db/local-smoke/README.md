@@ -12,6 +12,8 @@ This folder defines the manual local DB baseline for Guide and PatchNotes smoke 
 
 ## Start Infrastructure
 
+Docker Compose maps MySQL to host port `3307` and backend to host port `8081` by default so it does not collide with a local MySQL/STS backend already using `3306`/`8080`.
+
 ```powershell
 docker compose up -d mysql redis
 ```
@@ -21,8 +23,8 @@ docker compose up -d mysql redis
 With a host MySQL client:
 
 ```powershell
-mysql --default-character-set=utf8mb4 -h 127.0.0.1 -P 3306 -u tftuser -ptftpass tftgogo < backend/src/main/resources/db/local-smoke/01_schema.sql
-mysql --default-character-set=utf8mb4 -h 127.0.0.1 -P 3306 -u tftuser -ptftpass tftgogo < backend/src/main/resources/db/local-smoke/02_seed.sql
+mysql --default-character-set=utf8mb4 -h 127.0.0.1 -P 3307 -u tftuser -ptftpass tftgogo < backend/src/main/resources/db/local-smoke/01_schema.sql
+mysql --default-character-set=utf8mb4 -h 127.0.0.1 -P 3307 -u tftuser -ptftpass tftgogo < backend/src/main/resources/db/local-smoke/02_seed.sql
 ```
 
 Or through the MySQL container:
@@ -50,18 +52,18 @@ cd backend
 ## Smoke Checks
 
 ```powershell
-curl.exe http://localhost:8080/api/guide
-curl.exe "http://localhost:8080/api/guide/traits?page=1&pageSize=10"
-curl.exe "http://localhost:8080/api/guide/items?page=1&pageSize=10"
-curl.exe "http://localhost:8080/api/guide/augments?page=1&pageSize=10"
-curl.exe "http://localhost:8080/api/guide/champions?page=1&pageSize=10&cost=4"
+curl.exe http://localhost:8081/api/guide
+curl.exe "http://localhost:8081/api/guide/traits?page=1&pageSize=10"
+curl.exe "http://localhost:8081/api/guide/items?page=1&pageSize=10"
+curl.exe "http://localhost:8081/api/guide/augments?page=1&pageSize=10"
+curl.exe "http://localhost:8081/api/guide/champions?page=1&pageSize=10&cost=4"
 
-curl.exe http://localhost:8080/api/patch-notes
-curl.exe "http://localhost:8080/api/patch-notes/17.3/changes?page=1&pageSize=10"
-curl.exe "http://localhost:8080/api/patch-notes/17.3/changes?category=CHAMPION&impact=HIGH"
+curl.exe http://localhost:8081/api/patch-notes
+curl.exe "http://localhost:8081/api/patch-notes/17.3/changes?page=1&pageSize=10"
+curl.exe "http://localhost:8081/api/patch-notes/17.3/changes?category=CHAMPION&impact=HIGH"
 
-curl.exe -H "X-Admin-Token: local-admin-token" http://localhost:8080/api/admin/guides
-curl.exe -H "X-Admin-Token: local-admin-token" http://localhost:8080/api/admin/patch-notes
+curl.exe -H "X-Admin-Token: local-admin-token" http://localhost:8081/api/admin/guides
+curl.exe -H "X-Admin-Token: local-admin-token" http://localhost:8081/api/admin/patch-notes
 ```
 
 Expected result: Guide and PatchNotes public APIs return seeded `17.3` data without frontend fallback data.

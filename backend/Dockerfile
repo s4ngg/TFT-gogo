@@ -6,6 +6,7 @@ WORKDIR /app
 # 의존성 캐시 활용 (소스 변경 시 재다운로드 방지)
 COPY gradlew build.gradle ./
 COPY gradle ./gradle
+RUN sed -i 's/\r$//' gradlew && chmod +x gradlew
 RUN ./gradlew dependencies --no-daemon -q
 
 COPY src ./src
