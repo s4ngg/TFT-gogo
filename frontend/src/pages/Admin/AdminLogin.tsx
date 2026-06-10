@@ -1,17 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { validateAdminToken, setAdminToken, clearAdminToken } from '../../api/adminApi'
+import { validateAdminToken, setAdminToken, clearAdminToken, isAdminAuthFailure } from '../../api/adminApi'
 import pageStyles from './AdminLogin.module.css'
 import styles from './Admin.module.css'
-
-function getHttpStatus(error: unknown): number | undefined {
-  if (typeof error !== 'object' || error === null || !('response' in error)) {
-    return undefined
-  }
-
-  const response = (error as { response?: { status?: unknown } }).response
-  return typeof response?.status === 'number' ? response.status : undefined
-}
 
 function AdminLogin() {
   const [input, setInput] = useState('')
@@ -25,9 +16,7 @@ function AdminLogin() {
       await validateAdminToken()
       navigate('/admin/decks', { replace: true })
     } catch (error: unknown) {
-      const status = getHttpStatus(error)
-
-      if (status === 401 || status === 403) {
+      if (isAdminAuthFailure(error)) {
         clearAdminToken()
         setError('토큰이 올바르지 않습니다.')
         return

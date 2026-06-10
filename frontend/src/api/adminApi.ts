@@ -19,6 +19,20 @@ function adminHeaders() {
   return { 'X-Admin-Token': getAdminToken() }
 }
 
+function getHttpStatus(error: unknown): number | undefined {
+  if (typeof error !== 'object' || error === null || !('response' in error)) {
+    return undefined
+  }
+
+  const response = (error as { response?: { status?: unknown } }).response
+  return typeof response?.status === 'number' ? response.status : undefined
+}
+
+export function isAdminAuthFailure(error: unknown): boolean {
+  const status = getHttpStatus(error)
+  return status === 401 || status === 403
+}
+
 export async function validateAdminToken(): Promise<void> {
   await axiosInstance.get('/admin/guides', {
     headers: adminHeaders(),
