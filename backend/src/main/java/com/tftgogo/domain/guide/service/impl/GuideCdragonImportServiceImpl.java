@@ -25,8 +25,10 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 @Service
@@ -49,12 +51,13 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         if (request == null) {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
-        if (!request.shouldIncludeChampions() && !request.shouldIncludeTraits()) {
+        if (!request.shouldIncludeChampions() && !request.shouldIncludeTraits() && !request.shouldIncludeItems()) {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
 
         String patchVersion = normalizePatchVersion(request.getPatchVersion());
-        JsonNode setData = findSetData(fetchCdragonData(), request.resolveSetNumber(), request.resolveMutator());
+        JsonNode cdragonData = fetchCdragonData();
+        JsonNode setData = findSetData(cdragonData, request.resolveSetNumber(), request.resolveMutator());
         List<JsonNode> champions = readShopChampions(setData, request.resolveSetNumber());
 
         List<GuideCandidate> candidates = new ArrayList<>();
@@ -63,6 +66,9 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         }
         if (request.shouldIncludeTraits()) {
             candidates.addAll(toTraitCandidates(setData.path("traits"), champions, patchVersion));
+        }
+        if (request.shouldIncludeItems()) {
+            candidates.addAll(toItemCandidates(cdragonData.path("items"), patchVersion));
         }
 
         ImportCounter counter = new ImportCounter();
@@ -76,6 +82,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                 .skippedCount(counter.skippedCount)
                 .championCount(countByType(candidates, GuideType.CHAMPION))
                 .traitCount(countByType(candidates, GuideType.TRAIT))
+                .itemCount(countByType(candidates, GuideType.ITEM))
                 .build();
     }
 
@@ -186,6 +193,104 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             ));
         }
         return candidates;
+    }
+
+    private List<GuideCandidate> toItemCandidates(JsonNode items, String patchVersion) {
+        Map<String, JsonNode> itemByApiName = mapItemsByApiName(items);
+        List<JsonNode> completedItems = new ArrayList<>();
+        for (JsonNode item : items) {
+            if (isCompletedItem(item)) {
+                completedItems.add(item);
+            }
+        }
+        completedItems.sort(Comparator.comparing(item -> item.path("name").asText()));
+
+        List<GuideCandidate> candidates = new ArrayList<>();
+        int sortOrder = 0;
+        for (JsonNode item : completedItems) {
+            String description = sanitizeText(item.path("desc").asText());
+
+            ObjectNode dataJson = objectMapper.createObjectNode();
+            dataJson.put("avgPlace", "-");
+            dataJson.set("bestUsers", objectMapper.createArrayNode());
+            dataJson.put("category", "완성 아이템");
+            dataJson.set("combinations", itemCombinations(item, itemByApiName));
+            dataJson.put("description", description);
+            dataJson.put("pickRate", "-");
+            dataJson.put("top4", "-");
+            dataJson.put("winRate", "-");
+
+            candidates.add(new GuideCandidate(
+                    GuideType.ITEM,
+                    item.path("apiName").asText(),
+                    item.path("name").asText(),
+                    hasText(description) ? description : "CDragon 완성 아이템",
+                    assetUrl(item.path("icon").asText()),
+                    dataJson,
+                    patchVersion,
+                    sortOrder++
+            ));
+        }
+        return candidates;
+    }
+
+    private Map<String, JsonNode> mapItemsByApiName(JsonNode items) {
+        Map<String, JsonNode> itemByApiName = new HashMap<>();
+        for (JsonNode item : items) {
+            String apiName = item.path("apiName").asText();
+            if (hasText(apiName)) {
+                itemByApiName.put(apiName, item);
+            }
+        }
+        return itemByApiName;
+    }
+
+    private boolean isCompletedItem(JsonNode item) {
+        String apiName = item.path("apiName").asText();
+        if (!apiName.startsWith("TFT_Item_")
+                || !hasText(item.path("name").asText())
+                || !hasText(item.path("icon").asText())) {
+            return false;
+        }
+        if (item.path("associatedTraits").isArray() && item.path("associatedTraits").size() > 0) {
+            return false;
+        }
+        return hasTwoCompositionItems(item.path("composition"));
+    }
+
+    private boolean hasTwoCompositionItems(JsonNode composition) {
+        if (!composition.isArray() || composition.size() != 2) {
+            return false;
+        }
+        for (JsonNode component : composition) {
+            if (!hasText(component.asText())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private ArrayNode itemCombinations(JsonNode item, Map<String, JsonNode> itemByApiName) {
+        ArrayNode componentRefs = objectMapper.createArrayNode();
+        for (JsonNode componentKey : item.path("composition")) {
+            componentRefs.add(itemRef(componentKey.asText(), itemByApiName));
+        }
+
+        ArrayNode combinations = objectMapper.createArrayNode();
+        ObjectNode combination = objectMapper.createObjectNode();
+        combination.set("items", componentRefs);
+        combination.put("label", "조합식");
+        combination.put("note", "CDragon 조합 기준");
+        combinations.add(combination);
+        return combinations;
+    }
+
+    private ObjectNode itemRef(String apiName, Map<String, JsonNode> itemByApiName) {
+        JsonNode item = itemByApiName.get(apiName);
+        ObjectNode ref = objectMapper.createObjectNode();
+        ref.put("imageUrl", item == null ? "" : assetUrlOrEmpty(item.path("icon").asText()));
+        ref.put("name", item == null ? apiName : item.path("name").asText(apiName));
+        return ref;
     }
 
     private ObjectNode toChampionStats(JsonNode stats) {
@@ -396,6 +501,11 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         return communityDragonProperties.getAssetBaseUrl()
                 + "/"
                 + assetPath.toLowerCase(Locale.ROOT).replace(".tex", ".png");
+    }
+
+    private String assetUrlOrEmpty(String assetPath) {
+        String url = assetUrl(assetPath);
+        return url == null ? "" : url;
     }
 
     private String buildChampionSummary(JsonNode ability) {

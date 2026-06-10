@@ -17,7 +17,7 @@ Page: Guide (/guide).
 - GET /api/guide/{tab}?patchVersion=&query=&page=&pageSize=&sortKey=&sortDir=&cost=
 - GET    /api/admin/guides?guideType=&patchVersion=&active= -> admin guide list
 - POST   /api/admin/guides                                  -> create guide
-- POST   /api/admin/guides/import/cdragon                   -> import champion/trait guides from Community Dragon
+- POST   /api/admin/guides/import/cdragon                   -> import champion/trait/item guides from Community Dragon
 - PATCH  /api/admin/guides/{guideId}                        -> update guide
 - DELETE /api/admin/guides/{guideId}                        -> soft delete guide
 </backend>
@@ -57,12 +57,15 @@ Page: Guide (/guide).
 - Admin responses include active, createdAt, updatedAt, and deletedAt in addition to the public guide fields.
 - Admin delete uses soft delete through active/deletedAt. Do not hard delete guide rows.
 - Admin CDragon import writes into the same guides contract as manual admin curation.
-- CDragon import currently supports CHAMPION and TRAIT guide rows first; ITEM/AUGMENT import requires a separate filtering policy.
+- CDragon import currently supports CHAMPION, TRAIT, and ITEM guide rows. AUGMENT import requires a separate filtering policy.
 - CDragon import is upsert-based for non-deleted rows: same guideType + targetKey + patchVersion updates existing rows while preserving active state, and creates missing rows as active.
 - If a soft-deleted row already reserves the same key, CDragon import skips that key instead of recreating it.
-- CDragon import request fields: patchVersion (required, max 20), setNumber (default 17), mutator (default TFTSet{setNumber}), includeChampions (default true), includeTraits (default true).
-- CDragon import rejects requests where both includeChampions and includeTraits resolve to false.
-- CDragon import response fields: createdCount, updatedCount, skippedCount, championCount, traitCount, importedCount (= createdCount + updatedCount).
+- CDragon import item filtering includes only completed craftable TFT_Item_* rows with exactly two composition components and no associatedTraits.
+- CDragon item import excludes component-only rows, emblem/trait-associated rows, radiant/artifact/support/non-craftable rows that do not match the completed-item policy.
+- CDragon item import stores statistic fields as "-" and bestUsers as [] until match/stat aggregation is connected.
+- CDragon import request fields: patchVersion (required, max 20), setNumber (default 17), mutator (default TFTSet{setNumber}), includeChampions (default true), includeTraits (default true), includeItems (default false).
+- CDragon import rejects requests where includeChampions, includeTraits, and includeItems all resolve to false.
+- CDragon import response fields: createdCount, updatedCount, skippedCount, championCount, traitCount, itemCount, importedCount (= createdCount + updatedCount).
 - Data originates from CDragon (traits, champions) where possible; use communityDragonAssets.ts helpers for frontend images.
 - guideFallback.ts provides static fallback when the backend is unreachable.
 - guideNormalizers.ts must be applied before passing data to components; do not use raw API responses directly.
@@ -101,6 +104,17 @@ Page: Guide (/guide).
 - tips: [] at current import stage
 - champions: [{ cost, imageUrl, name }]
 </cdragon-trait-data-json>
+
+<cdragon-item-data-json>
+- category: "완성 아이템"
+- description: sanitized CDragon desc
+- avgPlace: "-" until statistics aggregation is connected
+- pickRate: "-" until statistics aggregation is connected
+- top4: "-" until statistics aggregation is connected
+- winRate: "-" until statistics aggregation is connected
+- bestUsers: [] until statistics aggregation is connected
+- combinations: [{ label: "조합식", note: "CDragon 조합 기준", items: [{ imageUrl, name }] }]
+</cdragon-item-data-json>
 </data-contracts>
 
 <backend-implementation>
@@ -136,8 +150,8 @@ Page: Guide (/guide).
 </validation>
 
 <data-ingestion>
-- Current stage: CDragon champion/trait guide import after admin CRUD and public query contracts are stable.
-- Next stage: ITEM/AUGMENT import filtering policy and patch-note crawling/import.
+- Current stage: CDragon champion/trait/item guide import after admin CRUD and public query contracts are stable.
+- Next stage: AUGMENT import filtering policy and patch-note crawling/import.
 - AI server/FastAPI is not required for guide CRUD. Add it only when AI/RAG/recommendation behavior needs guide data.
 - Current CDragon import does not curate bestItems/tips and should not be treated as final editorial guide quality.
 </data-ingestion>
