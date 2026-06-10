@@ -7,6 +7,8 @@ import {
   getAdminToken,
   setAdminToken,
   clearAdminToken,
+  validateAdminToken,
+  isAdminAuthFailure,
   fetchAdminHeroAugmentDecks,
   createHeroAugmentDeck,
   updateHeroAugmentDeck,
@@ -398,11 +400,16 @@ function TokenGate({ onSuccess }: { onSuccess: () => void }) {
     e.preventDefault()
     setAdminToken(input.trim())
     try {
-      await fetchAdminDecks()  // 토큰 검증
+      await validateAdminToken()
       onSuccess()
-    } catch {
-      clearAdminToken()
-      setError('토큰이 올바르지 않습니다.')
+    } catch (error: unknown) {
+      if (isAdminAuthFailure(error)) {
+        clearAdminToken()
+        setError('토큰이 올바르지 않습니다.')
+        return
+      }
+
+      setError('인증 서버에 일시적인 문제가 있습니다. 잠시 후 다시 시도해주세요.')
     }
   }
 
