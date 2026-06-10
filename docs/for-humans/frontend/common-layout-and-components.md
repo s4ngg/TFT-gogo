@@ -45,7 +45,7 @@ frontend/src/components/
 | 컴포넌트 | 용도 |
 | --- | --- |
 | `ChampionCard` | 챔피언 이미지, 별 등급, 추천 아이템 슬롯 |
-| `TierBadge` | S, A+, A 같은 메타 등급 배지 |
+| `TierBadge` | S, A, B 같은 메타 등급 배지 |
 | `TraitHexBadge` | 시너지/특성 육각 배지 |
 
 ## 현재 공통화된 레이아웃

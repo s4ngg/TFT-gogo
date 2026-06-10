@@ -63,7 +63,7 @@ src/components/layout/
 ```
 src/components/common/
   ChampionCard/      # 챔피언 이미지, 별 등급, 추천 아이템 슬롯
-  TierBadge/         # S, A+, A 메타 등급 배지
+  TierBadge/         # S, A, B 메타 등급 배지
   TraitHexBadge/     # 시너지/특성 육각 배지
 ```
 

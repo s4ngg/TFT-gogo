@@ -31,7 +31,7 @@ Spring은 Riot API에서 아래 데이터를 가져와 가공한다.
 ```ts
 type DeckMetaResponse = {
   rank: number
-  grade: 'S' | 'A+' | 'A' | 'B' | 'C' | 'D'
+  grade: 'S' | 'A' | 'B' | 'C' | 'D'
   name: string
   winRate: string
   top4: string
