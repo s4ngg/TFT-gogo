@@ -53,6 +53,7 @@ public class MetaDeckScheduler {
                 trigger, targetDate, aggregatedRankCount);
         try {
             metaDeckService.aggregateAndSave(targetDate);
+            logger.info("메타 덱 일일 자동 집계 완료 - trigger={}, date={}", trigger, targetDate);
         } catch (Exception e) {
             logger.error("메타 덱 일일 자동 집계 실패 - trigger={}, date={}", trigger, targetDate, e);
         }
