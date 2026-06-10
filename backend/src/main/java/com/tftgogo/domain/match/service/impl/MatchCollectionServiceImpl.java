@@ -252,7 +252,8 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
                                 .filter(id -> !cachedIds.contains(id))
                                 .collect(Collectors.toList());
                         if (!toFetch.isEmpty()) {
-                            collectInBackground(puuid, toFetch, toFetch.size());
+                            // requestedFast=0으로 latch 즉시 완료 — executor 스레드 점유 없이 fire-and-forget
+                            collectInBackground(puuid, toFetch, 0);
                         } else {
                             inProgressMap.remove(puuid);
                         }
