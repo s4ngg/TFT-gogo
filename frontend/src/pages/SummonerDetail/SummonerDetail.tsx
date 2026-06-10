@@ -1,6 +1,7 @@
 import { ChevronDown, ChevronUp, Coins, RefreshCcw, Search, Swords } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { communityDragonProfileIconUrl, itemsFromUrls, tftChampSquareUrl, tftTierEmblemUrl, tftTraitIconUrl } from '../../api/communityDragonAssets'
 import { AppLayout } from '../../components/layout'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
@@ -9,7 +10,11 @@ import useSummonerStore from '../../store/useSummonerStore'
 import { useSummonerProfile } from '../../hooks/useSummonerProfile'
 import { useMatchHistory } from '../../hooks/useMatchHistory'
 import type { MatchSummaryResponse, MatchTraitResponse, GameType } from '../../api/summonerApi'
+import { refreshSummoner } from '../../api/summonerApi'
+import ProfileSkeleton from './components/ProfileSkeleton'
 import styles from './SummonerDetail.module.css'
+
+interface HttpError { response?: { status?: number; headers?: Record<string, string> } }
 
 const TIER_KO: Record<string, string> = {
   IRON: '아이언', BRONZE: '브론즈', SILVER: '실버', GOLD: '골드',
@@ -125,6 +130,29 @@ function MatchDetailPanel({ match, myPuuid }: { match: MatchSummaryResponse; myP
   )
 }
 
+/* ── rate limit 안내 ── */
+function RateLimitState({ retryAfterSeconds }: { retryAfterSeconds: number }) {
+  const [remaining, setRemaining] = useState(retryAfterSeconds)
+
+  useEffect(() => {
+    setRemaining(retryAfterSeconds)
+    if (retryAfterSeconds <= 0) return
+    const id = setInterval(() => setRemaining((s) => Math.max(0, s - 1)), 1000)
+    return () => clearInterval(id)
+  }, [retryAfterSeconds])
+
+  return (
+    <div className={styles.emptyState}>
+      <p className={styles.emptyTitle}>요청이 너무 많습니다</p>
+      <p className={styles.emptyDesc}>
+        {remaining > 0
+          ? `${remaining}초 후 다시 시도해주세요`
+          : '다시 검색할 수 있습니다'}
+      </p>
+    </div>
+  )
+}
+
 /* ── 소환사 없음 ── */
 function EmptyState({ name, tag }: { name: string; tag: string }) {
   return (
@@ -144,21 +172,31 @@ function SummonerDetail() {
   const [query, setQuery] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [gameTypeFilter, setGameTypeFilter] = useState<GameTypeFilter>('ALL')
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [refreshRateLimitSeconds, setRefreshRateLimitSeconds] = useState(0)
+  const [refreshError, setRefreshError] = useState<string | null>(null)
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const setSummoner = useSummonerStore((s) => s.setSummoner)
 
   const name = decodeURIComponent(gameName ?? '')
   const tag = tagLine ?? 'KR1'
 
-  const { data: profile, isError: profileNotFound } = useSummonerProfile(name, tag)
+  const { data: profile, isError: profileIsError, error: profileErr, isLoading: profileLoading } = useSummonerProfile(name, tag)
+  const profileRateLimited = profileIsError && (profileErr as Error)?.message === 'RATE_LIMITED'
+  const profileNotFound = profileIsError && !profileRateLimited
+  const profileRetryAfter = profileRateLimited ? 120 : 0
+  const isRateLimited = profileRateLimited || refreshRateLimitSeconds > 0
+  const retryAfterSeconds = profileRateLimited ? profileRetryAfter : refreshRateLimitSeconds
   const {
     data: matchData,
-    refetch: refetchMatches,
-    isFetching: isMatchesRefetching,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    isError: matchIsError,
+    error: matchError,
   } = useMatchHistory(profile?.puuid ?? '')
+  const matchRateLimited = matchIsError && (matchError as HttpError)?.response?.status === 429
   const matches = matchData?.pages.flat() ?? []
 
   const tierKo = TIER_KO[profile?.tier ?? ''] ?? profile?.tier ?? '-'
@@ -232,11 +270,34 @@ function SummonerDetail() {
     }
   }, [profile, name, tag, tierKo, setSummoner])
 
+  async function handleRefresh() {
+    if (!name || !tag || isRefreshing) return
+    setIsRefreshing(true)
+    setRefreshError(null)
+    try {
+      await refreshSummoner(name, tag)
+      await queryClient.invalidateQueries({ queryKey: ['summoner', 'profile', name, tag] })
+      await queryClient.invalidateQueries({ queryKey: ['summoner', 'matches', profile?.puuid] })
+    } catch (err: unknown) {
+      const status = (err as HttpError)?.response?.status
+      if (status === 429) {
+        const retryAfter = (err as HttpError)?.response?.headers?.['retry-after']
+        setRefreshRateLimitSeconds(Math.max(1, Number(retryAfter ?? 120) || 120))
+      } else if (status === 404) {
+        setRefreshError('소환사 정보를 찾을 수 없습니다.')
+      } else {
+        setRefreshError('갱신 중 오류가 발생했습니다.')
+      }
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
+
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
     const trimmed = query.trim()
     if (!trimmed) return
-    const [n = trimmed, tg = 'KR1'] = trimmed.split('#')
+    const [n = trimmed, tg = 'KR1'] = trimmed.split('#').map((s) => s.trim())
     navigate(`/summoner/${encodeURIComponent(n)}/${tg}`)
     setQuery('')
   }
@@ -254,7 +315,11 @@ function SummonerDetail() {
           <button type="submit" aria-label="검색"><Search size={20} /></button>
         </form>
 
-        {profileNotFound ? (
+        {profileLoading ? (
+          <ProfileSkeleton />
+        ) : isRateLimited ? (
+          <RateLimitState retryAfterSeconds={retryAfterSeconds} />
+        ) : profileNotFound ? (
           <EmptyState name={name} tag={tag} />
         ) : (
           <>
@@ -290,12 +355,13 @@ function SummonerDetail() {
                 <button
                   type="button"
                   className={styles.updateBtn}
-                  onClick={() => refetchMatches()}
-                  disabled={isMatchesRefetching}
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
                 >
-                  <RefreshCcw size={16} className={isMatchesRefetching ? styles.spin : ''} />
-                  {isMatchesRefetching ? '갱신 중...' : '전적 업데이트'}
+                  <RefreshCcw size={16} className={isRefreshing ? styles.spin : ''} />
+                  {isRefreshing ? '갱신 중...' : '전적 업데이트'}
                 </button>
+                {refreshError && <p className={styles.refreshError}>{refreshError}</p>}
               </div>
             </section>
 
@@ -410,6 +476,11 @@ function SummonerDetail() {
                   )
                 })}
               </div>
+              {matchRateLimited && (
+                <p className={styles.matchError}>
+                  전적 갱신에 실패했습니다. 잠시 후 다시 시도해주세요.
+                </p>
+              )}
               {hasNextPage && (
                 <button
                   type="button"

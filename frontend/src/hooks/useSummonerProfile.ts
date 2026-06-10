@@ -7,4 +7,5 @@ export const useSummonerProfile = (gameName: string, tagLine: string) =>
     queryFn: () => getSummonerProfile(gameName, tagLine),
     enabled: !!gameName && !!tagLine,
     staleTime: 1000 * 60 * 5,
+    retry: false,
   })
