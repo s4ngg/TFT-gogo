@@ -23,6 +23,7 @@ Pages: Dashboard (/), MetaStats.
 - Search format: gameName#tagLine (e.g., Hide on Bush#KR1).
 - Meta snapshot is shown on Dashboard even without a search (default state).
 - Meta snapshot tabs: 종합 / 상위권 / 마스터+ — each filters the displayed deck list.
+- Recent searches: localStorage key `recentSearches`, max 5 entries, latest first. Shown in TopSummaryCards only when search input is focused. Reflects the user's own search history — not a fixed popular list.
 </business-rules>
 
 <frontend-structure>

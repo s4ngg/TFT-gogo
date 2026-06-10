@@ -307,7 +307,6 @@ export const mockMatchHistory: MatchSummaryResponse[] = PLACEMENTS_90.map((place
       stage: STAGE_BY_RANK[myRank - 1],
       traits: cfg.traits,
       units: cfg.units,
-      augments: ['TFT17_Augment_Guidebook', 'TFT17_Augment_Manaflow', 'TFT17_Augment_FinalPolish'],
       playersEliminated: Math.max(0, 3 - myRank + 1),
       goldLeft: (i * 3 + myRank) % 18 + 2,
     },
@@ -322,7 +321,6 @@ export const mockMatchHistory: MatchSummaryResponse[] = PLACEMENTS_90.map((place
     compositionName: cfg.compositionName,
     traits: cfg.traits,
     units: cfg.units,
-    augments: ['TFT17_Augment_Guidebook', 'TFT17_Augment_Manaflow', 'TFT17_Augment_FinalPolish'],
     participants,
   }
 })

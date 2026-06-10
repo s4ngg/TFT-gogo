@@ -43,7 +43,9 @@ font-variant-numeric: tabular-nums;
 ## Colors
 
 > 모든 색상은 `src/styles/variables.css`에 CSS 변수로 정의하고 `var(--토큰명)`으로 참조한다.
-> 컴포넌트 CSS에 색상값 직접 하드코딩 금지.
+> 컴포넌트 CSS에 hex, rgb, rgba 색상값 직접 하드코딩 금지.
+> 새 색상이 필요하면 variables.css에 토큰을 먼저 추가한 후 참조한다.
+> 예외: box-shadow의 rgba 흰/검 그림자 깊이값은 의미 재사용이 없을 경우 하드코딩 허용.
 
 | CSS 변수명 | 값 | 용도 |
 | --- | --- | --- |
@@ -61,6 +63,10 @@ font-variant-numeric: tabular-nums;
 | `--text-main` | `#ffffff` | 기본 텍스트 |
 | `--text-soft` | `#c6ccd8` | 보조 텍스트 |
 | `--text-muted` | `#8b92a8` | 흐린 텍스트 |
+
+> 위 표는 핵심 토큰만 정리한 것입니다. 전체 토큰 목록(패널 배경, 매치 행 색상, 배지, 툴팁 등)은
+> `src/styles/variables.css`를 단일 소스로 참조하세요.
+> 추가된 토큰 prefix: `--bg-*` `--border-*` `--cyan-*` `--match-*` `--badge-*` `--search-*` `--donut-*`
 
 ## Radius And Borders
 

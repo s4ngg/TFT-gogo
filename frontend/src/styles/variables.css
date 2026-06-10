@@ -148,3 +148,57 @@
   --status-fallback-border: rgba(255, 91, 87, 0.28);
   --status-fallback-icon-bg: rgba(255, 91, 87, 0.12);
 }
+
+/* Panel / card background tokens */
+:root {
+  --bg-card-gradient: linear-gradient(180deg, rgba(8, 21, 29, 0.96), rgba(5, 15, 21, 0.96));
+  --bg-input-dark: rgba(3, 15, 20, 0.94);
+  --bg-btn-dark: rgba(14, 27, 34, 0.74);
+  --bg-btn-dark-soft: rgba(14, 27, 34, 0.6);
+  --bg-profile-level: rgba(0, 212, 180, 0.12);
+  --bg-match-panel: rgba(3, 10, 16, 0.97);
+  --bg-donut-inner: rgba(5, 15, 21, 0.97);
+  --bg-tooltip: rgba(5, 12, 18, 0.96);
+  --bg-row-hover: rgba(255, 255, 255, 0.025);
+}
+
+/* Search / CTA button tokens */
+:root {
+  --search-btn-bg: linear-gradient(135deg, #075c62, #0b9898);
+  --search-btn-border: rgba(0, 244, 235, 0.55);
+}
+
+/* Muted border tokens */
+:root {
+  --border-btn-muted: rgba(118, 151, 160, 0.36);
+  --border-load-more: rgba(118, 151, 160, 0.28);
+  --border-separator: rgba(112, 144, 152, 0.14);
+  --border-row-divider: rgba(112, 144, 152, 0.06);
+  --border-tooltip: rgba(112, 144, 152, 0.3);
+}
+
+/* Cyan opacity variant tokens */
+:root {
+  --cyan-bg-faint: rgba(4, 243, 229, 0.07);
+  --cyan-bg-subtle: rgba(4, 243, 229, 0.1);
+  --cyan-border-subtle: rgba(4, 243, 229, 0.28);
+  --cyan-border-light: rgba(4, 243, 229, 0.3);
+  --donut-track-bg: rgba(255, 255, 255, 0.07);
+}
+
+/* Match row background tokens */
+:root {
+  --match-row-base-end: rgba(6, 17, 24, 0.82);
+  --match-row-gold-start: rgba(108, 74, 25, 0.24);
+  --match-row-top4-start: rgba(0, 80, 80, 0.22);
+  --match-row-bot4-start: rgba(100, 20, 20, 0.22);
+  --match-my-row-bg: rgba(4, 243, 229, 0.055);
+  --match-my-row-hover: rgba(4, 243, 229, 0.08);
+}
+
+/* Game type badge tokens */
+:root {
+  --badge-normal-bg: rgba(140, 150, 160, 0.1);
+  --badge-normal-border: rgba(140, 150, 160, 0.22);
+}
+

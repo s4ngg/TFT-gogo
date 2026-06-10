@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, Coins, RefreshCcw, Search, Swords } from 'lucide-react'
+import { ChevronDown, ChevronUp, RefreshCcw, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
@@ -9,9 +9,13 @@ import ChampionCard from '../../components/common/ChampionCard'
 import useSummonerStore from '../../store/useSummonerStore'
 import { useSummonerProfile } from '../../hooks/useSummonerProfile'
 import { useMatchHistory } from '../../hooks/useMatchHistory'
-import type { MatchSummaryResponse, MatchTraitResponse, GameType } from '../../api/summonerApi'
+import type { MatchTraitResponse, GameType } from '../../api/summonerApi'
 import { refreshSummoner } from '../../api/summonerApi'
 import ProfileSkeleton from './components/ProfileSkeleton'
+import RecentSummary from './components/RecentSummary'
+import MatchDetailPanel from './components/MatchDetailPanel'
+import EmptyState from './components/EmptyState'
+import { placementTone, timeAgo, formatDate } from './utils/summonerUtils'
 import styles from './SummonerDetail.module.css'
 
 interface HttpError { response?: { status?: number; headers?: Record<string, string> } }
@@ -24,111 +28,6 @@ const TIER_KO: Record<string, string> = {
 
 type GameTypeFilter = 'ALL' | GameType
 const GAME_TYPE_FILTERS: GameTypeFilter[] = ['ALL', 'RANKED', 'NORMAL']
-
-function timeAgo(gameDateTime: number): string {
-  const diffMs = Date.now() - gameDateTime
-  const diffMin = Math.floor(diffMs / 60000)
-  if (diffMin < 1) return '방금 전'
-  if (diffMin < 60) return `${diffMin}분 전`
-  const diffHour = Math.floor(diffMin / 60)
-  if (diffHour < 24) return `${diffHour}시간 전`
-  const diffDay = Math.floor(diffHour / 24)
-  return diffDay === 1 ? '어제' : `${diffDay}일 전`
-}
-
-function placementTone(n: number) {
-  if (n === 1) return styles.gold
-  if (n <= 4) return styles.top4
-  return styles.bot4
-}
-
-function detailRankClass(n: number) {
-  if (n === 1) return styles.detailRankGold
-  if (n === 2) return styles.detailRankSilver
-  if (n === 3) return styles.detailRankBronze
-  return ''
-}
-
-/* ── 30게임 요약 ── */
-function RecentSummary({ matches }: { matches: MatchSummaryResponse[] }) {
-  const recent = matches.slice(0, 30)
-  const top4 = recent.filter((m) => m.placement <= 4).length
-  const avgPlace = recent.length > 0
-    ? (recent.reduce((s, m) => s + m.placement, 0) / recent.length).toFixed(1)
-    : '-'
-  const top4Rate = recent.length > 0 ? ((top4 / recent.length) * 100).toFixed(1) : '0'
-  const losses = recent.length - top4
-
-  return (
-    <section className={styles.summarySection}>
-      <div className={styles.winRateDonut} style={{ '--pct': `${top4Rate}%` } as React.CSSProperties}>
-        <div className={styles.winRateInner}>
-          <strong className={styles.winRatePct}>{top4Rate}%</strong>
-        </div>
-      </div>
-      <div className={styles.summaryStats}>
-        <p className={styles.summaryStatLabel}>순방 확률</p>
-        <p className={styles.summaryStatValue}>
-          {top4}W {losses}L <span className={styles.summaryStatSub}>({top4Rate}%)</span>
-        </p>
-        <p className={styles.summaryStatLabel}>평균 순위</p>
-        <p className={styles.summaryStatValue}>
-          {avgPlace}<span className={styles.summaryStatTh}>th</span> / 8
-        </p>
-      </div>
-    </section>
-  )
-}
-
-/* ── 매치 상세 패널 ── */
-function MatchDetailPanel({ match, myPuuid }: { match: MatchSummaryResponse; myPuuid: string }) {
-  return (
-    <div className={styles.matchDetailPanel}>
-      <div className={styles.matchDetailHeader}>
-        <span>#</span><span>소환사</span><span>스테이지</span><span>시너지</span>
-        <span>챔피언</span><span>킬</span><span>잔여골드</span>
-      </div>
-      {match.participants.map((p) => {
-        const isMe = p.puuid === myPuuid
-        return (
-          <div key={p.puuid} className={`${styles.matchDetailRow} ${isMe ? styles.myMatchDetailRow : ''}`}>
-            <span className={`${styles.detailRank} ${detailRankClass(p.placement)}`}>{p.placement}위</span>
-            <div className={styles.detailPlayer}>
-              <span className={styles.detailName}>{p.riotIdGameName}</span>
-              <span className={styles.detailTag}>#{p.riotIdTagline}</span>
-            </div>
-            <span className={styles.detailStage}>{p.stage}</span>
-            <div className={styles.detailTraits}>
-              {p.traits.slice(0, 3).map((tr) => (
-                <TraitHexBadge
-                  key={tr.traitId}
-                  count={tr.count}
-                  iconUrl={tftTraitIconUrl(tr.traitId)}
-                  name={tr.name}
-                  tone={tr.tone}
-                />
-              ))}
-            </div>
-            <div className={styles.detailUnits}>
-              {p.units.map((unit, i) => (
-                <ChampionCard
-                  key={`${unit.characterId}-${i}`}
-                  imageUrl={unit.imageUrl || tftChampSquareUrl(unit.characterId)}
-                  stars={unit.stars}
-                  label=""
-                  items={itemsFromUrls(unit.itemImageUrls)}
-                  toneIndex={0}
-                />
-              ))}
-            </div>
-            <span className={styles.detailKills}><Swords size={11} />{p.playersEliminated}</span>
-            <span className={styles.detailGold}><Coins size={11} />{p.goldLeft}</span>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
 
 /* ── rate limit 안내 ── */
 function RateLimitState({ retryAfterSeconds }: { retryAfterSeconds: number }) {
@@ -148,19 +47,6 @@ function RateLimitState({ retryAfterSeconds }: { retryAfterSeconds: number }) {
         {remaining > 0
           ? `${remaining}초 후 다시 시도해주세요`
           : '다시 검색할 수 있습니다'}
-      </p>
-    </div>
-  )
-}
-
-/* ── 소환사 없음 ── */
-function EmptyState({ name, tag }: { name: string; tag: string }) {
-  return (
-    <div className={styles.emptyState}>
-      <p className={styles.emptyTitle}>소환사를 찾을 수 없습니다</p>
-      <p className={styles.emptyDesc}>
-        <strong>{name}#{tag}</strong>에 해당하는 소환사가 존재하지 않거나 한국 서버에 등록되지 않았습니다.
-        소환사명과 태그를 다시 확인해 주세요.
       </p>
     </div>
   )
@@ -204,12 +90,6 @@ function SummonerDetail() {
   const winRate = total > 0 ? Math.round((profile!.wins / total) * 100) : 0
 
   const recentMatches = matches.slice(0, 30)
-  const computedAvgPlace = recentMatches.length > 0
-    ? Math.round(recentMatches.reduce((s, m) => s + m.placement, 0) / recentMatches.length * 10) / 10
-    : 0
-  const computedTop4Rate = recentMatches.length > 0
-    ? Math.round(recentMatches.filter(m => m.placement <= 4).length / recentMatches.length * 1000) / 10
-    : 0
 
   const topTraits = (() => {
     const map = new Map<string, { traitId: string; name: string; tone: MatchTraitResponse['tone']; count: number; games: number; totalPlace: number }>()
@@ -347,8 +227,6 @@ function SummonerDetail() {
                 <p className={styles.recordLine}>
                   <span>{profile?.wins ?? '-'}승 {profile?.losses ?? '-'}패</span>
                   <span className={styles.winRateText}>승률 {winRate}%</span>
-                  <span className={styles.avgPlaceText}>평균 {recentMatches.length > 0 ? computedAvgPlace : '-'}등</span>
-                  <span className={styles.top4Text}>TOP4 {recentMatches.length > 0 ? computedTop4Rate : '-'}%</span>
                 </p>
               </div>
               <div className={styles.profileRight}>
@@ -402,7 +280,6 @@ function SummonerDetail() {
               </div>
             )}
 
-
             {/* 매치 히스토리 */}
             <section className={styles.matchSection}>
               <h2>최근 {Math.min(30, filteredMatches.length)}게임</h2>
@@ -428,7 +305,7 @@ function SummonerDetail() {
                   return (
                     <div key={match.matchId} className={styles.matchItem}>
                       <article
-                        className={`${styles.matchRow} ${placementTone(match.placement)} ${isOpen ? styles.matchRowOpen : ''}`}
+                        className={`${styles.matchRow} ${placementTone(match.placement, styles)} ${isOpen ? styles.matchRowOpen : ''}`}
                         role="button"
                         tabIndex={0}
                         onClick={() => setExpandedId(isOpen ? null : match.matchId)}
@@ -449,7 +326,7 @@ function SummonerDetail() {
                             </span>
                             {match.compositionName}
                           </p>
-                          <p className={styles.timeAgo}>{timeAgo(match.gameDateTime)}</p>
+                          <p className={styles.timeAgo}>{formatDate(match.gameDateTime)} · {timeAgo(match.gameDateTime)}</p>
                         </div>
                         <div className={styles.unitList}>
                           {match.units.map((unit, i) => (
@@ -498,6 +375,5 @@ function SummonerDetail() {
     </AppLayout>
   )
 }
-
 
 export default SummonerDetail

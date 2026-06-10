@@ -7,8 +7,16 @@
 <style>
 - Use CSS Modules (*.module.css). Tailwind, styled-components, and inline styles are forbidden.
 - Design tokens (color, size, radius) must come from frontend/src/styles/variables.css CSS variables.
-  Available token prefixes: --color-*, --tone-*, --space-*, --font-size-*, --radius-*
+  Available token prefixes: --color-*, --tone-*, --bg-*, --border-*, --cyan-*, --match-*, --badge-*,
+  --space-*, --font-size-*, --radius-*, --search-*, --donut-*, --tooltip-*
   If a new token is needed, add it to variables.css first, then reference it.
+- Hardcoding color values (hex, rgb, rgba) directly in component CSS files is FORBIDDEN.
+  BAD:  background: rgba(4, 243, 229, 0.1);
+  GOOD: background: var(--cyan-bg-subtle);
+  BAD:  border: 1px solid rgba(112, 144, 152, 0.14);
+  GOOD: border: 1px solid var(--border-separator);
+  Exception: box-shadow compound values (rgba whites/blacks for shadow depth) may remain hardcoded
+  if no matching token exists and the value has no semantic reuse.
 - CSS Modules class names must be camelCase. snake_case is forbidden.
   BAD:  styles[`tone_${t.tone}`]
   GOOD: const TONE_CLASS_MAP: Record&lt;string, string&gt; = { gold: styles.toneGold, ... }; TONE_CLASS_MAP[t.tone]
