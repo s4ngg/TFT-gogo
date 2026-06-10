@@ -43,13 +43,6 @@ export const mockAiRecommendation: AiRecommendResponse = {
       tone: 'silver', games: 5, avgPlace: '6.1', top4Rate: '19%',
     },
   ],
-  augments: [
-    { name: '강철의 의지', avgPlace: '2.9', games: 4, icon: '🛡️' },
-    { name: '정의의 손길+', avgPlace: '3.2', games: 3, icon: '⚔️' },
-    { name: '용의 불꽃', avgPlace: '3.5', games: 5, icon: '🔥' },
-    { name: '별의 수호자', avgPlace: '4.8', games: 3, icon: '✨' },
-    { name: '전사의 용기', avgPlace: '5.1', games: 4, icon: '🗡️' },
-  ],
   deckReasons: [
     { deckRank: 1, isPatchTrend: false, reason: '내가 자주 쓰는 챔피언 포함' },
     { deckRank: 2, isPatchTrend: false, reason: '현재 메타 최상위 티어' },
