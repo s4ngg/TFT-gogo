@@ -31,8 +31,8 @@ class AiRecommendControllerTest {
 
         // then
         assertThat(response.getStatusCode().value()).isEqualTo(200);
+        assertThat(response.getBody()).isInstanceOf(com.tftgogo.global.response.ApiResponse.class);
         var body = (com.tftgogo.global.response.ApiResponse<?>) response.getBody();
-        assertThat(body).isNotNull();
         assertThat(body.getData()).isNull();
     }
 
@@ -47,8 +47,8 @@ class AiRecommendControllerTest {
 
         // then
         assertThat(response.getStatusCode().value()).isEqualTo(200);
+        assertThat(response.getBody()).isInstanceOf(com.tftgogo.global.response.ApiResponse.class);
         var body = (com.tftgogo.global.response.ApiResponse<?>) response.getBody();
-        assertThat(body).isNotNull();
         assertThat(body.getData()).isNotNull();
     }
 }

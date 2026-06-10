@@ -9,6 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -29,6 +30,9 @@ class AiRecommendServiceTest {
 
     @Test
     void 전적_API_미연동_상태에서_recommend는_null을_반환한다() {
+        // given
+        // 전적 API 미연동 상태 — recommend()는 null을 반환하는 뼈대 구현
+
         // when
         AiRecommendResponse result = aiRecommendService.recommend("TestUser", "KR1");
 
@@ -38,11 +42,14 @@ class AiRecommendServiceTest {
 
     @Test
     void 전적_API_미연동_상태에서_AI_서버_호출은_발생하지_않는다() {
+        // given
+        // 전적 API 미연동 상태 — AI 서버 호출 없이 null 반환
+
         // when
         aiRecommendService.recommend("TestUser", "KR1");
 
         // then
-        verify(aiServerClient, never()).analyzeWithMeta(org.mockito.ArgumentMatchers.any());
+        verify(aiServerClient, never()).analyzeWithMeta(any());
     }
 
     // TODO (팀원 전적 API 완성 후 구현):
