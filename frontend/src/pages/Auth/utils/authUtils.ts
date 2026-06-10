@@ -16,6 +16,13 @@ export function mapAuthError(error: unknown, isSignup: boolean): string {
   }
 
   if (
+    normalizedMessage.includes('404') ||
+    normalizedMessage.includes('not found')
+  ) {
+    return '인증 API 경로를 찾을 수 없습니다. 잠시 후 다시 시도해 주세요.'
+  }
+
+  if (
     normalizedMessage.includes('401') ||
     normalizedMessage.includes('unauthorized') ||
     normalizedMessage.includes('login failed')
