@@ -7,6 +7,7 @@ import {
 import styles from './Admin.module.css'
 
 interface GuideImportFormState {
+  includeAugments: boolean
   includeChampions: boolean
   includeItems: boolean
   includeTraits: boolean
@@ -16,6 +17,7 @@ interface GuideImportFormState {
 }
 
 const DEFAULT_GUIDE_IMPORT_FORM: GuideImportFormState = {
+  includeAugments: true,
   includeChampions: true,
   includeItems: true,
   includeTraits: true,
@@ -48,12 +50,13 @@ function AdminGuides() {
       return null
     }
 
-    if (!form.includeChampions && !form.includeTraits && !form.includeItems) {
-      setError('챔피언, 특성, 아이템 중 하나는 선택해야 합니다.')
+    if (!form.includeChampions && !form.includeTraits && !form.includeItems && !form.includeAugments) {
+      setError('챔피언, 특성, 아이템, 증강체 중 하나는 선택해야 합니다.')
       return null
     }
 
     return {
+      includeAugments: form.includeAugments,
       includeChampions: form.includeChampions,
       includeItems: form.includeItems,
       includeTraits: form.includeTraits,
@@ -146,6 +149,15 @@ function AdminGuides() {
             <label className={styles.guideImportCheck}>
               <input
                 type="checkbox"
+                checked={form.includeAugments}
+                onChange={(e) => patch('includeAugments', e.target.checked)}
+              />
+              <span>증강체</span>
+            </label>
+
+            <label className={styles.guideImportCheck}>
+              <input
+                type="checkbox"
                 checked={form.includeTraits}
                 onChange={(e) => patch('includeTraits', e.target.checked)}
               />
@@ -192,6 +204,10 @@ function AdminGuides() {
               <div className={styles.guideImportMetric}>
                 <span className={styles.guideImportMetricLabel}>아이템 후보</span>
                 <strong className={styles.guideImportMetricValue}>{result.itemCount}</strong>
+              </div>
+              <div className={styles.guideImportMetric}>
+                <span className={styles.guideImportMetricLabel}>증강체 후보</span>
+                <strong className={styles.guideImportMetricValue}>{result.augmentCount}</strong>
               </div>
             </div>
           </div>

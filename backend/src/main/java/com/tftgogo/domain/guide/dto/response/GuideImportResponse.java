@@ -13,6 +13,7 @@ public class GuideImportResponse {
     private int championCount;
     private int traitCount;
     private int itemCount;
+    private int augmentCount;
 
     public int getImportedCount() {
         return createdCount + updatedCount;

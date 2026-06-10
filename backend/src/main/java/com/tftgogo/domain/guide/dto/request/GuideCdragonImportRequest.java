@@ -33,6 +33,9 @@ public class GuideCdragonImportRequest {
     @Schema(description = "아이템 가이드 import 여부. 기본값은 false이며 명시적으로 true를 보내야 import합니다.", example = "true")
     private Boolean includeItems;
 
+    @Schema(description = "증강체 가이드 import 여부. 기본값은 false이며 명시적으로 true를 보내야 import합니다.", example = "true")
+    private Boolean includeAugments;
+
     public int resolveSetNumber() {
         return setNumber != null ? setNumber : 17;
     }
@@ -54,5 +57,9 @@ public class GuideCdragonImportRequest {
 
     public boolean shouldIncludeItems() {
         return Boolean.TRUE.equals(includeItems);
+    }
+
+    public boolean shouldIncludeAugments() {
+        return Boolean.TRUE.equals(includeAugments);
     }
 }
