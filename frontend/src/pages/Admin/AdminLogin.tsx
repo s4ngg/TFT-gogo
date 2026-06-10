@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { fetchAdminDecks, setAdminToken, clearAdminToken } from '../../api/adminApi'
+import { validateAdminToken, setAdminToken, clearAdminToken } from '../../api/adminApi'
 import pageStyles from './AdminLogin.module.css'
 import styles from './Admin.module.css'
 
@@ -13,7 +13,7 @@ function AdminLogin() {
     e.preventDefault()
     setAdminToken(input.trim())
     try {
-      await fetchAdminDecks()
+      await validateAdminToken()
       navigate('/admin/decks', { replace: true })
     } catch {
       clearAdminToken()
