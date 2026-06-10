@@ -21,6 +21,9 @@ _client: AsyncOpenAI | None = None
 _TOKENS_PER_DECK = 80
 _TOKENS_BASE = 50  # JSON 배열 오버헤드
 
+# S/A 티어 덱 = 패치 후 상위 메타 등극 기준으로 isPatchTrend 판단
+_PATCH_TREND_GRADES = {"S", "A"}
+
 
 def _get_client() -> AsyncOpenAI:
     global _client
@@ -65,6 +68,7 @@ def rank_meta_decks(
 
 async def generate_reasons(
     good_traits: list[TraitStat],
+    bad_traits: list[TraitStat],
     recommended_decks: list[MetaDeck],
     stats_summary: str,
 ) -> list[DeckReason]:
@@ -76,26 +80,43 @@ async def generate_reasons(
         return _fallback_reasons(recommended_decks)
 
     target_decks = recommended_decks[:3]
-    good_trait_names = [_sanitize(t.name) for t in good_traits[:5]]
-    deck_info = [
-        {
+
+    # 겹치는 시너지 기반으로 덱별 추천 근거를 미리 계산 (프롬프트 품질 향상)
+    good_names = {t.name.lower() for t in good_traits}
+    bad_names = {t.name.lower() for t in bad_traits}
+
+    deck_info = []
+    for d in target_decks:
+        deck_traits_lower = {s.lower() for s in d.trait_suffixes[:4]}
+        matched = sorted(_sanitize(n) for n in (good_names & deck_traits_lower))
+        avoid = sorted(_sanitize(n) for n in (bad_names & deck_traits_lower))
+        deck_info.append({
             "rank": d.rank,
             "grade": _sanitize(d.grade),
             "traits": [_sanitize(s) for s in d.trait_suffixes[:4]],
-        }
-        for d in target_decks
-    ]
+            "matched_with_player": matched,
+            "player_weak_traits": avoid,
+            "avg_place": _sanitize(d.avg_place),
+            "top4_rate": _sanitize(d.top4_rate),
+        })
 
-    # system/user 분리: 역할 지시는 system, 데이터는 user
+    good_trait_summary = ", ".join(
+        f"{_sanitize(t.name)}(평균{_sanitize(t.avg_place)}등, TOP4 {_sanitize(t.top4_rate)})"
+        for t in good_traits[:3]
+    )
+    bad_trait_summary = ", ".join(_sanitize(t.name) for t in bad_traits[:3])
+
     system_message = (
         "당신은 TFT(팀파이트 택티스) 전문 코치입니다. "
-        "플레이어 데이터를 바탕으로 추천 덱 이유를 한국어 1~2문장으로 작성합니다. "
+        "플레이어 통계와 덱 데이터를 바탕으로 추천 이유를 한국어 1~2문장으로 작성합니다. "
+        "잘 맞는 시너지가 겹치면 구체적으로 언급하고, 주의할 약점도 간략히 포함하세요. "
         "반드시 아래 JSON 배열 형식만 출력하세요. 다른 텍스트는 절대 출력하지 마세요:\n"
         '[{"deck_rank": <숫자>, "reason": "<추천 이유>"}]'
     )
     user_message = (
         f"플레이어 최근 통계: {_sanitize(stats_summary)}\n"
-        f"잘 맞는 시너지: {', '.join(good_trait_names)}\n\n"
+        f"잘 맞는 시너지: {good_trait_summary}\n"
+        f"약한 시너지: {bad_trait_summary}\n\n"
         f"추천 덱 목록:\n{json.dumps(deck_info, ensure_ascii=False)}"
     )
 
@@ -119,7 +140,7 @@ async def generate_reasons(
         return [
             DeckReason(
                 deck_rank=item["deck_rank"],
-                is_patch_trend=False,
+                is_patch_trend=_is_patch_trend(item["deck_rank"], target_decks),
                 reason=item["reason"],
             )
             for item in raw
@@ -141,11 +162,19 @@ async def generate_reasons(
         return _fallback_reasons(recommended_decks)
 
 
+def _is_patch_trend(deck_rank: int, decks: list[MetaDeck]) -> bool:
+    """S/A 티어 덱만 패치 트렌드 표시."""
+    for d in decks:
+        if d.rank == deck_rank:
+            return d.grade in _PATCH_TREND_GRADES
+    return False
+
+
 def _fallback_reasons(decks: list[MetaDeck]) -> list[DeckReason]:
     return [
         DeckReason(
             deck_rank=deck.rank,
-            is_patch_trend=deck.grade == "S",
+            is_patch_trend=deck.grade in _PATCH_TREND_GRADES,
             reason="현재 메타 기반 추천 덱입니다.",
         )
         for deck in decks[:3]
