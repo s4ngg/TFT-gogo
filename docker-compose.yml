@@ -3,32 +3,49 @@ services:
     image: mysql:8.0
     container_name: tftgogo-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: tftgogo
-      MYSQL_USER: tftuser
-      MYSQL_PASSWORD: tftpass
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-tftgogo}
+      MYSQL_USER: ${MYSQL_USER:-tftuser}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-tftpass}
     ports:
       - "${MYSQL_HOST_PORT:-3307}:3306"
     volumes:
       - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   redis:
     image: redis:7.2-alpine
     container_name: tftgogo-redis
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   postgres:
     image: pgvector/pgvector:pg16
     container_name: tftgogo-postgres
     environment:
-      POSTGRES_DB: tftgogo_ai
-      POSTGRES_USER: tftuser
-      POSTGRES_PASSWORD: tftpass
+      POSTGRES_DB: ${POSTGRES_DB:-tftgogo_ai}
+      POSTGRES_USER: ${POSTGRES_USER:-tftuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tftpass}
     ports:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   backend:
     build:
@@ -38,22 +55,24 @@ services:
     ports:
       - "${BACKEND_HOST_PORT:-8081}:8080"
     depends_on:
-      - mysql
-      - redis
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/tftgogo?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-      SPRING_DATASOURCE_USERNAME: tftuser
-      SPRING_DATASOURCE_PASSWORD: tftpass
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-tftgogo}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-tftuser}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-tftpass}
       SPRING_JPA_HIBERNATE_DDL_AUTO: none
       SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQL8Dialect
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
-      RIOT_API_KEY: local-smoke-disabled
-      ADMIN_SECRET_TOKEN: local-admin-token
+      RIOT_API_KEY: ${RIOT_API_KEY:-local-smoke-disabled}
+      ADMIN_SECRET_TOKEN: ${ADMIN_SECRET_TOKEN:-local-admin-token}
       APP_META_DECK_STARTUP_AGGREGATE: "false"
-      JWT_SECRET: local-jwt-secret-key-for-tft-gogo-dev-123456
-      JWT_ACCESS_TOKEN_EXPIRATION_MILLIS: 3600000
+      JWT_SECRET: ${JWT_SECRET:-local-jwt-secret-key-for-tft-gogo-dev-123456}
+      JWT_ACCESS_TOKEN_EXPIRATION_MILLIS: ${JWT_ACCESS_TOKEN_EXPIRATION_MILLIS:-3600000}
 
   ai-server:
     build:
@@ -63,7 +82,8 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     env_file:
       - path: ./ai-server/.env
         required: false

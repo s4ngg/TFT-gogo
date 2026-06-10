@@ -94,6 +94,8 @@ ON DUPLICATE KEY UPDATE
     is_active = VALUES(is_active),
     deleted_at = NULL;
 
+START TRANSACTION;
+
 UPDATE patch_notes
 SET is_current = 0
 WHERE is_current = 1
@@ -187,3 +189,5 @@ INSERT INTO patch_changes (
     20,
     1
 );
+
+COMMIT;
