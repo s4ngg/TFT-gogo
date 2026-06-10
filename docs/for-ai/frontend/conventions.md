@@ -52,6 +52,13 @@
 - Never log sensitive data (passwords, JWT tokens, auth codes).
 </security>
 
+<testing>
+- Frontend unit tests use `tsx --test` with Node's built-in `node:test` runner while the project remains on Vite 5.
+- Do not add Vitest for new tests unless the team first upgrades the frontend build stack and re-evaluates the security/compatibility tradeoff.
+- Add new frontend tests under the nearest `__tests__/` directory and include them in `frontend/package.json` `test` script.
+- Frontend CI must run `npm run build`, `npm run lint`, `npm run test`, and `npm audit --audit-level=high`.
+</testing>
+
 </conventions>
 
 </spec>

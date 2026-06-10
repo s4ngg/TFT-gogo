@@ -38,7 +38,10 @@ Page: Guide (/guide).
 - GuideEntryResponse includes id, guideType, targetKey, name, summary, imageUrl, patchVersion, sortOrder, dataJson.
 - dataJson must serialize as a JSON object, not a raw JSON string.
 - Local DB smoke data lives in guides. guideType + targetKey + patchVersion identifies one guide entry.
-- The guides table has a unique constraint on guideType + targetKey + patchVersion. Soft-deleted rows still reserve that key unless the schema changes.
+- The guides table has a unique constraint on guideType + targetKey + patchVersion.
+- v0.3.0 policy: soft-deleted guide rows still reserve guideType + targetKey + patchVersion.
+- Admin create/import must not recreate a guide with the same guideType + targetKey + patchVersion when a soft-deleted row already exists; use skip or restore/reactivation behavior instead.
+- Allowing same-key recreation after delete requires a separate DB migration/index policy change, such as a uniqueness rule scoped to non-deleted rows, plus matching service duplicate checks.
 - If patchVersion is omitted, public APIs resolve the latest active non-deleted patch version. Do not mix multiple patch versions in one public response.
 - Latest patch selection sorts patchVersion numerically by major/minor parts, then lexicographically as a final tie-breaker.
 - GET /api/guide returns all active, non-deleted rows for the latest active patch ordered by sortOrder ASC, id ASC.
