@@ -48,11 +48,12 @@ class MemberServiceImplTest {
         // given
         SignupRequest request = signupRequest("sojung@example.com", "password123", "소정");
         Member savedMember = member("sojung@example.com", "encoded-password", "소정");
+        ReflectionTestUtils.setField(savedMember, "userId", 1L);
 
         when(memberRepository.existsByEmail("sojung@example.com")).thenReturn(false);
         when(passwordEncoder.encode("password123")).thenReturn("encoded-password");
         when(memberRepository.saveAndFlush(any(Member.class))).thenReturn(savedMember);
-        when(jwtTokenProvider.createAccessToken(any())).thenReturn("access-token");
+        when(jwtTokenProvider.createAccessToken(1L)).thenReturn("access-token");
 
         // when
         AuthResponse response = memberService.signup(request);
@@ -63,6 +64,7 @@ class MemberServiceImplTest {
                 .extracting(MemberResponse::getEmail, MemberResponse::getNickname)
                 .containsExactly("sojung@example.com", "소정");
         verify(memberRepository).saveAndFlush(any(Member.class));
+        verify(jwtTokenProvider).createAccessToken(1L);
     }
 
     @Test
@@ -114,6 +116,44 @@ class MemberServiceImplTest {
         assertThatThrownBy(() -> memberService.login(wrongPasswordRequest))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_LOGIN_CREDENTIALS));
+    }
+
+    @Test
+    void 로그인_성공시_토큰과_사용자정보를_반환한다() {
+        // given
+        LoginRequest request = loginRequest("sojung@example.com", "password123");
+        Member member = member("sojung@example.com", "encoded-password", "소정");
+        ReflectionTestUtils.setField(member, "userId", 1L);
+
+        when(memberRepository.findByEmail("sojung@example.com")).thenReturn(Optional.of(member));
+        when(passwordEncoder.matches("password123", "encoded-password")).thenReturn(true);
+        when(jwtTokenProvider.createAccessToken(1L)).thenReturn("access-token");
+
+        // when
+        AuthResponse response = memberService.login(request);
+
+        // then
+        assertThat(response.getAccessToken()).isEqualTo("access-token");
+        assertThat(response.getUser())
+                .extracting(MemberResponse::getEmail, MemberResponse::getNickname)
+                .containsExactly("sojung@example.com", "소정");
+    }
+
+    @Test
+    void 내정보_조회_성공시_사용자정보를_반환한다() {
+        // given
+        Member member = member("sojung@example.com", "encoded-password", "소정");
+        ReflectionTestUtils.setField(member, "userId", 1L);
+
+        when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+
+        // when
+        MemberResponse response = memberService.getMe(1L);
+
+        // then
+        assertThat(response)
+                .extracting(MemberResponse::getEmail, MemberResponse::getNickname)
+                .containsExactly("sojung@example.com", "소정");
     }
 
     @Test
