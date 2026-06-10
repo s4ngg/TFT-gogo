@@ -386,7 +386,7 @@ const RANK_OPTIONS: { label: string; value: RankFilter }[] = [
 ]
 
 const TIER_COLOR: Record<string, string> = {
-  S: '#04f3e5', 'A+': '#f7d26d', A: '#a78bfa', B: '#60a5fa', C: '#818cf8', D: '#6b7280',
+  S: '#04f3e5', A: '#a78bfa', B: '#60a5fa', C: '#818cf8', D: '#6b7280',
 }
 
 /* ── 토큰 입력 화면 ── */
@@ -902,7 +902,7 @@ function HaFormModal({ initial, onClose, onSaved }: HaFormModalProps) {
           onChange={(e) => patch('grade', e.target.value || null)}
         >
           <option value="">선택 안 함</option>
-          {['S', 'A+', 'A', 'B', 'C', 'D'].map((g) => <option key={g} value={g}>{g}</option>)}
+          {['S', 'A', 'B', 'C', 'D'].map((g) => <option key={g} value={g}>{g}</option>)}
         </select>
 
         <label className={styles.fieldLabel}>정렬 순서</label>
