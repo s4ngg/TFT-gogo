@@ -232,6 +232,71 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
     }
 
     @Override
+    public List<MatchSummaryResponse> getRankedMatchSummaries(String puuid, int count) {
+        // DB에서 queueId=1100 조건으로 직접 조회 (메모리 필터링 불필요)
+        List<CachedMatch> cached = cachedMatchRepository
+                .findByParticipantPuuidAndQueueId(puuid, 1100, PageRequest.of(0, count));
+
+        // 캐시가 부족하면 비동기로 수집 트리거만 하고 현재 캐시 데이터로 즉시 반환
+        // putIfAbsent로 선점해 중복 트리거 방지 (작업 등록 전에 선점)
+        if (cached.size() < count && inProgressMap.putIfAbsent(puuid, Boolean.TRUE) == null) {
+            try {
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        List<String> matchIds = riotQueue
+                                .submit(() -> riotApiClient.getMatchIdsForQueue(puuid, count, 0, 1100))
+                                .get(FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                        Set<String> cachedIds = new HashSet<>(
+                                cachedMatchRepository.findMatchIdsByMatchIdIn(matchIds));
+                        List<String> toFetch = matchIds.stream()
+                                .filter(id -> !cachedIds.contains(id))
+                                .collect(Collectors.toList());
+                        if (!toFetch.isEmpty()) {
+                            // requestedFast=0으로 latch 즉시 완료 — executor 스레드 점유 없이 fire-and-forget
+                            collectInBackground(puuid, toFetch, 0);
+                        } else {
+                            inProgressMap.remove(puuid);
+                        }
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        inProgressMap.remove(puuid);
+                        logger.warn("AI용 랭크 전적 수집 인터럽트: puuid={}", puuid);
+                    } catch (Exception e) {
+                        inProgressMap.remove(puuid);
+                        logger.warn("AI용 랭크 전적 백그라운드 수집 실패: puuid={}", puuid);
+                    }
+                }, matchCollectionExecutor);
+            } catch (Exception e) {
+                // runAsync 등록 자체 실패(RejectedExecutionException 등) 시 선점 해제
+                inProgressMap.remove(puuid);
+                logger.warn("AI용 랭크 전적 수집 작업 등록 실패: puuid={}", puuid);
+            }
+        }
+
+        return cached.stream()
+                .map(m -> toMatchSummaryResponse(puuid, m.getMatchId(), m))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    private MatchSummaryResponse toMatchSummaryResponse(String puuid, String matchId, CachedMatch cached) {
+        try {
+            MatchDto matchDto = CACHE_MAPPER.readValue(cached.getMatchJson(), MatchDto.class);
+            MatchDto.MatchInfoDto info = matchDto.getInfo();
+            if (info == null || info.getParticipants() == null) return null;
+
+            return info.getParticipants().stream()
+                    .filter(p -> puuid.equals(p.getPuuid()))
+                    .findFirst()
+                    .map(p -> MatchSummaryResponse.of(matchId, info, p))
+                    .orElse(null);
+        } catch (Exception e) {
+            logger.error("AI용 매치 역직렬화 실패: matchId={}", matchId, e);
+            return null;
+        }
+    }
+
+    @Override
     public CollectionStatusResponse getStatus(String puuid) {
         long collected = cachedMatchRepository.countByParticipantPuuid(puuid);
         boolean running = inProgressMap.getOrDefault(puuid, false);
