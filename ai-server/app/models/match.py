@@ -86,7 +86,7 @@ class AnalyzeResponse(BaseModel):
 
 class MetaDeck(BaseModel):
     rank: int
-    grade: str              # "S" | "A+" | "A" | "B" | "C" | "D"
+    grade: str              # "S" | "A" | "B" | "C" | "D"
     trait_suffixes: list[str]
     top4_rate: str
     avg_place: str

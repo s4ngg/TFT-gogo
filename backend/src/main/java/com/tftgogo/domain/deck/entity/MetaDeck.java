@@ -35,7 +35,7 @@ public class MetaDeck {
     @Column(name = "patch_version", nullable = false, length = 20)
     private String patchVersion;
 
-    // ENUM('S','A+','A','B','C','D')
+    // ENUM('S','A','B','C','D')
     @Column(nullable = false, length = 5)
     private String tier;
 
