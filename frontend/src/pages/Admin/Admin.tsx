@@ -1041,6 +1041,7 @@ export function HeroAugmentDeckManager() {
   )
 }
 
+
 /* ── 메인 관리 페이지 ── */
 export function AdminPage() {
   const [decks, setDecks] = useState<AdminDeck[]>([])

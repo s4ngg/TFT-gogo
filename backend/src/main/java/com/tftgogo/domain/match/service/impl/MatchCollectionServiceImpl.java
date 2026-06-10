@@ -32,7 +32,6 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
 
     private static final Logger logger = LogManager.getLogger(MatchCollectionServiceImpl.class);
     private static final Set<Integer> VALID_QUEUE_IDS = Set.of(1090, 1100);
-    private static final int FAST_RETURN_TARGET = 10;
     private static final long FETCH_TIMEOUT_SECONDS = 60L;
 
     // MatchDto는 @Getter만 있고 setter 없음 → FIELD visibility로 직접 접근
@@ -80,7 +79,8 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
                 .collect(Collectors.toList());
 
         if (!toFetch.isEmpty()) {
-            collectInBackground(puuid, toFetch);
+            int fastTarget = Math.max(0, count - cachedIds.size());
+            collectInBackground(puuid, toFetch, fastTarget);
         }
 
         return buildResult(puuid, matchIds);
@@ -88,11 +88,23 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
 
     private List<String> fetchMatchIds(String puuid, int start, int count) {
         try {
-            return riotQueue.submit(() -> riotApiClient.getMatchIdsForQueue(puuid, count, start))
-                    .get(FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            CompletableFuture<List<String>> rankedFuture =
+                    riotQueue.submit(() -> riotApiClient.getMatchIdsForQueue(puuid, count, start, 1100));
+            CompletableFuture<List<String>> normalFuture =
+                    riotQueue.submit(() -> riotApiClient.getMatchIdsForQueue(puuid, count, start, 1090));
+
+            List<String> ranked = rankedFuture.get(FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            List<String> normal = normalFuture.get(FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+            Set<String> merged = new LinkedHashSet<>(ranked);
+            merged.addAll(normal);
+            return new ArrayList<>(merged);
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
             if (cause instanceof BusinessException be) throw be;
+            throw new BusinessException(ErrorCode.RIOT_API_ERROR);
+        } catch (TimeoutException e) {
+            logger.error("matchId 목록 조회 타임아웃: puuid={}", puuid, e);
             throw new BusinessException(ErrorCode.RIOT_API_ERROR);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -103,9 +115,9 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
         }
     }
 
-    // 첫 FAST_RETURN_TARGET개 수집 완료까지 블로킹, 나머지는 백그라운드 계속 진행
-    private void collectInBackground(String puuid, List<String> toFetch) {
-        int fastTarget = Math.min(FAST_RETURN_TARGET, toFetch.size());
+    // requestedFast개 수집 완료까지 블로킹, 나머지는 백그라운드 계속 진행
+    private void collectInBackground(String puuid, List<String> toFetch, int requestedFast) {
+        int fastTarget = Math.min(requestedFast, toFetch.size());
         CountDownLatch latch = new CountDownLatch(fastTarget);
         AtomicInteger completedCount = new AtomicInteger(0);
 
@@ -202,6 +214,21 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
                 .map(m -> toDto(puuid, m.getMatchId(), m))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public void refreshMatches(String puuid) {
+        List<String> matchIds = fetchMatchIds(puuid, 0, 20);
+        if (matchIds.isEmpty()) return;
+
+        Set<String> cachedIds = new HashSet<>(cachedMatchRepository.findMatchIdsByMatchIdIn(matchIds));
+        List<String> toFetch = matchIds.stream()
+                .filter(id -> !cachedIds.contains(id))
+                .collect(Collectors.toList());
+
+        if (!toFetch.isEmpty()) {
+            collectInBackground(puuid, toFetch, toFetch.size());
+        }
     }
 
     @Override

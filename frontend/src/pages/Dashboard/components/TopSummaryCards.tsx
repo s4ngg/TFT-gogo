@@ -30,7 +30,7 @@ function SummonerSearchCard() {
   function handleSearch(input: string) {
     const trimmed = input.trim()
     if (!trimmed) return
-    const [name = trimmed, tag = 'KR1'] = trimmed.split('#')
+    const [name = trimmed, tag = 'KR1'] = trimmed.split('#').map((s) => s.trim())
     navigate(`/summoner/${encodeURIComponent(name)}/${tag}`)
   }
 

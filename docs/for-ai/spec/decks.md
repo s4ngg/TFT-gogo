@@ -22,7 +22,7 @@ Pages: Decks (/decks), DeckDetail (/decks/:deckId).
 <business-rules>
 
 <deck-list>
-- Decks are grouped by tier: S / A+ / A / B / C / D.
+- Decks are grouped by tier: S / A / B / C / D.
 - Rank filter options: 마스터+ / 다이아+ / 에메랄드+.
 - Deck name format: "[Primary Synergy] [Carry Champion]" — auto-generated; admin can override.
 - Each deck card shows: champion icons, synergy badges, win rate, TOP4 rate, avg placement, pick rate.

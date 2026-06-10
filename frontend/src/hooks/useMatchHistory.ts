@@ -7,7 +7,7 @@ export const useMatchHistory = (puuid: string, count = 20) =>
     queryFn: ({ pageParam }) => getMatchHistory(puuid, pageParam, count),
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) =>
-      lastPage.length === count ? allPages.length * count : undefined,
+      lastPage.length > 0 ? allPages.length * count : undefined,
     enabled: !!puuid,
     staleTime: 1000 * 60 * 5,
   })

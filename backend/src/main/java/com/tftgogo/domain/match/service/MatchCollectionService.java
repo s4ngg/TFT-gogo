@@ -8,4 +8,5 @@ import java.util.List;
 public interface MatchCollectionService {
     List<SummonerMatchItemDto> fetchAndCache(String puuid, int start, int count);
     CollectionStatusResponse getStatus(String puuid);
+    void refreshMatches(String puuid);
 }

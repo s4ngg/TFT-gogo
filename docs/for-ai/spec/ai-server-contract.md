@@ -68,7 +68,7 @@ Spring 백엔드 ↔ AI 서버(FastAPI) 간 API 계약 명세.
   "meta_decks": [                   // 현재 메타 덱 목록 (Spring이 DB에서 조회해 전달)
     {
       "rank": 0,
-      "grade": "S",                 // "S" | "A+" | "A" | "B" | "C" | "D"
+      "grade": "S",                 // "S" | "A" | "B" | "C" | "D"
       "trait_suffixes": ["string"], // 시너지 suffix 목록 (e.g. ["bruiser", "sniper"])
       "top4_rate": "string",        // e.g. "76.2%"
       "avg_place": "string",        // e.g. "3.14"

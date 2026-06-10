@@ -35,6 +35,7 @@ async def analyze_with_meta(request: AnalyzeWithMetaRequest) -> AnalyzeResponse:
     """
     result = analyzer.analyze(request)
     good_traits = result["good_traits"]
+    bad_traits = result["bad_traits"]
     stats = result["stats"]
 
     # 메타 덱 중 내 스타일과 잘 맞는 덱 순위 재정렬
@@ -46,6 +47,7 @@ async def analyze_with_meta(request: AnalyzeWithMetaRequest) -> AnalyzeResponse:
     )
     deck_reasons = await recommender.generate_reasons(
         good_traits=good_traits,
+        bad_traits=bad_traits,
         recommended_decks=ranked_decks[:3],
         stats_summary=stats_summary,
     )
