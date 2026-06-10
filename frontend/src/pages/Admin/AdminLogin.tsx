@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { fetchAdminDecks, setAdminToken, clearAdminToken } from '../../api/adminApi'
+import { validateAdminToken, setAdminToken, clearAdminToken, isAdminAuthFailure } from '../../api/adminApi'
 import pageStyles from './AdminLogin.module.css'
 import styles from './Admin.module.css'
 
@@ -13,11 +13,16 @@ function AdminLogin() {
     e.preventDefault()
     setAdminToken(input.trim())
     try {
-      await fetchAdminDecks()
+      await validateAdminToken()
       navigate('/admin/decks', { replace: true })
-    } catch {
-      clearAdminToken()
-      setError('토큰이 올바르지 않습니다.')
+    } catch (error: unknown) {
+      if (isAdminAuthFailure(error)) {
+        clearAdminToken()
+        setError('토큰이 올바르지 않습니다.')
+        return
+      }
+
+      setError('인증 서버에 일시적인 문제가 있습니다. 잠시 후 다시 시도해주세요.')
     }
   }
 
