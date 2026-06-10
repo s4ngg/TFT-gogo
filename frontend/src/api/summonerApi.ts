@@ -77,7 +77,8 @@ export const getSummonerProfile = async (
     return data.data
   } catch (err: unknown) {
     const status = (err as { response?: { status?: number } })?.response?.status
-    if (status === 404 || status === 429) throw err
+    if (status === 404) throw err
+    if (status === 429) throw new Error('RATE_LIMITED')
     return mockSummonerProfile
   }
 }
@@ -89,7 +90,7 @@ export const refreshSummoner = async (
   const { data } = await axiosInstance.post<ApiResponse<SummonerProfileResponse>>(
     `/summoners/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}/refresh`,
     null,
-    { timeout: 90_000 },
+    { timeout: 60_000 },
   )
   return data.data
 }

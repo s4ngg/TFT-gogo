@@ -14,7 +14,7 @@ import { refreshSummoner } from '../../api/summonerApi'
 import ProfileSkeleton from './components/ProfileSkeleton'
 import styles from './SummonerDetail.module.css'
 
-type HttpError = { response?: { status?: number; headers?: Record<string, string> } }
+interface HttpError { response?: { status?: number; headers?: Record<string, string> } }
 
 const TIER_KO: Record<string, string> = {
   IRON: '아이언', BRONZE: '브론즈', SILVER: '실버', GOLD: '골드',
@@ -183,12 +183,9 @@ function SummonerDetail() {
   const tag = tagLine ?? 'KR1'
 
   const { data: profile, isError: profileIsError, error: profileErr, isLoading: profileLoading } = useSummonerProfile(name, tag)
-  const profileStatus = (profileErr as HttpError | null)?.response?.status
-  const profileRateLimited = profileIsError && profileStatus === 429
+  const profileRateLimited = profileIsError && (profileErr as Error)?.message === 'RATE_LIMITED'
   const profileNotFound = profileIsError && !profileRateLimited
-  const profileRetryAfter = profileRateLimited
-    ? Math.max(1, Number((profileErr as HttpError)?.response?.headers?.['retry-after'] ?? 120) || 120)
-    : 0
+  const profileRetryAfter = profileRateLimited ? 120 : 0
   const isRateLimited = profileRateLimited || refreshRateLimitSeconds > 0
   const retryAfterSeconds = profileRateLimited ? profileRetryAfter : refreshRateLimitSeconds
   const {
