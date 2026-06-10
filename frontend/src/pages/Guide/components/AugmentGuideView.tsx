@@ -1,16 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Trophy } from 'lucide-react'
 import {
   DEFAULT_GUIDE_PAGE_SIZE,
   type AugmentPlan,
   type AugmentPlanKey,
   type GuideCatalog,
-  type MetricSortKey,
   type RewardRow,
-  type SortDir,
 } from '../../../api/guide'
 import TierBadge from '../../../components/common/TierBadge'
 import { useGuideTabItems } from '../../../hooks/useGuide'
+import { useGuideMetricSort } from '../hooks/useGuideMetricSort'
+import {
+  useGuidePageBounds,
+  useGuideTabPagination,
+} from '../hooks/useGuideTabPagination'
 import {
   EmptyState,
   GuidePagination,
@@ -33,9 +36,15 @@ function AugmentGuideView({
   rewardRows,
 }: AugmentGuideViewProps) {
   const [planKey, setPlanKey] = useState<AugmentPlanKey>('fast8')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [sortDir, setSortDir] = useState<SortDir>('desc')
-  const [sortKey, setSortKey] = useState<MetricSortKey>('winRate')
+  const {
+    currentPage,
+    setCurrentPage,
+  } = useGuideTabPagination({ resetKey: query })
+  const {
+    handleSort,
+    sortDir,
+    sortKey,
+  } = useGuideMetricSort({ onSortChange: () => setCurrentPage(1) })
   const augmentsQuery = useGuideTabItems({
     fallbackData,
     params: {
@@ -48,27 +57,13 @@ function AugmentGuideView({
     },
   })
   const pageData = augmentsQuery.data.data
-  const safePage = Math.min(currentPage, pageData.totalPages)
+  const safePage = useGuidePageBounds({
+    currentPage,
+    setCurrentPage,
+    totalPages: pageData.totalPages,
+  })
   const visibleAugments = pageData.items
   const selectedPlan = augmentPlans.find((plan) => plan.key === planKey) ?? augmentPlans[0]
-
-  function handleSort(nextSortKey: MetricSortKey) {
-    if (sortKey === nextSortKey) {
-      setSortDir((current) => (current === 'asc' ? 'desc' : 'asc'))
-    } else {
-      setSortKey(nextSortKey)
-      setSortDir(nextSortKey === 'avgPlace' ? 'asc' : 'desc')
-    }
-    setCurrentPage(1)
-  }
-
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [query])
-
-  useEffect(() => {
-    if (currentPage > pageData.totalPages) setCurrentPage(pageData.totalPages)
-  }, [currentPage, pageData.totalPages])
 
   return (
     <>

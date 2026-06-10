@@ -1,12 +1,16 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { Star } from 'lucide-react'
 import {
   CHAMPION_PAGE_SIZE,
   type ChampionCostFilter,
-  type ChampionGuide,
   type GuideCatalog,
 } from '../../../api/guide'
 import { useGuideTabItems } from '../../../hooks/useGuide'
+import { useChampionDetailDialog } from '../hooks/useChampionDetailDialog'
+import {
+  useGuidePageBounds,
+  useGuideTabPagination,
+} from '../hooks/useGuideTabPagination'
 import ChampionDetailDialog from './ChampionDetailDialog'
 import {
   EmptyState,
@@ -34,9 +38,15 @@ function ChampionGuideView({
   query,
 }: ChampionGuideViewProps) {
   const [costFilter, setCostFilter] = useState<ChampionCostFilter>('all')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [selectedChampion, setSelectedChampion] = useState<ChampionGuide | null>(null)
-  const lastFocusedElementRef = useRef<HTMLElement | null>(null)
+  const {
+    currentPage,
+    setCurrentPage,
+  } = useGuideTabPagination({ resetKey: `${costFilter}:${query}` })
+  const {
+    closeChampionDetail,
+    openChampionDetail,
+    selectedChampion,
+  } = useChampionDetailDialog(onChampionOpen)
   const championsQuery = useGuideTabItems({
     fallbackData,
     params: {
@@ -48,31 +58,12 @@ function ChampionGuideView({
     },
   })
   const pageData = championsQuery.data.data
-  const safePage = Math.min(currentPage, pageData.totalPages)
+  const safePage = useGuidePageBounds({
+    currentPage,
+    setCurrentPage,
+    totalPages: pageData.totalPages,
+  })
   const visibleChampions = pageData.items
-
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [costFilter, query])
-
-  useEffect(() => {
-    if (currentPage > pageData.totalPages) setCurrentPage(pageData.totalPages)
-  }, [currentPage, pageData.totalPages])
-
-  function openChampionDetail(championGuide: ChampionGuide) {
-    lastFocusedElementRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
-    setSelectedChampion(championGuide)
-    onChampionOpen(championGuide.name)
-  }
-
-  function closeChampionDetail() {
-    setSelectedChampion(null)
-    window.requestAnimationFrame(() => {
-      if (lastFocusedElementRef.current?.isConnected) {
-        lastFocusedElementRef.current.focus()
-      }
-    })
-  }
 
   return (
     <>
