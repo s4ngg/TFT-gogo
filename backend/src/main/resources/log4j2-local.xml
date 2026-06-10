@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 로컬 개발 전용 로그 설정 — SQL DEBUG 포함 -->
+<!-- 활성화: application-local.yml에 logging.config: classpath:log4j2-local.xml 추가 -->
+<Configuration status="WARN">
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} [%thread] %highlight{%-5level}{FATAL=red blink, ERROR=red bold, WARN=yellow bold, INFO=green, DEBUG=cyan, TRACE=white} %logger{36} - %msg%n" disableAnsi="false"/>
+        </Console>
+        <Rewrite name="Rewrite">
+            <AppenderRef ref="Console"/>
+            <RegexReplacement regex="Bearer\s+[A-Za-z0-9\-._~+/]+=*" replacement="Bearer [MASKED]"/>
+            <RegexReplacement regex="(?i)(password|passwd|pwd|secret|apikey|api[_-]key)\s*[:=]\s*\S+" replacement="$1=[MASKED]"/>
+        </Rewrite>
+    </Appenders>
+
+    <Loggers>
+        <Logger name="com.tftgogo" level="DEBUG" additivity="false">
+            <AppenderRef ref="Rewrite"/>
+        </Logger>
+        <Logger name="org.springframework.security" level="INFO" additivity="false">
+            <AppenderRef ref="Rewrite"/>
+        </Logger>
+        <!-- 로컬 개발: SQL 쿼리 DEBUG 출력 활성화 -->
+        <Logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+            <AppenderRef ref="Rewrite"/>
+        </Logger>
+        <Root level="INFO">
+            <AppenderRef ref="Rewrite"/>
+        </Root>
+    </Loggers>
+</Configuration>
