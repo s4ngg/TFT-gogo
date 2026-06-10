@@ -8,4 +8,5 @@ public interface SummonerService {
     SummonerProfileResponse getProfile(String gameName, String tagLine);
     RankInfoResponse getRank(String puuid);
     SummonerDetailResponse getDetail(String gameName, String tagLine);
+    SummonerDetailResponse refresh(String gameName, String tagLine);
 }

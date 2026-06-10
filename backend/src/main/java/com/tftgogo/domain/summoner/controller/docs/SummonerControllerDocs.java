@@ -27,4 +27,20 @@ public interface SummonerControllerDocs {
             @Parameter(description = "소환사 태그라인", example = "KR1", required = true)
             @PathVariable("tagLine") String tagLine
     );
+
+    @Operation(
+            summary = "전적 갱신",
+            description = "소환사 프로필·랭크 캐시를 무효화하고 Riot API에서 최신 데이터를 다시 조회합니다. 새로운 매치도 수집합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "갱신 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "소환사를 찾을 수 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429", description = "Riot API Rate Limit 초과")
+    })
+    ResponseEntity<ApiResponse<SummonerDetailResponse>> refreshSummoner(
+            @Parameter(description = "소환사 게임 이름", example = "Hide on bush", required = true)
+            @PathVariable("gameName") String gameName,
+            @Parameter(description = "소환사 태그라인", example = "KR1", required = true)
+            @PathVariable("tagLine") String tagLine
+    );
 }
