@@ -14,9 +14,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -140,17 +142,22 @@ class MetaDeckServiceImplTest {
 
     @Test
     void 집계_중_중복_호출은_Riot_API를_호출하지_않는다() throws Exception {
-        // AtomicBoolean 직접 조작은 어렵지만, 두 번 연속 호출 시 두 번째는 warn 후 return 되는 것을 verify로 확인
-        // given: riotApiClient.getChallenger()가 빈 LeagueListDto 반환 (정상 집계는 하지 않음)
-        when(riotApiClient.getChallenger()).thenReturn(null);
-        when(riotApiClient.getGrandmaster()).thenReturn(null);
-        when(riotApiClient.getMaster()).thenReturn(null);
+        // given: aggregating 플래그를 리플렉션으로 true로 세팅 (이미 집계 중인 상태 시뮬레이션)
+        Field aggregatingField = MetaDeckServiceImpl.class.getDeclaredField("aggregating");
+        aggregatingField.setAccessible(true);
+        AtomicBoolean aggregating = (AtomicBoolean) aggregatingField.get(metaDeckService);
+        aggregating.set(true);
 
-        // when: 첫 번째 호출 (정상 종료)
+        // when: 집계 중에 다시 호출
         metaDeckService.aggregateAndSave(LocalDate.of(2026, 6, 1));
 
-        // then: 예외 없이 완료
-        // (두 번째 동시 호출 테스트는 멀티스레드 환경 필요 — 통합 테스트 대상)
+        // then: Riot API 미호출 (집계 skip)
+        verify(riotApiClient, never()).getChallenger();
+        verify(riotApiClient, never()).getGrandmaster();
+        verify(riotApiClient, never()).getMaster();
+
+        // cleanup
+        aggregating.set(false);
     }
 
     // ── assignTierByRatio (패치 로직 핵심) ──────────────────────────────
