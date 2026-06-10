@@ -7,6 +7,7 @@ import {
   getAdminToken,
   setAdminToken,
   clearAdminToken,
+  validateAdminToken,
   fetchAdminHeroAugmentDecks,
   createHeroAugmentDeck,
   updateHeroAugmentDeck,
@@ -398,7 +399,7 @@ function TokenGate({ onSuccess }: { onSuccess: () => void }) {
     e.preventDefault()
     setAdminToken(input.trim())
     try {
-      await fetchAdminDecks()  // 토큰 검증
+      await validateAdminToken()
       onSuccess()
     } catch {
       clearAdminToken()

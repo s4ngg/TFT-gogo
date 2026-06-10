@@ -19,6 +19,12 @@ function adminHeaders() {
   return { 'X-Admin-Token': getAdminToken() }
 }
 
+export async function validateAdminToken(): Promise<void> {
+  await axiosInstance.get('/admin/guides', {
+    headers: adminHeaders(),
+  })
+}
+
 export interface UnitInfo {
   characterId: string
   name: string
