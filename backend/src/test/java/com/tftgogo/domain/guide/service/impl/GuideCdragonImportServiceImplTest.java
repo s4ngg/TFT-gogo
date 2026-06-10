@@ -146,6 +146,7 @@ class GuideCdragonImportServiceImplTest {
         assertThat(itemGuide.getImageUrl()).contains("guinsoosrageblade.png");
         assertThat(itemGuide.getDataJson()).contains("\"category\":\"완성 아이템\"");
         assertThat(itemGuide.getDataJson()).contains("\"bestUsers\":[]");
+        assertThat(itemGuide.getDataJson()).doesNotContain("bestUsersNote");
         assertThat(itemGuide.getDataJson()).contains("\"label\":\"조합식\"");
         assertThat(itemGuide.getDataJson()).contains("Recurve Bow");
         assertThat(itemGuide.getDataJson()).contains("Needlessly Large Rod");

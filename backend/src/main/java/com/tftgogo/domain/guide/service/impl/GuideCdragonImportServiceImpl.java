@@ -212,7 +212,6 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
 
             ObjectNode dataJson = objectMapper.createObjectNode();
             dataJson.put("avgPlace", "-");
-            dataJson.put("bestUsersNote", "통계 집계 연결 전 기본값");
             dataJson.set("bestUsers", objectMapper.createArrayNode());
             dataJson.put("category", "완성 아이템");
             dataJson.set("combinations", itemCombinations(item, itemByApiName));
