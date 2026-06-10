@@ -143,7 +143,6 @@ function SummonerDetail() {
   const { gameName, tagLine } = useParams<{ gameName: string; tagLine: string }>()
   const [query, setQuery] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [visibleCount, setVisibleCount] = useState(30)
   const [gameTypeFilter, setGameTypeFilter] = useState<GameTypeFilter>('ALL')
   const navigate = useNavigate()
   const setSummoner = useSummonerStore((s) => s.setSummoner)
@@ -153,10 +152,14 @@ function SummonerDetail() {
 
   const { data: profile, isError: profileNotFound } = useSummonerProfile(name, tag)
   const {
-    data: matches = [],
+    data: matchData,
     refetch: refetchMatches,
-    isRefetching: isMatchesRefetching,
-  } = useMatchHistory(name, tag)
+    isFetching: isMatchesRefetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useMatchHistory(profile?.puuid ?? '')
+  const matches = matchData?.pages.flat() ?? []
 
   const tierKo = TIER_KO[profile?.tier ?? ''] ?? profile?.tier ?? '-'
   const total = profile ? (profile.wins + profile.losses) : 0
@@ -240,7 +243,6 @@ function SummonerDetail() {
 
   function handleFilterChange(filter: GameTypeFilter) {
     setGameTypeFilter(filter)
-    setVisibleCount(30)
     setExpandedId(null)
   }
 
@@ -334,6 +336,7 @@ function SummonerDetail() {
               </div>
             )}
 
+
             {/* 매치 히스토리 */}
             <section className={styles.matchSection}>
               <h2>최근 {Math.min(30, filteredMatches.length)}게임</h2>
@@ -354,7 +357,7 @@ function SummonerDetail() {
               </div>
 
               <div className={styles.matchList}>
-                {filteredMatches.slice(0, visibleCount).map((match) => {
+                {filteredMatches.map((match) => {
                   const isOpen = expandedId === match.matchId
                   return (
                     <div key={match.matchId} className={styles.matchItem}>
@@ -407,13 +410,14 @@ function SummonerDetail() {
                   )
                 })}
               </div>
-              {visibleCount < filteredMatches.length && (
+              {hasNextPage && (
                 <button
                   type="button"
                   className={styles.loadMoreBtn}
-                  onClick={() => setVisibleCount((v) => v + 30)}
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
                 >
-                  30개 더 보기 ({filteredMatches.length - visibleCount}개 남음)
+                  {isFetchingNextPage ? '불러오는 중...' : '더 보기'}
                 </button>
               )}
             </section>

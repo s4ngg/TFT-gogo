@@ -28,9 +28,9 @@
 </output-format>
 
 <checklist-refs>
-- 프론트엔드 PR: docs/for-ai/spec-frontend.md
-- 백엔드 PR: docs/for-ai/spec-backend.md
-- AI 서버 PR: docs/for-ai/spec-ai.md
+- 프론트엔드 PR: docs/for-ai/frontend/conventions.md
+- 백엔드 PR: docs/for-ai/backend/conventions.md
+- AI 서버 PR: docs/for-ai/ai-server/conventions.md
 </checklist-refs>
 
 <pr-rules>

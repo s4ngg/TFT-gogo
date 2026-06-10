@@ -269,7 +269,7 @@ export const metaDecks: MetaDeck[] = [
   },
   {
     rank: 3,
-    grade: 'A+',
+    grade: 'A',
     name: '정령족 코르키 백류',
     winRate: '52.1%',
     top4: '71.8%',

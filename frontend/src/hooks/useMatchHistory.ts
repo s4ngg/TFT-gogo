@@ -1,10 +1,13 @@
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import { getMatchHistory } from '../api/summonerApi'
 
-export const useMatchHistory = (gameName: string, tagLine: string, count = 90) =>
-  useQuery({
-    queryKey: ['summoner', 'matches', gameName, tagLine, count],
-    queryFn: () => getMatchHistory(gameName, tagLine, count),
-    enabled: !!gameName && !!tagLine,
+export const useMatchHistory = (puuid: string, count = 20) =>
+  useInfiniteQuery({
+    queryKey: ['summoner', 'matches', puuid, count],
+    queryFn: ({ pageParam }) => getMatchHistory(puuid, pageParam, count),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.length === count ? allPages.length * count : undefined,
+    enabled: !!puuid,
     staleTime: 1000 * 60 * 5,
   })

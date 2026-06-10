@@ -1,0 +1,128 @@
+name: PR CI Summary
+
+on:
+  pull_request:
+
+concurrency:
+  group: pr-ci-summary-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+      ai-server: ${{ steps.filter.outputs.ai-server }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+              - '.github/workflows/**'
+            backend:
+              - 'backend/**'
+              - '.github/workflows/**'
+            ai-server:
+              - 'ai-server/**'
+              - '.github/workflows/**'
+
+  frontend-ci:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        run: cd frontend && npm ci
+      - name: Build
+        run: cd frontend && npm run build
+      - name: Lint
+        run: cd frontend && npm run lint
+      - name: Test
+        run: cd frontend && npm run test
+
+  backend-ci:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Grant execute permission for gradlew
+        run: chmod +x backend/gradlew
+      - name: Build and test
+        run: cd backend && ./gradlew clean build
+      - name: Upload test report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-report
+          path: backend/build/reports/tests/test/
+
+  ai-server-ci:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.ai-server == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: cd ai-server && python -m pip install --upgrade pip && pip install -r requirements.txt
+      - name: Lint with ruff
+        run: cd ai-server && ruff check .
+      - name: Run tests
+        run: cd ai-server && pytest
+
+  summary:
+    runs-on: ubuntu-latest
+    needs: [detect-changes, frontend-ci, backend-ci, ai-server-ci]
+    if: always()
+    steps:
+      - name: Check results
+        run: |
+          detect_result="${{ needs.detect-changes.result }}"
+          frontend_result="${{ needs.frontend-ci.result }}"
+          backend_result="${{ needs.backend-ci.result }}"
+          ai_result="${{ needs.ai-server-ci.result }}"
+
+          failed=false
+
+          if [[ "$detect_result" == "failure" || "$detect_result" == "cancelled" ]]; then
+            echo "detect-changes failed: $detect_result"
+            failed=true
+          fi
+          if [[ "$frontend_result" == "failure" || "$frontend_result" == "cancelled" ]]; then
+            echo "Frontend CI failed: $frontend_result"
+            failed=true
+          fi
+          if [[ "$backend_result" == "failure" || "$backend_result" == "cancelled" ]]; then
+            echo "Backend CI failed: $backend_result"
+            failed=true
+          fi
+          if [[ "$ai_result" == "failure" || "$ai_result" == "cancelled" ]]; then
+            echo "AI Server CI failed: $ai_result"
+            failed=true
+          fi
+
+          if [[ "$failed" == "true" ]]; then
+            exit 1
+          fi
+
+          echo "All CI checks passed or skipped."

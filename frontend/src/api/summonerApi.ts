@@ -19,8 +19,8 @@ export interface SummonerProfileResponse {
   tier: string | null
   rank: string | null
   leaguePoints: number
-  wins: number
-  losses: number
+  wins: number            // 4위 이상(순방) 횟수
+  losses: number          // 5~8위(4위 미만) 횟수
 }
 
 export interface MatchUnitResponse {
@@ -72,6 +72,7 @@ export const getSummonerProfile = async (
   try {
     const { data } = await axiosInstance.get<ApiResponse<SummonerProfileResponse>>(
       `/summoners/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`,
+      { timeout: 60_000 },
     )
     return data.data
   } catch (err: unknown) {
@@ -82,17 +83,19 @@ export const getSummonerProfile = async (
 }
 
 export const getMatchHistory = async (
-  gameName: string,
-  tagLine: string,
-  count = 90,
+  puuid: string,
+  start = 0,
+  count = 20,
 ): Promise<MatchSummaryResponse[]> => {
   try {
     const { data } = await axiosInstance.get<ApiResponse<MatchSummaryResponse[]>>(
-      `/summoners/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}/matches`,
-      { params: { count }, timeout: 120000 },
+      `/match/${encodeURIComponent(puuid)}/matches`,
+      { params: { start, count }, timeout: 60_000 },
     )
     return data.data
-  } catch {
-    return []
+  } catch (err: unknown) {
+    const status = (err as { response?: { status?: number } })?.response?.status
+    if (status === 404 || status === 204) return []
+    throw err
   }
 }

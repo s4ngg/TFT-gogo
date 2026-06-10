@@ -1,6 +1,7 @@
 package com.tftgogo.domain.match.controller;
 
 import com.tftgogo.domain.match.controller.docs.MatchControllerDocs;
+import com.tftgogo.domain.match.dto.response.CollectionStatusResponse;
 import com.tftgogo.domain.match.dto.response.MatchDetailResponse;
 import com.tftgogo.domain.match.service.MatchService;
 import com.tftgogo.domain.summoner.dto.response.SummonerMatchItemDto;
@@ -34,5 +35,13 @@ public class MatchController implements MatchControllerDocs {
             @PathVariable("matchId") String matchId) {
         return ResponseEntity.ok(ApiResponse.success("매치 상세 조회 성공",
                 matchService.getMatchDetail(matchId)));
+    }
+
+    @Override
+    @GetMapping("/{puuid}/collection-status")
+    public ResponseEntity<ApiResponse<CollectionStatusResponse>> getCollectionStatus(
+            @PathVariable("puuid") String puuid) {
+        return ResponseEntity.ok(ApiResponse.success("수집 상태 조회 성공",
+                matchService.getCollectionStatus(puuid)));
     }
 }

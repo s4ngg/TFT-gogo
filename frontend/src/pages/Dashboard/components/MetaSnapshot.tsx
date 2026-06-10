@@ -29,7 +29,7 @@ function toNumber(value: string | undefined): number {
 
 function filterMetaDecks(decks: MetaDeck[], filter: MetaFilter) {
   if (filter === 'upper') {
-    return decks.filter((deck) => deck.grade === 'S' || deck.grade === 'A+')
+    return decks.filter((deck) => deck.grade === 'S' || deck.grade === 'A')
   }
 
   if (filter === 'master') {

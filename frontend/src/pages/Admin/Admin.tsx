@@ -7,11 +7,16 @@ import {
   getAdminToken,
   setAdminToken,
   clearAdminToken,
+  fetchAdminHeroAugmentDecks,
+  createHeroAugmentDeck,
+  updateHeroAugmentDeck,
+  deleteHeroAugmentDeck,
   type AdminDeck,
   type DeckCurationRequest,
-  type UnitInfo,
   type PlayGuide,
   type HeroAugmentEntry,
+  type HeroAugmentDeckItem,
+  type HeroAugmentDeckPayload,
 } from '../../api/adminApi'
 import { useCDragonLocale } from '../../hooks/useCDragonLocale'
 import { getTraitName, getChampionName } from '../../api/cdragonLocale'
@@ -117,7 +122,10 @@ function BoardEditorModal({ deck, locale, onClose, onSave }: BoardEditorProps) {
     return map
   }, [locale])
 
-  const posMap = levelBoards.get(activeLevel) ?? new Map<string, CellPos>()
+  const posMap = useMemo(
+    () => levelBoards.get(activeLevel) ?? new Map<string, CellPos>(),
+    [levelBoards, activeLevel],
+  )
 
   const cellMap = useMemo(() => {
     const m = new Map<string, string>()
@@ -378,7 +386,7 @@ const RANK_OPTIONS: { label: string; value: RankFilter }[] = [
 ]
 
 const TIER_COLOR: Record<string, string> = {
-  S: '#04f3e5', 'A+': '#f7d26d', A: '#a78bfa', B: '#60a5fa', C: '#818cf8', D: '#6b7280',
+  S: '#04f3e5', A: '#a78bfa', B: '#60a5fa', C: '#818cf8', D: '#6b7280',
 }
 
 /* ── 토큰 입력 화면 ── */
@@ -808,19 +816,241 @@ function DeckRow({ deck, onSaved, locale }: { deck: AdminDeck; onSaved: (updated
   )
 }
 
+/* ── 영웅증강 덱 폼 모달 ── */
+const EMPTY_HA_PAYLOAD: HeroAugmentDeckPayload = {
+  name: '',
+  description: null,
+  champions: null,
+  traits: null,
+  boardPositions: null,
+  heroAugments: null,
+  recommended: true,
+  sortOrder: 0,
+  grade: null,
+}
+
+interface HaFormModalProps {
+  initial: HeroAugmentDeckItem | null
+  onClose: () => void
+  onSaved: (item: HeroAugmentDeckItem) => void
+}
+
+function HaFormModal({ initial, onClose, onSaved }: HaFormModalProps) {
+  const [payload, setPayload] = useState<HeroAugmentDeckPayload>(
+    initial
+      ? {
+          name: initial.name,
+          description: initial.description,
+          champions: initial.champions,
+          traits: initial.traits,
+          boardPositions: initial.boardPositions,
+          heroAugments: initial.heroAugments,
+          recommended: initial.recommended,
+          sortOrder: initial.sortOrder,
+          grade: initial.grade,
+        }
+      : EMPTY_HA_PAYLOAD,
+  )
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  function patch<K extends keyof HeroAugmentDeckPayload>(key: K, value: HeroAugmentDeckPayload[K]) {
+    setPayload((prev) => ({ ...prev, [key]: value }))
+  }
+
+  async function handleSave() {
+    if (!payload.name.trim()) { setError('덱 이름은 필수입니다.'); return }
+    setSaving(true); setError('')
+    try {
+      const result = initial
+        ? await updateHeroAugmentDeck(initial.id, payload)
+        : await createHeroAugmentDeck(payload)
+      onSaved(result)
+    } catch {
+      setError('저장 실패. 토큰 또는 입력값을 확인하세요.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <h3 className={styles.modalTitle}>{initial ? '영웅증강 덱 수정' : '영웅증강 덱 추가'}</h3>
+
+        <label className={styles.fieldLabel}>덱 이름 *</label>
+        <input
+          className={styles.textInput}
+          value={payload.name}
+          onChange={(e) => patch('name', e.target.value)}
+          placeholder="예: (꽁) 나서스 덱"
+        />
+
+        <label className={styles.fieldLabel}>설명</label>
+        <textarea
+          className={styles.textarea}
+          value={payload.description ?? ''}
+          onChange={(e) => patch('description', e.target.value || null)}
+          placeholder="운영 방법, 핵심 조합 등 간략 설명"
+          rows={2}
+        />
+
+        <label className={styles.fieldLabel}>티어 (grade)</label>
+        <select
+          className={styles.rankSelect}
+          value={payload.grade ?? ''}
+          onChange={(e) => patch('grade', e.target.value || null)}
+        >
+          <option value="">선택 안 함</option>
+          {['S', 'A', 'B', 'C', 'D'].map((g) => <option key={g} value={g}>{g}</option>)}
+        </select>
+
+        <label className={styles.fieldLabel}>정렬 순서</label>
+        <input
+          type="number"
+          className={styles.textInput}
+          value={payload.sortOrder}
+          onChange={(e) => patch('sortOrder', Number(e.target.value))}
+        />
+
+        <label className={styles.fieldLabel}>영웅증강 JSON</label>
+        <textarea
+          className={styles.textarea}
+          value={payload.heroAugments ?? ''}
+          onChange={(e) => patch('heroAugments', e.target.value || null)}
+          placeholder={'[{"championId":"tft17_nasus","championName":"나서스","augmentName":"꽁 나서스"}]'}
+          rows={3}
+        />
+
+        <label className={styles.fieldLabel}>챔피언 JSON</label>
+        <textarea
+          className={styles.textarea}
+          value={payload.champions ?? ''}
+          onChange={(e) => patch('champions', e.target.value || null)}
+          placeholder={'[{"characterId":"tft17_nasus","imageUrl":"...","stars":2}]'}
+          rows={3}
+        />
+
+        <div className={styles.haCheckRow}>
+          <input
+            type="checkbox"
+            id="ha-recommended"
+            checked={payload.recommended}
+            onChange={(e) => patch('recommended', e.target.checked)}
+          />
+          <label htmlFor="ha-recommended">추천 덱</label>
+        </div>
+
+        {error && <p className={styles.saveError}>{error}</p>}
+
+        <div className={styles.modalBtns}>
+          <button className={styles.cancelBtn} onClick={onClose}>취소</button>
+          <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
+            {saving ? '저장 중...' : '저장'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ── 영웅증강 덱 관리 ── */
+function HeroAugmentDeckManager() {
+  const [decks, setDecks] = useState<HeroAugmentDeckItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState<HeroAugmentDeckItem | null | 'new'>(null)
+
+  useEffect(() => {
+    fetchAdminHeroAugmentDecks()
+      .then(setDecks)
+      .finally(() => setLoading(false))
+  }, [])
+
+  async function handleDelete(id: number) {
+    if (!confirm('삭제하시겠습니까?')) return
+    await deleteHeroAugmentDeck(id)
+    setDecks((prev) => prev.filter((d) => d.id !== id))
+  }
+
+  function handleSaved(item: HeroAugmentDeckItem) {
+    setDecks((prev) => {
+      const exists = prev.find((d) => d.id === item.id)
+      return exists ? prev.map((d) => (d.id === item.id ? item : d)) : [...prev, item]
+    })
+    setEditing(null)
+  }
+
+  return (
+    <div>
+      <div className={styles.toolbar}>
+        <h2 className={styles.title}>영웅증강 덱 관리</h2>
+        <button className={styles.saveBtn} onClick={() => setEditing('new')}>+ 덱 추가</button>
+      </div>
+
+      {loading ? (
+        <p style={{ color: 'var(--text-muted)' }}>불러오는 중...</p>
+      ) : decks.length === 0 ? (
+        <p style={{ color: 'var(--text-muted)', marginTop: 24 }}>등록된 영웅증강 덱이 없습니다.</p>
+      ) : (
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>덱 이름</th>
+              <th>티어</th>
+              <th>순서</th>
+              <th>추천</th>
+              <th>액션</th>
+            </tr>
+          </thead>
+          <tbody>
+            {decks.map((deck) => (
+              <tr key={deck.id}>
+                <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{deck.id}</td>
+                <td style={{ fontWeight: 600 }}>{deck.name}</td>
+                <td>{deck.grade ?? '-'}</td>
+                <td>{deck.sortOrder}</td>
+                <td>{deck.recommended ? '✓' : '-'}</td>
+                <td>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button className={styles.boardBtn} onClick={() => setEditing(deck)}>수정</button>
+                    <button className={`${styles.boardBtn} ${styles.resetBtn}`} onClick={() => handleDelete(deck.id)}>삭제</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {editing !== null && (
+        <HaFormModal
+          initial={editing === 'new' ? null : editing}
+          onClose={() => setEditing(null)}
+          onSaved={handleSaved}
+        />
+      )}
+    </div>
+  )
+}
+
+type AdminTab = 'decks' | 'heroAugmentDecks'
+
 /* ── 메인 관리 페이지 ── */
 function AdminPage() {
   const [decks, setDecks] = useState<AdminDeck[]>([])
   const [rankFilter, setRankFilter] = useState<RankFilter>('MASTER_PLUS')
   const [loading, setLoading] = useState(true)
+  const [adminTab, setAdminTab] = useState<AdminTab>('decks')
   const { data: locale } = useCDragonLocale()
 
   useEffect(() => {
+    if (adminTab !== 'decks') return
     setLoading(true)
     fetchAdminDecks(rankFilter)
       .then(setDecks)
       .finally(() => setLoading(false))
-  }, [rankFilter])
+  }, [rankFilter, adminTab])
 
   function handleSaved(updated: AdminDeck) {
     setDecks((prev) => prev.map((d) => (d.id === updated.id ? { ...d, ...updated } : d)))
@@ -834,41 +1064,59 @@ function AdminPage() {
   return (
     <div className={styles.page}>
       <div className={styles.toolbar}>
-        <h1 className={styles.title}>덱 관리자</h1>
-        <select
-          className={styles.rankSelect}
-          value={rankFilter}
-          onChange={(e) => setRankFilter(e.target.value as RankFilter)}
-        >
-          {RANK_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
+        <h1 className={styles.title}>관리자</h1>
+        <div className={styles.adminTabBar}>
+          <button
+            className={adminTab === 'decks' ? styles.adminTabActive : styles.adminTab}
+            onClick={() => setAdminTab('decks')}
+          >
+            메타덱 관리
+          </button>
+          <button
+            className={adminTab === 'heroAugmentDecks' ? styles.adminTabActive : styles.adminTab}
+            onClick={() => setAdminTab('heroAugmentDecks')}
+          >
+            영웅증강 덱
+          </button>
+        </div>
         <button className={styles.logoutBtn} onClick={handleLogout}>로그아웃</button>
       </div>
 
-      {loading ? (
+      {adminTab === 'heroAugmentDecks' ? (
+        <HeroAugmentDeckManager />
+      ) : loading ? (
         <p style={{ color: 'var(--text-muted)' }}>불러오는 중...</p>
       ) : (
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>티어</th>
-              <th>덱 이름</th>
-              <th>승률</th>
-              <th>픽률</th>
-              <th>표본</th>
-              <th>순서</th>
-              <th>숨김</th>
-              <th>액션</th>
-            </tr>
-          </thead>
-          <tbody>
-            {decks.map((deck) => (
-              <DeckRow key={deck.id} deck={deck} onSaved={handleSaved} locale={locale} />
+        <>
+          <select
+            className={styles.rankSelect}
+            value={rankFilter}
+            onChange={(e) => setRankFilter(e.target.value as RankFilter)}
+          >
+            {RANK_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
             ))}
-          </tbody>
-        </table>
+          </select>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>티어</th>
+                <th>덱 이름</th>
+                <th>승률</th>
+                <th>픽률</th>
+                <th>표본</th>
+                <th>순서</th>
+                <th>숨김</th>
+                <th>액션</th>
+              </tr>
+            </thead>
+            <tbody>
+              {decks.map((deck) => (
+                <DeckRow key={deck.id} deck={deck} onSaved={handleSaved} locale={locale} />
+              ))}
+            </tbody>
+          </table>
+        </>
       )}
     </div>
   )

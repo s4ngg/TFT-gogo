@@ -1,7 +1,9 @@
 package com.tftgogo.domain.guide.controller.docs;
 
 import com.tftgogo.domain.guide.dto.request.AdminGuideRequest;
+import com.tftgogo.domain.guide.dto.request.GuideCdragonImportRequest;
 import com.tftgogo.domain.guide.dto.response.AdminGuideResponse;
+import com.tftgogo.domain.guide.dto.response.GuideImportResponse;
 import com.tftgogo.domain.guide.entity.GuideType;
 import com.tftgogo.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -44,6 +46,17 @@ public interface AdminGuideControllerDocs {
     })
     ResponseEntity<ApiResponse<AdminGuideResponse>> createGuide(
             @RequestBody @Valid AdminGuideRequest request
+    );
+
+    @Operation(summary = "관리자 CDragon 게임가이드 import", description = "Community Dragon TFT 한국어 데이터에서 챔피언/특성 가이드를 가져와 guides 테이블에 upsert합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "import 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "관리자 인증 실패"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "502", description = "외부 데이터 호출 실패")
+    })
+    ResponseEntity<ApiResponse<GuideImportResponse>> importCdragonGuides(
+            @RequestBody @Valid GuideCdragonImportRequest request
     );
 
     @Operation(summary = "관리자 게임가이드 수정", description = "게임가이드 데이터를 수정합니다. dataJson은 JSON object여야 합니다.")
