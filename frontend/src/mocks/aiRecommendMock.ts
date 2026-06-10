@@ -7,6 +7,7 @@ export const mockAiRecommendation: AiRecommendResponse = {
     avgPlace: '4.1',
     top4Rate: '58.0%',
     winRate: '22.5%',
+    recentPlacements: [1, 4, 4, 3, 2, 6, 1, 5, 3, 2, 3, 1, 7, 4, 2, 5, 3, 4, 6, 1],
   },
   goodTraits: [
     {

@@ -12,6 +12,7 @@ export interface AiRecommendStats {
   avgPlace: string
   top4Rate: string
   winRate: string
+  recentPlacements?: number[]
 }
 
 export interface AiRecommendTrait {
