@@ -32,7 +32,7 @@
 ## Phase 2 — 공통 컴포넌트 + 페이지 구현 (병렬 작업 가능)
 
 ### PR 3: 공통 컴포넌트
-- [ ] `components/common/TierBadge/` — S, A+, A 등급 배지
+- [ ] `components/common/TierBadge/` — S, A, B 등급 배지
 - [ ] `components/common/ChampionCard/` — 챔피언 이미지, 별 등급, 아이템 슬롯
 - [ ] `components/common/TraitHexBadge/` — 시너지/특성 육각 배지
 

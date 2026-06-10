@@ -955,7 +955,7 @@ function HaFormModal({ initial, onClose, onSaved }: HaFormModalProps) {
 }
 
 /* ── 영웅증강 덱 관리 ── */
-function HeroAugmentDeckManager() {
+export function HeroAugmentDeckManager() {
   const [decks, setDecks] = useState<HeroAugmentDeckItem[]>([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<HeroAugmentDeckItem | null | 'new'>(null)
@@ -1034,57 +1034,32 @@ function HeroAugmentDeckManager() {
   )
 }
 
-type AdminTab = 'decks' | 'heroAugmentDecks'
 
 /* ── 메인 관리 페이지 ── */
-function AdminPage() {
+export function AdminPage() {
   const [decks, setDecks] = useState<AdminDeck[]>([])
   const [rankFilter, setRankFilter] = useState<RankFilter>('MASTER_PLUS')
   const [loading, setLoading] = useState(true)
-  const [adminTab, setAdminTab] = useState<AdminTab>('decks')
   const { data: locale } = useCDragonLocale()
 
   useEffect(() => {
-    if (adminTab !== 'decks') return
     setLoading(true)
     fetchAdminDecks(rankFilter)
       .then(setDecks)
       .finally(() => setLoading(false))
-  }, [rankFilter, adminTab])
+  }, [rankFilter])
 
   function handleSaved(updated: AdminDeck) {
     setDecks((prev) => prev.map((d) => (d.id === updated.id ? { ...d, ...updated } : d)))
   }
 
-  function handleLogout() {
-    clearAdminToken()
-    window.location.reload()
-  }
-
   return (
     <div className={styles.page}>
       <div className={styles.toolbar}>
-        <h1 className={styles.title}>관리자</h1>
-        <div className={styles.adminTabBar}>
-          <button
-            className={adminTab === 'decks' ? styles.adminTabActive : styles.adminTab}
-            onClick={() => setAdminTab('decks')}
-          >
-            메타덱 관리
-          </button>
-          <button
-            className={adminTab === 'heroAugmentDecks' ? styles.adminTabActive : styles.adminTab}
-            onClick={() => setAdminTab('heroAugmentDecks')}
-          >
-            영웅증강 덱
-          </button>
-        </div>
-        <button className={styles.logoutBtn} onClick={handleLogout}>로그아웃</button>
+        <h1 className={styles.title}>메타덱 관리</h1>
       </div>
 
-      {adminTab === 'heroAugmentDecks' ? (
-        <HeroAugmentDeckManager />
-      ) : loading ? (
+      {loading ? (
         <p style={{ color: 'var(--text-muted)' }}>불러오는 중...</p>
       ) : (
         <>

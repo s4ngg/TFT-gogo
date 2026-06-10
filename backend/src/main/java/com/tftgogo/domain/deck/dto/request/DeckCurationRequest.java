@@ -21,7 +21,7 @@ public class DeckCurationRequest {
     private String curatorNote;
 
     @Size(max = 50000, message = "배치판 데이터가 너무 큽니다.")
-    private String boardPositions;  // JSON: {"imageUrl": {"row":N,"col":N}}
+    private String boardPositions;  // JSON: {"5": {"TFT17_Ahri": {"row":0,"col":3,"items":[]}}, ...} (레벨 키 5~9)
 
     @Size(max = 10000, message = "운영 가이드 데이터가 너무 큽니다.")
     private String playGuide;       // JSON: {"early":"...","mid":"...","late":"..."}

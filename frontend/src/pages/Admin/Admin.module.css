@@ -788,3 +788,149 @@
   color: var(--danger);
   font-size: 12px;
 }
+
+/* ── 게임가이드 Import ── */
+.guideImportPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.guideImportForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+
+.guideImportGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.guideImportField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.guideImportLabel {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.guideImportInput {
+  height: 36px;
+  padding: 0 10px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.guideImportInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.guideImportChecks {
+  display: flex;
+  gap: 14px;
+}
+
+.guideImportCheck {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-ui);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.guideImportActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.guideImportError {
+  margin-right: auto;
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.guideImportResult {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+
+.guideImportStatus {
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.guideImportResultGrid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.guideImportMetric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-faint);
+  border-radius: 6px;
+}
+
+.guideImportMetricLabel {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.guideImportMetricValue {
+  color: var(--text-primary);
+  font-size: 20px;
+  line-height: 1;
+}
+
+@media (max-width: 900px) {
+  .guideImportGrid,
+  .guideImportResultGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .guideImportGrid,
+  .guideImportResultGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .guideImportActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .guideImportError {
+    margin-right: 0;
+  }
+}

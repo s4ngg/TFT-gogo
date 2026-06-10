@@ -1,0 +1,56 @@
+spring:
+  profiles:
+    active: local   # local | docker | prod
+  datasource:
+    url: jdbc:mysql://localhost:3306/tftgogo?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
+    username: root
+    password: your-db-password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+        default_batch_fetch_size: 100
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+jwt:
+  secret: your-jwt-secret-key-must-be-32-chars-or-more
+  access-token-expiration-millis: 3600000
+
+riot:
+  api-key: RGAPI-your-riot-api-key
+  kr-base-url: https://kr.api.riotgames.com
+  asia-base-url: https://asia.api.riotgames.com
+
+admin:
+  secret-token: your-admin-secret-token
+
+app:
+  meta-deck:
+    startup-aggregate: false
+  # CORS 허용 origin 목록 — allowCredentials=true이므로 wildcard(*) 사용 불가
+  # 환경별로 실제 배포 도메인을 명시적으로 추가하세요
+  cors:
+    allowed-origins:
+      - http://localhost:3000       # 로컬 React (CRA)
+      - http://localhost:5173       # 로컬 Vite dev server
+      - http://127.0.0.1:5173
+      # - https://staging.example.com   # 스테이징 도메인
+      # - https://www.example.com       # 운영 도메인
+
+server:
+  port: 8080
+
+# ── 로컬 개발 시 SQL 로그 활성화 방법 ────────────────────────────
+# Hibernate SQL DEBUG 로그는 기본(운영) 설정에서는 꺼져 있습니다.
+# 로컬에서 SQL을 확인하려면 아래 설정을 추가하세요:
+#
+#   logging:
+#     config: classpath:log4j2-local.xml

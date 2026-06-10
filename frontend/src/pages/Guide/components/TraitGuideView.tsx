@@ -1,10 +1,13 @@
-import { useEffect, useState } from 'react'
 import {
   TRAIT_PAGE_SIZE,
   type GuideCatalog,
 } from '../../../api/guide'
 import TraitHexBadge from '../../../components/common/TraitHexBadge'
 import { useGuideTabItems } from '../../../hooks/useGuide'
+import {
+  useGuidePageBounds,
+  useGuideTabPagination,
+} from '../hooks/useGuideTabPagination'
 import {
   EmptyState,
   GuidePagination,
@@ -24,7 +27,10 @@ function TraitGuideView({
   onChampionSelect,
   query,
 }: TraitGuideViewProps) {
-  const [currentPage, setCurrentPage] = useState(1)
+  const {
+    currentPage,
+    setCurrentPage,
+  } = useGuideTabPagination({ resetKey: query })
   const traitsQuery = useGuideTabItems({
     fallbackData,
     params: {
@@ -35,16 +41,12 @@ function TraitGuideView({
     },
   })
   const pageData = traitsQuery.data.data
-  const safePage = Math.min(currentPage, pageData.totalPages)
+  const safePage = useGuidePageBounds({
+    currentPage,
+    setCurrentPage,
+    totalPages: pageData.totalPages,
+  })
   const visibleTraits = pageData.items
-
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [query])
-
-  useEffect(() => {
-    if (currentPage > pageData.totalPages) setCurrentPage(pageData.totalPages)
-  }, [currentPage, pageData.totalPages])
 
   return (
     <>
