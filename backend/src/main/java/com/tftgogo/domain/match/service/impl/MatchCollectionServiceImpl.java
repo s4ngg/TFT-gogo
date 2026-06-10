@@ -233,41 +233,29 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
 
     @Override
     public List<MatchSummaryResponse> getRankedMatchSummaries(String puuid, int count) {
-        // 캐시에서 랭크 게임(queueId=1100)만 조회
+        // DB에서 queueId=1100 조건으로 직접 조회 (메모리 필터링 불필요)
         List<CachedMatch> cached = cachedMatchRepository
-                .findByParticipantPuuid(puuid, PageRequest.of(0, count * 2))  // 여유분 확보
-                .stream()
-                .filter(m -> m.getQueueId() == 1100)
-                .limit(count)
-                .collect(Collectors.toList());
+                .findByParticipantPuuidAndQueueId(puuid, 1100, PageRequest.of(0, count));
 
-        if (cached.size() < count) {
-            // 부족하면 Riot API로 수집 시도 (동기 대기)
-            try {
-                List<String> matchIds = riotQueue
-                        .submit(() -> riotApiClient.getMatchIdsForQueue(puuid, count, 0, 1100))
-                        .get(FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-
-                Set<String> cachedIds = new HashSet<>(
-                        cachedMatchRepository.findMatchIdsByMatchIdIn(matchIds));
-                List<String> toFetch = matchIds.stream()
-                        .filter(id -> !cachedIds.contains(id))
-                        .collect(Collectors.toList());
-
-                if (!toFetch.isEmpty()) {
-                    collectInBackground(puuid, toFetch, toFetch.size());
+        // 캐시가 부족하면 비동기로 수집 트리거만 하고 현재 캐시 데이터로 즉시 반환
+        if (cached.size() < count && !inProgressMap.getOrDefault(puuid, false)) {
+            CompletableFuture.runAsync(() -> {
+                try {
+                    List<String> matchIds = riotQueue
+                            .submit(() -> riotApiClient.getMatchIdsForQueue(puuid, count, 0, 1100))
+                            .get(FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                    Set<String> cachedIds = new HashSet<>(
+                            cachedMatchRepository.findMatchIdsByMatchIdIn(matchIds));
+                    List<String> toFetch = matchIds.stream()
+                            .filter(id -> !cachedIds.contains(id))
+                            .collect(Collectors.toList());
+                    if (!toFetch.isEmpty()) {
+                        collectInBackground(puuid, toFetch, toFetch.size());
+                    }
+                } catch (Exception e) {
+                    logger.warn("AI용 랭크 전적 백그라운드 수집 실패: puuid={}", puuid);
                 }
-
-                // 수집 후 재조회
-                cached = cachedMatchRepository
-                        .findByParticipantPuuid(puuid, PageRequest.of(0, count * 2))
-                        .stream()
-                        .filter(m -> m.getQueueId() == 1100)
-                        .limit(count)
-                        .collect(Collectors.toList());
-            } catch (Exception e) {
-                logger.warn("AI용 랭크 전적 수집 실패, 캐시 데이터만 사용: puuid={}", puuid);
-            }
+            }, matchCollectionExecutor);
         }
 
         return cached.stream()
