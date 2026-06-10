@@ -4,6 +4,15 @@ import { validateAdminToken, setAdminToken, clearAdminToken } from '../../api/ad
 import pageStyles from './AdminLogin.module.css'
 import styles from './Admin.module.css'
 
+function getHttpStatus(error: unknown): number | undefined {
+  if (typeof error !== 'object' || error === null || !('response' in error)) {
+    return undefined
+  }
+
+  const response = (error as { response?: { status?: unknown } }).response
+  return typeof response?.status === 'number' ? response.status : undefined
+}
+
 function AdminLogin() {
   const [input, setInput] = useState('')
   const [error, setError] = useState('')
@@ -15,9 +24,16 @@ function AdminLogin() {
     try {
       await validateAdminToken()
       navigate('/admin/decks', { replace: true })
-    } catch {
-      clearAdminToken()
-      setError('토큰이 올바르지 않습니다.')
+    } catch (error: unknown) {
+      const status = getHttpStatus(error)
+
+      if (status === 401 || status === 403) {
+        clearAdminToken()
+        setError('토큰이 올바르지 않습니다.')
+        return
+      }
+
+      setError('인증 서버에 일시적인 문제가 있습니다. 잠시 후 다시 시도해주세요.')
     }
   }
 
