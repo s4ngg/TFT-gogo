@@ -84,6 +84,7 @@ class GuideCdragonImportServiceImplTest {
         assertThat(response.getChampionCount()).isEqualTo(1);
         assertThat(response.getTraitCount()).isEqualTo(1);
         assertThat(response.getItemCount()).isZero();
+        assertThat(response.getAugmentCount()).isZero();
         assertThat(response.getImportedCount()).isEqualTo(2);
 
         ArgumentCaptor<Guide> guideCaptor = ArgumentCaptor.forClass(Guide.class);
@@ -135,6 +136,7 @@ class GuideCdragonImportServiceImplTest {
         assertThat(response.getChampionCount()).isZero();
         assertThat(response.getTraitCount()).isZero();
         assertThat(response.getItemCount()).isEqualTo(1);
+        assertThat(response.getAugmentCount()).isZero();
         assertThat(response.getImportedCount()).isEqualTo(1);
 
         ArgumentCaptor<Guide> guideCaptor = ArgumentCaptor.forClass(Guide.class);
@@ -150,6 +152,49 @@ class GuideCdragonImportServiceImplTest {
         assertThat(itemGuide.getDataJson()).contains("\"label\":\"조합식\"");
         assertThat(itemGuide.getDataJson()).contains("Recurve Bow");
         assertThat(itemGuide.getDataJson()).contains("Needlessly Large Rod");
+    }
+
+    @Test
+    void CDragon_일반_증강체만_증강체_가이드로_생성한다() {
+        // given
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonJson());
+        when(guideRepository.findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(Optional.empty());
+        when(guideRepository.existsByGuideTypeAndTargetKeyAndPatchVersion(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(false);
+        when(guideRepository.saveAndFlush(any(Guide.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request(false, false, false, true));
+
+        // then
+        assertThat(response.getCreatedCount()).isEqualTo(1);
+        assertThat(response.getUpdatedCount()).isZero();
+        assertThat(response.getChampionCount()).isZero();
+        assertThat(response.getTraitCount()).isZero();
+        assertThat(response.getItemCount()).isZero();
+        assertThat(response.getAugmentCount()).isEqualTo(1);
+        assertThat(response.getImportedCount()).isEqualTo(1);
+
+        ArgumentCaptor<Guide> guideCaptor = ArgumentCaptor.forClass(Guide.class);
+        verify(guideRepository).saveAndFlush(guideCaptor.capture());
+        Guide augmentGuide = guideCaptor.getValue();
+        assertThat(augmentGuide.getGuideType()).isEqualTo(GuideType.AUGMENT);
+        assertThat(augmentGuide.getTargetKey()).isEqualTo("TFT17_Augment_BattleReady");
+        assertThat(augmentGuide.getName()).isEqualTo("Battle Ready");
+        assertThat(augmentGuide.getImageUrl()).contains("battle_ready.png");
+        assertThat(augmentGuide.getDataJson()).contains("\"description\":\"Your team gains Attack Speed.\"");
+        assertThat(augmentGuide.getDataJson()).contains("\"tier\":\"A\"");
+        assertThat(augmentGuide.getDataJson()).contains("\"type\":\"Combat\"");
+        assertThat(augmentGuide.getDataJson()).contains("\"tags\":[\"Combat\"]");
+        assertThat(augmentGuide.getDataJson()).contains("\"winRate\":\"-\"");
     }
 
     @Test
@@ -292,6 +337,15 @@ class GuideCdragonImportServiceImplTest {
     }
 
     private GuideCdragonImportRequest request(boolean includeChampions, boolean includeTraits, boolean includeItems) {
+        return request(includeChampions, includeTraits, includeItems, false);
+    }
+
+    private GuideCdragonImportRequest request(
+            boolean includeChampions,
+            boolean includeTraits,
+            boolean includeItems,
+            boolean includeAugments
+    ) {
         GuideCdragonImportRequest request = new GuideCdragonImportRequest();
         ReflectionTestUtils.setField(request, "patchVersion", "17.3");
         ReflectionTestUtils.setField(request, "setNumber", 17);
@@ -299,6 +353,7 @@ class GuideCdragonImportServiceImplTest {
         ReflectionTestUtils.setField(request, "includeChampions", includeChampions);
         ReflectionTestUtils.setField(request, "includeTraits", includeTraits);
         ReflectionTestUtils.setField(request, "includeItems", includeItems);
+        ReflectionTestUtils.setField(request, "includeAugments", includeAugments);
         return request;
     }
 
@@ -374,6 +429,24 @@ class GuideCdragonImportServiceImplTest {
                             {"minUnits": 2, "maxUnits": 3, "style": 1},
                             {"minUnits": 4, "maxUnits": 25000, "style": 3}
                           ]
+                        }
+                      ],
+                      "augments": [
+                        {
+                          "apiName": "TFT17_Augment_BattleReady",
+                          "name": "Battle Ready",
+                          "desc": "<rules>Your team gains @AttackSpeed@ Attack Speed.</rules>",
+                          "icon": "ASSETS/UX/Augments/Battle_Ready.tex",
+                          "rarity": "gold",
+                          "augmentType": "Combat",
+                          "tags": ["Combat"]
+                        },
+                        {
+                          "apiName": "TFT17_Augment_DebugDummy",
+                          "name": "Debug Dummy",
+                          "desc": "Test only",
+                          "icon": "ASSETS/UX/Augments/Debug_Dummy.tex",
+                          "rarity": "silver"
                         }
                       ]
                     }

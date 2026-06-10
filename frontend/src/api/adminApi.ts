@@ -118,6 +118,7 @@ export async function resetDeckCuration(deckId: number): Promise<void> {
 // ── 게임가이드 import ─────────────────────────────────────────────────────
 
 export interface GuideCdragonImportRequest {
+  includeAugments: boolean
   includeChampions: boolean
   includeItems: boolean
   includeTraits: boolean
@@ -127,6 +128,7 @@ export interface GuideCdragonImportRequest {
 }
 
 export interface GuideImportResponse {
+  augmentCount: number
   championCount: number
   createdCount: number
   importedCount: number

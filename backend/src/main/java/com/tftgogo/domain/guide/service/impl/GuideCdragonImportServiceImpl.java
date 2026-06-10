@@ -51,7 +51,10 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         if (request == null) {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
-        if (!request.shouldIncludeChampions() && !request.shouldIncludeTraits() && !request.shouldIncludeItems()) {
+        if (!request.shouldIncludeChampions()
+                && !request.shouldIncludeTraits()
+                && !request.shouldIncludeItems()
+                && !request.shouldIncludeAugments()) {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
 
@@ -70,6 +73,9 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         if (request.shouldIncludeItems()) {
             candidates.addAll(toItemCandidates(cdragonData.path("items"), patchVersion));
         }
+        if (request.shouldIncludeAugments()) {
+            candidates.addAll(toAugmentCandidates(setData.path("augments"), patchVersion));
+        }
 
         ImportCounter counter = new ImportCounter();
         for (GuideCandidate candidate : candidates) {
@@ -83,6 +89,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                 .championCount(countByType(candidates, GuideType.CHAMPION))
                 .traitCount(countByType(candidates, GuideType.TRAIT))
                 .itemCount(countByType(candidates, GuideType.ITEM))
+                .augmentCount(countByType(candidates, GuideType.AUGMENT))
                 .build();
     }
 
@@ -291,6 +298,157 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         ref.put("imageUrl", item == null ? "" : assetUrlOrEmpty(item.path("icon").asText()));
         ref.put("name", item == null ? apiName : item.path("name").asText(apiName));
         return ref;
+    }
+
+    private List<GuideCandidate> toAugmentCandidates(JsonNode augments, String patchVersion) {
+        List<JsonNode> importableAugments = new ArrayList<>();
+        for (JsonNode augment : augments) {
+            if (isImportableAugment(augment)) {
+                importableAugments.add(augment);
+            }
+        }
+        importableAugments.sort(Comparator
+                .comparingInt(this::augmentTierSortOrder)
+                .thenComparing(augment -> augment.path("name").asText()));
+
+        List<GuideCandidate> candidates = new ArrayList<>();
+        int sortOrder = 0;
+        for (JsonNode augment : importableAugments) {
+            String description = sanitizeText(readText(augment, "desc", "description", "tooltip"));
+            ObjectNode dataJson = objectMapper.createObjectNode();
+            dataJson.put("avgPlace", "-");
+            dataJson.put("description", description);
+            dataJson.put("pickRate", "-");
+            dataJson.put("reward", "-");
+            dataJson.set("tags", augmentTags(augment));
+            dataJson.put("tier", augmentTier(augment));
+            dataJson.put("type", augmentType(augment));
+            dataJson.put("winRate", "-");
+
+            candidates.add(new GuideCandidate(
+                    GuideType.AUGMENT,
+                    augment.path("apiName").asText(),
+                    augment.path("name").asText(),
+                    hasText(description) ? description : "CDragon 증강체",
+                    assetUrl(augment.path("icon").asText()),
+                    dataJson,
+                    patchVersion,
+                    sortOrder++
+            ));
+        }
+        return candidates;
+    }
+
+    private boolean isImportableAugment(JsonNode augment) {
+        String apiName = augment.path("apiName").asText();
+        String name = augment.path("name").asText();
+        String description = sanitizeText(readText(augment, "desc", "description", "tooltip"));
+        if (!apiName.startsWith("TFT")
+                || !hasText(name)
+                || !hasText(description)
+                || !hasText(augment.path("icon").asText())) {
+            return false;
+        }
+
+        String searchable = (apiName + " " + name + " " + description).toLowerCase(Locale.ROOT);
+        return !containsAny(searchable, "debug", "dummy", "test", "placeholder", "inactive", "disabled");
+    }
+
+    private boolean containsAny(String value, String... needles) {
+        for (String needle : needles) {
+            if (value.contains(needle)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String readText(JsonNode node, String... fields) {
+        for (String field : fields) {
+            String value = node.path(field).asText();
+            if (hasText(value)) {
+                return value;
+            }
+        }
+        return "";
+    }
+
+    private ArrayNode augmentTags(JsonNode augment) {
+        ArrayNode tags = objectMapper.createArrayNode();
+        JsonNode cdragonTags = augment.path("tags");
+        if (cdragonTags.isArray()) {
+            for (JsonNode tag : cdragonTags) {
+                String text = sanitizeText(tag.asText());
+                if (hasText(text)) {
+                    tags.add(text);
+                }
+            }
+        }
+        if (tags.isEmpty()) {
+            tags.add("CDragon");
+        }
+        return tags;
+    }
+
+    private String augmentType(JsonNode augment) {
+        String type = sanitizeText(readText(augment, "augmentType", "type", "category"));
+        return hasText(type) ? type : "공용";
+    }
+
+    private String augmentTier(JsonNode augment) {
+        String tier = readText(augment, "tier", "rarity", "quality", "augmentRarity")
+                .toLowerCase(Locale.ROOT);
+        if (tier.contains("prismatic")) {
+            return "S";
+        }
+        if (tier.contains("gold")) {
+            return "A";
+        }
+        if (tier.contains("silver")) {
+            return "B";
+        }
+        if (tier.contains("bronze")) {
+            return "C";
+        }
+
+        int numericTier = readInt(augment, "tier", "rarity", "quality", "augmentRarity");
+        if (numericTier >= 3) {
+            return "S";
+        }
+        if (numericTier == 2) {
+            return "A";
+        }
+        if (numericTier == 1) {
+            return "B";
+        }
+        return "B";
+    }
+
+    private int augmentTierSortOrder(JsonNode augment) {
+        return switch (augmentTier(augment)) {
+            case "S" -> 0;
+            case "A" -> 1;
+            case "B" -> 2;
+            case "C" -> 3;
+            default -> 4;
+        };
+    }
+
+    private int readInt(JsonNode node, String... fields) {
+        for (String field : fields) {
+            JsonNode value = node.path(field);
+            if (value.isInt()) {
+                return value.asInt();
+            }
+            if (value.isTextual()) {
+                try {
+                    return Integer.parseInt(value.asText().trim());
+                } catch (NumberFormatException ignored) {
+                    // Try the next possible CDragon field.
+                }
+            }
+        }
+        return 0;
     }
 
     private ObjectNode toChampionStats(JsonNode stats) {
