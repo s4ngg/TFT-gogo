@@ -61,7 +61,7 @@ function normalizeAuthResponse(payload: RawAuthResponse, fallbackEmail: string):
 export async function login(request: LoginRequest) {
     try {
         const response = await axiosInstance.post<RawAuthResponse | ApiEnvelope<RawAuthResponse>>(
-            '/members/login',
+            '/v1/auth/login',
             request,
         )
         const payload = unwrapResponse(response.data)
@@ -76,7 +76,7 @@ export async function login(request: LoginRequest) {
 export async function signup(request: SignupRequest) {
     try {
         const response = await axiosInstance.post<RawAuthResponse | ApiEnvelope<RawAuthResponse>>(
-            '/members/signup',
+            '/v1/auth/signup',
             request,
         )
 
