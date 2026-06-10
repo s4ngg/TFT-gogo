@@ -99,6 +99,7 @@ export async function resetDeckCuration(deckId: number): Promise<void> {
 
 export interface GuideCdragonImportRequest {
   includeChampions: boolean
+  includeItems: boolean
   includeTraits: boolean
   mutator: string | null
   patchVersion: string
@@ -109,6 +110,7 @@ export interface GuideImportResponse {
   championCount: number
   createdCount: number
   importedCount: number
+  itemCount: number
   skippedCount: number
   traitCount: number
   updatedCount: number

@@ -83,6 +83,7 @@ class GuideCdragonImportServiceImplTest {
         assertThat(response.getUpdatedCount()).isZero();
         assertThat(response.getChampionCount()).isEqualTo(1);
         assertThat(response.getTraitCount()).isEqualTo(1);
+        assertThat(response.getItemCount()).isZero();
         assertThat(response.getImportedCount()).isEqualTo(2);
 
         ArgumentCaptor<Guide> guideCaptor = ArgumentCaptor.forClass(Guide.class);
@@ -106,6 +107,48 @@ class GuideCdragonImportServiceImplTest {
         assertThat(traitGuide.getTargetKey()).isEqualTo("TFT17_AnimalSquad");
         assertThat(traitGuide.getDataJson()).contains("\"tone\":\"gold\"");
         assertThat(traitGuide.getDataJson()).contains("\"champions\":[{\"cost\":1");
+    }
+
+    @Test
+    void CDragon_완성_아이템만_아이템_가이드로_생성한다() {
+        // given
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonJson());
+        when(guideRepository.findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(Optional.empty());
+        when(guideRepository.existsByGuideTypeAndTargetKeyAndPatchVersion(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(false);
+        when(guideRepository.saveAndFlush(any(Guide.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request(false, false, true));
+
+        // then
+        assertThat(response.getCreatedCount()).isEqualTo(1);
+        assertThat(response.getUpdatedCount()).isZero();
+        assertThat(response.getChampionCount()).isZero();
+        assertThat(response.getTraitCount()).isZero();
+        assertThat(response.getItemCount()).isEqualTo(1);
+        assertThat(response.getImportedCount()).isEqualTo(1);
+
+        ArgumentCaptor<Guide> guideCaptor = ArgumentCaptor.forClass(Guide.class);
+        verify(guideRepository).saveAndFlush(guideCaptor.capture());
+        Guide itemGuide = guideCaptor.getValue();
+        assertThat(itemGuide.getGuideType()).isEqualTo(GuideType.ITEM);
+        assertThat(itemGuide.getTargetKey()).isEqualTo("TFT_Item_GuinsoosRageblade");
+        assertThat(itemGuide.getName()).isEqualTo("Guinsoo's Rageblade");
+        assertThat(itemGuide.getImageUrl()).contains("guinsoosrageblade.png");
+        assertThat(itemGuide.getDataJson()).contains("\"category\":\"완성 아이템\"");
+        assertThat(itemGuide.getDataJson()).contains("\"bestUsers\":[]");
+        assertThat(itemGuide.getDataJson()).contains("\"label\":\"조합식\"");
+        assertThat(itemGuide.getDataJson()).contains("Recurve Bow");
+        assertThat(itemGuide.getDataJson()).contains("Needlessly Large Rod");
     }
 
     @Test
@@ -244,12 +287,17 @@ class GuideCdragonImportServiceImplTest {
     }
 
     private GuideCdragonImportRequest request(boolean includeChampions, boolean includeTraits) {
+        return request(includeChampions, includeTraits, false);
+    }
+
+    private GuideCdragonImportRequest request(boolean includeChampions, boolean includeTraits, boolean includeItems) {
         GuideCdragonImportRequest request = new GuideCdragonImportRequest();
         ReflectionTestUtils.setField(request, "patchVersion", "17.3");
         ReflectionTestUtils.setField(request, "setNumber", 17);
         ReflectionTestUtils.setField(request, "mutator", "TFTSet17");
         ReflectionTestUtils.setField(request, "includeChampions", includeChampions);
         ReflectionTestUtils.setField(request, "includeTraits", includeTraits);
+        ReflectionTestUtils.setField(request, "includeItems", includeItems);
         return request;
     }
 
@@ -329,7 +377,39 @@ class GuideCdragonImportServiceImplTest {
                       ]
                     }
                   ],
-                  "sets": {}
+                  "sets": {},
+                  "items": [
+                    {
+                      "apiName": "TFT_Item_RecurveBow",
+                      "name": "Recurve Bow",
+                      "icon": "ASSETS/Maps/Particles/TFT/Item_Icons/Standard/RecurveBow.png"
+                    },
+                    {
+                      "apiName": "TFT_Item_NeedlesslyLargeRod",
+                      "name": "Needlessly Large Rod",
+                      "icon": "ASSETS/Maps/Particles/TFT/Item_Icons/Standard/NeedlesslyLargeRod.png"
+                    },
+                    {
+                      "apiName": "TFT_Item_GuinsoosRageblade",
+                      "name": "Guinsoo's Rageblade",
+                      "desc": "<stats>Gain @AttackSpeed@ Attack Speed.</stats>",
+                      "icon": "ASSETS/Maps/Particles/TFT/Item_Icons/Standard/GuinsoosRageblade.png",
+                      "composition": ["TFT_Item_RecurveBow", "TFT_Item_NeedlesslyLargeRod"],
+                      "associatedTraits": []
+                    },
+                    {
+                      "apiName": "TFT_Item_AnimalSquadEmblem",
+                      "name": "Animal Squad Emblem",
+                      "icon": "ASSETS/Maps/Particles/TFT/Item_Icons/Standard/AnimalSquadEmblem.png",
+                      "composition": ["TFT_Item_Spatula", "TFT_Item_RecurveBow"],
+                      "associatedTraits": ["TFT17_AnimalSquad"]
+                    },
+                    {
+                      "apiName": "TFT5_Item_GuinsoosRagebladeRadiant",
+                      "name": "Radiant Rageblade",
+                      "icon": "ASSETS/Maps/Particles/TFT/Item_Icons/Radiant/RadiantRageblade.png"
+                    }
+                  ]
                 }
                 """;
     }

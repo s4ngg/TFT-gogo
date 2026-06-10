@@ -30,6 +30,9 @@ public class GuideCdragonImportRequest {
     @Schema(description = "특성/시너지 가이드 import 여부. 비우면 true입니다.", example = "true")
     private Boolean includeTraits;
 
+    @Schema(description = "아이템 가이드 import 여부. 비우면 false입니다.", example = "true")
+    private Boolean includeItems;
+
     public int resolveSetNumber() {
         return setNumber != null ? setNumber : 17;
     }
@@ -47,5 +50,9 @@ public class GuideCdragonImportRequest {
 
     public boolean shouldIncludeTraits() {
         return includeTraits == null || includeTraits;
+    }
+
+    public boolean shouldIncludeItems() {
+        return Boolean.TRUE.equals(includeItems);
     }
 }

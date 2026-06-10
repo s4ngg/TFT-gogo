@@ -48,7 +48,7 @@ public interface AdminGuideControllerDocs {
             @RequestBody @Valid AdminGuideRequest request
     );
 
-    @Operation(summary = "관리자 CDragon 게임가이드 import", description = "Community Dragon TFT 한국어 데이터에서 챔피언/특성 가이드를 가져와 guides 테이블에 upsert합니다.")
+    @Operation(summary = "관리자 CDragon 게임가이드 import", description = "Community Dragon TFT 한국어 데이터에서 챔피언/특성/아이템 가이드를 가져와 guides 테이블에 upsert합니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "import 성공"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
