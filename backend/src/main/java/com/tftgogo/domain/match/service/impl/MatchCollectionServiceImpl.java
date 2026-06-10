@@ -232,6 +232,68 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
     }
 
     @Override
+    public List<MatchSummaryResponse> getRankedMatchSummaries(String puuid, int count) {
+        // 캐시에서 랭크 게임(queueId=1100)만 조회
+        List<CachedMatch> cached = cachedMatchRepository
+                .findByParticipantPuuid(puuid, PageRequest.of(0, count * 2))  // 여유분 확보
+                .stream()
+                .filter(m -> m.getQueueId() == 1100)
+                .limit(count)
+                .collect(Collectors.toList());
+
+        if (cached.size() < count) {
+            // 부족하면 Riot API로 수집 시도 (동기 대기)
+            try {
+                List<String> matchIds = riotQueue
+                        .submit(() -> riotApiClient.getMatchIdsForQueue(puuid, count, 0, 1100))
+                        .get(FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+                Set<String> cachedIds = new HashSet<>(
+                        cachedMatchRepository.findMatchIdsByMatchIdIn(matchIds));
+                List<String> toFetch = matchIds.stream()
+                        .filter(id -> !cachedIds.contains(id))
+                        .collect(Collectors.toList());
+
+                if (!toFetch.isEmpty()) {
+                    collectInBackground(puuid, toFetch, toFetch.size());
+                }
+
+                // 수집 후 재조회
+                cached = cachedMatchRepository
+                        .findByParticipantPuuid(puuid, PageRequest.of(0, count * 2))
+                        .stream()
+                        .filter(m -> m.getQueueId() == 1100)
+                        .limit(count)
+                        .collect(Collectors.toList());
+            } catch (Exception e) {
+                logger.warn("AI용 랭크 전적 수집 실패, 캐시 데이터만 사용: puuid={}", puuid);
+            }
+        }
+
+        return cached.stream()
+                .map(m -> toMatchSummaryResponse(puuid, m.getMatchId(), m))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    private MatchSummaryResponse toMatchSummaryResponse(String puuid, String matchId, CachedMatch cached) {
+        try {
+            MatchDto matchDto = CACHE_MAPPER.readValue(cached.getMatchJson(), MatchDto.class);
+            MatchDto.MatchInfoDto info = matchDto.getInfo();
+            if (info == null || info.getParticipants() == null) return null;
+
+            return info.getParticipants().stream()
+                    .filter(p -> puuid.equals(p.getPuuid()))
+                    .findFirst()
+                    .map(p -> MatchSummaryResponse.of(matchId, info, p))
+                    .orElse(null);
+        } catch (Exception e) {
+            logger.error("AI용 매치 역직렬화 실패: matchId={}", matchId, e);
+            return null;
+        }
+    }
+
+    @Override
     public CollectionStatusResponse getStatus(String puuid) {
         long collected = cachedMatchRepository.countByParticipantPuuid(puuid);
         boolean running = inProgressMap.getOrDefault(puuid, false);
