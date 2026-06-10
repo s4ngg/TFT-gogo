@@ -15,7 +15,7 @@ function AiRecommendedDecks({ deckReasons }: AiRecommendedDecksProps) {
   const navigate = useNavigate()
   const { data: metaDeckResponse } = useMetaSnapshot()
   const metaDecks = metaDeckResponse?.decks ?? []
-  const topDecks = metaDecks.filter((d) => d.grade === 'S' || d.grade === 'A+').slice(0, 3)
+  const topDecks = metaDecks.filter((d) => d.grade === 'S' || d.grade === 'A').slice(0, 3)
 
   return (
     <section className={styles.panel}>
@@ -32,10 +32,10 @@ function AiRecommendedDecks({ deckReasons }: AiRecommendedDecksProps) {
             <div
               key={deck.rank}
               className={`${styles.aiDeckCard} ${meta.isPatchTrend ? styles.aiDeckCardPatch : ''}`}
-              onClick={() => navigate(`/decks/${deck.rank}`)}
+              onClick={() => navigate(`/decks/EMERALD_PLUS/${deck.rank}`)}
               role="button"
               tabIndex={0}
-              onKeyDown={(e) => e.key === 'Enter' && navigate(`/decks/${deck.rank}`)}
+              onKeyDown={(e) => e.key === 'Enter' && navigate(`/decks/EMERALD_PLUS/${deck.rank}`)}
             >
               <div className={styles.aiDeckTop}>
                 <span className={styles.aiDeckBadge}>추천 #{i + 1}</span>

@@ -45,15 +45,21 @@ export interface AiRecommendResponse {
   deckReasons: AiRecommendDeckReason[]
 }
 
-export const getAiRecommendation = async (params: AiRecommendRequest) => {
+interface ApiResponse<T> {
+  success: boolean
+  message: string
+  data: T | null
+}
+
+export const getAiRecommendation = async (params: AiRecommendRequest): Promise<AiRecommendResponse | null> => {
   try {
-    const { data } = await axiosInstance.get<AiRecommendResponse>('/ai/recommendations', {
+    const { data } = await axiosInstance.get<ApiResponse<AiRecommendResponse>>('/ai/recommend', {
       params,
     })
 
-    return data
+    return data.data
   } catch (error: unknown) {
     console.error('AI recommendation request failed', error)
-    throw error
+    return null
   }
 }
