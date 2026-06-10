@@ -238,7 +238,8 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
                 .findByParticipantPuuidAndQueueId(puuid, 1100, PageRequest.of(0, count));
 
         // 캐시가 부족하면 비동기로 수집 트리거만 하고 현재 캐시 데이터로 즉시 반환
-        if (cached.size() < count && !inProgressMap.getOrDefault(puuid, false)) {
+        // putIfAbsent로 선점해 중복 트리거 방지 (작업 등록 전에 선점)
+        if (cached.size() < count && inProgressMap.putIfAbsent(puuid, Boolean.TRUE) == null) {
             CompletableFuture.runAsync(() -> {
                 try {
                     List<String> matchIds = riotQueue
@@ -251,8 +252,16 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
                             .collect(Collectors.toList());
                     if (!toFetch.isEmpty()) {
                         collectInBackground(puuid, toFetch, toFetch.size());
+                    } else {
+                        // 수집할 항목이 없으면 직접 선점 해제
+                        inProgressMap.remove(puuid);
                     }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    inProgressMap.remove(puuid);
+                    logger.warn("AI용 랭크 전적 수집 인터럽트: puuid={}", puuid);
                 } catch (Exception e) {
+                    inProgressMap.remove(puuid);
                     logger.warn("AI용 랭크 전적 백그라운드 수집 실패: puuid={}", puuid);
                 }
             }, matchCollectionExecutor);
