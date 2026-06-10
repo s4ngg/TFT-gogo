@@ -11,15 +11,12 @@ import {
   createHeroAugmentDeck,
   updateHeroAugmentDeck,
   deleteHeroAugmentDeck,
-  importGuideCdragonData,
   type AdminDeck,
   type DeckCurationRequest,
   type PlayGuide,
   type HeroAugmentEntry,
   type HeroAugmentDeckItem,
   type HeroAugmentDeckPayload,
-  type GuideCdragonImportRequest,
-  type GuideImportResponse,
 } from '../../api/adminApi'
 import { useCDragonLocale } from '../../hooks/useCDragonLocale'
 import { getTraitName, getChampionName } from '../../api/cdragonLocale'
@@ -958,7 +955,7 @@ function HaFormModal({ initial, onClose, onSaved }: HaFormModalProps) {
 }
 
 /* ── 영웅증강 덱 관리 ── */
-function HeroAugmentDeckManager() {
+export function HeroAugmentDeckManager() {
   const [decks, setDecks] = useState<HeroAugmentDeckItem[]>([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<HeroAugmentDeckItem | null | 'new'>(null)
@@ -1037,236 +1034,32 @@ function HeroAugmentDeckManager() {
   )
 }
 
-interface GuideImportFormState {
-  includeChampions: boolean
-  includeTraits: boolean
-  mutator: string
-  patchVersion: string
-  setNumber: string
-}
-
-const DEFAULT_GUIDE_IMPORT_FORM: GuideImportFormState = {
-  includeChampions: true,
-  includeTraits: true,
-  mutator: 'TFTSet17',
-  patchVersion: '17.3',
-  setNumber: '17',
-}
-
-function GuideImportManager() {
-  const [form, setForm] = useState<GuideImportFormState>(DEFAULT_GUIDE_IMPORT_FORM)
-  const [result, setResult] = useState<GuideImportResponse | null>(null)
-  const [error, setError] = useState('')
-  const [importing, setImporting] = useState(false)
-
-  function patch<K extends keyof GuideImportFormState>(key: K, value: GuideImportFormState[K]) {
-    setForm((prev) => ({ ...prev, [key]: value }))
-  }
-
-  function buildPayload(): GuideCdragonImportRequest | null {
-    const patchVersion = form.patchVersion.trim()
-    const setNumber = Number(form.setNumber)
-
-    if (!patchVersion) {
-      setError('패치 버전을 입력하세요.')
-      return null
-    }
-    if (!Number.isInteger(setNumber) || setNumber < 1) {
-      setError('세트 번호는 1 이상이어야 합니다.')
-      return null
-    }
-    if (!form.includeChampions && !form.includeTraits) {
-      setError('챔피언 또는 특성 중 하나는 선택해야 합니다.')
-      return null
-    }
-
-    return {
-      includeChampions: form.includeChampions,
-      includeTraits: form.includeTraits,
-      mutator: form.mutator.trim() || null,
-      patchVersion,
-      setNumber,
-    }
-  }
-
-  async function handleImport(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    const payload = buildPayload()
-    if (!payload) return
-
-    setImporting(true)
-    setError('')
-    try {
-      const response = await importGuideCdragonData(payload)
-      setResult(response)
-    } catch {
-      setError('가져오기에 실패했습니다. 토큰, 패치 버전, 세트 정보를 확인하세요.')
-    } finally {
-      setImporting(false)
-    }
-  }
-
-  const importedCount = result?.importedCount ?? 0
-
-  return (
-    <div className={styles.guideImportPanel}>
-      <div className={styles.toolbar}>
-        <h2 className={styles.title}>게임가이드 Import</h2>
-      </div>
-
-      <form className={styles.guideImportForm} onSubmit={handleImport}>
-        <div className={styles.guideImportGrid}>
-          <label className={styles.guideImportField}>
-            <span className={styles.guideImportLabel}>패치 버전</span>
-            <input
-              className={styles.guideImportInput}
-              value={form.patchVersion}
-              onChange={(e) => patch('patchVersion', e.target.value)}
-              placeholder="17.3"
-            />
-          </label>
-          <label className={styles.guideImportField}>
-            <span className={styles.guideImportLabel}>세트 번호</span>
-            <input
-              className={styles.guideImportInput}
-              min={1}
-              type="number"
-              value={form.setNumber}
-              onChange={(e) => patch('setNumber', e.target.value)}
-            />
-          </label>
-          <label className={styles.guideImportField}>
-            <span className={styles.guideImportLabel}>Mutator</span>
-            <input
-              className={styles.guideImportInput}
-              value={form.mutator}
-              onChange={(e) => patch('mutator', e.target.value)}
-              placeholder="TFTSet17"
-            />
-          </label>
-        </div>
-
-        <div className={styles.guideImportChecks}>
-          <label className={styles.guideImportCheck}>
-            <input
-              type="checkbox"
-              checked={form.includeChampions}
-              onChange={(e) => patch('includeChampions', e.target.checked)}
-            />
-            <span>챔피언</span>
-          </label>
-          <label className={styles.guideImportCheck}>
-            <input
-              type="checkbox"
-              checked={form.includeTraits}
-              onChange={(e) => patch('includeTraits', e.target.checked)}
-            />
-            <span>특성</span>
-          </label>
-        </div>
-
-        <div className={styles.guideImportActions}>
-          {error && <span className={styles.guideImportError}>{error}</span>}
-          <button className={styles.saveBtn} type="submit" disabled={importing}>
-            {importing ? '가져오는 중...' : 'CDragon 가져오기'}
-          </button>
-        </div>
-      </form>
-
-      {result && (
-        <div className={styles.guideImportResult}>
-          <span className={styles.guideImportStatus}>가져오기 완료</span>
-          <div className={styles.guideImportResultGrid}>
-            <div className={styles.guideImportMetric}>
-              <span className={styles.guideImportMetricLabel}>반영</span>
-              <strong className={styles.guideImportMetricValue}>{importedCount}</strong>
-            </div>
-            <div className={styles.guideImportMetric}>
-              <span className={styles.guideImportMetricLabel}>생성</span>
-              <strong className={styles.guideImportMetricValue}>{result.createdCount}</strong>
-            </div>
-            <div className={styles.guideImportMetric}>
-              <span className={styles.guideImportMetricLabel}>수정</span>
-              <strong className={styles.guideImportMetricValue}>{result.updatedCount}</strong>
-            </div>
-            <div className={styles.guideImportMetric}>
-              <span className={styles.guideImportMetricLabel}>스킵</span>
-              <strong className={styles.guideImportMetricValue}>{result.skippedCount}</strong>
-            </div>
-            <div className={styles.guideImportMetric}>
-              <span className={styles.guideImportMetricLabel}>챔피언 후보</span>
-              <strong className={styles.guideImportMetricValue}>{result.championCount}</strong>
-            </div>
-            <div className={styles.guideImportMetric}>
-              <span className={styles.guideImportMetricLabel}>특성 후보</span>
-              <strong className={styles.guideImportMetricValue}>{result.traitCount}</strong>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-type AdminTab = 'decks' | 'heroAugmentDecks' | 'guideImport'
 
 /* ── 메인 관리 페이지 ── */
-function AdminPage() {
+export function AdminPage() {
   const [decks, setDecks] = useState<AdminDeck[]>([])
   const [rankFilter, setRankFilter] = useState<RankFilter>('MASTER_PLUS')
   const [loading, setLoading] = useState(true)
-  const [adminTab, setAdminTab] = useState<AdminTab>('decks')
   const { data: locale } = useCDragonLocale()
 
   useEffect(() => {
-    if (adminTab !== 'decks') return
     setLoading(true)
     fetchAdminDecks(rankFilter)
       .then(setDecks)
       .finally(() => setLoading(false))
-  }, [rankFilter, adminTab])
+  }, [rankFilter])
 
   function handleSaved(updated: AdminDeck) {
     setDecks((prev) => prev.map((d) => (d.id === updated.id ? { ...d, ...updated } : d)))
   }
 
-  function handleLogout() {
-    clearAdminToken()
-    window.location.reload()
-  }
-
   return (
     <div className={styles.page}>
       <div className={styles.toolbar}>
-        <h1 className={styles.title}>관리자</h1>
-        <div className={styles.adminTabBar}>
-          <button
-            className={adminTab === 'decks' ? styles.adminTabActive : styles.adminTab}
-            onClick={() => setAdminTab('decks')}
-          >
-            메타덱 관리
-          </button>
-          <button
-            className={adminTab === 'heroAugmentDecks' ? styles.adminTabActive : styles.adminTab}
-            onClick={() => setAdminTab('heroAugmentDecks')}
-          >
-            영웅증강 덱
-          </button>
-          <button
-            className={adminTab === 'guideImport' ? styles.adminTabActive : styles.adminTab}
-            onClick={() => setAdminTab('guideImport')}
-          >
-            게임가이드 Import
-          </button>
-        </div>
-        <button className={styles.logoutBtn} onClick={handleLogout}>로그아웃</button>
+        <h1 className={styles.title}>메타덱 관리</h1>
       </div>
 
-      {adminTab === 'guideImport' ? (
-        <GuideImportManager />
-      ) : adminTab === 'heroAugmentDecks' ? (
-        <HeroAugmentDeckManager />
-      ) : loading ? (
+      {loading ? (
         <p style={{ color: 'var(--text-muted)' }}>불러오는 중...</p>
       ) : (
         <>

@@ -1,12 +1,14 @@
-import { useEffect, useState } from 'react'
 import { Gem, Rows3, Trophy } from 'lucide-react'
 import {
   DEFAULT_GUIDE_PAGE_SIZE,
   type GuideCatalog,
-  type MetricSortKey,
-  type SortDir,
 } from '../../../api/guide'
 import { useGuideTabItems } from '../../../hooks/useGuide'
+import { useGuideMetricSort } from '../hooks/useGuideMetricSort'
+import {
+  useGuidePageBounds,
+  useGuideTabPagination,
+} from '../hooks/useGuideTabPagination'
 import {
   EmptyState,
   GuidePagination,
@@ -27,9 +29,15 @@ function ItemStatsView({
   onChampionSelect,
   query,
 }: ItemStatsViewProps) {
-  const [currentPage, setCurrentPage] = useState(1)
-  const [sortDir, setSortDir] = useState<SortDir>('desc')
-  const [sortKey, setSortKey] = useState<MetricSortKey>('winRate')
+  const {
+    currentPage,
+    setCurrentPage,
+  } = useGuideTabPagination({ resetKey: query })
+  const {
+    handleSort,
+    sortDir,
+    sortKey,
+  } = useGuideMetricSort({ onSortChange: () => setCurrentPage(1) })
   const itemsQuery = useGuideTabItems({
     fallbackData,
     params: {
@@ -42,26 +50,12 @@ function ItemStatsView({
     },
   })
   const pageData = itemsQuery.data.data
-  const safePage = Math.min(currentPage, pageData.totalPages)
+  const safePage = useGuidePageBounds({
+    currentPage,
+    setCurrentPage,
+    totalPages: pageData.totalPages,
+  })
   const visibleItems = pageData.items
-
-  function handleSort(nextSortKey: MetricSortKey) {
-    if (sortKey === nextSortKey) {
-      setSortDir((current) => (current === 'asc' ? 'desc' : 'asc'))
-    } else {
-      setSortKey(nextSortKey)
-      setSortDir(nextSortKey === 'avgPlace' ? 'asc' : 'desc')
-    }
-    setCurrentPage(1)
-  }
-
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [query])
-
-  useEffect(() => {
-    if (currentPage > pageData.totalPages) setCurrentPage(pageData.totalPages)
-  }, [currentPage, pageData.totalPages])
 
   return (
     <>

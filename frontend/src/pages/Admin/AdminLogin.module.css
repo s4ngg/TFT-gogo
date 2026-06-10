@@ -1,0 +1,6 @@
+.loginPage {
+  min-height: 100vh;
+  background: var(--bg-main);
+  display: grid;
+  place-items: center;
+}
