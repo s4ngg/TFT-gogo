@@ -69,8 +69,9 @@ public class RiotApiClient {
     public AccountDto getAccount(String gameName, String tagLine) {
         String path = "/riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}";
         String url = UriComponentsBuilder
-                .fromHttpUrl(riotProperties.getAsiaBaseUrl() + path)
-                .buildAndExpand(Map.of("gameName", gameName, "tagLine", tagLine))
+                .fromHttpUrl(riotProperties.getAsiaBaseUrl())
+                .pathSegment("riot", "account", "v1", "accounts", "by-riot-id", gameName, tagLine)
+                .build()
                 .toUriString();
         return getByUrl(url, path, AccountDto.class, ErrorCode.ACCOUNT_NOT_FOUND);
     }

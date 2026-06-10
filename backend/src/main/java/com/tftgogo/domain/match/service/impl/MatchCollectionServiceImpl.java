@@ -103,6 +103,9 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
             Throwable cause = e.getCause();
             if (cause instanceof BusinessException be) throw be;
             throw new BusinessException(ErrorCode.RIOT_API_ERROR);
+        } catch (TimeoutException e) {
+            logger.error("matchId 목록 조회 타임아웃: puuid={}", puuid, e);
+            throw new BusinessException(ErrorCode.RIOT_API_ERROR);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new BusinessException(ErrorCode.RIOT_API_ERROR);
