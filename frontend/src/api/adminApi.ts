@@ -2,6 +2,7 @@ import axiosInstance from './axiosInstance'
 import type { RankFilter } from '../pages/Dashboard/dashboardData'
 
 const ADMIN_TOKEN_KEY = 'tftgogo_admin_token'
+const GUIDE_CDRAGON_IMPORT_TIMEOUT_MS = 120_000
 
 export function getAdminToken(): string {
   return localStorage.getItem(ADMIN_TOKEN_KEY) ?? ''
@@ -123,7 +124,10 @@ export async function importGuideCdragonData(
   const { data } = await axiosInstance.post<ApiResponse<GuideImportResponse>>(
     '/admin/guides/import/cdragon',
     payload,
-    { headers: adminHeaders() },
+    {
+      headers: adminHeaders(),
+      timeout: GUIDE_CDRAGON_IMPORT_TIMEOUT_MS,
+    },
   )
   return data.data
 }
