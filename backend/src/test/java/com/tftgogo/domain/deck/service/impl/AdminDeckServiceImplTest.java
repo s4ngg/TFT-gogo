@@ -223,6 +223,19 @@ class AdminDeckServiceImplTest {
     }
 
     @Test
+    void boardPositions_row_소수값_INVALID_INPUT() {
+        // given: row/col은 정수여야 하므로 소수는 거부
+        String json = "{\"5\": {\"TFT17_Ahri\": {\"row\": 1.5, \"col\": 3}}}";
+        DeckCurationRequest req = requestWithBoardPositions(json);
+
+        // when / then
+        assertThatThrownBy(() -> adminDeckService.updateCuration(1L, req))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.INVALID_INPUT);
+    }
+
+    @Test
     void boardPositions_JSON_파싱_실패시_INVALID_INPUT() {
         // given
         DeckCurationRequest req = requestWithBoardPositions("not-valid-json");

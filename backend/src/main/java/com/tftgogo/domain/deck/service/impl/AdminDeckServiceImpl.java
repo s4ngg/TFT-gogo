@@ -147,7 +147,8 @@ public class AdminDeckServiceImpl implements AdminDeckService {
     private int toInt(Object value) {
         if (value == null) throw new BusinessException(ErrorCode.INVALID_INPUT);
         if (value instanceof Integer i) return i;
-        if (value instanceof Number n) return n.intValue();
+        // Long은 허용하되 소수(Double/Float)는 좌표로 유효하지 않으므로 거부
+        if (value instanceof Long l) return Math.toIntExact(l);
         throw new BusinessException(ErrorCode.INVALID_INPUT);
     }
 
