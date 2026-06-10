@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface CachedMatchRepository extends JpaRepository<CachedMatch, String> {
@@ -18,4 +19,6 @@ public interface CachedMatchRepository extends JpaRepository<CachedMatch, String
 
     @Query("SELECT cm.matchId FROM CachedMatch cm WHERE cm.matchId IN :ids")
     List<String> findMatchIdsByMatchIdIn(@Param("ids") List<String> ids);
+
+    List<CachedMatch> findByQueueIdIn(Collection<Integer> queueIds);
 }

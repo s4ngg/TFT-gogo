@@ -62,10 +62,10 @@ Page: Guide (/guide).
 - If a soft-deleted row already reserves the same key, CDragon import skips that key instead of recreating it.
 - CDragon import item filtering includes only completed craftable TFT_Item_* rows with exactly two composition components and no associatedTraits.
 - CDragon item import excludes component-only rows, emblem/trait-associated rows, radiant/artifact/support/non-craftable rows that do not match the completed-item policy.
-- CDragon item import stores statistic fields as "-" and bestUsers as [] until match/stat aggregation is connected.
+- CDragon item import fills statistic fields and bestUsers from cached match data when available, otherwise keeps "-" and [] fallbacks.
 - CDragon augment import reads only the requested set/mutator augments and requires apiName, name, description, and icon.
 - CDragon augment import excludes debug/dummy/test/placeholder/inactive/disabled entries by apiName/name/description keywords.
-- CDragon augment import stores statistic fields as "-" until match/stat aggregation is connected.
+- CDragon augment import fills statistic fields from cached match data when available, otherwise keeps "-" fallbacks.
 - CDragon import request fields: patchVersion (required, max 20), setNumber (default 17), mutator (default TFTSet{setNumber}), includeChampions (default true), includeTraits (default true), includeItems (default false), includeAugments (default false).
 - CDragon import rejects requests where includeChampions, includeTraits, includeItems, and includeAugments all resolve to false.
 - CDragon import response fields: createdCount, updatedCount, skippedCount, championCount, traitCount, itemCount, augmentCount, importedCount (= createdCount + updatedCount).
@@ -111,11 +111,11 @@ Page: Guide (/guide).
 <cdragon-item-data-json>
 - category: "완성 아이템"
 - description: sanitized CDragon desc
-- avgPlace: "-" until statistics aggregation is connected
-- pickRate: "-" until statistics aggregation is connected
-- top4: "-" until statistics aggregation is connected
-- winRate: "-" until statistics aggregation is connected
-- bestUsers: [] until statistics aggregation is connected
+- avgPlace: cached match average placement or "-"
+- pickRate: cached match pick rate or "-"
+- top4: cached match TOP4 rate or "-"
+- winRate: cached match win rate or "-"
+- bestUsers: top cached match users or []
 - combinations: [{ label: "조합식", note: "CDragon 조합 기준", items: [{ imageUrl, name }] }]
 </cdragon-item-data-json>
 
@@ -125,9 +125,9 @@ Page: Guide (/guide).
 - tier: S | A | B | C | D, derived from CDragon rarity/tier when available
 - tags: CDragon tags or ["CDragon"]
 - reward: "-"
-- avgPlace: "-" until statistics aggregation is connected
-- pickRate: "-" until statistics aggregation is connected
-- winRate: "-" until statistics aggregation is connected
+- avgPlace: cached match average placement or "-"
+- pickRate: cached match pick rate or "-"
+- winRate: cached match win rate or "-"
 </cdragon-augment-data-json>
 </data-contracts>
 
@@ -137,6 +137,7 @@ Page: Guide (/guide).
 - AdminGuideController owns admin CRUD and /api/admin/guides/import/cdragon.
 - AdminGuideServiceImpl owns admin validation, duplicate prevention, dataJson serialization, and soft delete.
 - GuideCdragonImportServiceImpl fetches CommunityDragonProperties.tftKoKrUrl using RestTemplate and builds guide candidates.
+- GuideCdragonImportServiceImpl enriches ITEM and AUGMENT guide candidates with cached match metrics when matching patch data exists.
 - CDragon set data resolution first searches root.setData by setNumber + mutator, then falls back to root.sets[setNumber] if champions and traits exist.
 - Champion import includes only shop champions whose apiName starts with TFT{setNumber}_, cost is 1..5, and name is present.
 - Import asset URLs use CommunityDragonProperties.assetBaseUrl plus a lowercased asset path with .tex replaced by .png.
@@ -165,7 +166,7 @@ Page: Guide (/guide).
 
 <data-ingestion>
 - Current stage: CDragon champion/trait/item/augment guide import after admin CRUD and public query contracts are stable.
-- Next stage: patch-note crawling/import and match/stat aggregation connection.
+- Next stage: patch-note crawling/import and broader match/stat aggregation quality improvements.
 - AI server/FastAPI is not required for guide CRUD. Add it only when AI/RAG/recommendation behavior needs guide data.
 - Current CDragon import does not curate bestItems/tips and should not be treated as final editorial guide quality.
 </data-ingestion>
