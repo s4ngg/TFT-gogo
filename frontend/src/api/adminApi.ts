@@ -2,6 +2,7 @@ import axiosInstance from './axiosInstance'
 import type { RankFilter } from '../pages/Dashboard/dashboardData'
 
 const ADMIN_TOKEN_KEY = 'tftgogo_admin_token'
+const GUIDE_CDRAGON_IMPORT_TIMEOUT_MS = 120_000
 
 export function getAdminToken(): string {
   return localStorage.getItem(ADMIN_TOKEN_KEY) ?? ''
@@ -92,6 +93,43 @@ export async function resetDeckCuration(deckId: number): Promise<void> {
   await axiosInstance.delete(`/admin/decks/${deckId}/curation`, {
     headers: adminHeaders(),
   })
+}
+
+// ── 게임가이드 import ─────────────────────────────────────────────────────
+
+export interface GuideCdragonImportRequest {
+  includeChampions: boolean
+  includeTraits: boolean
+  mutator: string | null
+  patchVersion: string
+  setNumber: number
+}
+
+export interface GuideImportResponse {
+  championCount: number
+  createdCount: number
+  importedCount: number
+  skippedCount: number
+  traitCount: number
+  updatedCount: number
+}
+
+interface ApiResponse<T> {
+  data: T
+}
+
+export async function importGuideCdragonData(
+  payload: GuideCdragonImportRequest,
+): Promise<GuideImportResponse> {
+  const { data } = await axiosInstance.post<ApiResponse<GuideImportResponse>>(
+    '/admin/guides/import/cdragon',
+    payload,
+    {
+      headers: adminHeaders(),
+      timeout: GUIDE_CDRAGON_IMPORT_TIMEOUT_MS,
+    },
+  )
+  return data.data
 }
 
 // ── 영웅증강 덱 ────────────────────────────────────────────────────────────
