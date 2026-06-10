@@ -25,7 +25,9 @@ const STORAGE_KEY = 'tft_recent_searches'
 
 function getRecentSearches(): string[] {
   try {
-    return (JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]') as string[]).slice(0, 5)
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]')
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter((s): s is string => typeof s === 'string').slice(0, 5)
   } catch {
     return []
   }
@@ -39,15 +41,16 @@ function saveRecentSearch(input: string) {
 
 function SummonerSearchCard() {
   const [query, setQuery] = useState('')
-  const [focused, setFocused] = useState(false)
   const navigate = useNavigate()
 
   function handleSearch(input: string) {
     const trimmed = input.trim()
     if (!trimmed) return
     saveRecentSearch(trimmed)
-    const [name = trimmed, tag = 'KR1'] = trimmed.split('#').map((s) => s.trim())
-    navigate(`/summoner/${encodeURIComponent(name)}/${tag}`)
+    const parts = trimmed.split('#').map((s) => s.trim())
+    const name = parts[0] || trimmed
+    const tag = parts[1] || 'KR1'
+    navigate(`/summoner/${encodeURIComponent(name)}/${encodeURIComponent(tag)}`)
   }
 
   const recentSearches = getRecentSearches()
@@ -68,21 +71,18 @@ function SummonerSearchCard() {
           placeholder="소환사명#태그 입력"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
         />
         <button type="submit" aria-label="검색">
           <Search size={28} />
         </button>
       </form>
-      {focused && recentSearches.length > 0 && (
+      {recentSearches.length > 0 && (
         <div className={styles.searchTags}>
           <span>최근 검색</span>
           {recentSearches.map((tag) => (
             <button
               key={tag}
               type="button"
-              onMouseDown={(e) => e.preventDefault()}
               onClick={() => handleSearch(tag)}
             >
               {tag}

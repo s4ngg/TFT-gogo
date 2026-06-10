@@ -151,11 +151,15 @@
 }
 
 .searchTags {
-  display: flex;
+  display: none;
   align-items: center;
   gap: 8px;
   margin-top: 13px;
   overflow: hidden;
+}
+
+.searchPanel:focus-within .searchTags {
+  display: flex;
 }
 
 .searchTags span {
