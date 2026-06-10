@@ -16,7 +16,7 @@ const TIER_COLOR: Record<TierBadgeValue, string> = {
 
 const TIER_DESC: Record<TierBadgeValue, string> = {
   S: '최상위 픽 · 강력 추천',
-  A: '상위권 안정적 덱',
+  A: '중상위권 범용 덱',
   B: '중위권 상황 의존적',
   C: '하위권 전문 운영 필요',
   D: '비추천 · 낮은 안정성',
