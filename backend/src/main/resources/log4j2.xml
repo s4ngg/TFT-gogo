@@ -36,7 +36,8 @@
         <Logger name="org.springframework.security" level="INFO" additivity="false">
             <AppenderRef ref="Rewrite"/>
         </Logger>
-        <Logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+        <!-- 운영 기본: SQL 로그 비활성화. 로컬 개발 시 log4j2-local.xml 사용 -->
+        <Logger name="org.hibernate.SQL" level="WARN" additivity="false">
             <AppenderRef ref="Rewrite"/>
         </Logger>
         <Root level="INFO">
