@@ -12,6 +12,7 @@ export interface AiRecommendStats {
   avgPlace: string
   top4Rate: string
   winRate: string
+  recentPlacements?: number[]
 }
 
 export interface AiRecommendTrait {
@@ -24,13 +25,6 @@ export interface AiRecommendTrait {
   top4Rate: string
 }
 
-export interface AiRecommendAugment {
-  name: string
-  avgPlace: string
-  games: number
-  icon: string
-}
-
 export interface AiRecommendDeckReason {
   deckRank: number
   reason: string
@@ -41,7 +35,6 @@ export interface AiRecommendResponse {
   stats: AiRecommendStats
   goodTraits: AiRecommendTrait[]
   badTraits: AiRecommendTrait[]
-  augments: AiRecommendAugment[]
   deckReasons: AiRecommendDeckReason[]
 }
 

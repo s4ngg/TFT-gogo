@@ -55,6 +55,24 @@
   font-weight: 400;
 }
 
+.summonerDivider {
+  width: 1px;
+  height: 14px;
+  background: rgba(112, 144, 152, 0.3);
+  margin: 0 2px;
+}
+
+.summonerTier {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(4, 100, 106, 0.4);
+  color: #04ede0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 /* ── 공통 패널 ── */
 .panel {
   padding: 20px 22px;
@@ -207,6 +225,94 @@
 .statCard[data-tone="purple"] strong { color: #a78bfa; }
 .statCard[data-tone="green"] strong { color: #04ede0; }
 .statCard[data-tone="gold"] strong { color: #f9c860; }
+
+/* ── 최근 등수 ── */
+.placementsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(112, 144, 152, 0.1);
+}
+
+.placementsLabel {
+  color: #5a6470;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.placementsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.placementBadges {
+  display: flex;
+  gap: 5px;
+}
+
+.placementBadge {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 5px;
+  border: 1px solid rgba(112, 144, 152, 0.2);
+  background: rgba(8, 20, 28, 0.7);
+  color: #5a6470;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.placementBadge[data-top4="true"] {
+  border-color: rgba(4, 243, 229, 0.3);
+  color: #04ede0;
+}
+
+.tierInfo {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.tierEmblem {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 12px rgba(249, 200, 96, 0.5));
+}
+
+.tierText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.tierName {
+  color: #f9c860;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.tierLp {
+  color: #6b757e;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.placementBadge[data-first="true"] {
+  border-color: rgba(249, 200, 96, 0.4);
+  background: rgba(249, 200, 96, 0.08);
+  color: #f9c860;
+}
 
 /* ── 자주 쓴 덱 / 시너지 ── */
 .myDeckList { display: flex; flex-direction: column; gap: 8px; }

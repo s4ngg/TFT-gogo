@@ -41,6 +41,9 @@ public class AiRecommendResponse {
 
         @JsonProperty("win_rate")
         private String winRate;
+
+        @JsonProperty("recent_placements")
+        private List<Integer> recentPlacements;
     }
 
     @Getter
