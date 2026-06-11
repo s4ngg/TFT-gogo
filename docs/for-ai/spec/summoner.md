@@ -52,7 +52,10 @@ Detailed human spec: docs/for-humans/spec/summoner.md
 - Expanding a match row shows all 8 participants: placement, summonerName, stage (last_round → Spring notation), traits, units, kills, gold_left.
 - My row in expanded view is highlighted in teal.
 - stage conversion: last_round integer → Spring round notation (e.g., 5 → 2-1).
-- Non-existent summoner search → show empty state message.
+- Non-existent summoner search → show empty state message (EmptyState 컴포넌트).
+- Match list empty states:
+  - matches.length === 0 (전적 없는 소환사): RecentSummary null 반환, 필터바 숨김, 매치 리스트 영역에 "아직 플레이한 기록이 없습니다" 표시.
+  - filteredMatches.length === 0 && matches.length > 0 (필터 결과 없음): "선택한 게임 유형의 전적이 없습니다" 표시.
 - Search input: split('#') 후 gameName·tagLine 양쪽 모두 trim(). "닉네임 # KR1" 형태 입력 허용.
 - 429 rate limit:
   - 프로필 조회 또는 전적 갱신(POST /refresh) 429 → RateLimitState 컴포넌트 표시. Retry-After 초 카운트다운 (기본값 120초, 0이 되면 "다시 검색할 수 있습니다" 표시).

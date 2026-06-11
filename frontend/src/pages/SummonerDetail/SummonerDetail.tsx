@@ -260,25 +260,33 @@ function SummonerDetail() {
 
             {/* 매치 히스토리 */}
             <section className={styles.matchSection}>
-              <h2>최근 {Math.min(30, filteredMatches.length)}게임</h2>
+              <h2>{filteredMatches.length > 0 ? `최근 ${Math.min(30, filteredMatches.length)}게임` : '매치 히스토리'}</h2>
               <RecentSummary matches={filteredMatches} />
 
               {/* 게임 유형 필터 */}
-              <div className={styles.filterBar}>
-                {GAME_TYPE_FILTERS.map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    className={`${styles.filterBtn} ${gameTypeFilter === type ? styles.filterBtnActive : ''}`}
-                    onClick={() => handleFilterChange(type)}
-                  >
-                    {type === 'ALL' ? '전체' : type === 'RANKED' ? '랭크' : '일반'}
-                  </button>
-                ))}
-              </div>
+              {matches.length > 0 && (
+                <div className={styles.filterBar}>
+                  {GAME_TYPE_FILTERS.map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      className={`${styles.filterBtn} ${gameTypeFilter === type ? styles.filterBtnActive : ''}`}
+                      onClick={() => handleFilterChange(type)}
+                    >
+                      {type === 'ALL' ? '전체' : type === 'RANKED' ? '랭크' : '일반'}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               <div className={styles.matchList}>
-                {filteredMatches.map((match) => {
+                {filteredMatches.length === 0 ? (
+                  <p className={styles.matchEmptyState}>
+                    {matches.length === 0
+                      ? '아직 플레이한 기록이 없습니다'
+                      : '선택한 게임 유형의 전적이 없습니다'}
+                  </p>
+                ) : filteredMatches.map((match) => {
                   const isOpen = expandedId === match.matchId
                   return (
                     <div key={match.matchId} className={styles.matchItem}>
