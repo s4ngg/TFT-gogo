@@ -158,6 +158,9 @@ public class RiotApiClient {
             } catch (HttpClientErrorException.NotFound e) {
                 logger.warn("Riot API 404: endpoint={}", logPath);
                 throw new BusinessException(notFoundCode);
+            } catch (HttpClientErrorException.Forbidden | HttpClientErrorException.Unauthorized e) {
+                logger.error("Riot API 인증 실패 (키 만료/무효): endpoint={}", logPath, e);
+                throw new BusinessException(ErrorCode.RIOT_API_KEY_INVALID);
             } catch (HttpClientErrorException.TooManyRequests e) {
                 if (attempt == MAX_RETRY_COUNT) {
                     logger.warn("Riot API rate limit exceeded after retries: endpoint={}", logPath);
