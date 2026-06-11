@@ -33,6 +33,8 @@ Detailed human spec: docs/for-humans/spec/summoner.md
 <frontend>
 - frontend/src/api/summonerApi.ts               — getSummonerProfile, getMatchHistory
 - frontend/src/api/communityDragonAssets.ts     — tftChampSquareUrl, tftTraitIconUrl (CDragon CDN)
+- frontend/src/hooks/useMatchHistory.ts         — getMatchHistory 래핑 + 페이징 상태 관리
+- frontend/src/hooks/useSummonerProfile.ts      — getSummonerProfile 래핑
 - frontend/src/pages/SummonerDetail/SummonerDetail.tsx
 </frontend>
 </api>
@@ -58,10 +60,15 @@ Detailed human spec: docs/for-humans/spec/summoner.md
 </business-rules>
 
 <frontend-structure>
-- frontend/src/pages/SummonerDetail/SummonerDetail.tsx — main page component
-- frontend/src/api/summonerApi.ts                      — API calls
-- frontend/src/api/communityDragonAssets.ts            — CDragon image URL helpers
-- frontend/src/hooks/useMatchHistory.ts                — useInfiniteQuery 기반 전적 목록 페이지네이션 훅
+- frontend/src/pages/SummonerDetail/SummonerDetail.tsx              — main page component
+- frontend/src/pages/SummonerDetail/components/RecentSummary.tsx    — 최근 30게임 요약 카드
+- frontend/src/pages/SummonerDetail/components/MatchDetailPanel.tsx — 전적 행 상세 펼침 패널 (8인)
+- frontend/src/pages/SummonerDetail/components/EmptyState.tsx       — 소환사 없음 빈 상태
+- frontend/src/pages/SummonerDetail/utils/summonerUtils.ts          — timeAgo, formatDate, placementTone, detailRankClass
+- frontend/src/hooks/useMatchHistory.ts                             — 전적 목록 fetching hook
+- frontend/src/hooks/useSummonerProfile.ts                          — 프로필 fetching hook
+- frontend/src/api/summonerApi.ts                                   — API calls
+- frontend/src/api/communityDragonAssets.ts                         — CDragon image URL helpers
 </frontend-structure>
 
 <open-issues>
