@@ -1,4 +1,5 @@
 import { type FormEvent, useMemo, useRef, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Clock3,
   Crown,
@@ -12,21 +13,18 @@ import {
 } from 'lucide-react'
 import { AppLayout } from '../../components/layout'
 import { partyFilters, type PartyFilter } from './partyFilters'
+import {
+  buildLocalPartyPost,
+  cancelPartyJoin,
+  createPartyPost,
+  fallbackPartyPosts,
+  getPartyPosts,
+  joinPartyPost,
+  type CreatePartyPostRequest,
+  type PartyMode,
+  type PartyPost,
+} from '../../api/partyApi'
 import styles from './Party.module.css'
-
-interface PartyPost {
-  capacity: string
-  close: string
-  description: string
-  icon: 'crown' | 'leaf' | 'spark' | 'swords'
-  id: string
-  mode: Exclude<PartyFilter, '전체'>
-  status: '모집중' | '대기중'
-  tags: string[]
-  tier: string
-  title: string
-  tone: 'purple' | 'green' | 'cyan' | 'gold'
-}
 
 interface ChatMessage {
   isMine?: boolean
@@ -42,61 +40,6 @@ interface ChatRoom {
   name: string
   users: string
 }
-
-const initialPartyPosts: PartyPost[] = [
-  {
-    id: 'party-master-duo',
-    title: '마스터 이상 듀오 구합니다',
-    mode: '랭크',
-    tier: '마스터+',
-    capacity: '2/2',
-    close: '마감 15분 전',
-    status: '모집중',
-    description: '17.3 추천 메타 기준으로 빠르게 점수 올리실 분 찾아요.',
-    tags: ['음성 가능', '연승 목표', '빠른 매칭'],
-    icon: 'crown',
-    tone: 'purple',
-  },
-  {
-    id: 'party-diamond-practice',
-    title: '다이아 구간 야부/연습 같이해요',
-    mode: '랭크',
-    tier: '다이아+',
-    capacity: '1/2',
-    close: '마감 42분 전',
-    status: '모집중',
-    description: '운영 피드백 주고받으면서 편하게 연습하실 분이면 좋아요.',
-    tags: ['피드백 환영', '저녁 접속', '마이크 선택'],
-    icon: 'leaf',
-    tone: 'green',
-  },
-  {
-    id: 'party-casual-evening',
-    title: '저녁 근접, 편하게 즐기실 분!',
-    mode: '일반',
-    tier: '제한 없음',
-    capacity: '3/4',
-    close: '마감 1시간 전',
-    status: '대기중',
-    description: '랭크 부담 없이 조합 테스트하면서 같이 하실 분 구해요.',
-    tags: ['초보 환영', '일반전', '덱 실험'],
-    icon: 'spark',
-    tone: 'cyan',
-  },
-  {
-    id: 'party-weekend-master',
-    title: '주말 마스터 달성 목표!',
-    mode: '랭크',
-    tier: '플래티넘+',
-    capacity: '2/3',
-    close: '마감 2시간 전',
-    status: '모집중',
-    description: '순방 위주로 안정적인 운영 맞춰가실 분이면 좋습니다.',
-    tags: ['주말 집중', '순방 운영', '멘탈 좋음'],
-    icon: 'swords',
-    tone: 'gold',
-  },
-]
 
 const initialChatRooms: ChatRoom[] = [
   { name: '일반', users: '1,234', lastMessage: '새로운 패치 적응 중입니다!' },
@@ -171,24 +114,37 @@ function parseCapacity(capacity: string) {
   return { current, total }
 }
 
-function getPostStyle(mode: Exclude<PartyFilter, '전체'>, tier: string) {
-  if (mode === '일반') {
-    return { icon: 'spark' as const, tone: 'cyan' as const }
-  }
+function replacePost(posts: PartyPost[], nextPost: PartyPost) {
+  return posts.map((post) => (post.id === nextPost.id ? nextPost : post))
+}
 
-  if (mode === '커스텀') {
-    return { icon: 'swords' as const, tone: 'gold' as const }
-  }
+function updatePostJoinState(post: PartyPost, isJoining: boolean): PartyPost {
+  const { current, total } = parseCapacity(post.capacity)
+  const nextCurrent = isJoining ? Math.min(total, current + 1) : Math.max(0, current - 1)
 
-  if (tier.includes('다이아')) {
-    return { icon: 'leaf' as const, tone: 'green' as const }
+  return {
+    ...post,
+    capacity: `${nextCurrent}/${total}`,
+    isJoined: isJoining,
+    status: nextCurrent >= total ? '대기중' : '모집중',
   }
+}
 
-  return { icon: 'crown' as const, tone: 'purple' as const }
+function getDefaultDeadlineInput() {
+  const deadline = new Date(Date.now() + 1000 * 60 * 60 * 2)
+  const year = deadline.getFullYear()
+  const month = String(deadline.getMonth() + 1).padStart(2, '0')
+  const day = String(deadline.getDate()).padStart(2, '0')
+  const hour = String(deadline.getHours()).padStart(2, '0')
+  const minute = String(deadline.getMinutes()).padStart(2, '0')
+
+  return `${year}-${month}-${day}T${hour}:${minute}`
 }
 
 function Party() {
-  const [posts, setPosts] = useState<PartyPost[]>(initialPartyPosts)
+  const queryClient = useQueryClient()
+  const [localPosts, setLocalPosts] = useState<PartyPost[]>([])
+  const [postOverrides, setPostOverrides] = useState<Record<string, PartyPost>>({})
   const [rooms, setRooms] = useState<ChatRoom[]>(initialChatRooms)
   const [selectedFilter, setSelectedFilter] = useState<PartyFilter>('전체')
   const [searchDraft, setSearchDraft] = useState('')
@@ -198,13 +154,43 @@ function Party() {
   const [chatInput, setChatInput] = useState('')
   const [joinedPostId, setJoinedPostId] = useState<string | null>(null)
   const [titleDraft, setTitleDraft] = useState('')
-  const [modeDraft, setModeDraft] = useState<Exclude<PartyFilter, '전체'>>('랭크')
+  const [modeDraft, setModeDraft] = useState<PartyMode>('랭크')
   const [tierDraft, setTierDraft] = useState('마스터+')
   const [capacityDraft, setCapacityDraft] = useState('2')
+  const [deadlineDraft, setDeadlineDraft] = useState(getDefaultDeadlineInput)
   const [tagsDraft, setTagsDraft] = useState('')
   const [descriptionDraft, setDescriptionDraft] = useState('')
   const [composeError, setComposeError] = useState('')
+  const [partyStatusMessage, setPartyStatusMessage] = useState('')
   const titleInputRef = useRef<HTMLInputElement>(null)
+  const partyQuery = useQuery({
+    queryKey: ['community', 'parties'],
+    queryFn: getPartyPosts,
+    staleTime: 1000 * 60,
+  })
+  const createMutation = useMutation({
+    mutationFn: createPartyPost,
+  })
+  const joinMutation = useMutation({
+    mutationFn: ({ postId, isJoining }: { postId: string; isJoining: boolean }) =>
+      isJoining ? joinPartyPost(postId) : cancelPartyJoin(postId),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['community', 'parties'] })
+    },
+  })
+  const posts = useMemo(() => {
+    const serverPosts = partyQuery.data?.data ?? fallbackPartyPosts
+    const merged = [...localPosts]
+    const localIds = new Set(localPosts.map((post) => post.id))
+
+    serverPosts.forEach((post) => {
+      if (!localIds.has(post.id)) {
+        merged.push(postOverrides[post.id] ?? post)
+      }
+    })
+
+    return merged.map((post) => postOverrides[post.id] ?? post)
+  }, [localPosts, partyQuery.data?.data, postOverrides])
   const filteredPartyPosts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
 
@@ -226,6 +212,7 @@ function Party() {
     () => messages.filter((message) => message.roomName === activeRoomName),
     [activeRoomName, messages],
   )
+  const isShowingFallback = partyQuery.data?.source === 'fallback'
 
   const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -235,39 +222,46 @@ function Party() {
   const handleComposeFocus = () => {
     titleInputRef.current?.focus()
     setComposeError('')
+    setPartyStatusMessage('')
   }
 
   const handlePartySubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    createMutation.reset()
 
     const title = titleDraft.trim()
     const description = descriptionDraft.trim()
+    const deadline = new Date(deadlineDraft)
 
     if (!title || !description) {
       setComposeError('모집글 제목과 플레이 스타일을 입력해주세요.')
       return
     }
 
-    const style = getPostStyle(modeDraft, tierDraft)
+    if (Number.isNaN(deadline.getTime())) {
+      setComposeError('마감 시간을 선택해주세요.')
+      return
+    }
+
     const parsedTags = tagsDraft
       .split(',')
       .map((tag) => tag.trim())
       .filter(Boolean)
       .slice(0, 4)
-    const nextPost: PartyPost = {
-      id: `party-${crypto.randomUUID()}`,
+    const capacity = normalizeCapacity(capacityDraft)
+    const request: CreatePartyPostRequest = {
       title,
       mode: modeDraft,
       tier: tierDraft,
-      capacity: normalizeCapacity(capacityDraft),
-      close: '방금 등록',
-      status: '모집중',
+      capacity,
+      deadline: deadline.toISOString(),
       description,
-      tags: parsedTags.length > 0 ? parsedTags : [modeDraft, tierDraft, '방금 등록'],
-      ...style,
+      tags: parsedTags,
     }
+    const localId = `party-${crypto.randomUUID()}`
+    const localPost = buildLocalPartyPost(request, localId)
 
-    setPosts((currentPosts) => [nextPost, ...currentPosts])
+    setLocalPosts((currentPosts) => [localPost, ...currentPosts])
     setSelectedFilter('전체')
     setSearchDraft('')
     setQuery('')
@@ -275,9 +269,25 @@ function Party() {
     setModeDraft('랭크')
     setTierDraft('마스터+')
     setCapacityDraft('2')
+    setDeadlineDraft(getDefaultDeadlineInput())
     setTagsDraft('')
     setDescriptionDraft('')
     setComposeError('')
+    setPartyStatusMessage('모집글을 등록했습니다.')
+    createMutation.mutate(request, {
+      onSuccess: (createdPost) => {
+        if (createdPost) {
+          setLocalPosts((currentPosts) =>
+            currentPosts.map((post) => (post.id === localId ? createdPost : post)),
+          )
+        }
+
+        void queryClient.invalidateQueries({ queryKey: ['community', 'parties'] })
+      },
+      onError: () => {
+        setPartyStatusMessage('API 연결 실패로 방금 등록한 글은 임시로만 표시됩니다.')
+      },
+    })
   }
 
   const handleJoinToggle = (postId: string) => {
@@ -287,7 +297,8 @@ function Party() {
       return
     }
 
-    const alreadyJoined = joinedPostId === postId
+    joinMutation.reset()
+    const alreadyJoined = joinedPostId === postId || targetPost.isJoined === true
     const { current, total } = parseCapacity(targetPost.capacity)
 
     if (!alreadyJoined && (joinedPostId !== null || current >= total)) {
@@ -298,22 +309,15 @@ function Party() {
     const nextMessage = alreadyJoined
       ? `${targetPost.title} 참여 신청을 취소했어요.`
       : `${targetPost.title} 참여 신청했습니다. (${nextCurrent}/${total})`
+    const nextPost = updatePostJoinState(targetPost, !alreadyJoined)
 
-    setPosts((currentPosts) =>
-      currentPosts.map((post) => {
-        if (post.id !== postId) {
-          return post
-        }
-
-        return {
-          ...post,
-          capacity: `${nextCurrent}/${total}`,
-          status: nextCurrent >= total ? '대기중' : '모집중',
-        }
-      }),
-    )
-
+    setLocalPosts((currentPosts) => replacePost(currentPosts, nextPost))
+    setPostOverrides((currentOverrides) => ({
+      ...currentOverrides,
+      [postId]: nextPost,
+    }))
     setJoinedPostId(alreadyJoined ? null : postId)
+    setPartyStatusMessage(nextMessage)
     setActiveRoomName('파티 모집')
     setMessages((currentMessages) => [
       ...currentMessages,
@@ -330,6 +334,14 @@ function Party() {
       currentRooms.map((room) =>
         room.name === '파티 모집' ? { ...room, lastMessage: nextMessage } : room,
       ),
+    )
+    joinMutation.mutate(
+      { postId, isJoining: !alreadyJoined },
+      {
+        onError: () => {
+          setPartyStatusMessage('API 연결 실패로 참여 상태는 임시로만 반영됩니다.')
+        },
+      },
     )
   }
 
@@ -427,7 +439,7 @@ function Party() {
             />
             <select
               aria-label="모집 모드"
-              onChange={(event) => setModeDraft(event.target.value as Exclude<PartyFilter, '전체'>)}
+              onChange={(event) => setModeDraft(event.target.value as PartyMode)}
               value={modeDraft}
             >
               <option value="랭크">랭크</option>
@@ -451,6 +463,14 @@ function Party() {
               value={capacityDraft}
             />
             <input
+              aria-label="마감 시간"
+              className={styles.deadlineInput}
+              min={getDefaultDeadlineInput()}
+              onChange={(event) => setDeadlineDraft(event.target.value)}
+              type="datetime-local"
+              value={deadlineDraft}
+            />
+            <input
               aria-label="모집 태그"
               className={styles.tagInput}
               onChange={(event) => setTagsDraft(event.target.value)}
@@ -463,20 +483,26 @@ function Party() {
               placeholder="플레이 스타일이나 요청사항을 적어주세요."
               value={descriptionDraft}
             />
-            <button type="submit" className={styles.primaryButton}>
-              등록
+            <button type="submit" className={styles.primaryButton} disabled={createMutation.isPending}>
+              {createMutation.isPending ? '등록중' : '등록'}
             </button>
-            {composeError && <p className={styles.composeError}>{composeError}</p>}
+            {composeError && <p className={styles.composeError} role="alert">{composeError}</p>}
           </form>
+          {(isShowingFallback || partyStatusMessage) && (
+            <p className={styles.statusMessage} role="status">
+              {partyStatusMessage || '파티 API 응답을 불러오지 못해 목업 모집글을 표시합니다.'}
+            </p>
+          )}
 
           <div className={styles.partyList}>
             {filteredPartyPosts.length > 0 ? (
               filteredPartyPosts.map((post) => {
                 const Icon = partyIconMap[post.icon]
                 const { current, total } = parseCapacity(post.capacity)
-                const isJoined = joinedPostId === post.id
+                const isJoined = joinedPostId === post.id || post.isJoined === true
                 const hasJoinedOtherPost = joinedPostId !== null && !isJoined
                 const isFull = current >= total
+                const isJoinPending = joinMutation.isPending && joinMutation.variables?.postId === post.id
 
                 return (
                   <article className={styles.partyCard} key={post.id}>
@@ -511,10 +537,10 @@ function Party() {
                       type="button"
                       aria-pressed={isJoined}
                       className={styles.joinButton}
-                      disabled={(isFull && !isJoined) || hasJoinedOtherPost}
+                      disabled={isJoinPending || (isFull && !isJoined) || hasJoinedOtherPost}
                       onClick={() => handleJoinToggle(post.id)}
                     >
-                      {isJoined ? '참여중' : isFull ? '마감' : hasJoinedOtherPost ? '잠김' : '참여'}
+                      {isJoinPending ? '처리중' : isJoined ? '참여중' : isFull ? '마감' : hasJoinedOtherPost ? '잠김' : '참여'}
                     </button>
                   </article>
                 )

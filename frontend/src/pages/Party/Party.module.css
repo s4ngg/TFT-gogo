@@ -104,6 +104,13 @@
   font-size: 13px;
 }
 
+.primaryButton:disabled {
+  color: #7f8d98;
+  border-color: rgba(110, 142, 150, 0.22);
+  background: rgba(8, 20, 27, 0.72);
+  cursor: not-allowed;
+}
+
 .toolbar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -187,8 +194,12 @@
   padding: 10px;
 }
 
+.deadlineInput {
+  grid-column: 1 / 2;
+}
+
 .tagInput {
-  grid-column: 1 / 4;
+  grid-column: 2 / 4;
 }
 
 .composeBox input::placeholder,
@@ -207,6 +218,17 @@
   color: #ff7976;
   font-size: 12px;
   font-weight: 650;
+}
+
+.statusMessage {
+  margin: 10px 0 0;
+  padding: 9px 10px;
+  border: 1px solid rgba(5, 221, 213, 0.24);
+  border-radius: 8px;
+  color: #b8c2ca;
+  background: rgba(3, 44, 49, 0.32);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .searchBox input::placeholder {
