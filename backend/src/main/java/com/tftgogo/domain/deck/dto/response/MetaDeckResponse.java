@@ -27,6 +27,8 @@ public class MetaDeckResponse {
     private String pickRate;
     private int sampleSize;
     private List<TraitSummary> traits;
+    // AI 서버 요청용 시너지 suffix 목록 (e.g. "TFT17_Bruiser" → "bruiser")
+    private List<String> traitSuffixes;
     private List<ChampionSummary> champions;
     private List<ItemSummary> topItems;
     // 관리자 배치판 포지션 JSON (null = 자동 배치)
@@ -96,6 +98,14 @@ public class MetaDeckResponse {
                         .build())
                 .toList();
 
+        List<String> traitSuffixes = deck.getTraits().stream()
+                .sorted((a, b) -> Integer.compare(b.getNumUnits(), a.getNumUnits()))
+                .map(t -> {
+                    String id = t.getTraitId();
+                    return id.contains("_") ? id.substring(id.lastIndexOf('_') + 1).toLowerCase() : id.toLowerCase();
+                })
+                .toList();
+
         List<com.tftgogo.domain.deck.entity.DeckUnit> responseUnits = deck.getUnits().stream()
                 .filter(unit -> TftShopUnitFilter.isShopUnit(unit.getCharacterId()))
                 .sorted(Comparator.comparingInt(com.tftgogo.domain.deck.entity.DeckUnit::getCost)) // 1→2→3→4→5 코스트 오름차순
@@ -147,6 +157,7 @@ public class MetaDeckResponse {
                 .pickRate(String.format("%.1f%%", deck.getPlayRate()))
                 .sampleSize(deck.getSampleSize())
                 .traits(traits)
+                .traitSuffixes(traitSuffixes)
                 .champions(champions)
                 .topItems(topItems)
                 .boardPositions(boardPositions)
