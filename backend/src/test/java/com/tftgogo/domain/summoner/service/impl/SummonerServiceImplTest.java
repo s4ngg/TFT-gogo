@@ -62,6 +62,24 @@ class SummonerServiceImplTest {
     }
 
     @Test
+    void getProfile_대소문자_무시로_캐시를_조회한다() {
+        // given
+        String upperGameName = "HIDE";
+        String lowerTagLine = "kr1";
+        CachedSummoner cached = cachedSummoner(PUUID, GAME_NAME, TAG_LINE,
+                LocalDateTime.now().minusMinutes(10));
+        when(cachedSummonerRepository.findByGameNameIgnoreCaseAndTagLineIgnoreCase(upperGameName, lowerTagLine))
+                .thenReturn(Optional.of(cached));
+
+        // when
+        SummonerProfileResponse result = summonerService.getProfile(upperGameName, lowerTagLine);
+
+        // then
+        assertThat(result.getPuuid()).isEqualTo(PUUID);
+        verify(riotApiClient, never()).getAccount(anyString(), anyString());
+    }
+
+    @Test
     void TTL_만료된_캐시는_Riot_API를_재조회하고_캐시를_갱신한다() {
         // given
         CachedSummoner stale = cachedSummoner(PUUID, GAME_NAME, TAG_LINE,
@@ -162,6 +180,19 @@ class SummonerServiceImplTest {
     }
 
     @Test
+    void getRank_캐시_미스_시_일반_RuntimeException은_전파된다() {
+        // given
+        when(cachedRankRepository.findById(PUUID)).thenReturn(Optional.empty());
+        when(riotApiClient.getLeagueByPuuid(PUUID))
+                .thenThrow(new RuntimeException("network error"));
+
+        // when, then
+        assertThatThrownBy(() -> summonerService.getRank(PUUID))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("network error");
+    }
+
+    @Test
     void getRank_그_외_BusinessException은_unranked_fallback으로_처리한다() {
         // given
         when(cachedRankRepository.findById(PUUID)).thenReturn(Optional.empty());
@@ -195,6 +226,31 @@ class SummonerServiceImplTest {
         assertThat(result).isNotNull();
         verify(cachedSummonerRepository).findByGameNameIgnoreCaseAndTagLineIgnoreCase(GAME_NAME, TAG_LINE);
         verify(cachedRankRepository).findById(PUUID);
+    }
+
+    @Test
+    void getDetail_profile과_rank_필드를_정확히_합성한다() {
+        // given
+        CachedSummoner cachedSummonerData = cachedSummoner(PUUID, GAME_NAME, TAG_LINE,
+                LocalDateTime.now().minusMinutes(5));
+        CachedRank cachedRankData = cachedRank(PUUID, "DIAMOND", "III",
+                LocalDateTime.now().minusMinutes(1));
+        when(cachedSummonerRepository.findByGameNameIgnoreCaseAndTagLineIgnoreCase(GAME_NAME, TAG_LINE))
+                .thenReturn(Optional.of(cachedSummonerData));
+        when(cachedRankRepository.findById(PUUID)).thenReturn(Optional.of(cachedRankData));
+
+        // when
+        SummonerDetailResponse result = summonerService.getDetail(GAME_NAME, TAG_LINE);
+
+        // then
+        assertThat(result.getPuuid()).isEqualTo(PUUID);
+        assertThat(result.getGameName()).isEqualTo(GAME_NAME);
+        assertThat(result.getTagLine()).isEqualTo(TAG_LINE);
+        assertThat(result.getTier()).isEqualTo("DIAMOND");
+        assertThat(result.getRank()).isEqualTo("III");
+        assertThat(result.getLeaguePoints()).isEqualTo(50);
+        assertThat(result.getWins()).isEqualTo(100);
+        assertThat(result.getLosses()).isEqualTo(80);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

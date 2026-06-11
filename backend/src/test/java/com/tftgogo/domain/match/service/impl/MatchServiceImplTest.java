@@ -49,7 +49,7 @@ class MatchServiceImplTest {
         // given
         String matchId = "KR_12345";
         when(cachedMatchRepository.findById(matchId))
-                .thenReturn(Optional.of(cachedMatch(matchId, validMatchJson(1100))));
+                .thenReturn(Optional.of(cachedMatch(matchId, 1100, validMatchJson(1100))));
 
         // when
         MatchDetailResponse result = matchService.getMatchDetail(matchId);
@@ -81,7 +81,7 @@ class MatchServiceImplTest {
         // given
         String matchId = "KR_12345";
         when(cachedMatchRepository.findById(matchId))
-                .thenReturn(Optional.of(cachedMatch(matchId, "invalid-json{{{")));
+                .thenReturn(Optional.of(cachedMatch(matchId, 1100, "invalid-json{{{")));
         when(riotApiClient.getMatch(matchId)).thenReturn(matchDto(1100));
 
         // when
@@ -97,7 +97,7 @@ class MatchServiceImplTest {
         // given
         String matchId = "KR_12345";
         when(cachedMatchRepository.findById(matchId))
-                .thenReturn(Optional.of(cachedMatch(matchId, validMatchJson(9999))));
+                .thenReturn(Optional.of(cachedMatch(matchId, 9999, validMatchJson(9999))));
 
         // when, then
         assertThatThrownBy(() -> matchService.getMatchDetail(matchId))
@@ -137,10 +137,10 @@ class MatchServiceImplTest {
         verify(matchCollectionService).getStatus(puuid);
     }
 
-    private CachedMatch cachedMatch(String matchId, String json) {
+    private CachedMatch cachedMatch(String matchId, int queueId, String json) {
         return CachedMatch.builder()
                 .matchId(matchId)
-                .queueId(1100)
+                .queueId(queueId)
                 .gameDatetime(1000L)
                 .matchJson(json)
                 .createdAt(LocalDateTime.now())
