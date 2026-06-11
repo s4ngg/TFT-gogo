@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { tftItemIconOnError } from '../../../api/communityDragonAssets'
 import styles from './ChampionCard.module.css'
 
 const costClasses: Record<number, string> = {
@@ -53,14 +54,7 @@ function ChampionCard({ label, imageUrl, items = [], stars = 2, hasItem = false,
               src={item.imageUrl}
               alt={item.name}
               key={item.name}
-              onError={(e) => {
-                const img = e.currentTarget
-                if (img.src.includes('.tft_set17.')) {
-                  img.src = img.src.replace('.tft_set17.', '.tft_set13.')
-                } else {
-                  img.style.opacity = '0'
-                }
-              }}
+              onError={tftItemIconOnError}
             />
           ))}
         </span>
