@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClientException;
@@ -51,6 +52,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
     private static final Pattern MATCH_PATCH_VERSION_PATTERN = Pattern.compile("(\\d+\\.\\d+[a-zA-Z]?)");
     private static final int PATCH_VERSION_MAX_LENGTH = 20;
     private static final int BEST_USER_LIMIT = 3;
+    private static final int GUIDE_STAT_MATCH_LIMIT = 500;
     private static final Set<Integer> GUIDE_STAT_QUEUE_IDS = Set.of(1090, 1100);
     private static final ObjectMapper MATCH_CACHE_MAPPER = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
@@ -480,7 +482,10 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
     }
 
     private GuideMetricStats collectGuideMetricStats(String patchVersion) {
-        List<CachedMatch> cachedMatches = cachedMatchRepository.findByQueueIdIn(GUIDE_STAT_QUEUE_IDS);
+        List<CachedMatch> cachedMatches = cachedMatchRepository.findRecentByQueueIds(
+                GUIDE_STAT_QUEUE_IDS,
+                PageRequest.of(0, GUIDE_STAT_MATCH_LIMIT)
+        );
         if (cachedMatches == null || cachedMatches.isEmpty()) {
             return new GuideMetricStats();
         }

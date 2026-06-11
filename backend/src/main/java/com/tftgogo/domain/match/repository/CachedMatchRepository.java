@@ -20,7 +20,8 @@ public interface CachedMatchRepository extends JpaRepository<CachedMatch, String
     @Query("SELECT cm.matchId FROM CachedMatch cm WHERE cm.matchId IN :ids")
     List<String> findMatchIdsByMatchIdIn(@Param("ids") List<String> ids);
 
-    List<CachedMatch> findByQueueIdIn(Collection<Integer> queueIds);
+    @Query("SELECT cm FROM CachedMatch cm WHERE cm.queueId IN :queueIds ORDER BY cm.gameDatetime DESC, cm.matchId DESC")
+    List<CachedMatch> findRecentByQueueIds(@Param("queueIds") Collection<Integer> queueIds, Pageable pageable);
 
     @Query("SELECT cm FROM CachedMatch cm JOIN cm.participantPuuids p WHERE p = :puuid AND cm.queueId = :queueId ORDER BY cm.gameDatetime DESC, cm.matchId DESC")
     List<CachedMatch> findByParticipantPuuidAndQueueId(@Param("puuid") String puuid, @Param("queueId") int queueId, Pageable pageable);
