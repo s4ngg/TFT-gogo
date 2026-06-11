@@ -1,14 +1,54 @@
 import type React from 'react'
 
-const COMMUNITY_DRAGON_BASE_URL = 'https://raw.communitydragon.org/latest/game'
-const COMMUNITY_DRAGON_RAW_BASE_URL = 'https://raw.communitydragon.org/latest'
+export const TFT_ASSET_CONFIG = {
+  currentSetNumber: 17,
+  currentSetTag: 'tft_set17',
+  fallbackItemSetTag: 'tft_set13',
+  communityDragonGameBaseUrl: 'https://raw.communitydragon.org/latest/game',
+  communityDragonRawBaseUrl: 'https://raw.communitydragon.org/latest',
+} as const
+
+const TFT_SET_PATTERN = /(?:set|tft)(\d+)/i
+const TFT_SET_TAG_PATTERN = /\.tft_set\d+\./i
+
+function readTftSetNumber(value: string): number | undefined {
+  const match = value.match(TFT_SET_PATTERN)
+  if (!match) return undefined
+
+  const setNumber = Number(match[1])
+  return Number.isInteger(setNumber) && setNumber > 0 ? setNumber : undefined
+}
+
+export function tftSetTag(setNumber: number = TFT_ASSET_CONFIG.currentSetNumber): string {
+  return `tft_set${setNumber}`
+}
+
+export function tftSetTagFromId(value: string): string {
+  return tftSetTag(readTftSetNumber(value) ?? TFT_ASSET_CONFIG.currentSetNumber)
+}
+
+function tftSetFileSuffix(setNumber: number): string {
+  return `TFT_Set${setNumber}`
+}
+
+function tftSetFileSuffixFromId(value: string): string {
+  return tftSetFileSuffix(readTftSetNumber(value) ?? TFT_ASSET_CONFIG.currentSetNumber)
+}
+
+function traitIconPath(iconSetNumber: number, traitName: string): string {
+  return `ASSETS/UX/TraitIcons/Trait_Icon_${iconSetNumber}_${traitName}.${tftSetFileSuffix(iconSetNumber)}.tex`
+}
+
+function traitIconPathWithoutSet(iconSetNumber: number, traitName: string): string {
+  return `ASSETS/UX/TraitIcons/Trait_Icon_${iconSetNumber}_${traitName}.tex`
+}
 
 export function communityDragonAssetUrl(assetPath: string) {
-  return `${COMMUNITY_DRAGON_BASE_URL}/${assetPath.toLowerCase().replace('.tex', '.png')}`
+  return `${TFT_ASSET_CONFIG.communityDragonGameBaseUrl}/${assetPath.toLowerCase().replace('.tex', '.png')}`
 }
 
 export function communityDragonProfileIconUrl(profileIconId: number) {
-  return `${COMMUNITY_DRAGON_RAW_BASE_URL}/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${profileIconId}.jpg`
+  return `${TFT_ASSET_CONFIG.communityDragonRawBaseUrl}/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${profileIconId}.jpg`
 }
 
 export function itemsFromUrls(urls: string[]): { imageUrl: string; name: string }[] {
@@ -18,56 +58,52 @@ export function itemsFromUrls(urls: string[]): { imageUrl: string; name: string 
   }))
 }
 
-/**
- * Riot API itemId(예: "TFT_Item_InfinityEdge")로 CDragon 아이템 아이콘 URL 반환
- * Set17 경로 우선 시도, onError에서 set13 fallback 적용 권장
- */
-export function tftItemIconUrl(itemId: string, setTag = 'tft_set17'): string {
+export function tftItemIconUrl(itemId: string, setTag = TFT_ASSET_CONFIG.currentSetTag): string {
   const normalized = itemId.toLowerCase()
-  return `${COMMUNITY_DRAGON_BASE_URL}/assets/maps/tft/icons/items/hexcore/${normalized}.${setTag}.png`
+  return `${TFT_ASSET_CONFIG.communityDragonGameBaseUrl}/assets/maps/tft/icons/items/hexcore/${normalized}.${setTag}.png`
 }
 
-/**
- * tftItemIconUrl의 onError 핸들러 — set17 실패 시 set13 재시도, 그 후 숨김
- */
 export function tftItemIconOnError(e: React.SyntheticEvent<HTMLImageElement>): void {
   const img = e.currentTarget
-  if (img.src.includes('.tft_set17.')) {
-    img.src = img.src.replace('.tft_set17.', '.tft_set13.')
-  } else {
-    img.style.opacity = '0'
+  const currentSetTag = img.src.match(TFT_SET_TAG_PATTERN)?.[0]
+  const fallbackSetTag = `.${TFT_ASSET_CONFIG.fallbackItemSetTag}.`
+
+  if (currentSetTag && currentSetTag.toLowerCase() !== fallbackSetTag) {
+    img.src = img.src.replace(currentSetTag, fallbackSetTag)
+    return
   }
+
+  img.style.opacity = '0'
 }
 
-/**
- * TFT 시너지 traitId(예: "TFT17_Vanguard")로 CDragon 아이콘 URL 반환.
- * 덱 탭에서 검증된 CDN 경로를 단일 소스로 관리한다.
- */
-const TRAIT_ICON_PATHS: Record<string, string> = {
-  TFT17_Vanguard:   'ASSETS/UX/TraitIcons/Trait_Icon_12_Vanguard.TFT_Set12.tex',
-  TFT17_DarkStar:   'ASSETS/UX/TraitIcons/Trait_Icon_17_DarkStar.TFT_Set17.tex',
-  TFT17_Astronaut:  'ASSETS/UX/TraitIcons/Trait_Icon_17_Astronaut.TFT_Set17.tex',
-  TFT17_Rogue:      'ASSETS/UX/TraitIcons/Trait_Icon_17_Rogue.TFT_Set17.tex',
-  TFT17_Stargazer:  'ASSETS/UX/TraitIcons/Trait_Icon_17_Stargazer.TFT_Set17.tex',
-  TFT17_Shepherd:   'ASSETS/UX/TraitIcons/Trait_Icon_17_Shepherd.TFT_Set17.tex',
-  TFT17_Sniper:     'ASSETS/UX/TraitIcons/Trait_Icon_6_Sniper.tex',
-  TFT17_Replicator: 'ASSETS/UX/TraitIcons/Trait_Icon_17_Replicator.TFT_Set17.tex',
-  TFT17_PsyOps:     'ASSETS/UX/TraitIcons/Trait_Icon_17_PsyOps.TFT_Set17.tex',
-  TFT17_Bastion:    'ASSETS/UX/TraitIcons/Trait_Icon_9_Bastion.tex',
+const TRAIT_ICON_PATHS: Readonly<Record<string, string>> = {
+  tft17_vanguard: traitIconPath(12, 'Vanguard'),
+  tft17_darkstar: traitIconPath(17, 'DarkStar'),
+  tft17_astronaut: traitIconPath(17, 'Astronaut'),
+  tft17_rogue: traitIconPath(17, 'Rogue'),
+  tft17_stargazer: traitIconPath(17, 'Stargazer'),
+  tft17_shepherd: traitIconPath(17, 'Shepherd'),
+  tft17_sniper: traitIconPathWithoutSet(6, 'Sniper'),
+  tft17_replicator: traitIconPath(17, 'Replicator'),
+  tft17_psyops: traitIconPath(17, 'PsyOps'),
+  tft17_bastion: traitIconPathWithoutSet(9, 'Bastion'),
 }
 
 export function tftTraitIconUrl(traitId: string): string {
-  const path = TRAIT_ICON_PATHS[traitId]
+  const normalizedTraitId = traitId.trim()
+  const path = TRAIT_ICON_PATHS[normalizedTraitId.toLowerCase()]
   if (path) return communityDragonAssetUrl(path)
-  const traitName = traitId.replace(/^(?:TFT|Set)\d+_/i, '')
-  return communityDragonAssetUrl(`ASSETS/UX/TraitIcons/Trait_Icon_17_${traitName}.TFT_Set17.tex`)
+
+  const setNumber = readTftSetNumber(normalizedTraitId) ?? TFT_ASSET_CONFIG.currentSetNumber
+  const traitName = normalizedTraitId.replace(/^(?:TFT|Set)\d+_/i, '')
+  return communityDragonAssetUrl(traitIconPath(setNumber, traitName))
 }
 
 export function tftChampSquareUrl(apiName: string): string {
-  return communityDragonAssetUrl(`ASSETS/Characters/${apiName}/HUD/${apiName}_Square.TFT_Set17.tex`)
+  return communityDragonAssetUrl(`ASSETS/Characters/${apiName}/HUD/${apiName}_Square.${tftSetFileSuffixFromId(apiName)}.tex`)
 }
 
 export function tftTierEmblemUrl(tier: string): string {
   const t = tier.toLowerCase()
-  return `${COMMUNITY_DRAGON_RAW_BASE_URL}/plugins/rcp-fe-lol-static-assets/global/default/ranked-emblem/emblem-${t}.png`
+  return `${TFT_ASSET_CONFIG.communityDragonRawBaseUrl}/plugins/rcp-fe-lol-static-assets/global/default/ranked-emblem/emblem-${t}.png`
 }

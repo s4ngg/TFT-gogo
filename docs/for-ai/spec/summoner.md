@@ -46,7 +46,7 @@ Detailed human spec: docs/for-humans/spec/summoner.md
 - Champion star level: use Riot API `tier` (int) directly.
 - Trait activation tone: Riot API `style` (0–4) → 0=none, 1=bronze, 2=silver, 3=gold, 4=chromatic.
 - LP change and augments are not provided by Riot API — never fabricate these values.
-- CDragon image fallback: if registered URL missing, auto-generate `Trait_Icon_17_{TraitName}.TFT_Set17.tex` pattern.
+- CDragon image fallback: if registered URL missing, auto-generate trait icon paths from the traitId set number, e.g. `TFT17_Bruiser` -> `Trait_Icon_17_Bruiser.TFT_Set17.tex`.
 - Match list: count 파라미터로 배치 크기 지정 (기본값 20). "더 보기" 버튼 클릭 시 start를 count 단위로 증가. getNextPageParam 조건: lastPage.length > 0이면 다음 페이지 존재로 간주. 200ms 쓰로틀 적용.
 - Game type filter: 전체 / 랭크 / 일반 — applied client-side on fetched match list.
 - Expanding a match row shows all 8 participants: placement, summonerName, stage (last_round → Spring notation), traits, units, kills, gold_left.
