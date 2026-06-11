@@ -54,6 +54,8 @@ function PatchNotes() {
   })
 
   function handlePatchSelect(version: string) {
+    if (version === selectedPatchVersion) return
+
     resetChangeListState()
     setSelectedPatchVersion(version)
   }

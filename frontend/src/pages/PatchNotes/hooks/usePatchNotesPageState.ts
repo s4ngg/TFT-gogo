@@ -43,18 +43,30 @@ export function usePatchNotesPageState({
   )
 
   const setActiveCategoryAndReset = useCallback((category: PatchCategory) => {
-    setActiveCategory(category)
-    resetChangeListState()
+    setActiveCategory((currentCategory) => {
+      if (currentCategory === category) return currentCategory
+
+      resetChangeListState()
+      return category
+    })
   }, [resetChangeListState])
 
   const setActiveChangeTypeAndReset = useCallback((changeType: ChangeTypeFilter) => {
-    setActiveChangeType(changeType)
-    resetChangeListState()
+    setActiveChangeType((currentChangeType) => {
+      if (currentChangeType === changeType) return currentChangeType
+
+      resetChangeListState()
+      return changeType
+    })
   }, [resetChangeListState])
 
   const setQueryAndReset = useCallback((nextQuery: string) => {
-    setQuery(nextQuery)
-    resetChangeListState()
+    setQuery((currentQuery) => {
+      if (currentQuery === nextQuery) return currentQuery
+
+      resetChangeListState()
+      return nextQuery
+    })
   }, [resetChangeListState])
 
   const toggleHighImpactOnly = useCallback(() => {
