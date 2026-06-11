@@ -122,7 +122,7 @@ Page: Guide (/guide).
 <cdragon-augment-data-json>
 - description: sanitized CDragon desc/description/tooltip
 - type: CDragon augmentType/type/category or "공용"
-- tier: S | A | B | C | D, derived from CDragon rarity/tier when available
+- tier: S | A | B | C, derived from CDragon rarity/tier when available
 - tags: CDragon tags or ["CDragon"]
 - reward: "-"
 - avgPlace: cached match average placement or "-"

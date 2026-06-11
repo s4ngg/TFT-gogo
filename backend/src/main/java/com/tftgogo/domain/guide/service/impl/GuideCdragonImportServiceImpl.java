@@ -488,11 +488,17 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         GuideMetricStats guideMetricStats = new GuideMetricStats();
         for (CachedMatch cachedMatch : cachedMatches) {
             try {
-                MatchDto match = MATCH_CACHE_MAPPER.readValue(cachedMatch.getMatchJson(), MatchDto.class);
+                String rawMatchJson = cachedMatch.getMatchJson();
+                if (!hasText(rawMatchJson)) {
+                    logger.warn("Cached match JSON is empty while refreshing guide stats. matchId={}",
+                            cachedMatch.getMatchId());
+                    continue;
+                }
+                MatchDto match = MATCH_CACHE_MAPPER.readValue(rawMatchJson, MatchDto.class);
                 recordMatchMetricStats(match, patchVersion, guideMetricStats);
-            } catch (JsonProcessingException e) {
-                logger.warn("Cached match JSON parse failed while refreshing guide stats. matchId={}",
-                        cachedMatch.getMatchId(), e);
+            } catch (JsonProcessingException | IllegalArgumentException e) {
+                logger.warn("Cached match JSON parse failed while refreshing guide stats. matchId="
+                        + cachedMatch.getMatchId(), e);
             }
         }
         return guideMetricStats;

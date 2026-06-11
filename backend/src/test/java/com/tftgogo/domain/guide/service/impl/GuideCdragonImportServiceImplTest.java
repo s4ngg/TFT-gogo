@@ -196,6 +196,37 @@ class GuideCdragonImportServiceImplTest {
     }
 
     @Test
+    void CDragon_item_import_skips_blank_cached_match_json() {
+        // given
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonJson());
+        when(cachedMatchRepository.findByQueueIdIn(any())).thenReturn(List.of(cachedMatch("   ")));
+        when(guideRepository.findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(Optional.empty());
+        when(guideRepository.existsByGuideTypeAndTargetKeyAndPatchVersion(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(false);
+        when(guideRepository.saveAndFlush(any(Guide.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        guideCdragonImportService.importGuides(request(false, false, true));
+
+        // then
+        ArgumentCaptor<Guide> guideCaptor = ArgumentCaptor.forClass(Guide.class);
+        verify(guideRepository).saveAndFlush(guideCaptor.capture());
+        Guide itemGuide = guideCaptor.getValue();
+        assertThat(itemGuide.getDataJson()).contains("\"avgPlace\":\"-\"");
+        assertThat(itemGuide.getDataJson()).contains("\"pickRate\":\"-\"");
+        assertThat(itemGuide.getDataJson()).contains("\"top4\":\"-\"");
+        assertThat(itemGuide.getDataJson()).contains("\"winRate\":\"-\"");
+    }
+
+    @Test
     void CDragon_일반_증강체만_증강체_가이드로_생성한다() {
         // given
         when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
