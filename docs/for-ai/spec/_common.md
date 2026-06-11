@@ -14,7 +14,7 @@ Loaded alongside every feature spec file. Defines shared utilities, asset helper
 
 <riot-api-proxy>
 - The backend proxies all Riot API calls. Frontend never calls Riot API directly.
-- Riot API rate limit: 100 req / 2 min (Dev key). Design accordingly.
+- Riot API rate limit: 100 req / 2 min (Dev key), 20 req / 1 s. 백엔드 RiotRateLimiter(이중 토큰 버킷)가 모든 Riot API 호출을 중앙에서 제어한다. 프론트엔드는 429 응답을 받을 경우 Retry-After 헤더 기준으로 처리한다.
 - frontend/src/api/riotApi.ts wraps the proxy endpoints.
 </riot-api-proxy>
 

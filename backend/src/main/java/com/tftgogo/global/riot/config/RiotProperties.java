@@ -16,4 +16,8 @@ public class RiotProperties {
     private String asiaBaseUrl = "https://asia.api.riotgames.com";
     private int connectTimeoutMs = 10_000;
     private int readTimeoutMs = 10_000;
+    private int shortRateLimitMax = 20;
+    private long shortRateLimitWindowMs = 1_000L;
+    private int longRateLimitMax = 100;
+    private long longRateLimitWindowMs = 120_000L;
 }

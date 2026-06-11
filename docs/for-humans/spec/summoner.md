@@ -22,13 +22,15 @@
 
 ## 많이 플레이한 시너지 / 챔피언
 
+- 현재 시즌 전체 매치 기록 기반 집계 (더 보기로 불러온 목록과 무관하게 독립적으로 고정)
 - 시너지·챔피언별 게임 수 · 평균 등수 통계 목록
 - Community Dragon CDN 이미지 연동
 
 ---
 
-## 최근 30게임 요약
+## 게임 요약
 
+- 현재까지 불러온 전체 매치 기준으로 집계 (더 보기 클릭 시 실시간 재집계)
 - 순방확률 도넛 차트 (TOP4 비율, CSS `conic-gradient`)
 - 순방확률: `20W 10L (66.7%)` 형식 (4위 이상 = Win, 5~8위 = Loss)
 - 평균 순위: `3.6th / 8`
@@ -94,7 +96,7 @@
 | 4 | tft-match-v1 (IDs) `GET /tft/match/v1/matches/by-puuid/{puuid}/ids` | 매치 ID 목록 |
 | 5 | tft-match-v1 (상세) `GET /tft/match/v1/matches/{matchId}` | 참가자, 유닛, 시너지 등 |
 
-- start 기본값 0, count 기본값 20. 매치 상세 호출 간 200ms 쓰로틀 적용
+- start 기본값 0, count 기본값 20. 모든 Riot API 호출은 이중 토큰 버킷(단기 20req/1s · 장기 100req/2min)으로 rate limit 적용
 - queue_id 1100(랭크) / 1090(일반)만 수집. 하이퍼롤 등 그 외 제외
 - wins = placement ≤ 4 횟수, losses = placement > 4 횟수
 - Riot API의 `win` 필드(1위 여부)는 사용하지 않음 — 반드시 placement로 직접 판정
