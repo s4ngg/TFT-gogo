@@ -561,6 +561,13 @@
   background: rgba(0, 83, 88, 0.54);
 }
 
+.chatStatus {
+  margin: 0 14px 10px;
+  color: #ff7976;
+  font-size: 12px;
+  font-weight: 650;
+}
+
 .chatEmpty {
   margin: auto;
   color: #9ea8b2;
@@ -602,6 +609,12 @@
   display: grid;
   place-items: center;
   padding: 0;
+}
+
+.messageForm button:disabled,
+.messageForm input:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
 }
 
 button:hover {

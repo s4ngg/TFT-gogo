@@ -40,6 +40,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth ->
                         auth
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/decks/meta").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/chat/rooms/*/messages").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/chat/rooms/*/stream").permitAll()
                         .requestMatchers(
                                 "/health",
                                 "/api/v1/auth/login",

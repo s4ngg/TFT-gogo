@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { AppLayout } from '../../components/layout'
 import { partyFilters, type PartyFilter } from './partyFilters'
+import { useChatRoom, type ChatRoomId } from './hooks/useChatRoom'
 import styles from './Party.module.css'
 
 interface PartyPost {
@@ -28,19 +29,14 @@ interface PartyPost {
   tone: 'purple' | 'green' | 'cyan' | 'gold'
 }
 
-interface ChatMessage {
-  isMine?: boolean
-  message: string
-  name: string
-  roomName: string
-  time: string
-  tier: string
+interface ChatRoom {
+  id: ChatRoomId
+  label: string
+  users: string
 }
 
-interface ChatRoom {
+interface ChatRoomWithLastMessage extends ChatRoom {
   lastMessage: string
-  name: string
-  users: string
 }
 
 const initialPartyPosts: PartyPost[] = [
@@ -98,33 +94,14 @@ const initialPartyPosts: PartyPost[] = [
   },
 ]
 
-const initialChatRooms: ChatRoom[] = [
-  { name: '일반', users: '1,234', lastMessage: '새로운 패치 적응 중입니다!' },
-  { name: '덱 공략', users: '856', lastMessage: '증강 추천 부탁드려요' },
-  { name: '파티 모집', users: '622', lastMessage: '마스터 듀오 구해요~' },
-  { name: '질문 & 답변', users: '741', lastMessage: '초보 운영 질문 있습니다' },
+const chatRooms: ChatRoom[] = [
+  { id: 'general', label: '일반', users: '1,234' },
+  { id: 'deck-guide', label: '덱 공략', users: '856' },
+  { id: 'party-recruitment', label: '파티 모집', users: '622' },
+  { id: 'qna', label: '질문 & 답변', users: '741' },
 ]
 
-const chatMessages: ChatMessage[] = [
-  { roomName: '일반', name: '정동글', tier: 'Master', message: '선봉대 벡스 지금도 순방률 괜찮나요?', time: '14:58' },
-  { roomName: '일반', name: '새벽의달', tier: 'Diamond', message: '초반에 벡스 2성만 빨리 붙으면 꽤 안정적이에요.', time: '14:59' },
-  { roomName: '일반', name: '응의자', tier: 'Platinum', message: '아이템은 보건보다 블루 먼저 보는 게 나을까요?', time: '15:00' },
-  { roomName: '일반', name: 'TFTgogo', tier: 'System', message: '17.3 패치 기준 추천 메타가 업데이트되었습니다.', time: '15:01' },
-  {
-    roomName: '일반',
-    name: '나',
-    tier: 'Diamond',
-    message: '파티 모집 쪽에 같이 하실 분 있으면 바로 들어갈게요.',
-    time: '15:02',
-    isMine: true,
-  },
-  { roomName: '덱 공략', name: '운영연습', tier: 'Diamond', message: '전투 증강 첫 선택이면 어떤 조합이 좋아요?', time: '14:54' },
-  { roomName: '덱 공략', name: '메타분석가', tier: 'Master', message: '초반에는 선봉대나 요새 기반으로 피 관리 추천해요.', time: '14:55' },
-  { roomName: '파티 모집', name: '플레러너', tier: 'Platinum', message: '플래티넘 듀오 한 자리 남았습니다.', time: '14:50' },
-  { roomName: '파티 모집', name: '순방중독', tier: 'Master', message: '마스터 이상 저녁 랭크 같이 하실 분?', time: '14:56' },
-  { roomName: '질문 & 답변', name: '입문자', tier: 'Gold', message: '아이템 우선순위는 캐리부터 맞추면 되나요?', time: '14:48' },
-  { roomName: '질문 & 답변', name: '코치봇', tier: 'System', message: '캐리 3신기와 앞라인 탱템 균형을 같이 보는 편이 좋아요.', time: '14:49' },
-]
+const chatRoomIds = chatRooms.map((room) => room.id)
 
 const partyIconMap = {
   crown: Crown,
@@ -133,12 +110,12 @@ const partyIconMap = {
   swords: Swords,
 }
 
-function getCurrentTime() {
+function formatMessageTime(createdAt: string) {
   return new Intl.DateTimeFormat('ko-KR', {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
-  }).format(new Date())
+  }).format(new Date(createdAt))
 }
 
 function normalizeCapacity(value: string) {
@@ -189,13 +166,12 @@ function getPostStyle(mode: Exclude<PartyFilter, '전체'>, tier: string) {
 
 function Party() {
   const [posts, setPosts] = useState<PartyPost[]>(initialPartyPosts)
-  const [rooms, setRooms] = useState<ChatRoom[]>(initialChatRooms)
   const [selectedFilter, setSelectedFilter] = useState<PartyFilter>('전체')
   const [searchDraft, setSearchDraft] = useState('')
   const [query, setQuery] = useState('')
-  const [activeRoomName, setActiveRoomName] = useState(initialChatRooms[0]?.name ?? '일반')
-  const [messages, setMessages] = useState<ChatMessage[]>(chatMessages)
+  const [activeRoomId, setActiveRoomId] = useState<ChatRoomId>(chatRooms[0]?.id ?? 'general')
   const [chatInput, setChatInput] = useState('')
+  const [chatError, setChatError] = useState('')
   const [joinedPostId, setJoinedPostId] = useState<string | null>(null)
   const [titleDraft, setTitleDraft] = useState('')
   const [modeDraft, setModeDraft] = useState<Exclude<PartyFilter, '전체'>>('랭크')
@@ -222,10 +198,22 @@ function Party() {
       return matchesFilter && matchesQuery
     })
   }, [posts, query, selectedFilter])
-  const activeMessages = useMemo(
-    () => messages.filter((message) => message.roomName === activeRoomName),
-    [activeRoomName, messages],
+  const { activeMessages, currentSenderName, isLoading, isSending, messagesByRoom, sendError, sendMessage } =
+    useChatRoom(activeRoomId, chatRoomIds)
+  const rooms = useMemo<ChatRoomWithLastMessage[]>(
+    () =>
+      chatRooms.map((room) => {
+        const roomMessages = messagesByRoom[room.id]
+        const lastMessage = roomMessages[roomMessages.length - 1]?.message ?? '아직 메시지가 없습니다.'
+
+        return {
+          ...room,
+          lastMessage,
+        }
+      }),
+    [messagesByRoom],
   )
+  const activeRoomLabel = chatRooms.find((room) => room.id === activeRoomId)?.label ?? '일반'
 
   const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -295,10 +283,6 @@ function Party() {
     }
 
     const nextCurrent = alreadyJoined ? Math.max(0, current - 1) : Math.min(total, current + 1)
-    const nextMessage = alreadyJoined
-      ? `${targetPost.title} 참여 신청을 취소했어요.`
-      : `${targetPost.title} 참여 신청했습니다. (${nextCurrent}/${total})`
-
     setPosts((currentPosts) =>
       currentPosts.map((post) => {
         if (post.id !== postId) {
@@ -314,51 +298,25 @@ function Party() {
     )
 
     setJoinedPostId(alreadyJoined ? null : postId)
-    setActiveRoomName('파티 모집')
-    setMessages((currentMessages) => [
-      ...currentMessages,
-      {
-        roomName: '파티 모집',
-        name: '나',
-        tier: 'Diamond',
-        message: nextMessage,
-        time: getCurrentTime(),
-        isMine: true,
-      },
-    ])
-    setRooms((currentRooms) =>
-      currentRooms.map((room) =>
-        room.name === '파티 모집' ? { ...room, lastMessage: nextMessage } : room,
-      ),
-    )
+    setActiveRoomId('party-recruitment')
   }
 
-  const handleMessageSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleMessageSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     const trimmedMessage = chatInput.trim()
 
-    if (trimmedMessage.length === 0) {
+    if (trimmedMessage.length === 0 || isSending) {
       return
     }
 
-    setMessages((currentMessages) => [
-      ...currentMessages,
-      {
-        roomName: activeRoomName,
-        name: '나',
-        tier: 'Diamond',
-        message: trimmedMessage,
-        time: getCurrentTime(),
-        isMine: true,
-      },
-    ])
-    setRooms((currentRooms) =>
-      currentRooms.map((room) =>
-        room.name === activeRoomName ? { ...room, lastMessage: trimmedMessage } : room,
-      ),
-    )
-    setChatInput('')
+    try {
+      setChatError('')
+      await sendMessage(trimmedMessage)
+      setChatInput('')
+    } catch {
+      setChatError('메시지를 보내지 못했습니다. 로그인 상태를 확인한 뒤 다시 시도해주세요.')
+    }
   }
 
   return (
@@ -538,13 +496,16 @@ function Party() {
             <aside className={styles.channelList} aria-label="채팅 채널">
               {rooms.map((room) => (
                 <button
-                  aria-pressed={activeRoomName === room.name}
-                  className={activeRoomName === room.name ? styles.activeChannel : undefined}
-                  onClick={() => setActiveRoomName(room.name)}
+                  aria-pressed={activeRoomId === room.id}
+                  className={activeRoomId === room.id ? styles.activeChannel : undefined}
+                  onClick={() => {
+                    setActiveRoomId(room.id)
+                    setChatError('')
+                  }}
                   type="button"
-                  key={room.name}
+                  key={room.id}
                 >
-                  <strong># {room.name}</strong>
+                  <strong># {room.label}</strong>
                   <span>
                     <Users size={14} />
                     {room.users}
@@ -556,9 +517,11 @@ function Party() {
 
             <div className={styles.chatWindow}>
               <div className={styles.chatWindowHeader}>
-                <strong># {activeRoomName}</strong>
+                <strong># {activeRoomLabel}</strong>
                 <span>
-                  {activeMessages.length > 0
+                  {isLoading
+                    ? '메시지를 불러오는 중'
+                    : activeMessages.length > 0
                     ? `새 메시지 ${activeMessages.length}개`
                     : '대화를 시작해보세요'}
                 </span>
@@ -567,13 +530,13 @@ function Party() {
                 {activeMessages.length > 0 ? (
                   activeMessages.map((chat) => (
                     <article
-                      className={chat.isMine ? styles.myMessage : undefined}
-                      key={`${chat.roomName}-${chat.name}-${chat.time}-${chat.message}`}
+                      className={chat.senderName === currentSenderName ? styles.myMessage : undefined}
+                      key={chat.id}
                     >
                       <div>
-                        <strong>{chat.name}</strong>
-                        <span>{chat.tier}</span>
-                        <time>{chat.time}</time>
+                        <strong>{chat.senderName}</strong>
+                        <span>{chat.senderTier}</span>
+                        <time>{formatMessageTime(chat.createdAt)}</time>
                       </div>
                       <p>{chat.message}</p>
                     </article>
@@ -582,15 +545,21 @@ function Party() {
                   <p className={styles.chatEmpty}>아직 이 채널에는 메시지가 없습니다.</p>
                 )}
               </div>
+              {(chatError || sendError) && (
+                <p className={styles.chatStatus}>
+                  {chatError || '채팅 연결 상태가 불안정합니다. 잠시 후 다시 시도해주세요.'}
+                </p>
+              )}
               <form className={styles.messageForm} onSubmit={handleMessageSubmit}>
                 <MessageCircle size={19} />
                 <input
                   aria-label="채팅 메시지 입력"
+                  disabled={isSending}
                   onChange={(event) => setChatInput(event.target.value)}
                   placeholder="메시지를 입력하세요"
                   value={chatInput}
                 />
-                <button type="submit" aria-label="메시지 보내기">
+                <button type="submit" aria-label="메시지 보내기" disabled={isSending}>
                   <Send size={18} />
                 </button>
               </form>
