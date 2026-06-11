@@ -23,6 +23,7 @@ import {
   type CreatePartyPostRequest,
   type PartyMode,
   type PartyPost,
+  type PartyPostsResult,
 } from '../../api/partyApi'
 import styles from './Party.module.css'
 
@@ -118,6 +119,31 @@ function replacePost(posts: PartyPost[], nextPost: PartyPost) {
   return posts.map((post) => (post.id === nextPost.id ? nextPost : post))
 }
 
+function restorePostOverride(
+  overrides: Record<string, PartyPost>,
+  postId: string,
+  previousOverride: PartyPost | undefined,
+) {
+  if (previousOverride) {
+    return {
+      ...overrides,
+      [postId]: previousOverride,
+    }
+  }
+
+  const nextOverrides = { ...overrides }
+  delete nextOverrides[postId]
+
+  return nextOverrides
+}
+
+function removePostOverride(overrides: Record<string, PartyPost>, postId: string) {
+  const nextOverrides = { ...overrides }
+  delete nextOverrides[postId]
+
+  return nextOverrides
+}
+
 function updatePostJoinState(post: PartyPost, isJoining: boolean): PartyPost {
   const { current, total } = parseCapacity(post.capacity)
   const nextCurrent = isJoining ? Math.min(total, current + 1) : Math.max(0, current - 1)
@@ -163,6 +189,7 @@ function Party() {
   const [composeError, setComposeError] = useState('')
   const [partyStatusMessage, setPartyStatusMessage] = useState('')
   const titleInputRef = useRef<HTMLInputElement>(null)
+  const joinRequestPostIdRef = useRef<string | null>(null)
   const partyQuery = useQuery({
     queryKey: ['community', 'parties'],
     queryFn: getPartyPosts,
@@ -174,9 +201,6 @@ function Party() {
   const joinMutation = useMutation({
     mutationFn: ({ postId, isJoining }: { postId: string; isJoining: boolean }) =>
       isJoining ? joinPartyPost(postId) : cancelPartyJoin(postId),
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: ['community', 'parties'] })
-    },
   })
   const posts = useMemo(() => {
     const serverPosts = partyQuery.data?.data ?? fallbackPartyPosts
@@ -291,6 +315,10 @@ function Party() {
   }
 
   const handleJoinToggle = (postId: string) => {
+    if (joinRequestPostIdRef.current !== null || joinMutation.isPending) {
+      return
+    }
+
     const targetPost = posts.find((post) => post.id === postId)
 
     if (!targetPost) {
@@ -299,6 +327,8 @@ function Party() {
 
     joinMutation.reset()
     const alreadyJoined = joinedPostId === postId || targetPost.isJoined === true
+    const previousJoinedPostId = joinedPostId
+    const previousOverride = postOverrides[postId]
     const { current, total } = parseCapacity(targetPost.capacity)
 
     if (!alreadyJoined && (joinedPostId !== null || current >= total)) {
@@ -335,11 +365,33 @@ function Party() {
         room.name === '파티 모집' ? { ...room, lastMessage: nextMessage } : room,
       ),
     )
+    joinRequestPostIdRef.current = postId
     joinMutation.mutate(
       { postId, isJoining: !alreadyJoined },
       {
+        onSuccess: async () => {
+          await queryClient.invalidateQueries({ queryKey: ['community', 'parties'] })
+
+          const refreshedPosts = queryClient.getQueryData<PartyPostsResult>(['community', 'parties'])
+
+          if (refreshedPosts?.source === 'api') {
+            setPostOverrides((currentOverrides) => removePostOverride(currentOverrides, postId))
+          }
+        },
         onError: () => {
-          setPartyStatusMessage('API 연결 실패로 참여 상태는 임시로만 반영됩니다.')
+          setLocalPosts((currentPosts) => replacePost(currentPosts, targetPost))
+          setPostOverrides((currentOverrides) =>
+            restorePostOverride(currentOverrides, postId, previousOverride),
+          )
+          setJoinedPostId(previousJoinedPostId)
+          setPartyStatusMessage('API 연결 실패로 참여 상태를 되돌렸습니다.')
+        },
+        onSettled: (_data, error) => {
+          joinRequestPostIdRef.current = null
+
+          if (error) {
+            void queryClient.invalidateQueries({ queryKey: ['community', 'parties'] })
+          }
         },
       },
     )
@@ -537,7 +589,7 @@ function Party() {
                       type="button"
                       aria-pressed={isJoined}
                       className={styles.joinButton}
-                      disabled={isJoinPending || (isFull && !isJoined) || hasJoinedOtherPost}
+                      disabled={joinMutation.isPending || (isFull && !isJoined) || hasJoinedOtherPost}
                       onClick={() => handleJoinToggle(post.id)}
                     >
                       {isJoinPending ? '처리중' : isJoined ? '참여중' : isFull ? '마감' : hasJoinedOtherPost ? '잠김' : '참여'}
