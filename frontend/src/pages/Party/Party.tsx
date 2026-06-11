@@ -215,6 +215,10 @@ function Party() {
 
     return merged.map((post) => postOverrides[post.id] ?? post)
   }, [localPosts, partyQuery.data?.data, postOverrides])
+  const activeJoinedPostId = useMemo(
+    () => joinedPostId ?? posts.find((post) => post.isJoined === true)?.id ?? null,
+    [joinedPostId, posts],
+  )
   const filteredPartyPosts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
 
@@ -326,12 +330,12 @@ function Party() {
     }
 
     joinMutation.reset()
-    const alreadyJoined = joinedPostId === postId || targetPost.isJoined === true
+    const alreadyJoined = activeJoinedPostId === postId || targetPost.isJoined === true
     const previousJoinedPostId = joinedPostId
     const previousOverride = postOverrides[postId]
     const { current, total } = parseCapacity(targetPost.capacity)
 
-    if (!alreadyJoined && (joinedPostId !== null || current >= total)) {
+    if (!alreadyJoined && (activeJoinedPostId !== null || current >= total)) {
       return
     }
 
@@ -348,28 +352,29 @@ function Party() {
     }))
     setJoinedPostId(alreadyJoined ? null : postId)
     setPartyStatusMessage(nextMessage)
-    setActiveRoomName('파티 모집')
-    setMessages((currentMessages) => [
-      ...currentMessages,
-      {
-        roomName: '파티 모집',
-        name: '나',
-        tier: 'Diamond',
-        message: nextMessage,
-        time: getCurrentTime(),
-        isMine: true,
-      },
-    ])
-    setRooms((currentRooms) =>
-      currentRooms.map((room) =>
-        room.name === '파티 모집' ? { ...room, lastMessage: nextMessage } : room,
-      ),
-    )
     joinRequestPostIdRef.current = postId
     joinMutation.mutate(
       { postId, isJoining: !alreadyJoined },
       {
         onSuccess: async () => {
+          setActiveRoomName('파티 모집')
+          setMessages((currentMessages) => [
+            ...currentMessages,
+            {
+              roomName: '파티 모집',
+              name: '나',
+              tier: 'Diamond',
+              message: nextMessage,
+              time: getCurrentTime(),
+              isMine: true,
+            },
+          ])
+          setRooms((currentRooms) =>
+            currentRooms.map((room) =>
+              room.name === '파티 모집' ? { ...room, lastMessage: nextMessage } : room,
+            ),
+          )
+
           await queryClient.invalidateQueries({ queryKey: ['community', 'parties'] })
 
           const refreshedPosts = queryClient.getQueryData<PartyPostsResult>(['community', 'parties'])
@@ -551,8 +556,8 @@ function Party() {
               filteredPartyPosts.map((post) => {
                 const Icon = partyIconMap[post.icon]
                 const { current, total } = parseCapacity(post.capacity)
-                const isJoined = joinedPostId === post.id || post.isJoined === true
-                const hasJoinedOtherPost = joinedPostId !== null && !isJoined
+                const isJoined = activeJoinedPostId === post.id || post.isJoined === true
+                const hasJoinedOtherPost = activeJoinedPostId !== null && !isJoined
                 const isFull = current >= total
                 const isJoinPending = joinMutation.isPending && joinMutation.variables?.postId === post.id
 
