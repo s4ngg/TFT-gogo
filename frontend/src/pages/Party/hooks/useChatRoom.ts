@@ -80,9 +80,7 @@ export function useChatRoom(activeRoomId: ChatRoomId, roomIds: ChatRoomId[]) {
   )
 
   useEffect(() => {
-    const source = new EventSource(buildChatStreamUrl(activeRoomId), {
-      withCredentials: true,
-    })
+    const source = new EventSource(buildChatStreamUrl(activeRoomId))
 
     source.addEventListener('message', (event) => {
       let parsedMessage: ChatMessage | null = null

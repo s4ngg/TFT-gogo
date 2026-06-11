@@ -47,13 +47,13 @@ public interface ChatControllerDocs {
 
     @Operation(
             summary = "채팅 SSE 구독",
-            description = "roomId 기준 실시간 메시지를 text/event-stream으로 구독합니다. 이벤트 data는 ApiResponse<ChatMessageResponse> 형태입니다."
+            description = "roomId 기준 실시간 메시지를 text/event-stream으로 구독합니다. SSE 응답 특성상 HTTP body는 SseEmitter이며, 이벤트 data는 ApiResponse<ChatMessageResponse> 형태입니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "스트림 연결 성공"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청")
     })
-    SseEmitter stream(
+    ResponseEntity<SseEmitter> stream(
             @Parameter(description = "채팅방 ID", example = "party-recruitment", required = true)
             @PathVariable String roomId
     );

@@ -27,9 +27,9 @@ function createChatAdapter(): AxiosAdapter {
         data: [
           {
             createdAt: '2026-06-11T09:00:00',
-            id: 'general-1',
+            id: 'party-recruitment-1',
             message: '안녕하세요',
-            roomId: 'general',
+            roomId: 'party-recruitment',
             senderName: '소정',
             senderTier: 'Diamond',
             sequence: 1,
@@ -62,6 +62,7 @@ describe('chatApi', () => {
     assert.equal(requestCalls[0]?.method, 'get')
     assert.equal(requestCalls[0]?.url, '/v1/chat/rooms/party-recruitment/messages')
     assert.equal(response[0]?.message, '안녕하세요')
+    assert.equal(response[0]?.roomId, 'party-recruitment')
   })
 
   it('parseChatStreamMessage는 ApiResponse 이벤트 payload를 해석한다', async () => {
@@ -76,7 +77,7 @@ describe('chatApi', () => {
         message: '안녕하세요',
         roomId: 'general',
         senderName: '소정',
-        senderTier: 'Diamond',
+        senderTier: null,
         sequence: 1,
       },
       success: true,
@@ -84,5 +85,6 @@ describe('chatApi', () => {
 
     // then
     assert.equal(response?.id, 'general-1')
+    assert.equal(response?.senderTier, 'Unranked')
   })
 })

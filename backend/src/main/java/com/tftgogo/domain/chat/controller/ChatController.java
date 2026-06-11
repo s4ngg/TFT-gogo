@@ -53,7 +53,7 @@ public class ChatController implements ChatControllerDocs {
 
     @Override
     @GetMapping(value = "/{roomId}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter stream(@PathVariable String roomId) {
-        return chatService.subscribe(roomId);
+    public ResponseEntity<SseEmitter> stream(@PathVariable String roomId) {
+        return ResponseEntity.ok(chatService.subscribe(roomId));
     }
 }

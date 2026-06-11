@@ -5,6 +5,9 @@ import com.tftgogo.domain.chat.dto.response.ChatMessageResponse;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
@@ -16,9 +19,11 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+@ExtendWith(MockitoExtension.class)
 class InMemoryChatServiceTest {
 
-    private final InMemoryChatService chatService = new InMemoryChatService();
+    @InjectMocks
+    private InMemoryChatService chatService;
 
     @Test
     void 빈_채팅방은_빈_목록을_반환한다() {
@@ -123,11 +128,13 @@ class InMemoryChatServiceTest {
         }
 
         boolean completed = latch.await(3, TimeUnit.SECONDS);
-        executorService.shutdownNow();
+        executorService.shutdown();
+        boolean terminated = executorService.awaitTermination(3, TimeUnit.SECONDS);
         List<ChatMessageResponse> response = chatService.getMessages("general", 100);
 
         // then
         assertThat(completed).isTrue();
+        assertThat(terminated).isTrue();
         assertThat(response).hasSize(100);
     }
 

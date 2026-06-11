@@ -314,8 +314,12 @@ function Party() {
       setChatError('')
       await sendMessage(trimmedMessage)
       setChatInput('')
-    } catch {
-      setChatError('메시지를 보내지 못했습니다. 로그인 상태를 확인한 뒤 다시 시도해주세요.')
+    } catch (error) {
+      setChatError(
+        error instanceof Error
+          ? error.message
+          : '메시지를 보내지 못했습니다. 잠시 후 다시 시도해주세요.',
+      )
     }
   }
 

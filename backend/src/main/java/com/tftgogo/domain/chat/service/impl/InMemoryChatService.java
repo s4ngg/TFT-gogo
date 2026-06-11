@@ -27,6 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class InMemoryChatService implements ChatService {
 
     private static final Logger logger = LogManager.getLogger(InMemoryChatService.class);
+    private static final int MAX_ROOMS = 1_000;
     private static final int MAX_MESSAGES = 100;
     private static final long SSE_TIMEOUT_MILLIS = 30L * 60L * 1000L;
     private static final String DEFAULT_TIER = "Unranked";
@@ -36,8 +37,12 @@ public class InMemoryChatService implements ChatService {
 
     @Override
     public List<ChatMessageResponse> getMessages(String roomId, int limit) {
-        RoomState state = getRoomState(roomId);
+        RoomState state = getRoomState(roomId, false);
         int boundedLimit = Math.max(1, Math.min(limit, MAX_MESSAGES));
+
+        if (state == null) {
+            return List.of();
+        }
 
         state.lock.lock();
         try {
@@ -51,7 +56,7 @@ public class InMemoryChatService implements ChatService {
 
     @Override
     public ChatMessageResponse sendMessage(String roomId, ChatMessageRequest request) {
-        RoomState state = getRoomState(roomId);
+        RoomState state = getRoomState(roomId, true);
         ChatMessageResponse response = ChatMessageResponse.of(
                 normalizeRoomId(roomId),
                 normalizeRequired(request.getSenderName()),
@@ -77,7 +82,7 @@ public class InMemoryChatService implements ChatService {
 
     @Override
     public SseEmitter subscribe(String roomId) {
-        RoomState state = getRoomState(roomId);
+        RoomState state = getRoomState(roomId, true);
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MILLIS);
         state.emitters.add(emitter);
 
@@ -98,9 +103,20 @@ public class InMemoryChatService implements ChatService {
         return emitter;
     }
 
-    private RoomState getRoomState(String roomId) {
+    private RoomState getRoomState(String roomId, boolean createIfMissing) {
         String normalizedRoomId = normalizeRoomId(roomId);
-        return rooms.computeIfAbsent(normalizedRoomId, ignored -> new RoomState());
+
+        if (!createIfMissing) {
+            return rooms.get(normalizedRoomId);
+        }
+
+        return rooms.computeIfAbsent(normalizedRoomId, ignored -> {
+            if (rooms.size() >= MAX_ROOMS) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT);
+            }
+
+            return new RoomState();
+        });
     }
 
     private String normalizeRoomId(String roomId) {
