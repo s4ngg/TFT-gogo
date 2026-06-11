@@ -1,4 +1,6 @@
 import { isRecord } from './apiResponse'
+import { getChampionApiName } from './cdragonLocale'
+import { tftChampSquareUrl } from './communityDragonAssets'
 import type { TierBadgeValue, TraitHexBadgeTone } from '../types/badges'
 import { getTotalPages } from './guideFallback'
 import {
@@ -67,6 +69,11 @@ function readImageUrl(entry: GuideEntryResponse, data: Record<string, unknown>) 
   return entry.imageUrl || entry.image_url || readString(data, 'imageUrl') || readString(data, 'image_url')
 }
 
+function normalizeChampionImageUrl(imageUrl: string) {
+  const apiName = getChampionApiName(imageUrl)
+  return apiName ? tftChampSquareUrl(apiName) : imageUrl
+}
+
 function readPatchVersion(entry: GuideEntryResponse) {
   return entry.patchVersion ?? entry.patch_version ?? undefined
 }
@@ -76,7 +83,7 @@ function readChampionRefs(value: unknown): ChampionRef[] {
 
   return value.filter(isRecord).map((championRef) => ({
     cost: readNumber(championRef, 'cost', 1),
-    imageUrl: readString(championRef, 'imageUrl', readString(championRef, 'image_url')),
+    imageUrl: normalizeChampionImageUrl(readString(championRef, 'imageUrl', readString(championRef, 'image_url'))),
     name: readString(championRef, 'name'),
   }))
 }
@@ -383,7 +390,7 @@ function guideEntriesToCatalog(entries: GuideEntryResponse[], fallbackData: Guid
       catalog.champions.push({
         bestItems: readItemRefs(data.bestItems ?? data.best_items),
         cost: readChampionCost(data.cost),
-        imageUrl,
+        imageUrl: normalizeChampionImageUrl(imageUrl),
         name: entry.name,
         position: readString(data, 'position'),
         role: readString(data, 'role'),
