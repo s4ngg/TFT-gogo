@@ -1,6 +1,9 @@
 package com.tftgogo.domain.guide.service.impl;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -11,9 +14,13 @@ import com.tftgogo.domain.guide.entity.Guide;
 import com.tftgogo.domain.guide.entity.GuideType;
 import com.tftgogo.domain.guide.repository.GuideRepository;
 import com.tftgogo.domain.guide.service.GuideCdragonImportService;
+import com.tftgogo.domain.match.entity.CachedMatch;
+import com.tftgogo.domain.match.repository.CachedMatchRepository;
 import com.tftgogo.global.cdragon.config.CommunityDragonProperties;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
+import com.tftgogo.global.riot.dto.MatchDto;
+import com.tftgogo.global.riot.util.TftAssetUrlBuilder;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -26,9 +33,12 @@ import org.springframework.web.client.RestTemplate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Service
@@ -38,9 +48,18 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
     private static final Logger logger = LogManager.getLogger(GuideCdragonImportServiceImpl.class);
     private static final Pattern TAG_PATTERN = Pattern.compile("<[^>]+>");
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("@[^@]+@");
+    private static final Pattern MATCH_PATCH_VERSION_PATTERN = Pattern.compile("(\\d+\\.\\d+[a-zA-Z]?)");
     private static final int PATCH_VERSION_MAX_LENGTH = 20;
+    private static final int BEST_USER_LIMIT = 3;
+    private static final Set<Integer> GUIDE_STAT_QUEUE_IDS = Set.of(1090, 1100);
+    private static final ObjectMapper MATCH_CACHE_MAPPER = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
+            .setVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE)
+            .setVisibility(PropertyAccessor.IS_GETTER, JsonAutoDetect.Visibility.NONE);
 
     private final GuideRepository guideRepository;
+    private final CachedMatchRepository cachedMatchRepository;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final CommunityDragonProperties communityDragonProperties;
@@ -62,6 +81,9 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         JsonNode cdragonData = fetchCdragonData();
         JsonNode setData = findSetData(cdragonData, request.resolveSetNumber(), request.resolveMutator());
         List<JsonNode> champions = readShopChampions(setData, request.resolveSetNumber());
+        GuideMetricStats guideMetricStats = shouldReadGuideMetricStats(request)
+                ? collectGuideMetricStats(patchVersion)
+                : new GuideMetricStats();
 
         List<GuideCandidate> candidates = new ArrayList<>();
         if (request.shouldIncludeChampions()) {
@@ -71,10 +93,10 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             candidates.addAll(toTraitCandidates(setData.path("traits"), champions, patchVersion));
         }
         if (request.shouldIncludeItems()) {
-            candidates.addAll(toItemCandidates(cdragonData.path("items"), patchVersion));
+            candidates.addAll(toItemCandidates(cdragonData.path("items"), patchVersion, guideMetricStats));
         }
         if (request.shouldIncludeAugments()) {
-            candidates.addAll(toAugmentCandidates(setData.path("augments"), patchVersion));
+            candidates.addAll(toAugmentCandidates(setData.path("augments"), patchVersion, guideMetricStats));
         }
 
         ImportCounter counter = new ImportCounter();
@@ -202,7 +224,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         return candidates;
     }
 
-    private List<GuideCandidate> toItemCandidates(JsonNode items, String patchVersion) {
+    private List<GuideCandidate> toItemCandidates(JsonNode items, String patchVersion, GuideMetricStats guideMetricStats) {
         Map<String, JsonNode> itemByApiName = mapItemsByApiName(items);
         List<JsonNode> completedItems = new ArrayList<>();
         for (JsonNode item : items) {
@@ -226,6 +248,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             dataJson.put("pickRate", "-");
             dataJson.put("top4", "-");
             dataJson.put("winRate", "-");
+            applyItemMetricStats(dataJson, item.path("apiName").asText(), guideMetricStats);
 
             candidates.add(new GuideCandidate(
                     GuideType.ITEM,
@@ -300,7 +323,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         return ref;
     }
 
-    private List<GuideCandidate> toAugmentCandidates(JsonNode augments, String patchVersion) {
+    private List<GuideCandidate> toAugmentCandidates(JsonNode augments, String patchVersion, GuideMetricStats guideMetricStats) {
         List<JsonNode> importableAugments = new ArrayList<>();
         for (JsonNode augment : augments) {
             if (isImportableAugment(augment)) {
@@ -324,6 +347,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             dataJson.put("tier", augmentTier(augment));
             dataJson.put("type", augmentType(augment));
             dataJson.put("winRate", "-");
+            applyAugmentMetricStats(dataJson, augment.path("apiName").asText(), guideMetricStats);
 
             candidates.add(new GuideCandidate(
                     GuideType.AUGMENT,
@@ -449,6 +473,189 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             }
         }
         return 0;
+    }
+
+    private boolean shouldReadGuideMetricStats(GuideCdragonImportRequest request) {
+        return request.shouldIncludeItems() || request.shouldIncludeAugments();
+    }
+
+    private GuideMetricStats collectGuideMetricStats(String patchVersion) {
+        List<CachedMatch> cachedMatches = cachedMatchRepository.findByQueueIdIn(GUIDE_STAT_QUEUE_IDS);
+        if (cachedMatches == null || cachedMatches.isEmpty()) {
+            return new GuideMetricStats();
+        }
+
+        GuideMetricStats guideMetricStats = new GuideMetricStats();
+        for (CachedMatch cachedMatch : cachedMatches) {
+            try {
+                String rawMatchJson = cachedMatch.getMatchJson();
+                if (!hasText(rawMatchJson)) {
+                    logger.warn("Cached match JSON is empty while refreshing guide stats. matchId={}",
+                            cachedMatch.getMatchId());
+                    continue;
+                }
+                MatchDto match = MATCH_CACHE_MAPPER.readValue(rawMatchJson, MatchDto.class);
+                recordMatchMetricStats(match, patchVersion, guideMetricStats);
+            } catch (JsonProcessingException | IllegalArgumentException e) {
+                logger.warn("Cached match JSON parse failed while refreshing guide stats. matchId="
+                        + cachedMatch.getMatchId(), e);
+            }
+        }
+        return guideMetricStats;
+    }
+
+    private void recordMatchMetricStats(MatchDto match, String patchVersion, GuideMetricStats guideMetricStats) {
+        if (match == null || match.getInfo() == null || match.getInfo().getParticipants() == null) {
+            return;
+        }
+        if (!patchVersion.equals(normalizeMatchPatchVersion(match.getInfo().getGame_version()))) {
+            return;
+        }
+
+        for (MatchDto.ParticipantDto participant : match.getInfo().getParticipants()) {
+            int placement = participant.getPlacement();
+            if (placement < 1 || placement > 8) {
+                continue;
+            }
+
+            guideMetricStats.totalParticipants++;
+            recordItemMetricStats(participant, guideMetricStats, placement);
+            recordAugmentMetricStats(participant, guideMetricStats, placement);
+        }
+    }
+
+    private void recordItemMetricStats(
+            MatchDto.ParticipantDto participant,
+            GuideMetricStats guideMetricStats,
+            int placement
+    ) {
+        if (participant.getUnits() == null) {
+            return;
+        }
+
+        Set<String> recordedItemKeys = new HashSet<>();
+        for (MatchDto.UnitDto unit : participant.getUnits()) {
+            if (unit.getItemNames() == null) {
+                continue;
+            }
+
+            for (String itemName : unit.getItemNames()) {
+                String itemKey = normalizeMetricKey(itemName);
+                if (!hasText(itemKey)) {
+                    continue;
+                }
+
+                GuideMetricStat itemStat = guideMetricStats.itemStats.computeIfAbsent(itemKey, ignored -> new GuideMetricStat());
+                if (recordedItemKeys.add(itemKey)) {
+                    itemStat.record(placement);
+                }
+                itemStat.recordChampion(unit);
+            }
+        }
+    }
+
+    private void recordAugmentMetricStats(
+            MatchDto.ParticipantDto participant,
+            GuideMetricStats guideMetricStats,
+            int placement
+    ) {
+        if (participant.getAugments() == null) {
+            return;
+        }
+
+        Set<String> recordedAugmentKeys = new HashSet<>();
+        for (String augment : participant.getAugments()) {
+            String augmentKey = normalizeMetricKey(augment);
+            if (hasText(augmentKey) && recordedAugmentKeys.add(augmentKey)) {
+                guideMetricStats.augmentStats
+                        .computeIfAbsent(augmentKey, ignored -> new GuideMetricStat())
+                        .record(placement);
+            }
+        }
+    }
+
+    private void applyItemMetricStats(ObjectNode dataJson, String targetKey, GuideMetricStats guideMetricStats) {
+        GuideMetricStat metricStat = guideMetricStats.itemStats.get(normalizeMetricKey(targetKey));
+        if (metricStat == null || metricStat.count == 0) {
+            return;
+        }
+
+        applyPlacementMetrics(dataJson, metricStat, guideMetricStats.totalParticipants);
+        dataJson.set("bestUsers", toBestUserRefs(metricStat));
+    }
+
+    private void applyAugmentMetricStats(ObjectNode dataJson, String targetKey, GuideMetricStats guideMetricStats) {
+        GuideMetricStat metricStat = guideMetricStats.augmentStats.get(normalizeMetricKey(targetKey));
+        if (metricStat == null || metricStat.count == 0) {
+            return;
+        }
+
+        applyPlacementMetrics(dataJson, metricStat, guideMetricStats.totalParticipants);
+    }
+
+    private void applyPlacementMetrics(ObjectNode dataJson, GuideMetricStat metricStat, int totalParticipants) {
+        dataJson.put("avgPlace", formatNumber(metricStat.avgPlacement()));
+        dataJson.put("pickRate", formatPercent(metricStat.pickRate(totalParticipants)));
+        dataJson.put("winRate", formatPercent(metricStat.winRate()));
+        if (dataJson.has("top4")) {
+            dataJson.put("top4", formatPercent(metricStat.top4Rate()));
+        }
+    }
+
+    private ArrayNode toBestUserRefs(GuideMetricStat metricStat) {
+        ArrayNode bestUsers = objectMapper.createArrayNode();
+        metricStat.championStats.values().stream()
+                .sorted(Comparator.comparingInt(ChampionMetricStat::count).reversed()
+                        .thenComparing(ChampionMetricStat::name))
+                .limit(BEST_USER_LIMIT)
+                .forEach(championStat -> {
+                    ObjectNode championRef = objectMapper.createObjectNode();
+                    championRef.put("cost", championStat.cost());
+                    championRef.put("imageUrl", TftAssetUrlBuilder.buildChampionImageUrl(championStat.characterId()));
+                    championRef.put("name", championStat.name());
+                    bestUsers.add(championRef);
+                });
+        return bestUsers;
+    }
+
+    private String normalizeMatchPatchVersion(String gameVersion) {
+        if (!hasText(gameVersion)) {
+            return "";
+        }
+        Matcher matcher = MATCH_PATCH_VERSION_PATTERN.matcher(gameVersion);
+        return matcher.find() ? matcher.group(1) : "";
+    }
+
+    private String normalizeMetricKey(String value) {
+        return hasText(value) ? value.trim().toLowerCase(Locale.ROOT) : "";
+    }
+
+    private String formatNumber(double value) {
+        return String.format(Locale.ROOT, "%.2f", value);
+    }
+
+    private String formatPercent(double value) {
+        return String.format(Locale.ROOT, "%.1f%%", value);
+    }
+
+    private String displayName(MatchDto.UnitDto unit) {
+        if (hasText(unit.getName())) {
+            return unit.getName();
+        }
+        String characterId = unit.getCharacter_id();
+        int separatorIndex = characterId == null ? -1 : characterId.lastIndexOf('_');
+        return separatorIndex >= 0 ? characterId.substring(separatorIndex + 1) : characterId;
+    }
+
+    private int rarityToCost(int rarity) {
+        return switch (rarity) {
+            case 0 -> 1;
+            case 1 -> 2;
+            case 2 -> 3;
+            case 4 -> 4;
+            case 6 -> 5;
+            default -> 1;
+        };
     }
 
     private ObjectNode toChampionStats(JsonNode stats) {
@@ -712,6 +919,97 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
 
     private boolean hasText(String value) {
         return value != null && !value.trim().isEmpty();
+    }
+
+    private class GuideMetricStats {
+        private final Map<String, GuideMetricStat> itemStats = new HashMap<>();
+        private final Map<String, GuideMetricStat> augmentStats = new HashMap<>();
+        private int totalParticipants;
+    }
+
+    private class GuideMetricStat {
+        private final Map<String, ChampionMetricStat> championStats = new HashMap<>();
+        private int count;
+        private int wins;
+        private int top4;
+        private double totalPlacement;
+
+        private void record(int placement) {
+            count++;
+            totalPlacement += placement;
+            if (placement == 1) {
+                wins++;
+            }
+            if (placement <= 4) {
+                top4++;
+            }
+        }
+
+        private void recordChampion(MatchDto.UnitDto unit) {
+            if (unit == null || !hasText(unit.getCharacter_id())) {
+                return;
+            }
+
+            championStats
+                    .computeIfAbsent(
+                            unit.getCharacter_id(),
+                            ignored -> new ChampionMetricStat(
+                                    unit.getCharacter_id(),
+                                    displayName(unit),
+                                    rarityToCost(unit.getRarity())
+                            )
+                    )
+                    .record();
+        }
+
+        private double avgPlacement() {
+            return count == 0 ? 0 : totalPlacement / count;
+        }
+
+        private double pickRate(int totalParticipants) {
+            return totalParticipants == 0 ? 0 : (double) count / totalParticipants * 100;
+        }
+
+        private double winRate() {
+            return count == 0 ? 0 : (double) wins / count * 100;
+        }
+
+        private double top4Rate() {
+            return count == 0 ? 0 : (double) top4 / count * 100;
+        }
+    }
+
+    private static class ChampionMetricStat {
+        private final String characterId;
+        private final String name;
+        private final int cost;
+        private int count;
+
+        private ChampionMetricStat(String characterId, String name, int cost) {
+            this.characterId = characterId;
+            this.name = name;
+            this.cost = cost;
+        }
+
+        private void record() {
+            count++;
+        }
+
+        private String characterId() {
+            return characterId;
+        }
+
+        private String name() {
+            return name;
+        }
+
+        private int cost() {
+            return cost;
+        }
+
+        private int count() {
+            return count;
+        }
     }
 
     private record GuideCandidate(

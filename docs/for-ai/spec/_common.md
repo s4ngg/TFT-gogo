@@ -10,6 +10,8 @@ Loaded alongside every feature spec file. Defines shared utilities, asset helper
 - All champion/trait/item images must be fetched via helpers in frontend/src/api/communityDragonAssets.ts.
 - Do NOT hardcode CDragon CDN URLs inside components or API files.
 - Locale handling is in frontend/src/api/cdragonLocale.ts.
+- TFT set-specific values such as `tft_set17`, `TFT_Set17`, and trait icon set numbers must be derived from the shared asset helpers/config where possible.
+- Backend CDragon URLs should use `TftAssetUrlBuilder` and `TftAssetConfig` rather than duplicating set tags or CDN base URLs in feature code.
 </cdragon>
 
 <riot-api-proxy>

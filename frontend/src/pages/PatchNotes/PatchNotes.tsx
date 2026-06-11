@@ -8,6 +8,7 @@ import PatchPagination from './components/PatchPagination'
 import PatchSideRail from './components/PatchSideRail'
 import PatchStatusBanner from './components/PatchStatusBanner'
 import PatchSummaryGrid from './components/PatchSummaryGrid'
+import { usePatchChangesPage } from './hooks/usePatchChangesPage'
 import { usePatchNotesPageState } from './hooks/usePatchNotesPageState'
 import styles from './PatchNotes.module.css'
 
@@ -25,14 +26,11 @@ function PatchNotes() {
   const {
     activeCategory,
     activeChangeType,
-    changeStats,
-    changesPage,
     expandedChangeIds,
     highImpactOnly,
-    patchChanges,
-    patchChangesQuery,
+    patchChangesParams,
     query,
-    safePage,
+    resetChangeListState,
     setActiveCategory,
     setActiveChangeType,
     setCurrentPage,
@@ -40,10 +38,27 @@ function PatchNotes() {
     toggleExpandedChange,
     toggleHighImpactOnly,
   } = usePatchNotesPageState({
-    fallbackData: patchNotesFallbackData,
-    patchHistory,
     selectedPatchVersion,
   })
+  const {
+    changeStats,
+    changesPage,
+    patchChanges,
+    patchChangesQuery,
+    safePage,
+  } = usePatchChangesPage({
+    fallbackData: patchNotesFallbackData,
+    onPageOutOfRange: setCurrentPage,
+    params: patchChangesParams,
+    patchHistory,
+  })
+
+  function handlePatchSelect(version: string) {
+    if (version === selectedPatchVersion) return
+
+    resetChangeListState()
+    setSelectedPatchVersion(version)
+  }
 
   return (
     <AppLayout>
@@ -92,7 +107,7 @@ function PatchNotes() {
           </section>
 
           <PatchSideRail
-            onPatchSelect={setSelectedPatchVersion}
+            onPatchSelect={handlePatchSelect}
             patchHistory={patchHistory}
             selectedPatch={selectedPatch}
             selectedPatchVersion={selectedPatchVersion}
