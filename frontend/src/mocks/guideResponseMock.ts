@@ -1,4 +1,4 @@
-﻿import { communityDragonAssetUrl } from '../api/communityDragonAssets'
+﻿import { communityDragonAssetUrl, tftChampSquareUrl } from '../api/communityDragonAssets'
 import {
   CHAMPION_PAGE_SIZE,
   DEFAULT_GUIDE_PAGE_SIZE,
@@ -29,50 +29,32 @@ const traitIconUrls = {
 }
 
 const championUrls = {
-  akali: communityDragonAssetUrl('ASSETS/Characters/TFT17_Akali/Skins/Base/Images/TFT17_Akali_splash_tile_68.TFT_Set17.tex'),
-  aurelionSol: communityDragonAssetUrl(
-    'ASSETS/Characters/TFT17_AurelionSol/Skins/Base/Images/TFT17_AurelionSol_splash_tile_2.TFT_Set17.tex',
-  ),
-  aurora: communityDragonAssetUrl(
-    'ASSETS/Characters/TFT17_Aurora/Skins/Base/Images/TFT17_Aurora_splash_tile_1.TFT_Set17.tex',
-  ),
-  bard: communityDragonAssetUrl('ASSETS/Characters/TFT17_Bard/Skins/Base/Images/TFT17_Bard_splash_tile_8.TFT_Set17.tex'),
-  belveth: communityDragonAssetUrl(
-    'ASSETS/Characters/TFT17_Belveth/Skins/Base/Images/TFT17_Belveth_splash_tile_19.TFT_Set17.tex',
-  ),
-  blitzcrank: communityDragonAssetUrl(
-    'ASSETS/Characters/TFT17_Blitzcrank/Skins/Base/Images/TFT17_Blitzcrank_splash_tile_65.TFT_Set17.tex',
-  ),
-  briar: communityDragonAssetUrl(
-    'ASSETS/Characters/TFT17_Briar/Skins/Base/Images/TFT17_Briar_splash_tile_10.TFT_Set17.tex',
-  ),
-  corki: communityDragonAssetUrl('ASSETS/Characters/TFT17_Corki/Skins/Base/Images/TFT17_Corki_splash_tile_26.TFT_Set17.tex'),
-  illaoi: communityDragonAssetUrl(
-    'ASSETS/Characters/TFT17_Illaoi/Skins/Base/Images/TFT17_Illaoi_splash_tile_27.TFT_Set17.tex',
-  ),
-  jhin: communityDragonAssetUrl('ASSETS/Characters/TFT17_Jhin/Skins/Base/Images/TFT17_Jhin_splash_tile_37.TFT_Set17.tex'),
-  jinx: communityDragonAssetUrl('ASSETS/Characters/TFT17_Jinx/Skins/Base/Images/TFT17_Jinx_splash_tile_38.TFT_Set17.tex'),
-  kaisa: communityDragonAssetUrl('ASSETS/Characters/TFT17_Kaisa/Skins/Base/Images/TFT17_Kaisa_splash_tile_69.TFT_Set17.tex'),
-  karma: communityDragonAssetUrl('ASSETS/Characters/TFT17_Karma/Skins/Base/Images/TFT17_Karma_splash_tile_8.TFT_Set17.tex'),
-  lulu: communityDragonAssetUrl('ASSETS/Characters/TFT17_Lulu/Skins/Base/Images/TFT17_Lulu_splash_tile_14.TFT_Set17.tex'),
-  masterYi: communityDragonAssetUrl(
-    'ASSETS/Characters/TFT17_MasterYi/Skins/Base/Images/TFT17_MasterYi_splash_tile_33.TFT_Set17.tex',
-  ),
-  nami: communityDragonAssetUrl('ASSETS/Characters/TFT17_Nami/Skins/Base/Images/TFT17_Nami_splash_tile_41.TFT_Set17.tex'),
-  ornn: communityDragonAssetUrl('ASSETS/Characters/TFT17_Ornn/Skins/Base/Images/TFT17_Ornn_splash_tile_11.TFT_Set17.tex'),
-  poppy: communityDragonAssetUrl('ASSETS/Characters/TFT17_Poppy/Skins/Base/Images/TFT17_Poppy_splash_tile_16.TFT_Set17.tex'),
-  pyke: communityDragonAssetUrl('ASSETS/Characters/TFT17_Pyke/Skins/Base/Images/TFT17_Pyke_splash_tile_25.TFT_Set17.tex'),
-  rammus: communityDragonAssetUrl(
-    'ASSETS/Characters/TFT17_Rammus/Skins/Base/Images/TFT17_Rammus_splash_tile_17.TFT_Set17.tex',
-  ),
-  shen: communityDragonAssetUrl('ASSETS/Characters/TFT17_Shen/Skins/Base/Images/TFT17_shen_splash_tile_49.TFT_Set17.tex'),
-  sona: communityDragonAssetUrl('ASSETS/Characters/TFT17_Sona/Skins/Base/Images/TFT17_Sona_splash_tile_17.TFT_Set17.tex'),
-  vex: communityDragonAssetUrl('ASSETS/Characters/TFT17_Vex/Skins/Base/Images/TFT17_vex_splash_tile_10.TFT_Set17.tex'),
-  viktor: communityDragonAssetUrl(
-    'ASSETS/Characters/TFT17_Viktor/Skins/Base/Images/TFT17_Viktor_splash_tile_5.TFT_Set17.tex',
-  ),
-  xayah: communityDragonAssetUrl('ASSETS/Characters/TFT17_Xayah/Skins/Base/Images/TFT17_Xayah_splash_tile_1.TFT_Set17.tex'),
-  zed: communityDragonAssetUrl('ASSETS/Characters/TFT17_Zed/Skins/Base/Images/TFT17_Zed_splash_tile_68.TFT_Set17.tex'),
+  akali: tftChampSquareUrl('TFT17_Akali'),
+  aurelionSol: tftChampSquareUrl('TFT17_AurelionSol'),
+  aurora: tftChampSquareUrl('TFT17_Aurora'),
+  bard: tftChampSquareUrl('TFT17_Bard'),
+  belveth: tftChampSquareUrl('TFT17_Belveth'),
+  blitzcrank: tftChampSquareUrl('TFT17_Blitzcrank'),
+  briar: tftChampSquareUrl('TFT17_Briar'),
+  corki: tftChampSquareUrl('TFT17_Corki'),
+  illaoi: tftChampSquareUrl('TFT17_Illaoi'),
+  jhin: tftChampSquareUrl('TFT17_Jhin'),
+  jinx: tftChampSquareUrl('TFT17_Jinx'),
+  kaisa: tftChampSquareUrl('TFT17_Kaisa'),
+  karma: tftChampSquareUrl('TFT17_Karma'),
+  lulu: tftChampSquareUrl('TFT17_Lulu'),
+  masterYi: tftChampSquareUrl('TFT17_MasterYi'),
+  nami: tftChampSquareUrl('TFT17_Nami'),
+  ornn: tftChampSquareUrl('TFT17_Ornn'),
+  poppy: tftChampSquareUrl('TFT17_Poppy'),
+  pyke: tftChampSquareUrl('TFT17_Pyke'),
+  rammus: tftChampSquareUrl('TFT17_Rammus'),
+  shen: tftChampSquareUrl('TFT17_Shen'),
+  sona: tftChampSquareUrl('TFT17_Sona'),
+  vex: tftChampSquareUrl('TFT17_Vex'),
+  viktor: tftChampSquareUrl('TFT17_Viktor'),
+  xayah: tftChampSquareUrl('TFT17_Xayah'),
+  zed: tftChampSquareUrl('TFT17_Zed'),
 }
 
 const itemUrls = {

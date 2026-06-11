@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import {
   AlertTriangle,
   ChevronLeft,
@@ -46,6 +47,43 @@ interface LinkedChampionMiniProps {
 interface ItemIconStripProps {
   items: ItemRef[]
   onItemSelect?: (itemName: string) => void
+}
+
+interface GuideChampionImageProps {
+  decorative?: boolean
+  imageUrl?: string
+  name: string
+}
+
+export function GuideChampionImage({
+  decorative = false,
+  imageUrl,
+  name,
+}: GuideChampionImageProps) {
+  const [imageFailed, setImageFailed] = useState(false)
+
+  useEffect(() => {
+    setImageFailed(false)
+  }, [imageUrl])
+
+  if (!imageUrl || imageFailed) {
+    return (
+      <span
+        aria-hidden={decorative || undefined}
+        className={styles.championImageFallback}
+      >
+        {name.trim().charAt(0) || '?'}
+      </span>
+    )
+  }
+
+  return (
+    <img
+      alt={decorative ? '' : name}
+      src={imageUrl}
+      onError={() => setImageFailed(true)}
+    />
+  )
 }
 
 export function EmptyState() {
@@ -170,7 +208,7 @@ export function LinkedChampionMini({
       title={`${champion.name} 챔피언 보기`}
       type="button"
     >
-      <img src={champion.imageUrl} alt={champion.name} />
+      <GuideChampionImage imageUrl={champion.imageUrl} name={champion.name} />
       <span>{champion.name}</span>
       <b>{champion.cost}</b>
     </button>

@@ -1008,7 +1008,7 @@ button.championMini:hover {
   object-fit: cover;
 }
 
-.championPortrait span {
+.championCostBadge {
   position: absolute;
   right: 4px;
   bottom: 4px;
@@ -1188,6 +1188,50 @@ button.championMini:hover {
   border: 2px solid rgba(249, 200, 96, 0.62);
   border-radius: 9px;
   object-fit: cover;
+}
+
+.championImageFallback {
+  display: inline-grid;
+  place-items: center;
+  color: var(--gold);
+  background: var(--bg-card-soft);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.championMini .championImageFallback {
+  width: 29px;
+  height: 29px;
+  border-radius: 5px;
+  font-size: var(--font-size-xs);
+}
+
+.avatarButton .championImageFallback {
+  width: 100%;
+  height: 100%;
+  border-radius: 5px;
+  font-size: var(--font-size-xs);
+}
+
+.championPortrait .championImageFallback {
+  width: 100%;
+  height: 100%;
+  font-size: 24px;
+}
+
+.tooltipTop .championImageFallback {
+  width: 44px;
+  height: 44px;
+  border-radius: 7px;
+  font-size: var(--font-size-sm);
+}
+
+.dialogHero .championImageFallback {
+  width: 74px;
+  height: 74px;
+  border: 2px solid rgba(249, 200, 96, 0.62);
+  border-radius: 9px;
+  font-size: 24px;
 }
 
 .dialogHero strong {

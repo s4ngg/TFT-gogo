@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef } from 'react'
 import { Star, X } from 'lucide-react'
 import type { ChampionGuide } from '../../../api/guide'
-import { ItemIconStrip } from './GuideShared'
+import { GuideChampionImage, ItemIconStrip } from './GuideShared'
 import styles from '../Guide.module.css'
 
 interface ChampionDetailDialogProps {
@@ -54,7 +54,7 @@ function ChampionDetailDialog({
           <X size={17} />
         </button>
         <div className={styles.dialogHero}>
-          <img src={champion.imageUrl} alt={champion.name} />
+          <GuideChampionImage imageUrl={champion.imageUrl} name={champion.name} />
           <div>
             <strong id={titleId}>{champion.name}</strong>
             <span>{champion.role}</span>

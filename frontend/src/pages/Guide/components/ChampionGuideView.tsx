@@ -14,6 +14,7 @@ import {
 import ChampionDetailDialog from './ChampionDetailDialog'
 import {
   EmptyState,
+  GuideChampionImage,
   GuidePagination,
   GuideStatusBanner,
   ItemIconStrip,
@@ -122,8 +123,8 @@ function ChampionGuideView({
               <Star size={14} />
             </button>
             <div className={styles.championPortrait}>
-              <img src={championGuide.imageUrl} alt={championGuide.name} />
-              <span>{championGuide.cost}</span>
+              <GuideChampionImage imageUrl={championGuide.imageUrl} name={championGuide.name} />
+              <span className={styles.championCostBadge}>{championGuide.cost}</span>
             </div>
             <div className={styles.championInfo}>
               <strong>{championGuide.name}</strong>
@@ -132,7 +133,7 @@ function ChampionGuideView({
             <ItemIconStrip items={championGuide.bestItems} onItemSelect={onItemSelect} />
             <div className={styles.championTooltip} role="tooltip">
               <div className={styles.tooltipTop}>
-                <img src={championGuide.imageUrl} alt="" />
+                <GuideChampionImage decorative imageUrl={championGuide.imageUrl} name={championGuide.name} />
                 <div>
                   <strong>{championGuide.name}</strong>
                   <span>{championGuide.traits.join(' / ')}</span>
