@@ -52,6 +52,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
     private static final Pattern MATCH_PATCH_VERSION_PATTERN = Pattern.compile("(\\d+\\.\\d+[a-zA-Z]?)");
     private static final int PATCH_VERSION_MAX_LENGTH = 20;
     private static final int BEST_USER_LIMIT = 3;
+    // cached_match can grow quickly, so guide metric imports only sample recent matches.
     private static final int GUIDE_STAT_MATCH_LIMIT = 500;
     private static final Set<Integer> GUIDE_STAT_QUEUE_IDS = Set.of(1090, 1100);
     private static final ObjectMapper MATCH_CACHE_MAPPER = new ObjectMapper()
