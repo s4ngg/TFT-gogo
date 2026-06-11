@@ -167,6 +167,20 @@ function getDefaultDeadlineInput() {
   return `${year}-${month}-${day}T${hour}:${minute}`
 }
 
+function formatDeadlineForRequest(value: string) {
+  const trimmedValue = value.trim()
+
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(trimmedValue)) {
+    return `${trimmedValue}:00`
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(trimmedValue)) {
+    return trimmedValue
+  }
+
+  return null
+}
+
 function Party() {
   const queryClient = useQueryClient()
   const [localPosts, setLocalPosts] = useState<PartyPost[]>([])
@@ -178,7 +192,7 @@ function Party() {
   const [activeRoomName, setActiveRoomName] = useState(initialChatRooms[0]?.name ?? '일반')
   const [messages, setMessages] = useState<ChatMessage[]>(chatMessages)
   const [chatInput, setChatInput] = useState('')
-  const [joinedPostId, setJoinedPostId] = useState<string | null>(null)
+  const [joinedPostId, setJoinedPostId] = useState<string | null | undefined>(undefined)
   const [titleDraft, setTitleDraft] = useState('')
   const [modeDraft, setModeDraft] = useState<PartyMode>('랭크')
   const [tierDraft, setTierDraft] = useState('마스터+')
@@ -216,7 +230,11 @@ function Party() {
     return merged.map((post) => postOverrides[post.id] ?? post)
   }, [localPosts, partyQuery.data?.data, postOverrides])
   const activeJoinedPostId = useMemo(
-    () => joinedPostId ?? posts.find((post) => post.isJoined === true)?.id ?? null,
+    () => (
+      joinedPostId !== undefined
+        ? joinedPostId
+        : posts.find((post) => post.isJoined === true)?.id ?? null
+    ),
     [joinedPostId, posts],
   )
   const filteredPartyPosts = useMemo(() => {
@@ -259,14 +277,14 @@ function Party() {
 
     const title = titleDraft.trim()
     const description = descriptionDraft.trim()
-    const deadline = new Date(deadlineDraft)
+    const deadline = formatDeadlineForRequest(deadlineDraft)
 
     if (!title || !description) {
       setComposeError('모집글 제목과 플레이 스타일을 입력해주세요.')
       return
     }
 
-    if (Number.isNaN(deadline.getTime())) {
+    if (deadline === null) {
       setComposeError('마감 시간을 선택해주세요.')
       return
     }
@@ -282,7 +300,7 @@ function Party() {
       mode: modeDraft,
       tier: tierDraft,
       capacity,
-      deadline: deadline.toISOString(),
+      deadline,
       description,
       tags: parsedTags,
     }
@@ -330,7 +348,7 @@ function Party() {
     }
 
     joinMutation.reset()
-    const alreadyJoined = activeJoinedPostId === postId || targetPost.isJoined === true
+    const alreadyJoined = activeJoinedPostId === postId
     const previousJoinedPostId = joinedPostId
     const previousOverride = postOverrides[postId]
     const { current, total } = parseCapacity(targetPost.capacity)
@@ -379,7 +397,7 @@ function Party() {
 
           const refreshedPosts = queryClient.getQueryData<PartyPostsResult>(['community', 'parties'])
 
-          if (refreshedPosts?.source === 'api') {
+          if (refreshedPosts?.source === 'api' && !alreadyJoined) {
             setPostOverrides((currentOverrides) => removePostOverride(currentOverrides, postId))
           }
         },
@@ -556,7 +574,7 @@ function Party() {
               filteredPartyPosts.map((post) => {
                 const Icon = partyIconMap[post.icon]
                 const { current, total } = parseCapacity(post.capacity)
-                const isJoined = activeJoinedPostId === post.id || post.isJoined === true
+                const isJoined = activeJoinedPostId === post.id
                 const hasJoinedOtherPost = activeJoinedPostId !== null && !isJoined
                 const isFull = current >= total
                 const isJoinPending = joinMutation.isPending && joinMutation.variables?.postId === post.id

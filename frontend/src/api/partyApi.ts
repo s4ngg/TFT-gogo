@@ -68,6 +68,11 @@ type PartyPostsPayload = PartyPostResponse[] | {
   partyPosts?: PartyPostResponse[]
 }
 
+interface PartyListPayloadResult {
+  isValid: boolean
+  posts: PartyPostResponse[]
+}
+
 export const fallbackPartyPosts: PartyPost[] = [
   {
     id: 'party-master-duo',
@@ -239,14 +244,28 @@ function toGameMode(mode: PartyMode) {
   return 'RANKED_TFT'
 }
 
-function readPartyListPayload(payload: unknown): PartyPostResponse[] {
-  if (Array.isArray(payload)) return payload.filter((item): item is PartyPostResponse => isRecord(item))
-  if (!isRecord(payload)) return []
+function readPartyPostArray(value: unknown[]): PartyListPayloadResult {
+  const posts = value.filter((item): item is PartyPostResponse => isRecord(item))
+
+  return {
+    isValid: posts.length === value.length,
+    posts,
+  }
+}
+
+function readPartyListPayload(payload: unknown): PartyListPayloadResult {
+  if (Array.isArray(payload)) {
+    return readPartyPostArray(payload)
+  }
+
+  if (!isRecord(payload)) {
+    return { isValid: false, posts: [] }
+  }
 
   const candidates = [payload.content, payload.items, payload.parties, payload.partyPosts]
   const list = candidates.find(Array.isArray)
 
-  return Array.isArray(list) ? list.filter((item): item is PartyPostResponse => isRecord(item)) : []
+  return Array.isArray(list) ? readPartyPostArray(list) : { isValid: false, posts: [] }
 }
 
 function hasFailedApiResponse(payload: unknown) {
@@ -302,11 +321,15 @@ export async function getPartyPosts(): Promise<PartyPostsResult> {
     }
 
     const payload = unwrapApiResponse(data)
-    const posts = readPartyListPayload(payload).map(normalizePartyPost)
+    const payloadResult = readPartyListPayload(payload)
 
-    return posts.length > 0
-      ? { data: posts, source: 'api' }
-      : { data: fallbackPartyPosts, source: 'fallback' }
+    if (!payloadResult.isValid) {
+      return { data: fallbackPartyPosts, source: 'fallback' }
+    }
+
+    const posts = payloadResult.posts.map(normalizePartyPost)
+
+    return { data: posts, source: 'api' }
   } catch {
     return { data: fallbackPartyPosts, source: 'fallback' }
   }
