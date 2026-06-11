@@ -1,24 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   CHANGE_TYPE_FILTERS,
   PATCH_CATEGORIES,
-  type PatchNoteDetail,
   type ChangeTypeFilter,
+  type PatchChangesQuery,
   type PatchCategory,
 } from '../../../api/patchNotes'
-import { usePatchChanges } from '../../../hooks/usePatchNotes'
 
 const PATCH_PAGE_SIZE = 5
 
 interface UsePatchNotesPageStateOptions {
-  fallbackData: PatchNoteDetail[]
-  patchHistory: PatchNoteDetail[]
   selectedPatchVersion: string
 }
 
 export function usePatchNotesPageState({
-  fallbackData,
-  patchHistory,
   selectedPatchVersion,
 }: UsePatchNotesPageStateOptions) {
   const [activeCategory, setActiveCategory] = useState<PatchCategory>(PATCH_CATEGORIES[0])
@@ -27,9 +22,15 @@ export function usePatchNotesPageState({
   const [expandedChangeIds, setExpandedChangeIds] = useState<number[]>([])
   const [query, setQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
-  const patchChangesQuery = usePatchChanges({
-    fallbackData: patchHistory.length > 0 ? patchHistory : fallbackData,
-    params: {
+  const selectedPatchVersionRef = useRef(selectedPatchVersion)
+
+  const resetChangeListState = useCallback(() => {
+    setCurrentPage((page) => (page === 1 ? page : 1))
+    setExpandedChangeIds((currentIds) => (currentIds.length === 0 ? currentIds : []))
+  }, [])
+
+  const patchChangesParams = useMemo<PatchChangesQuery>(
+    () => ({
       category: activeCategory,
       changeType: activeChangeType,
       highImpactOnly,
@@ -37,55 +38,58 @@ export function usePatchNotesPageState({
       pageSize: PATCH_PAGE_SIZE,
       query,
       version: selectedPatchVersion,
-    },
-  })
-  const changesPage = patchChangesQuery.data.data
-  const patchChanges = changesPage.items
-  const changeStats = changesPage.stats
-  const safePage = Math.max(1, Math.min(currentPage, changesPage.totalPages))
+    }),
+    [activeCategory, activeChangeType, currentPage, highImpactOnly, query, selectedPatchVersion],
+  )
 
-  function toggleHighImpactOnly() {
+  const setActiveCategoryAndReset = useCallback((category: PatchCategory) => {
+    setActiveCategory(category)
+    resetChangeListState()
+  }, [resetChangeListState])
+
+  const setActiveChangeTypeAndReset = useCallback((changeType: ChangeTypeFilter) => {
+    setActiveChangeType(changeType)
+    resetChangeListState()
+  }, [resetChangeListState])
+
+  const setQueryAndReset = useCallback((nextQuery: string) => {
+    setQuery(nextQuery)
+    resetChangeListState()
+  }, [resetChangeListState])
+
+  const toggleHighImpactOnly = useCallback(() => {
     setHighImpactOnly((enabled) => !enabled)
-  }
+    resetChangeListState()
+  }, [resetChangeListState])
 
-  function toggleExpandedChange(id: number) {
+  const toggleExpandedChange = useCallback((id: number) => {
     setExpandedChangeIds((currentIds) => (
       currentIds.includes(id)
         ? currentIds.filter((currentId) => currentId !== id)
         : [...currentIds, id]
     ))
-  }
+  }, [])
 
   useEffect(() => {
-    setCurrentPage(1)
-    setExpandedChangeIds([])
-  }, [activeCategory, activeChangeType, highImpactOnly, query, selectedPatchVersion])
+    if (selectedPatchVersionRef.current === selectedPatchVersion) return
 
-  useEffect(() => {
-    if (changesPage.totalPages < 1) {
-      if (currentPage !== 1) setCurrentPage(1)
-      return
-    }
-
-    if (currentPage > changesPage.totalPages) setCurrentPage(changesPage.totalPages)
-  }, [changesPage.totalPages, currentPage])
+    selectedPatchVersionRef.current = selectedPatchVersion
+    resetChangeListState()
+  }, [resetChangeListState, selectedPatchVersion])
 
   return {
     activeCategory,
     activeChangeType,
-    changeStats,
-    changesPage,
     currentPage,
     expandedChangeIds,
     highImpactOnly,
-    patchChanges,
-    patchChangesQuery,
+    patchChangesParams,
     query,
-    safePage,
-    setActiveCategory,
-    setActiveChangeType,
+    resetChangeListState,
+    setActiveCategory: setActiveCategoryAndReset,
+    setActiveChangeType: setActiveChangeTypeAndReset,
     setCurrentPage,
-    setQuery,
+    setQuery: setQueryAndReset,
     toggleExpandedChange,
     toggleHighImpactOnly,
   }
