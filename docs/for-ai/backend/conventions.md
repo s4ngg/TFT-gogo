@@ -15,6 +15,7 @@
 <response>
 - All API responses must use ApiResponse&lt;T&gt;.
 - Return type: ResponseEntity&lt;ApiResponse&lt;T&gt;&gt;
+- SSE streaming endpoints may return ResponseEntity&lt;SseEmitter&gt; directly so Spring can keep the event stream open; each emitted event data should still use ApiResponse&lt;T&gt;.
 - Success: ApiResponse.success("message", data)
 - Failure: ApiResponse.fail("message", HttpStatus)
 </response>
