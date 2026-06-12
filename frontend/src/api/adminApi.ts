@@ -142,6 +142,148 @@ interface ApiResponse<T> {
   data: T
 }
 
+export type AdminPatchChangeCategory = 'CHAMPION' | 'TRAIT' | 'ITEM' | 'AUGMENT' | 'SYSTEM'
+export type AdminPatchChangeType = 'BUFF' | 'NERF' | 'ADJUST' | 'NEW'
+export type AdminPatchChangeImpact = 'HIGH' | 'MEDIUM' | 'LOW'
+
+export interface AdminPatchNote {
+  changeCount: number
+  description: string | null
+  focus: string | null
+  highlights: string[]
+  id: number
+  imageUrl: string | null
+  isCurrent: boolean
+  publishedAt: string
+  summary: string
+  title: string
+  version: string
+}
+
+export interface AdminPatchNotePayload {
+  current: boolean
+  description: string | null
+  focus: string | null
+  highlights: string[]
+  imageUrl: string | null
+  publishedAt: string
+  summary: string
+  title: string
+  version: string
+}
+
+export interface AdminPatchChange {
+  afterValue: string | null
+  beforeValue: string | null
+  category: AdminPatchChangeCategory
+  id: number
+  imageUrl: string | null
+  impact: AdminPatchChangeImpact
+  summary: string
+  tags: string[]
+  targetKey: string
+  targetName: string
+  type: AdminPatchChangeType
+}
+
+export interface AdminPatchChangePayload {
+  afterValue: string | null
+  beforeValue: string | null
+  category: AdminPatchChangeCategory
+  imageUrl: string | null
+  impact: AdminPatchChangeImpact
+  patchNoteId: number
+  sortOrder: number
+  summary: string
+  tags: string[]
+  targetKey: string
+  targetName: string
+  type: AdminPatchChangeType
+}
+
+interface AdminPatchChangePage {
+  items: AdminPatchChange[]
+  page: number
+  pageSize: number
+  totalItems: number
+  totalPages: number
+}
+
+export async function fetchAdminPatchNotes(): Promise<AdminPatchNote[]> {
+  const { data } = await axiosInstance.get<ApiResponse<AdminPatchNote[]>>('/admin/patch-notes', {
+    headers: adminHeaders(),
+  })
+  return data.data
+}
+
+export async function createAdminPatchNote(payload: AdminPatchNotePayload): Promise<AdminPatchNote> {
+  const { data } = await axiosInstance.post<ApiResponse<AdminPatchNote>>('/admin/patch-notes', payload, {
+    headers: adminHeaders(),
+  })
+  return data.data
+}
+
+export async function updateAdminPatchNote(
+  patchNoteId: number,
+  payload: AdminPatchNotePayload,
+): Promise<AdminPatchNote> {
+  const { data } = await axiosInstance.patch<ApiResponse<AdminPatchNote>>(
+    `/admin/patch-notes/${patchNoteId}`,
+    payload,
+    {
+      headers: adminHeaders(),
+    },
+  )
+  return data.data
+}
+
+export async function deleteAdminPatchNote(patchNoteId: number): Promise<void> {
+  await axiosInstance.delete(`/admin/patch-notes/${patchNoteId}`, {
+    headers: adminHeaders(),
+  })
+}
+
+export async function fetchAdminPatchChanges(
+  version: string,
+  page = 1,
+  pageSize = 100,
+): Promise<AdminPatchChangePage> {
+  const { data } = await axiosInstance.get<ApiResponse<AdminPatchChangePage>>(
+    `/patch-notes/${encodeURIComponent(version)}/changes`,
+    {
+      params: { page, pageSize },
+    },
+  )
+  return data.data
+}
+
+export async function createAdminPatchChange(payload: AdminPatchChangePayload): Promise<AdminPatchChange> {
+  const { data } = await axiosInstance.post<ApiResponse<AdminPatchChange>>('/admin/patch-note-changes', payload, {
+    headers: adminHeaders(),
+  })
+  return data.data
+}
+
+export async function updateAdminPatchChange(
+  changeId: number,
+  payload: AdminPatchChangePayload,
+): Promise<AdminPatchChange> {
+  const { data } = await axiosInstance.patch<ApiResponse<AdminPatchChange>>(
+    `/admin/patch-note-changes/${changeId}`,
+    payload,
+    {
+      headers: adminHeaders(),
+    },
+  )
+  return data.data
+}
+
+export async function deleteAdminPatchChange(changeId: number): Promise<void> {
+  await axiosInstance.delete(`/admin/patch-note-changes/${changeId}`, {
+    headers: adminHeaders(),
+  })
+}
+
 export async function importGuideCdragonData(
   payload: GuideCdragonImportRequest,
 ): Promise<GuideImportResponse> {

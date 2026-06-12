@@ -1,0 +1,373 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+
+.header,
+.panelHeader,
+.footerActions,
+.actions,
+.actionsEnd,
+.changeActions,
+.changeItemHeader,
+.changeTitleRow {
+  display: flex;
+  align-items: center;
+}
+
+.header {
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--accent);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.successBanner,
+.errorBanner {
+  padding: 12px 14px;
+  border-radius: var(--radius-button);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.successBanner {
+  color: var(--success);
+  background: var(--tone-gold-bg);
+  border: 1px solid var(--tone-gold-border);
+}
+
+.errorBanner {
+  color: var(--danger);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.85fr) minmax(420px, 1.4fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  padding: 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+}
+
+.panelHeader {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.panelTitle {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.panelHint {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.primaryButton,
+.secondaryButton,
+.dangerButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: var(--radius-button);
+  font-size: var(--font-size-sm);
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.primaryButton {
+  color: var(--bg-main);
+  background: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.secondaryButton {
+  color: var(--text-ui);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+}
+
+.dangerButton {
+  color: var(--danger);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.dangerButton:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.actions {
+  gap: 8px;
+}
+
+.actionsEnd {
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.noteList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.noteItem {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 4px 10px;
+  width: 100%;
+  padding: 12px;
+  text-align: left;
+  background: var(--bg-main);
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-button);
+  cursor: pointer;
+}
+
+.noteItemActive {
+  border-color: var(--accent);
+  background: var(--cyan-bg-faint);
+}
+
+.noteVersion {
+  grid-row: span 2;
+  color: var(--accent);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.noteTitle {
+  overflow: hidden;
+  color: var(--text-main);
+  font-size: var(--font-size-sm);
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.noteMeta {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.field span,
+.checkboxField {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-button);
+  background: var(--bg-main);
+  color: var(--text-ui);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+}
+
+.field input,
+.field select {
+  height: 36px;
+  padding: 0 10px;
+}
+
+.field textarea {
+  min-height: 78px;
+  padding: 10px;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.checkboxField {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkboxField input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+.changeLayout {
+  display: grid;
+  grid-template-columns: minmax(420px, 1fr) minmax(320px, 0.9fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.changeForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.changeList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  max-height: 680px;
+  overflow-y: auto;
+}
+
+.changeItem {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-button);
+}
+
+.changeItemHeader {
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.changeTitleRow {
+  gap: 6px;
+  min-width: 0;
+  color: var(--text-main);
+}
+
+.changeTitleRow strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.changeBadges,
+.changeValues {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.changeSummary {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: var(--font-size-sm);
+  line-height: 1.55;
+}
+
+.changeValues {
+  margin: 0;
+}
+
+.changeActions {
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.emptyText {
+  margin: 0;
+  padding: 24px 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+.footerActions {
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 1040px) {
+  .grid,
+  .changeLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: 24px 12px;
+  }
+
+  .header,
+  .panelHeader,
+  .footerActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .primaryButton,
+  .secondaryButton,
+  .dangerButton {
+    width: 100%;
+  }
+}
