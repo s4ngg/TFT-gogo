@@ -24,15 +24,42 @@ export function isCompleteItem(key: string): boolean {
 // level → (imageUrl → CellPos)
 export type LevelBoards = Map<number, Map<string, CellPos>>
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isCellPos(value: unknown): value is CellPos {
+  if (!isRecord(value)) return false
+  const { row, col, items } = value
+  const hasValidItems = items === undefined || (Array.isArray(items) && items.every((item) => typeof item === 'string'))
+
+  return typeof row === 'number' && typeof col === 'number' && hasValidItems
+}
+
+function readCellPositions(value: unknown): Record<string, CellPos> | null {
+  if (!isRecord(value)) return null
+
+  const entries = Object.entries(value)
+  if (entries.some(([, cellPos]) => !isCellPos(cellPos))) {
+    return null
+  }
+
+  return Object.fromEntries(entries) as Record<string, CellPos>
+}
+
 export function parseLevelBoards(json: string | null | undefined): LevelBoards {
   if (!json) return new Map()
   try {
-    const obj = JSON.parse(json) as Record<string, Record<string, CellPos>>
+    const obj = JSON.parse(json) as unknown
+    if (!isRecord(obj)) return new Map()
+
     const result: LevelBoards = new Map()
     for (const [k, posObj] of Object.entries(obj)) {
       const lv = Number(k)
-      if (BOARD_LEVELS.includes(lv))
-        result.set(lv, new Map(Object.entries(posObj)))
+      const positions = readCellPositions(posObj)
+      if (BOARD_LEVELS.includes(lv) && positions) {
+        result.set(lv, new Map(Object.entries(positions)))
+      }
     }
     return result
   } catch { return new Map() }
@@ -45,8 +72,6 @@ export function serializeLevelBoards(boards: LevelBoards): string | null {
   })
   return Object.keys(obj).length > 0 ? JSON.stringify(obj) : null
 }
-
-/* ── 배치판 편집 모달 ── */
 
 export function buildKoreanName(deck: AdminDeck, locale: TFTLocale | undefined): string {
   if (!locale) return deck.autoName

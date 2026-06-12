@@ -21,6 +21,7 @@ export function useAdminDecks(rankFilter: RankFilter) {
 
       return currentDecks.map((deck) => (deck.id === updated.id ? { ...deck, ...updated } : deck))
     })
+    void queryClient.invalidateQueries({ queryKey })
   }
 
   return {

@@ -15,6 +15,7 @@ export default function PlayGuideModal({ deck, onClose, onSave }: PlayGuideModal
   }
   const [guide, setGuide] = useState<PlayGuide>(initial)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   function patch(key: keyof PlayGuide, value: string) {
     setGuide((g) => ({ ...g, [key]: value }))
@@ -22,11 +23,14 @@ export default function PlayGuideModal({ deck, onClose, onSave }: PlayGuideModal
 
   async function handleSave() {
     setSaving(true)
+    setSaveError('')
     const isEmpty = !guide.early.trim() && !guide.mid.trim() && !guide.late.trim()
     const json = isEmpty ? null : JSON.stringify(guide)
     try {
       await onSave(json)
       onClose()
+    } catch {
+      setSaveError('운영방법 저장에 실패했습니다. 다시 시도해 주세요.')
     } finally {
       setSaving(false)
     }
@@ -58,6 +62,16 @@ export default function PlayGuideModal({ deck, onClose, onSave }: PlayGuideModal
         </div>
 
         <div className={styles.modalFooter}>
+          {saveError && (
+            <span
+              className={styles.saveErrorMsg}
+              role="alert"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              {saveError}
+            </span>
+          )}
           <button className={styles.resetBtn} onClick={() => setGuide({ early: '', mid: '', late: '' })}>
             전체 초기화
           </button>
@@ -69,5 +83,3 @@ export default function PlayGuideModal({ deck, onClose, onSave }: PlayGuideModal
     </div>
   )
 }
-
-/* ── 영웅 증강 편집 모달 ── */

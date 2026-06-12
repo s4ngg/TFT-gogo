@@ -20,6 +20,7 @@ interface DeckRowState {
   boardEditorOpen: boolean
   guideEditorOpen: boolean
   heroAugEditorOpen: boolean
+  saveError: string
 }
 
 
@@ -33,10 +34,11 @@ export default function DeckRow({ deck, onSaved, locale }: { deck: AdminDeck; on
     boardEditorOpen: false,
     guideEditorOpen: false,
     heroAugEditorOpen: false,
+    saveError: '',
   })
 
   function markDirty(patch: Partial<DeckRowState>) {
-    setState((s) => ({ ...s, ...patch, dirty: true }))
+    setState((s) => ({ ...s, ...patch, dirty: true, saveError: '' }))
   }
 
   function buildRequest(
@@ -56,46 +58,72 @@ export default function DeckRow({ deck, onSaved, locale }: { deck: AdminDeck; on
   }
 
   async function handleSave() {
-    setState((s) => ({ ...s, saving: true }))
+    setState((s) => ({ ...s, saving: true, saveError: '' }))
     try {
       const updated = await updateDeckCuration(deck.id, buildRequest())
       onSaved(updated)
       setState((s) => ({ ...s, dirty: false, saving: false }))
     } catch {
-      setState((s) => ({ ...s, saving: false }))
-      alert('저장 실패')
+      setState((s) => ({
+        ...s,
+        saving: false,
+        saveError: '덱 큐레이션 저장에 실패했습니다. 다시 시도해 주세요.',
+      }))
+    }
+  }
+
+  async function saveCuration(
+    boardPositions?: string | null,
+    playGuide?: string | null,
+    heroAugments?: string | null,
+  ) {
+    setState((s) => ({ ...s, saveError: '' }))
+    try {
+      const updated = await updateDeckCuration(deck.id, buildRequest(boardPositions, playGuide, heroAugments))
+      onSaved(updated)
+    } catch {
+      const message = '덱 큐레이션 저장에 실패했습니다. 다시 시도해 주세요.'
+      setState((s) => ({ ...s, saveError: message }))
+      throw new Error(message)
     }
   }
 
   async function handleBoardSave(boardPositionsJson: string | null) {
-    const updated = await updateDeckCuration(deck.id, buildRequest(boardPositionsJson))
-    onSaved(updated)
+    await saveCuration(boardPositionsJson)
   }
 
   async function handleGuideSave(playGuideJson: string | null) {
-    const updated = await updateDeckCuration(deck.id, buildRequest(undefined, playGuideJson))
-    onSaved(updated)
+    await saveCuration(undefined, playGuideJson)
   }
 
   async function handleHeroAugSave(heroAugmentsJson: string | null) {
-    const updated = await updateDeckCuration(deck.id, buildRequest(undefined, undefined, heroAugmentsJson))
-    onSaved(updated)
+    await saveCuration(undefined, undefined, heroAugmentsJson)
   }
 
   async function handleReset() {
     if (!confirm('큐레이션을 초기화하고 자동 이름으로 되돌릴까요?')) return
-    await resetDeckCuration(deck.id)
-    setState({
-      customName: '',
-      hidden: false,
-      sortPriority: '',
-      dirty: false,
-      saving: false,
-      boardEditorOpen: false,
-      guideEditorOpen: false,
-      heroAugEditorOpen: false,
-    })
-    onSaved({ ...deck, customName: null, displayName: deck.autoName, hidden: false, sortPriority: null, boardPositions: null, playGuide: null, heroAugments: null })
+    setState((s) => ({ ...s, saving: true, saveError: '' }))
+    try {
+      await resetDeckCuration(deck.id)
+      setState({
+        customName: '',
+        hidden: false,
+        sortPriority: '',
+        dirty: false,
+        saving: false,
+        boardEditorOpen: false,
+        guideEditorOpen: false,
+        heroAugEditorOpen: false,
+        saveError: '',
+      })
+      onSaved({ ...deck, customName: null, displayName: deck.autoName, hidden: false, sortPriority: null, boardPositions: null, playGuide: null, heroAugments: null })
+    } catch {
+      setState((s) => ({
+        ...s,
+        saving: false,
+        saveError: '큐레이션 초기화에 실패했습니다. 다시 시도해 주세요.',
+      }))
+    }
   }
 
   return (
@@ -171,6 +199,16 @@ export default function DeckRow({ deck, onSaved, locale }: { deck: AdminDeck; on
           </button>
           {(deck.customName != null || deck.hidden || deck.sortPriority != null) && (
             <button className={styles.resetBtn} onClick={handleReset}>초기화</button>
+          )}
+          {state.saveError && (
+            <span
+              className={styles.saveErrorMsg}
+              role="alert"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              {state.saveError}
+            </span>
           )}
         </td>
       </tr>

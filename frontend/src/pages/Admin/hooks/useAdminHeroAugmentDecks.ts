@@ -32,8 +32,11 @@ export function useAdminHeroAugmentDecks() {
 
   return {
     decks: decksQuery.data ?? [],
+    error: decksQuery.error,
+    isError: decksQuery.isError,
     isLoading: decksQuery.isLoading,
     removeDeck,
+    refetch: decksQuery.refetch,
     upsertDeck,
   }
 }

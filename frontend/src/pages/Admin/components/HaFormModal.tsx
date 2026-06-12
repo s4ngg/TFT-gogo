@@ -100,7 +100,10 @@ export default function HaFormModal({ initial, onClose, onSaved }: HaFormModalPr
           type="number"
           className={styles.textInput}
           value={payload.sortOrder}
-          onChange={(e) => patch('sortOrder', Number(e.target.value))}
+          onChange={(e) => {
+            const nextSortOrder = Number.parseInt(e.target.value, 10)
+            patch('sortOrder', Number.isFinite(nextSortOrder) ? nextSortOrder : 0)
+          }}
         />
 
         <label className={styles.fieldLabel}>영웅증강 JSON</label>

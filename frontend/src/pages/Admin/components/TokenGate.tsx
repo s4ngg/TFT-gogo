@@ -47,5 +47,3 @@ export default function TokenGate({ onSuccess }: { onSuccess: () => void }) {
     </div>
   )
 }
-
-/* ── 운영방법 편집 모달 ── */

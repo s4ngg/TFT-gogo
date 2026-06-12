@@ -29,6 +29,7 @@ export default function BoardEditorModal({ deck, locale, onClose, onSave }: Boar
   const [editingItemsFor, setEditingItemsFor] = useState<string | null>(null) // apiName
   const [itemSearch, setItemSearch] = useState('')
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const [levelBoards, setLevelBoards] = useState<LevelBoards>(() => parseLevelBoards(deck.boardPositions))
 
   // CDragon 아이템 목록
@@ -147,10 +148,15 @@ export default function BoardEditorModal({ deck, locale, onClose, onSave }: Boar
 
   async function handleSave() {
     setSaving(true)
+    setSaveError('')
     try {
       await onSave(serializeLevelBoards(levelBoards))
       onClose()
-    } finally { setSaving(false) }
+    } catch {
+      setSaveError('배치판 저장에 실패했습니다. 다시 시도해 주세요.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -309,6 +315,16 @@ export default function BoardEditorModal({ deck, locale, onClose, onSave }: Boar
         </div>
 
         <div className={styles.modalFooter}>
+          {saveError && (
+            <span
+              className={styles.saveErrorMsg}
+              role="alert"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              {saveError}
+            </span>
+          )}
           <button className={styles.resetBtn} onClick={() => setPosMap(() => new Map())}>
             Lv.{activeLevel} 초기화
           </button>
