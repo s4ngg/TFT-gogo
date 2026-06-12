@@ -16,8 +16,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -35,10 +37,13 @@ public class CommunityPartyServiceImpl implements CommunityPartyService {
         String normalizedQuery = normalizeQuery(query);
         PageRequest pageRequest = PageRequest.of(0, PARTY_POST_PAGE_SIZE);
 
-        return partyPostRepository.search(gameMode, normalizedQuery, pageRequest)
-                .getContent()
+        List<PartyPost> partyPosts = partyPostRepository.search(gameMode, normalizedQuery, pageRequest)
+                .getContent();
+        Set<Long> joinedPartyPostIds = getJoinedPartyPostIds(partyPosts, userId);
+
+        return partyPosts
                 .stream()
-                .map(partyPost -> PartyPostResponse.from(partyPost, isJoined(partyPost, userId)))
+                .map(partyPost -> PartyPostResponse.from(partyPost, isJoined(partyPost, userId, joinedPartyPostIds)))
                 .toList();
     }
 
@@ -99,12 +104,33 @@ public class CommunityPartyServiceImpl implements CommunityPartyService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.PARTY_POST_NOT_FOUND));
     }
 
-    private boolean isJoined(PartyPost partyPost, Long userId) {
+    private boolean isJoined(PartyPost partyPost, Long userId, Set<Long> joinedPartyPostIds) {
         if (userId == null) {
             return false;
         }
 
-        return partyPost.isOwner(userId) || hasAcceptedApplication(partyPost, userId);
+        return partyPost.isOwner(userId)
+                || (partyPost.getId() != null && joinedPartyPostIds.contains(partyPost.getId()));
+    }
+
+    private Set<Long> getJoinedPartyPostIds(List<PartyPost> partyPosts, Long userId) {
+        if (userId == null || partyPosts.isEmpty()) {
+            return Set.of();
+        }
+
+        List<Long> partyPostIds = partyPosts.stream()
+                .map(PartyPost::getId)
+                .filter(id -> id != null)
+                .toList();
+        if (partyPostIds.isEmpty()) {
+            return Set.of();
+        }
+
+        return new HashSet<>(partyApplicationRepository.findPartyPostIdsByUserIdAndStatus(
+                userId,
+                PartyApplicationStatus.ACCEPTED,
+                partyPostIds
+        ));
     }
 
     private boolean hasAcceptedApplication(PartyPost partyPost, Long userId) {

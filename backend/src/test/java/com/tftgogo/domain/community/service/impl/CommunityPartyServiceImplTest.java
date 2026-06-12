@@ -49,11 +49,11 @@ class CommunityPartyServiceImplTest {
         PageRequest pageRequest = PageRequest.of(0, 50);
         when(partyPostRepository.search(PartyGameMode.RANKED_TFT, "마스터", pageRequest))
                 .thenReturn(new PageImpl<>(List.of(partyPost)));
-        when(partyApplicationRepository.existsByPartyPostAndUserIdAndStatus(
-                partyPost,
+        when(partyApplicationRepository.findPartyPostIdsByUserIdAndStatus(
                 2L,
-                PartyApplicationStatus.ACCEPTED
-        )).thenReturn(true);
+                PartyApplicationStatus.ACCEPTED,
+                List.of(1L)
+        )).thenReturn(List.of(1L));
 
         // when
         List<PartyPostResponse> response = communityPartyService.getPartyPosts("랭크", " 마스터 ", 2L);
@@ -70,6 +70,11 @@ class CommunityPartyServiceImplTest {
                 )
                 .containsExactly("마스터 듀오 구합니다", "RANKED_TFT", "랭크", "1/2", true);
         verify(partyPostRepository).search(PartyGameMode.RANKED_TFT, "마스터", pageRequest);
+        verify(partyApplicationRepository).findPartyPostIdsByUserIdAndStatus(
+                2L,
+                PartyApplicationStatus.ACCEPTED,
+                List.of(1L)
+        );
     }
 
     @Test

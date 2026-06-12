@@ -20,6 +20,7 @@ import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -71,6 +72,7 @@ public class PartyPost {
     private LocalDateTime deletedAt;
 
     @ElementCollection
+    @BatchSize(size = 50)
     @CollectionTable(name = "party_post_tags", joinColumns = @JoinColumn(name = "party_post_id"))
     @OrderColumn(name = "tag_order")
     @Column(name = "tag", length = 30)
