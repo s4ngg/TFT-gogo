@@ -143,14 +143,14 @@ function toPatchNoteForm(note: AdminPatchNote): PatchNoteFormState {
   }
 }
 
-function toPatchChangeForm(change: AdminPatchChange, sortOrder: number): PatchChangeFormState {
+function toPatchChangeForm(change: AdminPatchChange): PatchChangeFormState {
   return {
     afterValue: change.afterValue ?? '',
     beforeValue: change.beforeValue ?? '',
     category: change.category,
     imageUrl: change.imageUrl ?? '',
     impact: change.impact,
-    sortOrder: String(sortOrder),
+    sortOrder: String(change.sortOrder),
     summary: change.summary,
     tags: joinLines(change.tags),
     targetKey: change.targetKey,
@@ -365,10 +365,10 @@ function AdminPatchNotesManager() {
     })
   }
 
-  function startEditPatchChange(change: AdminPatchChange, index: number) {
+  function startEditPatchChange(change: AdminPatchChange) {
     clearNotice()
     setEditingChangeId(change.id)
-    setPatchChangeForm(toPatchChangeForm(change, index))
+    setPatchChangeForm(toPatchChangeForm(change))
   }
 
   async function handlePatchNoteSubmit(event: FormEvent<HTMLFormElement>) {
@@ -760,7 +760,7 @@ function AdminPatchNotesManager() {
             ) : patchChanges.length === 0 ? (
               <p className={styles.emptyText}>등록된 변경사항이 없습니다.</p>
             ) : (
-              patchChanges.map((change, index) => (
+              patchChanges.map((change) => (
                 <article key={change.id} className={styles.changeItem}>
                   <div className={styles.changeItemHeader}>
                     <div className={styles.changeTitleRow}>
@@ -781,7 +781,7 @@ function AdminPatchNotesManager() {
                     <button
                       className={styles.secondaryButton}
                       type="button"
-                      onClick={() => startEditPatchChange(change, index)}
+                      onClick={() => startEditPatchChange(change)}
                     >
                       <Edit3 size={15} />
                       수정

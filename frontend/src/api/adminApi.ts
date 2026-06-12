@@ -179,6 +179,7 @@ export interface AdminPatchChange {
   id: number
   imageUrl: string | null
   impact: AdminPatchChangeImpact
+  sortOrder: number
   summary: string
   tags: string[]
   targetKey: string
