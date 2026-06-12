@@ -12,6 +12,11 @@ Loaded alongside every feature spec file. Defines shared utilities, asset helper
 - Locale handling is in frontend/src/api/cdragonLocale.ts.
 - TFT set-specific values such as `tft_set17`, `TFT_Set17`, and trait icon set numbers must be derived from the shared asset helpers/config where possible.
 - Backend CDragon URLs should use `TftAssetUrlBuilder` and `TftAssetConfig` rather than duplicating set tags or CDN base URLs in feature code.
+- Frontend TFT asset defaults live in `TFT_ASSET_CONFIG` in frontend/src/api/communityDragonAssets.ts.
+  Use helper functions such as `tftChampSquareUrl`, `tftTraitIconUrl`, `tftItemIconUrl`, and `communityDragonAssetUrl` instead of rebuilding URL strings in feature code.
+- Backend TFT asset defaults live in backend/src/main/java/com/tftgogo/global/riot/config/TftAssetConfig.java.
+  Use `setTag`, `setFileSuffix`, `setUnitIdPrefix`, and `TftAssetUrlBuilder` when constructing champion, trait, or item URLs/IDs.
+- Set-specific override maps are allowed only for verified Community Dragon exceptions, legacy trait icon paths, or temporary fallback/demo assets. Prefer deriving new season paths from the shared config.
 </cdragon>
 
 <riot-api-proxy>
