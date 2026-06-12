@@ -1,6 +1,7 @@
 package com.tftgogo.domain.community.dto.request;
 
 import com.tftgogo.domain.community.entity.PartyGameMode;
+import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -30,6 +31,7 @@ public class PartyPostCreateRequest {
     @Max(8)
     private int maxMembers;
 
+    @Future(message = "마감 시간은 현재 시간 이후여야 합니다.")
     private LocalDateTime deadline;
 
     @Size(max = 4)

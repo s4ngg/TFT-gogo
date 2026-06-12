@@ -15,6 +15,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
@@ -44,7 +46,9 @@ class CommunityPartyServiceImplTest {
     void 파티_모집글_목록은_게임모드와_검색어로_조회한다() {
         // given
         PartyPost partyPost = partyPost(1L, 1L, "마스터 듀오 구합니다", PartyGameMode.RANKED_TFT, 1, 2);
-        when(partyPostRepository.search(PartyGameMode.RANKED_TFT, "마스터")).thenReturn(List.of(partyPost));
+        PageRequest pageRequest = PageRequest.of(0, 50);
+        when(partyPostRepository.search(PartyGameMode.RANKED_TFT, "마스터", pageRequest))
+                .thenReturn(new PageImpl<>(List.of(partyPost)));
         when(partyApplicationRepository.existsByPartyPostAndUserIdAndStatus(
                 partyPost,
                 2L,
@@ -65,7 +69,7 @@ class CommunityPartyServiceImplTest {
                         PartyPostResponse::isJoined
                 )
                 .containsExactly("마스터 듀오 구합니다", "RANKED_TFT", "랭크", "1/2", true);
-        verify(partyPostRepository).search(PartyGameMode.RANKED_TFT, "마스터");
+        verify(partyPostRepository).search(PartyGameMode.RANKED_TFT, "마스터", pageRequest);
     }
 
     @Test
@@ -73,7 +77,8 @@ class CommunityPartyServiceImplTest {
         // given
         PartyPost partyPost = partyPost(1L, 1L, "마스터 듀오 구합니다", PartyGameMode.RANKED_TFT, 1, 3);
         ReflectionTestUtils.setField(partyPost, "deadline", LocalDateTime.now().minusMinutes(1));
-        when(partyPostRepository.search(null, null)).thenReturn(List.of(partyPost));
+        when(partyPostRepository.search(null, null, PageRequest.of(0, 50)))
+                .thenReturn(new PageImpl<>(List.of(partyPost)));
 
         // when
         List<PartyPostResponse> response = communityPartyService.getPartyPosts(null, null, null);
@@ -102,6 +107,21 @@ class CommunityPartyServiceImplTest {
         assertThat(response.getCapacity()).isEqualTo("1/2");
         assertThat(response.isJoined()).isTrue();
         verify(partyPostRepository).save(any(PartyPost.class));
+        verify(partyApplicationRepository, never()).save(any(PartyApplication.class));
+    }
+
+    @Test
+    void 과거_마감시간으로_모집글을_작성할_수_없다() {
+        // given
+        PartyPostCreateRequest request = partyPostCreateRequest("마스터 듀오 구합니다", PartyGameMode.RANKED_TFT, 2);
+        ReflectionTestUtils.setField(request, "deadline", LocalDateTime.now().minusMinutes(1));
+
+        // when, then
+        assertThatThrownBy(() -> communityPartyService.createPartyPost(1L, request))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
+
+        verify(partyPostRepository, never()).save(any(PartyPost.class));
         verify(partyApplicationRepository, never()).save(any(PartyApplication.class));
     }
 

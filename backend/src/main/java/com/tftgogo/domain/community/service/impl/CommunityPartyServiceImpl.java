@@ -12,6 +12,7 @@ import com.tftgogo.domain.community.service.CommunityPartyService;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,8 @@ import java.util.Optional;
 @Transactional(readOnly = true)
 public class CommunityPartyServiceImpl implements CommunityPartyService {
 
+    private static final int PARTY_POST_PAGE_SIZE = 50;
+
     private final PartyPostRepository partyPostRepository;
     private final PartyApplicationRepository partyApplicationRepository;
 
@@ -30,8 +33,10 @@ public class CommunityPartyServiceImpl implements CommunityPartyService {
     public List<PartyPostResponse> getPartyPosts(String mode, String query, Long userId) {
         PartyGameMode gameMode = PartyGameMode.fromNullable(mode);
         String normalizedQuery = normalizeQuery(query);
+        PageRequest pageRequest = PageRequest.of(0, PARTY_POST_PAGE_SIZE);
 
-        return partyPostRepository.search(gameMode, normalizedQuery)
+        return partyPostRepository.search(gameMode, normalizedQuery, pageRequest)
+                .getContent()
                 .stream()
                 .map(partyPost -> PartyPostResponse.from(partyPost, isJoined(partyPost, userId)))
                 .toList();

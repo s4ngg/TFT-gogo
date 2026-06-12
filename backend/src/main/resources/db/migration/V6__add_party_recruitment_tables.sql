@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS party_posts (
     PRIMARY KEY (id),
     KEY idx_party_posts_list (deleted_at, game_mode, is_closed, created_at, id),
     KEY idx_party_posts_user (user_id),
-    CONSTRAINT fk_party_posts_user FOREIGN KEY (user_id) REFERENCES users (user_id)
+    CONSTRAINT fk_party_posts_user FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS party_applications (
@@ -34,8 +34,8 @@ CREATE TABLE IF NOT EXISTS party_applications (
     UNIQUE KEY uk_party_applications_post_user (party_post_id, user_id),
     KEY idx_party_applications_post_user_status (party_post_id, user_id, status),
     KEY idx_party_applications_user (user_id),
-    CONSTRAINT fk_party_applications_post FOREIGN KEY (party_post_id) REFERENCES party_posts (id),
-    CONSTRAINT fk_party_applications_user FOREIGN KEY (user_id) REFERENCES users (user_id)
+    CONSTRAINT fk_party_applications_post FOREIGN KEY (party_post_id) REFERENCES party_posts (id) ON DELETE CASCADE,
+    CONSTRAINT fk_party_applications_user FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS party_post_tags (
@@ -43,5 +43,5 @@ CREATE TABLE IF NOT EXISTS party_post_tags (
     tag_order INT NOT NULL,
     tag VARCHAR(30) NOT NULL,
     PRIMARY KEY (party_post_id, tag_order),
-    CONSTRAINT fk_party_post_tags_post FOREIGN KEY (party_post_id) REFERENCES party_posts (id)
+    CONSTRAINT fk_party_post_tags_post FOREIGN KEY (party_post_id) REFERENCES party_posts (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

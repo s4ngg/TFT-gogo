@@ -78,6 +78,10 @@ public class PartyPost {
 
     public static PartyPost create(Long userId, PartyPostCreateRequest request) {
         LocalDateTime now = LocalDateTime.now();
+        LocalDateTime deadline = request.getDeadline();
+        if (deadline != null && !deadline.isAfter(now)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
 
         PartyPost partyPost = new PartyPost();
         partyPost.userId = userId;
@@ -86,7 +90,7 @@ public class PartyPost {
         partyPost.gameMode = request.getGameMode();
         partyPost.maxMembers = request.getMaxMembers();
         partyPost.currentMembers = 1;
-        partyPost.deadline = request.getDeadline();
+        partyPost.deadline = deadline;
         partyPost.closed = false;
         partyPost.createdAt = now;
         partyPost.updatedAt = now;
@@ -113,6 +117,7 @@ public class PartyPost {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
 
+        // 작성자 1명은 동시성/데이터 불일치 상황에서도 보존한다.
         currentMembers = Math.max(1, currentMembers - 1);
         updatedAt = LocalDateTime.now();
         refreshClosed();
