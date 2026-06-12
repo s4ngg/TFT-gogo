@@ -1,16 +1,22 @@
 ﻿.appShell {
   --snapshot-height: 722px;
+  --sidebar-current-width: var(--sidebar-width);
+  --sidebar-collapsed-width: 78px;
 
   width: 1529px;
   min-width: 1529px;
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 222px minmax(0, 1fr);
+  grid-template-columns: var(--sidebar-current-width) minmax(0, 1fr);
   overflow: visible;
   color: #f6f8fb;
   background:
     radial-gradient(circle at 52% 42%, rgba(12, 119, 125, 0.14), transparent 36%),
     linear-gradient(135deg, var(--bg-main) 0%, #061016 48%, #02070b 100%);
+}
+
+.sidebarCollapsed {
+  --sidebar-current-width: var(--sidebar-collapsed-width);
 }
 
 .sidebar {
@@ -28,20 +34,34 @@
     linear-gradient(180deg, rgba(2, 10, 15, 0.99), rgba(1, 7, 11, 0.97));
 }
 
+.sidebarHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 36px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
 .brand {
   display: flex;
   align-items: center;
   gap: 14px;
   height: 45px;
   padding: 0 12px;
-  margin-bottom: 16px;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
 }
 
 .brand strong {
+  min-width: 0;
+  overflow: hidden;
   color: #ffffff;
   font-size: 25px;
   font-weight: 800;
   letter-spacing: -0.04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .brandLogo {
@@ -49,6 +69,24 @@
   height: 37px;
   flex: 0 0 auto;
   background: url("/assets/brand/tftgogo-mark.png") center / contain no-repeat;
+}
+
+.sidebarToggle {
+  width: 36px;
+  height: 36px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border-btn-muted);
+  border-radius: var(--radius-button);
+  color: var(--text-ui);
+  background: var(--bg-btn-dark);
+  cursor: pointer;
+}
+
+.sidebarToggle:hover {
+  border-color: var(--cyan-border-light);
+  color: var(--text-main);
 }
 
 .navList {
@@ -100,6 +138,39 @@
   flex: 0 1 270px;
   min-height: 18px;
   max-height: 270px;
+}
+
+.sidebarCollapsed .sidebar {
+  padding-right: 10px;
+  padding-left: 10px;
+}
+
+.sidebarCollapsed .sidebarHeader {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+}
+
+.sidebarCollapsed .brand {
+  justify-content: center;
+  width: 100%;
+  padding: 0;
+}
+
+.sidebarCollapsed .brand strong,
+.sidebarCollapsed .navItem span {
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.sidebarCollapsed .sidebarToggle {
+  width: 100%;
+}
+
+.sidebarCollapsed .navItem {
+  justify-content: center;
+  gap: 0;
+  padding: 0;
 }
 
 .rankCard {
@@ -191,8 +262,8 @@
 }
 
 .main {
-  width: 1307px;
-  min-width: 1307px;
+  width: calc(1529px - var(--sidebar-current-width));
+  min-width: calc(1529px - var(--sidebar-current-width));
   min-height: 100vh;
   overflow: visible;
   padding: 17px 15px 0 19px;
@@ -204,6 +275,13 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 16px;
+}
+
+.topStatusGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
 }
 
 .patchBrief {
@@ -240,6 +318,61 @@
   font-weight: 400;
   letter-spacing: -0.01em;
   text-overflow: ellipsis;
+}
+
+.riotStatus {
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 0 10px;
+  border: 1px solid var(--border-btn-muted);
+  border-radius: var(--radius-button);
+  color: var(--text-soft);
+  background: var(--bg-btn-dark-soft);
+  font-size: var(--font-size-xs);
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.riotStatus strong {
+  color: var(--text-main);
+  font-size: var(--font-size-xs);
+}
+
+.riotStatus span {
+  color: var(--text-muted);
+}
+
+.riotStatusAvailable {
+  border-color: var(--cyan-border-light);
+}
+
+.riotStatusAvailable svg,
+.riotStatusAvailable strong {
+  color: var(--color-cyan);
+}
+
+.riotStatusQueue {
+  border-color: var(--tone-gold-border);
+}
+
+.riotStatusQueue svg,
+.riotStatusQueue strong {
+  color: var(--color-gold);
+}
+
+.riotStatusLimited,
+.riotStatusDegraded {
+  border-color: var(--status-fallback-border);
+}
+
+.riotStatusLimited svg,
+.riotStatusLimited strong,
+.riotStatusDegraded svg,
+.riotStatusDegraded strong {
+  color: var(--danger);
 }
 
 .topActions {
@@ -339,7 +472,7 @@
     padding-bottom: 16px;
   }
 
-  .brand {
+  .sidebarHeader {
     margin-bottom: 12px;
   }
 
@@ -396,5 +529,9 @@
 
   .patchBrief {
     width: 448px;
+  }
+
+  .riotStatus {
+    max-width: 300px;
   }
 }
