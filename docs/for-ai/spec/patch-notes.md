@@ -17,6 +17,7 @@ Page: PatchNotes (/patch-notes).
 - POST   /api/admin/patch-notes                  -> create patch note
 - PATCH  /api/admin/patch-notes/{patchNoteId}    -> update patch note
 - DELETE /api/admin/patch-notes/{patchNoteId}    -> soft delete patch note
+- GET    /api/admin/patch-notes/{patchNoteId}/changes -> admin patch change list
 - POST   /api/admin/patch-note-changes           -> create patch change
 - PATCH  /api/admin/patch-note-changes/{changeId} -> update patch change
 - DELETE /api/admin/patch-note-changes/{changeId} -> soft delete patch change
@@ -28,7 +29,9 @@ Page: PatchNotes (/patch-notes).
 - frontend/src/pages/PatchNotes/hooks/usePatchNotesPageState.ts -> UI filter/search/page/expanded state
 - frontend/src/pages/PatchNotes/hooks/usePatchChangesPage.ts -> change query wiring and page bounds correction
 - frontend/src/pages/PatchNotes/components/ -> public patch note page sections
-- frontend/src/pages/Admin/AdminPatchNotes.tsx -> admin patch-note UI placeholder at the current stage; must be wired before crawler/import work
+- frontend/src/pages/Admin/AdminPatchNotes.tsx -> admin patch-note page wrapper
+- frontend/src/pages/Admin/components/AdminPatchNotesManager.tsx -> admin patch note and patch change CRUD screen
+- frontend/src/api/adminApi.ts -> admin patch note/change request functions and admin-token headers
 </frontend>
 </api>
 
@@ -48,8 +51,9 @@ Page: PatchNotes (/patch-notes).
 - version param format matches backend storage key, for example "17.3".
 - Local DB smoke data lives in patch_notes and patch_changes. patch_notes.version identifies one patch note.
 - Admin endpoints are protected by X-Admin-Token through /api/admin/**.
-- Admin writes use /api/admin/patch-notes and /api/admin/patch-note-changes.
-- Backend admin patch-note APIs are implemented, but the frontend admin patch-note screen is not yet wired. Do not start patch-note crawling/import before the admin screen can list, create, update, and soft-delete patch notes and patch changes.
+- Admin reads/writes use /api/admin/patch-notes and /api/admin/patch-note-changes.
+- Admin patch change list uses patchNoteId and returns deletedAt-is-null changes, including inactive rows for curation.
+- The admin patch-note screen can list, create, update, and soft-delete patch notes and patch changes. Keep crawler/import work separate from this curation contract.
 - Admin delete uses soft delete through active/deletedAt. Do not hard delete patch note or patch change rows.
 - highlightsJson and tagsJson must validate as JSON string arrays.
 - isCurrent must stay unique among active, non-deleted patch notes.
@@ -74,23 +78,23 @@ Page: PatchNotes (/patch-notes).
 - Public change stats are calculated from all active, non-deleted changes for the selected patch note.
 - Public change items are filtered by category, type, impact, and escaped LIKE query, then returned with page metadata.
 - Current curated-data implementation may slice filtered results in the service. If crawler/import substantially increases patch_changes volume, move filtered item paging/counting to repository-level Pageable/count queries.
-- AdminPatchNoteServiceImpl owns patch note CRUD, patch change CRUD, JSON array serialization/validation, current-patch clearing, and soft delete.
+- AdminPatchNoteServiceImpl owns patch note CRUD, patch change list lookup, patch change CRUD, JSON array serialization/validation, current-patch clearing, and soft delete.
 - Creating or updating a patch note with current=true must unset other active current patch notes in the same transaction.
 - Deleting a patch note must soft-delete its active/non-deleted patch changes.
 </backend-implementation>
 
 <validation>
 - Public service tests should cover list response, version not found, filtered change query, stats separation, page slicing, invalid pagination, empty filters, enum parsing, and LIKE escaping.
-- Admin service tests should cover patch note CRUD, patch change CRUD, JSON array validation, duplicate/current behavior, not found errors, and soft delete.
+- Admin service tests should cover patch note CRUD, admin patch change list lookup, patch change CRUD, JSON array validation, duplicate/current behavior, not found errors, and soft delete.
 - Frontend tests should continue to cover nested stats payload handling via readPatchChangeStatsPayload.
-- Future admin frontend tests should cover admin API request shape and core form payload mapping before crawler/import is added.
+- Admin frontend tests should cover admin API request shape, admin-token headers, request error wrapping, and core form payload mapping before crawler/import is added.
 - Swagger smoke testing should verify public APIs without admin token and admin APIs with X-Admin-Token.
 </validation>
 
 <data-ingestion>
-- Current stage: public PatchNotes browsing and backend admin CRUD are stable enough for curated DB/admin data.
-- Next stage before crawling/import: connect the frontend AdminPatchNotes screen to the existing backend admin APIs.
-- Patch-note crawling/import comes after admin UI wiring, current-patch uniqueness, public stats contracts, and smoke testing are stable.
+- Current stage: public PatchNotes browsing, backend admin CRUD, admin patch change list lookup, and frontend AdminPatchNotes curation screen are implemented for curated DB/admin data.
+- Next stage before crawling/import: merge the admin screen/API work, keep the spec in sync, and repeat smoke testing against the admin endpoints.
+- Patch-note crawling/import comes after admin UI wiring, current-patch uniqueness, public stats contracts, and smoke testing are stable in develop.
 - External crawling/import must write into the same patch_notes and patch_changes contract used by admin curation.
 - AI server/FastAPI is not required for patch-note CRUD. Add it only when AI summarization/search/RAG behavior needs patch-note data.
 </data-ingestion>
