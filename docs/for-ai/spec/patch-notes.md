@@ -54,6 +54,9 @@ Page: PatchNotes (/patch-notes).
 - Admin reads/writes use /api/admin/patch-notes and /api/admin/patch-note-changes.
 - Admin patch change list uses patchNoteId and returns deletedAt-is-null changes, including inactive rows for curation.
 - The admin patch-note screen can list, create, update, and soft-delete patch notes and patch changes. Keep crawler/import work separate from this curation contract.
+- Admin patch change forms must reject empty sortOrder text before numeric conversion; do not allow blank input to be stored as 0.
+- Editing a patch change must not drift across selected patch notes. If the selected patch note changes while editing, clear the edit state before saving.
+- Admin patch-note API functions must include X-Admin-Token headers and wrap request failures so auth failures can still be detected by callers.
 - Admin delete uses soft delete through active/deletedAt. Do not hard delete patch note or patch change rows.
 - highlightsJson and tagsJson must validate as JSON string arrays.
 - isCurrent must stay unique among active, non-deleted patch notes.
@@ -87,7 +90,8 @@ Page: PatchNotes (/patch-notes).
 - Public service tests should cover list response, version not found, filtered change query, stats separation, page slicing, invalid pagination, empty filters, enum parsing, and LIKE escaping.
 - Admin service tests should cover patch note CRUD, admin patch change list lookup, patch change CRUD, JSON array validation, duplicate/current behavior, not found errors, and soft delete.
 - Frontend tests should continue to cover nested stats payload handling via readPatchChangeStatsPayload.
-- Admin frontend tests should cover admin API request shape, admin-token headers, request error wrapping, and core form payload mapping before crawler/import is added.
+- Admin frontend tests should cover admin API request shape, admin-token headers for patch note and patch change read/write calls, request error wrapping, and core form payload mapping before crawler/import is added.
+- Admin UI validation should be verified around empty sortOrder handling and patch-change edit state reset when the selected patch note changes.
 - Swagger smoke testing should verify public APIs without admin token and admin APIs with X-Admin-Token.
 </validation>
 
