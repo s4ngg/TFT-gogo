@@ -21,7 +21,7 @@ Detailed human spec: docs/for-humans/spec/summoner.md
       traits: [ { traitId, name, iconUrl, count, tone(bronze|silver|gold|prismatic) } ],
       units:  [ { characterId, imageUrl, stars, itemImageUrls } ],
       participants: [ { puuid, riotIdGameName, riotIdTagline, placement, stage, traits, units, playersEliminated, goldLeft } ] }
-  — start 기본값 0, count 기본값 20. Riot API 호출 간 200ms 쓰로틀. queue 1090·1100만 포함.
+  — start 기본값 0, count 기본값 20. Riot API 호출 간 1,300ms 쓰로틀 (RiotApiClient 단일 rate limiter). queue 1090·1100만 포함.
 
 - GET /api/match/detail/{matchId}
   → MatchDetailResponse — 매치에 참가한 8인 전체 상세 데이터
@@ -41,7 +41,7 @@ Detailed human spec: docs/for-humans/spec/summoner.md
 - Trait activation tone: Riot API `style` (0–4) → 0=none, 1=bronze, 2=silver, 3=gold, 4=chromatic.
 - LP change and augments are not provided by Riot API — never fabricate these values.
 - CDragon image fallback: if registered URL missing, auto-generate `Trait_Icon_17_{TraitName}.TFT_Set17.tex` pattern.
-- Match list: count 파라미터로 배치 크기 지정 (기본값 20). "더 보기" 버튼 클릭 시 start를 count 단위로 증가시켜 추가 요청. 내부적으로 matchId 조회 후 각 매치 상세 조회 시 200ms 쓰로틀 적용 (Riot API rate limit 대응).
+- Match list: count 파라미터로 배치 크기 지정 (기본값 20). "더 보기" 버튼 클릭 시 start를 count 단위로 증가시켜 추가 요청. 내부적으로 matchId 조회 및 매치 상세 조회 모두 RiotApiClient의 단일 rate limiter(1,300ms)를 통해 직렬 처리.
 - Game type filter: 전체 / 랭크 / 일반 — applied client-side on fetched match list.
 - Expanding a match row shows all 8 participants: placement, summonerName, stage (last_round → Spring notation), traits, units, kills, gold_left.
 - My row in expanded view is highlighted in teal.

@@ -88,7 +88,7 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
 
     private List<String> fetchMatchIds(String puuid, int start, int count) {
         try {
-            return riotQueue.submit(() -> riotApiClient.getMatchIdsForQueue(puuid, count, start))
+            return riotQueue.submit(() -> riotApiClient.getMatchIds(puuid, count, start))
                     .get(FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
@@ -112,7 +112,7 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
         inProgressMap.put(puuid, Boolean.TRUE);
 
         for (String matchId : toFetch) {
-            riotQueue.submit(() -> riotApiClient.getMatchForQueue(matchId))
+            riotQueue.submit(() -> riotApiClient.getMatch(matchId))
                     .thenApplyAsync(matchDto -> {
                         persistMatch(matchId, matchDto);
                         return null;
