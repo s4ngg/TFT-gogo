@@ -86,9 +86,26 @@ Page: PatchNotes (/patch-notes).
 - Deleting a patch note must soft-delete its active/non-deleted patch changes.
 </backend-implementation>
 
+<crawler-import-plan>
+- Patch-note import source is the official Riot/TFT patch-note page. Fixture/seed files may be used only as parser test snapshots, not as the production import source.
+- Crawler implementation must be split into fetcher, parser, normalizer, and importer steps so official page markup changes can be isolated from DB write logic.
+- Planned admin entrypoint: POST /api/admin/patch-notes/import/crawl protected by X-Admin-Token. The request should include sourceUrl, version, dryRun, and forceOverwrite or equivalent review-safe options.
+- The crawler parser should extract patch title, version, publishedAt, highlights, section headings, target names, before/after text, and source ordering when available.
+- The normalizer should convert crawler rows into PatchNoteImportCandidate and PatchChangeImportCandidate records before touching entities.
+- PatchNote upsert key is version. Importing the same version twice must not create duplicate patch_notes rows.
+- PatchChange upsert must use a stable sourceKey derived from official source structure when available. If no stable key exists, use a deterministic hash from version, section/category, targetName, summary, beforeValue, afterValue, and source order.
+- Imported rows that cannot be confidently classified into CHAMPION, TRAIT, ITEM, AUGMENT, or SYSTEM must be marked for admin review and should not be exposed as active public changes until curated.
+- Imported rows that cannot be confidently mapped to BUFF, NERF, ADJUST, or NEW should default to ADJUST with a review-required tag rather than inventing unsupported enum values.
+- Import must preserve admin curation. Manual edits should not be overwritten by a repeated crawl unless forceOverwrite is explicitly requested.
+- Import result should report created, updated, skipped, reviewRequired, and failed counts plus row-level errors when available.
+- Automatic scheduling is out of scope until manual/admin-triggered crawling is stable.
+</crawler-import-plan>
+
 <validation>
 - Public service tests should cover list response, version not found, filtered change query, stats separation, page slicing, invalid pagination, empty filters, enum parsing, and LIKE escaping.
 - Admin service tests should cover patch note CRUD, admin patch change list lookup, patch change CRUD, JSON array validation, duplicate/current behavior, not found errors, and soft delete.
+- Crawler/import service tests should use saved official-page HTML snapshots and mock HTTP fetches; tests must not depend on live official page availability.
+- Crawler/import tests should cover parser success, parser markup drift, repeated import idempotency, sourceKey/hash generation, review-required rows, manual edit preservation, dryRun behavior, and forceOverwrite behavior.
 - Frontend tests should continue to cover nested stats payload handling via readPatchChangeStatsPayload.
 - Admin frontend tests should cover admin API request shape, admin-token headers for patch note and patch change read/write calls, request error wrapping, and core form payload mapping before crawler/import is added.
 - Admin UI validation should be verified around empty sortOrder handling and patch-change edit state reset when the selected patch note changes.
@@ -98,8 +115,8 @@ Page: PatchNotes (/patch-notes).
 <data-ingestion>
 - Current stage: public PatchNotes browsing, backend admin CRUD, admin patch change list lookup, and frontend AdminPatchNotes curation screen are implemented for curated DB/admin data.
 - Next stage before crawling/import: merge the admin screen/API work, keep the spec in sync, and repeat smoke testing against the admin endpoints.
-- Patch-note crawling/import comes after admin UI wiring, current-patch uniqueness, public stats contracts, and smoke testing are stable in develop.
-- External crawling/import must write into the same patch_notes and patch_changes contract used by admin curation.
+- Patch-note crawling/import comes after admin UI wiring, current-patch uniqueness, public stats contracts, and smoke testing are stable in develop. The implementation direction is official Riot/TFT patch-note crawling, not manual fixture/seed import.
+- External crawling/import must write into the same patch_notes and patch_changes contract used by admin curation, with additional source metadata or equivalent duplicate-detection strategy when needed.
 - AI server/FastAPI is not required for patch-note CRUD. Add it only when AI summarization/search/RAG behavior needs patch-note data.
 </data-ingestion>
 
