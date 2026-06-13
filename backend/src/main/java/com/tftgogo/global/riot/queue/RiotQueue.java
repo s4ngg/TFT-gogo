@@ -1,7 +1,10 @@
 package com.tftgogo.global.riot.queue;
 
+import com.tftgogo.global.exception.BusinessException;
+import com.tftgogo.global.exception.ErrorCode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.CompletableFuture;
@@ -10,26 +13,31 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 @Component
-public class RiotQueue {
+public class RiotQueue implements DisposableBean {
 
     private static final Logger logger = LogManager.getLogger(RiotQueue.class);
+    private static final int MAX_QUEUE_SIZE = 500;
 
-    private final LinkedBlockingQueue<RiotTask<?>> queue = new LinkedBlockingQueue<>();
+    private final LinkedBlockingQueue<RiotTask<?>> queue = new LinkedBlockingQueue<>(MAX_QUEUE_SIZE);
+    private final Thread worker;
 
     public RiotQueue() {
-        Thread worker = new Thread(this::processLoop, "riot-queue-worker");
+        worker = new Thread(this::processLoop, "riot-queue-worker");
         worker.setDaemon(true);
         worker.start();
     }
 
     public <T> CompletableFuture<T> submit(Supplier<T> task) {
         CompletableFuture<T> future = new CompletableFuture<>();
-        queue.offer(new RiotTask<>(task, future));
+        if (!queue.offer(new RiotTask<>(task, future))) {
+            future.completeExceptionally(new BusinessException(ErrorCode.RIOT_API_ERROR));
+        }
         return future;
     }
 
-    public int getPendingTaskCount() {
-        return queue.size();
+    @Override
+    public void destroy() {
+        worker.interrupt();
     }
 
     private void processLoop() {
