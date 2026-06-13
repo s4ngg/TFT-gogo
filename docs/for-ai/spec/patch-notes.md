@@ -87,17 +87,37 @@ Page: PatchNotes (/patch-notes).
 </backend-implementation>
 
 <crawler-import-plan>
-- Patch-note import source is the official Riot/TFT patch-note page. Fixture/seed files may be used only as parser test snapshots, not as the production import source.
+- Production import source is the official Riot/TFT patch-note site, not fixture/seed files.
+- Tag/list page: https://www.leagueoflegends.com/ko-kr/news/tags/teamfight-tactics-patch-notes/
+- Detail pages are linked from the tag page through articleCardGrid items. Current links point to https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/... patch-note detail URLs.
+- The Riot pages are Next.js pages. Fetch HTML first and extract the __NEXT_DATA__ application/json script. Do not hardcode _next/data buildId values because they change on deploy.
+- List extraction should read props.pageProps.page.blades[type=articleCardGrid].items. Each item currently includes title, publishedAt, description.body, imageMedia.url, analytics.contentId, and action.payload.url.
+- Detail extraction should read props.pageProps.page where type=patchNote. The articleMasthead blade contains title, description.body, publishDate, tags, authors, and banner data.
+- Detail body extraction should read the patchNotesRichText blade. Its richText is currently {type: "html", body: "..."} and the body contains div#patch-notes-container.
+- The detail HTML structure observed on 17.2, 17.1, 15.9, and 14.24 patch notes uses h2 for major sections, h4.change-detail-title for change groups, ul/li for change rows, and span.change-indicator for before/after arrows.
 - Crawler implementation must be split into fetcher, parser, normalizer, and importer steps so official page markup changes can be isolated from DB write logic.
-- Planned admin entrypoint: POST /api/admin/patch-notes/import/crawl protected by X-Admin-Token. The request should include sourceUrl, version, dryRun, and forceOverwrite or equivalent review-safe options.
-- The crawler parser should extract patch title, version, publishedAt, highlights, section headings, target names, before/after text, and source ordering when available.
-- The normalizer should convert crawler rows into PatchNoteImportCandidate and PatchChangeImportCandidate records before touching entities.
+- Backend implementation should mirror the guide import pattern: service interfaces under domain/patchnote/service, implementations under service/impl, request/response DTOs under dto/request and dto/response, and Swagger docs in AdminPatchNoteControllerDocs.
+- Fetcher should use the backend RestTemplate pattern with explicit timeout, redirect handling, user-agent, and logged failures. It should return raw HTML plus sourceUrl and fetchedAt metadata.
+- Parser should use a real HTML parser such as Jsoup rather than regex-only parsing. Regex may be used only for small post-processing like version extraction. If adding Jsoup is considered too much dependency surface, keep parser scope smaller and document the lower reliability.
+- Parser should convert the Next.js page data into PatchNoteCrawlDocument and PatchChangeCrawlRow records before domain normalization.
+- Normalizer should convert crawler rows into PatchNoteImportCandidate and PatchChangeImportCandidate records before touching entities.
+- Planned admin entrypoint: POST /api/admin/patch-notes/import/crawl protected by X-Admin-Token. The request should include sourceUrl, version, locale, dryRun, and forceOverwrite or equivalent review-safe options.
+- Default locale is ko-kr. If ko-kr parsing fails, en-us pages with the same slug may be used only for diagnostics or parser comparison, not for Korean public copy.
+- The crawler parser should extract patch title, version, publishedAt, summary, highlights, masthead image, authors, h2 section headings, h4 group headings, li row text, source ordering, before/after arrow text, and row source HTML when available.
+- PatchNote title should prefer masthead title. Version should prefer explicit request.version, then title/slug extraction such as teamfight-tactics-patch-17-2 -> 17.2.
+- PatchNote summary should prefer masthead description.body with HTML stripped. highlights should use a small curated subset from patch highlight sections only when confidently parsed; otherwise leave empty for admin curation.
+- PatchChange category should be inferred from current h2/h4 heading and target text. Korean headings such as "특성", "유닛"/"챔피언", "증강", "상징"/"아이템", "체계", and "버그 수정" must map conservatively to TRAIT, CHAMPION, AUGMENT, ITEM, SYSTEM, and SYSTEM.
+- PatchChange type should be inferred from row text and before/after values only when confidence is high. Buff/nerf keywords and numeric direction may map to BUFF or NERF; mixed changes, bug fixes, new content, removals, and uncertain rows should map to ADJUST or NEW with review-required tagging when needed.
+- Impact should default to MEDIUM unless section context or manually curated rules justify HIGH or LOW. Do not invent impact values outside HIGH, MEDIUM, LOW.
+- targetName should be parsed from the text before the first colon when present, or from parentheses/heading context when reliable. targetKey should be a normalized slug from category + targetName until CDragon ID matching is implemented.
+- beforeValue and afterValue should be extracted from span.change-indicator-separated text when a row has one clear before/after pair. If a row has multiple arrows or mixed values, keep the full text in summary and leave beforeValue/afterValue null unless the parser can split them safely.
+- imageUrl should come from masthead/list image for PatchNote. PatchChange imageUrl should be null unless the row contains a direct image or a later CDragon matching step provides a verified asset URL.
 - PatchNote upsert key is version. Importing the same version twice must not create duplicate patch_notes rows.
-- PatchChange upsert must use a stable sourceKey derived from official source structure when available. If no stable key exists, use a deterministic hash from version, section/category, targetName, summary, beforeValue, afterValue, and source order.
+- PatchChange upsert must use a stable sourceKey derived from official source structure when available, such as contentId + heading path + source order. If no stable key exists, use a deterministic hash from sourceUrl, version, heading path, category, targetName, normalized row text, and source order.
 - Imported rows that cannot be confidently classified into CHAMPION, TRAIT, ITEM, AUGMENT, or SYSTEM must be marked for admin review and should not be exposed as active public changes until curated.
 - Imported rows that cannot be confidently mapped to BUFF, NERF, ADJUST, or NEW should default to ADJUST with a review-required tag rather than inventing unsupported enum values.
 - Import must preserve admin curation. Manual edits should not be overwritten by a repeated crawl unless forceOverwrite is explicitly requested.
-- Import result should report created, updated, skipped, reviewRequired, and failed counts plus row-level errors when available.
+- Import result should report sourceUrl, version, dryRun, created, updated, skipped, reviewRequired, failed counts, parserWarnings, and row-level errors when available.
 - Automatic scheduling is out of scope until manual/admin-triggered crawling is stable.
 </crawler-import-plan>
 
@@ -105,7 +125,11 @@ Page: PatchNotes (/patch-notes).
 - Public service tests should cover list response, version not found, filtered change query, stats separation, page slicing, invalid pagination, empty filters, enum parsing, and LIKE escaping.
 - Admin service tests should cover patch note CRUD, admin patch change list lookup, patch change CRUD, JSON array validation, duplicate/current behavior, not found errors, and soft delete.
 - Crawler/import service tests should use saved official-page HTML snapshots and mock HTTP fetches; tests must not depend on live official page availability.
-- Crawler/import tests should cover parser success, parser markup drift, repeated import idempotency, sourceKey/hash generation, review-required rows, manual edit preservation, dryRun behavior, and forceOverwrite behavior.
+- Crawler snapshot tests should include the tag page and at least three detail pages with different structures, such as 17.2, 17.1, 15.9, and 14.24.
+- Crawler list tests should assert extraction from articleCardGrid items: title, publishedAt, description.body, imageMedia.url, analytics.contentId, and action.payload.url.
+- Crawler detail tests should assert extraction from articleMasthead and patchNotesRichText: title, description, publishDate, authors, richText.body, h2 sections, h4 groups, li rows, and change-indicator arrows.
+- Crawler/import tests should cover parser success, missing __NEXT_DATA__, missing articleCardGrid, missing patchNotesRichText, parser markup drift, repeated import idempotency, sourceKey/hash generation, review-required rows, manual edit preservation, dryRun behavior, and forceOverwrite behavior.
+- Crawler parser tests should verify that rows with multiple change-indicator arrows preserve the full summary and avoid unsafe beforeValue/afterValue splitting.
 - Frontend tests should continue to cover nested stats payload handling via readPatchChangeStatsPayload.
 - Admin frontend tests should cover admin API request shape, admin-token headers for patch note and patch change read/write calls, request error wrapping, and core form payload mapping before crawler/import is added.
 - Admin UI validation should be verified around empty sortOrder handling and patch-change edit state reset when the selected patch note changes.
