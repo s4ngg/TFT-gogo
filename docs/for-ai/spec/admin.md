@@ -108,6 +108,9 @@ frontend/src/
 - isCurrent는 활성 패치노트 중 하나만 true 가능
 - highlightsJson, tagsJson은 JSON 문자열 배열
 - 패치 변경사항(PatchChange)은 패치노트에 종속
+- 패치노트 공식 크롤링 import는 수동 CRUD와 분리된 후속 기능이다. 구현 전까지 /admin/patch-notes 화면은 패치노트/변경사항 수동 관리만 담당한다.
+- 계획된 import API는 POST /api/admin/patch-notes/import/crawl 이며 X-Admin-Token 보호, dryRun, forceOverwrite, row-level parser warning/error 응답을 포함해야 한다.
+- 크롤링으로 가져온 데이터라도 관리자가 수정한 행은 반복 import에서 덮어쓰지 않는 것을 기본 정책으로 한다.
 </patch-note-curation>
 
 <hero-augment-deck>
