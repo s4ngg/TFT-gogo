@@ -184,12 +184,13 @@ function buildPatchChangePayload(
   form: PatchChangeFormState,
   patchNoteId: number,
 ): AdminPatchChangePayload | null {
-  const sortOrder = Number(form.sortOrder)
+  const sortOrderText = form.sortOrder.trim()
+  const sortOrder = Number(sortOrderText)
   const targetKey = form.targetKey.trim()
   const targetName = form.targetName.trim()
   const summary = form.summary.trim()
 
-  if (!Number.isInteger(sortOrder) || sortOrder < 0 || !targetKey || !targetName || !summary) {
+  if (!sortOrderText || !Number.isInteger(sortOrder) || sortOrder < 0 || !targetKey || !targetName || !summary) {
     return null
   }
 
@@ -214,6 +215,7 @@ function AdminPatchNotesManager() {
   const [selectedPatchNoteId, setSelectedPatchNoteId] = useState<number | null>(null)
   const [editingPatchNoteId, setEditingPatchNoteId] = useState<number | null>(null)
   const [editingChangeId, setEditingChangeId] = useState<number | null>(null)
+  const [editingChangePatchNoteId, setEditingChangePatchNoteId] = useState<number | null>(null)
   const [patchNoteForm, setPatchNoteForm] = useState<PatchNoteFormState>(EMPTY_PATCH_NOTE_FORM)
   const [patchChangeForm, setPatchChangeForm] = useState<PatchChangeFormState>(EMPTY_PATCH_CHANGE_FORM)
   const [message, setMessage] = useState('')
@@ -268,7 +270,10 @@ function AdminPatchNotesManager() {
     onSuccess: async (note) => {
       setSelectedPatchNoteId(note.id)
       setEditingPatchNoteId(null)
+      setEditingChangeId(null)
+      setEditingChangePatchNoteId(null)
       setPatchNoteForm(EMPTY_PATCH_NOTE_FORM)
+      setPatchChangeForm(EMPTY_PATCH_CHANGE_FORM)
       setMessage('패치노트를 생성했습니다.')
       await refreshPatchNotes()
     },
@@ -280,7 +285,10 @@ function AdminPatchNotesManager() {
     onSuccess: async (note) => {
       setSelectedPatchNoteId(note.id)
       setEditingPatchNoteId(null)
+      setEditingChangeId(null)
+      setEditingChangePatchNoteId(null)
       setPatchNoteForm(EMPTY_PATCH_NOTE_FORM)
+      setPatchChangeForm(EMPTY_PATCH_CHANGE_FORM)
       setMessage('패치노트를 수정했습니다.')
       await refreshPatchNotes()
     },
@@ -291,7 +299,10 @@ function AdminPatchNotesManager() {
     onSuccess: async () => {
       setSelectedPatchNoteId(null)
       setEditingPatchNoteId(null)
+      setEditingChangeId(null)
+      setEditingChangePatchNoteId(null)
       setPatchNoteForm(EMPTY_PATCH_NOTE_FORM)
+      setPatchChangeForm(EMPTY_PATCH_CHANGE_FORM)
       setMessage('패치노트를 삭제했습니다.')
       await refreshPatchNotes()
     },
@@ -301,6 +312,7 @@ function AdminPatchNotesManager() {
     mutationFn: createAdminPatchChange,
     onSuccess: async () => {
       setEditingChangeId(null)
+      setEditingChangePatchNoteId(null)
       setPatchChangeForm(EMPTY_PATCH_CHANGE_FORM)
       setMessage('변경사항을 생성했습니다.')
       await refreshPatchChanges()
@@ -313,6 +325,7 @@ function AdminPatchNotesManager() {
       updateAdminPatchChange(id, payload),
     onSuccess: async () => {
       setEditingChangeId(null)
+      setEditingChangePatchNoteId(null)
       setPatchChangeForm(EMPTY_PATCH_CHANGE_FORM)
       setMessage('변경사항을 수정했습니다.')
       await refreshPatchChanges()
@@ -323,6 +336,7 @@ function AdminPatchNotesManager() {
     mutationFn: deleteAdminPatchChange,
     onSuccess: async () => {
       setEditingChangeId(null)
+      setEditingChangePatchNoteId(null)
       setPatchChangeForm(EMPTY_PATCH_CHANGE_FORM)
       setMessage('변경사항을 삭제했습니다.')
       await refreshPatchChanges()
@@ -343,10 +357,23 @@ function AdminPatchNotesManager() {
     setMessage('')
   }
 
+  function clearPatchChangeEdit() {
+    setEditingChangeId(null)
+    setEditingChangePatchNoteId(null)
+    setPatchChangeForm(EMPTY_PATCH_CHANGE_FORM)
+  }
+
+  function selectPatchNote(noteId: number) {
+    clearNotice()
+    setSelectedPatchNoteId(noteId)
+    clearPatchChangeEdit()
+  }
+
   function startNewPatchNote() {
     clearNotice()
     setEditingPatchNoteId(null)
     setPatchNoteForm(EMPTY_PATCH_NOTE_FORM)
+    clearPatchChangeEdit()
   }
 
   function startEditPatchNote(note: AdminPatchNote) {
@@ -354,11 +381,13 @@ function AdminPatchNotesManager() {
     setSelectedPatchNoteId(note.id)
     setEditingPatchNoteId(note.id)
     setPatchNoteForm(toPatchNoteForm(note))
+    clearPatchChangeEdit()
   }
 
   function startNewPatchChange() {
     clearNotice()
     setEditingChangeId(null)
+    setEditingChangePatchNoteId(null)
     setPatchChangeForm({
       ...EMPTY_PATCH_CHANGE_FORM,
       sortOrder: String(patchChanges.length),
@@ -366,8 +395,11 @@ function AdminPatchNotesManager() {
   }
 
   function startEditPatchChange(change: AdminPatchChange) {
+    if (!selectedPatchNote) return
+
     clearNotice()
     setEditingChangeId(change.id)
+    setEditingChangePatchNoteId(selectedPatchNote.id)
     setPatchChangeForm(toPatchChangeForm(change))
   }
 
@@ -412,7 +444,14 @@ function AdminPatchNotesManager() {
       return
     }
 
-    const payload = buildPatchChangePayload(patchChangeForm, selectedPatchNote.id)
+    const patchNoteId = editingChangeId ? editingChangePatchNoteId : selectedPatchNote.id
+    if (patchNoteId === null || (editingChangeId && patchNoteId !== selectedPatchNote.id)) {
+      clearPatchChangeEdit()
+      setError('변경사항 편집 중 패치노트가 변경되었습니다. 다시 시도해주세요.')
+      return
+    }
+
+    const payload = buildPatchChangePayload(patchChangeForm, patchNoteId)
     if (!payload) {
       setError('대상 key, 대상 이름, 요약, 정렬 순서를 확인해주세요.')
       return
@@ -483,7 +522,7 @@ function AdminPatchNotesManager() {
                   key={note.id}
                   className={`${styles.noteItem} ${selectedPatchNote?.id === note.id ? styles.noteItemActive : ''}`}
                   type="button"
-                  onClick={() => setSelectedPatchNoteId(note.id)}
+                  onClick={() => selectPatchNote(note.id)}
                 >
                   <span className={styles.noteVersion}>{note.version}</span>
                   <span className={styles.noteTitle}>{note.title}</span>

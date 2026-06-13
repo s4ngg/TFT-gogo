@@ -34,6 +34,22 @@ export function isAdminAuthFailure(error: unknown): boolean {
   return status === 401 || status === 403
 }
 
+interface AdminRequestError extends Error {
+  cause?: unknown
+  response?: { status?: unknown }
+}
+
+function createAdminRequestError(error: unknown, message: string): AdminRequestError {
+  const wrappedError = new Error(message) as AdminRequestError
+  wrappedError.cause = error
+
+  if (typeof error === 'object' && error !== null && 'response' in error) {
+    wrappedError.response = (error as { response?: { status?: unknown } }).response
+  }
+
+  return wrappedError
+}
+
 export async function validateAdminToken(): Promise<void> {
   await axiosInstance.get('/admin/guides', {
     headers: adminHeaders(),
@@ -211,37 +227,53 @@ interface AdminPatchChangePage {
 }
 
 export async function fetchAdminPatchNotes(): Promise<AdminPatchNote[]> {
-  const { data } = await axiosInstance.get<ApiResponse<AdminPatchNote[]>>('/admin/patch-notes', {
-    headers: adminHeaders(),
-  })
-  return data.data
+  try {
+    const { data } = await axiosInstance.get<ApiResponse<AdminPatchNote[]>>('/admin/patch-notes', {
+      headers: adminHeaders(),
+    })
+    return data.data
+  } catch (error) {
+    throw createAdminRequestError(error, 'Failed to fetch admin patch notes.')
+  }
 }
 
 export async function createAdminPatchNote(payload: AdminPatchNotePayload): Promise<AdminPatchNote> {
-  const { data } = await axiosInstance.post<ApiResponse<AdminPatchNote>>('/admin/patch-notes', payload, {
-    headers: adminHeaders(),
-  })
-  return data.data
+  try {
+    const { data } = await axiosInstance.post<ApiResponse<AdminPatchNote>>('/admin/patch-notes', payload, {
+      headers: adminHeaders(),
+    })
+    return data.data
+  } catch (error) {
+    throw createAdminRequestError(error, 'Failed to create admin patch note.')
+  }
 }
 
 export async function updateAdminPatchNote(
   patchNoteId: number,
   payload: AdminPatchNotePayload,
 ): Promise<AdminPatchNote> {
-  const { data } = await axiosInstance.patch<ApiResponse<AdminPatchNote>>(
-    `/admin/patch-notes/${patchNoteId}`,
-    payload,
-    {
-      headers: adminHeaders(),
-    },
-  )
-  return data.data
+  try {
+    const { data } = await axiosInstance.patch<ApiResponse<AdminPatchNote>>(
+      `/admin/patch-notes/${patchNoteId}`,
+      payload,
+      {
+        headers: adminHeaders(),
+      },
+    )
+    return data.data
+  } catch (error) {
+    throw createAdminRequestError(error, 'Failed to update admin patch note.')
+  }
 }
 
 export async function deleteAdminPatchNote(patchNoteId: number): Promise<void> {
-  await axiosInstance.delete(`/admin/patch-notes/${patchNoteId}`, {
-    headers: adminHeaders(),
-  })
+  try {
+    await axiosInstance.delete(`/admin/patch-notes/${patchNoteId}`, {
+      headers: adminHeaders(),
+    })
+  } catch (error) {
+    throw createAdminRequestError(error, 'Failed to delete admin patch note.')
+  }
 }
 
 export async function fetchAdminPatchChanges(
@@ -249,40 +281,56 @@ export async function fetchAdminPatchChanges(
   page = 1,
   pageSize = 100,
 ): Promise<AdminPatchChangePage> {
-  const { data } = await axiosInstance.get<ApiResponse<AdminPatchChangePage>>(
-    `/patch-notes/${encodeURIComponent(version)}/changes`,
-    {
-      params: { page, pageSize },
-    },
-  )
-  return data.data
+  try {
+    const { data } = await axiosInstance.get<ApiResponse<AdminPatchChangePage>>(
+      `/patch-notes/${encodeURIComponent(version)}/changes`,
+      {
+        params: { page, pageSize },
+      },
+    )
+    return data.data
+  } catch (error) {
+    throw createAdminRequestError(error, 'Failed to fetch admin patch changes.')
+  }
 }
 
 export async function createAdminPatchChange(payload: AdminPatchChangePayload): Promise<AdminPatchChange> {
-  const { data } = await axiosInstance.post<ApiResponse<AdminPatchChange>>('/admin/patch-note-changes', payload, {
-    headers: adminHeaders(),
-  })
-  return data.data
+  try {
+    const { data } = await axiosInstance.post<ApiResponse<AdminPatchChange>>('/admin/patch-note-changes', payload, {
+      headers: adminHeaders(),
+    })
+    return data.data
+  } catch (error) {
+    throw createAdminRequestError(error, 'Failed to create admin patch change.')
+  }
 }
 
 export async function updateAdminPatchChange(
   changeId: number,
   payload: AdminPatchChangePayload,
 ): Promise<AdminPatchChange> {
-  const { data } = await axiosInstance.patch<ApiResponse<AdminPatchChange>>(
-    `/admin/patch-note-changes/${changeId}`,
-    payload,
-    {
-      headers: adminHeaders(),
-    },
-  )
-  return data.data
+  try {
+    const { data } = await axiosInstance.patch<ApiResponse<AdminPatchChange>>(
+      `/admin/patch-note-changes/${changeId}`,
+      payload,
+      {
+        headers: adminHeaders(),
+      },
+    )
+    return data.data
+  } catch (error) {
+    throw createAdminRequestError(error, 'Failed to update admin patch change.')
+  }
 }
 
 export async function deleteAdminPatchChange(changeId: number): Promise<void> {
-  await axiosInstance.delete(`/admin/patch-note-changes/${changeId}`, {
-    headers: adminHeaders(),
-  })
+  try {
+    await axiosInstance.delete(`/admin/patch-note-changes/${changeId}`, {
+      headers: adminHeaders(),
+    })
+  } catch (error) {
+    throw createAdminRequestError(error, 'Failed to delete admin patch change.')
+  }
 }
 
 export async function importGuideCdragonData(

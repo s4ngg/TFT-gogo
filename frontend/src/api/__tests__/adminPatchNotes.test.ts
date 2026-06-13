@@ -7,6 +7,7 @@ import {
   createAdminPatchNote,
   fetchAdminPatchChanges,
   fetchAdminPatchNotes,
+  isAdminAuthFailure,
   setAdminToken,
   updateAdminPatchChange,
   type AdminPatchChangePayload,
@@ -70,6 +71,15 @@ function createAdapter(responseData: unknown): AxiosAdapter {
   }
 }
 
+function createErrorAdapter(status: number): AxiosAdapter {
+  return async (): Promise<AxiosResponse> => {
+    throw {
+      message: 'Request failed',
+      response: { status },
+    }
+  }
+}
+
 afterEach(() => {
   axiosInstance.defaults.adapter = originalAdapter
   requestCalls.length = 0
@@ -101,6 +111,21 @@ describe('admin patch note api', () => {
     assert.equal(requestCalls[0]?.url, '/admin/patch-notes')
     assert.equal(requestCalls[0]?.token, 'admin-token')
     assert.equal(response[0]?.version, '17.3')
+  })
+
+  it('admin patch note api error preserves auth failure status', async () => {
+    axiosInstance.defaults.adapter = createErrorAdapter(403)
+
+    await assert.rejects(
+      async () => {
+        await fetchAdminPatchNotes()
+      },
+      (error) => {
+        assert.equal(error instanceof Error, true)
+        assert.equal(isAdminAuthFailure(error), true)
+        return true
+      },
+    )
   })
 
   it('패치노트 생성 요청을 백엔드 관리자 계약에 맞춰 보낸다', async () => {
