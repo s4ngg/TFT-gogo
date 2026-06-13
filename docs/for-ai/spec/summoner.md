@@ -21,7 +21,11 @@ Detailed human spec: docs/for-humans/spec/summoner.md
       traits: [ { traitId, name, iconUrl, count, tone(bronze|silver|gold|prismatic) } ],
       units:  [ { characterId, imageUrl, stars, itemImageUrls } ],
       participants: [ { puuid, riotIdGameName, riotIdTagline, placement, stage, traits, units, playersEliminated, goldLeft } ] }
-  — start 기본값 0, count 기본값 20. queue 1100(랭크)·1090(일반) 각각 병렬 조회 후 LinkedHashSet 병합 (랭크 순서 우선). 각 매치 상세 조회 시 200ms 쓰로틀.
+  — start 기본값 0, count 기본값 20. queue 1100(랭크)·1090(일반) 순차 조회 후 LinkedHashSet 병합 (랭크 순서 우선). 모든 Riot API 호출은 RiotRateLimiter(단기 20req/1s · 장기 100req/2min 이중 토큰 버킷)를 통해 rate limit 적용.
+
+- GET /api/match/{puuid}/stats
+  → PlayerStatsResponse { topTraits: [...], topChampions: [...] }
+  — DB 캐시 전체 매치 집계. 많이 플레이한 시너지/챔피언 TOP 5. 더 보기와 무관한 독립 호출.
 
 - GET /api/match/detail/{matchId}
   → MatchDetailResponse — 매치에 참가한 8인 전체 상세 데이터
@@ -41,13 +45,15 @@ Detailed human spec: docs/for-humans/spec/summoner.md
 
 <business-rules>
 - Win = placement ≤ 4. Loss = placement > 4. Never use Riot API `win` field.
-- LeagueEntryDTO wins/losses are Riot's all-time totals — do NOT use for recent 30-game win rate calculation.
+- LeagueEntryDTO wins/losses are Riot's all-time totals — do NOT use for win rate calculation.
+- 많이 플레이한 시너지/챔피언 집계: 현재 시즌 전체 매치 기록 기반. 더 보기로 불러온 목록과 무관하게 고정값으로 표시. 별도 시즌 전체 매치 조회가 필요하다.
+- 게임 요약(순방확률·평균순위): 현재까지 불러온 전체 매치 기준. 더 보기 클릭 시 재집계. 30게임으로 제한하지 않는다.
 - queue_id 1100 = Ranked, 1090 = Normal. Exclude all other queue types.
 - Champion star level: use Riot API `tier` (int) directly.
 - Trait activation tone: Riot API `style` (0–4) → 0=none, 1=bronze, 2=silver, 3=gold, 4=chromatic.
 - LP change and augments are not provided by Riot API — never fabricate these values.
-- CDragon image fallback: if registered URL missing, auto-generate trait icon paths from the traitId set number, e.g. `TFT17_Bruiser` -> `Trait_Icon_17_Bruiser.TFT_Set17.tex`.
-- Match list: count 파라미터로 배치 크기 지정 (기본값 20). "더 보기" 버튼 클릭 시 start를 count 단위로 증가. getNextPageParam 조건: lastPage.length > 0이면 다음 페이지 존재로 간주. 200ms 쓰로틀 적용.
+- CDragon image fallback: if registered URL missing, auto-generate `Trait_Icon_17_{TraitName}.TFT_Set17.tex` pattern.
+- Match list: count 파라미터로 배치 크기 지정 (기본값 20). "더 보기" 버튼 클릭 시 start를 count 단위로 증가. getNextPageParam 조건: lastPage.length > 0이면 다음 페이지 존재로 간주. 모든 Riot API 호출은 백엔드 RiotRateLimiter가 rate limit 보장.
 - Game type filter: 전체 / 랭크 / 일반 — applied client-side on fetched match list.
 - Expanding a match row shows all 8 participants: placement, summonerName, stage (last_round → Spring notation), traits, units, kills, gold_left.
 - My row in expanded view is highlighted in teal.
@@ -61,7 +67,7 @@ Detailed human spec: docs/for-humans/spec/summoner.md
 
 <frontend-structure>
 - frontend/src/pages/SummonerDetail/SummonerDetail.tsx              — main page component
-- frontend/src/pages/SummonerDetail/components/RecentSummary.tsx    — 최근 30게임 요약 카드
+- frontend/src/pages/SummonerDetail/components/RecentSummary.tsx    — 게임 요약 카드 (불러온 전체 매치 기준)
 - frontend/src/pages/SummonerDetail/components/MatchDetailPanel.tsx — 전적 행 상세 펼침 패널 (8인)
 - frontend/src/pages/SummonerDetail/components/EmptyState.tsx       — 소환사 없음 빈 상태
 - frontend/src/pages/SummonerDetail/utils/summonerUtils.ts          — timeAgo, formatDate, placementTone, detailRankClass

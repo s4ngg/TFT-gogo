@@ -31,12 +31,11 @@ import java.util.stream.Stream;
 public class RiotApiClient {
 
     private static final Logger logger = LogManager.getLogger(RiotApiClient.class);
-    private static final long MIN_REQUEST_INTERVAL_MS = 1300L;
     private static final int DEFAULT_RETRY_AFTER_SECONDS = 120;
 
     private final RiotProperties riotProperties;
     private final RestTemplate restTemplate;
-    private long lastRequestAt = 0L;
+    private final RiotRateLimiter rateLimiter;
 
     // ── Challenger 리그 조회 ────────────────────────────────
     public LeagueListDto getChallenger() {
@@ -132,21 +131,14 @@ public class RiotApiClient {
         return getByUrl(url, path, MatchDto.class, ErrorCode.MATCH_NOT_FOUND);
     }
 
-    // ── RiotQueue 전용 — 스로틀 없는 매치ID 목록 조회 (RiotQueue가 100ms 간격 보장) ──
-    public List<String> getMatchIdsForQueue(String puuid, int count, int start, int queue) {
+    // ── 매치 ID 목록 (queue 필터 + start 오프셋 지원 — 전적 수집용) ──
+    public List<String> getMatchIds(String puuid, int count, int start, int queue) {
         String path = "/tft/match/v1/matches/by-puuid/{puuid}/ids";
         String url = riotProperties.getAsiaBaseUrl()
                 + "/tft/match/v1/matches/by-puuid/" + puuid
                 + "/ids?queue=" + queue + "&count=" + count + "&start=" + start;
-        String[] ids = executeRequest(url, path, String[].class, ErrorCode.RIOT_API_ERROR);
+        String[] ids = getByUrl(url, path, String[].class, ErrorCode.RIOT_API_ERROR);
         return ids != null ? Arrays.asList(ids) : List.of();
-    }
-
-    // ── RiotQueue 전용 — 스로틀 없는 매치 상세 조회 (RiotQueue가 100ms 간격 보장) ──
-    public MatchDto getMatchForQueue(String matchId) {
-        String path = "/tft/match/v1/matches/{matchId}";
-        String url = riotProperties.getAsiaBaseUrl() + "/tft/match/v1/matches/" + matchId;
-        return executeRequest(url, path, MatchDto.class, ErrorCode.MATCH_NOT_FOUND);
     }
 
     // ── 공통 GET (baseUrl 분기용) ───────────────────────────
@@ -154,9 +146,14 @@ public class RiotApiClient {
         return getByUrl(baseUrl + path, path, responseType, ErrorCode.RIOT_API_ERROR);
     }
 
-    // ── 공통 GET — 1,300ms 최소 간격 + Retry-After 파싱 재시도 (최대 3회) ──
+    // ── 공통 GET — rate limiter 통과 후 실행 ──
     private <T> T getByUrl(String url, String logPath, Class<T> responseType, ErrorCode notFoundCode) {
-        waitForRequestWindow();
+        try {
+            rateLimiter.acquire();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new BusinessException(ErrorCode.RIOT_API_ERROR);
+        }
         return executeRequest(url, logPath, responseType, notFoundCode);
     }
 
@@ -188,15 +185,6 @@ public class RiotApiClient {
         }
     }
 
-    private synchronized void waitForRequestWindow() {
-        long now = System.currentTimeMillis();
-        long elapsed = now - lastRequestAt;
-        if (elapsed < MIN_REQUEST_INTERVAL_MS) {
-            sleep(MIN_REQUEST_INTERVAL_MS - elapsed);
-        }
-        lastRequestAt = System.currentTimeMillis();
-    }
-
     private int parseRetryAfterSeconds(HttpClientErrorException.TooManyRequests e) {
         String retryAfter = e.getResponseHeaders() != null
                 ? e.getResponseHeaders().getFirst("Retry-After")
@@ -206,15 +194,6 @@ public class RiotApiClient {
             return Math.max(1, Integer.parseInt(retryAfter.trim()));
         } catch (NumberFormatException ignored) {
             return DEFAULT_RETRY_AFTER_SECONDS;
-        }
-    }
-
-    private void sleep(long waitMs) {
-        try {
-            Thread.sleep(waitMs);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new BusinessException(ErrorCode.RIOT_API_ERROR);
         }
     }
 
