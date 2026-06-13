@@ -15,7 +15,7 @@ Loaded alongside every feature spec file. Defines shared utilities, asset helper
 - Frontend TFT asset defaults live in `TFT_ASSET_CONFIG` in frontend/src/api/communityDragonAssets.ts.
   Use helper functions such as `tftChampSquareUrl`, `tftTraitIconUrl`, `tftItemIconUrl`, and `communityDragonAssetUrl` instead of rebuilding URL strings in feature code.
 - Backend TFT asset defaults live in backend/src/main/java/com/tftgogo/global/riot/config/TftAssetConfig.java.
-  Use `setTag`, `setFileSuffix`, `setUnitIdPrefix`, and `TftAssetUrlBuilder` when constructing champion, trait, or item URLs/IDs.
+  Use `setTag`, `setFileSuffix`, `setUnitIdPrefix`, and `TftAssetUrlBuilder` when constructing champion or trait URLs/IDs. For item asset URLs, use the frontend `tftItemIconUrl` helper unless a backend item-specific helper is introduced.
 - Set-specific override maps are allowed only for verified Community Dragon exceptions, legacy trait icon paths, or temporary fallback/demo assets. Prefer deriving new season paths from the shared config.
 </cdragon>
 
