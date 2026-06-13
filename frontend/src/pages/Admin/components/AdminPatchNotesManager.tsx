@@ -234,11 +234,11 @@ function AdminPatchNotesManager() {
 
   const patchChangesQuery = useQuery({
     enabled: selectedPatchNote !== null,
-    queryFn: () => fetchAdminPatchChanges(selectedPatchNote?.version ?? ''),
-    queryKey: [...PATCH_CHANGE_QUERY_KEY, selectedPatchNote?.version ?? ''],
+    queryFn: () => fetchAdminPatchChanges(selectedPatchNote?.id ?? 0),
+    queryKey: [...PATCH_CHANGE_QUERY_KEY, selectedPatchNote?.id ?? 0],
   })
 
-  const patchChanges = patchChangesQuery.data?.items ?? []
+  const patchChanges = patchChangesQuery.data ?? []
 
   useEffect(() => {
     if (patchNotes.length === 0) {

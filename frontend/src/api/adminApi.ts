@@ -218,14 +218,6 @@ export interface AdminPatchChangePayload {
   type: AdminPatchChangeType
 }
 
-interface AdminPatchChangePage {
-  items: AdminPatchChange[]
-  page: number
-  pageSize: number
-  totalItems: number
-  totalPages: number
-}
-
 export async function fetchAdminPatchNotes(): Promise<AdminPatchNote[]> {
   try {
     const { data } = await axiosInstance.get<ApiResponse<AdminPatchNote[]>>('/admin/patch-notes', {
@@ -276,16 +268,12 @@ export async function deleteAdminPatchNote(patchNoteId: number): Promise<void> {
   }
 }
 
-export async function fetchAdminPatchChanges(
-  version: string,
-  page = 1,
-  pageSize = 100,
-): Promise<AdminPatchChangePage> {
+export async function fetchAdminPatchChanges(patchNoteId: number): Promise<AdminPatchChange[]> {
   try {
-    const { data } = await axiosInstance.get<ApiResponse<AdminPatchChangePage>>(
-      `/patch-notes/${encodeURIComponent(version)}/changes`,
+    const { data } = await axiosInstance.get<ApiResponse<AdminPatchChange[]>>(
+      `/admin/patch-notes/${patchNoteId}/changes`,
       {
-        params: { page, pageSize },
+        headers: adminHeaders(),
       },
     )
     return data.data

@@ -17,6 +17,7 @@ Page: PatchNotes (/patch-notes).
 - POST   /api/admin/patch-notes                  -> create patch note
 - PATCH  /api/admin/patch-notes/{patchNoteId}    -> update patch note
 - DELETE /api/admin/patch-notes/{patchNoteId}    -> soft delete patch note
+- GET    /api/admin/patch-notes/{patchNoteId}/changes -> admin patch change list
 - POST   /api/admin/patch-note-changes           -> create patch change
 - PATCH  /api/admin/patch-note-changes/{changeId} -> update patch change
 - DELETE /api/admin/patch-note-changes/{changeId} -> soft delete patch change
@@ -40,7 +41,8 @@ Page: PatchNotes (/patch-notes).
 - version param format matches backend storage key, for example "17.3".
 - Local DB smoke data lives in patch_notes and patch_changes. patch_notes.version identifies one patch note.
 - Admin endpoints are protected by X-Admin-Token through /api/admin/**.
-- Admin writes use /api/admin/patch-notes and /api/admin/patch-note-changes.
+- Admin reads/writes use /api/admin/patch-notes and /api/admin/patch-note-changes.
+- Admin patch change list uses patchNoteId and returns deletedAt-is-null changes, including inactive rows for curation.
 - Admin delete uses soft delete through active/deletedAt. Do not hard delete patch note or patch change rows.
 - highlightsJson and tagsJson must validate as JSON string arrays.
 - isCurrent must stay unique among active, non-deleted patch notes.

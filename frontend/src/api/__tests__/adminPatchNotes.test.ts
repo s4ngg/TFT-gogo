@@ -150,20 +150,15 @@ describe('admin patch note api', () => {
     assert.deepEqual(requestCalls[0]?.data, payload)
   })
 
-  it('선택 패치의 변경사항은 공개 변경사항 조회 API를 재사용한다', async () => {
-    axiosInstance.defaults.adapter = createAdapter({
-      items: [],
-      page: 1,
-      pageSize: 100,
-      totalItems: 0,
-      totalPages: 1,
-    })
+  it('선택 패치의 변경사항은 관리자 변경사항 조회 API를 사용한다', async () => {
+    axiosInstance.defaults.adapter = createAdapter([])
+    setAdminToken('admin-token')
 
-    await fetchAdminPatchChanges('17.3', 1, 100)
+    await fetchAdminPatchChanges(1)
 
     assert.equal(requestCalls[0]?.method, 'get')
-    assert.equal(requestCalls[0]?.url, '/patch-notes/17.3/changes')
-    assert.deepEqual(requestCalls[0]?.params, { page: 1, pageSize: 100 })
+    assert.equal(requestCalls[0]?.url, '/admin/patch-notes/1/changes')
+    assert.equal(requestCalls[0]?.token, 'admin-token')
   })
 
   it('패치 변경사항 수정 요청을 patch-note-changes 엔드포인트로 보낸다', async () => {

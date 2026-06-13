@@ -59,6 +59,7 @@ frontend/src/
 - POST   /api/admin/patch-notes                   → 패치노트 생성
 - PATCH  /api/admin/patch-notes/{patchNoteId}     → 패치노트 수정
 - DELETE /api/admin/patch-notes/{patchNoteId}     → 패치노트 소프트삭제
+- GET    /api/admin/patch-notes/{patchNoteId}/changes → 패치 변경사항 목록
 - POST   /api/admin/patch-note-changes            → 패치 변경사항 생성
 - PATCH  /api/admin/patch-note-changes/{changeId} → 패치 변경사항 수정
 - DELETE /api/admin/patch-note-changes/{changeId} → 패치 변경사항 소프트삭제
