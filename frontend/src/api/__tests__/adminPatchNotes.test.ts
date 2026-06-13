@@ -189,6 +189,7 @@ describe('admin patch note api', () => {
 
   it('패치 변경사항 생성 요청을 patch-note-changes 엔드포인트로 보낸다', async () => {
     axiosInstance.defaults.adapter = createAdapter({ id: 11, targetName: '무한의 대검' })
+    setAdminToken('admin-token')
     const payload: AdminPatchChangePayload = {
       afterValue: null,
       beforeValue: null,
@@ -209,5 +210,6 @@ describe('admin patch note api', () => {
     assert.equal(requestCalls[0]?.method, 'post')
     assert.equal(requestCalls[0]?.url, '/admin/patch-note-changes')
     assert.deepEqual(requestCalls[0]?.data, payload)
+    assert.equal(requestCalls[0]?.token, 'admin-token')
   })
 })
