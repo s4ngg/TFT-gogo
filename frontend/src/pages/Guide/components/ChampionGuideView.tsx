@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Star } from 'lucide-react'
 import {
   CHAMPION_PAGE_SIZE,
   type ChampionCostFilter,
@@ -11,13 +10,12 @@ import {
   useGuidePageBounds,
   useGuideTabPagination,
 } from '../hooks/useGuideTabPagination'
+import ChampionGuideCard from './ChampionGuideCard'
 import ChampionDetailDialog from './ChampionDetailDialog'
 import {
   EmptyState,
-  GuideChampionImage,
   GuidePagination,
   GuideStatusBanner,
-  ItemIconStrip,
 } from './GuideShared'
 import styles from '../Guide.module.css'
 
@@ -91,69 +89,14 @@ function ChampionGuideView({
       <section className={styles.championGrid}>
         {visibleChampions.length === 0 && <EmptyState />}
         {visibleChampions.map((championGuide) => (
-          <article
-            className={styles.championCard}
+          <ChampionGuideCard
+            championGuide={championGuide}
+            isFavorite={favoriteChampions.includes(championGuide.name)}
             key={championGuide.name}
-            onClick={() => {
-              openChampionDetail(championGuide)
-            }}
-            onKeyDown={(event) => {
-              if (event.target !== event.currentTarget) return
-              if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault()
-                openChampionDetail(championGuide)
-              }
-            }}
-            role="button"
-            tabIndex={0}
-          >
-            <button
-              aria-pressed={favoriteChampions.includes(championGuide.name)}
-              className={`${styles.favoriteButton} ${favoriteChampions.includes(championGuide.name) ? styles.favoriteActive : ''}`}
-              onClick={(event) => {
-                event.stopPropagation()
-                onFavoriteToggle(championGuide.name)
-              }}
-              onKeyDown={(event) => {
-                event.stopPropagation()
-              }}
-              title={favoriteChampions.includes(championGuide.name) ? '즐겨찾기 해제' : '즐겨찾기 추가'}
-              type="button"
-            >
-              <Star size={14} />
-            </button>
-            <div className={styles.championPortrait}>
-              <GuideChampionImage imageUrl={championGuide.imageUrl} name={championGuide.name} />
-              <span className={styles.championCostBadge}>{championGuide.cost}</span>
-            </div>
-            <div className={styles.championInfo}>
-              <strong>{championGuide.name}</strong>
-              <span>{championGuide.role}</span>
-            </div>
-            <ItemIconStrip items={championGuide.bestItems} onItemSelect={onItemSelect} />
-            <div className={styles.championTooltip} role="tooltip">
-              <div className={styles.tooltipTop}>
-                <GuideChampionImage decorative imageUrl={championGuide.imageUrl} name={championGuide.name} />
-                <div>
-                  <strong>{championGuide.name}</strong>
-                  <span>{championGuide.traits.join(' / ')}</span>
-                </div>
-              </div>
-              <div className={styles.tooltipItems}>
-                <b>3신기</b>
-                <ItemIconStrip items={championGuide.bestItems} onItemSelect={onItemSelect} />
-              </div>
-              <dl className={styles.statGrid}>
-                <div><dt>체력</dt><dd>{championGuide.stats.hp}</dd></div>
-                <div><dt>공격력</dt><dd>{championGuide.stats.ad}</dd></div>
-                <div><dt>공속</dt><dd>{championGuide.stats.attackSpeed}</dd></div>
-                <div><dt>마나</dt><dd>{championGuide.stats.mana}</dd></div>
-                <div><dt>방어</dt><dd>{championGuide.stats.armor}</dd></div>
-                <div><dt>마저</dt><dd>{championGuide.stats.mr}</dd></div>
-              </dl>
-              <p>권장 배치: {championGuide.position}</p>
-            </div>
-          </article>
+            onFavoriteToggle={onFavoriteToggle}
+            onItemSelect={onItemSelect}
+            onOpen={openChampionDetail}
+          />
         ))}
       </section>
       <GuidePagination currentPage={safePage} onPageChange={setCurrentPage} totalPages={pageData.totalPages} />

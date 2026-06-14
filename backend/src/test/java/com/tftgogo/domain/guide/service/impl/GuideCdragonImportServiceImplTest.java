@@ -20,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
@@ -166,7 +167,7 @@ class GuideCdragonImportServiceImplTest {
         // given
         when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
                 .thenReturn(cdragonJson());
-        when(cachedMatchRepository.findByQueueIdIn(any())).thenReturn(List.of(cachedMatch(cachedMatchJson())));
+        when(cachedMatchRepository.findRecentByQueueIds(any(), any())).thenReturn(List.of(cachedMatch(cachedMatchJson())));
         when(guideRepository.findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
                 any(GuideType.class),
                 any(String.class),
@@ -193,6 +194,11 @@ class GuideCdragonImportServiceImplTest {
         assertThat(itemGuide.getDataJson()).contains("\"bestUsers\":[{\"cost\":1");
         assertThat(itemGuide.getDataJson()).contains("\"name\":\"Briar\"");
         assertThat(itemGuide.getDataJson()).contains("tft17_briar_square.tft_set17.png");
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(cachedMatchRepository).findRecentByQueueIds(any(), pageableCaptor.capture());
+        assertThat(pageableCaptor.getValue().getPageNumber()).isZero();
+        assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(500);
     }
 
     @Test
@@ -200,7 +206,7 @@ class GuideCdragonImportServiceImplTest {
         // given
         when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
                 .thenReturn(cdragonJson());
-        when(cachedMatchRepository.findByQueueIdIn(any())).thenReturn(List.of(cachedMatch("   ")));
+        when(cachedMatchRepository.findRecentByQueueIds(any(), any())).thenReturn(List.of(cachedMatch("   ")));
         when(guideRepository.findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
                 any(GuideType.class),
                 any(String.class),
@@ -274,7 +280,7 @@ class GuideCdragonImportServiceImplTest {
         // given
         when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
                 .thenReturn(cdragonJson());
-        when(cachedMatchRepository.findByQueueIdIn(any())).thenReturn(List.of(cachedMatch(cachedMatchJson())));
+        when(cachedMatchRepository.findRecentByQueueIds(any(), any())).thenReturn(List.of(cachedMatch(cachedMatchJson())));
         when(guideRepository.findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
                 any(GuideType.class),
                 any(String.class),
