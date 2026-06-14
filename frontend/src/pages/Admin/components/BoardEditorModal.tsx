@@ -7,7 +7,6 @@ import {
   BOARD_COLS,
   BOARD_LEVELS,
   BOARD_ROWS,
-  COST_COLORS,
   isCompleteItem,
   parseLevelBoards,
   serializeLevelBoards,
@@ -15,6 +14,14 @@ import {
   type ChampInfo,
   type LevelBoards,
 } from '../utils/adminUtils'
+
+const COST_TONE_CLASS_MAP: Record<number, string> = {
+  1: styles.costTone1,
+  2: styles.costTone2,
+  3: styles.costTone3,
+  4: styles.costTone4,
+  5: styles.costTone5,
+}
 
 interface BoardEditorProps {
   deck: AdminDeck
@@ -161,7 +168,7 @@ export default function BoardEditorModal({ deck, locale, onClose, onSave }: Boar
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modalBox} style={{ width: 'min(1100px, 96vw)' }} onClick={(e) => e.stopPropagation()}>
+      <div className={`${styles.modalBox} ${styles.modalBoxWide}`} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <span className={styles.modalTitle}>배치판 편집 — {deck.displayName}</span>
           <button className={styles.modalClose} onClick={onClose}>✕</button>
@@ -192,7 +199,7 @@ export default function BoardEditorModal({ deck, locale, onClose, onSave }: Boar
               if (list.length === 0) return null
               return (
                 <div key={cost} className={styles.costGroup}>
-                  <span className={styles.costLabel} style={{ color: COST_COLORS[cost] }}>
+                  <span className={`${styles.costLabel} ${COST_TONE_CLASS_MAP[cost]}`}>
                     {cost}코스트
                   </span>
                   <div className={styles.champGrid}>

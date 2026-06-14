@@ -40,7 +40,7 @@ export default function HeroAugmentDeckManager() {
       )}
 
       {isLoading ? (
-        <p style={{ color: 'var(--text-muted)' }}>불러오는 중...</p>
+        <p className={styles.mutedText}>불러오는 중...</p>
       ) : isError ? (
         <div>
           <p className={styles.saveError} role="alert" aria-live="polite">
@@ -49,7 +49,7 @@ export default function HeroAugmentDeckManager() {
           <button className={styles.boardBtn} onClick={() => refetch()}>다시 불러오기</button>
         </div>
       ) : decks.length === 0 ? (
-        <p style={{ color: 'var(--text-muted)', marginTop: 24 }}>등록된 영웅증강 덱이 없습니다.</p>
+        <p className={styles.emptyText}>등록된 영웅증강 덱이 없습니다.</p>
       ) : (
         <table className={styles.table}>
           <thead>
@@ -65,13 +65,13 @@ export default function HeroAugmentDeckManager() {
           <tbody>
             {decks.map((deck) => (
               <tr key={deck.id}>
-                <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{deck.id}</td>
-                <td style={{ fontWeight: 600 }}>{deck.name}</td>
+                <td className={styles.tableId}>{deck.id}</td>
+                <td className={styles.strongText}>{deck.name}</td>
                 <td>{deck.grade ?? '-'}</td>
                 <td>{deck.sortOrder}</td>
                 <td>{deck.recommended ? '✓' : '-'}</td>
                 <td>
-                  <div style={{ display: 'flex', gap: 6 }}>
+                  <div className={styles.tableActions}>
                     <button className={styles.boardBtn} onClick={() => setEditing(deck)}>수정</button>
                     <button className={`${styles.boardBtn} ${styles.resetBtn}`} onClick={() => handleDelete(deck.id)}>삭제</button>
                   </div>

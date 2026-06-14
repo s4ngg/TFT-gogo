@@ -23,7 +23,7 @@ export default function AdminPage() {
       </div>
 
       {isLoading ? (
-        <p style={{ color: 'var(--text-muted)' }}>불러오는 중...</p>
+        <p className={styles.mutedText}>불러오는 중...</p>
       ) : (
         <>
           <select

@@ -7,8 +7,12 @@ import BoardEditorModal from './BoardEditorModal'
 import HeroAugmentModal from './HeroAugmentModal'
 import PlayGuideModal from './PlayGuideModal'
 
-const TIER_COLOR: Record<string, string> = {
-  S: '#04f3e5', A: '#a78bfa', B: '#60a5fa', C: '#818cf8', D: '#6b7280',
+const GRADE_CLASS_MAP: Record<string, string> = {
+  S: styles.gradeS,
+  A: styles.gradeA,
+  B: styles.gradeB,
+  C: styles.gradeC,
+  D: styles.gradeD,
 }
 
 interface DeckRowState {
@@ -130,7 +134,7 @@ export default function DeckRow({ deck, onSaved, locale }: { deck: AdminDeck; on
     <>
       <tr className={state.hidden ? styles.hiddenRow : ''}>
         <td>
-          <span className={styles.grade} style={{ color: TIER_COLOR[deck.grade] ?? '#fff' }}>
+          <span className={`${styles.grade} ${GRADE_CLASS_MAP[deck.grade] ?? styles.gradeDefault}`}>
             {deck.grade}
           </span>
         </td>
@@ -152,8 +156,7 @@ export default function DeckRow({ deck, onSaved, locale }: { deck: AdminDeck; on
         <td>
           <input
             type="number"
-            className={styles.nameInput}
-            style={{ width: 60 }}
+            className={`${styles.nameInput} ${styles.sortInput}`}
             value={state.sortPriority}
             onChange={(e) => markDirty({ sortPriority: e.target.value })}
             placeholder="순서"
@@ -171,7 +174,7 @@ export default function DeckRow({ deck, onSaved, locale }: { deck: AdminDeck; on
             <span className={styles.toggleThumb} />
           </label>
         </td>
-        <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        <td className={styles.tableActions}>
           <button
             className={styles.saveBtn}
             onClick={handleSave}

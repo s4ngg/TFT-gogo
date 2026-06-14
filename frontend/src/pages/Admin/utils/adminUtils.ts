@@ -4,7 +4,6 @@ import type { AdminDeck } from '../../../api/adminApi'
 export const BOARD_ROWS = 4
 export const BOARD_COLS = 7
 export const BOARD_LEVELS = [5, 6, 7, 8, 9, 10]
-export const COST_COLORS: Record<number, string> = { 1: '#8e9497', 2: '#4ade80', 3: '#60a5fa', 4: '#c084fc', 5: '#f9c860' }
 
 export interface CellPos { row: number; col: number; items?: string[] }
 export interface ChampInfo { apiName: string; name: string; imageUrl: string; cost: number }
