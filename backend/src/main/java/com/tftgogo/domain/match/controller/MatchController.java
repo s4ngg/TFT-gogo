@@ -5,6 +5,7 @@ import com.tftgogo.domain.match.dto.response.CollectionStatusResponse;
 import com.tftgogo.domain.match.dto.response.MatchDetailResponse;
 import com.tftgogo.domain.match.service.MatchService;
 import com.tftgogo.domain.summoner.dto.response.SummonerMatchItemDto;
+import com.tftgogo.domain.summoner.dto.response.SummonerStatsDto;
 import com.tftgogo.global.cdragon.service.TftAssetCacheService;
 import com.tftgogo.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,15 @@ public class MatchController implements MatchControllerDocs {
                         tftAssetCacheService::getTraitIconUrl,
                         tftAssetCacheService::getTraitName,
                         tftAssetCacheService::getItemIconUrl)));
+    }
+
+    @GetMapping("/{puuid}/stats")
+    public ResponseEntity<ApiResponse<SummonerStatsDto>> getStats(
+            @PathVariable("puuid") String puuid) {
+        return ResponseEntity.ok(ApiResponse.success("통계 조회 성공",
+                matchService.getStats(puuid,
+                        tftAssetCacheService::getTraitIconUrl,
+                        tftAssetCacheService::getTraitName)));
     }
 
     @Override

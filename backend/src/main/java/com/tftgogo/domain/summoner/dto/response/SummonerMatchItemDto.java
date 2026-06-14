@@ -44,6 +44,14 @@ public class SummonerMatchItemDto {
                 .build();
     }
 
+    private static String lastRoundToStage(int lastRound) {
+        if (lastRound <= 3) return "1-" + lastRound;
+        int adjusted = lastRound - 3;
+        int stage = (adjusted - 1) / 7 + 2;
+        int roundInStage = (adjusted - 1) % 7 + 1;
+        return stage + "-" + roundInStage;
+    }
+
     private static String styleToTone(int style) {
         return switch (style) {
             case 2 -> "silver";
@@ -118,7 +126,7 @@ public class SummonerMatchItemDto {
                     .riotIdGameName(p.getRiotIdGameName())
                     .riotIdTagline(p.getRiotIdTagline())
                     .placement(p.getPlacement())
-                    .stage(String.valueOf(p.getLastRound()))
+                    .stage(lastRoundToStage(p.getLastRound()))
                     .traits(p.getTraits().stream()
                             .map(t -> TraitDto.from(t, traitIconFn, traitNameFn))
                             .collect(Collectors.toList()))

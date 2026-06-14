@@ -11,6 +11,7 @@ import com.tftgogo.domain.match.repository.CachedMatchRepository;
 import com.tftgogo.domain.match.service.MatchCollectionService;
 import com.tftgogo.domain.match.service.MatchService;
 import com.tftgogo.domain.summoner.dto.response.SummonerMatchItemDto;
+import com.tftgogo.domain.summoner.dto.response.SummonerStatsDto;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import com.tftgogo.global.riot.RiotApiClient;
@@ -56,6 +57,13 @@ public class MatchServiceImpl implements MatchService {
                                                   Function<String, String> traitNameFn,
                                                   Function<String, String> itemIconFn) {
         return matchCollectionService.fetchAndCache(puuid, start, count, traitIconFn, traitNameFn, itemIconFn);
+    }
+
+    @Override
+    public SummonerStatsDto getStats(String puuid,
+                                     Function<String, String> traitIconFn,
+                                     Function<String, String> traitNameFn) {
+        return matchCollectionService.getAllMatchStats(puuid, traitIconFn, traitNameFn);
     }
 
     @Override
