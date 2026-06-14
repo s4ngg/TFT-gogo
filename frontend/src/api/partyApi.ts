@@ -272,6 +272,24 @@ function hasFailedApiResponse(payload: unknown) {
   return isRecord(payload) && payload.success === false
 }
 
+function getPartyApiErrorMessage(error: unknown, fallbackMessage: string) {
+  if (isRecord(error)) {
+    const response = error.response
+    if (isRecord(response)) {
+      const data = response.data
+      if (isRecord(data) && typeof data.message === 'string' && data.message.trim()) {
+        return data.message
+      }
+    }
+
+    if (typeof error.message === 'string' && error.message.trim()) {
+      return error.message
+    }
+  }
+
+  return fallbackMessage
+}
+
 export function buildLocalPartyPost(request: CreatePartyPostRequest, id: string): PartyPost {
   const style = getPostStyle(request.mode, request.tier)
 
@@ -336,31 +354,43 @@ export async function getPartyPosts(): Promise<PartyPostsResult> {
 }
 
 export async function createPartyPost(request: CreatePartyPostRequest): Promise<PartyPost | null> {
-  const { data } = await axiosInstance.post<ApiResponse<PartyPostResponse | null> | PartyPostResponse | null>(
-    '/community/parties',
-    {
-      title: request.title,
-      content: request.description,
-      deadline: request.deadline,
-      gameMode: toGameMode(request.mode),
-      maxMembers: readNumber(request.capacity.split('/')[1]) ?? 2,
-      tags: request.tags,
-    },
-  )
+  try {
+    const { data } = await axiosInstance.post<ApiResponse<PartyPostResponse | null> | PartyPostResponse | null>(
+      '/community/parties',
+      {
+        title: request.title,
+        content: request.description,
+        deadline: request.deadline,
+        gameMode: toGameMode(request.mode),
+        maxMembers: readNumber(request.capacity.split('/')[1]) ?? 2,
+        tags: request.tags,
+      },
+    )
 
-  if (hasFailedApiResponse(data)) {
-    throw new Error('파티 모집글 등록 실패')
+    if (hasFailedApiResponse(data)) {
+      throw new Error('파티 모집글 등록 실패')
+    }
+
+    const payload = unwrapApiResponse(data)
+
+    return isRecord(payload) ? normalizePartyPost(payload, 0) : null
+  } catch (error) {
+    throw new Error(getPartyApiErrorMessage(error, '파티 모집글 등록 실패'))
   }
-
-  const payload = unwrapApiResponse(data)
-
-  return isRecord(payload) ? normalizePartyPost(payload, 0) : null
 }
 
 export async function joinPartyPost(partyPostId: string): Promise<void> {
-  await axiosInstance.post(`/community/parties/${partyPostId}/join`)
+  try {
+    await axiosInstance.post(`/community/parties/${partyPostId}/join`)
+  } catch (error) {
+    throw new Error(getPartyApiErrorMessage(error, '파티 참여 요청 실패'))
+  }
 }
 
 export async function cancelPartyJoin(partyPostId: string): Promise<void> {
-  await axiosInstance.delete(`/community/parties/${partyPostId}/join`)
+  try {
+    await axiosInstance.delete(`/community/parties/${partyPostId}/join`)
+  } catch (error) {
+    throw new Error(getPartyApiErrorMessage(error, '파티 참여 취소 실패'))
+  }
 }

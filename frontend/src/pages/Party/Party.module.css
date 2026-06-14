@@ -105,9 +105,9 @@
 }
 
 .primaryButton:disabled {
-  color: #7f8d98;
-  border-color: rgba(110, 142, 150, 0.22);
-  background: rgba(8, 20, 27, 0.72);
+  color: var(--text-muted);
+  border-color: var(--border-subtle);
+  background: var(--bg-btn-dark-soft);
   cursor: not-allowed;
 }
 
@@ -223,11 +223,11 @@
 .statusMessage {
   margin: 10px 0 0;
   padding: 9px 10px;
-  border: 1px solid rgba(5, 221, 213, 0.24);
-  border-radius: 8px;
-  color: #b8c2ca;
-  background: rgba(3, 44, 49, 0.32);
-  font-size: 12px;
+  border: 1px solid var(--cyan-border-subtle);
+  border-radius: var(--radius-button);
+  color: var(--text-secondary);
+  background: var(--cyan-bg-faint);
+  font-size: var(--font-size-xs);
   font-weight: 600;
 }
 
@@ -426,9 +426,9 @@
 }
 
 .joinButton:disabled {
-  color: #7f8d98;
-  border-color: rgba(110, 142, 150, 0.22);
-  background: rgba(8, 20, 27, 0.72);
+  color: var(--text-muted);
+  border-color: var(--border-subtle);
+  background: var(--bg-btn-dark-soft);
   cursor: not-allowed;
 }
 
