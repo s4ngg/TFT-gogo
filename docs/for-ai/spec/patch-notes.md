@@ -21,6 +21,7 @@ Page: PatchNotes (/patch-notes).
 - POST   /api/admin/patch-note-changes           -> create patch change
 - PATCH  /api/admin/patch-note-changes/{changeId} -> update patch change
 - DELETE /api/admin/patch-note-changes/{changeId} -> soft delete patch change
+- POST   /api/admin/patch-notes/import/crawl     -> planned official Riot/TFT patch-note crawl import
 </backend>
 <frontend>
 - frontend/src/api/patchNotes.ts
@@ -86,6 +87,88 @@ Page: PatchNotes (/patch-notes).
 - Deleting a patch note must soft-delete its active/non-deleted patch changes.
 </backend-implementation>
 
+<crawler-research-2026-06-14>
+- Official source policy: use Riot/TFT official patch-note pages only. Do not build the production importer from local seed/fixture data.
+- Tag/list page checked: https://www.leagueoflegends.com/ko-kr/news/tags/teamfight-tactics-patch-notes/
+- Detail pages checked:
+  - https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-2/
+  - https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-1/
+  - https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-15-9-notes/
+  - https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-14-24-notes/
+- Raw HTML check confirmed that both list and detail pages include script#__NEXT_DATA__.
+- List page JSON path confirmed:
+  - props.pageProps.page.blades contains riotbar, textMasthead, articleCardGrid.
+  - articleCardGrid.items[0] contains title, publishedAt, description.body, imageMedia.url, analytics.contentId, action.payload.url.
+  - Example latest item at research time was 17.2 with publishedAt=2026-04-28T18:00:00.000Z and action.payload.url pointing to the teamfighttactics.leagueoflegends.com detail URL.
+  - This 17.2 value is a research snapshot, not a hardcoded latest-patch rule. Runtime latest selection must sort official list items by publishedAt/current source data instead of assuming a fixed version.
+- Detail page JSON path confirmed on 17.2:
+  - props.pageProps.page.type=patchNote.
+  - props.pageProps.page.blades contains riotbar, articleMasthead, patchNotesRichText, articleCardCarousel.
+  - articleMasthead contains title, description.body, publishDate, authors[].name.
+  - patchNotesRichText.richText.type=html and patchNotesRichText.richText.body contains the article body.
+- Detail richText HTML check confirmed:
+  - h2 section examples: 4월 30일 17.2 추가 패치 노트, 패치 하이라이트, 체계, 대규모 변경 사항, 소규모 변경 사항, 버그 수정.
+  - h4.change-detail-title examples: 신의 선물, 증강, 특성, 유닛, 시작 조우자, 증강 등장 확률, 전리품 체계, 신의 은총.
+  - li rows include plain text and before/after arrows such as "주문력 175/200/250 ⇒ 주문력 225/250/300".
+  - Some rows contain more than one before/after pair. Parser must preserve full summary when safe splitting is not possible.
+- jsoup dependency research:
+  - Current official jsoup release checked on 2026-06-14: 1.22.2.
+  - Gradle notation: implementation 'org.jsoup:jsoup:1.22.2'.
+  - License: MIT.
+  - Runtime dependencies: none required.
+  - Java support: Java 8+, compatible with backend Java 17.
+</crawler-research-2026-06-14>
+
+<crawler-implementation-slices>
+- PR 1, DB metadata contract:
+  - Add source/import metadata to patch_notes and patch_changes before write-side import.
+  - Keep the public/admin CRUD behavior unchanged.
+  - Add repository/service tests for sourceKey duplicate matching and manual-edit preservation.
+- PR 2, fetcher/parser/snapshot:
+  - Add jsoup dependency.
+  - Add HTTP fetch abstraction and parser records.
+  - Add reduced HTML snapshots under backend/src/test/resources/patchnote/crawl/.
+  - No DB writes in this PR.
+- PR 3, importer upsert/dryRun:
+  - Convert parser output into import candidates.
+  - Match existing patch_notes by version and patch_changes by patchNoteId + sourceKey.
+  - Implement dryRun, forceOverwrite, warning/error result reporting, and manual-edit skip rules.
+- PR 4, admin endpoint/UI:
+  - Expose POST /api/admin/patch-notes/import/crawl.
+  - Add admin API function and admin import controls.
+  - Display created/updated/skipped/review-required/error counts before and after confirmed import.
+- Low-priority follow-up:
+  - Refresh patch-note fallback images and guide fallback sample assets after current PRs merge.
+</crawler-implementation-slices>
+
+<crawler-backend-structure>
+- Suggested packages under backend/src/main/java/com/tftgogo/domain/patchnote/:
+  - service/PatchNoteCrawlerFetchService.java
+  - service/PatchNoteCrawlerParser.java
+  - service/PatchNoteCrawlerImportService.java
+  - service/impl/RiotPatchNoteCrawlerFetchServiceImpl.java
+  - service/impl/JsoupPatchNoteCrawlerParser.java
+  - service/impl/PatchNoteCrawlerImportServiceImpl.java
+  - dto/request/PatchNoteCrawlImportRequest.java
+  - dto/response/PatchNoteCrawlImportResponse.java
+  - dto/response/PatchNoteCrawlRowErrorResponse.java
+  - dto/crawl/PatchNoteCrawlListItem.java
+  - dto/crawl/PatchNoteCrawlDocument.java
+  - dto/crawl/PatchChangeCrawlRow.java
+  - dto/crawl/PatchNoteImportCandidate.java
+  - dto/crawl/PatchChangeImportCandidate.java
+- Suggested config:
+  - global/config or domain/patchnote/config/PatchNoteCrawlerProperties.java using @ConfigurationProperties.
+  - Properties should cover tagUrl, defaultLocale, userAgent, connectTimeoutMillis, readTimeoutMillis, and maxDetailRows.
+- Controller rule:
+  - Add the import endpoint to AdminPatchNoteController.
+  - Swagger annotations belong in AdminPatchNoteControllerDocs only.
+  - Endpoint must return ResponseEntity<ApiResponse<PatchNoteCrawlImportResponse>>.
+- HTTP rule:
+  - Use a backend HTTP client pattern with explicit timeout and user-agent.
+  - Log sourceUrl and high-level failure reason only. Do not log full official HTML bodies.
+</crawler-backend-structure>
+
 <crawler-import-plan>
 - Production import source is the official Riot/TFT patch-note site, not fixture/seed files.
 - Tag/list page: https://www.leagueoflegends.com/ko-kr/news/tags/teamfight-tactics-patch-notes/
@@ -112,6 +195,79 @@ Page: PatchNotes (/patch-notes).
 - Automatic scheduling is out of scope until manual/admin-triggered crawling is stable.
 </crawler-import-plan>
 
+<crawler-fetcher-contract>
+- Input:
+  - sourceUrl if an admin targets a specific detail page.
+  - tagUrl if sourceUrl is omitted and the latest official TFT patch note must be discovered.
+  - locale, default ko-kr.
+- Output:
+  - rawHtml.
+  - sourceUrl after redirect resolution when available.
+  - fetchedAt.
+  - httpStatus.
+- Failure handling:
+  - DNS/connection/timeout/5xx should fail the import request with a BusinessException and a safe admin-facing message.
+  - 404 or unsupported URL should fail fast before parsing.
+  - Parser should not retry on malformed HTML; return parserWarnings/rowErrors where partial parsing is possible.
+- URL policy:
+  - Allow only https URLs with exact official hosts: www.leagueoflegends.com and teamfighttactics.leagueoflegends.com.
+  - Validate host names by parsing URI components. Do not use contains() or broad endsWith() checks for official-host validation.
+  - Reject arbitrary external hosts from admin input to avoid turning the endpoint into a generic fetch proxy.
+</crawler-fetcher-contract>
+
+<crawler-parser-output-contract>
+- PatchNoteCrawlListItem:
+  - title: list card title.
+  - publishedAt: list card date as LocalDateTime-compatible ISO string.
+  - description: description.body stripped to plain text.
+  - imageUrl: imageMedia.url.
+  - contentId: analytics.contentId, nullable.
+  - detailUrl: action.payload.url.
+- PatchNoteCrawlDocument:
+  - sourceUrl, locale, contentId.
+  - title, version, summary, publishedAt.
+  - imageUrl.
+  - authors: list of author names.
+  - sections: ordered heading tree for diagnostics and stable sourceKey generation.
+  - rows: ordered PatchChangeCrawlRow list.
+- PatchChangeCrawlRow:
+  - sourceKeyCandidate: raw key material such as contentId + headingPath + sourceOrder when contentId exists. This value is for hash generation only and should not be stored directly as a unique DB key.
+  - sourceKeyHash: fixed-length deterministic hash generated from normalized sourceKeyCandidate material when available.
+  - headingPath: h2/h3/h4 text path, joined with " > ".
+  - sourceOrder: 0-based row order inside the detail document.
+  - sectionTitle: nearest h2.
+  - groupTitle: nearest h4.change-detail-title or nearest meaningful heading.
+  - rowText: normalized plain text.
+  - rawHtml: reduced row HTML for tests/debugging, not for logging.
+  - beforeText and afterText only when one clear arrow pair exists.
+  - parserWarnings: uncertain split, missing heading, unsupported nested list, or ambiguous category.
+</crawler-parser-output-contract>
+
+<crawler-normalization-contract>
+- PatchNoteImportCandidate:
+  - version: explicit request.version first, then title, then detail URL slug.
+  - title: articleMasthead.title.
+  - summary: articleMasthead.description.body stripped to plain text.
+  - description: optional longer intro text. Avoid storing the whole article body.
+  - focus: nullable, admin-curated by default unless a short confident focus can be derived.
+  - imageUrl: articleMasthead/banner image or list image.
+  - publishedAt: articleMasthead.publishDate, fallback list publishedAt.
+  - current: false by default unless admin explicitly requests current.
+  - highlights: only parse from a clear patch-highlight section; otherwise empty list.
+  - tags: include source tags and review markers, not raw article HTML.
+- PatchChangeImportCandidate:
+  - category: conservative enum mapping from heading and row context.
+  - type: conservative enum mapping from wording and before/after direction.
+  - impact: MEDIUM by default.
+  - targetName: text before the first colon when reliable, otherwise group/heading-derived target.
+  - targetKey: normalized lowercase slug from category + targetName until verified CDragon mapping exists.
+  - summary: full normalized row text.
+  - beforeValue/afterValue: only set when there is exactly one clear before/after pair.
+  - imageUrl: null by default.
+  - active: false when review is required, true only when category/type parsing is confident.
+  - tagsJson: include "import:riot", "locale:ko-kr", and "review:required" when needed.
+</crawler-normalization-contract>
+
 <crawler-import-contract>
 - Planned endpoint is POST /api/admin/patch-notes/import/crawl. Treat it as planned until the crawler implementation PR lands; existing admin CRUD must keep working without it.
 - Request DTO fields:
@@ -127,7 +283,7 @@ Page: PatchNotes (/patch-notes).
   - parserWarnings: list of non-blocking parser warnings such as missing optional masthead image or uncertain heading mapping.
   - rowErrors: list of row-level failures with sourceKey, headingPath, sourceOrder, rowTextPreview, and reason.
 - dryRun must perform fetch, parse, normalize, duplicate matching, and validation, but it must not create, update, soft-delete, reactivate, or unset current patch notes.
-- forceOverwrite must affect only crawler-owned fields. It must not bypass enum validation, JSON validation, soft-delete policy, admin-token protection, or current-patch uniqueness.
+- forceOverwrite must affect only crawler-owned fields on imported patch notes and imported patch changes. It must not bypass enum validation, JSON validation, soft-delete policy, admin-token protection, current-patch uniqueness, or official URL validation.
 </crawler-import-contract>
 
 <crawler-parser-rules>
@@ -145,24 +301,60 @@ Page: PatchNotes (/patch-notes).
   - ADJUST: mixed before/after changes, reworks, bug fixes, removals, unclear numeric direction, and any row where BUFF/NERF/NEW confidence is low.
 - Impact should default to MEDIUM unless section context or manually curated rules justify HIGH or LOW. Do not invent impact values outside HIGH, MEDIUM, LOW.
 - Review-required rows should include a stable marker such as review:required in tagsJson or equivalent import metadata, and should default to active=false until an admin confirms them.
+- Do not infer TFT gameplay value too aggressively. For example, "마나 60 -> 50" may be a buff for a champion but the same numeric decrease can be a nerf in another context. If the parser cannot determine value direction from context, use ADJUST + review-required.
+- Rows under bug-fix sections should usually be SYSTEM + ADJUST unless the text clearly targets a champion/trait/item and should be curated differently.
 </crawler-parser-rules>
 
 <crawler-persistence>
 - Current PatchNote/PatchChange entities do not yet store crawler source metadata. Add this metadata before implementing write-side import instead of hiding it in summary or tagsJson only.
-- Recommended PatchNote metadata: sourceUrl, sourceLocale, importedAt, and importSource. Keep version as the upsert key.
+- Recommended PatchNote metadata: sourceUrl, sourceLocale, importedAt, importSource, and manuallyEdited. Keep version as the upsert key.
 - Recommended PatchChange metadata: sourceKey, sourceUrl, sourceHeadingPath, sourceOrder, importedAt, importSource, and manuallyEdited.
 - PatchNote upsert key is version. Importing the same version twice must not create duplicate patch_notes rows.
-- PatchChange upsert must use a stable sourceKey derived from official source structure when available, such as contentId + heading path + source order. If no stable key exists, use a deterministic hash from sourceUrl, version, heading path, category, targetName, normalized row text, and source order.
+- PatchChange upsert must use a stable fixed-length sourceKey hash derived from official source structure when available. Preferred sourceKey format is a sha-256 hex hash of normalized sourceUrl, version, contentId, heading path, category, targetName, normalized row text, and source order.
+- Do not store long headingPath or raw row text as the unique sourceKey. Store raw diagnostics separately in sourceHeadingPath/sourceOrder and keep sourceKey suitable for DB indexing.
 - If MySQL index constraints are added, prefer a uniqueness guarantee for imported rows by patch_note_id + source_key while still allowing manually created rows without a sourceKey. If the database cannot express the desired partial uniqueness cleanly, enforce the imported-row uniqueness in service logic and cover it with tests.
 - Manual admin edits must be preserved. Admin update endpoints should mark imported PatchNote/PatchChange rows as manuallyEdited or equivalent.
+- PatchNote manuallyEdited=true must protect admin-edited title, summary, description, focus, imageUrl, highlightsJson, and current flag from normal re-import overwrites.
 - Repeated import behavior:
-  - existing imported row + manuallyEdited=false + forceOverwrite=false: update crawler-owned fields.
-  - existing imported row + manuallyEdited=true + forceOverwrite=false: skip content overwrite and report skipped.
-  - existing imported row + manuallyEdited=true + forceOverwrite=true: overwrite only after validation and report updated.
+  - existing imported patch note/change + manuallyEdited=false + forceOverwrite=false: update crawler-owned fields.
+  - existing imported patch note/change + manuallyEdited=true + forceOverwrite=false: skip content overwrite and report skipped.
+  - existing imported patch note/change + manuallyEdited=true + forceOverwrite=true: overwrite crawler-owned fields only after validation and report updated.
   - soft-deleted imported row: do not silently reactivate unless the request explicitly supports reactivation.
 - Imported rows that cannot be confidently classified into CHAMPION, TRAIT, ITEM, AUGMENT, or SYSTEM must be marked for admin review and should not be exposed as active public changes until curated.
 - Imported rows that cannot be confidently mapped to BUFF, NERF, ADJUST, or NEW should default to ADJUST with review-required tagging rather than inventing unsupported enum values.
 </crawler-persistence>
+
+<crawler-admin-ui-plan>
+- Admin import controls should live inside the admin patch-note screen, not the public PatchNotes page.
+- Minimum controls:
+  - sourceUrl text input for a specific official detail URL.
+  - version text input, optional override.
+  - locale select with ko-kr default.
+  - dryRun toggle, default on.
+  - forceOverwrite toggle, default off and visually separated from dryRun.
+  - import/dry-run button using existing admin token request flow.
+- Result panel:
+  - Show sourceUrl, version, dryRun, patchNoteId.
+  - Show createdCount, updatedCount, skippedCount, reviewRequiredCount, failedCount.
+  - Show parserWarnings and rowErrors in a compact table.
+  - If dryRun=false succeeds, invalidate admin patch-note and selected patch-change queries.
+- UX safety:
+  - First click should default to dryRun.
+  - Actual write import should require dryRun=false and a visible result preview or explicit admin confirmation.
+  - forceOverwrite should explain that it overwrites crawler-owned fields only and does not bypass manual-edit protection unless backend allows it.
+</crawler-admin-ui-plan>
+
+<crawler-acceptance-criteria>
+- A dry run against an official ko-kr detail URL returns parsed patch note metadata and row counts without creating or updating DB rows.
+- Importing the same official detail URL twice does not create duplicate patch_notes or duplicate imported patch_changes.
+- Manually edited imported patch notes and patch changes are not overwritten when forceOverwrite=false.
+- Imported patch changes use fixed-length sourceKey hashes, while long heading paths and row text remain diagnostics only.
+- Admin import endpoint accepts only https URLs from exact official hosts and rejects lookalike or arbitrary external hosts.
+- Ambiguous rows are returned with review-required markers and are inactive by default.
+- Parser tests pass using saved snapshots and do not depend on live Riot page availability.
+- Admin import endpoint is protected by X-Admin-Token and rejects non-official sourceUrl hosts.
+- Public PatchNotes endpoints keep their existing response shape after crawler metadata is added.
+</crawler-acceptance-criteria>
 
 <crawler-fixtures>
 - Parser tests should store reduced, representative HTML snapshots under backend/src/test/resources/patchnote/crawl/ rather than relying on live Riot pages.
