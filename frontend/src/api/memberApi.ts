@@ -1,90 +1,65 @@
-import axiosInstance from "./axiosInstance"
-import type {AuthUser} from "../store/useAuthStore"
-
-
-interface ApiEnvelope<T>{
-    data: T
-    message?: string
-    success?: boolean
-}
-
-interface RawAuthResponse {
-    accessToken?: string
-    jwt?: string
-    member?: Partial<AuthUser>
-    token?: string
-    user?: Partial<AuthUser>
-}
+import axiosInstance from './axiosInstance'
+import type { ApiResponse } from './apiResponse'
+import { unwrapApiResponse } from './apiResponse'
+import {
+  normalizeAuthResponse,
+  normalizeMemberResponse,
+  type AuthResponse,
+  type MemberProfile,
+  type RawAuthResponse,
+  type RawMemberResponse,
+} from './memberApiPayload'
 
 export interface LoginRequest {
-    email: string
-    password: string
+  email: string
+  password: string
 }
 
 export interface SignupRequest extends LoginRequest {
-    summonerName?: string
-    tagLine?:string
+  nickname: string
 }
 
-export interface AuthResponse {
-    token: string
-    user: AuthUser
+export async function login(request: LoginRequest): Promise<AuthResponse> {
+  try {
+    const response = await axiosInstance.post<RawAuthResponse | ApiResponse<RawAuthResponse>>(
+      '/v1/auth/login',
+      request,
+    )
+    const payload = unwrapApiResponse(response.data)
+
+    return normalizeAuthResponse(payload, request.email)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(`Login failed: ${message}`)
+  }
 }
 
-function unwrapResponse<T>(payload: T | ApiEnvelope<T>) {
-    if (payload && typeof payload === 'object' && 'data' in payload) {
-        return payload.data
-    }
+export async function signup(request: SignupRequest): Promise<AuthResponse> {
+  try {
+    const response = await axiosInstance.post<RawAuthResponse | ApiResponse<RawAuthResponse>>(
+      '/v1/auth/signup',
+      request,
+    )
 
-    return payload
+    const payload = unwrapApiResponse(response.data)
+
+    return normalizeAuthResponse(payload, request.email)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(`Signup failed: ${message}`)
+  }
 }
 
-function normalizeAuthResponse(payload: RawAuthResponse, fallbackEmail: string): AuthResponse {
-    const token = payload.token ?? payload.accessToken ?? payload.jwt
+export async function getMe(): Promise<MemberProfile> {
+  try {
+    const response = await axiosInstance.get<RawMemberResponse | ApiResponse<RawMemberResponse>>(
+      '/v1/members/me',
+    )
+    const payload = unwrapApiResponse(response.data)
 
-    if (!token) {
-        throw new Error('Auth response does not include a token')
-    }
-
-    const userPayload = payload.user ?? payload.member ?? {}
-    const email = userPayload.email ?? fallbackEmail
-
-    return{
-        token,
-        user :{
-            ...userPayload,
-            email,
-        },
-    }
-}
-
-export async function login(request: LoginRequest) {
-    try {
-        const response = await axiosInstance.post<RawAuthResponse | ApiEnvelope<RawAuthResponse>>(
-            '/v1/auth/login',
-            request,
-        )
-        const payload = unwrapResponse(response.data)
-
-        return normalizeAuthResponse(payload, request.email)
-    } catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
-        throw new Error(`Login failed: ${message}`)
-    }
-}
-
-export async function signup(request: SignupRequest) {
-    try {
-        const response = await axiosInstance.post<RawAuthResponse | ApiEnvelope<RawAuthResponse>>(
-            '/v1/auth/signup',
-            request,
-        )
-
-        const payload = unwrapResponse(response.data)
-
-        return normalizeAuthResponse(payload, request.email)
-    } catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
-        throw new Error(`Signup failed: ${message}`)
-    }
+    return normalizeMemberResponse(payload)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(`Fetch current member failed: ${message}`)
+  }
 }

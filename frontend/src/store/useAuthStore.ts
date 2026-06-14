@@ -13,31 +13,33 @@ export interface AuthUser {
 
 interface AuthPayload {
   token: string
-  user: AuthUser
 }
 
 interface AuthState {
   token: string | null
-  user: AuthUser | null
   setAuth: (auth: AuthPayload) => void
-  setUser: (user: AuthUser | null) => void
   clearAuth: () => void
+}
+
+function hasToken(value: unknown): value is { token?: string | null } {
+  return typeof value === 'object' && value !== null && 'token' in value
 }
 
 const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       token: null,
-      user: null,
-      setAuth: ({ token, user }) => set({ token, user }),
-      setUser: (user) => set({ user }),
-      clearAuth: () => set({ token: null, user: null }),
+      setAuth: ({ token }) => set({ token }),
+      clearAuth: () => set({ token: null }),
     }),
     {
       name: 'tftgogo-auth',
+      version: 1,
+      migrate: (persistedState) => ({
+        token: hasToken(persistedState) ? persistedState.token ?? null : null,
+      }),
       partialize: (state) => ({
         token: state.token,
-        user: state.user,
       }),
     },
   ),
