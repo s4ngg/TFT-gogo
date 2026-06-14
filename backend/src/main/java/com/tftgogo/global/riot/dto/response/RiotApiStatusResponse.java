@@ -1,5 +1,6 @@
 package com.tftgogo.global.riot.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -13,10 +14,10 @@ public class RiotApiStatusResponse {
     private String checkedAt;
     private String message;
     private int queueSize;
-    private String status;
+    private RiotApiStatusKind status;
 
     public static RiotApiStatusResponse from(int queueSize) {
-        String status = queueSize > 0 ? "queue" : "available";
+        RiotApiStatusKind status = queueSize > 0 ? RiotApiStatusKind.QUEUE : RiotApiStatusKind.AVAILABLE;
         String message = queueSize > 0
                 ? "Riot API 요청 대기열을 처리 중입니다."
                 : "Riot API 요청 대기열이 비어 있습니다.";
@@ -28,5 +29,21 @@ public class RiotApiStatusResponse {
                 .queueSize(queueSize)
                 .status(status)
                 .build();
+    }
+
+    public enum RiotApiStatusKind {
+        AVAILABLE("available"),
+        QUEUE("queue");
+
+        private final String value;
+
+        RiotApiStatusKind(String value) {
+            this.value = value;
+        }
+
+        @JsonValue
+        public String getValue() {
+            return value;
+        }
     }
 }

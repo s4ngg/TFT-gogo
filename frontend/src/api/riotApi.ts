@@ -60,11 +60,7 @@ export async function getRiotApiStatus() {
     }
 
     return data.data
-  } catch (error) {
-    if (error instanceof Error && error.message.trim()) {
-      throw new Error(`Riot API 상태 조회 실패: ${error.message}`)
-    }
-
+  } catch {
     throw new Error('Riot API 상태 조회 실패')
   }
 }

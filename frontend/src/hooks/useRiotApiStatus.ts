@@ -11,10 +11,10 @@ export interface RiotApiStatus {
 }
 
 export const fallbackRiotApiStatus: RiotApiStatus = {
-  activeConnections: 4113,
+  activeConnections: 0,
   checkedAt: new Date(0).toISOString(),
-  message: '상태 API 응답을 확인하지 못해 최근 기준 상태로 표시 중입니다.',
-  queueSize: 8,
+  message: '상태 API 응답을 확인하지 못해 수치를 표시하지 않습니다.',
+  queueSize: 0,
   source: 'fallback',
   status: 'degraded',
 }
