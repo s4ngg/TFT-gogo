@@ -39,6 +39,72 @@ export function parseCapacity(capacity: string) {
   return { current, total }
 }
 
+export function replacePost(posts: PartyPost[], nextPost: PartyPost) {
+  return posts.map((post) => (post.id === nextPost.id ? nextPost : post))
+}
+
+export function restorePostOverride(
+  overrides: Record<string, PartyPost>,
+  postId: string,
+  previousOverride: PartyPost | undefined,
+) {
+  if (previousOverride) {
+    return {
+      ...overrides,
+      [postId]: previousOverride,
+    }
+  }
+
+  const nextOverrides = { ...overrides }
+  delete nextOverrides[postId]
+
+  return nextOverrides
+}
+
+export function removePostOverride(overrides: Record<string, PartyPost>, postId: string) {
+  const nextOverrides = { ...overrides }
+  delete nextOverrides[postId]
+
+  return nextOverrides
+}
+
+export function updatePostJoinState(post: PartyPost, isJoining: boolean): PartyPost {
+  const { current, total } = parseCapacity(post.capacity)
+  const nextCurrent = isJoining ? Math.min(total, current + 1) : Math.max(0, current - 1)
+
+  return {
+    ...post,
+    capacity: `${nextCurrent}/${total}`,
+    isJoined: isJoining,
+    status: nextCurrent >= total ? '대기중' : '모집중',
+  }
+}
+
+export function getDefaultDeadlineInput() {
+  const deadline = new Date(Date.now() + 1000 * 60 * 60 * 2)
+  const year = deadline.getFullYear()
+  const month = String(deadline.getMonth() + 1).padStart(2, '0')
+  const day = String(deadline.getDate()).padStart(2, '0')
+  const hour = String(deadline.getHours()).padStart(2, '0')
+  const minute = String(deadline.getMinutes()).padStart(2, '0')
+
+  return `${year}-${month}-${day}T${hour}:${minute}`
+}
+
+export function formatDeadlineForRequest(value: string) {
+  const trimmedValue = value.trim()
+
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(trimmedValue)) {
+    return `${trimmedValue}:00`
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(trimmedValue)) {
+    return trimmedValue
+  }
+
+  return null
+}
+
 export function getPostStyle(mode: PartyMode, tier: string): PartyPostStyle {
   if (mode === '일반') {
     return { icon: 'spark', tone: 'cyan' }

@@ -10,6 +10,7 @@ export interface PartyPost {
   description: string
   icon: PartyIcon
   id: string
+  isJoined?: boolean
   mode: PartyMode
   status: '모집중' | '대기중'
   tags: string[]

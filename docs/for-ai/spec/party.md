@@ -33,8 +33,8 @@ Page: Party (/party).
 <frontend>
 - frontend/src/pages/Party/Party.tsx
 - frontend/src/pages/Party/partyFilters.ts
-- Future API layer: frontend/src/api/partyApi.ts
-- Future server-state hook: frontend/src/pages/Party/hooks/
+- API layer: frontend/src/api/partyApi.ts
+- Server-state hook: frontend/src/pages/Party/hooks/usePartyPosts.ts
 </frontend>
 </api>
 
@@ -102,7 +102,6 @@ Page: Party (/party).
 </validation>
 
 <open-issues>
-- Party.tsx still uses local state and mock data until a frontend integration PR connects it to this API.
 - Realtime chat transport and reconnect/fallback policy are still undecided.
 - Party close/delete policy for owners is still undecided.
 - The party_post_tags helper table is required for custom tags because tags are not present in the shared ERD snapshot.
