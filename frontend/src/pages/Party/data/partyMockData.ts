@@ -3,6 +3,7 @@ import type { ChatMessage, ChatRoom, PartyPost } from '../types'
 export const initialPartyPosts: PartyPost[] = [
   {
     id: 'party-master-duo',
+    chatRoomId: 'party-master-duo',
     title: '마스터 이상 듀오 구합니다',
     mode: '랭크',
     tier: '마스터+',
@@ -16,6 +17,7 @@ export const initialPartyPosts: PartyPost[] = [
   },
   {
     id: 'party-diamond-practice',
+    chatRoomId: 'party-diamond-practice',
     title: '다이아 구간 야부/연습 같이해요',
     mode: '랭크',
     tier: '다이아+',
@@ -29,6 +31,7 @@ export const initialPartyPosts: PartyPost[] = [
   },
   {
     id: 'party-casual-evening',
+    chatRoomId: 'party-casual-evening',
     title: '저녁 근접, 편하게 즐기실 분!',
     mode: '일반',
     tier: '제한 없음',
@@ -42,6 +45,7 @@ export const initialPartyPosts: PartyPost[] = [
   },
   {
     id: 'party-weekend-master',
+    chatRoomId: 'party-weekend-master',
     title: '주말 마스터 달성 목표!',
     mode: '랭크',
     tier: '플래티넘+',

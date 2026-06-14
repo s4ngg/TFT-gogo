@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { initialPartyPosts } from '../data/partyMockData'
 import type { PartyFilter } from '../partyFilters'
 import type { PartyMode, PartyPost } from '../types'
+import { createPartyChatRoomId } from '../utils/partyChatRooms'
 import {
   filterPartyPosts,
   getPostStyle,
@@ -13,10 +14,11 @@ import {
 const PARTY_PAGE_SIZE = 3
 
 interface UsePartyPostsOptions {
-  onPartyMessage: (message: string) => void
+  onPartyMessage: (post: PartyPost, message: string) => void
+  onPartyPostCreated: (post: PartyPost, message?: string) => void
 }
 
-export function usePartyPosts({ onPartyMessage }: UsePartyPostsOptions) {
+export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPostsOptions) {
   const [posts, setPosts] = useState<PartyPost[]>(initialPartyPosts)
   const [selectedFilter, setSelectedFilter] = useState<PartyFilter>('전체')
   const [searchDraft, setSearchDraft] = useState('')
@@ -83,8 +85,10 @@ export function usePartyPosts({ onPartyMessage }: UsePartyPostsOptions) {
       .map((tag) => tag.trim())
       .filter(Boolean)
       .slice(0, 4)
+    const nextPostId = `party-${crypto.randomUUID()}`
     const nextPost: PartyPost = {
-      id: `party-${crypto.randomUUID()}`,
+      id: nextPostId,
+      chatRoomId: createPartyChatRoomId(nextPostId),
       title,
       mode: modeDraft,
       tier: tierDraft,
@@ -108,6 +112,7 @@ export function usePartyPosts({ onPartyMessage }: UsePartyPostsOptions) {
     setDescriptionDraft('')
     setComposeError('')
     setCurrentPage(1)
+    onPartyPostCreated(nextPost)
   }
 
   const toggleJoin = (postId: string) => {
@@ -128,6 +133,12 @@ export function usePartyPosts({ onPartyMessage }: UsePartyPostsOptions) {
     const nextMessage = alreadyJoined
       ? `${targetPost.title} 참여 신청을 취소했어요.`
       : `${targetPost.title} 참여 신청했습니다. (${nextCurrent}/${total})`
+    const nextStatus: PartyPost['status'] = nextCurrent >= total ? '대기중' : '모집중'
+    const updatedPost: PartyPost = {
+      ...targetPost,
+      capacity: `${nextCurrent}/${total}`,
+      status: nextStatus,
+    }
 
     setPosts((currentPosts) =>
       currentPosts.map((post) => {
@@ -138,13 +149,13 @@ export function usePartyPosts({ onPartyMessage }: UsePartyPostsOptions) {
         return {
           ...post,
           capacity: `${nextCurrent}/${total}`,
-          status: nextCurrent >= total ? '대기중' : '모집중',
+          status: nextStatus,
         }
       }),
     )
 
     setJoinedPostId(alreadyJoined ? null : postId)
-    onPartyMessage(nextMessage)
+    onPartyMessage(updatedPost, nextMessage)
   }
 
   return {

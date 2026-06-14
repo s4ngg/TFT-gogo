@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import useAuthStore from '../../../store/useAuthStore'
 import { initialChatRooms } from '../data/partyMockData'
+import type { PartyPost } from '../types'
+import { createPartyChatRoom, upsertChatRoom } from '../utils/partyChatRooms'
 import { useRealtimeChat } from './useRealtimeChat'
 
-const PARTY_ROOM_ID = 'party-recruitment'
 const DEFAULT_TIER = 'Unranked'
 
 export function usePartyChat() {
@@ -26,7 +27,7 @@ export function usePartyChat() {
   const currentUserName = authUser?.nickname ?? authUser?.summonerName ?? '나'
   const currentUserTier = authUser?.tier ?? DEFAULT_TIER
   const activeRoom = useMemo(
-    () => rooms.find((room) => room.id === activeRoomId) ?? rooms[0],
+    () => rooms.find((room) => room.id === activeRoomId),
     [activeRoomId, rooms],
   )
   const activeRoomName = activeRoom?.name ?? '채팅'
@@ -63,8 +64,13 @@ export function usePartyChat() {
     )
   }
 
-  const appendPartyMessage = (message: string) => {
-    setActiveRoomId(PARTY_ROOM_ID)
+  const preparePartyRoom = (post: PartyPost, lastMessage?: string) => {
+    setRooms((currentRooms) => upsertChatRoom(currentRooms, createPartyChatRoom(post, lastMessage)))
+    setActiveRoomId(post.chatRoomId)
+  }
+
+  const appendPartyMessage = (post: PartyPost, message: string) => {
+    preparePartyRoom(post, message)
     setChatStatusMessage('')
 
     if (!isChatAvailable) {
@@ -74,7 +80,7 @@ export function usePartyChat() {
 
     void sendRealtimeMessage({
       content: message,
-      roomId: PARTY_ROOM_ID,
+      roomId: post.chatRoomId,
       senderName: currentUserName,
       tier: currentUserTier,
     })
@@ -116,6 +122,7 @@ export function usePartyChat() {
     currentUserName,
     isLoading,
     isMessageDisabled,
+    preparePartyRoom,
     rooms,
     sendMessage,
     setActiveRoomId,

@@ -9,7 +9,10 @@ import styles from './Party.module.css'
 
 function Party() {
   const chat = usePartyChat()
-  const party = usePartyPosts({ onPartyMessage: chat.appendPartyMessage })
+  const party = usePartyPosts({
+    onPartyMessage: chat.appendPartyMessage,
+    onPartyPostCreated: chat.preparePartyRoom,
+  })
 
   return (
     <AppLayout>

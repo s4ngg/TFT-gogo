@@ -33,6 +33,12 @@ public class InMemoryChatServiceImpl implements ChatService {
     private final ConcurrentHashMap<String, Set<SseEmitter>> roomEmitters = new ConcurrentHashMap<>();
 
     @Override
+    public void ensureRoom(String roomId) {
+        String normalizedRoomId = normalizeRoomId(roomId);
+        roomMessages.computeIfAbsent(normalizedRoomId, ignored -> new ConcurrentLinkedDeque<>());
+    }
+
+    @Override
     public List<ChatMessageResponse> getRecentMessages(String roomId) {
         String normalizedRoomId = normalizeRoomId(roomId);
         ConcurrentLinkedDeque<ChatMessage> messages = roomMessages.get(normalizedRoomId);

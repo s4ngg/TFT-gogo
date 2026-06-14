@@ -20,6 +20,29 @@ class InMemoryChatServiceImplTest {
     private final InMemoryChatServiceImpl chatService = new InMemoryChatServiceImpl();
 
     @Test
+    void 채팅방_준비는_기존_메시지를_지우지_않는다() {
+        // given
+        ChatMessageCreateRequest request = request("party-10", "소정", "Diamond", "참여했습니다");
+        ChatMessageResponse sentMessage = chatService.sendMessage(request);
+
+        // when
+        chatService.ensureRoom("party-10");
+        List<ChatMessageResponse> messages = chatService.getRecentMessages("party-10");
+
+        // then
+        assertThat(messages).hasSize(1);
+        assertThat(messages.get(0).getId()).isEqualTo(sentMessage.getId());
+    }
+
+    @Test
+    void 유효하지_않은_방_ID는_준비할_수_없다() {
+        // when, then
+        assertThatThrownBy(() -> chatService.ensureRoom("bad room"))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
+    }
+
+    @Test
     void 메시지를_전송하면_방별_최근_메시지로_조회된다() {
         // given
         ChatMessageCreateRequest request = request("party-1", "소정", "Diamond", "  안녕하세요  ");

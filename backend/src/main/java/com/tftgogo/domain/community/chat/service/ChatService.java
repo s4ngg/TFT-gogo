@@ -8,6 +8,8 @@ import java.util.List;
 
 public interface ChatService {
 
+    void ensureRoom(String roomId);
+
     List<ChatMessageResponse> getRecentMessages(String roomId);
 
     ChatMessageResponse sendMessage(ChatMessageCreateRequest request);

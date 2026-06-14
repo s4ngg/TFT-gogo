@@ -17,7 +17,7 @@ Page: Party (/party).
   -> PartyPostCreateRequest, PartyPostResponse
   -> Authenticated. Creates a party recruitment post.
   -> The author is counted in party_posts.current_members but no party_applications row is created for the author.
-  -> This endpoint does not create a chat_rooms row.
+  -> The response includes chatRoomId. The endpoint prepares an in-memory PARTY chat room for the post, but does not create a chat_rooms row yet.
 
 - POST /api/community/parties/{partyPostId}/join
   -> PartyPostResponse
@@ -69,6 +69,7 @@ Page: Party (/party).
 - status: Korean display label only, 모집중 or 마감
 - tags: custom user tags
 - joined: true when the authenticated user is the author or has an ACCEPTED application
+- chatRoomId: deterministic party chat room id, e.g. party-10
 - deadline / createdAt: date-time fields
 </response>
 </dto-contract>
@@ -88,8 +89,8 @@ Page: Party (/party).
 - The owner cannot cancel participation through the join-cancel endpoint. Frontend must treat post.userId === auth.user.id as an owner state, not as a normal joined toggle.
 - A separate close/delete policy should be defined later.
 - Users can enter custom tags. Tags are limited to four items, 30 characters each.
-- Creating a recruitment post does not create a party chat room in this PR.
-- Realtime party chat should be implemented in a later chat-specific PR using chat_rooms.type = PARTY and chat_rooms.party_post_id.
+- Creating a recruitment post returns a dedicated chatRoomId and prepares an in-memory chat room for the party.
+- The MVP chat API requires authentication but does not yet enforce party membership for room access; membership validation and chat_rooms.type = PARTY persistence are later slices.
 </business-rules>
 
 <validation>
@@ -103,7 +104,7 @@ Page: Party (/party).
 
 <open-issues>
 - Party.tsx still uses local state and mock data until a frontend integration PR connects it to this API.
-- Realtime chat transport and reconnect/fallback policy are still undecided.
+- Realtime chat transport uses SSE with snapshot/message events in the MVP.
 - Party close/delete policy for owners is still undecided.
 - The party_post_tags helper table is required for custom tags because tags are not present in the shared ERD snapshot.
 </open-issues>

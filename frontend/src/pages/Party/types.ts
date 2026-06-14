@@ -6,6 +6,7 @@ export type PartyTone = 'purple' | 'green' | 'cyan' | 'gold'
 
 export interface PartyPost {
   capacity: string
+  chatRoomId: string
   close: string
   description: string
   icon: PartyIcon
