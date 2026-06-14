@@ -241,7 +241,7 @@ winRate = wins / (wins + losses) * 100
 
 - 전체 게임 수가 0인 경우: 승률 표시 없음
 
-*LeagueEntryDTO의 wins/losses 필드는 Riot 서버 전체 누적값이므로, 최근 30게임 승률 계산에는 사용하지 않습니다. 매치 상세의 placement 기반 계산값을 사용합니다.*
+*LeagueEntryDTO의 wins/losses 필드는 Riot 서버 전체 누적값이므로, 불러온 매치 기반 승률 계산에는 사용하지 않습니다. 매치 상세의 placement 기반 계산값을 사용합니다.*
 
 # **6. 화면 구성 및 데이터 매핑**
 

@@ -95,32 +95,6 @@ export const refreshSummoner = async (
   return data.data
 }
 
-export interface SummonerStatsResponse {
-  topTraits: {
-    traitId: string
-    name: string
-    iconUrl: string
-    tone: TraitHexBadgeTone
-    count: number
-    games: number
-    avgPlace: number
-  }[]
-  topChampions: {
-    characterId: string
-    imageUrl: string
-    games: number
-    avgPlace: number
-  }[]
-}
-
-export const getMatchStats = async (puuid: string): Promise<SummonerStatsResponse> => {
-  const { data } = await axiosInstance.get<ApiResponse<SummonerStatsResponse>>(
-    `/match/${encodeURIComponent(puuid)}/stats`,
-    { timeout: 30_000 },
-  )
-  return data.data
-}
-
 export const getMatchHistory = async (
   puuid: string,
   start = 0,

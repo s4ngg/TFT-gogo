@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tftgogo.domain.match.dto.response.CollectionStatusResponse;
 import com.tftgogo.domain.match.entity.CachedMatch;
 import com.tftgogo.domain.match.repository.CachedMatchRepository;
 import com.tftgogo.domain.summoner.dto.response.SummonerMatchItemDto;
@@ -16,14 +15,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Pageable;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
 
@@ -105,39 +101,6 @@ class MatchCollectionServiceImplTest {
         verify(riotQueue, atLeast(2)).submit(any());
         verify(cachedMatchRepository).save(any(CachedMatch.class));
         assertThat(result).isEmpty(); // findAllById가 빈 목록 반환
-    }
-
-    @Test
-    void getStatus는_collected_카운트와_inProgress_false를_반환한다() {
-        // given
-        String puuid = "test-puuid";
-        when(cachedMatchRepository.countByParticipantPuuid(puuid)).thenReturn(7L);
-
-        // when
-        CollectionStatusResponse result = matchCollectionService.getStatus(puuid);
-
-        // then
-        assertThat(result.getCollected()).isEqualTo(7);
-        assertThat(result.isInProgress()).isFalse();
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    void getStatus는_수집_진행_중이면_inProgress_true를_반환한다() {
-        // given
-        String puuid = "test-puuid";
-        ConcurrentHashMap<String, Boolean> inProgressMap =
-                (ConcurrentHashMap<String, Boolean>) ReflectionTestUtils.getField(
-                        matchCollectionService, "inProgressMap");
-        inProgressMap.put(puuid, Boolean.TRUE);
-        when(cachedMatchRepository.countByParticipantPuuid(puuid)).thenReturn(3L);
-
-        // when
-        CollectionStatusResponse result = matchCollectionService.getStatus(puuid);
-
-        // then
-        assertThat(result.isInProgress()).isTrue();
-        assertThat(result.getCollected()).isEqualTo(3);
     }
 
     private CachedMatch cachedMatch(String matchId, String puuid) {

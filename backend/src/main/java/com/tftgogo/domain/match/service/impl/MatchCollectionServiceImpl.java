@@ -4,13 +4,11 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tftgogo.domain.match.dto.response.CollectionStatusResponse;
 import com.tftgogo.domain.match.dto.response.MatchSummaryResponse;
 import com.tftgogo.domain.match.entity.CachedMatch;
 import com.tftgogo.domain.match.repository.CachedMatchRepository;
 import com.tftgogo.domain.match.service.MatchCollectionService;
 import com.tftgogo.domain.summoner.dto.response.SummonerMatchItemDto;
-import com.tftgogo.domain.summoner.dto.response.SummonerStatsDto;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import com.tftgogo.global.riot.RiotApiClient;
@@ -21,8 +19,6 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-
-import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -312,86 +308,4 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
         }
     }
 
-    @Override
-    public SummonerStatsDto getAllMatchStats(String puuid,
-                                             Function<String, String> traitIconFn,
-                                             Function<String, String> traitNameFn) {
-        List<CachedMatch> allMatches = cachedMatchRepository.findByParticipantPuuid(puuid, Pageable.unpaged());
-        List<SummonerMatchItemDto> dtos = toSummonerMatchItemDtoList(puuid, allMatches, traitIconFn, traitNameFn, s -> null);
-
-        // traitId → [games, totalPlace, maxCount]
-        Map<String, long[]> traitStats = new LinkedHashMap<>();
-        Map<String, SummonerMatchItemDto.TraitDto> traitMeta = new LinkedHashMap<>();
-        // characterId → [games, totalPlace]
-        Map<String, long[]> champStats = new LinkedHashMap<>();
-        Map<String, String> champImageUrl = new LinkedHashMap<>();
-
-        for (SummonerMatchItemDto dto : dtos) {
-            int placement = dto.getPlacement();
-            Set<String> seenTrait = new HashSet<>();
-            for (SummonerMatchItemDto.TraitDto tr : dto.getTraits()) {
-                if (tr.getTraitId().toLowerCase().contains("unique")) continue;
-                if (!seenTrait.add(tr.getTraitId())) continue;
-                traitStats.merge(tr.getTraitId(),
-                        new long[]{1, placement, tr.getCount()},
-                        (a, b) -> new long[]{a[0] + 1, a[1] + b[1], Math.max(a[2], b[2])});
-                traitMeta.putIfAbsent(tr.getTraitId(), tr);
-            }
-            Set<String> seenChamp = new HashSet<>();
-            for (SummonerMatchItemDto.UnitDto u : dto.getUnits()) {
-                if (!seenChamp.add(u.getCharacterId())) continue;
-                champStats.merge(u.getCharacterId(),
-                        new long[]{1, placement},
-                        (a, b) -> new long[]{a[0] + 1, a[1] + b[1]});
-                champImageUrl.putIfAbsent(u.getCharacterId(), u.getImageUrl());
-            }
-        }
-
-        List<SummonerStatsDto.TraitStatDto> topTraits = traitStats.entrySet().stream()
-                .sorted((a, b) -> Long.compare(b.getValue()[0], a.getValue()[0]))
-                .limit(5)
-                .map(e -> {
-                    SummonerMatchItemDto.TraitDto meta = traitMeta.get(e.getKey());
-                    long[] s = e.getValue();
-                    return SummonerStatsDto.TraitStatDto.builder()
-                            .traitId(e.getKey())
-                            .name(meta.getName())
-                            .iconUrl(meta.getIconUrl())
-                            .tone(meta.getTone())
-                            .count((int) s[2])
-                            .games((int) s[0])
-                            .avgPlace(Math.round((double) s[1] / s[0] * 10.0) / 10.0)
-                            .build();
-                })
-                .collect(Collectors.toList());
-
-        List<SummonerStatsDto.ChampionStatDto> topChampions = champStats.entrySet().stream()
-                .sorted((a, b) -> Long.compare(b.getValue()[0], a.getValue()[0]))
-                .limit(5)
-                .map(e -> {
-                    long[] s = e.getValue();
-                    return SummonerStatsDto.ChampionStatDto.builder()
-                            .characterId(e.getKey())
-                            .imageUrl(champImageUrl.get(e.getKey()))
-                            .games((int) s[0])
-                            .avgPlace(Math.round((double) s[1] / s[0] * 10.0) / 10.0)
-                            .build();
-                })
-                .collect(Collectors.toList());
-
-        return SummonerStatsDto.builder()
-                .topTraits(topTraits)
-                .topChampions(topChampions)
-                .build();
-    }
-
-    @Override
-    public CollectionStatusResponse getStatus(String puuid) {
-        long collected = cachedMatchRepository.countByParticipantPuuid(puuid);
-        boolean running = inProgressMap.getOrDefault(puuid, false);
-        return CollectionStatusResponse.builder()
-                .collected((int) collected)
-                .inProgress(running)
-                .build();
-    }
 }
