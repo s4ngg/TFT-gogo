@@ -149,6 +149,15 @@ class InMemoryChatServiceImplTest {
     }
 
     @Test
+    void 요청이_없으면_메시지를_전송할_수_없다() {
+        // when, then
+        assertThatThrownBy(() -> chatService.sendMessage(USER_ID, null))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
+        verify(memberRepository, never()).findById(USER_ID);
+    }
+
+    @Test
     void 회원이_없으면_메시지를_전송할_수_없다() {
         // given
         ChatMessageCreateRequest request = request("general", "안녕하세요");

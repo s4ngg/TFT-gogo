@@ -72,7 +72,7 @@ export function useRealtimeChat(roomId: string, enabled = true) {
       onSnapshot: (messages) => {
         queryClient.setQueryData<ChatMessage[]>(
           chatMessagesQueryKey(roomId),
-          (currentMessages) => mergeMessages(currentMessages, messages),
+          mergeMessages(undefined, messages),
         )
       },
     })

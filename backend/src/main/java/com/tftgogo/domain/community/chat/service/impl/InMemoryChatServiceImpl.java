@@ -63,6 +63,7 @@ public class InMemoryChatServiceImpl implements ChatService {
     @Override
     public ChatMessageResponse sendMessage(Long userId, ChatMessageCreateRequest request) {
         validateAuthenticated(userId);
+        validateRequest(request);
         String roomId = normalizeRoomId(request.getRoomId());
         String content = normalizeText(request.getContent(), 500);
         Member sender = memberRepository.findById(userId)
@@ -96,6 +97,12 @@ public class InMemoryChatServiceImpl implements ChatService {
     private void validateAuthenticated(Long userId) {
         if (userId == null) {
             throw new BusinessException(ErrorCode.UNAUTHORIZED);
+        }
+    }
+
+    private void validateRequest(ChatMessageCreateRequest request) {
+        if (request == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
     }
 

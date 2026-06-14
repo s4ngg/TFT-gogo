@@ -9,7 +9,7 @@ export interface ChatMessage {
   id: string
   roomId: string
   senderName: string
-  tier: string
+  tier?: string | null
 }
 
 export interface ChatMessageCreateRequest {
@@ -233,7 +233,7 @@ function isChatMessage(value: unknown): value is ChatMessage {
     && typeof value.id === 'string'
     && typeof value.roomId === 'string'
     && typeof value.senderName === 'string'
-    && typeof value.tier === 'string'
+    && (typeof value.tier === 'string' || value.tier == null)
     && typeof value.content === 'string'
     && typeof value.createdAt === 'string'
   )

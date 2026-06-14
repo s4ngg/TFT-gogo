@@ -21,11 +21,17 @@ interface PartyChatPanelProps {
 }
 
 function formatMessageTime(createdAt: string) {
+  const createdDate = new Date(createdAt)
+
+  if (Number.isNaN(createdDate.getTime())) {
+    return '--:--'
+  }
+
   return new Intl.DateTimeFormat('ko-KR', {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
-  }).format(new Date(createdAt))
+  }).format(createdDate)
 }
 
 function PartyChatPanel({
@@ -103,7 +109,7 @@ function PartyChatPanel({
                 >
                   <div>
                     <strong>{chat.senderName}</strong>
-                    <span>{chat.tier}</span>
+                    <span>{chat.tier ?? 'Unranked'}</span>
                     <time>{formatMessageTime(chat.createdAt)}</time>
                   </div>
                   <p>{chat.content}</p>
