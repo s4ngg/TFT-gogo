@@ -43,6 +43,9 @@ class MemberServiceImplTest {
     @Mock
     private JwtTokenProvider jwtTokenProvider;
 
+    @Mock
+    private SocialMemberCreationService socialMemberCreationService;
+
     @InjectMocks
     private MemberServiceImpl memberService;
 
@@ -194,7 +197,7 @@ class MemberServiceImplTest {
         when(memberRepository.findBySocialProviderAndSocialId("google", "google-1"))
                 .thenReturn(Optional.empty());
         when(memberRepository.existsByEmail("social@example.com")).thenReturn(false);
-        when(memberRepository.saveAndFlush(any(Member.class))).thenReturn(savedMember);
+        when(socialMemberCreationService.create(command)).thenReturn(savedMember);
         when(jwtTokenProvider.createAccessToken(1L)).thenReturn("access-token");
 
         // when
@@ -202,25 +205,7 @@ class MemberServiceImplTest {
 
         // then
         assertThat(response.getAccessToken()).isEqualTo("access-token");
-        ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
-        verify(memberRepository).saveAndFlush(memberCaptor.capture());
-        assertThat(memberCaptor.getValue())
-                .extracting(
-                        Member::getEmail,
-                        Member::getPasswordHash,
-                        Member::getNickname,
-                        Member::getProfileImage,
-                        Member::getSocialProvider,
-                        Member::getSocialId
-                )
-                .containsExactly(
-                        "social@example.com",
-                        null,
-                        "소셜회원",
-                        "https://example.com/profile.png",
-                        "google",
-                        "google-1"
-                );
+        verify(socialMemberCreationService).create(command);
     }
 
     @Test
@@ -237,26 +222,48 @@ class MemberServiceImplTest {
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.EMAIL_ALREADY_EXISTS));
 
-        verify(memberRepository, never()).saveAndFlush(any(Member.class));
+        verify(socialMemberCreationService, never()).create(any(SocialLoginCommand.class));
     }
 
     @Test
-    void 소셜로그인_신규저장중_제약조건이_깨지면_소셜로그인_실패로_처리한다() {
+    void 소셜로그인_신규저장중_소셜제약조건이_깨지면_재조회한_회원으로_토큰을_반환한다() {
+        // given
+        SocialLoginCommand command = socialLoginCommand("social@example.com", "소셜회원");
+        Member existingMember = socialMember("social@example.com", "소셜회원", "google", "google-1");
+        ReflectionTestUtils.setField(existingMember, "userId", 1L);
+
+        when(memberRepository.findBySocialProviderAndSocialId("google", "google-1"))
+                .thenReturn(Optional.empty(), Optional.of(existingMember));
+        when(memberRepository.existsByEmail("social@example.com")).thenReturn(false);
+        when(socialMemberCreationService.create(command))
+                .thenThrow(new DataIntegrityViolationException("duplicate social provider"));
+        when(jwtTokenProvider.createAccessToken(1L)).thenReturn("access-token");
+
+        // when
+        AuthResponse response = memberService.socialLogin(command);
+
+        // then
+        assertThat(response.getAccessToken()).isEqualTo("access-token");
+        assertThat(response.getUser())
+                .extracting(MemberResponse::getEmail, MemberResponse::getNickname)
+                .containsExactly("social@example.com", "소셜회원");
+    }
+
+    @Test
+    void 소셜로그인_신규저장중_제약조건이_깨지고_재조회도_실패하면_소셜로그인_실패로_처리한다() {
         // given
         SocialLoginCommand command = socialLoginCommand("social@example.com", "소셜회원");
 
         when(memberRepository.findBySocialProviderAndSocialId("google", "google-1"))
                 .thenReturn(Optional.empty());
         when(memberRepository.existsByEmail("social@example.com")).thenReturn(false);
-        when(memberRepository.saveAndFlush(any(Member.class)))
+        when(socialMemberCreationService.create(command))
                 .thenThrow(new DataIntegrityViolationException("duplicate social provider"));
 
         // when, then
         assertThatThrownBy(() -> memberService.socialLogin(command))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.SOCIAL_LOGIN_FAILED));
-
-        verify(memberRepository).saveAndFlush(any(Member.class));
     }
 
     @Test

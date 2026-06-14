@@ -7,6 +7,14 @@ export interface SocialAuthCallbackPayload {
   token: string
 }
 
+export type SocialAuthErrorCode = 'email_exists' | 'email_required' | 'provider_error'
+
+const socialAuthErrorCodes = new Set<SocialAuthErrorCode>([
+  'email_exists',
+  'email_required',
+  'provider_error',
+])
+
 function readParam(params: URLSearchParams, names: string[]): string | null {
   for (const name of names) {
     const value = params.get(name)
@@ -30,4 +38,14 @@ export function parseSocialAuthCallback(
   }
 
   return { token }
+}
+
+export function readSocialAuthErrorCode(search: string): SocialAuthErrorCode {
+  const rawError = new URLSearchParams(search).get('oauthError')
+
+  if (rawError && socialAuthErrorCodes.has(rawError as SocialAuthErrorCode)) {
+    return rawError as SocialAuthErrorCode
+  }
+
+  return 'provider_error'
 }

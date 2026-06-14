@@ -46,6 +46,9 @@ public class SocialOAuth2SuccessHandler implements AuthenticationSuccessHandler 
         } catch (BusinessException e) {
             clearOAuthSession(request);
             response.sendRedirect(redirectService.buildFailureRedirectUri(toErrorCode(e)));
+        } catch (Exception e) {
+            clearOAuthSession(request);
+            response.sendRedirect(redirectService.buildFailureRedirectUri(SocialOAuth2ErrorCode.PROVIDER_ERROR));
         }
     }
 

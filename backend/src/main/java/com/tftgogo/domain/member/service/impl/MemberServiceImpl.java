@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -25,6 +26,7 @@ public class MemberServiceImpl implements MemberService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final SocialMemberCreationService socialMemberCreationService;
 
     @Override
     @Transactional
@@ -67,7 +69,7 @@ public class MemberServiceImpl implements MemberService {
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public AuthResponse socialLogin(SocialLoginCommand command) {
         String provider = command.getProvider().registrationId();
 
@@ -89,23 +91,18 @@ public class MemberServiceImpl implements MemberService {
     }
 
     private AuthResponse createSocialMember(SocialLoginCommand command) {
+        String provider = command.getProvider().registrationId();
+
         if (memberRepository.existsByEmail(command.getEmail())) {
             throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
-        Member member = Member.builder()
-                .email(command.getEmail())
-                .passwordHash(null)
-                .nickname(command.getNickname())
-                .profileImage(command.getProfileImage())
-                .socialProvider(command.getProvider().registrationId())
-                .socialId(command.getSocialId())
-                .build();
-
         try {
-            return issueAuthResponse(memberRepository.saveAndFlush(member));
+            return issueAuthResponse(socialMemberCreationService.create(command));
         } catch (DataIntegrityViolationException e) {
-            throw new BusinessException(ErrorCode.SOCIAL_LOGIN_FAILED);
+            return memberRepository.findBySocialProviderAndSocialId(provider, command.getSocialId())
+                    .map(this::issueAuthResponse)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.SOCIAL_LOGIN_FAILED));
         }
     }
 

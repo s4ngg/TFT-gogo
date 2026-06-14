@@ -13,8 +13,8 @@ import org.springframework.validation.annotation.Validated;
 public class OAuth2RedirectProperties {
 
     @NotBlank(message = "소셜 로그인 성공 리다이렉트 URI는 필수입니다.")
-    private String authorizedRedirectUri = "http://localhost:5173/oauth/callback";
+    private String authorizedRedirectUri;
 
     @NotBlank(message = "소셜 로그인 실패 리다이렉트 URI는 필수입니다.")
-    private String loginFailureRedirectUri = "http://localhost:5173/login";
+    private String loginFailureRedirectUri;
 }

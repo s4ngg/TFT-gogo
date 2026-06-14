@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { getMe } from '../../api/memberApi'
 import { AUTH_ME_QUERY_KEY } from '../../hooks/useAuthSession'
 import useAuthStore from '../../store/useAuthStore'
-import { parseSocialAuthCallback } from './utils/socialAuthCallback'
+import { parseSocialAuthCallback, readSocialAuthErrorCode } from './utils/socialAuthCallback'
 
 function OAuthCallbackPage() {
   const location = useLocation()
@@ -41,7 +41,8 @@ function OAuthCallbackPage() {
       } catch {
         clearAuth()
         queryClient.removeQueries({ queryKey: AUTH_ME_QUERY_KEY })
-        navigate('/login?oauthError=provider_error', { replace: true })
+        const oauthError = readSocialAuthErrorCode(location.search)
+        navigate(`/login?oauthError=${oauthError}`, { replace: true })
       }
     }
 

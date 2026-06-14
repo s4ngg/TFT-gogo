@@ -13,12 +13,6 @@ interface AuthPageProps {
   mode: 'login' | 'signup'
 }
 
-const socialProviders: Array<{ id: SocialProvider; label: string; mark: string }> = [
-  { id: 'google', label: 'Google', mark: 'G' },
-  { id: 'kakao', label: 'Kakao', mark: 'K' },
-  { id: 'naver', label: 'Naver', mark: 'N' },
-]
-
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 interface AuthMutationVariables {
@@ -26,6 +20,18 @@ interface AuthMutationVariables {
   nickname?: string
   password: string
 }
+
+interface SocialProviderConfig {
+  id: SocialProvider
+  label: string
+  mark: string
+}
+
+const socialProviders: SocialProviderConfig[] = [
+  { id: 'google', label: 'Google', mark: 'G' },
+  { id: 'kakao', label: 'Kakao', mark: 'K' },
+  { id: 'naver', label: 'Naver', mark: 'N' },
+]
 
 function AuthPage({ mode }: AuthPageProps) {
   const isSignup = mode === 'signup'
@@ -74,6 +80,7 @@ function AuthPage({ mode }: AuthPageProps) {
   const socialError = socialLoginMutation.error
     ? mapSocialAuthError(socialLoginMutation.error)
     : mapOAuthErrorCode(oauthErrorCode)
+  const isAuthActionPending = authMutation.isPending || socialLoginMutation.isPending
 
   const clearOAuthError = () => {
     if (oauthErrorCode) {
@@ -127,6 +134,10 @@ function AuthPage({ mode }: AuthPageProps) {
     e.preventDefault()
     // e.preventDefault() — 페이지 새로고침 되는 브라우저 기본 동작을 막는 것
 
+    if (isAuthActionPending) {
+      return
+    }
+
     authMutation.reset()
     socialLoginMutation.reset()
     clearOAuthError()
@@ -142,6 +153,10 @@ function AuthPage({ mode }: AuthPageProps) {
   }
 
   const handleSocialLogin = (provider: SocialProvider) => {
+    if (isAuthActionPending) {
+      return
+    }
+
     authMutation.reset()
     socialLoginMutation.reset()
     clearOAuthError()
@@ -176,7 +191,7 @@ function AuthPage({ mode }: AuthPageProps) {
                     className={styles.socialButton}
                     key={provider.label}
                     aria-label={`${provider.label} 로그인`}
-                    disabled={socialLoginMutation.isPending}
+                    disabled={isAuthActionPending}
                     onClick={() => handleSocialLogin(provider.id)}
                 >
                   <span>{provider.mark}</span>
@@ -256,7 +271,7 @@ function AuthPage({ mode }: AuthPageProps) {
             {apiError && <p className={styles.errorText}>{apiError}</p>}
             {!apiError && socialError && <p className={styles.errorText}>{socialError}</p>}
 
-            <button type="submit" className={styles.submitButton} disabled={authMutation.isPending}>
+            <button type="submit" className={styles.submitButton} disabled={isAuthActionPending}>
               {authMutation.isPending ? (isSignup ? '가입 중...' : '로그인 중...') : (isSignup ? '회원가입' : '로그인')}
               {!authMutation.isPending && <ArrowRight size={19} />}
             </button>
