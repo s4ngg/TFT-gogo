@@ -1,16 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-export interface AuthUser {
-  email: string
-  id?: number | string
-  nickname?: string
-  profileIconId?: number
-  summonerName?: string
-  tagLine?: string
-  tier?: string
-}
-
 interface AuthPayload {
   token: string
 }
@@ -21,8 +11,14 @@ interface AuthState {
   clearAuth: () => void
 }
 
-function hasToken(value: unknown): value is { token?: string | null } {
-  return typeof value === 'object' && value !== null && 'token' in value
+function hasToken(value: unknown): value is { token: string | null } {
+  if (typeof value !== 'object' || value === null || !('token' in value)) {
+    return false
+  }
+
+  const token = (value as { token?: unknown }).token
+
+  return typeof token === 'string' || token === null
 }
 
 const useAuthStore = create<AuthState>()(
@@ -36,7 +32,7 @@ const useAuthStore = create<AuthState>()(
       name: 'tftgogo-auth',
       version: 1,
       migrate: (persistedState) => ({
-        token: hasToken(persistedState) ? persistedState.token ?? null : null,
+        token: hasToken(persistedState) ? persistedState.token : null,
       }),
       partialize: (state) => ({
         token: state.token,

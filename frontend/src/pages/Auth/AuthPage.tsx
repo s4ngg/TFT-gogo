@@ -56,7 +56,6 @@ function AuthPage({ mode }: AuthPageProps) {
     onSuccess: (auth) => {
       queryClient.removeQueries({ queryKey: AUTH_ME_QUERY_KEY })
       setAuth(auth)
-      queryClient.invalidateQueries({ queryKey: AUTH_ME_QUERY_KEY })
       navigate('/', { replace: true })
     },
   })

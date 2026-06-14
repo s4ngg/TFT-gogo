@@ -1,4 +1,4 @@
-import type { AuthUser } from '../store/useAuthStore'
+import type { AuthUser } from '../types/auth'
 
 export interface RawAuthResponse {
   accessToken?: string
