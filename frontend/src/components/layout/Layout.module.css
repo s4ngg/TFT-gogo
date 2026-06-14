@@ -1,8 +1,6 @@
 ﻿.appShell {
   --snapshot-height: 722px;
   --sidebar-current-width: var(--sidebar-width);
-  --sidebar-collapsed-width: 78px;
-
   width: 1529px;
   min-width: 1529px;
   min-height: 100vh;

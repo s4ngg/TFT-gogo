@@ -52,13 +52,21 @@ export function getMatchDetail(matchId: string) {
 }
 
 export async function getRiotApiStatus() {
-  const { data } = await axiosInstance.get<ApiResponse<RiotApiStatusResponse>>(RIOT_ENDPOINTS.apiStatus)
+  try {
+    const { data } = await axiosInstance.get<ApiResponse<RiotApiStatusResponse>>(RIOT_ENDPOINTS.apiStatus)
 
-  if (!data.success) {
-    throw new Error(data.message ?? 'Riot API 상태 조회 실패')
+    if (!data.success) {
+      throw new Error(data.message ?? 'Riot API 상태 조회 실패')
+    }
+
+    return data.data
+  } catch (error) {
+    if (error instanceof Error && error.message.trim()) {
+      throw new Error(`Riot API 상태 조회 실패: ${error.message}`)
+    }
+
+    throw new Error('Riot API 상태 조회 실패')
   }
-
-  return data.data
 }
 
 export { RIOT_ENDPOINTS }
