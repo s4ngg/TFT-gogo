@@ -72,6 +72,16 @@ Page: Party (/party).
 - chatRoomId: deterministic party chat room id, e.g. party-10
 - deadline / createdAt: date-time fields
 </response>
+<request name="ChatMessageCreateRequest">
+- roomId: string, required. Party rooms use the deterministic chatRoomId returned by PartyPostResponse.
+- content: string, required, max 500.
+- senderName / tier: not accepted from the client. The backend derives senderName from the authenticated user and uses a server-controlled tier value until a trusted rank source is connected.
+</request>
+<response name="ChatMessageResponse">
+- id / roomId / content / createdAt: message metadata and body
+- senderName: server-derived member nickname
+- tier: server-controlled display tier. MVP default is Unranked.
+</response>
 </dto-contract>
 
 <business-rules>

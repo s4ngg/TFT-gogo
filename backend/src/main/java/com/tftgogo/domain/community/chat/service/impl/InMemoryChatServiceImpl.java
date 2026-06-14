@@ -4,8 +4,11 @@ import com.tftgogo.domain.community.chat.dto.request.ChatMessageCreateRequest;
 import com.tftgogo.domain.community.chat.dto.response.ChatMessageResponse;
 import com.tftgogo.domain.community.chat.model.ChatMessage;
 import com.tftgogo.domain.community.chat.service.ChatService;
+import com.tftgogo.domain.member.entity.Member;
+import com.tftgogo.domain.member.repository.MemberRepository;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
+import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
@@ -22,8 +25,10 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.regex.Pattern;
 
 @Service
+@RequiredArgsConstructor
 public class InMemoryChatServiceImpl implements ChatService {
 
+    private static final String DEFAULT_TIER = "Unranked";
     private static final Logger logger = LogManager.getLogger(InMemoryChatServiceImpl.class);
     private static final int MAX_MESSAGES_PER_ROOM = 100;
     private static final long SSE_TIMEOUT_MILLIS = 30L * 60L * 1000L;
@@ -31,6 +36,7 @@ public class InMemoryChatServiceImpl implements ChatService {
 
     private final ConcurrentHashMap<String, ConcurrentLinkedDeque<ChatMessage>> roomMessages = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Set<SseEmitter>> roomEmitters = new ConcurrentHashMap<>();
+    private final MemberRepository memberRepository;
 
     @Override
     public void ensureRoom(String roomId) {
@@ -55,16 +61,18 @@ public class InMemoryChatServiceImpl implements ChatService {
     }
 
     @Override
-    public ChatMessageResponse sendMessage(ChatMessageCreateRequest request) {
+    public ChatMessageResponse sendMessage(Long userId, ChatMessageCreateRequest request) {
+        validateAuthenticated(userId);
         String roomId = normalizeRoomId(request.getRoomId());
-        String senderName = normalizeText(request.getSenderName(), 40);
-        String tier = normalizeOptionalText(request.getTier(), 40);
         String content = normalizeText(request.getContent(), 500);
+        Member sender = memberRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+        String senderName = normalizeText(sender.getNickname(), 50);
         ChatMessage message = new ChatMessage(
                 UUID.randomUUID().toString(),
                 roomId,
                 senderName,
-                tier,
+                DEFAULT_TIER,
                 content,
                 Instant.now()
         );
@@ -83,6 +91,12 @@ public class InMemoryChatServiceImpl implements ChatService {
         ChatMessageResponse response = ChatMessageResponse.from(message);
         broadcast(roomId, response);
         return response;
+    }
+
+    private void validateAuthenticated(Long userId) {
+        if (userId == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED);
+        }
     }
 
     @Override
@@ -169,21 +183,4 @@ public class InMemoryChatServiceImpl implements ChatService {
         return trimmedValue;
     }
 
-    private String normalizeOptionalText(String value, int maxLength) {
-        if (value == null) {
-            return "Unranked";
-        }
-
-        String trimmedValue = value.trim();
-
-        if (trimmedValue.isEmpty()) {
-            return "Unranked";
-        }
-
-        if (trimmedValue.length() > maxLength) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT);
-        }
-
-        return trimmedValue;
-    }
 }

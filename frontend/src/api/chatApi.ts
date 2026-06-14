@@ -15,8 +15,6 @@ export interface ChatMessage {
 export interface ChatMessageCreateRequest {
   content: string
   roomId: string
-  senderName: string
-  tier?: string
 }
 
 interface ChatStreamHandlers {
@@ -49,9 +47,13 @@ export async function getChatMessages(roomId: string): Promise<ChatMessage[]> {
 
 export async function sendChatMessage(request: ChatMessageCreateRequest): Promise<ChatMessage> {
   try {
+    const payload: ChatMessageCreateRequest = {
+      content: request.content,
+      roomId: request.roomId,
+    }
     const response = await axiosInstance.post<ApiResponse<ChatMessage>>(
       '/community/chat/messages',
-      request,
+      payload,
     )
 
     return unwrapApiResponse(response.data)

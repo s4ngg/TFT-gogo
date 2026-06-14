@@ -512,11 +512,11 @@
 
 .chatStatus {
   margin: 0;
-  padding: 9px 14px;
+  padding: var(--space-lg) var(--space-xl);
   border-bottom: 1px solid var(--border-separator);
   color: var(--text-secondary);
   background: var(--bg-btn-dark-soft);
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   font-weight: 600;
 }
 

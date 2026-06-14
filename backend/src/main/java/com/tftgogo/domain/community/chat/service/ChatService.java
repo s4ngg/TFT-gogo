@@ -12,7 +12,7 @@ public interface ChatService {
 
     List<ChatMessageResponse> getRecentMessages(String roomId);
 
-    ChatMessageResponse sendMessage(ChatMessageCreateRequest request);
+    ChatMessageResponse sendMessage(Long userId, ChatMessageCreateRequest request);
 
     SseEmitter subscribe(String roomId);
 }

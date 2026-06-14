@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,9 +35,10 @@ public class ChatController implements ChatControllerDocs {
 
     @PostMapping("/messages")
     public ResponseEntity<ApiResponse<ChatMessageResponse>> sendMessage(
+            @AuthenticationPrincipal Long userId,
             @Valid @RequestBody ChatMessageCreateRequest request
     ) {
-        ChatMessageResponse response = chatService.sendMessage(request);
+        ChatMessageResponse response = chatService.sendMessage(userId, request);
         return ResponseEntity.ok(ApiResponse.success("채팅 메시지 전송 성공", response));
     }
 

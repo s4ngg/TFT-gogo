@@ -5,8 +5,6 @@ import type { PartyPost } from '../types'
 import { createPartyChatRoom, upsertChatRoom } from '../utils/partyChatRooms'
 import { useRealtimeChat } from './useRealtimeChat'
 
-const DEFAULT_TIER = 'Unranked'
-
 export function usePartyChat() {
   const authUser = useAuthStore((state) => state.user)
   const authToken = useAuthStore((state) => state.token)
@@ -25,7 +23,6 @@ export function usePartyChat() {
   } = useRealtimeChat(activeRoomId, Boolean(authToken))
 
   const currentUserName = authUser?.nickname ?? authUser?.summonerName ?? '나'
-  const currentUserTier = authUser?.tier ?? DEFAULT_TIER
   const activeRoom = useMemo(
     () => rooms.find((room) => room.id === activeRoomId),
     [activeRoomId, rooms],
@@ -81,8 +78,6 @@ export function usePartyChat() {
     void sendRealtimeMessage({
       content: message,
       roomId: post.chatRoomId,
-      senderName: currentUserName,
-      tier: currentUserTier,
     })
       .then((sentMessage) => updateLastMessage(sentMessage.roomId, sentMessage.content))
       .catch(() => setChatStatusMessage('참여 상태는 반영됐지만 채팅 알림 전송에 실패했습니다.'))
@@ -99,8 +94,6 @@ export function usePartyChat() {
       const sentMessage = await sendRealtimeMessage({
         content: trimmedMessage,
         roomId: activeRoomId,
-        senderName: currentUserName,
-        tier: currentUserTier,
       })
 
       updateLastMessage(sentMessage.roomId, sentMessage.content)

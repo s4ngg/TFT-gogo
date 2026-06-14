@@ -12,8 +12,6 @@ type ChatConnectionStatus = 'connected' | 'connecting' | 'disconnected'
 interface SendMessageParams {
   content: string
   roomId?: string
-  senderName: string
-  tier?: string
 }
 
 const chatMessagesQueryKey = (roomId: string) => ['chatMessages', roomId] as const
@@ -107,15 +105,11 @@ export function useRealtimeChat(roomId: string, enabled = true) {
   const sendMessage = async ({
     content,
     roomId: targetRoomId = roomId,
-    senderName,
-    tier,
   }: SendMessageParams) => {
     try {
       return await sendMutation.mutateAsync({
         content,
         roomId: targetRoomId,
-        senderName,
-        tier,
       })
     } catch {
       throw new Error('메시지 전송에 실패했습니다.')
