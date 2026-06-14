@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -50,8 +51,10 @@ public class MatchServiceImpl implements MatchService {
     }
 
     @Override
-    public List<SummonerMatchItemDto> getMatches(String puuid, int start, int count) {
-        return matchCollectionService.fetchAndCache(puuid, start, count);
+    public List<SummonerMatchItemDto> getMatches(String puuid, int start, int count,
+                                                  Function<String, String> traitIconFn,
+                                                  Function<String, String> itemIconFn) {
+        return matchCollectionService.fetchAndCache(puuid, start, count, traitIconFn, itemIconFn);
     }
 
     @Override

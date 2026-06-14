@@ -2,7 +2,7 @@ import { ChevronDown, ChevronUp, RefreshCcw, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { communityDragonProfileIconUrl, itemsFromUrls, tftChampSquareUrl, tftTierEmblemUrl, tftTraitIconUrl } from '../../api/communityDragonAssets'
+import { communityDragonProfileIconUrl, itemsFromUrls, tftChampSquareUrl, tftTierEmblemUrl } from '../../api/communityDragonAssets'
 import { AppLayout } from '../../components/layout'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
 import ChampionCard from '../../components/common/ChampionCard'
@@ -70,7 +70,7 @@ function SummonerDetail() {
   const recentMatches = matches.slice(0, 30)
 
   const topTraits = (() => {
-    const map = new Map<string, { traitId: string; name: string; tone: MatchTraitResponse['tone']; count: number; games: number; totalPlace: number }>()
+    const map = new Map<string, { traitId: string; name: string; iconUrl: string; tone: MatchTraitResponse['tone']; count: number; games: number; totalPlace: number }>()
     for (const m of recentMatches) {
       const seen = new Set<string>()
       for (const tr of m.traits) {
@@ -78,8 +78,11 @@ function SummonerDetail() {
         if (seen.has(tr.traitId)) continue
         seen.add(tr.traitId)
         const entry = map.get(tr.traitId)
-        if (entry) { entry.games++; entry.totalPlace += m.placement; entry.count = Math.max(entry.count, tr.count) }
-        else map.set(tr.traitId, { traitId: tr.traitId, name: tr.name, tone: tr.tone, count: tr.count, games: 1, totalPlace: m.placement })
+        if (entry) {
+          entry.games++; entry.totalPlace += m.placement
+          if (tr.count > entry.count) { entry.count = tr.count; entry.tone = tr.tone }
+        }
+        else map.set(tr.traitId, { traitId: tr.traitId, name: tr.name, iconUrl: tr.iconUrl, tone: tr.tone, count: tr.count, games: 1, totalPlace: m.placement })
       }
     }
     return [...map.values()]
@@ -230,7 +233,7 @@ function SummonerDetail() {
                     {topTraits.map((tr, i) => (
                       <div key={tr.traitId} className={styles.topTraitRow}>
                         <span className={styles.topRank}>{i + 1}</span>
-                        <TraitHexBadge count={tr.count} iconUrl={tftTraitIconUrl(tr.traitId)} name={tr.name} tone={tr.tone} />
+                        <TraitHexBadge count={tr.count} iconUrl={tr.iconUrl} name={tr.name} tone={tr.tone} />
                         <span className={styles.topName}>{tr.name}</span>
                         <span className={styles.topGames}>{tr.games}게임</span>
                         <span className={styles.topAvg}>평균 {tr.avgPlace}등</span>

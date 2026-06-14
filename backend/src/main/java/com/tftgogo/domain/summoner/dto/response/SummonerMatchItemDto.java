@@ -1,11 +1,12 @@
 package com.tftgogo.domain.summoner.dto.response;
 
 import com.tftgogo.domain.match.dto.response.MatchSummaryResponse;
-import com.tftgogo.global.riot.util.TftAssetUrlBuilder;
 import lombok.Builder;
 import lombok.Getter;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Getter
@@ -20,7 +21,9 @@ public class SummonerMatchItemDto {
     private List<UnitDto> units;
     private List<ParticipantDto> participants;
 
-    public static SummonerMatchItemDto from(MatchSummaryResponse m) {
+    public static SummonerMatchItemDto from(MatchSummaryResponse m,
+                                            Function<String, String> traitIconFn,
+                                            Function<String, String> itemIconFn) {
         return SummonerMatchItemDto.builder()
                 .matchId(m.getMatchId())
                 .placement(m.getPlacement())
@@ -29,13 +32,13 @@ public class SummonerMatchItemDto {
                 .compositionName("")
                 .traits(m.getTraits().stream()
                         .filter(t -> t.getStyle() > 0)
-                        .map(TraitDto::from)
+                        .map(t -> TraitDto.from(t, traitIconFn))
                         .collect(Collectors.toList()))
                 .units(m.getUnits().stream()
-                        .map(UnitDto::from)
+                        .map(u -> UnitDto.from(u, itemIconFn))
                         .collect(Collectors.toList()))
                 .participants(m.getParticipants().stream()
-                        .map(ParticipantDto::from)
+                        .map(p -> ParticipantDto.from(p, traitIconFn, itemIconFn))
                         .collect(Collectors.toList()))
                 .build();
     }
@@ -58,11 +61,11 @@ public class SummonerMatchItemDto {
         private int count;
         private String tone;
 
-        public static TraitDto from(MatchSummaryResponse.TraitSummary t) {
+        public static TraitDto from(MatchSummaryResponse.TraitSummary t, Function<String, String> iconFn) {
             return TraitDto.builder()
                     .traitId(t.getName())
                     .name(t.getName())
-                    .iconUrl(TftAssetUrlBuilder.buildTraitIconUrl(t.getName()))
+                    .iconUrl(iconFn.apply(t.getName()))
                     .count(t.getNumUnits())
                     .tone(styleToTone(t.getStyle()))
                     .build();
@@ -77,12 +80,15 @@ public class SummonerMatchItemDto {
         private int stars;
         private List<String> itemImageUrls;
 
-        public static UnitDto from(MatchSummaryResponse.UnitSummary u) {
+        public static UnitDto from(MatchSummaryResponse.UnitSummary u, Function<String, String> itemIconFn) {
             return UnitDto.builder()
                     .characterId(u.getCharacterId())
-                    .imageUrl(TftAssetUrlBuilder.buildChampionImageUrl(u.getCharacterId()))
+                    .imageUrl(com.tftgogo.global.riot.util.TftAssetUrlBuilder.buildChampionImageUrl(u.getCharacterId()))
                     .stars(u.getTier())
-                    .itemImageUrls(List.of())
+                    .itemImageUrls(u.getItemNames().stream()
+                            .map(itemIconFn)
+                            .filter(Objects::nonNull)
+                            .collect(Collectors.toList()))
                     .build();
         }
     }
@@ -100,18 +106,20 @@ public class SummonerMatchItemDto {
         private int playersEliminated;
         private int goldLeft;
 
-        public static ParticipantDto from(MatchSummaryResponse.ParticipantSummary p) {
+        public static ParticipantDto from(MatchSummaryResponse.ParticipantSummary p,
+                                          Function<String, String> traitIconFn,
+                                          Function<String, String> itemIconFn) {
             return ParticipantDto.builder()
                     .puuid(p.getPuuid())
                     .riotIdGameName(p.getRiotIdGameName())
                     .riotIdTagline(p.getRiotIdTagline())
                     .placement(p.getPlacement())
-                    .stage(String.valueOf(p.getLevel()))
+                    .stage(String.valueOf(p.getLastRound()))
                     .traits(p.getTraits().stream()
-                            .map(TraitDto::from)
+                            .map(t -> TraitDto.from(t, traitIconFn))
                             .collect(Collectors.toList()))
                     .units(p.getUnits().stream()
-                            .map(UnitDto::from)
+                            .map(u -> UnitDto.from(u, itemIconFn))
                             .collect(Collectors.toList()))
                     .playersEliminated(p.getPlayersEliminated())
                     .goldLeft(p.getGoldLeft())

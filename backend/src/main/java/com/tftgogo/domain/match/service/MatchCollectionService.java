@@ -5,9 +5,12 @@ import com.tftgogo.domain.match.dto.response.MatchSummaryResponse;
 import com.tftgogo.domain.summoner.dto.response.SummonerMatchItemDto;
 
 import java.util.List;
+import java.util.function.Function;
 
 public interface MatchCollectionService {
-    List<SummonerMatchItemDto> fetchAndCache(String puuid, int start, int count);
+    List<SummonerMatchItemDto> fetchAndCache(String puuid, int start, int count,
+                                             Function<String, String> traitIconFn,
+                                             Function<String, String> itemIconFn);
     CollectionStatusResponse getStatus(String puuid);
     void refreshMatches(String puuid);
 
