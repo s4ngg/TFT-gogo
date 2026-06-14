@@ -47,9 +47,13 @@ function Party() {
           <PartyCreateForm
             capacityDraft={party.capacityDraft}
             composeError={party.composeError}
+            deadlineDraft={party.deadlineDraft}
             descriptionDraft={party.descriptionDraft}
+            isSubmitting={party.isCreating}
+            minDeadline={party.minDeadline}
             modeDraft={party.modeDraft}
             onCapacityChange={party.setCapacityDraft}
+            onDeadlineChange={party.setDeadlineDraft}
             onDescriptionChange={party.setDescriptionDraft}
             onModeChange={party.setModeDraft}
             onSubmit={party.submitPartyPost}
@@ -62,9 +66,16 @@ function Party() {
             titleInputRef={party.titleInputRef}
           />
 
+          {party.statusMessage && (
+            <p className={styles.statusMessage} role="status">
+              {party.statusMessage}
+            </p>
+          )}
+
           <PartyPostList
             currentPage={party.currentPage}
             joinedPostId={party.joinedPostId}
+            joiningPostId={party.joiningPostId}
             onJoinToggle={party.toggleJoin}
             onPageChange={party.setCurrentPage}
             posts={party.pageItems}

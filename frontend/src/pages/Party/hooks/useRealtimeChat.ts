@@ -53,6 +53,11 @@ export function useRealtimeChat(roomId: string, enabled = true) {
 
     setConnectionStatus('connecting')
     const subscription = subscribeChatRoom(roomId, {
+      onClose: () => {
+        if (active) {
+          setConnectionStatus('disconnected')
+        }
+      },
       onError: () => {
         if (active) {
           setConnectionStatus('disconnected')
@@ -67,6 +72,7 @@ export function useRealtimeChat(roomId: string, enabled = true) {
       onOpen: () => {
         if (active) {
           setConnectionStatus('connected')
+          setErrorMessage('')
         }
       },
       onSnapshot: (messages) => {
@@ -74,6 +80,12 @@ export function useRealtimeChat(roomId: string, enabled = true) {
           chatMessagesQueryKey(roomId),
           mergeMessages(undefined, messages),
         )
+      },
+      onUnauthorized: () => {
+        if (active) {
+          setConnectionStatus('disconnected')
+          setErrorMessage('로그인이 만료되었습니다. 다시 로그인해주세요.')
+        }
       },
     })
 

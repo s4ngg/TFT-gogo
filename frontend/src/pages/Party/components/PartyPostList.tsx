@@ -6,6 +6,7 @@ import styles from '../Party.module.css'
 interface PartyPostListProps {
   currentPage: number
   joinedPostId: string | null
+  joiningPostId: string | null
   onJoinToggle: (postId: string) => void
   onPageChange: (page: number) => void
   posts: PartyPost[]
@@ -15,6 +16,7 @@ interface PartyPostListProps {
 function PartyPostList({
   currentPage,
   joinedPostId,
+  joiningPostId,
   onJoinToggle,
   onPageChange,
   posts,
@@ -25,13 +27,16 @@ function PartyPostList({
       <div className={styles.partyList}>
         {posts.length > 0 ? (
           posts.map((post) => {
-            const isJoined = joinedPostId === post.id
+            const isJoined = joinedPostId === post.id || post.isJoined === true
+            const isOwner = post.isOwner === true
             const hasJoinedOtherPost = joinedPostId !== null && !isJoined
 
             return (
               <PartyPostCard
                 hasJoinedOtherPost={hasJoinedOtherPost}
                 isJoined={isJoined}
+                isJoinPending={joiningPostId === post.id}
+                isOwner={isOwner}
                 key={post.id}
                 onJoinToggle={onJoinToggle}
                 post={post}

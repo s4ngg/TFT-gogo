@@ -11,12 +11,15 @@ export interface PartyPost {
   description: string
   icon: PartyIcon
   id: string
+  isJoined?: boolean
+  isOwner?: boolean
   mode: PartyMode
   status: '모집중' | '대기중'
   tags: string[]
   tier: string
   title: string
   tone: PartyTone
+  userId?: string
 }
 
 export interface ChatMessage {

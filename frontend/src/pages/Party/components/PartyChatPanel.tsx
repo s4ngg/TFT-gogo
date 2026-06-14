@@ -100,7 +100,7 @@ function PartyChatPanel({
               {chatNotice}
             </p>
           )}
-          <div className={styles.messageList}>
+          <div className={styles.messageList} role="log" aria-live="polite">
             {activeMessages.length > 0 ? (
               activeMessages.map((chat) => (
                 <article
@@ -110,7 +110,7 @@ function PartyChatPanel({
                   <div>
                     <strong>{chat.senderName}</strong>
                     <span>{chat.tier ?? 'Unranked'}</span>
-                    <time>{formatMessageTime(chat.createdAt)}</time>
+                    <time dateTime={chat.createdAt}>{formatMessageTime(chat.createdAt)}</time>
                   </div>
                   <p>{chat.content}</p>
                 </article>

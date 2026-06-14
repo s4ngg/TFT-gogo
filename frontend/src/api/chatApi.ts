@@ -18,10 +18,12 @@ export interface ChatMessageCreateRequest {
 }
 
 interface ChatStreamHandlers {
+  onClose: () => void
   onError: () => void
   onMessage: (message: ChatMessage) => void
   onOpen: () => void
   onSnapshot: (messages: ChatMessage[]) => void
+  onUnauthorized: () => void
 }
 
 export interface ChatStreamSubscription {
@@ -84,6 +86,12 @@ async function readChatStream(
       signal: controller.signal,
     })
 
+    if (response.status === 401) {
+      useAuthStore.getState().clearAuth()
+      handlers.onUnauthorized()
+      return
+    }
+
     if (!response.ok || !response.body) {
       handlers.onError()
       return
@@ -91,6 +99,10 @@ async function readChatStream(
 
     handlers.onOpen()
     await readSseBody(response.body, handlers, controller.signal)
+
+    if (!controller.signal.aborted) {
+      handlers.onClose()
+    }
   } catch {
     if (!controller.signal.aborted) {
       handlers.onError()
