@@ -172,6 +172,16 @@ class MemberServiceImplTest {
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.MEMBER_NOT_FOUND));
     }
 
+    @Test
+    void 내정보_조회는_인증정보가_없으면_UNAUTHORIZED를_던진다() {
+        // when, then
+        assertThatThrownBy(() -> memberService.getMe(null))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED));
+
+        verify(memberRepository, never()).findById(any());
+    }
+
     private SignupRequest signupRequest(String email, String password, String nickname) {
         SignupRequest request = new SignupRequest();
         ReflectionTestUtils.setField(request, "email", email);

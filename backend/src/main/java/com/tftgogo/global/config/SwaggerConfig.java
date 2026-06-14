@@ -3,6 +3,7 @@ package com.tftgogo.global.config;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeIn;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
+import io.swagger.v3.oas.annotations.security.SecuritySchemes;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
@@ -10,13 +11,22 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@SecurityScheme(
-        name = "X-Admin-Token",
-        type = SecuritySchemeType.APIKEY,
-        in = SecuritySchemeIn.HEADER,
-        paramName = "X-Admin-Token",
-        description = "관리자 인증 토큰"
-)
+@SecuritySchemes({
+        @SecurityScheme(
+                name = "X-Admin-Token",
+                type = SecuritySchemeType.APIKEY,
+                in = SecuritySchemeIn.HEADER,
+                paramName = "X-Admin-Token",
+                description = "관리자 인증 토큰"
+        ),
+        @SecurityScheme(
+                name = "BearerAuth",
+                type = SecuritySchemeType.HTTP,
+                scheme = "bearer",
+                bearerFormat = "JWT",
+                description = "JWT 액세스 토큰"
+        )
+})
 public class SwaggerConfig {
 
     @Bean
