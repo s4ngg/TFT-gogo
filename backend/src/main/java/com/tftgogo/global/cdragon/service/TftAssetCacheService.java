@@ -27,6 +27,7 @@ public class TftAssetCacheService {
     private final ObjectMapper objectMapper;
 
     private volatile Map<String, String> traitIconCache = Map.of();
+    private volatile Map<String, String> traitNameCache = Map.of();
     private volatile Map<String, String> itemIconCache = Map.of();
 
     @PostConstruct
@@ -39,6 +40,7 @@ public class TftAssetCacheService {
             }
             JsonNode root = objectMapper.readTree(response);
             traitIconCache = buildTraitIconCache(root);
+            traitNameCache = buildTraitNameCache(root);
             itemIconCache = buildItemIconCache(root);
             logger.info("TFT 에셋 캐시 로드 완료: 시너지 {}개, 아이템 {}개", traitIconCache.size(), itemIconCache.size());
         } catch (Exception e) {
@@ -50,6 +52,11 @@ public class TftAssetCacheService {
         String url = traitIconCache.get(traitId.toLowerCase(Locale.ROOT));
         if (url != null) return url;
         return TftAssetUrlBuilder.buildTraitIconUrl(traitId);
+    }
+
+    public String getTraitName(String traitId) {
+        String name = traitNameCache.get(traitId.toLowerCase(Locale.ROOT));
+        return name != null ? name : traitId;
     }
 
     public String getItemIconUrl(String itemId) {
@@ -65,6 +72,21 @@ public class TftAssetCacheService {
                 String icon = trait.path("icon").asText();
                 if (!apiName.isBlank() && !icon.isBlank()) {
                     cache.put(apiName.toLowerCase(Locale.ROOT), assetUrl(icon));
+                }
+            }
+        }
+        return cache;
+    }
+
+    private Map<String, String> buildTraitNameCache(JsonNode root) {
+        Map<String, String> cache = new HashMap<>();
+        for (JsonNode setData : root.path("setData")) {
+            if (setData.path("number").asInt() != TftAssetConfig.CURRENT_SET_NUMBER) continue;
+            for (JsonNode trait : setData.path("traits")) {
+                String apiName = trait.path("apiName").asText();
+                String name = trait.path("name").asText();
+                if (!apiName.isBlank() && !name.isBlank()) {
+                    cache.put(apiName.toLowerCase(Locale.ROOT), name);
                 }
             }
         }

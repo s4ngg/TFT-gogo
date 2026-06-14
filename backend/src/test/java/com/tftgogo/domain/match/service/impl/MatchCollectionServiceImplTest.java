@@ -55,7 +55,7 @@ class MatchCollectionServiceImplTest {
                 .thenReturn(List.of(cachedMatch("m0", puuid), cachedMatch("m1", puuid)));
 
         // when
-        matchCollectionService.fetchAndCache(puuid, 0, 2, Function.identity(), s -> null);
+        matchCollectionService.fetchAndCache(puuid, 0, 2, Function.identity(), Function.identity(), s -> null);
 
         // then
         verify(riotQueue, never()).submit(any());
@@ -73,7 +73,7 @@ class MatchCollectionServiceImplTest {
 
         // when
         List<SummonerMatchItemDto> result = matchCollectionService.fetchAndCache(puuid, 0, 2,
-                Function.identity(), s -> null);
+                Function.identity(), Function.identity(), s -> null);
 
         // then
         assertThat(result).isEmpty();
@@ -99,7 +99,7 @@ class MatchCollectionServiceImplTest {
 
         // when
         List<SummonerMatchItemDto> result = matchCollectionService.fetchAndCache(puuid, 0, 2,
-                Function.identity(), s -> null);
+                Function.identity(), Function.identity(), s -> null);
 
         // then
         verify(riotQueue, atLeast(2)).submit(any());

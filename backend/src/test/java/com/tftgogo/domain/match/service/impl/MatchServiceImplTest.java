@@ -112,16 +112,16 @@ class MatchServiceImplTest {
         // given
         String puuid = "test-puuid";
         List<SummonerMatchItemDto> expected = List.of();
-        when(matchCollectionService.fetchAndCache(eq(puuid), eq(0), eq(10), any(), any()))
+        when(matchCollectionService.fetchAndCache(eq(puuid), eq(0), eq(10), any(), any(), any()))
                 .thenReturn(expected);
 
         // when
         List<SummonerMatchItemDto> result = matchService.getMatches(puuid, 0, 10,
-                Function.identity(), s -> null);
+                Function.identity(), Function.identity(), s -> null);
 
         // then
         assertThat(result).isEqualTo(expected);
-        verify(matchCollectionService).fetchAndCache(eq(puuid), eq(0), eq(10), any(), any());
+        verify(matchCollectionService).fetchAndCache(eq(puuid), eq(0), eq(10), any(), any(), any());
     }
 
     @Test

@@ -53,8 +53,9 @@ public class MatchServiceImpl implements MatchService {
     @Override
     public List<SummonerMatchItemDto> getMatches(String puuid, int start, int count,
                                                   Function<String, String> traitIconFn,
+                                                  Function<String, String> traitNameFn,
                                                   Function<String, String> itemIconFn) {
-        return matchCollectionService.fetchAndCache(puuid, start, count, traitIconFn, itemIconFn);
+        return matchCollectionService.fetchAndCache(puuid, start, count, traitIconFn, traitNameFn, itemIconFn);
     }
 
     @Override

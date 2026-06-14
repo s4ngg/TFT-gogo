@@ -30,6 +30,7 @@ public class MatchController implements MatchControllerDocs {
         return ResponseEntity.ok(ApiResponse.success("매치 목록 조회 성공",
                 matchService.getMatches(puuid, start, count,
                         tftAssetCacheService::getTraitIconUrl,
+                        tftAssetCacheService::getTraitName,
                         tftAssetCacheService::getItemIconUrl)));
     }
 

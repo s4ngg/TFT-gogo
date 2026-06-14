@@ -23,6 +23,7 @@ public class SummonerMatchItemDto {
 
     public static SummonerMatchItemDto from(MatchSummaryResponse m,
                                             Function<String, String> traitIconFn,
+                                            Function<String, String> traitNameFn,
                                             Function<String, String> itemIconFn) {
         return SummonerMatchItemDto.builder()
                 .matchId(m.getMatchId())
@@ -32,13 +33,13 @@ public class SummonerMatchItemDto {
                 .compositionName("")
                 .traits(m.getTraits().stream()
                         .filter(t -> t.getStyle() > 0)
-                        .map(t -> TraitDto.from(t, traitIconFn))
+                        .map(t -> TraitDto.from(t, traitIconFn, traitNameFn))
                         .collect(Collectors.toList()))
                 .units(m.getUnits().stream()
                         .map(u -> UnitDto.from(u, itemIconFn))
                         .collect(Collectors.toList()))
                 .participants(m.getParticipants().stream()
-                        .map(p -> ParticipantDto.from(p, traitIconFn, itemIconFn))
+                        .map(p -> ParticipantDto.from(p, traitIconFn, traitNameFn, itemIconFn))
                         .collect(Collectors.toList()))
                 .build();
     }
@@ -61,10 +62,12 @@ public class SummonerMatchItemDto {
         private int count;
         private String tone;
 
-        public static TraitDto from(MatchSummaryResponse.TraitSummary t, Function<String, String> iconFn) {
+        public static TraitDto from(MatchSummaryResponse.TraitSummary t,
+                                    Function<String, String> iconFn,
+                                    Function<String, String> nameFn) {
             return TraitDto.builder()
                     .traitId(t.getName())
-                    .name(t.getName())
+                    .name(nameFn.apply(t.getName()))
                     .iconUrl(iconFn.apply(t.getName()))
                     .count(t.getNumUnits())
                     .tone(styleToTone(t.getStyle()))
@@ -108,6 +111,7 @@ public class SummonerMatchItemDto {
 
         public static ParticipantDto from(MatchSummaryResponse.ParticipantSummary p,
                                           Function<String, String> traitIconFn,
+                                          Function<String, String> traitNameFn,
                                           Function<String, String> itemIconFn) {
             return ParticipantDto.builder()
                     .puuid(p.getPuuid())
@@ -116,7 +120,7 @@ public class SummonerMatchItemDto {
                     .placement(p.getPlacement())
                     .stage(String.valueOf(p.getLastRound()))
                     .traits(p.getTraits().stream()
-                            .map(t -> TraitDto.from(t, traitIconFn))
+                            .map(t -> TraitDto.from(t, traitIconFn, traitNameFn))
                             .collect(Collectors.toList()))
                     .units(p.getUnits().stream()
                             .map(u -> UnitDto.from(u, itemIconFn))
