@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -54,7 +55,7 @@ class MatchCollectionServiceImplTest {
                 .thenReturn(List.of(cachedMatch("m0", puuid), cachedMatch("m1", puuid)));
 
         // when
-        matchCollectionService.fetchAndCache(puuid, 0, 2);
+        matchCollectionService.fetchAndCache(puuid, 0, 2, Function.identity(), s -> null);
 
         // then
         verify(riotQueue, never()).submit(any());
@@ -71,7 +72,8 @@ class MatchCollectionServiceImplTest {
                 .when(riotQueue).submit(any());
 
         // when
-        List<SummonerMatchItemDto> result = matchCollectionService.fetchAndCache(puuid, 0, 2);
+        List<SummonerMatchItemDto> result = matchCollectionService.fetchAndCache(puuid, 0, 2,
+                Function.identity(), s -> null);
 
         // then
         assertThat(result).isEmpty();
@@ -96,7 +98,8 @@ class MatchCollectionServiceImplTest {
         when(cachedMatchRepository.findAllById(any())).thenReturn(List.of());
 
         // when
-        List<SummonerMatchItemDto> result = matchCollectionService.fetchAndCache(puuid, 0, 2);
+        List<SummonerMatchItemDto> result = matchCollectionService.fetchAndCache(puuid, 0, 2,
+                Function.identity(), s -> null);
 
         // then
         verify(riotQueue, atLeast(2)).submit(any());

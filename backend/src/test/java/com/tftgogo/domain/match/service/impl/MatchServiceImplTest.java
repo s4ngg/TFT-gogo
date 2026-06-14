@@ -24,10 +24,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -110,14 +112,16 @@ class MatchServiceImplTest {
         // given
         String puuid = "test-puuid";
         List<SummonerMatchItemDto> expected = List.of();
-        when(matchCollectionService.fetchAndCache(puuid, 0, 10)).thenReturn(expected);
+        when(matchCollectionService.fetchAndCache(eq(puuid), eq(0), eq(10), any(), any()))
+                .thenReturn(expected);
 
         // when
-        List<SummonerMatchItemDto> result = matchService.getMatches(puuid, 0, 10);
+        List<SummonerMatchItemDto> result = matchService.getMatches(puuid, 0, 10,
+                Function.identity(), s -> null);
 
         // then
         assertThat(result).isEqualTo(expected);
-        verify(matchCollectionService).fetchAndCache(puuid, 0, 10);
+        verify(matchCollectionService).fetchAndCache(eq(puuid), eq(0), eq(10), any(), any());
     }
 
     @Test
