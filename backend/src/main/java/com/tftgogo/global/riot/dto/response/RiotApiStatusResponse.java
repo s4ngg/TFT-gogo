@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Getter
 @Builder
@@ -23,8 +24,8 @@ public class RiotApiStatusResponse {
                 : "Riot API 요청 대기열이 비어 있습니다.";
 
         return RiotApiStatusResponse.builder()
-                .activeConnections(0)
-                .checkedAt(OffsetDateTime.now().toString())
+                .activeConnections(0) // TODO: Riot API 활성 연결 수 지표가 생기면 실제 값으로 교체
+                .checkedAt(OffsetDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
                 .message(message)
                 .queueSize(queueSize)
                 .status(status)
