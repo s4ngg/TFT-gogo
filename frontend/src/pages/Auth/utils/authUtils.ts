@@ -47,3 +47,34 @@ export function mapAuthError(error: unknown, isSignup: boolean): string {
     ? '회원가입 처리 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.'
     : '로그인 처리 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.'
 }
+
+export function mapOAuthErrorCode(code: string | null): string {
+  if (!code) {
+    return ''
+  }
+
+  if (code === 'email_exists') {
+    return '같은 이메일로 가입된 계정이 있습니다. 이메일 로그인을 이용해 주세요.'
+  }
+
+  if (code === 'email_required') {
+    return '소셜 계정에서 이메일 정보를 확인할 수 없습니다.'
+  }
+
+  return '소셜 로그인 처리 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.'
+}
+
+export function mapSocialAuthError(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error)
+  const normalizedMessage = message.toLowerCase()
+
+  if (normalizedMessage.includes('network') || normalizedMessage.includes('timeout')) {
+    return '서버와 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.'
+  }
+
+  if (normalizedMessage.includes('404') || normalizedMessage.includes('not found')) {
+    return '소셜 로그인 API 경로를 찾을 수 없습니다. 잠시 후 다시 시도해 주세요.'
+  }
+
+  return '소셜 로그인 시작 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.'
+}

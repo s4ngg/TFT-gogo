@@ -2,9 +2,13 @@ package com.tftgogo.global.config;
 
 import com.tftgogo.global.filter.AdminTokenFilter;
 import com.tftgogo.global.filter.JwtAuthenticationFilter;
+import com.tftgogo.global.security.oauth.SocialOAuth2FailureHandler;
+import com.tftgogo.global.security.oauth.SocialOAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -29,22 +33,27 @@ public class SecurityConfig {
     private final AdminTokenFilter adminTokenFilter;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CorsProperties corsProperties;
+    private final SocialOAuth2SuccessHandler socialOAuth2SuccessHandler;
+    private final SocialOAuth2FailureHandler socialOAuth2FailureHandler;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    @Order(1)
+    public SecurityFilterChain apiFilterChain(HttpSecurity http) throws Exception {
         http
+                .securityMatcher("/api/**")
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth ->
                         auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/decks/meta").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/community/parties").permitAll()
                         .requestMatchers(
-                                "/health",
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/signup",
+                                "/api/v1/auth/social/**",
                                 "/api/admin/**",        // AdminTokenFilter가 직접 검증
                                 "/api/match/**",
                                 "/api/summoners/**",
@@ -59,6 +68,30 @@ public class SecurityConfig {
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(adminTokenFilter, JwtAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    @Bean
+    @Order(2)
+    public SecurityFilterChain oauth2FilterChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher(
+                        "/oauth2/**",
+                        "/login/oauth2/**",
+                        "/health",
+                        "/swagger-ui/**",
+                        "/v3/api-docs/**"
+                )
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(socialOAuth2SuccessHandler)
+                        .failureHandler(socialOAuth2FailureHandler)
+                );
 
         return http.build();
     }
