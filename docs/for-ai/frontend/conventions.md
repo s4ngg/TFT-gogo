@@ -7,8 +7,16 @@
 <style>
 - Use CSS Modules (*.module.css). Tailwind, styled-components, and inline styles are forbidden.
 - Design tokens (color, size, radius) must come from frontend/src/styles/variables.css CSS variables.
-  Available token prefixes: --color-*, --tone-*, --space-*, --font-size-*, --radius-*
+  Available token prefixes: --color-*, --tone-*, --bg-*, --border-*, --cyan-*, --match-*, --badge-*,
+  --space-*, --font-size-*, --radius-*, --search-*, --donut-*, --tooltip-*
   If a new token is needed, add it to variables.css first, then reference it.
+- Hardcoding color values (hex, rgb, rgba) directly in component CSS files is FORBIDDEN.
+  BAD:  background: rgba(4, 243, 229, 0.1);
+  GOOD: background: var(--cyan-bg-subtle);
+  BAD:  border: 1px solid rgba(112, 144, 152, 0.14);
+  GOOD: border: 1px solid var(--border-separator);
+  Exception: box-shadow compound values (rgba whites/blacks for shadow depth) may remain hardcoded
+  if no matching token exists and the value has no semantic reuse.
 - CSS Modules class names must be camelCase. snake_case is forbidden.
   BAD:  styles[`tone_${t.tone}`]
   GOOD: const TONE_CLASS_MAP: Record&lt;string, string&gt; = { gold: styles.toneGold, ... }; TONE_CLASS_MAP[t.tone]
@@ -51,6 +59,13 @@
 <security>
 - Never log sensitive data (passwords, JWT tokens, auth codes).
 </security>
+
+<testing>
+- Frontend unit tests use `tsx --test` with Node's built-in `node:test` runner while the project remains on Vite 5.
+- Do not add Vitest for new tests unless the team first upgrades the frontend build stack and re-evaluates the security/compatibility tradeoff.
+- Add new frontend tests under the nearest `__tests__/` directory and include them in `frontend/package.json` `test` script.
+- Frontend CI must run `npm run build`, `npm run lint`, `npm run test`, and `npm audit --audit-level=high`.
+</testing>
 
 </conventions>
 

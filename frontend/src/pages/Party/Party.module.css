@@ -262,6 +262,10 @@
   margin-top: 15px;
 }
 
+.partyPagination {
+  margin-top: 14px;
+}
+
 .emptyState {
   min-height: 180px;
   display: grid;

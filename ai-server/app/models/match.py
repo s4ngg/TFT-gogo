@@ -79,6 +79,7 @@ class RecentStats(BaseModel):
     avg_place: str
     top4_rate: str
     win_rate: str           # 1등 비율
+    recent_placements: list[int] = Field(default_factory=list, max_length=20)
 
 
 class AnalyzeResponse(BaseModel):

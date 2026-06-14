@@ -6,6 +6,8 @@ import com.tftgogo.domain.guide.dto.response.GuideImportResponse;
 import com.tftgogo.domain.guide.entity.Guide;
 import com.tftgogo.domain.guide.entity.GuideType;
 import com.tftgogo.domain.guide.repository.GuideRepository;
+import com.tftgogo.domain.match.entity.CachedMatch;
+import com.tftgogo.domain.match.repository.CachedMatchRepository;
 import com.tftgogo.global.cdragon.config.CommunityDragonProperties;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
@@ -18,11 +20,14 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -39,6 +44,9 @@ class GuideCdragonImportServiceImplTest {
 
     @Mock
     private GuideRepository guideRepository;
+
+    @Mock
+    private CachedMatchRepository cachedMatchRepository;
 
     @Mock
     private RestTemplate restTemplate;
@@ -155,6 +163,76 @@ class GuideCdragonImportServiceImplTest {
     }
 
     @Test
+    void CDragon_아이템_import는_cached_match_통계를_반영한다() {
+        // given
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonJson());
+        when(cachedMatchRepository.findRecentByQueueIds(any(), any())).thenReturn(List.of(cachedMatch(cachedMatchJson())));
+        when(guideRepository.findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(Optional.empty());
+        when(guideRepository.existsByGuideTypeAndTargetKeyAndPatchVersion(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(false);
+        when(guideRepository.saveAndFlush(any(Guide.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        guideCdragonImportService.importGuides(request(false, false, true));
+
+        // then
+        ArgumentCaptor<Guide> guideCaptor = ArgumentCaptor.forClass(Guide.class);
+        verify(guideRepository).saveAndFlush(guideCaptor.capture());
+        Guide itemGuide = guideCaptor.getValue();
+        assertThat(itemGuide.getDataJson()).contains("\"avgPlace\":\"3.00\"");
+        assertThat(itemGuide.getDataJson()).contains("\"pickRate\":\"100.0%\"");
+        assertThat(itemGuide.getDataJson()).contains("\"top4\":\"50.0%\"");
+        assertThat(itemGuide.getDataJson()).contains("\"winRate\":\"50.0%\"");
+        assertThat(itemGuide.getDataJson()).contains("\"bestUsers\":[{\"cost\":1");
+        assertThat(itemGuide.getDataJson()).contains("\"name\":\"Briar\"");
+        assertThat(itemGuide.getDataJson()).contains("tft17_briar_square.tft_set17.png");
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(cachedMatchRepository).findRecentByQueueIds(any(), pageableCaptor.capture());
+        assertThat(pageableCaptor.getValue().getPageNumber()).isZero();
+        assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(500);
+    }
+
+    @Test
+    void CDragon_item_import_skips_blank_cached_match_json() {
+        // given
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonJson());
+        when(cachedMatchRepository.findRecentByQueueIds(any(), any())).thenReturn(List.of(cachedMatch("   ")));
+        when(guideRepository.findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(Optional.empty());
+        when(guideRepository.existsByGuideTypeAndTargetKeyAndPatchVersion(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(false);
+        when(guideRepository.saveAndFlush(any(Guide.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        guideCdragonImportService.importGuides(request(false, false, true));
+
+        // then
+        ArgumentCaptor<Guide> guideCaptor = ArgumentCaptor.forClass(Guide.class);
+        verify(guideRepository).saveAndFlush(guideCaptor.capture());
+        Guide itemGuide = guideCaptor.getValue();
+        assertThat(itemGuide.getDataJson()).contains("\"avgPlace\":\"-\"");
+        assertThat(itemGuide.getDataJson()).contains("\"pickRate\":\"-\"");
+        assertThat(itemGuide.getDataJson()).contains("\"top4\":\"-\"");
+        assertThat(itemGuide.getDataJson()).contains("\"winRate\":\"-\"");
+    }
+
+    @Test
     void CDragon_일반_증강체만_증강체_가이드로_생성한다() {
         // given
         when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
@@ -195,6 +273,36 @@ class GuideCdragonImportServiceImplTest {
         assertThat(augmentGuide.getDataJson()).contains("\"type\":\"Combat\"");
         assertThat(augmentGuide.getDataJson()).contains("\"tags\":[\"Combat\"]");
         assertThat(augmentGuide.getDataJson()).contains("\"winRate\":\"-\"");
+    }
+
+    @Test
+    void CDragon_증강체_import는_cached_match_통계를_반영한다() {
+        // given
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonJson());
+        when(cachedMatchRepository.findRecentByQueueIds(any(), any())).thenReturn(List.of(cachedMatch(cachedMatchJson())));
+        when(guideRepository.findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(Optional.empty());
+        when(guideRepository.existsByGuideTypeAndTargetKeyAndPatchVersion(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(false);
+        when(guideRepository.saveAndFlush(any(Guide.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        guideCdragonImportService.importGuides(request(false, false, false, true));
+
+        // then
+        ArgumentCaptor<Guide> guideCaptor = ArgumentCaptor.forClass(Guide.class);
+        verify(guideRepository).saveAndFlush(guideCaptor.capture());
+        Guide augmentGuide = guideCaptor.getValue();
+        assertThat(augmentGuide.getDataJson()).contains("\"avgPlace\":\"1.00\"");
+        assertThat(augmentGuide.getDataJson()).contains("\"pickRate\":\"50.0%\"");
+        assertThat(augmentGuide.getDataJson()).contains("\"winRate\":\"100.0%\"");
     }
 
     @Test
@@ -379,6 +487,58 @@ class GuideCdragonImportServiceImplTest {
                 .sortOrder(0)
                 .active(active)
                 .build();
+    }
+
+    private CachedMatch cachedMatch(String matchJson) {
+        return CachedMatch.builder()
+                .matchId("KR_1")
+                .queueId(1100)
+                .gameDatetime(1_717_200_000_000L)
+                .matchJson(matchJson)
+                .createdAt(LocalDateTime.now())
+                .participantPuuids(Set.of("puuid-1", "puuid-2"))
+                .build();
+    }
+
+    private String cachedMatchJson() {
+        return """
+                {
+                  "info": {
+                    "game_version": "Version 17.3.1234567",
+                    "queue_id": 1100,
+                    "participants": [
+                      {
+                        "puuid": "puuid-1",
+                        "placement": 1,
+                        "augments": ["TFT17_Augment_BattleReady"],
+                        "units": [
+                          {
+                            "character_id": "TFT17_Briar",
+                            "name": "Briar",
+                            "rarity": 0,
+                            "tier": 2,
+                            "itemNames": ["TFT_Item_GuinsoosRageblade"]
+                          }
+                        ]
+                      },
+                      {
+                        "puuid": "puuid-2",
+                        "placement": 5,
+                        "augments": ["TFT17_Augment_Other"],
+                        "units": [
+                          {
+                            "character_id": "TFT17_Briar",
+                            "name": "Briar",
+                            "rarity": 0,
+                            "tier": 2,
+                            "itemNames": ["TFT_Item_GuinsoosRageblade"]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+                """;
     }
 
     private String cdragonJson() {

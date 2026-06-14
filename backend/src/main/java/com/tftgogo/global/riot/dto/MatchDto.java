@@ -84,6 +84,9 @@ public class MatchDto {
 
         @Schema(description = "활성화된 특성 목록", requiredMode = Schema.RequiredMode.REQUIRED)
         private List<TraitDto> traits;
+
+        @Schema(description = "선택한 증강체 ID 목록", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+        private List<String> augments;
     }
 
     @Getter

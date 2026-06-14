@@ -65,6 +65,7 @@ def compute_recent_stats(matches: list[MatchRecord]) -> RecentStats:
         avg_place=_fmt_place(total_place, n),
         top4_rate=_fmt_rate(top4_count, n),
         win_rate=_fmt_rate(win_count, n),
+        recent_placements=[m.placement for m in matches[:20]],
     )
 
 

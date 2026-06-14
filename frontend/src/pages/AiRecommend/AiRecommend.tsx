@@ -4,10 +4,10 @@ import { useAiRecommendQuery } from '../../hooks/useAiRecommendQuery'
 import useSummonerStore from '../../store/useSummonerStore'
 import { mockAiRecommendation } from '../../mocks/aiRecommendMock'
 import type { AiRecommendStats } from '../../api/aiRecommendApi'
+import { tftTierEmblemUrl } from '../../api/communityDragonAssets'
 import ConnectPrompt from './components/ConnectPrompt'
 import StatCard from './components/StatCard'
 import DeckPerformance from './components/DeckPerformance'
-import AugmentAnalysis from './components/AugmentAnalysis'
 import AiRecommendedDecks from './components/AiRecommendedDecks'
 import styles from './AiRecommend.module.css'
 
@@ -53,10 +53,43 @@ function AiRecommend() {
                 <StatCard label="1등 비율" value={stats.winRate} tone="gold" />
                 <StatCard label="분석 게임" value={`${stats.recentGames}게임`} />
               </div>
+              {stats.recentPlacements && stats.recentPlacements.length > 0 && (
+                <div className={styles.placementsRow}>
+                  <span className={styles.placementsLabel}>최근 등수</span>
+                  <div className={styles.placementsGrid}>
+                    {[stats.recentPlacements.slice(0, 10), stats.recentPlacements.slice(10, 20)].map((row, rowIdx) => (
+                      <div key={rowIdx} className={styles.placementBadges}>
+                        {row.map((place, i) => (
+                          <span
+                            key={i}
+                            className={styles.placementBadge}
+                            data-top4={place <= 4 ? 'true' : 'false'}
+                            data-first={place === 1 ? 'true' : 'false'}
+                          >
+                            {place}
+                          </span>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                  {summoner?.tier && (
+                    <div className={styles.tierInfo}>
+                      <img
+                        src={tftTierEmblemUrl(summoner.emblemKey)}
+                        alt={summoner.tier}
+                        className={styles.tierEmblem}
+                      />
+                      <div className={styles.tierText}>
+                        <span className={styles.tierName}>{summoner.tier}</span>
+                        <span className={styles.tierLp}>{summoner.lp} LP</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </section>
 
             <DeckPerformance goodTraits={recommendation.goodTraits} badTraits={recommendation.badTraits} />
-            <AugmentAnalysis augments={recommendation.augments} />
             <AiRecommendedDecks deckReasons={recommendation.deckReasons} />
           </div>
         )}

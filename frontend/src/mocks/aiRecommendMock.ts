@@ -7,6 +7,7 @@ export const mockAiRecommendation: AiRecommendResponse = {
     avgPlace: '4.1',
     top4Rate: '58.0%',
     winRate: '22.5%',
+    recentPlacements: [1, 4, 4, 3, 2, 6, 1, 5, 3, 2, 3, 1, 7, 4, 2, 5, 3, 4, 6, 1],
   },
   goodTraits: [
     {
@@ -41,13 +42,6 @@ export const mockAiRecommendation: AiRecommendResponse = {
       iconUrl: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Rogue.TFT_Set17.tex'),
       tone: 'silver', games: 5, avgPlace: '6.1', top4Rate: '19%',
     },
-  ],
-  augments: [
-    { name: '강철의 의지', avgPlace: '2.9', games: 4, icon: '🛡️' },
-    { name: '정의의 손길+', avgPlace: '3.2', games: 3, icon: '⚔️' },
-    { name: '용의 불꽃', avgPlace: '3.5', games: 5, icon: '🔥' },
-    { name: '별의 수호자', avgPlace: '4.8', games: 3, icon: '✨' },
-    { name: '전사의 용기', avgPlace: '5.1', games: 4, icon: '🗡️' },
   ],
   deckReasons: [
     { deckRank: 1, isPatchTrend: false, reason: '내가 자주 쓰는 챔피언 포함' },

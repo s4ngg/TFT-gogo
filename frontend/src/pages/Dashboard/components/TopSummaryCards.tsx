@@ -21,7 +21,23 @@ function PatchMetaCard() {
   )
 }
 
-const QUICK_TAGS = ['정동글#KR1', '새벽의달#KR', '응의자#KR1', 'TFT잘하고싶다#1234']
+const STORAGE_KEY = 'tft_recent_searches'
+
+function getRecentSearches(): string[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]')
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter((s): s is string => typeof s === 'string').slice(0, 5)
+  } catch {
+    return []
+  }
+}
+
+function saveRecentSearch(input: string) {
+  const prev = getRecentSearches()
+  const next = [input, ...prev.filter((s) => s !== input)].slice(0, 5)
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+}
 
 function SummonerSearchCard() {
   const [query, setQuery] = useState('')
@@ -30,9 +46,14 @@ function SummonerSearchCard() {
   function handleSearch(input: string) {
     const trimmed = input.trim()
     if (!trimmed) return
-    const [name = trimmed, tag = 'KR1'] = trimmed.split('#').map((s) => s.trim())
-    navigate(`/summoner/${encodeURIComponent(name)}/${tag}`)
+    saveRecentSearch(trimmed)
+    const parts = trimmed.split('#').map((s) => s.trim())
+    const name = parts[0] || trimmed
+    const tag = parts[1] || 'KR1'
+    navigate(`/summoner/${encodeURIComponent(name)}/${encodeURIComponent(tag)}`)
   }
+
+  const recentSearches = getRecentSearches()
 
   return (
     <section className={`${styles.panel} ${styles.searchPanel}`}>
@@ -55,14 +76,20 @@ function SummonerSearchCard() {
           <Search size={28} />
         </button>
       </form>
-      <div className={styles.searchTags}>
-        <span>인기 검색</span>
-        {QUICK_TAGS.map((tag) => (
-          <button key={tag} type="button" onClick={() => handleSearch(tag)}>
-            {tag}
-          </button>
-        ))}
-      </div>
+      {recentSearches.length > 0 && (
+        <div className={styles.searchTags}>
+          <span>최근 검색</span>
+          {recentSearches.map((tag) => (
+            <button
+              key={tag}
+              type="button"
+              onClick={() => handleSearch(tag)}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+      )}
     </section>
   )
 }

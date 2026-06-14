@@ -11,6 +11,7 @@ import {
 } from '../hooks/useGuideTabPagination'
 import {
   EmptyState,
+  GuideChampionImage,
   GuidePagination,
   GuideStatusBanner,
   ItemIconStrip,
@@ -131,7 +132,7 @@ function ItemStatsView({
                         title={`${championRef.name} 챔피언 보기`}
                         type="button"
                       >
-                        <img src={championRef.imageUrl} alt={championRef.name} />
+                        <GuideChampionImage imageUrl={championRef.imageUrl} name={championRef.name} />
                       </button>
                     ))}
                   </div>

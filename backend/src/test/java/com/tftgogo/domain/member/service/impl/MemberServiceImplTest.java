@@ -11,6 +11,7 @@ import com.tftgogo.global.exception.ErrorCode;
 import com.tftgogo.global.security.JwtTokenProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -63,7 +64,11 @@ class MemberServiceImplTest {
         assertThat(response.getUser())
                 .extracting(MemberResponse::getEmail, MemberResponse::getNickname)
                 .containsExactly("sojung@example.com", "소정");
-        verify(memberRepository).saveAndFlush(any(Member.class));
+        ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
+        verify(memberRepository).saveAndFlush(memberCaptor.capture());
+        assertThat(memberCaptor.getValue().getPasswordHash())
+                .isEqualTo("encoded-password")
+                .isNotEqualTo("password123");
         verify(jwtTokenProvider).createAccessToken(1L);
     }
 
