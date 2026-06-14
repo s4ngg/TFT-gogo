@@ -98,7 +98,7 @@ Page: PatchNotes (/patch-notes).
 - Crawler implementation must be split into fetcher, parser, normalizer, and importer steps so official page markup changes can be isolated from DB write logic.
 - Backend implementation should mirror the guide import pattern: service interfaces under domain/patchnote/service, implementations under service/impl, request/response DTOs under dto/request and dto/response, and Swagger docs in AdminPatchNoteControllerDocs.
 - Fetcher should use the backend RestTemplate pattern with explicit timeout, redirect handling, user-agent, and logged failures. It should return raw HTML plus sourceUrl and fetchedAt metadata.
-- Parser should use a real HTML parser such as Jsoup rather than regex-only parsing. Regex may be used only for small post-processing like version extraction. If adding Jsoup is considered too much dependency surface, keep parser scope smaller and document the lower reliability.
+- Production parser implementations must use Jsoup for robust HTML extraction from articleCardGrid, articleMasthead, and patchNotesRichText. Regex may be used only for small post-processing like version extraction; do not implement the crawler parser as regex-only or string-splitting HTML parsing.
 - Parser should convert the Next.js page data into PatchNoteCrawlDocument and PatchChangeCrawlRow records before domain normalization.
 - Normalizer should convert crawler rows into PatchNoteImportCandidate and PatchChangeImportCandidate records before touching entities.
 - Planned admin entrypoint: POST /api/admin/patch-notes/import/crawl protected by X-Admin-Token. The request should include sourceUrl, version, locale, dryRun, and forceOverwrite or equivalent review-safe options.
