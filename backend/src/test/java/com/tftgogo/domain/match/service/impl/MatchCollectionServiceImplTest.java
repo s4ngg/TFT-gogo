@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tftgogo.domain.match.entity.CachedMatch;
 import com.tftgogo.domain.match.repository.CachedMatchRepository;
 import com.tftgogo.domain.summoner.dto.response.SummonerMatchItemDto;
+import com.tftgogo.global.exception.BusinessException;
+import com.tftgogo.global.exception.ErrorCode;
 import com.tftgogo.global.riot.RiotApiClient;
 import com.tftgogo.global.riot.dto.MatchDto;
 import com.tftgogo.global.riot.queue.RiotQueue;
@@ -25,6 +27,7 @@ import java.util.concurrent.Executor;
 import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -108,6 +111,54 @@ class MatchCollectionServiceImplTest {
         verify(riotQueue, times(1)).submit(any());           // 매치 상세 수집 (background)
         verify(cachedMatchRepository).save(any(CachedMatch.class));
         assertThat(result).isEmpty(); // findAllById가 빈 목록 반환
+    }
+
+    @Test
+    void Riot_API_실패시_fetchAndCache는_BusinessException을_전파한다() {
+        // given
+        String puuid = "test-puuid";
+        when(cachedMatchRepository.findByParticipantPuuid(eq(puuid), any(Pageable.class)))
+                .thenReturn(List.of());
+        CompletableFuture<List<String>> failed = new CompletableFuture<>();
+        failed.completeExceptionally(new BusinessException(ErrorCode.RIOT_API_ERROR));
+        // fetchMatchIds는 submitForeground 사용
+        doReturn(failed).when(riotQueue).submitForeground(any());
+
+        // when / then
+        assertThatThrownBy(() -> matchCollectionService.fetchAndCache(puuid, 0, 2,
+                Function.identity(), Function.identity(), s -> null))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.RIOT_API_ERROR);
+    }
+
+    @Test
+    void 매치_상세_수집_실패시_건너뛰고_나머지_결과를_빌드한다() {
+        // given
+        String puuid = "test-puuid";
+        when(cachedMatchRepository.findByParticipantPuuid(eq(puuid), any(Pageable.class)))
+                .thenReturn(List.of());
+        when(cachedMatchRepository.findMatchIdsByMatchIdIn(any())).thenReturn(List.of());
+        when(cachedMatchRepository.findAllById(any())).thenReturn(List.of());
+
+        CompletableFuture<List<String>> matchIdFuture1 = CompletableFuture.completedFuture(List.of("m1"));
+        CompletableFuture<List<String>> matchIdFuture2 = CompletableFuture.completedFuture(List.of());
+        // fetchMatchIds: submitForeground 2회
+        doReturn(matchIdFuture1).doReturn(matchIdFuture2)
+                .when(riotQueue).submitForeground(any());
+
+        // collectInBackground: 매치 상세 조회 실패 (submit 1회)
+        CompletableFuture<MatchDto> detailFailed = new CompletableFuture<>();
+        detailFailed.completeExceptionally(new BusinessException(ErrorCode.RIOT_API_ERROR));
+        doReturn(detailFailed).when(riotQueue).submit(any());
+
+        // when — 매치 상세 실패해도 예외 없이 반환
+        // 실패한 future는 thenApplyAsync(..., executor)를 건너뛰므로 executor stub 불필요
+        List<SummonerMatchItemDto> result = matchCollectionService.fetchAndCache(puuid, 0, 2,
+                Function.identity(), Function.identity(), s -> null);
+
+        // then
+        assertThat(result).isEmpty();
+        verify(cachedMatchRepository, never()).save(any());
     }
 
     private CachedMatch cachedMatch(String matchId, String puuid) {
