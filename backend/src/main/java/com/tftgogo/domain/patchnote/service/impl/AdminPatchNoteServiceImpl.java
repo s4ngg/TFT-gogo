@@ -113,6 +113,15 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<PatchChangeResponse> getPatchChanges(Long patchNoteId) {
+        PatchNote patchNote = findPatchNote(patchNoteId);
+        return patchChangeRepository.findByPatchNoteAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchNote).stream()
+                .map(this::toPatchChangeResponse)
+                .toList();
+    }
+
+    @Override
     @Transactional
     public PatchChangeResponse createPatchChange(AdminPatchChangeRequest request) {
         PatchNote patchNote = findPatchNote(request.getPatchNoteId());

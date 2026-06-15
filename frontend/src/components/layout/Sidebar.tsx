@@ -4,6 +4,8 @@
   ClipboardList,
   Home,
   LayoutGrid,
+  PanelLeftClose,
+  PanelLeftOpen,
   Users,
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
@@ -23,13 +25,31 @@ function BrandLogo() {
   return <div className={styles.brandLogo} aria-hidden="true" />
 }
 
-function Sidebar() {
+interface SidebarProps {
+  isCollapsed: boolean
+  onToggleCollapsed: () => void
+}
+
+function Sidebar({ isCollapsed, onToggleCollapsed }: SidebarProps) {
+  const ToggleIcon = isCollapsed ? PanelLeftOpen : PanelLeftClose
+
   return (
     <aside className={styles.sidebar}>
-      <NavLink to="/" className={styles.brand}>
-        <BrandLogo />
-        <strong>TFTgogo</strong>
-      </NavLink>
+      <div className={styles.sidebarHeader}>
+        <NavLink to="/" className={styles.brand} aria-label="TFTgogo 홈">
+          <BrandLogo />
+          <strong>TFTgogo</strong>
+        </NavLink>
+        <button
+          type="button"
+          className={styles.sidebarToggle}
+          aria-label={isCollapsed ? '사이드바 펼치기' : '사이드바 접기'}
+          aria-expanded={!isCollapsed}
+          onClick={onToggleCollapsed}
+        >
+          <ToggleIcon size={18} />
+        </button>
+      </div>
 
       <nav className={styles.navList} aria-label="메인 메뉴">
         {navItems.map((item) => {
@@ -43,6 +63,8 @@ function Sidebar() {
               to={item.path}
               end={item.path === '/'}
               key={item.key}
+              aria-label={item.label}
+              title={isCollapsed ? item.label : undefined}
             >
               <Icon size={25} strokeWidth={2.2} />
               <span>{item.label}</span>

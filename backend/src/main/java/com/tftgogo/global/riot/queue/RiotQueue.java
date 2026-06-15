@@ -28,6 +28,10 @@ public class RiotQueue {
         return future;
     }
 
+    public int getPendingTaskCount() {
+        return queue.size();
+    }
+
     private void processLoop() {
         while (!Thread.currentThread().isInterrupted()) {
             try {

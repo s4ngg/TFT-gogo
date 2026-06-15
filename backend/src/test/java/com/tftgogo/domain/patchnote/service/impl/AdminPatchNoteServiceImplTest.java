@@ -3,6 +3,7 @@ package com.tftgogo.domain.patchnote.service.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tftgogo.domain.patchnote.dto.request.AdminPatchChangeRequest;
 import com.tftgogo.domain.patchnote.dto.request.AdminPatchNoteRequest;
+import com.tftgogo.domain.patchnote.dto.response.PatchChangeResponse;
 import com.tftgogo.domain.patchnote.dto.response.PatchNoteResponse;
 import com.tftgogo.domain.patchnote.entity.PatchChange;
 import com.tftgogo.domain.patchnote.entity.PatchChangeCategory;
@@ -112,6 +113,25 @@ class AdminPatchNoteServiceImplTest {
     }
 
     @Test
+    void getPatchChanges_returnsNonDeletedChangesForAdmin() {
+        // given
+        PatchNote patchNote = patchNote(1L, "17.3", true);
+        PatchChange firstChange = patchChange(10L, patchNote, 1, true);
+        PatchChange hiddenChange = patchChange(11L, patchNote, 2, false);
+        when(patchNoteRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(patchNote));
+        when(patchChangeRepository.findByPatchNoteAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchNote))
+                .thenReturn(List.of(firstChange, hiddenChange));
+
+        // when
+        List<PatchChangeResponse> responses = adminPatchNoteService.getPatchChanges(1L);
+
+        // then
+        assertThat(responses).extracting(PatchChangeResponse::getId).containsExactly(10L, 11L);
+        assertThat(responses).extracting(PatchChangeResponse::getSortOrder).containsExactly(1, 2);
+        verify(patchChangeRepository).findByPatchNoteAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchNote);
+    }
+
+    @Test
     void createPatchChange_whenCategoryInvalid_throwsInvalidInput() {
         // given
         PatchNote patchNote = patchNote(1L, "17.3", true);
@@ -143,6 +163,10 @@ class AdminPatchNoteServiceImplTest {
     }
 
     private PatchChange patchChange(Long id, PatchNote patchNote) {
+        return patchChange(id, patchNote, 1, true);
+    }
+
+    private PatchChange patchChange(Long id, PatchNote patchNote, int sortOrder, boolean active) {
         PatchChange patchChange = PatchChange.builder()
                 .patchNote(patchNote)
                 .category(PatchChangeCategory.CHAMPION)
@@ -155,8 +179,8 @@ class AdminPatchNoteServiceImplTest {
                 .afterValue("20")
                 .imageUrl("https://example.com/jinx.png")
                 .tagsJson("[\"champion\"]")
-                .sortOrder(1)
-                .active(true)
+                .sortOrder(sortOrder)
+                .active(active)
                 .build();
         ReflectionTestUtils.setField(patchChange, "id", id);
         return patchChange;
