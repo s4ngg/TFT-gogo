@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tftgogo.domain.match.dto.response.CollectionStatusResponse;
 import com.tftgogo.domain.match.dto.response.MatchSummaryResponse;
 import com.tftgogo.domain.match.entity.CachedMatch;
 import com.tftgogo.domain.match.repository.CachedMatchRepository;
@@ -23,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Function;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -61,12 +61,15 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
     }
 
     @Override
-    public List<SummonerMatchItemDto> fetchAndCache(String puuid, int start, int count) {
+    public List<SummonerMatchItemDto> fetchAndCache(String puuid, int start, int count,
+                                                     Function<String, String> traitIconFn,
+                                                     Function<String, String> traitNameFn,
+                                                     Function<String, String> itemIconFn) {
         // DB에 충분한 데이터가 있으면 즉시 반환
         List<CachedMatch> existing = cachedMatchRepository.findByParticipantPuuid(
                 puuid, PageRequest.of(0, start + count));
         if (existing.size() >= start + count) {
-            return toSummonerMatchItemDtoList(puuid, existing.subList(start, start + count));
+            return toSummonerMatchItemDtoList(puuid, existing.subList(start, start + count), traitIconFn, traitNameFn, itemIconFn);
         }
 
         // Riot API로 matchId 목록 조회
@@ -83,15 +86,15 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
             collectInBackground(puuid, toFetch, fastTarget);
         }
 
-        return buildResult(puuid, matchIds);
+        return buildResult(puuid, matchIds, traitIconFn, traitNameFn, itemIconFn);
     }
 
     private List<String> fetchMatchIds(String puuid, int start, int count) {
         try {
             CompletableFuture<List<String>> rankedFuture =
-                    riotQueue.submit(() -> riotApiClient.getMatchIds(puuid, count, start, 1100));
+                    riotQueue.submitForeground(() -> riotApiClient.getMatchIds(puuid, count, start, 1100));
             CompletableFuture<List<String>> normalFuture =
-                    riotQueue.submit(() -> riotApiClient.getMatchIds(puuid, count, start, 1090));
+                    riotQueue.submitForeground(() -> riotApiClient.getMatchIds(puuid, count, start, 1090));
 
             List<String> ranked = rankedFuture.get(FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             List<String> normal = normalFuture.get(FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
@@ -180,19 +183,25 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
         }
     }
 
-    private List<SummonerMatchItemDto> buildResult(String puuid, List<String> matchIds) {
+    private List<SummonerMatchItemDto> buildResult(String puuid, List<String> matchIds,
+                                                    Function<String, String> traitIconFn,
+                                                    Function<String, String> traitNameFn,
+                                                    Function<String, String> itemIconFn) {
         Map<String, CachedMatch> cacheMap = cachedMatchRepository.findAllById(matchIds)
                 .stream()
                 .collect(Collectors.toMap(CachedMatch::getMatchId, m -> m));
 
         return matchIds.stream()
                 .filter(cacheMap::containsKey)
-                .map(id -> toDto(puuid, id, cacheMap.get(id)))
+                .map(id -> toDto(puuid, id, cacheMap.get(id), traitIconFn, traitNameFn, itemIconFn))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
-    private SummonerMatchItemDto toDto(String puuid, String matchId, CachedMatch cached) {
+    private SummonerMatchItemDto toDto(String puuid, String matchId, CachedMatch cached,
+                                       Function<String, String> traitIconFn,
+                                       Function<String, String> traitNameFn,
+                                       Function<String, String> itemIconFn) {
         try {
             MatchDto matchDto = CACHE_MAPPER.readValue(cached.getMatchJson(), MatchDto.class);
             MatchDto.MatchInfoDto info = matchDto.getInfo();
@@ -201,7 +210,7 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
             return info.getParticipants().stream()
                     .filter(p -> puuid.equals(p.getPuuid()))
                     .findFirst()
-                    .map(p -> SummonerMatchItemDto.from(MatchSummaryResponse.of(matchId, info, p)))
+                    .map(p -> SummonerMatchItemDto.from(MatchSummaryResponse.of(matchId, info, p), traitIconFn, traitNameFn, itemIconFn))
                     .orElse(null);
         } catch (Exception e) {
             logger.error("매치 역직렬화 실패: matchId={}", matchId, e);
@@ -209,9 +218,12 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
         }
     }
 
-    private List<SummonerMatchItemDto> toSummonerMatchItemDtoList(String puuid, List<CachedMatch> matches) {
+    private List<SummonerMatchItemDto> toSummonerMatchItemDtoList(String puuid, List<CachedMatch> matches,
+                                                                   Function<String, String> traitIconFn,
+                                                                   Function<String, String> traitNameFn,
+                                                                   Function<String, String> itemIconFn) {
         return matches.stream()
-                .map(m -> toDto(puuid, m.getMatchId(), m))
+                .map(m -> toDto(puuid, m.getMatchId(), m, traitIconFn, traitNameFn, itemIconFn))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
@@ -296,13 +308,4 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
         }
     }
 
-    @Override
-    public CollectionStatusResponse getStatus(String puuid) {
-        long collected = cachedMatchRepository.countByParticipantPuuid(puuid);
-        boolean running = inProgressMap.getOrDefault(puuid, false);
-        return CollectionStatusResponse.builder()
-                .collected((int) collected)
-                .inProgress(running)
-                .build();
-    }
 }

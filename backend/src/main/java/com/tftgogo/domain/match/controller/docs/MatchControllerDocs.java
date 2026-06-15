@@ -1,6 +1,5 @@
 package com.tftgogo.domain.match.controller.docs;
 
-import com.tftgogo.domain.match.dto.response.CollectionStatusResponse;
 import com.tftgogo.domain.match.dto.response.MatchDetailResponse;
 import com.tftgogo.domain.summoner.dto.response.SummonerMatchItemDto;
 import com.tftgogo.global.response.ApiResponse;
@@ -50,16 +49,4 @@ public interface MatchControllerDocs {
             @PathVariable("matchId") String matchId
     );
 
-    @Operation(
-            summary = "매치 수집 상태 조회",
-            description = "해당 소환사의 DB 저장 매치 수와 백그라운드 수집 진행 여부를 반환합니다. "
-                    + "프론트엔드 폴링으로 추가 데이터 수집 완료 여부를 확인하는 데 사용합니다."
-    )
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공")
-    })
-    ResponseEntity<ApiResponse<CollectionStatusResponse>> getCollectionStatus(
-            @Parameter(description = "소환사 PUUID", required = true)
-            @PathVariable("puuid") String puuid
-    );
 }

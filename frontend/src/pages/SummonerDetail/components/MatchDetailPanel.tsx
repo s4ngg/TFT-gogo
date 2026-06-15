@@ -1,5 +1,5 @@
 import { Coins, Swords } from 'lucide-react'
-import { itemsFromUrls, tftChampSquareUrl, tftTraitIconUrl } from '../../../api/communityDragonAssets'
+import { itemsFromUrls, tftChampSquareUrl } from '../../../api/communityDragonAssets'
 import TraitHexBadge from '../../../components/common/TraitHexBadge'
 import ChampionCard from '../../../components/common/ChampionCard'
 import type { MatchSummaryResponse } from '../../../api/summonerApi'
@@ -31,7 +31,7 @@ export default function MatchDetailPanel({ match, myPuuid }: { match: MatchSumma
                 <TraitHexBadge
                   key={tr.traitId}
                   count={tr.count}
-                  iconUrl={tftTraitIconUrl(tr.traitId)}
+                  iconUrl={tr.iconUrl}
                   name={tr.name}
                   tone={tr.tone}
                 />

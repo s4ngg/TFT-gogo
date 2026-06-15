@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tftgogo.domain.match.dto.response.CollectionStatusResponse;
 import com.tftgogo.domain.match.dto.response.MatchDetailResponse;
 import com.tftgogo.domain.match.entity.CachedMatch;
 import com.tftgogo.domain.match.repository.CachedMatchRepository;
@@ -24,10 +23,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -110,31 +111,16 @@ class MatchServiceImplTest {
         // given
         String puuid = "test-puuid";
         List<SummonerMatchItemDto> expected = List.of();
-        when(matchCollectionService.fetchAndCache(puuid, 0, 10)).thenReturn(expected);
+        when(matchCollectionService.fetchAndCache(eq(puuid), eq(0), eq(10), any(), any(), any()))
+                .thenReturn(expected);
 
         // when
-        List<SummonerMatchItemDto> result = matchService.getMatches(puuid, 0, 10);
+        List<SummonerMatchItemDto> result = matchService.getMatches(puuid, 0, 10,
+                Function.identity(), Function.identity(), s -> null);
 
         // then
         assertThat(result).isEqualTo(expected);
-        verify(matchCollectionService).fetchAndCache(puuid, 0, 10);
-    }
-
-    @Test
-    void getCollectionStatus는_matchCollectionService_getStatus에_위임한다() {
-        // given
-        String puuid = "test-puuid";
-        CollectionStatusResponse expected = CollectionStatusResponse.builder()
-                .collected(5).inProgress(true).build();
-        when(matchCollectionService.getStatus(puuid)).thenReturn(expected);
-
-        // when
-        CollectionStatusResponse result = matchService.getCollectionStatus(puuid);
-
-        // then
-        assertThat(result.getCollected()).isEqualTo(5);
-        assertThat(result.isInProgress()).isTrue();
-        verify(matchCollectionService).getStatus(puuid);
+        verify(matchCollectionService).fetchAndCache(eq(puuid), eq(0), eq(10), any(), any(), any());
     }
 
     private CachedMatch cachedMatch(String matchId, int queueId, String json) {

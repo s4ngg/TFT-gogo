@@ -2,19 +2,16 @@ package com.tftgogo.domain.ai.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tftgogo.domain.ai.dto.AiRecommendResponse;
+import com.tftgogo.global.exception.BusinessException;
+import com.tftgogo.global.exception.ErrorCode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 import java.util.Map;
 
-/**
- * AI 서버(FastAPI) HTTP 클라이언트.
- * AI 서버가 타임아웃되거나 오류를 반환하면 null을 반환하고 호출부에서 fallback 처리.
- */
 @Component
 public class AiServerClient {
 
@@ -23,17 +20,13 @@ public class AiServerClient {
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
 
-    public AiServerClient(
-            @Value("${ai.server.url:http://localhost:8000}") String aiServerUrl,
-            @Value("${ai.server.timeout-seconds:10}") int timeoutSeconds,
-            ObjectMapper objectMapper
-    ) {
+    public AiServerClient(AiServerProperties props, ObjectMapper objectMapper) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(timeoutSeconds * 1000);
-        factory.setReadTimeout(timeoutSeconds * 1000);
+        factory.setConnectTimeout(props.getTimeoutSeconds() * 1000);
+        factory.setReadTimeout(props.getTimeoutSeconds() * 1000);
 
         this.restClient = RestClient.builder()
-                .baseUrl(aiServerUrl)
+                .baseUrl(props.getUrl())
                 .requestFactory(factory)
                 .build();
         this.objectMapper = objectMapper;
@@ -41,22 +34,27 @@ public class AiServerClient {
 
     /**
      * AI 서버에 전적 분석 + 메타 덱 매칭 요청.
-     *
-     * @param requestBody Spring이 구성한 요청 바디 (전적 + 메타 덱)
-     * @return AI 분석 결과, 오류 시 null
+     * 통신 오류 시 {@link BusinessException}(AI_SERVER_ERROR)을 던진다.
      */
     public AiRecommendResponse analyzeWithMeta(Map<String, Object> requestBody) {
         try {
             String json = objectMapper.writeValueAsString(requestBody);
-            return restClient.post()
+            AiRecommendResponse response = restClient.post()
                     .uri("/api/analyze/with-meta")
                     .header("Content-Type", "application/json")
                     .body(json)
                     .retrieve()
                     .body(AiRecommendResponse.class);
+            if (response == null) {
+                logger.warn("AI 서버 빈 응답 수신");
+                throw new BusinessException(ErrorCode.AI_SERVER_ERROR);
+            }
+            return response;
+        } catch (BusinessException e) {
+            throw e;
         } catch (Exception e) {
-            logger.warn("AI 서버 호출 실패, fallback 사용: {}", e.getMessage());
-            return null;
+            logger.warn("AI 서버 호출 실패: {}", e.getMessage());
+            throw new BusinessException(ErrorCode.AI_SERVER_ERROR);
         }
     }
 

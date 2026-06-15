@@ -18,10 +18,10 @@ public class AiRecommendController {
     private final AiRecommendService aiRecommendService;
 
     /**
-     * 소환사 전적 기반 AI 덱 추천.
+     * 소환사 전적 기반 AI 덱 추천 (로그인 필수).
      *
-     * 프론트 → Spring → AI 서버 흐름의 Spring 프록시 엔드포인트.
-     * AI 서버 오류 시 null을 반환하며 프론트는 목데이터로 fallback한다.
+     * - 전적 부족: 200 success:true data:null
+     * - 소환사/AI 서버 오류: GlobalExceptionHandler가 적절한 HTTP 상태로 응답
      */
     @GetMapping("/recommend")
     public ResponseEntity<ApiResponse<AiRecommendResponse>> recommend(
@@ -29,13 +29,9 @@ public class AiRecommendController {
             @RequestParam String tagLine
     ) {
         AiRecommendResponse result = aiRecommendService.recommend(gameName, tagLine);
-
         if (result == null) {
-            return ResponseEntity.ok(
-                    ApiResponse.success("AI 서버 연결 실패 — 목데이터를 사용하세요.", null)
-            );
+            return ResponseEntity.ok(ApiResponse.success("전적 데이터가 부족합니다.", null));
         }
-
         return ResponseEntity.ok(ApiResponse.success("AI 추천 완료", result));
     }
 }

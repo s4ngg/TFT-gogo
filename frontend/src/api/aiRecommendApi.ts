@@ -4,7 +4,6 @@ import type { TraitHexBadgeTone } from '../types/badges'
 export interface AiRecommendRequest {
   gameName: string
   tagLine: string
-  recentGameCount?: number
 }
 
 export interface AiRecommendStats {
@@ -45,14 +44,13 @@ interface ApiResponse<T> {
 }
 
 export const getAiRecommendation = async (params: AiRecommendRequest): Promise<AiRecommendResponse | null> => {
-  try {
-    const { data } = await axiosInstance.get<ApiResponse<AiRecommendResponse>>('/ai/recommend', {
-      params,
-    })
+  const { data } = await axiosInstance.get<ApiResponse<AiRecommendResponse>>('/ai/recommend', {
+    params,
+  })
 
-    return data.data
-  } catch (error: unknown) {
-    console.error('AI recommendation request failed', error)
-    return null
+  if (!data.success) {
+    throw new Error(data.message ?? 'AI 추천 요청 실패')
   }
+
+  return data.data
 }

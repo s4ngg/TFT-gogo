@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -45,16 +46,15 @@ class AiRecommendServiceTest {
     private static final String PUUID = "test-puuid-1234";
 
     @Test
-    void 소환사_조회_실패시_null을_반환하고_AI서버_미호출() {
+    void 소환사_조회_실패시_BusinessException을_던지고_AI서버_미호출() {
         // given
         when(summonerService.getProfile(GAME_NAME, TAG_LINE))
                 .thenThrow(new BusinessException(ErrorCode.SUMMONER_NOT_FOUND));
 
-        // when
-        AiRecommendResponse result = aiRecommendService.recommend(GAME_NAME, TAG_LINE);
-
-        // then
-        assertThat(result).isNull();
+        // when & then
+        assertThatThrownBy(() -> aiRecommendService.recommend(GAME_NAME, TAG_LINE))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SUMMONER_NOT_FOUND);
         verify(aiServerClient, never()).analyzeWithMeta(any());
     }
 

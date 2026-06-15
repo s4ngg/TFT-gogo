@@ -23,10 +23,6 @@ Detailed human spec: docs/for-humans/spec/summoner.md
       participants: [ { puuid, riotIdGameName, riotIdTagline, placement, stage, traits, units, playersEliminated, goldLeft } ] }
   — start 기본값 0, count 기본값 20. queue 1100(랭크)·1090(일반) 순차 조회 후 LinkedHashSet 병합 (랭크 순서 우선). 모든 Riot API 호출은 RiotRateLimiter(단기 20req/1s · 장기 100req/2min 이중 토큰 버킷)를 통해 rate limit 적용.
 
-- GET /api/match/{puuid}/stats
-  → PlayerStatsResponse { topTraits: [...], topChampions: [...] }
-  — DB 캐시 전체 매치 집계. 많이 플레이한 시너지/챔피언 TOP 5. 더 보기와 무관한 독립 호출.
-
 - GET /api/match/detail/{matchId}
   → MatchDetailResponse — 매치에 참가한 8인 전체 상세 데이터
 
@@ -46,8 +42,7 @@ Detailed human spec: docs/for-humans/spec/summoner.md
 <business-rules>
 - Win = placement ≤ 4. Loss = placement > 4. Never use Riot API `win` field.
 - LeagueEntryDTO wins/losses are Riot's all-time totals — do NOT use for win rate calculation.
-- 많이 플레이한 시너지/챔피언 집계: 현재 시즌 전체 매치 기록 기반. 더 보기로 불러온 목록과 무관하게 고정값으로 표시. 별도 시즌 전체 매치 조회가 필요하다.
-- 게임 요약(순방확률·평균순위): 현재까지 불러온 전체 매치 기준. 더 보기 클릭 시 재집계. 30게임으로 제한하지 않는다.
+- 많이 플레이한 시너지/챔피언 집계 및 게임 요약(순방확률·평균순위): 현재까지 불러온 전체 매치 기준 클라이언트 사이드 집계. 더 보기 클릭 시 재집계. 게임 수 제한 없음. 별도 API 호출 없음.
 - queue_id 1100 = Ranked, 1090 = Normal. Exclude all other queue types.
 - Champion star level: use Riot API `tier` (int) directly.
 - Trait activation tone: Riot API `style` (0–4) → 0=none, 1=bronze, 2=silver, 3=gold, 4=chromatic.
