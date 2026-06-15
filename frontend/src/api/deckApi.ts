@@ -45,10 +45,14 @@ export const getMetaDecks = async (rankFilter: RankFilter = 'EMERALD_PLUS'): Pro
     throw new Error(data.message ?? '메타 덱 조회 실패')
   }
 
+  if (!data.data || !Array.isArray(data.data.decks)) {
+    throw new Error('메타 덱 응답 형식 오류')
+  }
+
   return {
-    patchVersion: data.data?.patchVersion ?? null,
-    rankFilter: data.data?.rankFilter ?? rankFilter,
-    dataStartDate: data.data?.dataStartDate ?? null,
-    decks: deduplicateDecks(Array.isArray(data.data?.decks) ? data.data.decks : []),
+    patchVersion: data.data.patchVersion ?? null,
+    rankFilter: data.data.rankFilter ?? rankFilter,
+    dataStartDate: data.data.dataStartDate ?? null,
+    decks: deduplicateDecks(data.data.decks),
   }
 }

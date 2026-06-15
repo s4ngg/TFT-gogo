@@ -77,6 +77,7 @@ export const getSummonerProfile = async (
   } catch (err: unknown) {
     const status = (err as { response?: { status?: number } })?.response?.status
     if (status === 429) throw new Error('RATE_LIMITED')
+    if (status === 404) throw new Error('NOT_FOUND')
     throw err
   }
 }

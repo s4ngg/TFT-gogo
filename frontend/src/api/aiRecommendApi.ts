@@ -49,5 +49,9 @@ export const getAiRecommendation = async (params: AiRecommendRequest): Promise<A
     params,
   })
 
+  if (!data.success) {
+    throw new Error(data.message ?? 'AI 추천 요청 실패')
+  }
+
   return data.data
 }

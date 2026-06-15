@@ -48,7 +48,8 @@ function SummonerDetail() {
 
   const { data: profile, isError: profileIsError, error: profileErr, isLoading: profileLoading } = useSummonerProfile(name, tag)
   const profileRateLimited = profileIsError && (profileErr as Error)?.message === 'RATE_LIMITED'
-  const profileNotFound = profileIsError && !profileRateLimited
+  const profileNotFound = profileIsError && (profileErr as Error)?.message === 'NOT_FOUND'
+  const profileServerError = profileIsError && !profileRateLimited && !profileNotFound
   const profileRetryAfter = profileRateLimited ? 120 : 0
   const isRateLimited = profileRateLimited || refreshRateLimitSeconds > 0
   const retryAfterSeconds = profileRateLimited ? profileRetryAfter : refreshRateLimitSeconds
@@ -179,6 +180,8 @@ function SummonerDetail() {
           <RateLimitState retryAfterSeconds={retryAfterSeconds} />
         ) : profileNotFound ? (
           <EmptyState name={name} tag={tag} />
+        ) : profileServerError ? (
+          <p className={styles.emptyState}>서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.</p>
         ) : (
           <>
             {/* 프로필 카드 */}
