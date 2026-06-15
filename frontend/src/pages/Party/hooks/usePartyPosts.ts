@@ -10,7 +10,7 @@ import {
   type CreatePartyPostRequest,
   type PartyPostsResult,
 } from '../../../api/partyApi'
-import useAuthStore from '../../../store/useAuthStore'
+import { useAuthSession } from '../../../hooks/useAuthSession'
 import type { PartyFilter } from '../partyFilters'
 import type { PartyMode, PartyPost } from '../types'
 import {
@@ -56,7 +56,8 @@ function withOwnerState(post: PartyPost, authUserId: string | null): PartyPost {
 
 export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPostsOptions) {
   const queryClient = useQueryClient()
-  const authUserId = useAuthStore((state) => readAuthUserId(state.user?.id))
+  const { data: authUser } = useAuthSession()
+  const authUserId = readAuthUserId(authUser?.id)
   const [localPosts, setLocalPosts] = useState<PartyPost[]>([])
   const [postOverrides, setPostOverrides] = useState<Record<string, PartyPost>>({})
   const [selectedFilter, setSelectedFilter] = useState<PartyFilter>('전체')

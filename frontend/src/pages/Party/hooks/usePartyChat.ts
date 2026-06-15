@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useAuthSession } from '../../../hooks/useAuthSession'
 import useAuthStore from '../../../store/useAuthStore'
 import { initialChatRooms } from '../data/partyMockData'
 import type { PartyPost } from '../types'
@@ -6,8 +7,8 @@ import { createPartyChatRoom, upsertChatRoom } from '../utils/partyChatRooms'
 import { useRealtimeChat } from './useRealtimeChat'
 
 export function usePartyChat() {
-  const authUser = useAuthStore((state) => state.user)
   const authToken = useAuthStore((state) => state.token)
+  const { data: authUser } = useAuthSession()
   const [rooms, setRooms] = useState(initialChatRooms)
   const [activeRoomId, setActiveRoomId] = useState(initialChatRooms[0]?.id ?? 'general')
   const [chatInput, setChatInput] = useState('')
