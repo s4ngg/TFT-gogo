@@ -8,6 +8,7 @@ import {
   deleteAdminPatchNote,
   fetchAdminPatchChanges,
   fetchAdminPatchNotes,
+  importAdminPatchNoteByCrawl,
   updateAdminPatchChange,
   updateAdminPatchNote,
   type AdminPatchChange,
@@ -17,7 +18,10 @@ import {
   type AdminPatchChangeType,
   type AdminPatchNote,
   type AdminPatchNotePayload,
+  type PatchNoteCrawlImportRequest,
+  type PatchNoteCrawlImportResponse,
 } from '../../../api/adminApi'
+import AdminPatchNoteImportPanel from './AdminPatchNoteImportPanel'
 import styles from '../AdminPatchNotes.module.css'
 
 const PATCH_NOTE_QUERY_KEY = ['admin', 'patch-notes'] as const
@@ -218,6 +222,7 @@ function AdminPatchNotesManager() {
   const [editingChangePatchNoteId, setEditingChangePatchNoteId] = useState<number | null>(null)
   const [patchNoteForm, setPatchNoteForm] = useState<PatchNoteFormState>(EMPTY_PATCH_NOTE_FORM)
   const [patchChangeForm, setPatchChangeForm] = useState<PatchChangeFormState>(EMPTY_PATCH_CHANGE_FORM)
+  const [importResult, setImportResult] = useState<PatchNoteCrawlImportResponse | null>(null)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
@@ -305,6 +310,22 @@ function AdminPatchNotesManager() {
       setPatchChangeForm(EMPTY_PATCH_CHANGE_FORM)
       setMessage('패치노트를 삭제했습니다.')
       await refreshPatchNotes()
+    },
+  })
+
+  const importPatchNoteMutation = useMutation({
+    mutationFn: importAdminPatchNoteByCrawl,
+    onSuccess: async (result) => {
+      setImportResult(result)
+      setMessage(result.dryRun ? '패치노트 import 미리 확인을 완료했습니다.' : '패치노트 import를 반영했습니다.')
+
+      if (!result.dryRun) {
+        if (result.patchNoteId !== null) {
+          setSelectedPatchNoteId(result.patchNoteId)
+        }
+        await refreshPatchNotes()
+        await refreshPatchChanges()
+      }
     },
   })
 
@@ -479,6 +500,11 @@ function AdminPatchNotesManager() {
     }
   }
 
+  async function handlePatchNoteImport(payload: PatchNoteCrawlImportRequest) {
+    clearNotice()
+    await importPatchNoteMutation.mutateAsync(payload)
+  }
+
   const isPatchNoteSaving = createPatchNoteMutation.isPending || updatePatchNoteMutation.isPending
   const isPatchChangeSaving = createPatchChangeMutation.isPending || updatePatchChangeMutation.isPending
 
@@ -638,6 +664,12 @@ function AdminPatchNotesManager() {
           </label>
         </form>
       </section>
+
+      <AdminPatchNoteImportPanel
+        importing={importPatchNoteMutation.isPending}
+        result={importResult}
+        onImport={handlePatchNoteImport}
+      />
 
       <section className={styles.panel}>
         <div className={styles.panelHeader}>

@@ -3,6 +3,7 @@ import type { RankFilter } from '../pages/Dashboard/dashboardData'
 
 const ADMIN_TOKEN_KEY = 'tftgogo_admin_token'
 const GUIDE_CDRAGON_IMPORT_TIMEOUT_MS = 120_000
+const PATCH_NOTE_CRAWL_IMPORT_TIMEOUT_MS = 120_000
 
 export function getAdminToken(): string {
   return localStorage.getItem(ADMIN_TOKEN_KEY) ?? ''
@@ -188,6 +189,37 @@ export interface AdminPatchNotePayload {
   version: string
 }
 
+export interface PatchNoteCrawlImportRequest {
+  dryRun: boolean
+  forceOverwrite: boolean
+  locale: string | null
+  sourceUrl: string | null
+  version: string | null
+}
+
+export interface PatchNoteCrawlRowError {
+  headingPath: string | null
+  reason: string
+  rowTextPreview: string | null
+  sourceKey: string | null
+  sourceOrder: number | null
+}
+
+export interface PatchNoteCrawlImportResponse {
+  createdCount: number
+  dryRun: boolean
+  failedCount: number
+  locale: string
+  parserWarnings: string[]
+  patchNoteId: number | null
+  reviewRequiredCount: number
+  rowErrors: PatchNoteCrawlRowError[]
+  skippedCount: number
+  sourceUrl: string
+  updatedCount: number
+  version: string
+}
+
 export interface AdminPatchChange {
   afterValue: string | null
   beforeValue: string | null
@@ -265,6 +297,24 @@ export async function deleteAdminPatchNote(patchNoteId: number): Promise<void> {
     })
   } catch (error) {
     throw createAdminRequestError(error, 'Failed to delete admin patch note.')
+  }
+}
+
+export async function importAdminPatchNoteByCrawl(
+  payload: PatchNoteCrawlImportRequest,
+): Promise<PatchNoteCrawlImportResponse> {
+  try {
+    const { data } = await axiosInstance.post<ApiResponse<PatchNoteCrawlImportResponse>>(
+      '/admin/patch-notes/import/crawl',
+      payload,
+      {
+        headers: adminHeaders(),
+        timeout: PATCH_NOTE_CRAWL_IMPORT_TIMEOUT_MS,
+      },
+    )
+    return data.data
+  } catch (error) {
+    throw createAdminRequestError(error, 'Failed to import patch note by official crawl.')
   }
 }
 

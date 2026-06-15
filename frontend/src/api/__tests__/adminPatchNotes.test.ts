@@ -7,11 +7,13 @@ import {
   createAdminPatchNote,
   fetchAdminPatchChanges,
   fetchAdminPatchNotes,
+  importAdminPatchNoteByCrawl,
   isAdminAuthFailure,
   setAdminToken,
   updateAdminPatchChange,
   type AdminPatchChangePayload,
   type AdminPatchNotePayload,
+  type PatchNoteCrawlImportRequest,
 } from '../adminApi'
 import axiosInstance from '../axiosInstance'
 
@@ -20,6 +22,7 @@ interface RequestCall {
   method?: string
   params?: unknown
   token?: unknown
+  timeout?: number
   url?: string
 }
 
@@ -55,6 +58,7 @@ function createAdapter(responseData: unknown): AxiosAdapter {
       method: config.method,
       params: config.params,
       token: readAdminToken(config),
+      timeout: config.timeout,
       url: config.url,
     })
 
@@ -211,5 +215,39 @@ describe('admin patch note api', () => {
     assert.equal(requestCalls[0]?.url, '/admin/patch-note-changes')
     assert.deepEqual(requestCalls[0]?.data, payload)
     assert.equal(requestCalls[0]?.token, 'admin-token')
+  })
+
+  it('공식 패치노트 crawl import 요청을 관리자 토큰과 함께 보낸다', async () => {
+    axiosInstance.defaults.adapter = createAdapter({
+      createdCount: 0,
+      dryRun: true,
+      failedCount: 0,
+      locale: 'ko-kr',
+      parserWarnings: [],
+      patchNoteId: null,
+      reviewRequiredCount: 4,
+      rowErrors: [],
+      skippedCount: 0,
+      sourceUrl: 'https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/test/',
+      updatedCount: 0,
+      version: '17.2',
+    })
+    setAdminToken('admin-token')
+    const payload: PatchNoteCrawlImportRequest = {
+      dryRun: true,
+      forceOverwrite: false,
+      locale: 'ko-kr',
+      sourceUrl: 'https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/test/',
+      version: '17.2',
+    }
+
+    const response = await importAdminPatchNoteByCrawl(payload)
+
+    assert.equal(requestCalls[0]?.method, 'post')
+    assert.equal(requestCalls[0]?.url, '/admin/patch-notes/import/crawl')
+    assert.deepEqual(requestCalls[0]?.data, payload)
+    assert.equal(requestCalls[0]?.token, 'admin-token')
+    assert.equal(requestCalls[0]?.timeout, 120_000)
+    assert.equal(response.reviewRequiredCount, 4)
   })
 })

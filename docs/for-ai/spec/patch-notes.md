@@ -21,7 +21,7 @@ Page: PatchNotes (/patch-notes).
 - POST   /api/admin/patch-note-changes           -> create patch change
 - PATCH  /api/admin/patch-note-changes/{changeId} -> update patch change
 - DELETE /api/admin/patch-note-changes/{changeId} -> soft delete patch change
-- POST   /api/admin/patch-notes/import/crawl     -> planned official Riot/TFT patch-note crawl import
+- POST   /api/admin/patch-notes/import/crawl     -> official Riot/TFT patch-note crawl import
 </backend>
 <frontend>
 - frontend/src/api/patchNotes.ts
@@ -32,6 +32,7 @@ Page: PatchNotes (/patch-notes).
 - frontend/src/pages/PatchNotes/components/ -> public patch note page sections
 - frontend/src/pages/Admin/AdminPatchNotes.tsx -> admin patch-note page wrapper
 - frontend/src/pages/Admin/components/AdminPatchNotesManager.tsx -> admin patch note and patch change CRUD screen
+- frontend/src/pages/Admin/components/AdminPatchNoteImportPanel.tsx -> official crawl import controls/result panel
 - frontend/src/api/adminApi.ts -> admin patch note/change request functions and admin-token headers
 </frontend>
 </api>
@@ -386,8 +387,8 @@ Page: PatchNotes (/patch-notes).
 
 <data-ingestion>
 - Current stage: public PatchNotes browsing, backend admin CRUD, admin patch change list lookup, and frontend AdminPatchNotes curation screen are implemented for curated DB/admin data.
-- Next stage before crawling/import: merge the admin screen/API work, keep the spec in sync, and repeat smoke testing against the admin endpoints.
-- Patch-note crawling/import comes after admin UI wiring, current-patch uniqueness, public stats contracts, and smoke testing are stable in develop. The implementation direction is official Riot/TFT patch-note crawling, not manual fixture/seed import.
+- Next stage: merge the stacked crawler/import PRs, keep the spec in sync, and repeat smoke testing against the admin import endpoint and admin panel.
+- Patch-note crawling/import uses official Riot/TFT patch-note crawling, not manual fixture/seed import.
 - External crawling/import must write into the same patch_notes and patch_changes contract used by admin curation, with additional source metadata or equivalent duplicate-detection strategy when needed.
 - AI server/FastAPI is not required for patch-note CRUD. Add it only when AI summarization/search/RAG behavior needs patch-note data.
 </data-ingestion>
