@@ -14,6 +14,7 @@ interface PartyPostCardProps {
   hasJoinedOtherPost: boolean
   isJoined: boolean
   isJoinPending: boolean
+  isOwner: boolean
   onJoinToggle: (postId: string) => void
   post: PartyPost
 }
@@ -22,6 +23,7 @@ function PartyPostCard({
   hasJoinedOtherPost,
   isJoined,
   isJoinPending,
+  isOwner,
   onJoinToggle,
   post,
 }: PartyPostCardProps) {
@@ -62,10 +64,20 @@ function PartyPostCard({
         type="button"
         aria-pressed={isJoined}
         className={styles.joinButton}
-        disabled={isJoinPending || (isFull && !isJoined) || hasJoinedOtherPost}
+        disabled={isOwner || isJoinPending || (isFull && !isJoined) || hasJoinedOtherPost}
         onClick={() => onJoinToggle(post.id)}
       >
-        {isJoinPending ? '처리중' : isJoined ? '참여중' : isFull ? '마감' : hasJoinedOtherPost ? '잠김' : '참여'}
+        {isOwner
+          ? '작성자'
+          : isJoinPending
+            ? '처리중'
+            : isJoined
+              ? '참여중'
+              : isFull
+                ? '마감'
+                : hasJoinedOtherPost
+                  ? '잠김'
+                  : '참여'}
       </button>
     </article>
   )

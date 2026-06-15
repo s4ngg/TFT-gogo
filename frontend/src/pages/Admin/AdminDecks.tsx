@@ -1,4 +1,4 @@
-import { AdminPage } from './Admin'
+import AdminPage from './components/AdminPage'
 
 function AdminDecks() {
   return <AdminPage />

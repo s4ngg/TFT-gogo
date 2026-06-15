@@ -532,6 +532,16 @@
   font-weight: 500;
 }
 
+.chatStatus {
+  margin: 0;
+  padding: var(--space-lg) var(--space-xl);
+  border-bottom: 1px solid var(--border-separator);
+  color: var(--text-secondary);
+  background: var(--bg-btn-dark-soft);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+}
+
 .messageList {
   display: flex;
   flex-direction: column;
@@ -622,12 +632,24 @@
   color: #9ca7b1;
 }
 
+.messageForm input:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
 .messageForm button {
   width: 36px;
   height: 34px;
   display: grid;
   place-items: center;
   padding: 0;
+}
+
+.messageForm button:disabled {
+  color: var(--text-muted);
+  border-color: var(--border-subtle);
+  background: var(--bg-btn-dark);
+  cursor: not-allowed;
 }
 
 button:hover {
