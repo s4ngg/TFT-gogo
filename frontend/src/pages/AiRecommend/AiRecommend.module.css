@@ -192,6 +192,17 @@
 
 .connectBtn:hover { filter: brightness(1.1); }
 
+/* ── 상태 메시지 ── */
+.statusMessage {
+  padding: 48px 0;
+  text-align: center;
+  font-size: 14px;
+}
+
+.statusMessage.error { color: var(--danger); }
+.statusMessage.loading { color: var(--text-muted); }
+.statusMessage.empty { color: var(--text-muted); }
+
 /* ── 최근 전적 요약 ── */
 .summaryPanel { }
 

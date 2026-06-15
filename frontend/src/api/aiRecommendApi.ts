@@ -4,7 +4,6 @@ import type { TraitHexBadgeTone } from '../types/badges'
 export interface AiRecommendRequest {
   gameName: string
   tagLine: string
-  recentGameCount?: number
 }
 
 export interface AiRecommendStats {
