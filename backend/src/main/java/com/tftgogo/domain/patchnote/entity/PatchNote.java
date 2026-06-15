@@ -2,6 +2,8 @@ package com.tftgogo.domain.patchnote.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -49,6 +51,22 @@ public class PatchNote {
     @Column(name = "image_url", length = 500)
     private String imageUrl;
 
+    @Column(name = "source_url", length = 500)
+    private String sourceUrl;
+
+    @Column(name = "source_locale", length = 20)
+    private String sourceLocale;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "import_source", length = 30)
+    private PatchNoteImportSource importSource;
+
+    @Column(name = "imported_at")
+    private LocalDateTime importedAt;
+
+    @Column(name = "manually_edited", nullable = false)
+    private boolean manuallyEdited;
+
     @Column(name = "published_at", nullable = false)
     private LocalDateTime publishedAt;
 
@@ -72,14 +90,21 @@ public class PatchNote {
 
     @Builder
     public PatchNote(String version, String title, String summary, String description,
-                     String focus, String imageUrl, LocalDateTime publishedAt,
-                     boolean current, String highlightsJson, boolean active) {
+                     String focus, String imageUrl, String sourceUrl, String sourceLocale,
+                     PatchNoteImportSource importSource, LocalDateTime importedAt,
+                     boolean manuallyEdited, LocalDateTime publishedAt, boolean current,
+                     String highlightsJson, boolean active) {
         this.version = version;
         this.title = title;
         this.summary = summary;
         this.description = description;
         this.focus = focus;
         this.imageUrl = imageUrl;
+        this.sourceUrl = sourceUrl;
+        this.sourceLocale = sourceLocale;
+        this.importSource = importSource;
+        this.importedAt = importedAt;
+        this.manuallyEdited = manuallyEdited;
         this.publishedAt = publishedAt;
         this.current = current;
         this.highlightsJson = highlightsJson;
@@ -102,6 +127,16 @@ public class PatchNote {
 
     public void markNotCurrent() {
         this.current = false;
+    }
+
+    public void markManuallyEditedIfImported() {
+        if (isImported()) {
+            this.manuallyEdited = true;
+        }
+    }
+
+    public boolean isImported() {
+        return importSource != null;
     }
 
     public void softDelete() {

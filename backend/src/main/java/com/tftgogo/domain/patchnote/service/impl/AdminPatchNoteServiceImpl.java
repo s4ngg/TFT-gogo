@@ -100,6 +100,7 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
                 request.isCurrent(),
                 toJsonArray(request.getHighlights())
         );
+        patchNote.markManuallyEditedIfImported();
         return toPatchNoteResponse(patchNote, countActiveChanges(patchNote));
     }
 
@@ -107,9 +108,10 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
     @Transactional
     public void deletePatchNote(Long patchNoteId) {
         PatchNote patchNote = findPatchNote(patchNoteId);
+        patchNote.markManuallyEditedIfImported();
         patchNote.softDelete();
         patchChangeRepository.findByPatchNoteAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchNote)
-                .forEach(PatchChange::softDelete);
+                .forEach(this::deletePatchChangeByAdmin);
     }
 
     @Override
@@ -164,13 +166,14 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
                 toJsonArray(request.getTags()),
                 request.getSortOrder()
         );
+        patchChange.markManuallyEditedIfImported();
         return toPatchChangeResponse(patchChange);
     }
 
     @Override
     @Transactional
     public void deletePatchChange(Long changeId) {
-        findPatchChange(changeId).softDelete();
+        deletePatchChangeByAdmin(findPatchChange(changeId));
     }
 
     private PatchNote findPatchNote(Long patchNoteId) {
@@ -181,6 +184,11 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
     private PatchChange findPatchChange(Long changeId) {
         return patchChangeRepository.findByIdAndDeletedAtIsNull(changeId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PATCH_CHANGE_NOT_FOUND));
+    }
+
+    private void deletePatchChangeByAdmin(PatchChange patchChange) {
+        patchChange.markManuallyEditedIfImported();
+        patchChange.softDelete();
     }
 
     private void validateUniqueVersion(String version, Long excludedPatchNoteId) {

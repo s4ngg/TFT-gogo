@@ -10,6 +10,7 @@ import com.tftgogo.domain.patchnote.entity.PatchChangeCategory;
 import com.tftgogo.domain.patchnote.entity.PatchChangeImpact;
 import com.tftgogo.domain.patchnote.entity.PatchChangeType;
 import com.tftgogo.domain.patchnote.entity.PatchNote;
+import com.tftgogo.domain.patchnote.entity.PatchNoteImportSource;
 import com.tftgogo.domain.patchnote.repository.PatchChangeRepository;
 import com.tftgogo.domain.patchnote.repository.PatchNoteRepository;
 import com.tftgogo.global.exception.BusinessException;
@@ -93,6 +94,24 @@ class AdminPatchNoteServiceImplTest {
     }
 
     @Test
+    void updatePatchNote_whenImported_marksManuallyEdited() {
+        // given
+        PatchNote patchNote = importedPatchNote(1L, "17.3", true);
+        AdminPatchNoteRequest request = patchNoteRequest("17.3", true, List.of("manual highlight"));
+        when(patchNoteRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(patchNote));
+        when(patchNoteRepository.findByVersion("17.3")).thenReturn(Optional.of(patchNote));
+        when(patchChangeRepository.findByPatchNoteAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchNote))
+                .thenReturn(List.of());
+
+        // when
+        PatchNoteResponse response = adminPatchNoteService.updatePatchNote(1L, request);
+
+        // then
+        assertThat(response.getHighlights()).containsExactly("manual highlight");
+        assertThat(patchNote.isManuallyEdited()).isTrue();
+    }
+
+    @Test
     void deletePatchNote_softDeletesPatchNoteAndChanges() {
         // given
         PatchNote patchNote = patchNote(1L, "17.3", true);
@@ -109,6 +128,25 @@ class AdminPatchNoteServiceImplTest {
         assertThat(patchNote.isCurrent()).isFalse();
         assertThat(patchNote.getDeletedAt()).isNotNull();
         assertThat(patchChange.isActive()).isFalse();
+        assertThat(patchChange.getDeletedAt()).isNotNull();
+    }
+
+    @Test
+    void deletePatchNote_whenImported_marksPatchNoteAndChangesManuallyEdited() {
+        // given
+        PatchNote patchNote = importedPatchNote(1L, "17.3", true);
+        PatchChange patchChange = importedPatchChange(10L, patchNote);
+        when(patchNoteRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(patchNote));
+        when(patchChangeRepository.findByPatchNoteAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchNote))
+                .thenReturn(List.of(patchChange));
+
+        // when
+        adminPatchNoteService.deletePatchNote(1L);
+
+        // then
+        assertThat(patchNote.isManuallyEdited()).isTrue();
+        assertThat(patchChange.isManuallyEdited()).isTrue();
+        assertThat(patchNote.getDeletedAt()).isNotNull();
         assertThat(patchChange.getDeletedAt()).isNotNull();
     }
 
@@ -145,6 +183,23 @@ class AdminPatchNoteServiceImplTest {
         verify(patchChangeRepository, never()).save(any(PatchChange.class));
     }
 
+    @Test
+    void updatePatchChange_whenImported_marksManuallyEdited() {
+        // given
+        PatchNote patchNote = patchNote(1L, "17.3", true);
+        PatchChange patchChange = importedPatchChange(10L, patchNote);
+        AdminPatchChangeRequest request = patchChangeRequest(1L, "CHAMPION");
+        when(patchChangeRepository.findByIdAndDeletedAtIsNull(10L)).thenReturn(Optional.of(patchChange));
+        when(patchNoteRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(patchNote));
+
+        // when
+        PatchChangeResponse response = adminPatchNoteService.updatePatchChange(10L, request);
+
+        // then
+        assertThat(response.getTargetName()).isEqualTo("Jinx");
+        assertThat(patchChange.isManuallyEdited()).isTrue();
+    }
+
     private PatchNote patchNote(Long id, String version, boolean current) {
         PatchNote patchNote = PatchNote.builder()
                 .version(version)
@@ -153,6 +208,27 @@ class AdminPatchNoteServiceImplTest {
                 .description("description")
                 .focus("balance")
                 .imageUrl("https://example.com/patch.png")
+                .publishedAt(LocalDateTime.of(2026, 6, 1, 9, 0))
+                .current(current)
+                .highlightsJson("[\"highlight\"]")
+                .active(true)
+                .build();
+        ReflectionTestUtils.setField(patchNote, "id", id);
+        return patchNote;
+    }
+
+    private PatchNote importedPatchNote(Long id, String version, boolean current) {
+        PatchNote patchNote = PatchNote.builder()
+                .version(version)
+                .title(version + " patch")
+                .summary("summary")
+                .description("description")
+                .focus("balance")
+                .imageUrl("https://example.com/patch.png")
+                .sourceUrl("https://www.leagueoflegends.com/ko-kr/news/game-updates/patch-17-3-notes/")
+                .sourceLocale("ko_KR")
+                .importSource(PatchNoteImportSource.RIOT_OFFICIAL)
+                .importedAt(LocalDateTime.of(2026, 6, 1, 10, 0))
                 .publishedAt(LocalDateTime.of(2026, 6, 1, 9, 0))
                 .current(current)
                 .highlightsJson("[\"highlight\"]")
@@ -181,6 +257,33 @@ class AdminPatchNoteServiceImplTest {
                 .tagsJson("[\"champion\"]")
                 .sortOrder(sortOrder)
                 .active(active)
+                .build();
+        ReflectionTestUtils.setField(patchChange, "id", id);
+        return patchChange;
+    }
+
+    private PatchChange importedPatchChange(Long id, PatchNote patchNote) {
+        PatchChange patchChange = PatchChange.builder()
+                .patchNote(patchNote)
+                .sourceKey("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+                .sourceUrl("https://www.leagueoflegends.com/ko-kr/news/game-updates/patch-17-3-notes/")
+                .sourceHeadingPath("Champion > Jinx")
+                .sourceOrder(1)
+                .sourceLocale("ko_KR")
+                .importSource(PatchNoteImportSource.RIOT_OFFICIAL)
+                .importedAt(LocalDateTime.of(2026, 6, 1, 10, 0))
+                .category(PatchChangeCategory.CHAMPION)
+                .changeType(PatchChangeType.BUFF)
+                .impact(PatchChangeImpact.HIGH)
+                .targetKey("tft17_jinx")
+                .targetName("Jinx")
+                .summary("Jinx buff")
+                .beforeValue("10")
+                .afterValue("20")
+                .imageUrl("https://example.com/jinx.png")
+                .tagsJson("[\"champion\"]")
+                .sortOrder(1)
+                .active(true)
                 .build();
         ReflectionTestUtils.setField(patchChange, "id", id);
         return patchChange;

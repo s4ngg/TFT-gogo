@@ -13,6 +13,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,7 +22,12 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "patch_changes")
+@Table(
+        name = "patch_changes",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"patch_note_id", "source_key"})
+        }
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PatchChange {
@@ -33,6 +39,31 @@ public class PatchChange {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "patch_note_id", nullable = false)
     private PatchNote patchNote;
+
+    @Column(name = "source_key", length = 64)
+    private String sourceKey;
+
+    @Column(name = "source_url", length = 500)
+    private String sourceUrl;
+
+    @Column(name = "source_heading_path", length = 500)
+    private String sourceHeadingPath;
+
+    @Column(name = "source_order")
+    private Integer sourceOrder;
+
+    @Column(name = "source_locale", length = 20)
+    private String sourceLocale;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "import_source", length = 30)
+    private PatchNoteImportSource importSource;
+
+    @Column(name = "imported_at")
+    private LocalDateTime importedAt;
+
+    @Column(name = "manually_edited", nullable = false)
+    private boolean manuallyEdited;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -83,11 +114,21 @@ public class PatchChange {
     private LocalDateTime deletedAt;
 
     @Builder
-    public PatchChange(PatchNote patchNote, PatchChangeCategory category, PatchChangeType changeType,
-                       PatchChangeImpact impact, String targetKey, String targetName, String summary,
-                       String beforeValue, String afterValue, String imageUrl, String tagsJson,
-                       int sortOrder, boolean active) {
+    public PatchChange(PatchNote patchNote, String sourceKey, String sourceUrl, String sourceHeadingPath,
+                       Integer sourceOrder, String sourceLocale, PatchNoteImportSource importSource,
+                       LocalDateTime importedAt, boolean manuallyEdited, PatchChangeCategory category,
+                       PatchChangeType changeType, PatchChangeImpact impact, String targetKey,
+                       String targetName, String summary, String beforeValue, String afterValue,
+                       String imageUrl, String tagsJson, int sortOrder, boolean active) {
         this.patchNote = patchNote;
+        this.sourceKey = sourceKey;
+        this.sourceUrl = sourceUrl;
+        this.sourceHeadingPath = sourceHeadingPath;
+        this.sourceOrder = sourceOrder;
+        this.sourceLocale = sourceLocale;
+        this.importSource = importSource;
+        this.importedAt = importedAt;
+        this.manuallyEdited = manuallyEdited;
         this.category = category;
         this.changeType = changeType;
         this.impact = impact;
@@ -124,6 +165,16 @@ public class PatchChange {
         LocalDateTime now = LocalDateTime.now();
         this.active = false;
         this.deletedAt = now;
+    }
+
+    public void markManuallyEditedIfImported() {
+        if (isImported()) {
+            this.manuallyEdited = true;
+        }
+    }
+
+    public boolean isImported() {
+        return importSource != null;
     }
 
     @PrePersist
