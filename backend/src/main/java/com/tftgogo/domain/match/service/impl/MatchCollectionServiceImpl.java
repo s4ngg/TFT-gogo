@@ -244,7 +244,7 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
                 CompletableFuture.runAsync(() -> {
                     try {
                         List<String> matchIds = riotQueue
-                                .submitForeground(() -> riotApiClient.getMatchIds(puuid, count, 0, 1100))
+                                .submit(() -> riotApiClient.getMatchIds(puuid, count, 0, 1100))
                                 .get(FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
                         Set<String> cachedIds = new HashSet<>(
                                 cachedMatchRepository.findMatchIdsByMatchIdIn(matchIds));
