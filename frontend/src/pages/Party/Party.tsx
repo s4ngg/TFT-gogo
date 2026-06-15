@@ -9,7 +9,10 @@ import styles from './Party.module.css'
 
 function Party() {
   const chat = usePartyChat()
-  const party = usePartyPosts({ onPartyMessage: chat.appendPartyMessage })
+  const party = usePartyPosts({
+    onPartyMessage: chat.appendPartyMessage,
+    onPartyPostCreated: chat.preparePartyRoom,
+  })
 
   return (
     <AppLayout>
@@ -82,9 +85,15 @@ function Party() {
 
         <PartyChatPanel
           activeMessages={chat.activeMessages}
+          activeRoomId={chat.activeRoomId}
           activeRoomName={chat.activeRoomName}
           chatInput={chat.chatInput}
-          onActiveRoomChange={chat.setActiveRoomName}
+          chatNotice={chat.chatNotice}
+          connectionLabel={chat.connectionLabel}
+          currentUserName={chat.currentUserName}
+          isLoading={chat.isLoading}
+          isMessageDisabled={chat.isMessageDisabled}
+          onActiveRoomChange={chat.setActiveRoomId}
           onChatInputChange={chat.setChatInput}
           onMessageSubmit={chat.sendMessage}
           rooms={chat.rooms}

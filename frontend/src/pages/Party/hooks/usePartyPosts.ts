@@ -24,12 +24,14 @@ import {
   restorePostOverride,
   updatePostJoinState,
 } from '../utils/partyUtils'
+import { usePartyAuth } from './usePartyAuth'
 
 const PARTY_PAGE_SIZE = 3
 const PARTY_QUERY_KEY = ['community', 'parties'] as const
 
 interface UsePartyPostsOptions {
-  onPartyMessage: (message: string) => void
+  onPartyMessage: (post: PartyPost, message: string) => void
+  onPartyPostCreated: (post: PartyPost, message?: string) => void
 }
 
 interface JoinMutationVariables {
@@ -37,8 +39,18 @@ interface JoinMutationVariables {
   postId: string
 }
 
-export function usePartyPosts({ onPartyMessage }: UsePartyPostsOptions) {
+function withOwnerState(post: PartyPost, authUserId: string | null): PartyPost {
+  const isOwner = authUserId !== null && post.userId === authUserId
+
+  return {
+    ...post,
+    isOwner,
+  }
+}
+
+export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPostsOptions) {
   const queryClient = useQueryClient()
+  const { userId: authUserId } = usePartyAuth()
   const [localPosts, setLocalPosts] = useState<PartyPost[]>([])
   const [postOverrides, setPostOverrides] = useState<Record<string, PartyPost>>({})
   const [selectedFilter, setSelectedFilter] = useState<PartyFilter>('전체')
@@ -83,8 +95,8 @@ export function usePartyPosts({ onPartyMessage }: UsePartyPostsOptions) {
       }
     })
 
-    return mergedPosts.map((post) => postOverrides[post.id] ?? post)
-  }, [localPosts, partyQuery.data?.data, postOverrides])
+    return mergedPosts.map((post) => withOwnerState(postOverrides[post.id] ?? post, authUserId))
+  }, [authUserId, localPosts, partyQuery.data?.data, postOverrides])
   const activeJoinedPostId = useMemo(() => {
     if (joinedPostId !== undefined) {
       return joinedPostId
@@ -165,7 +177,14 @@ export function usePartyPosts({ onPartyMessage }: UsePartyPostsOptions) {
       tags: parsedTags,
     }
     const localId = `party-${crypto.randomUUID()}`
-    const localPost = buildLocalPartyPost(request, localId)
+    const localPost = withOwnerState(
+      {
+        ...buildLocalPartyPost(request, localId),
+        isJoined: authUserId !== null,
+        userId: authUserId ?? undefined,
+      },
+      authUserId,
+    )
 
     setLocalPosts((currentPosts) => [localPost, ...currentPosts])
     setSelectedFilter('전체')
@@ -185,9 +204,12 @@ export function usePartyPosts({ onPartyMessage }: UsePartyPostsOptions) {
     createMutation.mutate(request, {
       onSuccess: (createdPost) => {
         if (createdPost) {
+          const serverPost = withOwnerState(createdPost, authUserId)
+
           setLocalPosts((currentPosts) =>
-            currentPosts.map((post) => (post.id === localId ? createdPost : post)),
+            currentPosts.map((post) => (post.id === localId ? serverPost : post)),
           )
+          onPartyPostCreated(serverPost)
         }
 
         void queryClient.invalidateQueries({ queryKey: PARTY_QUERY_KEY })
@@ -209,6 +231,11 @@ export function usePartyPosts({ onPartyMessage }: UsePartyPostsOptions) {
       return
     }
 
+    if (targetPost.isOwner) {
+      setPartyStatusMessage('작성자는 자신의 모집글에서 나갈 수 없습니다.')
+      return
+    }
+
     joinMutation.reset()
 
     const serverJoinedPostId = posts.find((post) => post.isJoined === true)?.id ?? null
@@ -226,7 +253,7 @@ export function usePartyPosts({ onPartyMessage }: UsePartyPostsOptions) {
     const nextMessage = alreadyJoined
       ? `${targetPost.title} 참여 신청을 취소했어요.`
       : `${targetPost.title} 참여 신청했습니다. (${nextCurrent}/${total})`
-    const nextPost = updatePostJoinState(targetPost, !alreadyJoined)
+    const nextPost = withOwnerState(updatePostJoinState(targetPost, !alreadyJoined), authUserId)
 
     setLocalPosts((currentPosts) => replacePost(currentPosts, nextPost))
     setPostOverrides((currentOverrides) => ({
@@ -240,8 +267,15 @@ export function usePartyPosts({ onPartyMessage }: UsePartyPostsOptions) {
     joinMutation.mutate(
       { postId, isJoining: !alreadyJoined },
       {
-        onSuccess: async () => {
-          onPartyMessage(nextMessage)
+        onSuccess: async (serverPost) => {
+          const confirmedPost = withOwnerState(serverPost ?? nextPost, authUserId)
+
+          setLocalPosts((currentPosts) => replacePost(currentPosts, confirmedPost))
+          setPostOverrides((currentOverrides) => ({
+            ...currentOverrides,
+            [postId]: confirmedPost,
+          }))
+          onPartyMessage(confirmedPost, nextMessage)
           await queryClient.invalidateQueries({ queryKey: PARTY_QUERY_KEY })
 
           const refreshedPosts = queryClient.getQueryData<PartyPostsResult>(PARTY_QUERY_KEY)
