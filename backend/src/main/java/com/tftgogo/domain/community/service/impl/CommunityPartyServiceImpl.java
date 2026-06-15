@@ -1,5 +1,7 @@
 package com.tftgogo.domain.community.service.impl;
 
+import com.tftgogo.domain.community.chat.model.PartyChatRoomIds;
+import com.tftgogo.domain.community.chat.service.ChatService;
 import com.tftgogo.domain.community.dto.request.PartyPostCreateRequest;
 import com.tftgogo.domain.community.dto.response.PartyPostResponse;
 import com.tftgogo.domain.community.entity.PartyApplication;
@@ -30,6 +32,7 @@ public class CommunityPartyServiceImpl implements CommunityPartyService {
 
     private final PartyPostRepository partyPostRepository;
     private final PartyApplicationRepository partyApplicationRepository;
+    private final ChatService chatService;
 
     @Override
     public List<PartyPostResponse> getPartyPosts(String mode, String query, Long userId) {
@@ -53,6 +56,7 @@ public class CommunityPartyServiceImpl implements CommunityPartyService {
         validateAuthenticated(userId);
 
         PartyPost partyPost = partyPostRepository.save(PartyPost.create(userId, request));
+        chatService.ensureRoom(PartyChatRoomIds.fromPartyPostId(partyPost.getId()));
 
         return PartyPostResponse.from(partyPost, true);
     }

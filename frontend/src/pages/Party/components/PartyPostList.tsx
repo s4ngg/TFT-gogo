@@ -28,6 +28,7 @@ function PartyPostList({
         {posts.length > 0 ? (
           posts.map((post) => {
             const isJoined = joinedPostId === post.id || post.isJoined === true
+            const isOwner = post.isOwner === true
             const hasJoinedOtherPost = joinedPostId !== null && !isJoined
 
             return (
@@ -35,6 +36,7 @@ function PartyPostList({
                 hasJoinedOtherPost={hasJoinedOtherPost}
                 isJoined={isJoined}
                 isJoinPending={joiningPostId === post.id}
+                isOwner={isOwner}
                 key={post.id}
                 onJoinToggle={onJoinToggle}
                 post={post}

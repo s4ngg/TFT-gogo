@@ -1,5 +1,6 @@
 package com.tftgogo.domain.community.service.impl;
 
+import com.tftgogo.domain.community.chat.service.ChatService;
 import com.tftgogo.domain.community.dto.request.PartyPostCreateRequest;
 import com.tftgogo.domain.community.dto.response.PartyPostResponse;
 import com.tftgogo.domain.community.entity.PartyApplication;
@@ -39,6 +40,9 @@ class CommunityPartyServiceImplTest {
     @Mock
     private PartyApplicationRepository partyApplicationRepository;
 
+    @Mock
+    private ChatService chatService;
+
     @InjectMocks
     private CommunityPartyServiceImpl communityPartyService;
 
@@ -66,9 +70,10 @@ class CommunityPartyServiceImplTest {
                         PartyPostResponse::getGameMode,
                         PartyPostResponse::getMode,
                         PartyPostResponse::getCapacity,
+                        PartyPostResponse::getChatRoomId,
                         PartyPostResponse::isJoined
                 )
-                .containsExactly("마스터 듀오 구합니다", "RANKED_TFT", "랭크", "1/2", true);
+                .containsExactly("마스터 듀오 구합니다", "RANKED_TFT", "랭크", "1/2", "party-1", true);
         verify(partyPostRepository).search(PartyGameMode.RANKED_TFT, "마스터", pageRequest);
         verify(partyApplicationRepository).findPartyPostIdsByUserIdAndStatus(
                 2L,
@@ -110,8 +115,10 @@ class CommunityPartyServiceImplTest {
         // then
         assertThat(response.getId()).isEqualTo(10L);
         assertThat(response.getCapacity()).isEqualTo("1/2");
+        assertThat(response.getChatRoomId()).isEqualTo("party-10");
         assertThat(response.isJoined()).isTrue();
         verify(partyPostRepository).save(any(PartyPost.class));
+        verify(chatService).ensureRoom("party-10");
         verify(partyApplicationRepository, never()).save(any(PartyApplication.class));
     }
 
@@ -127,6 +134,7 @@ class CommunityPartyServiceImplTest {
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
 
         verify(partyPostRepository, never()).save(any(PartyPost.class));
+        verify(chatService, never()).ensureRoom(any());
         verify(partyApplicationRepository, never()).save(any(PartyApplication.class));
     }
 
@@ -141,6 +149,7 @@ class CommunityPartyServiceImplTest {
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED));
 
         verify(partyPostRepository, never()).save(any(PartyPost.class));
+        verify(chatService, never()).ensureRoom(any());
         verify(partyApplicationRepository, never()).save(any(PartyApplication.class));
     }
 
