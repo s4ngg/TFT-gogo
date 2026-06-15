@@ -83,6 +83,7 @@ function Party() {
             composeError={party.composeError}
             deadlineDraft={party.deadlineDraft}
             descriptionDraft={party.descriptionDraft}
+            isAuthenticated={party.isAuthenticated}
             isSubmitting={party.isCreating}
             minDeadline={party.minDeadline}
             modeDraft={party.modeDraft}
@@ -108,6 +109,7 @@ function Party() {
 
           <PartyPostList
             currentPage={party.currentPage}
+            isAuthenticated={party.isAuthenticated}
             joinedPostId={party.joinedPostId}
             joiningPostId={party.joiningPostId}
             onJoinToggle={party.toggleJoin}

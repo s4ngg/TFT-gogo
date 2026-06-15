@@ -90,6 +90,9 @@ Page: Party (/party).
 - Game modes for new data are RANKED_TFT, NORMAL_TFT, and CUSTOM.
 - Public users can read party posts.
 - Creating, joining, and canceling participation require JWT authentication.
+- The frontend must block unauthenticated create/join/cancel attempts before calling mutations and show a login-required state.
+- Unauthenticated create/join/cancel attempts must not create optimistic local posts, joined state, chat previews, success messages, or query invalidation.
+- If creating a recruitment post fails, the frontend keeps the user's draft input so the user can retry after fixing the problem.
 - The authenticated JWT principal is the numeric userId set by JwtAuthenticationFilter.
 - The post creator is automatically counted as the first current member.
 - A party with current_members >= max_members is closed and cannot accept new participants.
