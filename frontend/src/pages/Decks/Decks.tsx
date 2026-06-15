@@ -23,7 +23,7 @@ const RANK_FILTERS: RankFilterOption[] = [
 function Decks() {
   const [rankFilter, setRankFilter] = useState<RankFilter>('EMERALD_PLUS')
   const [tab, setTab] = useState<Tab>('덱모음')
-  const { data: metaDeckResponse } = useMetaSnapshot(rankFilter)
+  const { data: metaDeckResponse, isError: isDeckError } = useMetaSnapshot(rankFilter)
   const { data: locale } = useCDragonLocale()
   const decks = metaDeckResponse?.decks ?? []
   const patchVersion = metaDeckResponse?.patchVersion ?? '집계 대기'
@@ -74,7 +74,9 @@ function Decks() {
           </div>
         </div>
 
-        {tab === '덱모음'
+        {isDeckError ? (
+          <p className={styles.errorMessage}>메타 덱 정보를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.</p>
+        ) : tab === '덱모음'
           ? <DeckListView decks={decks} locale={locale} rankFilter={rankFilter} />
           : <MetaStatsView decks={decks} locale={locale} rankFilter={rankFilter} />
         }

@@ -2,7 +2,7 @@ import { ChevronDown, ChevronUp, RefreshCcw, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { communityDragonProfileIconUrl, itemsFromUrls, tftChampSquareUrl, tftTierEmblemUrl, tftTraitIconUrl } from '../../api/communityDragonAssets'
+import { communityDragonProfileIconUrl, itemsFromUrls, tftChampSquareUrl, tftTierEmblemUrl } from '../../api/communityDragonAssets'
 import { AppLayout } from '../../components/layout'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
 import ChampionCard from '../../components/common/ChampionCard'
@@ -48,7 +48,8 @@ function SummonerDetail() {
 
   const { data: profile, isError: profileIsError, error: profileErr, isLoading: profileLoading } = useSummonerProfile(name, tag)
   const profileRateLimited = profileIsError && (profileErr as Error)?.message === 'RATE_LIMITED'
-  const profileNotFound = profileIsError && !profileRateLimited
+  const profileNotFound = profileIsError && (profileErr as Error)?.message === 'NOT_FOUND'
+  const profileServerError = profileIsError && !profileRateLimited && !profileNotFound
   const profileRetryAfter = profileRateLimited ? 120 : 0
   const isRateLimited = profileRateLimited || refreshRateLimitSeconds > 0
   const retryAfterSeconds = profileRateLimited ? profileRetryAfter : refreshRateLimitSeconds
@@ -67,19 +68,20 @@ function SummonerDetail() {
   const total = profile ? (profile.wins + profile.losses) : 0
   const winRate = total > 0 ? Math.round((profile!.wins / total) * 100) : 0
 
-  const recentMatches = matches.slice(0, 30)
-
   const topTraits = (() => {
-    const map = new Map<string, { traitId: string; name: string; tone: MatchTraitResponse['tone']; count: number; games: number; totalPlace: number }>()
-    for (const m of recentMatches) {
+    const map = new Map<string, { traitId: string; name: string; iconUrl: string; tone: MatchTraitResponse['tone']; count: number; games: number; totalPlace: number }>()
+    for (const m of matches) {
       const seen = new Set<string>()
       for (const tr of m.traits) {
         if (tr.traitId.toLowerCase().includes('unique')) continue
         if (seen.has(tr.traitId)) continue
         seen.add(tr.traitId)
         const entry = map.get(tr.traitId)
-        if (entry) { entry.games++; entry.totalPlace += m.placement; entry.count = Math.max(entry.count, tr.count) }
-        else map.set(tr.traitId, { traitId: tr.traitId, name: tr.name, tone: tr.tone, count: tr.count, games: 1, totalPlace: m.placement })
+        if (entry) {
+          entry.games++; entry.totalPlace += m.placement
+          if (tr.count > entry.count) { entry.count = tr.count; entry.tone = tr.tone }
+        }
+        else map.set(tr.traitId, { traitId: tr.traitId, name: tr.name, iconUrl: tr.iconUrl, tone: tr.tone, count: tr.count, games: 1, totalPlace: m.placement })
       }
     }
     return [...map.values()]
@@ -89,7 +91,7 @@ function SummonerDetail() {
 
   const topChampions = (() => {
     const map = new Map<string, { characterId: string; name: string; imageUrl: string; games: number; totalPlace: number }>()
-    for (const m of recentMatches) {
+    for (const m of matches) {
       const seen = new Set<string>()
       for (const u of m.units) {
         if (seen.has(u.characterId)) continue
@@ -136,6 +138,7 @@ function SummonerDetail() {
       await refreshSummoner(name, tag)
       await queryClient.invalidateQueries({ queryKey: ['summoner', 'profile', name, tag] })
       await queryClient.invalidateQueries({ queryKey: ['summoner', 'matches', profile?.puuid] })
+      await queryClient.invalidateQueries({ queryKey: ['summoner', 'stats', profile?.puuid] })
     } catch (err: unknown) {
       const status = (err as HttpError)?.response?.status
       if (status === 429) {
@@ -179,6 +182,8 @@ function SummonerDetail() {
           <RateLimitState retryAfterSeconds={retryAfterSeconds} />
         ) : profileNotFound ? (
           <EmptyState name={name} tag={tag} />
+        ) : profileServerError ? (
+          <p className={styles.emptyState}>서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.</p>
         ) : (
           <>
             {/* 프로필 카드 */}
@@ -230,7 +235,7 @@ function SummonerDetail() {
                     {topTraits.map((tr, i) => (
                       <div key={tr.traitId} className={styles.topTraitRow}>
                         <span className={styles.topRank}>{i + 1}</span>
-                        <TraitHexBadge count={tr.count} iconUrl={tftTraitIconUrl(tr.traitId)} name={tr.name} tone={tr.tone} />
+                        <TraitHexBadge count={tr.count} iconUrl={tr.iconUrl} name={tr.name} tone={tr.tone} />
                         <span className={styles.topName}>{tr.name}</span>
                         <span className={styles.topGames}>{tr.games}게임</span>
                         <span className={styles.topAvg}>평균 {tr.avgPlace}등</span>
@@ -260,7 +265,7 @@ function SummonerDetail() {
 
             {/* 매치 히스토리 */}
             <section className={styles.matchSection}>
-              <h2>{filteredMatches.length > 0 ? `최근 ${Math.min(30, filteredMatches.length)}게임` : '매치 히스토리'}</h2>
+              <h2>{filteredMatches.length > 0 ? `최근 ${filteredMatches.length}게임` : '매치 히스토리'}</h2>
               <RecentSummary matches={filteredMatches} />
 
               {/* 게임 유형 필터 */}

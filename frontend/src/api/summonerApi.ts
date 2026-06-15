@@ -1,6 +1,5 @@
 import axiosInstance from './axiosInstance'
 import type { TraitHexBadgeTone } from '../types/badges'
-import { mockSummonerProfile } from '../mocks/summonerMock'
 
 interface ApiResponse<T> {
   success: boolean
@@ -77,9 +76,9 @@ export const getSummonerProfile = async (
     return data.data
   } catch (err: unknown) {
     const status = (err as { response?: { status?: number } })?.response?.status
-    if (status === 404) throw err
     if (status === 429) throw new Error('RATE_LIMITED')
-    return mockSummonerProfile
+    if (status === 404) throw new Error('NOT_FOUND')
+    throw err
   }
 }
 
