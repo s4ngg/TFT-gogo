@@ -3,6 +3,7 @@ import type { ChatMessage, ChatRoom, PartyPost } from '../types'
 export const initialPartyPosts: PartyPost[] = [
   {
     id: 'party-master-duo',
+    chatRoomId: 'party-master-duo',
     title: '마스터 이상 듀오 구합니다',
     mode: '랭크',
     tier: '마스터+',
@@ -16,6 +17,7 @@ export const initialPartyPosts: PartyPost[] = [
   },
   {
     id: 'party-diamond-practice',
+    chatRoomId: 'party-diamond-practice',
     title: '다이아 구간 야부/연습 같이해요',
     mode: '랭크',
     tier: '다이아+',
@@ -29,6 +31,7 @@ export const initialPartyPosts: PartyPost[] = [
   },
   {
     id: 'party-casual-evening',
+    chatRoomId: 'party-casual-evening',
     title: '저녁 근접, 편하게 즐기실 분!',
     mode: '일반',
     tier: '제한 없음',
@@ -42,6 +45,7 @@ export const initialPartyPosts: PartyPost[] = [
   },
   {
     id: 'party-weekend-master',
+    chatRoomId: 'party-weekend-master',
     title: '주말 마스터 달성 목표!',
     mode: '랭크',
     tier: '플래티넘+',
@@ -56,10 +60,10 @@ export const initialPartyPosts: PartyPost[] = [
 ]
 
 export const initialChatRooms: ChatRoom[] = [
-  { name: '일반', users: '1,234', lastMessage: '새로운 패치 적응 중입니다!' },
-  { name: '덱 공략', users: '856', lastMessage: '증강 추천 부탁드려요' },
-  { name: '파티 모집', users: '622', lastMessage: '마스터 듀오 구해요~' },
-  { name: '질문 & 답변', users: '741', lastMessage: '초보 운영 질문 있습니다' },
+  { id: 'general', name: '일반', users: '1,234', lastMessage: '새로운 패치 적응 중입니다!' },
+  { id: 'deck-guide', name: '덱 공략', users: '856', lastMessage: '증강 추천 부탁드려요' },
+  { id: 'party-recruitment', name: '파티 모집', users: '622', lastMessage: '마스터 듀오 구해요~' },
+  { id: 'question-answer', name: '질문 & 답변', users: '741', lastMessage: '초보 운영 질문 있습니다' },
 ]
 
 export const chatMessages: ChatMessage[] = [

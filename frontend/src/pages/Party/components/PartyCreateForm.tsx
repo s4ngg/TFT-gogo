@@ -5,9 +5,13 @@ import styles from '../Party.module.css'
 interface PartyCreateFormProps {
   capacityDraft: string
   composeError: string
+  deadlineDraft: string
   descriptionDraft: string
+  isSubmitting: boolean
+  minDeadline: string
   modeDraft: PartyMode
   onCapacityChange: (value: string) => void
+  onDeadlineChange: (value: string) => void
   onDescriptionChange: (value: string) => void
   onModeChange: (value: PartyMode) => void
   onSubmit: () => void
@@ -23,9 +27,13 @@ interface PartyCreateFormProps {
 function PartyCreateForm({
   capacityDraft,
   composeError,
+  deadlineDraft,
   descriptionDraft,
+  isSubmitting,
+  minDeadline,
   modeDraft,
   onCapacityChange,
+  onDeadlineChange,
   onDescriptionChange,
   onModeChange,
   onSubmit,
@@ -77,6 +85,14 @@ function PartyCreateForm({
         value={capacityDraft}
       />
       <input
+        aria-label="마감 시간"
+        className={styles.deadlineInput}
+        min={minDeadline}
+        onChange={(event) => onDeadlineChange(event.target.value)}
+        type="datetime-local"
+        value={deadlineDraft}
+      />
+      <input
         aria-label="모집 태그"
         className={styles.tagInput}
         onChange={(event) => onTagsChange(event.target.value)}
@@ -89,10 +105,14 @@ function PartyCreateForm({
         placeholder="플레이 스타일이나 요청사항을 적어주세요."
         value={descriptionDraft}
       />
-      <button type="submit" className={styles.primaryButton}>
-        등록
+      <button type="submit" className={styles.primaryButton} disabled={isSubmitting}>
+        {isSubmitting ? '등록중' : '등록'}
       </button>
-      {composeError && <p className={styles.composeError}>{composeError}</p>}
+      {composeError && (
+        <p className={styles.composeError} role="alert">
+          {composeError}
+        </p>
+      )}
     </form>
   )
 }
