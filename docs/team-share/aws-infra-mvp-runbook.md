@@ -2,6 +2,29 @@
 
 목표: 도메인이 아직 없는 상태에서 서울 리전(ap-northeast-2)에 TFT-gogo 백엔드를 먼저 배포할 수 있는 최소 AWS 인프라를 만든다.
 
+내일 콘솔 작업만 빠르게 진행해야 하면 먼저 [AWS MVP 구축 체크리스트](./aws-infra-mvp-checklist.md)를 보고, 막히는 항목만 이 런북의 상세 섹션을 확인한다.
+
+## 내일 작업 요약
+
+1. VPC `tftgogo`를 `10.0.0.0/16`, public 2개, private 2개, NAT Gateway 없음, VPC endpoint 없음으로 만든다.
+2. Security Group 6개를 먼저 만든다.
+3. MySQL RDS, Redis를 private subnet에 만든다. PostgreSQL은 ai-server가 내일 범위가 아니면 보류할 수 있다.
+4. ECR `tftgogo-backend`에 backend 이미지를 push한다.
+5. SSM Parameter Store에 DB 비밀번호, JWT secret, Riot key, admin token을 `SecureString`으로 저장한다.
+6. ECS task execution role과 backend task role을 만든다.
+7. CloudWatch log group `/ecs/tftgogo-backend`를 만든다.
+8. ECS Fargate task definition과 service를 만든다. NAT가 없으므로 MVP에서는 public subnet + public IP를 사용한다.
+9. ALB HTTP 80을 팀 고정 IP/CIDR에만 열고, target group을 ECS service에 연결한다.
+10. ALB target health와 `/v3/api-docs` 응답을 확인한다.
+
+내일 절대 하지 않는 것:
+
+- RDS/Redis를 public access로 열지 않는다.
+- MySQL 3306, PostgreSQL 5432, Redis 6379를 개인 IP나 `0.0.0.0/0`에 열지 않는다.
+- Fargate task에 SSH 22를 열지 않는다.
+- secret 값을 ECS plain environment에 붙여넣지 않는다.
+- 도메인/HTTPS 전에는 실사용 OAuth 로그인 QA를 완료됐다고 보지 않는다.
+
 ## 0. 중요한 결정
 
 - VPC는 요청값 그대로 만든다.
