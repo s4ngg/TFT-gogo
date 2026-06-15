@@ -24,7 +24,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -131,7 +130,9 @@ class AiRecommendServiceTest {
                 .thenReturn(List.of(match));
         when(metaDeckService.getMetaDecks(RankFilter.MASTER_PLUS))
                 .thenReturn(MetaDeckListResponse.builder().decks(List.of()).build());
-        when(aiServerClient.analyzeWithMeta(any())).thenReturn(null);
+        // analyzeWithMeta는 실제로 null을 반환하지 않는다(빈 응답이면 BusinessException).
+        // 여기서는 바디 구성 검증이 목적이므로 정상 응답으로 stub한다.
+        when(aiServerClient.analyzeWithMeta(any())).thenReturn(new AiRecommendResponse());
 
         // when
         aiRecommendService.recommend(GAME_NAME, TAG_LINE);
