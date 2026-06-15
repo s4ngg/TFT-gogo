@@ -634,13 +634,28 @@
 
 .chatRow {
   min-height: 0;
+  width: 100%;
   display: grid;
   grid-template-columns: 22px 84px 58px minmax(0, 1fr) 42px;
   align-items: center;
   gap: 5px;
   border-bottom: 1px solid rgba(114, 145, 153, 0.1);
+  background: transparent;
   color: #aeb7c0;
+  text-align: left;
+  text-decoration: none;
   font-size: 11px;
+  cursor: pointer;
+}
+
+.chatRow:hover,
+.chatRow:focus-visible {
+  background: var(--bg-row-hover);
+}
+
+.chatRow:focus-visible {
+  outline: 2px solid var(--border-active);
+  outline-offset: -2px;
 }
 
 .chatRow strong {

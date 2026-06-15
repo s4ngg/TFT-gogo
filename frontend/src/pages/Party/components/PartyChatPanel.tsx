@@ -1,12 +1,13 @@
 import { type FormEvent } from 'react'
 import { MessageCircle, Send, Users } from 'lucide-react'
 import type { ChatMessage } from '../../../api/chatApi'
+import type { CommunityChatRoomId } from '../../../constants/communityChatRooms'
 import type { ChatRoom } from '../types'
 import styles from '../Party.module.css'
 
 interface PartyChatPanelProps {
   activeMessages: ChatMessage[]
-  activeRoomId: string
+  activeRoomId: CommunityChatRoomId
   activeRoomName: string
   chatInput: string
   chatNotice: string
@@ -14,7 +15,7 @@ interface PartyChatPanelProps {
   currentUserName: string
   isLoading: boolean
   isMessageDisabled: boolean
-  onActiveRoomChange: (roomId: string) => void
+  onActiveRoomChange: (roomId: CommunityChatRoomId) => void
   onChatInputChange: (value: string) => void
   onMessageSubmit: () => Promise<void>
   rooms: ChatRoom[]

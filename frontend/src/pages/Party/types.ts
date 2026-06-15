@@ -1,3 +1,4 @@
+import type { CommunityChatRoomId } from '../../constants/communityChatRooms'
 import type { PartyFilter } from './partyFilters'
 
 export type PartyMode = Exclude<PartyFilter, '전체'>
@@ -6,7 +7,7 @@ export type PartyTone = 'purple' | 'green' | 'cyan' | 'gold'
 
 export interface PartyPost {
   capacity: string
-  chatRoomId: string
+  chatRoomId: CommunityChatRoomId
   close: string
   description: string
   icon: PartyIcon
@@ -32,7 +33,7 @@ export interface ChatMessage {
 }
 
 export interface ChatRoom {
-  id: string
+  id: CommunityChatRoomId
   lastMessage: string
   name: string
   users: string

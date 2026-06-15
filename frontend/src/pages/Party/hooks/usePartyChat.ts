@@ -1,15 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
 import { PARTY_RECRUITMENT_ROOM_ID } from '../../../constants/communityChatRooms'
+import type { CommunityChatRoomId } from '../../../constants/communityChatRooms'
 import { initialChatRooms } from '../data/partyMockData'
 import type { PartyPost } from '../types'
 import { updateChatRoomPreview, updatePartyRecruitmentPreview } from '../utils/partyChatRooms'
 import { usePartyAuth } from './usePartyAuth'
 import { useRealtimeChat } from './useRealtimeChat'
 
-export function usePartyChat() {
+interface UsePartyChatOptions {
+  activeRoomId: CommunityChatRoomId
+  onActiveRoomChange: (roomId: CommunityChatRoomId) => void
+}
+
+export function usePartyChat({ activeRoomId, onActiveRoomChange }: UsePartyChatOptions) {
   const { displayName: currentUserName, token: authToken } = usePartyAuth()
   const [rooms, setRooms] = useState(initialChatRooms)
-  const [activeRoomId, setActiveRoomId] = useState(initialChatRooms[0]?.id ?? 'general')
   const [chatInput, setChatInput] = useState('')
   const [chatStatusMessage, setChatStatusMessage] = useState('')
   const {
@@ -54,7 +59,7 @@ export function usePartyChat() {
 
   const openPartyRecruitmentRoom = (message: string) => {
     setRooms((currentRooms) => updatePartyRecruitmentPreview(currentRooms, message))
-    setActiveRoomId(PARTY_RECRUITMENT_ROOM_ID)
+    onActiveRoomChange(PARTY_RECRUITMENT_ROOM_ID)
   }
 
   const sendPartyRecruitmentMessage = (message: string, failureMessage: string) => {
@@ -120,7 +125,7 @@ export function usePartyChat() {
     preparePartyRoom,
     rooms,
     sendMessage,
-    setActiveRoomId,
+    setActiveRoomId: onActiveRoomChange,
     setChatInput,
   }
 }

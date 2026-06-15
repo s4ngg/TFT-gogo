@@ -1,5 +1,9 @@
 import axiosInstance from './axiosInstance'
-import { PARTY_RECRUITMENT_ROOM_ID } from '../constants/communityChatRooms'
+import {
+  normalizeCommunityChatRoomId,
+  PARTY_RECRUITMENT_ROOM_ID,
+  type CommunityChatRoomId,
+} from '../constants/communityChatRooms'
 import { isRecord, unwrapApiResponse, type ApiResponse } from './apiResponse'
 
 export type PartyMode = '랭크' | '일반' | '커스텀'
@@ -10,7 +14,7 @@ export type PartyPostsSource = 'api' | 'fallback'
 
 export interface PartyPost {
   capacity: string
-  chatRoomId: string
+  chatRoomId: CommunityChatRoomId
   close: string
   description: string
   icon: PartyIcon
@@ -330,7 +334,8 @@ function normalizePartyPost(response: PartyPostResponse, index: number): PartyPo
   const capacity = normalizeCapacity(response)
   const style = getPostStyle(mode, tier)
   const id = readId(response.partyPostId ?? response.id, `party-api-${index}`)
-  const chatRoomId = readId(response.chatRoomId, PARTY_RECRUITMENT_ROOM_ID)
+  const chatRoomId = normalizeCommunityChatRoomId(readId(response.chatRoomId, PARTY_RECRUITMENT_ROOM_ID))
+    ?? PARTY_RECRUITMENT_ROOM_ID
   const isClosed = readBoolean(response.closed ?? response.isClosed)
 
   return {
