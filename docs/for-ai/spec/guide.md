@@ -27,6 +27,9 @@ Page: Guide (/guide).
 - frontend/src/api/guideFallback.ts    -> fallback data when API is unavailable
 - frontend/src/api/guideNormalizers.ts -> normalize raw guide data before use
 - frontend/src/api/guideTypes.ts       -> TypeScript types for guide domain
+- frontend/src/hooks/useGuide.ts       -> TanStack Query hooks for guide catalog and tab pages
+- frontend/src/pages/Guide/hooks/      -> page UI state, tab pagination, metric sorting, and dialog state
+- frontend/src/pages/Guide/components/ -> page-specific guide panels/cards/controls
 </frontend>
 </api>
 
@@ -69,12 +72,18 @@ Page: Guide (/guide).
 - CDragon augment import reads only the requested set/mutator augments and requires apiName, name, description, and icon.
 - CDragon augment import excludes debug/dummy/test/placeholder/inactive/disabled entries by apiName/name/description keywords.
 - CDragon augment import fills statistic fields from cached match data when available, otherwise keeps "-" fallbacks.
+- Cached match guide metrics use queueId 1090 and 1100 only.
+- Cached match guide metrics must read a bounded recent sample instead of all cached matches. The current cap is 500 matches, sorted by gameDatetime DESC and matchId DESC.
+- The bounded cached match query requires a matching DB index on cached_match(queue_id, game_datetime DESC, match_id DESC) when applying production-like schema changes manually.
 - CDragon import request fields: patchVersion (required, max 20), setNumber (default 17), mutator (default TFTSet{setNumber}), includeChampions (default true), includeTraits (default true), includeItems (default false), includeAugments (default false).
 - CDragon import rejects requests where includeChampions, includeTraits, includeItems, and includeAugments all resolve to false.
 - CDragon import response fields: createdCount, updatedCount, skippedCount, championCount, traitCount, itemCount, augmentCount, importedCount (= createdCount + updatedCount).
 - Data originates from CDragon (traits, champions) where possible; use communityDragonAssets.ts helpers for frontend images.
 - guideFallback.ts provides static fallback when the backend is unreachable.
 - guideNormalizers.ts must be applied before passing data to components; do not use raw API responses directly.
+- Public guide UI should request tab data through `useGuideTabItems`; components must not fetch guide data directly.
+- Page-level state such as active tab, search, favorites, recent guides, pagination, and metric sort belongs in Guide page hooks.
+- Page components should remain composition-focused. Repeated UI units such as champion cards, augment stat tables, reward panels, and planner panels belong under pages/Guide/components/.
 </business-rules>
 
 <data-contracts>
@@ -141,6 +150,8 @@ Page: Guide (/guide).
 - AdminGuideServiceImpl owns admin validation, duplicate prevention, dataJson serialization, and soft delete.
 - GuideCdragonImportServiceImpl fetches CommunityDragonProperties.tftKoKrUrl using RestTemplate and builds guide candidates.
 - GuideCdragonImportServiceImpl enriches ITEM and AUGMENT guide candidates with cached match metrics when matching patch data exists.
+- GuideCdragonImportServiceImpl reads recent cached matches through CachedMatchRepository.findRecentByQueueIds with PageRequest.of(0, 500).
+- CachedMatchRepository.findRecentByQueueIds filters by queueId and orders by gameDatetime DESC, matchId DESC; keep the query and DB index aligned.
 - CDragon set data resolution first searches root.setData by setNumber + mutator, then falls back to root.sets[setNumber] if champions and traits exist.
 - Champion import includes only shop champions whose apiName starts with TFT{setNumber}_, cost is 1..5, and name is present.
 - Import asset URLs use CommunityDragonProperties.assetBaseUrl plus a lowercased asset path with .tex replaced by .png.
@@ -163,13 +174,16 @@ Page: Guide (/guide).
 - Service-layer unit tests are the primary backend verification target.
 - Admin guide tests should cover list filtering, create, update, duplicate prevention, invalid dataJson, not found, and soft delete.
 - CDragon import tests should cover create, update, active state preservation, skipped soft-deleted key behavior, and missing set/mutator input.
+- CDragon import tests should verify that cached match stats use page=0 and pageSize=500 when item or augment metrics are requested.
 - Public guide tests should continue to cover tab parsing, page/pageSize bounds, sortKey/sortDir validation, cost filtering, dataJson object response, metric sorting, latest patch fallback, empty latest patch behavior, and LIKE escaping.
 - Import tests should keep asserting importedCount semantics through createdCount + updatedCount, not championCount + traitCount.
+- Frontend guide tests should cover asset helper behavior when set-specific champion, trait, or item paths are derived from shared config.
 </validation>
 
 <data-ingestion>
-- Current stage: CDragon champion/trait/item/augment guide import after admin CRUD and public query contracts are stable.
-- Next stage: patch-note crawling/import and broader match/stat aggregation quality improvements.
+- Current stage: CDragon champion/trait/item/augment guide import with cached match statistics after admin CRUD and public query contracts are stable.
+- Current match-stat stage intentionally uses a recent bounded sample. Broader match/stat aggregation quality improvements should be separate from the CDragon import path.
+- Next stage for this domain is season/asset checklist completion and any remaining guide UI structure cleanup after open guide PRs are merged.
 - AI server/FastAPI is not required for guide CRUD. Add it only when AI/RAG/recommendation behavior needs guide data.
 - Current CDragon import does not curate bestItems/tips and should not be treated as final editorial guide quality.
 </data-ingestion>

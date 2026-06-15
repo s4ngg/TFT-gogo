@@ -12,11 +12,16 @@ Loaded alongside every feature spec file. Defines shared utilities, asset helper
 - Locale handling is in frontend/src/api/cdragonLocale.ts.
 - TFT set-specific values such as `tft_set17`, `TFT_Set17`, and trait icon set numbers must be derived from the shared asset helpers/config where possible.
 - Backend CDragon URLs should use `TftAssetUrlBuilder` and `TftAssetConfig` rather than duplicating set tags or CDN base URLs in feature code.
+- Frontend TFT asset defaults live in `TFT_ASSET_CONFIG` in frontend/src/api/communityDragonAssets.ts.
+  Use helper functions such as `tftChampSquareUrl`, `tftTraitIconUrl`, `tftItemIconUrl`, and `communityDragonAssetUrl` instead of rebuilding URL strings in feature code.
+- Backend TFT asset defaults live in backend/src/main/java/com/tftgogo/global/riot/config/TftAssetConfig.java.
+  Use `setTag`, `setFileSuffix`, `setUnitIdPrefix`, and `TftAssetUrlBuilder` when constructing champion or trait URLs/IDs. For item asset URLs, use the frontend `tftItemIconUrl` helper unless a backend item-specific helper is introduced.
+- Set-specific override maps are allowed only for verified Community Dragon exceptions, legacy trait icon paths, or temporary fallback/demo assets. Prefer deriving new season paths from the shared config.
 </cdragon>
 
 <riot-api-proxy>
 - The backend proxies all Riot API calls. Frontend never calls Riot API directly.
-- Riot API rate limit: 100 req / 2 min (Dev key). Design accordingly.
+- Riot API rate limit: 100 req / 2 min (Dev key), 20 req / 1 s. 백엔드 RiotRateLimiter(이중 토큰 버킷)가 모든 Riot API 호출을 중앙에서 제어한다. 프론트엔드는 429 응답을 받을 경우 Retry-After 헤더 기준으로 처리한다.
 - frontend/src/api/riotApi.ts wraps the proxy endpoints.
 </riot-api-proxy>
 
