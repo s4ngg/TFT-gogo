@@ -114,6 +114,30 @@
 
 .hiddenRow td { opacity: 0.4; }
 
+.mutedText {
+  color: var(--text-muted);
+}
+
+.emptyText {
+  margin-top: 24px;
+  color: var(--text-muted);
+}
+
+.tableId {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.strongText {
+  font-weight: 600;
+}
+
+.tableActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
 /* 이름 셀 */
 .nameCell {
   display: flex;
@@ -205,6 +229,34 @@
   font-size: 0.85rem;
 }
 
+.gradeDefault {
+  color: var(--text-main);
+}
+
+.gradeS {
+  color: var(--color-cyan);
+}
+
+.gradeA {
+  color: var(--color-purple);
+}
+
+.gradeB {
+  color: var(--cost3-border);
+}
+
+.gradeC {
+  color: var(--tone-prismatic-color);
+}
+
+.gradeD {
+  color: var(--text-muted);
+}
+
+.sortInput {
+  width: 60px;
+}
+
 .stat { color: var(--text-muted); }
 
 .modified { color: var(--accent); font-size: 0.75rem; }
@@ -248,6 +300,10 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+}
+
+.modalBoxWide {
+  width: min(1100px, 96vw);
 }
 
 .modalHeader {
@@ -333,6 +389,26 @@
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.04em;
+}
+
+.costTone1 {
+  color: var(--cost1-border);
+}
+
+.costTone2 {
+  color: var(--color-success);
+}
+
+.costTone3 {
+  color: var(--cost3-border);
+}
+
+.costTone4 {
+  color: var(--tone-prismatic-color);
+}
+
+.costTone5 {
+  color: var(--color-star);
 }
 
 .champGrid {
