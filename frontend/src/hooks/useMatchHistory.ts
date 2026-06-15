@@ -10,4 +10,5 @@ export const useMatchHistory = (puuid: string, count = 20) =>
       lastPage.length > 0 ? allPages.length * count : undefined,
     enabled: !!puuid,
     staleTime: 1000 * 60 * 5,
+    retry: false,
   })

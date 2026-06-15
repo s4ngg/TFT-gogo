@@ -7,6 +7,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -31,8 +33,11 @@ public interface MatchControllerDocs {
             @Parameter(description = "소환사 PUUID", required = true)
             @PathVariable("puuid") String puuid,
             @Parameter(description = "시작 인덱스 (0 이상, count 단위 증가)", example = "0")
+            @Min(value = 0, message = "시작 인덱스는 0 이상이어야 합니다.")
             @RequestParam(name = "start", defaultValue = "0") int start,
             @Parameter(description = "조회 건수 (1~20, 기본값 20)", example = "20")
+            @Min(value = 1, message = "조회 건수는 1 이상이어야 합니다.")
+            @Max(value = 20, message = "조회 건수는 20 이하이어야 합니다.")
             @RequestParam(name = "count", defaultValue = "20") int count
     );
 
