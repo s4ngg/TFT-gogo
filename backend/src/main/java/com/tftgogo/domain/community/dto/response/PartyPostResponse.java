@@ -1,6 +1,6 @@
 package com.tftgogo.domain.community.dto.response;
 
-import com.tftgogo.domain.community.chat.model.PartyChatRoomIds;
+import com.tftgogo.domain.community.chat.model.CommunityChatRoomIds;
 import com.tftgogo.domain.community.entity.PartyGameMode;
 import com.tftgogo.domain.community.entity.PartyPost;
 import lombok.Builder;
@@ -43,7 +43,7 @@ public class PartyPostResponse {
                 .currentMembers(partyPost.getCurrentMembers())
                 .maxMembers(partyPost.getMaxMembers())
                 .capacity(partyPost.getCurrentMembers() + "/" + partyPost.getMaxMembers())
-                .chatRoomId(PartyChatRoomIds.fromPartyPostId(partyPost.getId()))
+                .chatRoomId(CommunityChatRoomIds.PARTY_RECRUITMENT)
                 .closed(partyPost.isClosed())
                 .status(partyPost.isClosed() ? "마감" : "모집중")
                 .tags(List.copyOf(partyPost.getTags()))

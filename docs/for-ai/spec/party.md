@@ -17,7 +17,7 @@ Page: Party (/party).
   -> PartyPostCreateRequest, PartyPostResponse
   -> Authenticated. Creates a party recruitment post.
   -> The author is counted in party_posts.current_members but no party_applications row is created for the author.
-  -> The response includes chatRoomId. The endpoint prepares an in-memory PARTY chat room for the post, but does not create a chat_rooms row yet.
+  -> The response includes chatRoomId=party-recruitment. MVP party activity uses the fixed party recruitment chat channel instead of creating a party-specific chat tab.
 
 - POST /api/community/parties/{partyPostId}/join
   -> PartyPostResponse
@@ -71,11 +71,11 @@ Page: Party (/party).
 - status: Korean display label only, 모집중 or 마감
 - tags: custom user tags
 - joined: true when the authenticated user is the author or has an ACCEPTED application
-- chatRoomId: deterministic party chat room id, e.g. party-10
+- chatRoomId: fixed party recruitment chat room id, party-recruitment
 - deadline / createdAt: date-time fields
 </response>
 <request name="ChatMessageCreateRequest">
-- roomId: string, required. Party rooms use the deterministic chatRoomId returned by PartyPostResponse.
+- roomId: string, required. MVP allows only fixed community channel ids: general, deck-guide, party-recruitment, question-answer.
 - content: string, required, max 500.
 - senderName / tier: not accepted from the client. The backend derives senderName from the authenticated user and uses a server-controlled tier value until a trusted rank source is connected.
 </request>
@@ -101,8 +101,10 @@ Page: Party (/party).
 - The owner cannot cancel participation through the join-cancel endpoint. Frontend must treat post.userId === auth.user.id as an owner state, not as a normal joined toggle.
 - A separate close/delete policy should be defined later.
 - Users can enter custom tags. Tags are limited to four items, 30 characters each.
-- Creating a recruitment post returns a dedicated chatRoomId and prepares an in-memory chat room for the party.
-- The MVP chat API requires authentication but does not yet enforce party membership for room access; membership validation and chat_rooms.type = PARTY persistence are later slices.
+- Creating a recruitment post returns the fixed party-recruitment chatRoomId. Party-specific chat rooms and extra user-created chat tabs are out of scope for the MVP.
+- Normal users cannot create community chat channels by sending arbitrary roomId values.
+- Recent chat message reads are public for dashboard previews. Sending chat messages requires authentication.
+- The MVP chat API does not yet enforce party membership for room access; membership validation and chat_rooms.type = PARTY persistence are later slices.
 </business-rules>
 
 <validation>

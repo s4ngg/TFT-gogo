@@ -1,59 +1,37 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import type { PartyPost } from '../../types'
-import {
-  createPartyChatRoom,
-  createPartyChatRoomId,
-  upsertChatRoom,
-} from '../partyChatRooms'
+import { PARTY_RECRUITMENT_ROOM_ID } from '../../../../constants/communityChatRooms'
+import type { ChatRoom } from '../../types'
+import { updateChatRoomPreview, updatePartyRecruitmentPreview } from '../partyChatRooms'
 
-const partyPost: PartyPost = {
-  capacity: '1/2',
-  chatRoomId: 'party-10',
-  close: '방금 등록',
-  description: '저녁 랭크 같이 하실 분 구합니다.',
-  icon: 'crown',
-  id: '10',
-  mode: '랭크',
-  status: '모집중',
-  tags: ['음성 가능'],
-  tier: '마스터+',
-  title: '마스터 듀오 구합니다',
-  tone: 'purple',
-}
+const fixedRooms: ChatRoom[] = [
+  { id: 'general', name: '일반', users: '100', lastMessage: '안녕하세요' },
+  { id: 'deck-guide', name: '덱 공략', users: '80', lastMessage: '증강 추천 부탁드려요' },
+  { id: PARTY_RECRUITMENT_ROOM_ID, name: '파티 모집', users: '30', lastMessage: '마스터 듀오 구해요~' },
+  { id: 'question-answer', name: '질문 & 답변', users: '20', lastMessage: '초보 질문 있습니다' },
+]
 
 describe('partyChatRooms', () => {
-  it('post id로 안전한 파티 전용 채팅방 ID를 만든다', () => {
-    assert.equal(createPartyChatRoomId('10'), 'party-10')
-    assert.equal(createPartyChatRoomId('party-local'), 'party-local')
+  it('파티 활동은 고정 파티 모집 채널의 미리보기만 갱신한다', () => {
+    const result = updatePartyRecruitmentPreview(fixedRooms, '마스터 듀오 참여 신청했습니다.')
+
+    assert.equal(result.length, 4)
+    assert.equal(result[2]?.id, PARTY_RECRUITMENT_ROOM_ID)
+    assert.equal(result[2]?.lastMessage, '마스터 듀오 참여 신청했습니다.')
   })
 
-  it('파티 모집글로 전용 채팅방 항목을 만든다', () => {
-    const room = createPartyChatRoom(partyPost, '참여했습니다.')
+  it('지원하지 않는 채팅방 ID는 새 탭으로 추가하지 않는다', () => {
+    const result = updateChatRoomPreview(fixedRooms, 'party-10', '파티별 방이 열렸습니다.')
 
-    assert.deepEqual(room, {
-      id: 'party-10',
-      lastMessage: '참여했습니다.',
-      name: '마스터 듀오 구합니다',
-      users: '1/2',
-    })
+    assert.equal(result.length, 4)
+    assert.equal(result.some((room) => room.id === 'party-10'), false)
+    assert.deepEqual(result, fixedRooms)
   })
 
-  it('기존 채팅방은 중복 추가하지 않고 최신 정보로 갱신한다', () => {
-    const rooms = [
-      { id: 'general', name: '일반', users: '100', lastMessage: '안녕하세요' },
-      { id: 'party-10', name: '이전 제목', users: '1/2', lastMessage: '이전 메시지' },
-    ]
+  it('빈 메시지는 고정 채널 미리보기를 변경하지 않는다', () => {
+    const result = updatePartyRecruitmentPreview(fixedRooms, '   ')
 
-    const result = upsertChatRoom(rooms, createPartyChatRoom(partyPost, '새 메시지'))
-
-    assert.equal(result.length, 2)
-    assert.deepEqual(result[1], {
-      id: 'party-10',
-      lastMessage: '새 메시지',
-      name: '마스터 듀오 구합니다',
-      users: '1/2',
-    })
+    assert.deepEqual(result, fixedRooms)
   })
 })

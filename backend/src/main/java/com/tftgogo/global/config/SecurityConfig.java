@@ -50,6 +50,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/decks/meta").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/community/parties").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/community/chat/rooms/*/messages").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/riot/status").permitAll()
                         .requestMatchers(
                                 "/api/v1/auth/login",
@@ -61,9 +62,7 @@ public class SecurityConfig {
                                 "/api/guide",
                                 "/api/guide/**",
                                 "/api/patch-notes",
-                                "/api/patch-notes/**",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**"
+                                "/api/patch-notes/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

@@ -1,35 +1,23 @@
-import type { ChatRoom, PartyPost } from '../types'
+import { PARTY_RECRUITMENT_ROOM_ID } from '../../../constants/communityChatRooms'
+import type { ChatRoom } from '../types'
 
-const CHAT_ROOM_ID_PREFIX = 'party-'
+export function updateChatRoomPreview(rooms: ChatRoom[], roomId: string, lastMessage: string) {
+  const normalizedMessage = lastMessage.trim()
 
-export function createPartyChatRoomId(postId: string) {
-  return postId.startsWith(CHAT_ROOM_ID_PREFIX) ? postId : `${CHAT_ROOM_ID_PREFIX}${postId}`
-}
-
-export function createPartyChatRoom(post: PartyPost, lastMessage?: string): ChatRoom {
-  return {
-    id: post.chatRoomId,
-    lastMessage: lastMessage ?? `${post.title} 전용 채팅방이 열렸습니다.`,
-    name: post.title,
-    users: post.capacity,
-  }
-}
-
-export function upsertChatRoom(rooms: ChatRoom[], room: ChatRoom) {
-  const roomIndex = rooms.findIndex((currentRoom) => currentRoom.id === room.id)
-
-  if (roomIndex < 0) {
-    return [room, ...rooms]
+  if (!normalizedMessage) {
+    return rooms
   }
 
-  return rooms.map((currentRoom, index) =>
-    index === roomIndex
+  return rooms.map((room) =>
+    room.id === roomId
       ? {
-          ...currentRoom,
-          lastMessage: room.lastMessage,
-          name: room.name,
-          users: room.users,
+          ...room,
+          lastMessage: normalizedMessage,
         }
-      : currentRoom,
+      : room,
   )
+}
+
+export function updatePartyRecruitmentPreview(rooms: ChatRoom[], lastMessage: string) {
+  return updateChatRoomPreview(rooms, PARTY_RECRUITMENT_ROOM_ID, lastMessage)
 }

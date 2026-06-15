@@ -1,6 +1,6 @@
 package com.tftgogo.domain.community.service.impl;
 
-import com.tftgogo.domain.community.chat.model.PartyChatRoomIds;
+import com.tftgogo.domain.community.chat.model.CommunityChatRoomIds;
 import com.tftgogo.domain.community.chat.service.ChatService;
 import com.tftgogo.domain.community.dto.request.PartyPostCreateRequest;
 import com.tftgogo.domain.community.dto.response.PartyPostResponse;
@@ -56,7 +56,7 @@ public class CommunityPartyServiceImpl implements CommunityPartyService {
         validateAuthenticated(userId);
 
         PartyPost partyPost = partyPostRepository.save(PartyPost.create(userId, request));
-        chatService.ensureRoom(PartyChatRoomIds.fromPartyPostId(partyPost.getId()));
+        chatService.ensureRoom(CommunityChatRoomIds.PARTY_RECRUITMENT);
 
         return PartyPostResponse.from(partyPost, true);
     }

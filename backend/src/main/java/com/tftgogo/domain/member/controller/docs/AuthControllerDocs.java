@@ -33,6 +33,7 @@ public interface AuthControllerDocs {
             summary = "소셜 로그인 시작 URL 조회",
             description = """
                     provider(google, kakao, naver)에 맞는 Spring OAuth2 브라우저 리다이렉트 시작 URL을 반환합니다.
+                    실제 provider 인증 완료에는 각 provider client-id/client-secret과 redirect-uri 설정이 필요합니다.
                     실제 OAuth 인증 시작 엔드포인트(/oauth2/authorization/{provider})와 콜백(/login/oauth2/code/{provider})은 브라우저 리다이렉트용이며 ApiResponse를 반환하지 않습니다.
                     """
     )
