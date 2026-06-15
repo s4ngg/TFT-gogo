@@ -1,22 +1,17 @@
 import { ArrowRight, LockKeyhole, Mail, UserRound } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { login as loginMember, signup as signupMember } from '../../api/memberApi'
+import { getSocialLoginStart, type SocialProvider } from '../../api/socialAuth'
 import { AUTH_ME_QUERY_KEY } from '../../hooks/useAuthSession'
 import useAuthStore from '../../store/useAuthStore'
-import { mapAuthError } from './utils/authUtils'
+import { mapAuthError, mapOAuthErrorCode, mapSocialAuthError } from './utils/authUtils'
 import styles from './AuthPage.module.css'
 
 interface AuthPageProps {
   mode: 'login' | 'signup'
 }
-
-const socialProviders = [
-  { label: 'Google', mark: 'G' },
-  { label: 'Kakao', mark: 'K' },
-  { label: 'Naver', mark: 'N' },
-]
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -26,11 +21,25 @@ interface AuthMutationVariables {
   password: string
 }
 
+interface SocialProviderConfig {
+  id: SocialProvider
+  label: string
+  mark: string
+}
+
+const socialProviders: SocialProviderConfig[] = [
+  { id: 'google', label: 'Google', mark: 'G' },
+  { id: 'kakao', label: 'Kakao', mark: 'K' },
+  { id: 'naver', label: 'Naver', mark: 'N' },
+]
+
 function AuthPage({ mode }: AuthPageProps) {
   const isSignup = mode === 'signup'
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const queryClient = useQueryClient()
   const setAuth = useAuthStore((state) => state.setAuth)
+  const oauthErrorCode = searchParams.get('oauthError')
 
   // 입력값 상태 — 키 입력할 때마다 값 저장
   const [email, setEmail] = useState('')
@@ -60,7 +69,24 @@ function AuthPage({ mode }: AuthPageProps) {
     },
   })
 
+  const socialLoginMutation = useMutation({
+    mutationFn: getSocialLoginStart,
+    onSuccess: ({ authorizationUrl }) => {
+      window.location.assign(authorizationUrl)
+    },
+  })
+
   const apiError = authMutation.error ? mapAuthError(authMutation.error, isSignup) : ''
+  const socialError = socialLoginMutation.error
+    ? mapSocialAuthError(socialLoginMutation.error)
+    : mapOAuthErrorCode(oauthErrorCode)
+  const isAuthActionPending = authMutation.isPending || socialLoginMutation.isPending
+
+  const clearOAuthError = () => {
+    if (oauthErrorCode) {
+      setSearchParams({}, { replace: true })
+    }
+  }
 
   // 입력값 유효성 검사
   const validate = () => {
@@ -108,7 +134,13 @@ function AuthPage({ mode }: AuthPageProps) {
     e.preventDefault()
     // e.preventDefault() — 페이지 새로고침 되는 브라우저 기본 동작을 막는 것
 
+    if (isAuthActionPending) {
+      return
+    }
+
     authMutation.reset()
+    socialLoginMutation.reset()
+    clearOAuthError()
 
     if (!validate()) return
     // validate() 실패하면 여기서 멈추고 에러 메시지 표시
@@ -118,6 +150,17 @@ function AuthPage({ mode }: AuthPageProps) {
       nickname: isSignup ? nickname.trim() : undefined,
       password,
     })
+  }
+
+  const handleSocialLogin = (provider: SocialProvider) => {
+    if (isAuthActionPending) {
+      return
+    }
+
+    authMutation.reset()
+    socialLoginMutation.reset()
+    clearOAuthError()
+    socialLoginMutation.mutate(provider)
   }
 
   return (
@@ -148,6 +191,8 @@ function AuthPage({ mode }: AuthPageProps) {
                     className={styles.socialButton}
                     key={provider.label}
                     aria-label={`${provider.label} 로그인`}
+                    disabled={isAuthActionPending}
+                    onClick={() => handleSocialLogin(provider.id)}
                 >
                   <span>{provider.mark}</span>
                   {provider.label}
@@ -224,8 +269,9 @@ function AuthPage({ mode }: AuthPageProps) {
 
 
             {apiError && <p className={styles.errorText}>{apiError}</p>}
+            {!apiError && socialError && <p className={styles.errorText}>{socialError}</p>}
 
-            <button type="submit" className={styles.submitButton} disabled={authMutation.isPending}>
+            <button type="submit" className={styles.submitButton} disabled={isAuthActionPending}>
               {authMutation.isPending ? (isSignup ? '가입 중...' : '로그인 중...') : (isSignup ? '회원가입' : '로그인')}
               {!authMutation.isPending && <ArrowRight size={19} />}
             </button>
