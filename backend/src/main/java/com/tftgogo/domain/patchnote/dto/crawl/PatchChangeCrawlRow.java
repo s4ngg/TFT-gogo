@@ -15,4 +15,7 @@ public record PatchChangeCrawlRow(
         String afterText,
         List<String> parserWarnings
 ) {
+    public PatchChangeCrawlRow {
+        parserWarnings = parserWarnings == null ? List.of() : List.copyOf(parserWarnings);
+    }
 }

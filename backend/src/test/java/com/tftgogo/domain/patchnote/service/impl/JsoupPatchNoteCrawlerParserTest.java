@@ -8,8 +8,11 @@ import com.tftgogo.domain.patchnote.dto.crawl.PatchNoteCrawlFetchedPage;
 import com.tftgogo.domain.patchnote.dto.crawl.PatchNoteCrawlListItem;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -19,14 +22,17 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+@ExtendWith(MockitoExtension.class)
 class JsoupPatchNoteCrawlerParserTest {
 
-    private JsoupPatchNoteCrawlerParser parser;
+    @Spy
+    private ObjectMapper objectMapper = new ObjectMapper();
 
-    @BeforeEach
-    void setUp() {
-        parser = new JsoupPatchNoteCrawlerParser(new ObjectMapper(), new PatchNoteCrawlerProperties());
-    }
+    @Spy
+    private PatchNoteCrawlerProperties properties = new PatchNoteCrawlerProperties();
+
+    @InjectMocks
+    private JsoupPatchNoteCrawlerParser parser;
 
     @Test
     void parseListPage_extractsArticleCardGridItems() throws IOException {
@@ -82,6 +88,22 @@ class JsoupPatchNoteCrawlerParserTest {
         assertThat(ambiguousRow.beforeText()).isNull();
         assertThat(ambiguousRow.afterText()).isNull();
         assertThat(ambiguousRow.parserWarnings()).contains("multiple change indicators");
+    }
+
+    @Test
+    void parseDetailPage_defensivelyCopiesParserWarnings() throws IOException {
+        // given
+        PatchNoteCrawlFetchedPage fetchedPage = fetchedPage(
+                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-2-notes/",
+                fixture("detail-ko-kr-17-2.html")
+        );
+
+        // when
+        PatchNoteCrawlDocument document = parser.parseDetailPage(fetchedPage, null, "ko-kr");
+
+        // then
+        assertThatThrownBy(() -> document.rows().get(1).parserWarnings().add("changed"))
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test

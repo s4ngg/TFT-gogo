@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 @Service
 public class RiotPatchNoteCrawlerFetchServiceImpl implements PatchNoteCrawlerFetchService {
@@ -33,6 +34,7 @@ public class RiotPatchNoteCrawlerFetchServiceImpl implements PatchNoteCrawlerFet
             "www.leagueoflegends.com",
             "teamfighttactics.leagueoflegends.com"
     );
+    private static final Pattern LOCALE_PATTERN = Pattern.compile("^[a-z]{2}-[a-z]{2}$");
 
     private final RestTemplate restTemplate;
     private final PatchNoteCrawlerProperties properties;
@@ -95,12 +97,22 @@ public class RiotPatchNoteCrawlerFetchServiceImpl implements PatchNoteCrawlerFet
 
     @Override
     public PatchNoteCrawlFetchedPage fetchTagPage(String locale) {
-        String resolvedLocale = hasText(locale) ? locale.trim() : properties.getDefaultLocale();
+        String resolvedLocale = normalizeLocale(locale);
+        String defaultLocale = normalizeLocale(properties.getDefaultLocale());
         String tagUrl = properties.getTagUrl().replace(
-                "/" + properties.getDefaultLocale() + "/",
+                "/" + defaultLocale + "/",
                 "/" + resolvedLocale + "/"
         );
         return fetch(tagUrl);
+    }
+
+    private String normalizeLocale(String locale) {
+        String resolvedLocale = hasText(locale) ? locale.trim() : properties.getDefaultLocale();
+        String normalizedLocale = resolvedLocale.toLowerCase(Locale.ROOT);
+        if (!LOCALE_PATTERN.matcher(normalizedLocale).matches()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+        return normalizedLocale;
     }
 
     private URI validateOfficialUrl(String sourceUrl) {
