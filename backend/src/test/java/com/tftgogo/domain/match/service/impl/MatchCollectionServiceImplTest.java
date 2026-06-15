@@ -58,6 +58,7 @@ class MatchCollectionServiceImplTest {
 
         // then
         verify(riotQueue, never()).submit(any());
+        verify(riotQueue, never()).submitForeground(any());
     }
 
     @Test
@@ -66,9 +67,10 @@ class MatchCollectionServiceImplTest {
         String puuid = "test-puuid";
         when(cachedMatchRepository.findByParticipantPuuid(eq(puuid), any(Pageable.class)))
                 .thenReturn(List.of());
+        // fetchMatchIds: ranked(1100) + normal(1090) 각 1회 → submitForeground 2회
         doReturn(CompletableFuture.completedFuture(List.of()))
                 .doReturn(CompletableFuture.completedFuture(List.of()))
-                .when(riotQueue).submit(any());
+                .when(riotQueue).submitForeground(any());
 
         // when
         List<SummonerMatchItemDto> result = matchCollectionService.fetchAndCache(puuid, 0, 2);
@@ -85,9 +87,12 @@ class MatchCollectionServiceImplTest {
 
         when(cachedMatchRepository.findByParticipantPuuid(eq(puuid), any(Pageable.class)))
                 .thenReturn(List.of());
+        // fetchMatchIds: ranked → ["m1"], normal → [] (submitForeground 2회)
         doReturn(CompletableFuture.completedFuture(List.of("m1")))
                 .doReturn(CompletableFuture.completedFuture(List.of()))
-                .doReturn(CompletableFuture.completedFuture(fetchedDto))
+                .when(riotQueue).submitForeground(any());
+        // collectInBackground: getMatch("m1") (submit 1회)
+        doReturn(CompletableFuture.completedFuture(fetchedDto))
                 .when(riotQueue).submit(any());
         when(cachedMatchRepository.findMatchIdsByMatchIdIn(any())).thenReturn(List.of());
         doAnswer(inv -> { ((Runnable) inv.getArgument(0)).run(); return null; })
@@ -99,7 +104,8 @@ class MatchCollectionServiceImplTest {
         List<SummonerMatchItemDto> result = matchCollectionService.fetchAndCache(puuid, 0, 2);
 
         // then
-        verify(riotQueue, atLeast(2)).submit(any());
+        verify(riotQueue, times(2)).submitForeground(any()); // matchId 조회 (foreground)
+        verify(riotQueue, times(1)).submit(any());           // 매치 상세 수집 (background)
         verify(cachedMatchRepository).save(any(CachedMatch.class));
         assertThat(result).isEmpty(); // findAllById가 빈 목록 반환
     }
