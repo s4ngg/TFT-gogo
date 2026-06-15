@@ -63,6 +63,10 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public MemberResponse getMe(Long userId) {
+        if (userId == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED);
+        }
+
         Member member = memberRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 

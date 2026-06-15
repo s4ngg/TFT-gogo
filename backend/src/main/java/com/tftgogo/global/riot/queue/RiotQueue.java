@@ -13,7 +13,6 @@ import java.util.function.Supplier;
 public class RiotQueue {
 
     private static final Logger logger = LogManager.getLogger(RiotQueue.class);
-    private static final long INTERVAL_MS = 100L;
 
     private final LinkedBlockingQueue<RiotTask<?>> queue = new LinkedBlockingQueue<>();
 
@@ -39,7 +38,6 @@ public class RiotQueue {
                 RiotTask<?> task = queue.poll(1, TimeUnit.SECONDS);
                 if (task != null) {
                     task.execute();
-                    Thread.sleep(INTERVAL_MS);
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();

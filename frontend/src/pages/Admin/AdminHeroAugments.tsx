@@ -1,4 +1,4 @@
-import { HeroAugmentDeckManager } from './Admin'
+import HeroAugmentDeckManager from './components/HeroAugmentDeckManager'
 
 function AdminHeroAugments() {
   return <HeroAugmentDeckManager />

@@ -233,6 +233,13 @@
   gap: 6px;
 }
 
+.matchEmptyState {
+  padding: 48px 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
 .matchItem {
   display: flex;
   flex-direction: column;

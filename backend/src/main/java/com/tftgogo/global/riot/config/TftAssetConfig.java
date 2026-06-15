@@ -21,6 +21,11 @@ public final class TftAssetConfig {
         return "TFT_Set" + setNumber;
     }
 
+    public static String setUnitIdPrefix(int setNumber) {
+        validateSetNumber(setNumber);
+        return "tft" + setNumber + "_";
+    }
+
     public static String ddragonTftChampionImageUrl(String fileName) {
         return DDRAGON_CDN_BASE_URL + "/" + DDRAGON_VERSION + "/img/tft-champion/" + fileName;
     }
