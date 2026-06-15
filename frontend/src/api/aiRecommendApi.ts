@@ -45,14 +45,9 @@ interface ApiResponse<T> {
 }
 
 export const getAiRecommendation = async (params: AiRecommendRequest): Promise<AiRecommendResponse | null> => {
-  try {
-    const { data } = await axiosInstance.get<ApiResponse<AiRecommendResponse>>('/ai/recommend', {
-      params,
-    })
+  const { data } = await axiosInstance.get<ApiResponse<AiRecommendResponse>>('/ai/recommend', {
+    params,
+  })
 
-    return data.data
-  } catch (error: unknown) {
-    console.error('AI recommendation request failed', error)
-    return null
-  }
+  return data.data
 }
