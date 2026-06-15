@@ -306,6 +306,35 @@ class GuideCdragonImportServiceImplTest {
     }
 
     @Test
+    void CDragon_증강체_잘못된_곱셈_토큰은_import를_중단하지_않는다() {
+        // given
+        String invalidMultiplyTokenJson = cdragonJson()
+                .replace("@AttackSpeed@ %i:scaleAS% Attack Speed", "@AttackSpeed*1.2.3@ Attack Speed");
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(invalidMultiplyTokenJson);
+        when(guideRepository.findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(Optional.empty());
+        when(guideRepository.existsByGuideTypeAndTargetKeyAndPatchVersion(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(false);
+        when(guideRepository.saveAndFlush(any(Guide.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request(false, false, false, true));
+
+        // then
+        assertThat(response.getCreatedCount()).isEqualTo(1);
+        ArgumentCaptor<Guide> guideCaptor = ArgumentCaptor.forClass(Guide.class);
+        verify(guideRepository).saveAndFlush(guideCaptor.capture());
+        assertThat(guideCaptor.getValue().getDataJson()).doesNotContain("@AttackSpeed*1.2.3@");
+    }
+
+    @Test
     void CDragon_증강체_import는_cached_match_통계를_반영한다() {
         // given
         when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))

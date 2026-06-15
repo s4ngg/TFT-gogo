@@ -60,7 +60,8 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
     private static final Pattern ROW_TAG_PATTERN = Pattern.compile("(?is)<row>(.*?)</row>");
     private static final Pattern TAG_PATTERN = Pattern.compile("<[^>]+>");
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("@([^@]+)@");
-    private static final Pattern MULTIPLY_EXPRESSION_PATTERN = Pattern.compile("^([A-Za-z0-9_]+)\\s*\\*\\s*([0-9.]+)$");
+    private static final Pattern MULTIPLY_EXPRESSION_PATTERN =
+            Pattern.compile("^([A-Za-z0-9_]+)\\s*\\*\\s*([0-9]+(?:\\.[0-9]+)?)$");
     private static final Pattern CDRAGON_TOKEN_PATTERN = Pattern.compile("%[A-Za-z_:][A-Za-z0-9_:.-]*%");
     private static final Pattern DOUBLE_BRACE_TOKEN_PATTERN = Pattern.compile("\\{\\{[^}]+}}");
     private static final Pattern HASH_TAG_PATTERN = Pattern.compile("^\\{[0-9a-fA-F]{6,}\\}$");
@@ -73,6 +74,54 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
     // cached_match can grow quickly, so guide metric imports only sample recent matches.
     private static final int GUIDE_STAT_MATCH_LIMIT = 500;
     private static final Set<Integer> GUIDE_STAT_QUEUE_IDS = Set.of(1090, 1100);
+    private static final String[] AUGMENT_REROLL_KEYWORDS =
+            {"새로고침", "상점", "주사위", "reroll", "refresh", "shop", "dice", "roll"};
+    private static final String[] AUGMENT_ECONOMY_KEYWORDS =
+            {"골드", "동전", "경험치", "황금", "gold", "coin", "xp", "experience", "golden"};
+    private static final String[] AUGMENT_ITEM_TAG_KEYWORDS =
+            {"아이템", "모루", "상자", "찬란", "장갑", "활", "item", "anvil", "glove", "bow"};
+    private static final String[] AUGMENT_ITEM_REWARD_KEYWORDS =
+            appendKeywords(AUGMENT_ITEM_TAG_KEYWORDS, "component", "bandofthieves");
+    private static final String[] AUGMENT_CHAMPION_KEYWORDS =
+            {"챔피언", "유닛", "단계", "champion", "unit"};
+    private static final String[] AUGMENT_SYNERGY_KEYWORDS =
+            {"상징", "문장", "특성", "emblem", "trait"};
+    private static final String[] AUGMENT_QUEST_KEYWORDS =
+            {"퀘스트", "quest"};
+    private static final String[] AUGMENT_COMBAT_TAG_KEYWORDS = {
+            "공격력",
+            "주문력",
+            "체력",
+            "방어력",
+            "마법 저항력",
+            "공격 속도",
+            "피해",
+            "보호막",
+            "마나",
+            "치명타",
+            "attack",
+            "ability power",
+            "health",
+            "armor",
+            "magic resist",
+            "attack speed",
+            "damage",
+            "shield",
+            "mana",
+            "critical"
+    };
+    private static final String[] AUGMENT_COMBAT_REWARD_KEYWORDS = appendKeywords(
+            AUGMENT_COMBAT_TAG_KEYWORDS,
+            "철퇴",
+            "응징",
+            "집중",
+            "guardbreaker",
+            "lotus",
+            "retribution",
+            "concentration",
+            "powerup",
+            "arcane"
+    );
     private static final ObjectMapper MATCH_CACHE_MAPPER = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
@@ -258,7 +307,6 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         }
         completedItems.sort(Comparator
                 .comparing((JsonNode item) -> item.path("name").asText())
-                .thenComparingInt(this::itemVariantSortOrder)
                 .thenComparing(item -> item.path("apiName").asText()));
 
         List<GuideCandidate> candidates = new ArrayList<>();
@@ -339,10 +387,6 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                 "artifact",
                 "support"
         );
-    }
-
-    private int itemVariantSortOrder(JsonNode item) {
-        return isUnsupportedItemVariant(item.path("apiName").asText()) ? 1 : 0;
     }
 
     private boolean hasTwoCompositionItems(JsonNode composition) {
@@ -471,6 +515,13 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         return false;
     }
 
+    private static String[] appendKeywords(String[] baseKeywords, String... extraKeywords) {
+        String[] keywords = new String[baseKeywords.length + extraKeywords.length];
+        System.arraycopy(baseKeywords, 0, keywords, 0, baseKeywords.length);
+        System.arraycopy(extraKeywords, 0, keywords, baseKeywords.length, extraKeywords.length);
+        return keywords;
+    }
+
     private String readText(JsonNode node, String... fields) {
         for (String field : fields) {
             String value = node.path(field).asText();
@@ -501,47 +552,25 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
 
     private void addDerivedAugmentTags(ArrayNode tags, String description) {
         String searchable = description.toLowerCase(Locale.ROOT);
-        if (containsAny(searchable, "새로고침", "상점", "주사위", "reroll", "refresh", "shop", "dice", "roll")) {
+        if (containsAny(searchable, AUGMENT_REROLL_KEYWORDS)) {
             addDisplayTag(tags, "리롤");
         }
-        if (containsAny(searchable, "골드", "동전", "경험치", "황금", "gold", "coin", "xp", "experience", "golden")) {
+        if (containsAny(searchable, AUGMENT_ECONOMY_KEYWORDS)) {
             addDisplayTag(tags, "경제");
         }
-        if (containsAny(searchable, "아이템", "모루", "상자", "찬란", "장갑", "활", "item", "anvil", "glove", "bow")) {
+        if (containsAny(searchable, AUGMENT_ITEM_TAG_KEYWORDS)) {
             addDisplayTag(tags, "아이템");
         }
-        if (containsAny(searchable, "챔피언", "유닛", "단계", "champion", "unit")) {
+        if (containsAny(searchable, AUGMENT_CHAMPION_KEYWORDS)) {
             addDisplayTag(tags, "챔피언");
         }
-        if (containsAny(searchable, "상징", "문장", "특성", "emblem", "trait")) {
+        if (containsAny(searchable, AUGMENT_SYNERGY_KEYWORDS)) {
             addDisplayTag(tags, "시너지");
         }
-        if (containsAny(searchable, "퀘스트", "quest")) {
+        if (containsAny(searchable, AUGMENT_QUEST_KEYWORDS)) {
             addDisplayTag(tags, "퀘스트");
         }
-        if (containsAny(
-                searchable,
-                "공격력",
-                "주문력",
-                "체력",
-                "방어력",
-                "마법 저항력",
-                "공격 속도",
-                "피해",
-                "보호막",
-                "마나",
-                "치명타",
-                "attack",
-                "ability power",
-                "health",
-                "armor",
-                "magic resist",
-                "attack speed",
-                "damage",
-                "shield",
-                "mana",
-                "critical"
-        )) {
+        if (containsAny(searchable, AUGMENT_COMBAT_TAG_KEYWORDS)) {
             addDisplayTag(tags, "전투");
         }
     }
@@ -576,79 +605,34 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         addRewardLabel(
                 rewardLabels,
                 "리롤",
-                containsAny(searchable, "새로고침", "상점", "주사위", "reroll", "refresh", "shop", "dice", "roll")
+                containsAny(searchable, AUGMENT_REROLL_KEYWORDS)
         );
         addRewardLabel(
                 rewardLabels,
                 "경제",
-                containsAny(searchable, "골드", "동전", "경험치", "황금", "gold", "coin", "xp", "experience", "golden")
+                containsAny(searchable, AUGMENT_ECONOMY_KEYWORDS)
         );
         addRewardLabel(
                 rewardLabels,
                 "아이템",
-                containsAny(
-                        searchable,
-                        "아이템",
-                        "모루",
-                        "상자",
-                        "찬란",
-                        "장갑",
-                        "활",
-                        "item",
-                        "anvil",
-                        "glove",
-                        "bow",
-                        "component",
-                        "bandofthieves"
-                )
+                containsAny(searchable, AUGMENT_ITEM_REWARD_KEYWORDS)
         );
         addRewardLabel(
                 rewardLabels,
                 "챔피언",
-                containsAny(searchable, "챔피언", "유닛", "단계", "champion", "unit")
+                containsAny(searchable, AUGMENT_CHAMPION_KEYWORDS)
         );
         addRewardLabel(
                 rewardLabels,
                 "시너지",
-                containsAny(searchable, "상징", "문장", "특성", "emblem", "trait")
+                containsAny(searchable, AUGMENT_SYNERGY_KEYWORDS)
         );
         addRewardLabel(
                 rewardLabels,
                 "퀘스트",
-                containsAny(searchable, "퀘스트", "quest")
+                containsAny(searchable, AUGMENT_QUEST_KEYWORDS)
         );
-        if (containsAny(
-                searchable,
-                "공격력",
-                "주문력",
-                "체력",
-                "방어력",
-                "마법 저항력",
-                "공격 속도",
-                "피해",
-                "보호막",
-                "마나",
-                "치명타",
-                "철퇴",
-                "응징",
-                "집중",
-                "attack",
-                "ability power",
-                "health",
-                "armor",
-                "magic resist",
-                "attack speed",
-                "damage",
-                "shield",
-                "mana",
-                "critical",
-                "guardbreaker",
-                "lotus",
-                "retribution",
-                "concentration",
-                "powerup",
-                "arcane"
-        )) {
+        if (containsAny(searchable, AUGMENT_COMBAT_REWARD_KEYWORDS)) {
             addRewardLabel(rewardLabels, "전투 능력치", true);
         }
         if (rewardLabels.isEmpty()) {
