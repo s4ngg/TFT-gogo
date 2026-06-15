@@ -36,6 +36,26 @@ public class GuideCdragonImportRequest {
     @Schema(description = "증강체 가이드 import 여부. 기본값은 false이며 명시적으로 true를 보내야 import합니다.", example = "true")
     private Boolean includeAugments;
 
+    public static GuideCdragonImportRequest of(
+            String patchVersion,
+            Integer setNumber,
+            String mutator,
+            Boolean includeChampions,
+            Boolean includeTraits,
+            Boolean includeItems,
+            Boolean includeAugments
+    ) {
+        GuideCdragonImportRequest request = new GuideCdragonImportRequest();
+        request.patchVersion = patchVersion;
+        request.setNumber = setNumber;
+        request.mutator = mutator;
+        request.includeChampions = includeChampions;
+        request.includeTraits = includeTraits;
+        request.includeItems = includeItems;
+        request.includeAugments = includeAugments;
+        return request;
+    }
+
     public int resolveSetNumber() {
         return setNumber != null ? setNumber : 17;
     }

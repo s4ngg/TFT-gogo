@@ -59,14 +59,14 @@ public class AdminGuideController implements AdminGuideControllerDocs {
 
     @PatchMapping("/{guideId}")
     public ResponseEntity<ApiResponse<AdminGuideResponse>> updateGuide(
-            @PathVariable Long guideId,
+            @PathVariable("guideId") Long guideId,
             @RequestBody @Valid AdminGuideRequest request) {
         AdminGuideResponse response = adminGuideService.updateGuide(guideId, request);
         return ResponseEntity.ok(ApiResponse.success("관리자 게임가이드 수정 성공", response));
     }
 
     @DeleteMapping("/{guideId}")
-    public ResponseEntity<ApiResponse<Void>> deleteGuide(@PathVariable Long guideId) {
+    public ResponseEntity<ApiResponse<Void>> deleteGuide(@PathVariable("guideId") Long guideId) {
         adminGuideService.deleteGuide(guideId);
         return ResponseEntity.ok(ApiResponse.success("관리자 게임가이드 삭제 성공", null));
     }
