@@ -33,3 +33,24 @@ export function upsertChatRoom(rooms: ChatRoom[], room: ChatRoom) {
       : currentRoom,
   )
 }
+
+export function syncPartyChatRooms(rooms: ChatRoom[], posts: PartyPost[]) {
+  return posts.reduce((currentRooms, post) => {
+    const roomIndex = currentRooms.findIndex((room) => room.id === post.chatRoomId)
+    const nextRoom = createPartyChatRoom(post)
+
+    if (roomIndex < 0) {
+      return [nextRoom, ...currentRooms]
+    }
+
+    return currentRooms.map((room, index) =>
+      index === roomIndex
+        ? {
+            ...room,
+            name: nextRoom.name,
+            users: nextRoom.users,
+          }
+        : room,
+    )
+  }, rooms)
+}

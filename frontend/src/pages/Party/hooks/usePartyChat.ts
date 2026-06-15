@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { initialChatRooms } from '../data/partyMockData'
 import type { PartyPost } from '../types'
-import { createPartyChatRoom, upsertChatRoom } from '../utils/partyChatRooms'
+import { createPartyChatRoom, syncPartyChatRooms, upsertChatRoom } from '../utils/partyChatRooms'
 import { usePartyAuth } from './usePartyAuth'
 import { useRealtimeChat } from './useRealtimeChat'
 
@@ -58,6 +58,10 @@ export function usePartyChat() {
       ),
     )
   }
+
+  const syncPartyRooms = useCallback((posts: PartyPost[]) => {
+    setRooms((currentRooms) => syncPartyChatRooms(currentRooms, posts))
+  }, [])
 
   const preparePartyRoom = (post: PartyPost, lastMessage?: string) => {
     setRooms((currentRooms) => upsertChatRoom(currentRooms, createPartyChatRoom(post, lastMessage)))
@@ -118,5 +122,6 @@ export function usePartyChat() {
     sendMessage,
     setActiveRoomId,
     setChatInput,
+    syncPartyRooms,
   }
 }

@@ -97,6 +97,15 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
 
     return mergedPosts.map((post) => withOwnerState(postOverrides[post.id] ?? post, authUserId))
   }, [authUserId, localPosts, partyQuery.data?.data, postOverrides])
+  const chatSyncPosts = useMemo(() => {
+    if (partyQuery.data?.source !== 'api') {
+      return []
+    }
+
+    return partyQuery.data.data
+      .map((post) => withOwnerState(postOverrides[post.id] ?? post, authUserId))
+      .filter((post) => post.isOwner === true || post.isJoined === true)
+  }, [authUserId, partyQuery.data?.data, partyQuery.data?.source, postOverrides])
   const activeJoinedPostId = useMemo(() => {
     if (joinedPostId !== undefined) {
       return joinedPostId
@@ -305,6 +314,7 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
 
   return {
     capacityDraft,
+    chatSyncPosts,
     changeFilter,
     composeError,
     currentPage: safePage,

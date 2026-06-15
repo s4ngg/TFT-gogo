@@ -5,6 +5,7 @@ import type { PartyPost } from '../../types'
 import {
   createPartyChatRoom,
   createPartyChatRoomId,
+  syncPartyChatRooms,
   upsertChatRoom,
 } from '../partyChatRooms'
 
@@ -55,5 +56,60 @@ describe('partyChatRooms', () => {
       name: '마스터 듀오 구합니다',
       users: '1/2',
     })
+  })
+
+  it('서버 파티 목록으로 전용 채팅방을 복원한다', () => {
+    const rooms = [
+      { id: 'general', name: '일반', users: '100', lastMessage: '안녕하세요' },
+    ]
+
+    const result = syncPartyChatRooms(rooms, [partyPost])
+
+    assert.equal(result.length, 2)
+    assert.deepEqual(result[0], {
+      id: 'party-10',
+      lastMessage: '마스터 듀오 구합니다 전용 채팅방이 열렸습니다.',
+      name: '마스터 듀오 구합니다',
+      users: '1/2',
+    })
+    assert.deepEqual(result[1], rooms[0])
+  })
+
+  it('동일한 서버 파티를 반복 동기화해도 채팅방을 중복 추가하지 않는다', () => {
+    const rooms = [
+      { id: 'general', name: '일반', users: '100', lastMessage: '안녕하세요' },
+    ]
+    const syncedRooms = syncPartyChatRooms(rooms, [partyPost])
+    const result = syncPartyChatRooms(syncedRooms, [partyPost])
+
+    assert.equal(result.filter((room) => room.id === 'party-10').length, 1)
+    assert.equal(result.length, 2)
+  })
+
+  it('복원된 기존 파티방은 마지막 메시지를 보존하고 제목과 인원만 갱신한다', () => {
+    const rooms = [
+      {
+        id: 'party-10',
+        name: '이전 제목',
+        users: '1/2',
+        lastMessage: '방금 보낸 메시지',
+      },
+    ]
+    const updatedPost: PartyPost = {
+      ...partyPost,
+      capacity: '2/2',
+      title: '마감된 마스터 듀오',
+    }
+
+    const result = syncPartyChatRooms(rooms, [updatedPost])
+
+    assert.deepEqual(result, [
+      {
+        id: 'party-10',
+        lastMessage: '방금 보낸 메시지',
+        name: '마감된 마스터 듀오',
+        users: '2/2',
+      },
+    ])
   })
 })

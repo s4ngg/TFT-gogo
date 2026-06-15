@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { AppLayout } from '../../components/layout'
 import PartyChatPanel from './components/PartyChatPanel'
 import PartyCreateForm from './components/PartyCreateForm'
@@ -13,6 +14,12 @@ function Party() {
     onPartyMessage: chat.appendPartyMessage,
     onPartyPostCreated: chat.preparePartyRoom,
   })
+  const { syncPartyRooms } = chat
+  const { chatSyncPosts } = party
+
+  useEffect(() => {
+    syncPartyRooms(chatSyncPosts)
+  }, [chatSyncPosts, syncPartyRooms])
 
   return (
     <AppLayout>
