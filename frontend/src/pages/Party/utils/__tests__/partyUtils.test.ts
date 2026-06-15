@@ -32,6 +32,19 @@ describe('partyUtils', () => {
     assert.equal(result.label, '참여중')
   })
 
+  it('비로그인 상태에서는 stale 참여 상태가 남아 있어도 버튼을 열지 않는다', () => {
+    const result = getPartyJoinActionState({
+      hasJoinedOtherPost: false,
+      isAuthenticated: false,
+      isFull: false,
+      isJoined: true,
+      isJoinPending: false,
+      isOwner: false,
+    })
+
+    assert.deepEqual(result, { disabled: true, label: '로그인 후 참여' })
+  })
+
   it('작성자와 처리중 상태는 참여 토글을 막는다', () => {
     const ownerResult = getPartyJoinActionState({
       hasJoinedOtherPost: false,

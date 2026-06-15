@@ -105,16 +105,16 @@ export function getPartyJoinActionState({
     return { disabled: true, label: '처리중' }
   }
 
+  if (!isAuthenticated) {
+    return { disabled: true, label: '로그인 후 참여' }
+  }
+
   if (isJoined) {
     return { disabled: false, label: '참여중' }
   }
 
   if (isFull) {
     return { disabled: true, label: '마감' }
-  }
-
-  if (!isAuthenticated) {
-    return { disabled: true, label: '로그인 후 참여' }
   }
 
   if (hasJoinedOtherPost) {

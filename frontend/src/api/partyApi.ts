@@ -315,7 +315,12 @@ function normalizeRequiredPartyPost(payload: unknown, fallbackMessage: string): 
     throw new Error(fallbackMessage)
   }
 
-  return normalizePartyPost(payload, 0)
+  const response = payload as PartyPostResponse
+  if (readOptionalId(response.partyPostId ?? response.id) === undefined) {
+    throw new Error(fallbackMessage)
+  }
+
+  return normalizePartyPost(response, 0)
 }
 
 function normalizePartyPost(response: PartyPostResponse, index: number): PartyPost {

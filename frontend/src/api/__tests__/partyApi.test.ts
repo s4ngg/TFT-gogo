@@ -113,6 +113,27 @@ describe('partyApi', () => {
     )
   })
 
+  it('파티 생성 응답에 식별자가 없으면 성공으로 처리하지 않는다', async () => {
+    axiosInstance.defaults.adapter = createPartyAdapter({
+      data: {},
+      success: true,
+    })
+
+    await assert.rejects(
+      () =>
+        createPartyPost({
+          capacity: '1/2',
+          deadline: '2026-06-16T21:00:00',
+          description: '랭크 듀오 구합니다',
+          mode: '랭크',
+          tags: ['랭크'],
+          tier: '마스터+',
+          title: '마스터 듀오',
+        }),
+      /파티 모집글 등록 응답이 올바르지 않습니다/,
+    )
+  })
+
   it('파티 참여와 취소 응답 payload가 없으면 성공으로 처리하지 않는다', async () => {
     axiosInstance.defaults.adapter = createPartyAdapter({
       data: null,
