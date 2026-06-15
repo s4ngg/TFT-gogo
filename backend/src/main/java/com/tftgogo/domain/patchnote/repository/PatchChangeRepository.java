@@ -36,6 +36,8 @@ public interface PatchChangeRepository extends JpaRepository<PatchChange, Long> 
 
     Optional<PatchChange> findByIdAndDeletedAtIsNull(Long id);
 
+    Optional<PatchChange> findByPatchNoteAndSourceKey(PatchNote patchNote, String sourceKey);
+
     @Query("""
             SELECT c
             FROM PatchChange c

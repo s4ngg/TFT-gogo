@@ -161,6 +161,34 @@ public class PatchChange {
         this.sortOrder = sortOrder;
     }
 
+    public void updateImported(PatchNote patchNote, String sourceKey, String sourceUrl, String sourceHeadingPath,
+                               Integer sourceOrder, String sourceLocale, PatchNoteImportSource importSource,
+                               LocalDateTime importedAt, PatchChangeCategory category, PatchChangeType changeType,
+                               PatchChangeImpact impact, String targetKey, String targetName, String summary,
+                               String beforeValue, String afterValue, String imageUrl, String tagsJson,
+                               int sortOrder, boolean active) {
+        this.patchNote = patchNote;
+        this.sourceKey = sourceKey;
+        this.sourceUrl = sourceUrl;
+        this.sourceHeadingPath = sourceHeadingPath;
+        this.sourceOrder = sourceOrder;
+        this.sourceLocale = sourceLocale;
+        this.importSource = importSource;
+        this.importedAt = importedAt;
+        this.category = category;
+        this.changeType = changeType;
+        this.impact = impact;
+        this.targetKey = targetKey;
+        this.targetName = targetName;
+        this.summary = summary;
+        this.beforeValue = beforeValue;
+        this.afterValue = afterValue;
+        this.imageUrl = imageUrl;
+        this.tagsJson = tagsJson;
+        this.sortOrder = sortOrder;
+        this.active = active;
+    }
+
     public void softDelete() {
         LocalDateTime now = LocalDateTime.now();
         this.active = false;

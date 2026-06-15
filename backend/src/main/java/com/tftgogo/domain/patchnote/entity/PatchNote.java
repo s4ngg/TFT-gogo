@@ -125,6 +125,25 @@ public class PatchNote {
         this.highlightsJson = highlightsJson;
     }
 
+    public void updateImported(String title, String summary, String description,
+                               String focus, String imageUrl, LocalDateTime publishedAt,
+                               boolean current, String highlightsJson, String sourceUrl,
+                               String sourceLocale, PatchNoteImportSource importSource,
+                               LocalDateTime importedAt) {
+        this.title = title;
+        this.summary = summary;
+        this.description = description;
+        this.focus = focus;
+        this.imageUrl = imageUrl;
+        this.publishedAt = publishedAt;
+        this.current = current;
+        this.highlightsJson = highlightsJson;
+        this.sourceUrl = sourceUrl;
+        this.sourceLocale = sourceLocale;
+        this.importSource = importSource;
+        this.importedAt = importedAt;
+    }
+
     public void markNotCurrent() {
         this.current = false;
     }
