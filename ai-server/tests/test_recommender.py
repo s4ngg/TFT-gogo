@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from openai import APITimeoutError, APIConnectionError, APIStatusError
 
-from app.models.match import DeckReason, MetaDeck, TraitStat
+from app.models.match import MetaDeck, TraitStat
 from app.services.recommender import (
     _fallback_reasons,
     _is_patch_trend,
