@@ -37,6 +37,9 @@ Page: Party (/party).
 - Chat API layer: frontend/src/api/chatApi.ts
 - Server-state hook: frontend/src/pages/Party/hooks/usePartyPosts.ts
 - Realtime chat hook: frontend/src/pages/Party/hooks/useRealtimeChat.ts
+- GET /api/community/chat/rooms/{roomId}/messages reads recent fixed-channel messages without authentication.
+- GET /api/community/chat/rooms/{roomId}/stream subscribes to fixed-channel snapshot/message SSE events without authentication.
+- POST /api/community/chat/messages sends a message and requires JWT authentication.
 </frontend>
 </api>
 
@@ -104,6 +107,7 @@ Page: Party (/party).
 - Creating a recruitment post returns the fixed party-recruitment chatRoomId. Party-specific chat rooms and extra user-created chat tabs are out of scope for the MVP.
 - Normal users cannot create community chat channels by sending arbitrary roomId values.
 - Recent chat message reads are public for dashboard previews. Sending chat messages requires authentication.
+- Fixed community channel SSE reads are public, but the backend limits open SSE emitters to reduce abuse risk.
 - The MVP chat API does not yet enforce party membership for room access; membership validation and chat_rooms.type = PARTY persistence are later slices.
 </business-rules>
 

@@ -12,7 +12,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -143,6 +145,33 @@ class InMemoryChatServiceImplTest {
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
         verifyNoInteractions(memberRepository);
+    }
+
+    @Test
+    void 지원하지_않는_방_ID는_SSE를_구독할_수_없다() {
+        // when, then
+        assertThatThrownBy(() -> chatService.subscribe("party-1"))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
+        verifyNoInteractions(memberRepository);
+    }
+
+    @Test
+    void 방별_SSE_연결_한도를_초과하면_TOO_MANY_REQUESTS를_던진다() {
+        // given
+        List<SseEmitter> emitters = new ArrayList<>();
+        for (int index = 0; index < 100; index++) {
+            emitters.add(chatService.subscribe("general"));
+        }
+
+        try {
+            // when, then
+            assertThatThrownBy(() -> chatService.subscribe("general"))
+                    .isInstanceOfSatisfying(BusinessException.class, exception ->
+                            assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.CHAT_STREAM_CONNECTION_LIMIT_EXCEEDED));
+        } finally {
+            emitters.forEach(SseEmitter::complete);
+        }
     }
 
     @Test

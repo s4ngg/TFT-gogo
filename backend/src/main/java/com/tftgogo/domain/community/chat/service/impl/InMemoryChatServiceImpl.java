@@ -32,7 +32,9 @@ public class InMemoryChatServiceImpl implements ChatService {
     private static final String DEFAULT_TIER = "Unranked";
     private static final Logger logger = LogManager.getLogger(InMemoryChatServiceImpl.class);
     private static final int MAX_MESSAGES_PER_ROOM = 100;
-    private static final long SSE_TIMEOUT_MILLIS = 30L * 60L * 1000L;
+    private static final int MAX_SSE_CONNECTIONS_PER_ROOM = 100;
+    private static final int MAX_SSE_CONNECTIONS_TOTAL = 300;
+    private static final long SSE_TIMEOUT_MILLIS = 10L * 60L * 1000L;
     private static final Pattern ROOM_ID_PATTERN = Pattern.compile("^[A-Za-z0-9_-]{1,80}$");
 
     private final ConcurrentHashMap<String, ConcurrentLinkedDeque<ChatMessage>> roomMessages = new ConcurrentHashMap<>();
@@ -116,7 +118,13 @@ public class InMemoryChatServiceImpl implements ChatService {
                 ignored -> ConcurrentHashMap.newKeySet()
         );
 
-        emitters.add(emitter);
+        synchronized (emitters) {
+            if (emitters.size() >= MAX_SSE_CONNECTIONS_PER_ROOM
+                    || totalEmitterCount() >= MAX_SSE_CONNECTIONS_TOTAL) {
+                throw new BusinessException(ErrorCode.CHAT_STREAM_CONNECTION_LIMIT_EXCEEDED);
+            }
+            emitters.add(emitter);
+        }
         emitter.onCompletion(() -> removeEmitter(normalizedRoomId, emitter));
         emitter.onTimeout(() -> removeEmitter(normalizedRoomId, emitter));
         emitter.onError(error -> removeEmitter(normalizedRoomId, emitter));
@@ -132,6 +140,12 @@ public class InMemoryChatServiceImpl implements ChatService {
         }
 
         return emitter;
+    }
+
+    private int totalEmitterCount() {
+        return roomEmitters.values().stream()
+                .mapToInt(Set::size)
+                .sum();
     }
 
     private void broadcast(String roomId, ChatMessageResponse message) {
