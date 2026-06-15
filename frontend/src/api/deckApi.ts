@@ -2,10 +2,10 @@ import axiosInstance from './axiosInstance'
 import type { MetaDeck, RankFilter } from '../pages/Dashboard/dashboardData'
 
 /**
- * 중복 덱 제거: 동일 시너지 조합(traitGroup) 중 avgPlacement 최선 1개만 노출
- * 표본 수 필터는 백엔드(MIN_SAMPLE=10)에 위임 — 프론트에서 재적용하지 않음
+ * 덱모음 화면 전용 dedupe: 동일 시너지 조합(traitGroup) 중 avgPlace 최선 1개만 노출.
+ * AI 추천(useMetaSnapshot)에는 적용하지 않는다 — rank가 제거되면 추천 덱 매칭이 깨진다.
  */
-function deduplicateDecks(decks: MetaDeck[]): MetaDeck[] {
+export function deduplicateDecks(decks: MetaDeck[]): MetaDeck[] {
   const toAvg = (d: MetaDeck): number => {
     const n = parseFloat(d.avgPlace)
     return Number.isFinite(n) ? n : Infinity
@@ -53,6 +53,6 @@ export const getMetaDecks = async (rankFilter: RankFilter = 'EMERALD_PLUS'): Pro
     patchVersion: data.data.patchVersion ?? null,
     rankFilter: data.data.rankFilter ?? rankFilter,
     dataStartDate: data.data.dataStartDate ?? null,
-    decks: deduplicateDecks(data.data.decks),
+    decks: data.data.decks,
   }
 }
