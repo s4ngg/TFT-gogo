@@ -32,13 +32,7 @@ public class AiServerClient {
 
     /**
      * AI 서버에 전적 분석 + 메타 덱 매칭 요청.
-     *
-     * @param requestBody Spring이 구성한 요청 바디 (전적 + 메타 덱)
-     * @return AI 분석 결과, 오류 시 null
-     */
-    /**
-     * AI 서버 오류 시 null 대신 예외를 던진다.
-     * 호출부에서 "AI 서버 장애"와 "전적 부족(null 반환)"을 구분할 수 있도록 한다.
+     * 통신 오류 시 {@link AiServerException}을 던진다 — 호출부에서 AI 장애와 전적 부족을 구분할 수 있다.
      */
     public AiRecommendResponse analyzeWithMeta(Map<String, Object> requestBody) {
         try {
@@ -51,7 +45,7 @@ public class AiServerClient {
                     .body(AiRecommendResponse.class);
         } catch (Exception e) {
             logger.warn("AI 서버 호출 실패: {}", e.getMessage());
-            throw new RuntimeException("AI 서버 연결 실패: " + e.getMessage(), e);
+            throw new AiServerException("AI 서버 연결 실패: " + e.getMessage(), e);
         }
     }
 

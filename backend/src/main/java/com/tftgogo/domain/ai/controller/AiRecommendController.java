@@ -1,5 +1,6 @@
 package com.tftgogo.domain.ai.controller;
 
+import com.tftgogo.domain.ai.client.AiServerException;
 import com.tftgogo.domain.ai.dto.AiRecommendResponse;
 import com.tftgogo.domain.ai.service.AiRecommendService;
 import com.tftgogo.global.response.ApiResponse;
@@ -39,8 +40,8 @@ public class AiRecommendController {
                 return ResponseEntity.ok(ApiResponse.success("전적 데이터가 부족합니다.", null));
             }
             return ResponseEntity.ok(ApiResponse.success("AI 추천 완료", result));
-        } catch (Exception e) {
-            logger.error("AI 추천 처리 중 오류 발생: gameName={}, tagLine={}", gameName, tagLine, e);
+        } catch (AiServerException e) {
+            logger.error("AI 서버 연결 실패: gameName={}, tagLine={}", gameName, tagLine, e);
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                     .body(ApiResponse.fail("AI 서버 연결 실패"));
         }

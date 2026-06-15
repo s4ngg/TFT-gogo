@@ -15,7 +15,7 @@ const RANK_FILTER = 'MASTER_PLUS' as const
 
 function AiRecommendedDecks({ deckReasons }: AiRecommendedDecksProps) {
   const navigate = useNavigate()
-  const { data: metaDeckResponse } = useMetaSnapshot(RANK_FILTER)
+  const { data: metaDeckResponse, isPending, isError } = useMetaSnapshot(RANK_FILTER)
   const metaDecks = metaDeckResponse?.decks ?? []
 
   const recommendedDecks = deckReasons
@@ -26,6 +26,33 @@ function AiRecommendedDecks({ deckReasons }: AiRecommendedDecksProps) {
     .filter((entry): entry is { reason: AiRecommendDeckReason; deck: NonNullable<typeof entry.deck> } =>
       entry.deck !== undefined,
     )
+
+  if (isPending) {
+    return (
+      <section className={styles.panel}>
+        <div className={styles.panelHead}><Sparkles size={17} /><h2>AI 맞춤 덱 추천</h2></div>
+        <p className={`${styles.statusMessage} ${styles.loading}`}>메타 덱 데이터 로딩 중...</p>
+      </section>
+    )
+  }
+
+  if (isError) {
+    return (
+      <section className={styles.panel}>
+        <div className={styles.panelHead}><Sparkles size={17} /><h2>AI 맞춤 덱 추천</h2></div>
+        <p className={`${styles.statusMessage} ${styles.error}`}>메타 덱 데이터를 불러오지 못했습니다.</p>
+      </section>
+    )
+  }
+
+  if (recommendedDecks.length === 0) {
+    return (
+      <section className={styles.panel}>
+        <div className={styles.panelHead}><Sparkles size={17} /><h2>AI 맞춤 덱 추천</h2></div>
+        <p className={`${styles.statusMessage} ${styles.empty}`}>추천 덱 데이터를 찾을 수 없습니다.</p>
+      </section>
+    )
+  }
 
   return (
     <section className={styles.panel}>
