@@ -3,14 +3,12 @@ import type { MatchSummaryResponse } from '../../../api/summonerApi'
 import styles from '../SummonerDetail.module.css'
 
 export default function RecentSummary({ matches }: { matches: MatchSummaryResponse[] }) {
-  const recent = matches.slice(0, 30)
+  if (matches.length === 0) return null
 
-  if (recent.length === 0) return null
-
-  const top4 = recent.filter((m) => m.placement <= 4).length
-  const avgPlace = (recent.reduce((s, m) => s + m.placement, 0) / recent.length).toFixed(1)
-  const top4Rate = ((top4 / recent.length) * 100).toFixed(1)
-  const losses = recent.length - top4
+  const top4 = matches.filter((m) => m.placement <= 4).length
+  const avgPlace = (matches.reduce((s, m) => s + m.placement, 0) / matches.length).toFixed(1)
+  const top4Rate = ((top4 / matches.length) * 100).toFixed(1)
+  const losses = matches.length - top4
 
   return (
     <section className={styles.summarySection}>

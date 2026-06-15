@@ -70,6 +70,11 @@ riot:
   kr-base-url: https://kr.api.riotgames.com
   asia-base-url: https://asia.api.riotgames.com
 
+ai:
+  server:
+    url: http://localhost:8000   # 운영: AI 서버 실제 주소
+    timeout-seconds: 10
+
 admin:
   secret-token: your-admin-secret-token
 
