@@ -5,6 +5,7 @@ import com.tftgogo.domain.member.entity.SocialProvider;
 import com.tftgogo.domain.member.service.SocialLoginStartService;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
+import com.tftgogo.global.security.oauth.OAuth2UrlValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
@@ -36,10 +37,6 @@ public class SocialLoginStartServiceImpl implements SocialLoginStartService {
     }
 
     private String normalizeBaseUrl(String baseUrl) {
-        if (baseUrl == null || baseUrl.isBlank()) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT);
-        }
-
-        return baseUrl.trim();
+        return OAuth2UrlValidator.normalizeHttpOrHttpsAbsoluteUrl(baseUrl, ErrorCode.INVALID_INPUT);
     }
 }

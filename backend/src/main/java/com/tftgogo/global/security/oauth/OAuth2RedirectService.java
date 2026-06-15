@@ -1,6 +1,7 @@
 package com.tftgogo.global.security.oauth;
 
 import com.tftgogo.global.config.OAuth2RedirectProperties;
+import com.tftgogo.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -19,17 +20,26 @@ public class OAuth2RedirectService {
 
     public String buildSuccessRedirectUri(String accessToken) {
         String fragment = ACCESS_TOKEN_PARAM + "=" + UriUtils.encode(accessToken, StandardCharsets.UTF_8);
+        String redirectUri = OAuth2UrlValidator.normalizeHttpOrHttpsAbsoluteUrl(
+                properties.getAuthorizedRedirectUri(),
+                ErrorCode.INVALID_INPUT
+        );
 
         return UriComponentsBuilder
-                .fromUriString(properties.getAuthorizedRedirectUri())
+                .fromUriString(redirectUri)
                 .fragment(fragment)
                 .build(true)
                 .toUriString();
     }
 
     public String buildFailureRedirectUri(SocialOAuth2ErrorCode errorCode) {
+        String redirectUri = OAuth2UrlValidator.normalizeHttpOrHttpsAbsoluteUrl(
+                properties.getLoginFailureRedirectUri(),
+                ErrorCode.INVALID_INPUT
+        );
+
         return UriComponentsBuilder
-                .fromUriString(properties.getLoginFailureRedirectUri())
+                .fromUriString(redirectUri)
                 .queryParam(OAUTH_ERROR_PARAM, errorCode.value())
                 .build()
                 .toUriString();
