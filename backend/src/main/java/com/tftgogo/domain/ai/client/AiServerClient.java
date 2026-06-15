@@ -39,12 +39,19 @@ public class AiServerClient {
     public AiRecommendResponse analyzeWithMeta(Map<String, Object> requestBody) {
         try {
             String json = objectMapper.writeValueAsString(requestBody);
-            return restClient.post()
+            AiRecommendResponse response = restClient.post()
                     .uri("/api/analyze/with-meta")
                     .header("Content-Type", "application/json")
                     .body(json)
                     .retrieve()
                     .body(AiRecommendResponse.class);
+            if (response == null) {
+                logger.warn("AI 서버 빈 응답 수신");
+                throw new BusinessException(ErrorCode.AI_SERVER_ERROR);
+            }
+            return response;
+        } catch (BusinessException e) {
+            throw e;
         } catch (Exception e) {
             logger.warn("AI 서버 호출 실패: {}", e.getMessage());
             throw new BusinessException(ErrorCode.AI_SERVER_ERROR);

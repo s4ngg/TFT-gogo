@@ -52,7 +52,6 @@ public class AiRecommendService {
         // Step 2: 최근 랭크 게임 전적 조회 (캐시 우선, 없으면 Riot API 수집)
         List<MatchSummaryResponse> matches = matchCollectionService.getRankedMatchSummaries(puuid, MATCH_COUNT);
         if (matches.isEmpty()) {
-            logger.info("AI 추천 - 랭크 전적 없음: puuid={}", puuid);
             return null;
         }
 
