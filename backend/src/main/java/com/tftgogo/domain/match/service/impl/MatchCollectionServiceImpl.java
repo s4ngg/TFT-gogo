@@ -86,7 +86,7 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
             collectInBackground(puuid, toFetch, fastTarget);
         }
 
-        return buildResult(puuid, matchIds, traitIconFn, traitNameFn, itemIconFn);
+        return buildResult(puuid, matchIds, count, traitIconFn, traitNameFn, itemIconFn);
     }
 
     private List<String> fetchMatchIds(String puuid, int start, int count) {
@@ -101,7 +101,8 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
 
             Set<String> merged = new LinkedHashSet<>(ranked);
             merged.addAll(normal);
-            return new ArrayList<>(merged);
+            List<String> result = new ArrayList<>(merged);
+            return result.size() <= count ? result : result.subList(0, count);
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
             if (cause instanceof BusinessException be) throw be;
@@ -183,7 +184,7 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
         }
     }
 
-    private List<SummonerMatchItemDto> buildResult(String puuid, List<String> matchIds,
+    private List<SummonerMatchItemDto> buildResult(String puuid, List<String> matchIds, int count,
                                                     Function<String, String> traitIconFn,
                                                     Function<String, String> traitNameFn,
                                                     Function<String, String> itemIconFn) {
@@ -195,6 +196,7 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
                 .filter(cacheMap::containsKey)
                 .map(id -> toDto(puuid, id, cacheMap.get(id), traitIconFn, traitNameFn, itemIconFn))
                 .filter(Objects::nonNull)
+                .limit(count)
                 .collect(Collectors.toList());
     }
 
