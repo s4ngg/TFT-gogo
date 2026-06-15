@@ -596,4 +596,4 @@
 }
 
 .errorMessage, .loadingMessage, .emptyMessage { padding: 2rem; color: var(--color-text-secondary); text-align: center; }
-.errorMessage { color: var(--color-error, #f87171); }
+.errorMessage { color: var(--danger); }

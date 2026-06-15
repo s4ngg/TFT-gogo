@@ -404,4 +404,4 @@
   line-height: 1.55;
 }
 
-.errorMessage { padding: 2rem; color: var(--color-error, #f87171); text-align: center; }
+.errorMessage { padding: 2rem; color: var(--danger); text-align: center; }

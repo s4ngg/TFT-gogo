@@ -95,7 +95,7 @@ function Champions({ champions }: ChampionsProps) {
 }
 
 function MetaSnapshot() {
-  const { data: metaDeckResponse } = useMetaSnapshot()
+  const { data: metaDeckResponse, isError: isDeckError } = useMetaSnapshot()
   const allDecks = useMemo(() => metaDeckResponse?.decks ?? [], [metaDeckResponse?.decks])
   const [selectedFilter, setSelectedFilter] = useState<MetaFilter>('overall')
   const [sortKey, setSortKey] = useState<MetaSortKey>('top4')
@@ -148,7 +148,9 @@ function MetaSnapshot() {
       </div>
 
       <div className={styles.deckList}>
-        {metaDecks.length > 0 ? (
+        {isDeckError ? (
+          <p className={styles.emptyState}>메타 덱 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</p>
+        ) : metaDecks.length > 0 ? (
           metaDecks.map((deck) => (
             <article className={styles.deckRow} key={deck.rank}>
               <strong className={styles.rankNumber}>{deck.rank}</strong>
