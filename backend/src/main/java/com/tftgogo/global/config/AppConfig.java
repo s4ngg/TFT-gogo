@@ -13,7 +13,7 @@ import java.util.concurrent.Executor;
 
 @Configuration
 @EnableAsync
-@EnableConfigurationProperties({MetaDeckProperties.class, CorsProperties.class})
+@EnableConfigurationProperties({MetaDeckProperties.class, CorsProperties.class, GuideCdragonImportProperties.class})
 public class AppConfig {
 
     @Bean
