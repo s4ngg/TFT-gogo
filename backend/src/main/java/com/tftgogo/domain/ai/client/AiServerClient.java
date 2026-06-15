@@ -36,6 +36,10 @@ public class AiServerClient {
      * @param requestBody Spring이 구성한 요청 바디 (전적 + 메타 덱)
      * @return AI 분석 결과, 오류 시 null
      */
+    /**
+     * AI 서버 오류 시 null 대신 예외를 던진다.
+     * 호출부에서 "AI 서버 장애"와 "전적 부족(null 반환)"을 구분할 수 있도록 한다.
+     */
     public AiRecommendResponse analyzeWithMeta(Map<String, Object> requestBody) {
         try {
             String json = objectMapper.writeValueAsString(requestBody);
@@ -46,8 +50,8 @@ public class AiServerClient {
                     .retrieve()
                     .body(AiRecommendResponse.class);
         } catch (Exception e) {
-            logger.warn("AI 서버 호출 실패, fallback 사용: {}", e.getMessage());
-            return null;
+            logger.warn("AI 서버 호출 실패: {}", e.getMessage());
+            throw new RuntimeException("AI 서버 연결 실패: " + e.getMessage(), e);
         }
     }
 
