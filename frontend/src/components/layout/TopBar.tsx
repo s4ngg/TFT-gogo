@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { communityDragonProfileIconUrl } from '../../api/communityDragonAssets'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
 import useAuthStore from '../../store/useAuthStore'
+import RiotApiStatusBadge from './RiotApiStatusBadge'
 import styles from './Layout.module.css'
 
 const profileIconUrl = communityDragonProfileIconUrl(588)
@@ -15,9 +16,12 @@ function TopBar() {
 
   return (
     <header className={styles.topBar}>
-      <div className={styles.patchBrief} aria-label="패치 한줄 요약">
-        <span>{patchVersion} 패치 요약</span>
-        <strong>상위권 선봉대 벡스와 6악복 중심으로 압축 중</strong>
+      <div className={styles.topStatusGroup}>
+        <div className={styles.patchBrief} aria-label="패치 한줄 요약">
+          <span>{patchVersion} 패치 요약</span>
+          <strong>상위권 선봉대 벡스와 6악복 중심으로 압축 중</strong>
+        </div>
+        <RiotApiStatusBadge />
       </div>
       <div className={styles.topActions}>
         {isLoggedIn && (
