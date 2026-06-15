@@ -15,6 +15,13 @@ export interface CommunityChatRoom {
   users: string
 }
 
+export interface CommunityChatRoomPreview {
+  id: CommunityChatRoomId
+  lastMessage: string
+  name: string
+  users: string
+}
+
 export const PARTY_RECRUITMENT_ROOM_ID: CommunityChatRoomId = 'party-recruitment'
 
 export const COMMUNITY_CHAT_ROOMS: readonly CommunityChatRoom[] = [
@@ -24,7 +31,7 @@ export const COMMUNITY_CHAT_ROOMS: readonly CommunityChatRoom[] = [
   { id: 'question-answer', name: '질문 & 답변', users: '741', lastMessage: '초보 운영 질문 있습니다', lastMessageTime: '14:56' },
 ]
 
-export function createCommunityChatRooms() {
+export function createCommunityChatRooms(): CommunityChatRoomPreview[] {
   return COMMUNITY_CHAT_ROOMS.map((room) => ({
     id: room.id,
     lastMessage: room.lastMessage,

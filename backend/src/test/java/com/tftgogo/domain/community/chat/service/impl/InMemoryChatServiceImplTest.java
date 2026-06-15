@@ -137,6 +137,15 @@ class InMemoryChatServiceImplTest {
     }
 
     @Test
+    void 지원하지_않는_방_ID는_최근_메시지를_조회할_수_없다() {
+        // when, then
+        assertThatThrownBy(() -> chatService.getRecentMessages("party-1"))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
+        verifyNoInteractions(memberRepository);
+    }
+
+    @Test
     void 빈_메시지는_INVALID_INPUT을_던진다() {
         // given
         ChatMessageCreateRequest request = request("general", "   ");
