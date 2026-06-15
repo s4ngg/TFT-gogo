@@ -63,13 +63,11 @@ function AiRecommendedDecks({ deckReasons }: AiRecommendedDecksProps) {
       </div>
       <div className={styles.aiDeckList}>
         {recommendedDecks.map(({ deck, reason }, i) => (
-          <div
-            key={deck.rank}
+          <button
+            key={`${deck.rank}-${i}`}
+            type="button"
             className={`${styles.aiDeckCard} ${reason.isPatchTrend ? styles.aiDeckCardPatch : ''}`}
             onClick={() => navigate(`/decks/${RANK_FILTER}/${deck.rank}`)}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => e.key === 'Enter' && navigate(`/decks/${RANK_FILTER}/${deck.rank}`)}
           >
             <div className={styles.aiDeckTop}>
               <span className={styles.aiDeckBadge}>추천 #{i + 1}</span>
@@ -101,7 +99,7 @@ function AiRecommendedDecks({ deckReasons }: AiRecommendedDecksProps) {
               {reason.isPatchTrend ? <TrendingUp size={13} /> : <Bot size={13} />}
               <span>{reason.reason}</span>
             </div>
-          </div>
+          </button>
         ))}
       </div>
       <p className={styles.aiDisclaimer}>

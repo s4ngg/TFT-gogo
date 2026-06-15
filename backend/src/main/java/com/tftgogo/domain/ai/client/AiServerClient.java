@@ -2,6 +2,8 @@ package com.tftgogo.domain.ai.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tftgogo.domain.ai.dto.AiRecommendResponse;
+import com.tftgogo.global.exception.BusinessException;
+import com.tftgogo.global.exception.ErrorCode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -32,7 +34,7 @@ public class AiServerClient {
 
     /**
      * AI 서버에 전적 분석 + 메타 덱 매칭 요청.
-     * 통신 오류 시 {@link AiServerException}을 던진다 — 호출부에서 AI 장애와 전적 부족을 구분할 수 있다.
+     * 통신 오류 시 {@link BusinessException}(AI_SERVER_ERROR)을 던진다.
      */
     public AiRecommendResponse analyzeWithMeta(Map<String, Object> requestBody) {
         try {
@@ -45,7 +47,7 @@ public class AiServerClient {
                     .body(AiRecommendResponse.class);
         } catch (Exception e) {
             logger.warn("AI 서버 호출 실패: {}", e.getMessage());
-            throw new AiServerException("AI 서버 연결 실패: " + e.getMessage(), e);
+            throw new BusinessException(ErrorCode.AI_SERVER_ERROR);
         }
     }
 
