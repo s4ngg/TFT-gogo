@@ -1,9 +1,9 @@
 import { useQueries } from '@tanstack/react-query'
 import { getChatMessages, type ChatMessage } from '../api/chatApi'
-import { COMMUNITY_CHAT_ROOMS } from '../constants/communityChatRooms'
+import { COMMUNITY_CHAT_ROOMS, type CommunityChatRoomId } from '../constants/communityChatRooms'
 
 export interface CommunityChatPreview {
-  id: string
+  id: CommunityChatRoomId
   message: string
   name: string
   time: string

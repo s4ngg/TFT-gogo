@@ -22,10 +22,11 @@ describe('partyChatRooms', () => {
   })
 
   it('지원하지 않는 채팅방 ID는 새 탭으로 추가하지 않는다', () => {
-    const result = updateChatRoomPreview(fixedRooms, 'party-10', '파티별 방이 열렸습니다.')
+    const unsupportedRoomId = 'party-10' as string
+    const result = updateChatRoomPreview(fixedRooms, unsupportedRoomId, '파티별 방이 열렸습니다.')
 
     assert.equal(result.length, 4)
-    assert.equal(result.some((room) => room.id === 'party-10'), false)
+    assert.equal(result.some((room) => room.id === unsupportedRoomId), false)
     assert.deepEqual(result, fixedRooms)
   })
 

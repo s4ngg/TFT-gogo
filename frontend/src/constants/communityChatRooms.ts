@@ -7,6 +7,9 @@ export const COMMUNITY_CHAT_ROOM_IDS = [
 
 export type CommunityChatRoomId = (typeof COMMUNITY_CHAT_ROOM_IDS)[number]
 
+export const DEFAULT_COMMUNITY_CHAT_ROOM_ID: CommunityChatRoomId = 'general'
+export const COMMUNITY_CHAT_ROOM_QUERY_PARAM = 'room'
+
 export interface CommunityChatRoom {
   id: CommunityChatRoomId
   lastMessage: string
@@ -38,4 +41,16 @@ export function createCommunityChatRooms(): CommunityChatRoomPreview[] {
     name: room.name,
     users: room.users,
   }))
+}
+
+export function normalizeCommunityChatRoomId(
+  value: string | null | undefined,
+): CommunityChatRoomId | null {
+  const normalizedValue = value?.trim()
+
+  if (!normalizedValue) {
+    return null
+  }
+
+  return COMMUNITY_CHAT_ROOM_IDS.find((roomId) => roomId === normalizedValue) ?? null
 }
