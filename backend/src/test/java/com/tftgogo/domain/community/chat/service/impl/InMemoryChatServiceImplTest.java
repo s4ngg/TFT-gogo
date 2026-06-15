@@ -18,8 +18,8 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -121,7 +121,7 @@ class InMemoryChatServiceImplTest {
         assertThatThrownBy(() -> chatService.sendMessage(USER_ID, request))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
-        verify(memberRepository, never()).findById(USER_ID);
+        verifyNoInteractions(memberRepository);
     }
 
     @Test
@@ -133,7 +133,7 @@ class InMemoryChatServiceImplTest {
         assertThatThrownBy(() -> chatService.sendMessage(USER_ID, request))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
-        verify(memberRepository, never()).findById(USER_ID);
+        verifyNoInteractions(memberRepository);
     }
 
     @Test
@@ -145,7 +145,7 @@ class InMemoryChatServiceImplTest {
         assertThatThrownBy(() -> chatService.sendMessage(null, request))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED));
-        verify(memberRepository, never()).findById(USER_ID);
+        verifyNoInteractions(memberRepository);
     }
 
     @Test
@@ -154,7 +154,7 @@ class InMemoryChatServiceImplTest {
         assertThatThrownBy(() -> chatService.sendMessage(USER_ID, null))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
-        verify(memberRepository, never()).findById(USER_ID);
+        verifyNoInteractions(memberRepository);
     }
 
     @Test

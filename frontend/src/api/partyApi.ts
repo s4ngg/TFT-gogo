@@ -407,6 +407,11 @@ export async function joinPartyPost(partyPostId: string): Promise<PartyPost | nu
     const { data } = await axiosInstance.post<ApiResponse<PartyPostResponse | null> | PartyPostResponse | null>(
       `/community/parties/${partyPostId}/join`,
     )
+
+    if (hasFailedApiResponse(data)) {
+      throw new Error('파티 참여 요청 실패')
+    }
+
     const payload = unwrapApiResponse(data)
 
     return isRecord(payload) ? normalizePartyPost(payload, 0) : null
@@ -420,6 +425,11 @@ export async function cancelPartyJoin(partyPostId: string): Promise<PartyPost | 
     const { data } = await axiosInstance.delete<ApiResponse<PartyPostResponse | null> | PartyPostResponse | null>(
       `/community/parties/${partyPostId}/join`,
     )
+
+    if (hasFailedApiResponse(data)) {
+      throw new Error('파티 참여 취소 실패')
+    }
+
     const payload = unwrapApiResponse(data)
 
     return isRecord(payload) ? normalizePartyPost(payload, 0) : null

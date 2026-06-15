@@ -20,7 +20,10 @@ function readLegacyAuthUser(value: unknown): PartyAuthUser | null {
 
 function readUserId(value: number | string | undefined): string | null {
   if (typeof value === 'number' && Number.isFinite(value)) return String(value)
-  if (typeof value === 'string' && value.trim().length > 0) return value
+  if (typeof value === 'string') {
+    const normalized = value.trim()
+    if (normalized.length > 0) return normalized
+  }
   return null
 }
 
