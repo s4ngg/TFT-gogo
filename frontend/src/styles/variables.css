@@ -56,6 +56,7 @@
   --font-main: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 
   --sidebar-width: 222px;
+  --sidebar-collapsed-width: 78px;
   --radius-card: 12px;
   --radius-button: 8px;
   --chevron-col-width: 28px;
