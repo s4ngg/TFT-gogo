@@ -594,3 +594,6 @@
   color: #f9c860;
   background: rgba(249, 200, 96, 0.07);
 }
+
+.errorMessage, .loadingMessage, .emptyMessage { padding: 2rem; color: var(--color-text-secondary); text-align: center; }
+.errorMessage { color: var(--danger); }

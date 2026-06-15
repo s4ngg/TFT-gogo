@@ -2,8 +2,6 @@ import { Bot, Trophy } from 'lucide-react'
 import { AppLayout } from '../../components/layout'
 import { useAiRecommendQuery } from '../../hooks/useAiRecommendQuery'
 import useSummonerStore from '../../store/useSummonerStore'
-import { mockAiRecommendation } from '../../mocks/aiRecommendMock'
-import type { AiRecommendStats } from '../../api/aiRecommendApi'
 import { tftTierEmblemUrl } from '../../api/communityDragonAssets'
 import ConnectPrompt from './components/ConnectPrompt'
 import StatCard from './components/StatCard'
@@ -18,8 +16,8 @@ function AiRecommend() {
       ? { gameName: summoner.name, tagLine: summoner.tag, recentGameCount: 20 }
       : null,
   )
-  const recommendation = recommendationQuery.data ?? mockAiRecommendation
-  const stats: AiRecommendStats = recommendation.stats
+  const recommendation = recommendationQuery.data
+  const stats = recommendation?.stats
 
   return (
     <AppLayout>
@@ -40,6 +38,18 @@ function AiRecommend() {
 
         {!summoner ? (
           <ConnectPrompt />
+        ) : recommendationQuery.isError ? (
+          <div className={styles.content}>
+            <p className={styles.errorMessage}>AI 추천을 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.</p>
+          </div>
+        ) : recommendationQuery.isPending ? (
+          <div className={styles.content}>
+            <p className={styles.loadingMessage}>전적 분석 중...</p>
+          </div>
+        ) : !recommendation || !stats ? (
+          <div className={styles.content}>
+            <p className={styles.emptyMessage}>분석할 전적 데이터가 충분하지 않습니다.</p>
+          </div>
         ) : (
           <div className={styles.content}>
             <section className={`${styles.panel} ${styles.summaryPanel}`}>

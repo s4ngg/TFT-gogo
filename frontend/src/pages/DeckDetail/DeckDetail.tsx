@@ -27,7 +27,7 @@ function DeckDetail() {
   const { deckId, rankFilter: rankFilterParam } = useParams<{ deckId: string; rankFilter: string }>()
   const navigate = useNavigate()
   const rankFilter: ValidRankFilter = isValidRankFilter(rankFilterParam) ? rankFilterParam : 'EMERALD_PLUS'
-  const { data: metaDeckResponse, isLoading } = useMetaSnapshot(rankFilter as RankFilter)
+  const { data: metaDeckResponse, isLoading, isError } = useMetaSnapshot(rankFilter as RankFilter)
   const { data: locale } = useCDragonLocale()
   const metaDecks = metaDeckResponse?.decks ?? []
   const deck = metaDecks.find((d) => String(d.rank) === deckId)
@@ -103,6 +103,19 @@ function DeckDetail() {
       <AppLayout>
         <div className={styles.page}>
           <p className={styles.loading}>불러오는 중...</p>
+        </div>
+      </AppLayout>
+    )
+  }
+
+  if (isError) {
+    return (
+      <AppLayout>
+        <div className={styles.page}>
+          <button type="button" className={styles.backBtn} onClick={() => navigate('/decks')}>
+            <ArrowLeft size={16} /> 덱모음으로
+          </button>
+          <p className={styles.notFound}>덱 정보를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.</p>
         </div>
       </AppLayout>
     )
