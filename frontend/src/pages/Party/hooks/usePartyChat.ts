@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { PARTY_RECRUITMENT_ROOM_ID } from '../../../constants/communityChatRooms'
 import { initialChatRooms } from '../data/partyMockData'
 import type { PartyPost } from '../types'
-import { createPartyChatRoom, syncPartyChatRooms, upsertChatRoom } from '../utils/partyChatRooms'
+import { updateChatRoomPreview, updatePartyRecruitmentPreview } from '../utils/partyChatRooms'
 import { usePartyAuth } from './usePartyAuth'
 import { useRealtimeChat } from './useRealtimeChat'
 
@@ -44,32 +45,19 @@ export function usePartyChat() {
       return
     }
 
-    setRooms((currentRooms) =>
-      currentRooms.map((room) =>
-        room.id === lastMessage.roomId ? { ...room, lastMessage: lastMessage.content } : room,
-      ),
-    )
+    setRooms((currentRooms) => updateChatRoomPreview(currentRooms, lastMessage.roomId, lastMessage.content))
   }, [activeMessages])
 
   const updateLastMessage = (roomId: string, message: string) => {
-    setRooms((currentRooms) =>
-      currentRooms.map((room) =>
-        room.id === roomId ? { ...room, lastMessage: message } : room,
-      ),
-    )
+    setRooms((currentRooms) => updateChatRoomPreview(currentRooms, roomId, message))
   }
 
-  const syncPartyRooms = useCallback((posts: PartyPost[]) => {
-    setRooms((currentRooms) => syncPartyChatRooms(currentRooms, posts))
-  }, [])
-
-  const preparePartyRoom = (post: PartyPost, lastMessage?: string) => {
-    setRooms((currentRooms) => upsertChatRoom(currentRooms, createPartyChatRoom(post, lastMessage)))
-    setActiveRoomId(post.chatRoomId)
+  const openPartyRecruitmentRoom = (message: string) => {
+    setRooms((currentRooms) => updatePartyRecruitmentPreview(currentRooms, message))
+    setActiveRoomId(PARTY_RECRUITMENT_ROOM_ID)
   }
 
-  const appendPartyMessage = (post: PartyPost, message: string) => {
-    preparePartyRoom(post, message)
+  const sendPartyRecruitmentMessage = (message: string, failureMessage: string) => {
     setChatStatusMessage('')
 
     if (!isChatAvailable) {
@@ -79,10 +67,22 @@ export function usePartyChat() {
 
     void sendRealtimeMessage({
       content: message,
-      roomId: post.chatRoomId,
+      roomId: PARTY_RECRUITMENT_ROOM_ID,
     })
       .then((sentMessage) => updateLastMessage(sentMessage.roomId, sentMessage.content))
-      .catch(() => setChatStatusMessage('참여 상태는 반영됐지만 채팅 알림 전송에 실패했습니다.'))
+      .catch(() => setChatStatusMessage(failureMessage))
+  }
+
+  const preparePartyRoom = (post: PartyPost, lastMessage?: string) => {
+    const nextMessage = lastMessage ?? `${post.title} 모집글이 등록되었습니다.`
+
+    openPartyRecruitmentRoom(nextMessage)
+    sendPartyRecruitmentMessage(nextMessage, '모집글은 등록됐지만 채팅 알림 전송에 실패했습니다.')
+  }
+
+  const appendPartyMessage = (post: PartyPost, message: string) => {
+    openPartyRecruitmentRoom(message)
+    sendPartyRecruitmentMessage(message, '참여 상태는 반영됐지만 채팅 알림 전송에 실패했습니다.')
   }
 
   const sendMessage = async () => {
@@ -122,6 +122,5 @@ export function usePartyChat() {
     sendMessage,
     setActiveRoomId,
     setChatInput,
-    syncPartyRooms,
   }
 }

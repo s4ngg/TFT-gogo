@@ -1,10 +1,11 @@
 import { ChevronRight, MessageCircle, Users } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { chatChannels } from '../dashboardData'
+import { useCommunityChatPreviews } from '../../../hooks/useCommunityChatPreviews'
 import styles from '../Dashboard.module.css'
 
 function LiveChat() {
   const navigate = useNavigate()
+  const chatChannels = useCommunityChatPreviews()
 
   return (
     <section className={`${styles.panel} ${styles.chatPanel}`}>
@@ -17,7 +18,7 @@ function LiveChat() {
       </div>
       <div className={styles.chatList}>
         {chatChannels.map((channel) => (
-          <article className={styles.chatRow} key={channel.name}>
+          <article className={styles.chatRow} key={channel.id}>
             <strong>#</strong>
             <b>{channel.name}</b>
             <span>

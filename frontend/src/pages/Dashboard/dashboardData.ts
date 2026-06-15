@@ -67,13 +67,6 @@ export interface PartyPost {
   tone: 'purple' | 'green' | 'cyan' | 'gold'
 }
 
-export interface ChatChannel {
-  name: string
-  users: string
-  message: string
-  time: string
-}
-
 const traitIconUrls = {
   animaSquad: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_AnimaTech.TFT_Set17.tex'),
   challenger: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Challenger.TFT_Set17.tex'),
@@ -550,7 +543,6 @@ export const metaDecks: MetaDeck[] = [
     ],
   },
 ]
-
 export const partyPosts: PartyPost[] = [
   {
     title: '마스터 이상 듀오 구합니다',
@@ -588,19 +580,4 @@ export const partyPosts: PartyPost[] = [
     icon: 'goal',
     tone: 'gold',
   },
-]
-
-export const chatChannels: ChatChannel[] = [
-  { name: '일반', users: '1,234', message: '새로운 패치 적응 중입니다!', time: '14:58' },
-  { name: '덱 공략', users: '856', message: '증강 추천 부탁드려요', time: '14:57' },
-  { name: '자유 채팅', users: '2,102', message: '오늘 운 진짜 좋다 ㅋㅋ', time: '14:57' },
-  { name: '파티 모집', users: '622', message: '마스터 듀오 구해요~', time: '14:56' },
-  { name: '질문 & 답변', users: '741', message: '초보 운영 질문 있습니다', time: '14:56' },
-  { name: '아이템 토론', users: '489', message: '쇼진 먼저 잡는 판이 많네요', time: '14:55' },
-  { name: '증강 연구', users: '1,018', message: '전투 증강 첫 선택 괜찮나요?', time: '14:55' },
-  { name: '초보방', users: '334', message: '연패 운영 언제 끊어야 해요?', time: '14:54' },
-  { name: '랭크 후기', users: '913', message: '암흑 별 진 2성 찍으니 안정적', time: '14:54' },
-  { name: '친선 모집', users: '276', message: '커스텀 한 판 하실 분?', time: '14:53' },
-  { name: '패치 분석', users: '645', message: '선봉대 밸류가 아직 높네요', time: '14:53' },
-  { name: '운영 질문', users: '528', message: '레벨업 타이밍 조언 부탁드려요', time: '14:52' },
 ]

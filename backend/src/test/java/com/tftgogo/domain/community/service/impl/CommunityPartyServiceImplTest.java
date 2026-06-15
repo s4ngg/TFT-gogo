@@ -73,7 +73,7 @@ class CommunityPartyServiceImplTest {
                         PartyPostResponse::getChatRoomId,
                         PartyPostResponse::isJoined
                 )
-                .containsExactly("마스터 듀오 구합니다", "RANKED_TFT", "랭크", "1/2", "party-1", true);
+                .containsExactly("마스터 듀오 구합니다", "RANKED_TFT", "랭크", "1/2", "party-recruitment", true);
         verify(partyPostRepository).search(PartyGameMode.RANKED_TFT, "마스터", pageRequest);
         verify(partyApplicationRepository).findPartyPostIdsByUserIdAndStatus(
                 2L,
@@ -115,10 +115,10 @@ class CommunityPartyServiceImplTest {
         // then
         assertThat(response.getId()).isEqualTo(10L);
         assertThat(response.getCapacity()).isEqualTo("1/2");
-        assertThat(response.getChatRoomId()).isEqualTo("party-10");
+        assertThat(response.getChatRoomId()).isEqualTo("party-recruitment");
         assertThat(response.isJoined()).isTrue();
         verify(partyPostRepository).save(any(PartyPost.class));
-        verify(chatService).ensureRoom("party-10");
+        verify(chatService).ensureRoom("party-recruitment");
         verify(partyApplicationRepository, never()).save(any(PartyApplication.class));
     }
 

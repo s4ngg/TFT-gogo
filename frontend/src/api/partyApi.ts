@@ -1,4 +1,5 @@
 import axiosInstance from './axiosInstance'
+import { PARTY_RECRUITMENT_ROOM_ID } from '../constants/communityChatRooms'
 import { isRecord, unwrapApiResponse, type ApiResponse } from './apiResponse'
 
 export type PartyMode = '랭크' | '일반' | '커스텀'
@@ -81,7 +82,7 @@ interface PartyListPayloadResult {
 export const fallbackPartyPosts: PartyPost[] = [
   {
     id: 'party-master-duo',
-    chatRoomId: 'party-master-duo',
+    chatRoomId: PARTY_RECRUITMENT_ROOM_ID,
     title: '마스터 이상 듀오 구합니다',
     mode: '랭크',
     tier: '마스터+',
@@ -95,7 +96,7 @@ export const fallbackPartyPosts: PartyPost[] = [
   },
   {
     id: 'party-diamond-practice',
-    chatRoomId: 'party-diamond-practice',
+    chatRoomId: PARTY_RECRUITMENT_ROOM_ID,
     title: '다이아 구간 야부/연습 같이해요',
     mode: '랭크',
     tier: '다이아+',
@@ -109,7 +110,7 @@ export const fallbackPartyPosts: PartyPost[] = [
   },
   {
     id: 'party-casual-evening',
-    chatRoomId: 'party-casual-evening',
+    chatRoomId: PARTY_RECRUITMENT_ROOM_ID,
     title: '저녁 근접, 편하게 즐기실 분!',
     mode: '일반',
     tier: '제한 없음',
@@ -123,7 +124,7 @@ export const fallbackPartyPosts: PartyPost[] = [
   },
   {
     id: 'party-weekend-master',
-    chatRoomId: 'party-weekend-master',
+    chatRoomId: PARTY_RECRUITMENT_ROOM_ID,
     title: '주말 마스터 달성 목표!',
     mode: '랭크',
     tier: '플래티넘+',
@@ -259,10 +260,6 @@ function toGameMode(mode: PartyMode) {
   return 'RANKED_TFT'
 }
 
-function createPartyChatRoomId(postId: string) {
-  return postId.startsWith('party-') ? postId : `party-${postId}`
-}
-
 function readPartyPostArray(value: unknown[]): PartyListPayloadResult {
   const posts = value.filter((item): item is PartyPostResponse => isRecord(item))
 
@@ -314,7 +311,7 @@ export function buildLocalPartyPost(request: CreatePartyPostRequest, id: string)
 
   return {
     id,
-    chatRoomId: createPartyChatRoomId(id),
+    chatRoomId: PARTY_RECRUITMENT_ROOM_ID,
     title: request.title,
     mode: request.mode,
     tier: request.tier,
@@ -333,7 +330,7 @@ function normalizePartyPost(response: PartyPostResponse, index: number): PartyPo
   const capacity = normalizeCapacity(response)
   const style = getPostStyle(mode, tier)
   const id = readId(response.partyPostId ?? response.id, `party-api-${index}`)
-  const chatRoomId = readId(response.chatRoomId, createPartyChatRoomId(id))
+  const chatRoomId = readId(response.chatRoomId, PARTY_RECRUITMENT_ROOM_ID)
   const isClosed = readBoolean(response.closed ?? response.isClosed)
 
   return {

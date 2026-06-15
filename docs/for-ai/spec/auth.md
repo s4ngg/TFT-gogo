@@ -32,6 +32,7 @@ General signup/login APIs issue access tokens, and authenticated requests are re
 - 회원가입 성공 시 accessToken을 발급한다.
 - 로그인 성공 시 accessToken을 발급한다.
 - 소셜 로그인은 `/api/v1/auth/social/{provider}`로 시작 URL을 받은 뒤 브라우저를 `/oauth2/authorization/{provider}`로 이동시킨다.
+- 실제 provider 인증 완료에는 각 provider client-id/client-secret, redirect-uri, 프론트 콜백 URI 설정이 필요하다.
 - OAuth2 성공 시 백엔드는 `(socialProvider, socialId)` 기준으로 기존 회원을 찾거나 신규 소셜 회원을 생성하고 accessToken만 fragment로 프론트 콜백 URI에 전달한다.
 - 프론트 `/oauth/callback`은 fragment에서 accessToken을 읽고 URL을 즉시 replace한 뒤 `/api/v1/members/me`로 현재 회원 정보를 복원한다.
 - OAuth2 실패 시 백엔드는 프론트 로그인 URI에 whitelist `oauthError` code만 전달한다.

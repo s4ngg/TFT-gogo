@@ -2,6 +2,7 @@ package com.tftgogo.domain.community.chat.service.impl;
 
 import com.tftgogo.domain.community.chat.dto.request.ChatMessageCreateRequest;
 import com.tftgogo.domain.community.chat.dto.response.ChatMessageResponse;
+import com.tftgogo.domain.community.chat.model.CommunityChatRoomIds;
 import com.tftgogo.domain.community.chat.model.ChatMessage;
 import com.tftgogo.domain.community.chat.service.ChatService;
 import com.tftgogo.domain.member.entity.Member;
@@ -40,13 +41,13 @@ public class InMemoryChatServiceImpl implements ChatService {
 
     @Override
     public void ensureRoom(String roomId) {
-        String normalizedRoomId = normalizeRoomId(roomId);
+        String normalizedRoomId = normalizeSupportedRoomId(roomId);
         roomMessages.computeIfAbsent(normalizedRoomId, ignored -> new ConcurrentLinkedDeque<>());
     }
 
     @Override
     public List<ChatMessageResponse> getRecentMessages(String roomId) {
-        String normalizedRoomId = normalizeRoomId(roomId);
+        String normalizedRoomId = normalizeSupportedRoomId(roomId);
         ConcurrentLinkedDeque<ChatMessage> messages = roomMessages.get(normalizedRoomId);
 
         if (messages == null) {
@@ -64,7 +65,7 @@ public class InMemoryChatServiceImpl implements ChatService {
     public ChatMessageResponse sendMessage(Long userId, ChatMessageCreateRequest request) {
         validateAuthenticated(userId);
         validateRequest(request);
-        String roomId = normalizeRoomId(request.getRoomId());
+        String roomId = normalizeSupportedRoomId(request.getRoomId());
         String content = normalizeText(request.getContent(), 500);
         Member sender = memberRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
@@ -108,7 +109,7 @@ public class InMemoryChatServiceImpl implements ChatService {
 
     @Override
     public SseEmitter subscribe(String roomId) {
-        String normalizedRoomId = normalizeRoomId(roomId);
+        String normalizedRoomId = normalizeSupportedRoomId(roomId);
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MILLIS);
         Set<SseEmitter> emitters = roomEmitters.computeIfAbsent(
                 normalizedRoomId,
@@ -166,10 +167,11 @@ public class InMemoryChatServiceImpl implements ChatService {
         }
     }
 
-    private String normalizeRoomId(String roomId) {
+    private String normalizeSupportedRoomId(String roomId) {
         String normalizedRoomId = normalizeText(roomId, 80);
 
-        if (!ROOM_ID_PATTERN.matcher(normalizedRoomId).matches()) {
+        if (!ROOM_ID_PATTERN.matcher(normalizedRoomId).matches()
+                || !CommunityChatRoomIds.isSupported(normalizedRoomId)) {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
 

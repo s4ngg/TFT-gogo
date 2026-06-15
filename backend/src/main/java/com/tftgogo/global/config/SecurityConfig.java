@@ -5,6 +5,7 @@ import com.tftgogo.global.filter.JwtAuthenticationFilter;
 import com.tftgogo.global.security.oauth.SocialOAuth2FailureHandler;
 import com.tftgogo.global.security.oauth.SocialOAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -14,8 +15,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -50,6 +50,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/decks/meta").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/community/parties").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/community/chat/rooms/*/messages").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/riot/status").permitAll()
                         .requestMatchers(
                                 "/api/v1/auth/login",
@@ -75,14 +76,30 @@ public class SecurityConfig {
 
     @Bean
     @Order(2)
+    public SecurityFilterChain publicDocsFilterChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher(
+                        "/health",
+                        "/swagger-ui/**",
+                        "/v3/api-docs/**"
+                )
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+
+        return http.build();
+    }
+
+    @Bean
+    @Order(3)
+    @ConditionalOnBean(ClientRegistrationRepository.class)
     public SecurityFilterChain oauth2FilterChain(HttpSecurity http) throws Exception {
         http
                 .securityMatcher(
                         "/oauth2/**",
-                        "/login/oauth2/**",
-                        "/health",
-                        "/swagger-ui/**",
-                        "/v3/api-docs/**"
+                        "/login/oauth2/**"
                 )
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -98,7 +115,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    @Order(3)
+    @Order(4)
     public SecurityFilterChain fallbackFilterChain(HttpSecurity http) throws Exception {
         http
                 .securityMatcher("/**")
@@ -124,8 +141,4 @@ public class SecurityConfig {
         return source;
     }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
 }
