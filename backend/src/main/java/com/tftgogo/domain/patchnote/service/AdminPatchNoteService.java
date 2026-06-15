@@ -17,6 +17,8 @@ public interface AdminPatchNoteService {
 
     void deletePatchNote(Long patchNoteId);
 
+    List<PatchChangeResponse> getPatchChanges(Long patchNoteId);
+
     PatchChangeResponse createPatchChange(AdminPatchChangeRequest request);
 
     PatchChangeResponse updatePatchChange(Long changeId, AdminPatchChangeRequest request);

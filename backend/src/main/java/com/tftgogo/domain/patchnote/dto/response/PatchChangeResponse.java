@@ -24,6 +24,7 @@ public class PatchChangeResponse {
     private String afterValue;
     private String imageUrl;
     private List<String> tags;
+    private int sortOrder;
 
     public static PatchChangeResponse from(PatchChange patchChange, List<String> tags) {
         return PatchChangeResponse.builder()
@@ -38,6 +39,7 @@ public class PatchChangeResponse {
                 .afterValue(patchChange.getAfterValue())
                 .imageUrl(patchChange.getImageUrl())
                 .tags(tags)
+                .sortOrder(patchChange.getSortOrder())
                 .build();
     }
 }

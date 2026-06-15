@@ -1,13 +1,7 @@
-import styles from './AdminComingSoon.module.css'
+import AdminPatchNotesManager from './components/AdminPatchNotesManager'
 
 function AdminPatchNotes() {
-  return (
-    <div className={styles.wrap}>
-      <p className={styles.emoji}>📄</p>
-      <h2 className={styles.title}>패치노트 관리</h2>
-      <p className={styles.desc}>준비 중입니다.</p>
-    </div>
-  )
+  return <AdminPatchNotesManager />
 }
 
 export default AdminPatchNotes
