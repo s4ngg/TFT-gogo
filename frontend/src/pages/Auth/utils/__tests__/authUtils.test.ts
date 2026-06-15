@@ -52,4 +52,21 @@ describe('mapSocialAuthError', () => {
       '소셜 로그인 API 경로를 찾을 수 없습니다. 잠시 후 다시 시도해 주세요.',
     )
   })
+
+  it('소셜 provider 설정 누락 또는 503 오류를 안내 메시지로 변환한다', () => {
+    const expectedMessage = '해당 소셜 로그인은 현재 사용할 수 없습니다. 이메일 로그인을 이용해 주세요.'
+
+    assert.equal(
+      mapSocialAuthError(new Error('Social login start failed: Request failed with status code 503')),
+      expectedMessage,
+    )
+    assert.equal(
+      mapSocialAuthError(new Error('Social login start failed: Service Unavailable')),
+      expectedMessage,
+    )
+    assert.equal(
+      mapSocialAuthError(new Error('Social login start failed: SOCIAL_PROVIDER_NOT_CONFIGURED')),
+      expectedMessage,
+    )
+  })
 })
