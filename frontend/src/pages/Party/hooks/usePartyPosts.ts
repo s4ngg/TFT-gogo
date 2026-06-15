@@ -10,7 +10,6 @@ import {
   type CreatePartyPostRequest,
   type PartyPostsResult,
 } from '../../../api/partyApi'
-import useAuthStore from '../../../store/useAuthStore'
 import type { PartyFilter } from '../partyFilters'
 import type { PartyMode, PartyPost } from '../types'
 import {
@@ -25,6 +24,7 @@ import {
   restorePostOverride,
   updatePostJoinState,
 } from '../utils/partyUtils'
+import { usePartyAuth } from './usePartyAuth'
 
 const PARTY_PAGE_SIZE = 3
 const PARTY_QUERY_KEY = ['community', 'parties'] as const
@@ -39,12 +39,6 @@ interface JoinMutationVariables {
   postId: string
 }
 
-function readAuthUserId(value: number | string | undefined) {
-  if (typeof value === 'number' && Number.isFinite(value)) return String(value)
-  if (typeof value === 'string' && value.trim().length > 0) return value
-  return null
-}
-
 function withOwnerState(post: PartyPost, authUserId: string | null): PartyPost {
   const isOwner = authUserId !== null && post.userId === authUserId
 
@@ -56,7 +50,7 @@ function withOwnerState(post: PartyPost, authUserId: string | null): PartyPost {
 
 export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPostsOptions) {
   const queryClient = useQueryClient()
-  const authUserId = useAuthStore((state) => readAuthUserId(state.user?.id))
+  const { userId: authUserId } = usePartyAuth()
   const [localPosts, setLocalPosts] = useState<PartyPost[]>([])
   const [postOverrides, setPostOverrides] = useState<Record<string, PartyPost>>({})
   const [selectedFilter, setSelectedFilter] = useState<PartyFilter>('전체')
