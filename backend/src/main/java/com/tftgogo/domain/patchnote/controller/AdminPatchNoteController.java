@@ -60,6 +60,14 @@ public class AdminPatchNoteController implements AdminPatchNoteControllerDocs {
     }
 
     @Override
+    @GetMapping("/patch-notes/{patchNoteId}/changes")
+    public ResponseEntity<ApiResponse<List<PatchChangeResponse>>> getPatchChanges(
+            @PathVariable("patchNoteId") Long patchNoteId) {
+        List<PatchChangeResponse> response = adminPatchNoteService.getPatchChanges(patchNoteId);
+        return ResponseEntity.ok(ApiResponse.success("패치 변경사항 조회 성공", response));
+    }
+
+    @Override
     @PostMapping("/patch-note-changes")
     public ResponseEntity<ApiResponse<PatchChangeResponse>> createPatchChange(
             @Valid @RequestBody AdminPatchChangeRequest request) {
