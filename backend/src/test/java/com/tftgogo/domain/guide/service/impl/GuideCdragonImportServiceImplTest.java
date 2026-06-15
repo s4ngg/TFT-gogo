@@ -24,6 +24,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -33,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -51,6 +57,18 @@ class GuideCdragonImportServiceImplTest {
     @Mock
     private RestTemplate restTemplate;
 
+    @Mock
+    private DataSource dataSource;
+
+    @Mock
+    private Connection connection;
+
+    @Mock
+    private DatabaseMetaData databaseMetaData;
+
+    @Mock
+    private ResultSet tablesResultSet;
+
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -61,9 +79,14 @@ class GuideCdragonImportServiceImplTest {
     private GuideCdragonImportServiceImpl guideCdragonImportService;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws SQLException {
         communityDragonProperties.setTftKoKrUrl("https://example.com/cdragon/tft/ko_kr.json");
         communityDragonProperties.setAssetBaseUrl("https://raw.communitydragon.org/latest/game");
+        lenient().when(dataSource.getConnection()).thenReturn(connection);
+        lenient().when(connection.getCatalog()).thenReturn("tftgogo");
+        lenient().when(connection.getMetaData()).thenReturn(databaseMetaData);
+        lenient().when(databaseMetaData.getTables(any(), any(), any(), any())).thenReturn(tablesResultSet);
+        lenient().when(tablesResultSet.next()).thenReturn(true);
     }
 
     @Test
@@ -114,7 +137,11 @@ class GuideCdragonImportServiceImplTest {
                 .findFirst()
                 .orElseThrow();
         assertThat(traitGuide.getTargetKey()).isEqualTo("TFT17_AnimalSquad");
+        assertThat(traitGuide.getSummary()).isEqualTo("아군이 공격력을 10% 얻습니다. (2) 15% (4) 30%");
         assertThat(traitGuide.getDataJson()).contains("\"tone\":\"gold\"");
+        assertThat(traitGuide.getDataJson()).contains("\"summary\":\"아군이 공격력을 10% 얻습니다. (2) 15% (4) 30%\"");
+        assertThat(traitGuide.getDataJson()).doesNotContain("%i:scaleAS%");
+        assertThat(traitGuide.getDataJson()).doesNotContain("@TeamwideAD*100@");
         assertThat(traitGuide.getDataJson()).contains("\"champions\":[{\"cost\":1");
     }
 
@@ -268,10 +295,13 @@ class GuideCdragonImportServiceImplTest {
         assertThat(augmentGuide.getTargetKey()).isEqualTo("TFT17_Augment_BattleReady");
         assertThat(augmentGuide.getName()).isEqualTo("Battle Ready");
         assertThat(augmentGuide.getImageUrl()).contains("battle_ready.png");
-        assertThat(augmentGuide.getDataJson()).contains("\"description\":\"Your team gains Attack Speed.\"");
+        assertThat(augmentGuide.getDataJson()).contains("\"description\":\"Your team gains 25 Attack Speed.\"");
+        assertThat(augmentGuide.getDataJson()).doesNotContain("%i:scaleAS%");
         assertThat(augmentGuide.getDataJson()).contains("\"tier\":\"A\"");
         assertThat(augmentGuide.getDataJson()).contains("\"type\":\"Combat\"");
-        assertThat(augmentGuide.getDataJson()).contains("\"tags\":[\"Combat\"]");
+        assertThat(augmentGuide.getDataJson()).contains("\"reward\":\"전투 능력치\"");
+        assertThat(augmentGuide.getDataJson()).contains("\"tags\":[\"전투\"]");
+        assertThat(augmentGuide.getDataJson()).doesNotContain("{cf1fd3af}");
         assertThat(augmentGuide.getDataJson()).contains("\"winRate\":\"-\"");
     }
 
@@ -440,6 +470,57 @@ class GuideCdragonImportServiceImplTest {
         verifyNoInteractions(restTemplate, guideRepository);
     }
 
+    @Test
+    void CDragon_item_augment_import_continues_when_cached_match_stats_unavailable() throws SQLException {
+        // given
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonJson());
+        when(tablesResultSet.next()).thenReturn(false);
+        when(guideRepository.findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(Optional.empty());
+        when(guideRepository.existsByGuideTypeAndTargetKeyAndPatchVersion(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(false);
+        when(guideRepository.saveAndFlush(any(Guide.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request(false, false, true, true));
+
+        // then
+        assertThat(response.getCreatedCount()).isEqualTo(2);
+        assertThat(response.getItemCount()).isEqualTo(1);
+        assertThat(response.getAugmentCount()).isEqualTo(1);
+        assertThat(response.getImportedCount()).isEqualTo(2);
+
+        ArgumentCaptor<Guide> guideCaptor = ArgumentCaptor.forClass(Guide.class);
+        verify(guideRepository, times(2)).saveAndFlush(guideCaptor.capture());
+        List<Guide> savedGuides = guideCaptor.getAllValues();
+
+        Guide itemGuide = savedGuides.stream()
+                .filter(guide -> guide.getGuideType() == GuideType.ITEM)
+                .findFirst()
+                .orElseThrow();
+        assertThat(itemGuide.getDataJson()).contains("\"avgPlace\":\"-\"");
+        assertThat(itemGuide.getDataJson()).contains("\"pickRate\":\"-\"");
+        assertThat(itemGuide.getDataJson()).contains("\"top4\":\"-\"");
+        assertThat(itemGuide.getDataJson()).contains("\"winRate\":\"-\"");
+
+        Guide augmentGuide = savedGuides.stream()
+                .filter(guide -> guide.getGuideType() == GuideType.AUGMENT)
+                .findFirst()
+                .orElseThrow();
+        assertThat(augmentGuide.getDataJson()).contains("\"avgPlace\":\"-\"");
+        assertThat(augmentGuide.getDataJson()).contains("\"pickRate\":\"-\"");
+        assertThat(augmentGuide.getDataJson()).contains("\"winRate\":\"-\"");
+
+        verify(cachedMatchRepository, never()).findRecentByQueueIds(any(), any());
+    }
+
     private GuideCdragonImportRequest request(boolean includeChampions, boolean includeTraits) {
         return request(includeChampions, includeTraits, false);
     }
@@ -583,36 +664,68 @@ class GuideCdragonImportServiceImplTest {
                         {
                           "apiName": "TFT17_AnimalSquad",
                           "name": "동물특공대",
-                          "desc": "아군이 <b>공격력</b>을 얻습니다.",
+                          "desc": "아군이 <b>공격력</b>을 @TeamwideAD*100@% 얻습니다.<br><row>(@MinUnits@) @AttackSpeedPercent*100@% %i:scaleAS%</row><br><row>(@MinUnits@) @AttackSpeedPercent*100@% %i:scaleAS%</row>",
                           "icon": "ASSETS/UX/TraitIcons/Trait_Icon_17_AnimalSquad.TFT_Set17.tex",
                           "effects": [
-                            {"minUnits": 2, "maxUnits": 3, "style": 1},
-                            {"minUnits": 4, "maxUnits": 25000, "style": 3}
+                            {
+                              "minUnits": 2,
+                              "maxUnits": 3,
+                              "style": 1,
+                              "variables": {
+                                "TeamwideAD": 0.1,
+                                "AttackSpeedPercent": 0.15
+                              }
+                            },
+                            {
+                              "minUnits": 4,
+                              "maxUnits": 25000,
+                              "style": 3,
+                              "variables": {
+                                "TeamwideAD": 0.1,
+                                "AttackSpeedPercent": 0.3
+                              }
+                            }
                           ]
                         }
                       ],
                       "augments": [
-                        {
-                          "apiName": "TFT17_Augment_BattleReady",
-                          "name": "Battle Ready",
-                          "desc": "<rules>Your team gains @AttackSpeed@ Attack Speed.</rules>",
-                          "icon": "ASSETS/UX/Augments/Battle_Ready.tex",
-                          "rarity": "gold",
-                          "augmentType": "Combat",
-                          "tags": ["Combat"]
-                        },
-                        {
-                          "apiName": "TFT17_Augment_DebugDummy",
-                          "name": "Debug Dummy",
-                          "desc": "Test only",
-                          "icon": "ASSETS/UX/Augments/Debug_Dummy.tex",
-                          "rarity": "silver"
-                        }
+                        "TFT17_Augment_BattleReady",
+                        "TFT17_Augment_BattleReadyDuplicate",
+                        "TFT17_Augment_DebugDummy"
                       ]
                     }
                   ],
                   "sets": {},
                   "items": [
+                    {
+                      "apiName": "TFT17_Augment_BattleReady",
+                      "name": "Battle Ready",
+                      "desc": "<rules>Your team gains @AttackSpeed@ %i:scaleAS% Attack Speed. () %</rules>",
+                      "effects": {
+                        "AttackSpeed": 25
+                      },
+                      "icon": "ASSETS/UX/Augments/Battle_Ready.tex",
+                      "rarity": "gold",
+                      "augmentType": "Combat",
+                      "tags": ["{cf1fd3af}"]
+                    },
+                    {
+                      "apiName": "TFT17_Augment_DebugDummy",
+                      "name": "Debug Dummy",
+                      "desc": "Test only",
+                      "icon": "ASSETS/UX/Augments/Debug_Dummy.tex",
+                      "rarity": "silver"
+                    },
+                    {
+                      "apiName": "TFT17_Augment_BattleReadyDuplicate",
+                      "name": "Battle Ready",
+                      "desc": "<rules>Duplicate augment with the same display name.</rules>",
+                      "effects": {},
+                      "icon": "ASSETS/UX/Augments/Battle_Ready_Duplicate.tex",
+                      "rarity": "gold",
+                      "augmentType": "Combat",
+                      "tags": ["{b72bd3bf}"]
+                    },
                     {
                       "apiName": "TFT_Item_RecurveBow",
                       "name": "Recurve Bow",
@@ -627,6 +740,14 @@ class GuideCdragonImportServiceImplTest {
                       "apiName": "TFT_Item_GuinsoosRageblade",
                       "name": "Guinsoo's Rageblade",
                       "desc": "<stats>Gain @AttackSpeed@ Attack Speed.</stats>",
+                      "icon": "ASSETS/Maps/Particles/TFT/Item_Icons/Standard/GuinsoosRageblade.png",
+                      "composition": ["TFT_Item_RecurveBow", "TFT_Item_NeedlesslyLargeRod"],
+                      "associatedTraits": []
+                    },
+                    {
+                      "apiName": "TFT_Item_CorruptedGuinsoosRageblade",
+                      "name": "Guinsoo's Rageblade",
+                      "desc": "<stats>Corrupted duplicate item.</stats>",
                       "icon": "ASSETS/Maps/Particles/TFT/Item_Icons/Standard/GuinsoosRageblade.png",
                       "composition": ["TFT_Item_RecurveBow", "TFT_Item_NeedlesslyLargeRod"],
                       "associatedTraits": []
