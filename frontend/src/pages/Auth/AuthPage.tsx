@@ -1,10 +1,11 @@
 import { ArrowRight, LockKeyhole, Mail, UserRound } from 'lucide-react'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { login as loginMember, signup as signupMember } from '../../api/memberApi'
+import { AUTH_ME_QUERY_KEY } from '../../hooks/useAuthSession'
 import useAuthStore from '../../store/useAuthStore'
-import { parseSummonerTag, mapAuthError } from './utils/authUtils'
+import { mapAuthError } from './utils/authUtils'
 import styles from './AuthPage.module.css'
 
 interface AuthPageProps {
@@ -21,36 +22,39 @@ const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 interface AuthMutationVariables {
   email: string
+  nickname?: string
   password: string
-  summonerTag?: string
 }
 
 function AuthPage({ mode }: AuthPageProps) {
   const isSignup = mode === 'signup'
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const setAuth = useAuthStore((state) => state.setAuth)
 
   // 입력값 상태 — 키 입력할 때마다 값 저장
   const [email, setEmail] = useState('')
+  const [nickname, setNickname] = useState('')
   const [password, setPassword] = useState('')
   const [passwordConfirm, setPasswordConfirm] = useState('')
-  const [summonerTag, setSummonerTag] = useState('')
 
   // 에러 메시지 상태 — 빈 문자열이면 에러 없음
   const [emailError, setEmailError] = useState('')
+  const [nicknameError, setNicknameError] = useState('')
   const [passwordError, setPasswordError] = useState('')
   const [passwordConfirmError, setPasswordConfirmError] = useState('')
 
   const authMutation = useMutation({
-    mutationFn: ({ email, password, summonerTag }: AuthMutationVariables) =>
+    mutationFn: ({ email, nickname, password }: AuthMutationVariables) =>
       isSignup
         ? signupMember({
             email,
+            nickname: nickname ?? '',
             password,
-            ...parseSummonerTag(summonerTag ?? ''),
           })
         : loginMember({ email, password }),
     onSuccess: (auth) => {
+      queryClient.removeQueries({ queryKey: AUTH_ME_QUERY_KEY })
       setAuth(auth)
       navigate('/', { replace: true })
     },
@@ -68,6 +72,18 @@ function AuthPage({ mode }: AuthPageProps) {
       isValid = false
     } else {
       setEmailError('')
+    }
+
+    const trimmedNickname = nickname.trim()
+
+    if (isSignup && !trimmedNickname) {
+      setNicknameError('닉네임을 입력해 주세요.')
+      isValid = false
+    } else if (isSignup && trimmedNickname.length > 50) {
+      setNicknameError('닉네임은 50자 이하여야 합니다.')
+      isValid = false
+    } else {
+      setNicknameError('')
     }
 
     if (password.length < 8) {
@@ -99,8 +115,8 @@ function AuthPage({ mode }: AuthPageProps) {
 
     authMutation.mutate({
       email: email.trim(),
+      nickname: isSignup ? nickname.trim() : undefined,
       password,
-      summonerTag: isSignup ? summonerTag : undefined,
     })
   }
 
@@ -190,15 +206,17 @@ function AuthPage({ mode }: AuthPageProps) {
                   </label>
 
                   <label>
-                    <span>소환사명#태그</span>
+                    <span>닉네임</span>
                     <div className={styles.inputBox}>
                       <UserRound size={18} />
                       <input
-                          placeholder="정동글#KR1"
-                          value={summonerTag}
-                          onChange={(e) => setSummonerTag(e.target.value)}
+                          maxLength={50}
+                          placeholder="정동글"
+                          value={nickname}
+                          onChange={(e) => setNickname(e.target.value)}
                       />
                     </div>
+                    {nicknameError && <p className={styles.errorText}>{nicknameError}</p>}
                   </label>
                 </>
             )}
