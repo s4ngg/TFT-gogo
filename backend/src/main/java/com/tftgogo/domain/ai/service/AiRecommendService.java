@@ -42,7 +42,7 @@ public class AiRecommendService {
      *
      * @param gameName 소환사 게임 이름
      * @param tagLine  소환사 태그라인
-     * @return AI 분석 결과 (오류 시 null → 컨트롤러에서 fallback 처리)
+     * @return AI 분석 결과, 랭크 전적이 없으면 null
      */
     public AiRecommendResponse recommend(String gameName, String tagLine) {
         // Step 1: PUUID 조회 — 실패 시 BusinessException 전파 (GlobalExceptionHandler가 처리)
