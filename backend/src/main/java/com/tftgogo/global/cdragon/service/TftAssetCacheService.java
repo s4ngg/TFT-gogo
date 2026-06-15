@@ -60,7 +60,9 @@ public class TftAssetCacheService {
     }
 
     public String getItemIconUrl(String itemId) {
-        return itemIconCache.get(itemId.toLowerCase(Locale.ROOT));
+        String url = itemIconCache.get(itemId.toLowerCase(Locale.ROOT));
+        if (url != null) return url;
+        return TftAssetUrlBuilder.buildItemIconUrl(itemId);
     }
 
     private Map<String, String> buildTraitIconCache(JsonNode root) {
