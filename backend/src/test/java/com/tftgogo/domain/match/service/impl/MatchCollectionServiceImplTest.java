@@ -151,10 +151,8 @@ class MatchCollectionServiceImplTest {
         detailFailed.completeExceptionally(new BusinessException(ErrorCode.RIOT_API_ERROR));
         doReturn(detailFailed).when(riotQueue).submit(any());
 
-        doAnswer(inv -> { ((Runnable) inv.getArgument(0)).run(); return null; })
-                .when(matchCollectionExecutor).execute(any());
-
         // when — 매치 상세 실패해도 예외 없이 반환
+        // 실패한 future는 thenApplyAsync(..., executor)를 건너뛰므로 executor stub 불필요
         List<SummonerMatchItemDto> result = matchCollectionService.fetchAndCache(puuid, 0, 2,
                 Function.identity(), Function.identity(), s -> null);
 
