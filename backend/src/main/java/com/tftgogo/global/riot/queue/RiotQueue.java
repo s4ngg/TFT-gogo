@@ -40,6 +40,11 @@ public class RiotQueue implements DisposableBean {
         return enqueue(backgroundQueue, task);
     }
 
+    /** foreground + background 큐 합산 대기 작업 수 — 상태 모니터링용 */
+    public int getPendingTaskCount() {
+        return foregroundQueue.size() + backgroundQueue.size();
+    }
+
     private <T> CompletableFuture<T> enqueue(LinkedBlockingQueue<RiotTask<?>> queue, Supplier<T> task) {
         CompletableFuture<T> future = new CompletableFuture<>();
         if (!queue.offer(new RiotTask<>(task, future))) {
@@ -68,7 +73,7 @@ public class RiotQueue implements DisposableBean {
                 // foreground 우선 처리, 없으면 background 대기
                 RiotTask<?> task = foregroundQueue.poll();
                 if (task == null) {
-                    task = backgroundQueue.poll(1, TimeUnit.SECONDS);
+                    task = backgroundQueue.poll(50, TimeUnit.MILLISECONDS);
                 }
                 if (task != null) {
                     task.execute();
