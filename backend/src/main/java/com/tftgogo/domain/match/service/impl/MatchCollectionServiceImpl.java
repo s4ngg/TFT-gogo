@@ -89,9 +89,9 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
     private List<String> fetchMatchIds(String puuid, int start, int count) {
         try {
             CompletableFuture<List<String>> rankedFuture =
-                    riotQueue.submit(() -> riotApiClient.getMatchIds(puuid, count, start, 1100));
+                    riotQueue.submitForeground(() -> riotApiClient.getMatchIds(puuid, count, start, 1100));
             CompletableFuture<List<String>> normalFuture =
-                    riotQueue.submit(() -> riotApiClient.getMatchIds(puuid, count, start, 1090));
+                    riotQueue.submitForeground(() -> riotApiClient.getMatchIds(puuid, count, start, 1090));
 
             List<String> ranked = rankedFuture.get(FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             List<String> normal = normalFuture.get(FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
@@ -244,7 +244,7 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
                 CompletableFuture.runAsync(() -> {
                     try {
                         List<String> matchIds = riotQueue
-                                .submit(() -> riotApiClient.getMatchIds(puuid, count, 0, 1100))
+                                .submitForeground(() -> riotApiClient.getMatchIds(puuid, count, 0, 1100))
                                 .get(FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
                         Set<String> cachedIds = new HashSet<>(
                                 cachedMatchRepository.findMatchIdsByMatchIdIn(matchIds));

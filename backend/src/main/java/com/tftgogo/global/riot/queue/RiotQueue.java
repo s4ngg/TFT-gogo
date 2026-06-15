@@ -16,9 +16,12 @@ import java.util.function.Supplier;
 public class RiotQueue implements DisposableBean {
 
     private static final Logger logger = LogManager.getLogger(RiotQueue.class);
-    private static final int MAX_QUEUE_SIZE = 500;
+    private static final int MAX_QUEUE_SIZE = 200;
 
-    private final LinkedBlockingQueue<RiotTask<?>> queue = new LinkedBlockingQueue<>(MAX_QUEUE_SIZE);
+    // foreground: 사용자 직접 요청 (matchId 조회) — background보다 우선 처리
+    private final LinkedBlockingQueue<RiotTask<?>> foregroundQueue = new LinkedBlockingQueue<>(MAX_QUEUE_SIZE);
+    // background: 매치 상세 수집
+    private final LinkedBlockingQueue<RiotTask<?>> backgroundQueue = new LinkedBlockingQueue<>(MAX_QUEUE_SIZE);
     private final Thread worker;
 
     public RiotQueue() {
@@ -27,7 +30,17 @@ public class RiotQueue implements DisposableBean {
         worker.start();
     }
 
+    /** 사용자 요청 경로 — background 작업보다 우선 처리됨 */
+    public <T> CompletableFuture<T> submitForeground(Supplier<T> task) {
+        return enqueue(foregroundQueue, task);
+    }
+
+    /** 백그라운드 수집 경로 */
     public <T> CompletableFuture<T> submit(Supplier<T> task) {
+        return enqueue(backgroundQueue, task);
+    }
+
+    private <T> CompletableFuture<T> enqueue(LinkedBlockingQueue<RiotTask<?>> queue, Supplier<T> task) {
         CompletableFuture<T> future = new CompletableFuture<>();
         if (!queue.offer(new RiotTask<>(task, future))) {
             future.completeExceptionally(new BusinessException(ErrorCode.RIOT_API_ERROR));
@@ -38,12 +51,25 @@ public class RiotQueue implements DisposableBean {
     @Override
     public void destroy() {
         worker.interrupt();
+        drainWithException(foregroundQueue);
+        drainWithException(backgroundQueue);
+    }
+
+    private void drainWithException(LinkedBlockingQueue<RiotTask<?>> queue) {
+        RiotTask<?> task;
+        while ((task = queue.poll()) != null) {
+            task.future().completeExceptionally(new BusinessException(ErrorCode.RIOT_API_ERROR));
+        }
     }
 
     private void processLoop() {
         while (!Thread.currentThread().isInterrupted()) {
             try {
-                RiotTask<?> task = queue.poll(1, TimeUnit.SECONDS);
+                // foreground 우선 처리, 없으면 background 대기
+                RiotTask<?> task = foregroundQueue.poll();
+                if (task == null) {
+                    task = backgroundQueue.poll(1, TimeUnit.SECONDS);
+                }
                 if (task != null) {
                     task.execute();
                 }
