@@ -175,6 +175,26 @@ class InMemoryChatServiceImplTest {
     }
 
     @Test
+    void 전체_SSE_연결_한도를_초과하면_TOO_MANY_REQUESTS를_던진다() {
+        // given
+        List<SseEmitter> emitters = new ArrayList<>();
+        for (int index = 0; index < 100; index++) {
+            emitters.add(chatService.subscribe("general"));
+            emitters.add(chatService.subscribe("deck-guide"));
+            emitters.add(chatService.subscribe("party-recruitment"));
+        }
+
+        try {
+            // when, then
+            assertThatThrownBy(() -> chatService.subscribe("question-answer"))
+                    .isInstanceOfSatisfying(BusinessException.class, exception ->
+                            assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.CHAT_STREAM_CONNECTION_LIMIT_EXCEEDED));
+        } finally {
+            emitters.forEach(SseEmitter::complete);
+        }
+    }
+
+    @Test
     void 빈_메시지는_INVALID_INPUT을_던진다() {
         // given
         ChatMessageCreateRequest request = request("general", "   ");

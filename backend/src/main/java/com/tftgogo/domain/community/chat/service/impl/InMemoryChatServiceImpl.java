@@ -39,6 +39,7 @@ public class InMemoryChatServiceImpl implements ChatService {
 
     private final ConcurrentHashMap<String, ConcurrentLinkedDeque<ChatMessage>> roomMessages = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Set<SseEmitter>> roomEmitters = new ConcurrentHashMap<>();
+    private final Object globalEmitterLock = new Object();
     private final MemberRepository memberRepository;
 
     @Override
@@ -118,7 +119,7 @@ public class InMemoryChatServiceImpl implements ChatService {
                 ignored -> ConcurrentHashMap.newKeySet()
         );
 
-        synchronized (emitters) {
+        synchronized (globalEmitterLock) {
             if (emitters.size() >= MAX_SSE_CONNECTIONS_PER_ROOM
                     || totalEmitterCount() >= MAX_SSE_CONNECTIONS_TOTAL) {
                 throw new BusinessException(ErrorCode.CHAT_STREAM_CONNECTION_LIMIT_EXCEEDED);
@@ -175,9 +176,11 @@ public class InMemoryChatServiceImpl implements ChatService {
             return;
         }
 
-        emitters.remove(emitter);
-        if (emitters.isEmpty()) {
-            roomEmitters.remove(roomId, emitters);
+        synchronized (globalEmitterLock) {
+            emitters.remove(emitter);
+            if (emitters.isEmpty()) {
+                roomEmitters.remove(roomId, emitters);
+            }
         }
     }
 

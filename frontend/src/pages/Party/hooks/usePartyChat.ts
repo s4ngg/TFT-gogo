@@ -32,15 +32,15 @@ export function usePartyChat({ activeRoomId, onActiveRoomChange }: UsePartyChatO
     [activeRoomId, rooms],
   )
   const activeRoomName = activeRoom?.name ?? '채팅'
-  const isChatAvailable = isAuthenticated
+  const canSendMessages = isAuthenticated
   const connectionLabel = connectionStatus === 'connected'
     ? '실시간 연결됨'
     : connectionStatus === 'connecting'
       ? '연결 중'
       : '실시간 연결 대기'
   const chatReadNotice = chatStatusMessage || chatErrorMessage || (queryError ? '채팅 메시지를 불러오지 못했습니다.' : '')
-  const chatNotice = chatReadNotice || (!isChatAvailable ? '채팅은 조회할 수 있고 메시지 전송은 로그인 후 가능합니다.' : '')
-  const isMessageDisabled = !isChatAvailable || isSending || !activeRoom
+  const chatNotice = chatReadNotice || (!canSendMessages ? '채팅은 조회할 수 있고 메시지 전송은 로그인 후 가능합니다.' : '')
+  const isMessageDisabled = !canSendMessages || isSending || !activeRoom
 
   useEffect(() => {
     const lastMessage = activeMessages[activeMessages.length - 1]
@@ -64,7 +64,7 @@ export function usePartyChat({ activeRoomId, onActiveRoomChange }: UsePartyChatO
   const sendPartyRecruitmentMessage = (message: string, failureMessage: string) => {
     setChatStatusMessage('')
 
-    if (!isChatAvailable) {
+    if (!canSendMessages) {
       setChatStatusMessage('로그인 후 파티 채팅 알림을 보낼 수 있습니다.')
       return
     }
@@ -92,7 +92,7 @@ export function usePartyChat({ activeRoomId, onActiveRoomChange }: UsePartyChatO
   const sendMessage = async () => {
     const trimmedMessage = chatInput.trim()
 
-    if (trimmedMessage.length === 0 || !activeRoom || !isChatAvailable) {
+    if (trimmedMessage.length === 0 || !activeRoom || !canSendMessages) {
       return
     }
 
@@ -122,7 +122,7 @@ export function usePartyChat({ activeRoomId, onActiveRoomChange }: UsePartyChatO
     isAuthenticated,
     isLoading,
     isMessageDisabled,
-    isSendBlockedByAuth: !isChatAvailable,
+    isSendBlockedByAuth: !canSendMessages,
     preparePartyRoom,
     rooms,
     sendMessage,
