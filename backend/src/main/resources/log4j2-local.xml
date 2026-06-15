@@ -11,11 +11,20 @@
             <RegexReplacement regex="Bearer\s+[A-Za-z0-9\-._~+/]+=*" replacement="Bearer [MASKED]"/>
             <RegexReplacement regex="(?i)(password|passwd|pwd|secret|apikey|api[_-]key)\s*[:=]\s*\S+" replacement="$1=[MASKED]"/>
         </Rewrite>
+        <RollingFile name="ErrorFile" fileName="logs/error.log"
+                     filePattern="logs/error-%d{yyyy-MM-dd}.log">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n%ex"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+            </Policies>
+            <DefaultRolloverStrategy max="30"/>
+        </RollingFile>
     </Appenders>
 
     <Loggers>
         <Logger name="com.tftgogo" level="DEBUG" additivity="false">
             <AppenderRef ref="Rewrite"/>
+            <AppenderRef ref="ErrorFile" level="WARN"/>
         </Logger>
         <Logger name="org.springframework.security" level="INFO" additivity="false">
             <AppenderRef ref="Rewrite"/>
@@ -29,6 +38,7 @@
         </Logger>
         <Root level="INFO">
             <AppenderRef ref="Rewrite"/>
+            <AppenderRef ref="ErrorFile" level="WARN"/>
         </Root>
     </Loggers>
 </Configuration>

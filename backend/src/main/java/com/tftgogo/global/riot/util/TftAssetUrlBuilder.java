@@ -90,6 +90,17 @@ public final class TftAssetUrlBuilder {
                 : TftAssetConfig.CURRENT_SET_TAG;
     }
 
+    public static String buildItemIconUrl(String itemId) {
+        Objects.requireNonNull(itemId, "TftAssetUrlBuilder: itemId must not be null");
+        if (itemId.isBlank()) {
+            throw new IllegalStateException("TftAssetUrlBuilder: itemId must not be blank");
+        }
+        String id = itemId.toLowerCase(Locale.ROOT);
+        String fallbackUrl = TftAssetConfig.CDRAGON_ASSET_BASE_URL + "/maps/particles/tft/item_icons/standard/" + id + ".png";
+        logger.warn("Item icon cache miss; using fallback URL. itemId={}, fallbackUrl={}", itemId, fallbackUrl);
+        return fallbackUrl;
+    }
+
     private static String traitIconPath(int iconSetNumber, String traitName) {
         return "/ux/traiticons/trait_icon_" + iconSetNumber + "_" + traitName
                 + "." + TftAssetConfig.setTag(iconSetNumber) + ".png";

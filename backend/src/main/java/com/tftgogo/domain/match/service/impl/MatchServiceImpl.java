@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tftgogo.domain.match.dto.response.CollectionStatusResponse;
 import com.tftgogo.domain.match.dto.response.MatchDetailResponse;
 import com.tftgogo.domain.match.entity.CachedMatch;
 import com.tftgogo.domain.match.repository.CachedMatchRepository;
@@ -23,6 +22,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -50,8 +50,11 @@ public class MatchServiceImpl implements MatchService {
     }
 
     @Override
-    public List<SummonerMatchItemDto> getMatches(String puuid, int start, int count) {
-        return matchCollectionService.fetchAndCache(puuid, start, count);
+    public List<SummonerMatchItemDto> getMatches(String puuid, int start, int count,
+                                                  Function<String, String> traitIconFn,
+                                                  Function<String, String> traitNameFn,
+                                                  Function<String, String> itemIconFn) {
+        return matchCollectionService.fetchAndCache(puuid, start, count, traitIconFn, traitNameFn, itemIconFn);
     }
 
     @Override
@@ -59,11 +62,6 @@ public class MatchServiceImpl implements MatchService {
         return cachedMatchRepository.findById(matchId)
                 .map(cached -> buildDetailFromCache(matchId, cached))
                 .orElseGet(() -> fetchAndCacheDetail(matchId));
-    }
-
-    @Override
-    public CollectionStatusResponse getCollectionStatus(String puuid) {
-        return matchCollectionService.getStatus(puuid);
     }
 
     private MatchDetailResponse buildDetailFromCache(String matchId, CachedMatch cached) {
