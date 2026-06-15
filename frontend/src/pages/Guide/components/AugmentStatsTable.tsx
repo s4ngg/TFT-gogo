@@ -3,6 +3,7 @@ import type {
   MetricSortKey,
   SortDir,
 } from '../../../api/guide'
+import { formatGuideRankMetric } from '../../../api/guideText'
 import TierBadge from '../../../components/common/TierBadge'
 import {
   EmptyState,
@@ -71,7 +72,7 @@ function AugmentStatsTable({
               </td>
               <td>{augment.type}</td>
               <td className={styles.winRate}>{augment.winRate}</td>
-              <td className={styles.avgPlace}>#{augment.avgPlace}</td>
+              <td className={styles.avgPlace}>{formatGuideRankMetric(augment.avgPlace)}</td>
               <td className={styles.pickRate}>{augment.pickRate}</td>
               <td className={styles.rewardCell}>{augment.reward}</td>
             </tr>

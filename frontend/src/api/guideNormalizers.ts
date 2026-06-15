@@ -1,6 +1,7 @@
 import { isRecord } from './apiResponse'
 import { getChampionApiName } from './cdragonLocale'
 import { tftChampSquareUrl } from './communityDragonAssets'
+import { isDisplayableGuideTag, sanitizeGuideText } from './guideText'
 import type { TierBadgeValue, TraitHexBadgeTone } from '../types/badges'
 import { getTotalPages } from './guideFallback'
 import {
@@ -41,6 +42,12 @@ function readNumber(record: Record<string, unknown>, key: string, fallback = 0) 
 function readStringArray(record: Record<string, unknown>, key: string) {
   const value = record[key]
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
+}
+
+function readDisplayTags(record: Record<string, unknown>, key: string) {
+  return readStringArray(record, key)
+    .map(sanitizeGuideText)
+    .filter(isDisplayableGuideTag)
 }
 
 function parseJsonRecord(value: unknown) {
@@ -342,7 +349,7 @@ function guideEntriesToCatalog(entries: GuideEntryResponse[], fallbackData: Guid
   sortedEntries.forEach((entry) => {
     const data = readDataRecord(entry)
     const imageUrl = readImageUrl(entry, data)
-    const summary = entry.summary ?? readNullableString(data, 'summary') ?? ''
+    const summary = sanitizeGuideText(entry.summary ?? readNullableString(data, 'summary') ?? '')
 
     if (normalizeGuideType(entry) === 'traits') {
       catalog.traits.push({
@@ -375,11 +382,11 @@ function guideEntriesToCatalog(entries: GuideEntryResponse[], fallbackData: Guid
     if (normalizeGuideType(entry) === 'augments') {
       catalog.augments.push({
         avgPlace: readString(data, 'avgPlace', readString(data, 'avg_place')),
-        description: readString(data, 'description', summary),
+        description: sanitizeGuideText(readString(data, 'description', summary)),
         name: entry.name,
         pickRate: readString(data, 'pickRate', readString(data, 'pick_rate')),
         reward: readString(data, 'reward', '-'),
-        tags: readStringArray(data, 'tags'),
+        tags: readDisplayTags(data, 'tags'),
         tier: readTier(data.tier),
         type: readString(data, 'type', '공용'),
         winRate: readString(data, 'winRate', readString(data, 'win_rate')),
