@@ -33,6 +33,7 @@ General signup/login APIs issue access tokens, and authenticated requests are re
 - 로그인 성공 시 accessToken을 발급한다.
 - 소셜 로그인은 `/api/v1/auth/social/{provider}`로 시작 URL을 받은 뒤 브라우저를 `/oauth2/authorization/{provider}`로 이동시킨다.
 - 실제 provider 인증 완료에는 각 provider client-id/client-secret, redirect-uri, 프론트 콜백 URI 설정이 필요하다.
+- 소셜 로그인 시작 API는 provider enum이 지원되더라도 OAuth2 client registration 설정이 없으면 503 ApiResponse 실패를 반환하고, 프론트는 이메일 로그인을 안내한다.
 - OAuth2 성공 시 백엔드는 `(socialProvider, socialId)` 기준으로 기존 회원을 찾거나 신규 소셜 회원을 생성하고 accessToken만 fragment로 프론트 콜백 URI에 전달한다.
 - 프론트 `/oauth/callback`은 fragment에서 accessToken을 읽고 URL을 즉시 replace한 뒤 `/api/v1/members/me`로 현재 회원 정보를 복원한다.
 - OAuth2 실패 시 백엔드는 프론트 로그인 URI에 whitelist `oauthError` code만 전달한다.
@@ -83,6 +84,8 @@ General signup/login APIs issue access tokens, and authenticated requests are re
 - Login API failure: wrong email or password -> common invalid credential error.
 - Login API failure: social-only member with null passwordHash -> common invalid credential error.
 - Social start API success: supported provider -> absolute authorizationUrl.
+- Social start API failure: unsupported provider -> 400 INVALID_INPUT.
+- Social start API failure: supported provider without OAuth2 client registration -> 503 SOCIAL_PROVIDER_NOT_CONFIGURED.
 - Social OAuth success: provider attributes -> existing or new social member -> frontend callback with accessToken fragment.
 - Social OAuth failure: provider error/email missing/email conflict -> frontend login redirect with whitelist oauthError code.
 - Social OAuth callback frontend success: accessToken fragment -> token persisted -> GET /api/v1/members/me user restore.
