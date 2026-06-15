@@ -57,16 +57,6 @@ export interface ChampionItemSummary {
   name: string
 }
 
-export interface PartyPost {
-  title: string
-  mode: string
-  tier: string
-  count: string
-  close: string
-  icon: 'crown' | 'leaf' | 'spark' | 'goal'
-  tone: 'purple' | 'green' | 'cyan' | 'gold'
-}
-
 const traitIconUrls = {
   animaSquad: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_AnimaTech.TFT_Set17.tex'),
   challenger: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Challenger.TFT_Set17.tex'),
@@ -541,43 +531,5 @@ export const metaDecks: MetaDeck[] = [
       champion('오로라', championImageUrls.aurora, 2, recommendedItems.magicBurst),
       champion('뽀삐', championImageUrls.poppy, 2),
     ],
-  },
-]
-export const partyPosts: PartyPost[] = [
-  {
-    title: '마스터 이상 듀오 구합니다',
-    mode: '랭크',
-    tier: '마스터+',
-    count: '2/2',
-    close: '마감 15분 전',
-    icon: 'crown',
-    tone: 'purple',
-  },
-  {
-    title: '다이아 구간 야부/연습 같이해요',
-    mode: '랭크',
-    tier: '다이아+',
-    count: '1/2',
-    close: '마감 42분 전',
-    icon: 'leaf',
-    tone: 'green',
-  },
-  {
-    title: '저녁 근접, 편하게 즐기실 분!',
-    mode: '일반',
-    tier: '제한 없음',
-    count: '3/4',
-    close: '마감 1시간 전',
-    icon: 'spark',
-    tone: 'cyan',
-  },
-  {
-    title: '주말 마스터 달성 목표!',
-    mode: '랭크',
-    tier: '플래티넘+',
-    count: '2/3',
-    close: '마감 2시간 전',
-    icon: 'goal',
-    tone: 'gold',
   },
 ]
