@@ -41,6 +41,7 @@ public class SecurityConfig {
                         auth
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/decks/meta").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/community/parties").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/riot/status").permitAll()
                         .requestMatchers(
                                 "/health",
                                 "/api/v1/auth/login",
