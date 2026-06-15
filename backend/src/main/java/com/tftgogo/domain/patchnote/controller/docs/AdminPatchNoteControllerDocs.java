@@ -2,11 +2,14 @@ package com.tftgogo.domain.patchnote.controller.docs;
 
 import com.tftgogo.domain.patchnote.dto.request.AdminPatchChangeRequest;
 import com.tftgogo.domain.patchnote.dto.request.AdminPatchNoteRequest;
+import com.tftgogo.domain.patchnote.dto.request.PatchNoteCrawlImportRequest;
 import com.tftgogo.domain.patchnote.dto.response.PatchChangeResponse;
+import com.tftgogo.domain.patchnote.dto.response.PatchNoteCrawlImportResponse;
 import com.tftgogo.domain.patchnote.dto.response.PatchNoteResponse;
 import com.tftgogo.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import java.util.List;
 
 @Tag(name = "Admin PatchNotes", description = "패치노트 관리자 API")
+@SecurityRequirement(name = "X-Admin-Token")
 public interface AdminPatchNoteControllerDocs {
 
     @Operation(summary = "관리자 패치노트 목록 조회", description = "삭제되지 않은 패치노트를 관리자 정렬 기준으로 조회합니다.")
@@ -24,6 +28,20 @@ public interface AdminPatchNoteControllerDocs {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "관리자 인증 실패")
     })
     ResponseEntity<ApiResponse<List<PatchNoteResponse>>> getPatchNotes();
+
+    @Operation(
+            summary = "패치노트 공식 크롤링 import",
+            description = "Riot/TFT 공식 패치노트 URL을 fetch/parse/normalize한 뒤 dryRun 또는 실제 upsert를 수행합니다. dryRun=true이면 DB에 저장하지 않고 생성/수정/스킵 예상 결과만 반환합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "import 처리 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청 또는 지원하지 않는 공식 URL"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "관리자 인증 실패"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "502", description = "공식 패치노트 호출 실패")
+    })
+    ResponseEntity<ApiResponse<PatchNoteCrawlImportResponse>> importPatchNoteByCrawl(
+            @Valid @RequestBody PatchNoteCrawlImportRequest request
+    );
 
     @Operation(summary = "패치노트 생성", description = "관리자 권한으로 패치노트를 생성합니다.")
     @ApiResponses({

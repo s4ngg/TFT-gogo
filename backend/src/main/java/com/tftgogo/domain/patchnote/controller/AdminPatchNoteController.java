@@ -3,9 +3,12 @@ package com.tftgogo.domain.patchnote.controller;
 import com.tftgogo.domain.patchnote.controller.docs.AdminPatchNoteControllerDocs;
 import com.tftgogo.domain.patchnote.dto.request.AdminPatchChangeRequest;
 import com.tftgogo.domain.patchnote.dto.request.AdminPatchNoteRequest;
+import com.tftgogo.domain.patchnote.dto.request.PatchNoteCrawlImportRequest;
 import com.tftgogo.domain.patchnote.dto.response.PatchChangeResponse;
+import com.tftgogo.domain.patchnote.dto.response.PatchNoteCrawlImportResponse;
 import com.tftgogo.domain.patchnote.dto.response.PatchNoteResponse;
 import com.tftgogo.domain.patchnote.service.AdminPatchNoteService;
+import com.tftgogo.domain.patchnote.service.PatchNoteCrawlerImportService;
 import com.tftgogo.global.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,12 +30,21 @@ import java.util.List;
 public class AdminPatchNoteController implements AdminPatchNoteControllerDocs {
 
     private final AdminPatchNoteService adminPatchNoteService;
+    private final PatchNoteCrawlerImportService patchNoteCrawlerImportService;
 
     @Override
     @GetMapping("/patch-notes")
     public ResponseEntity<ApiResponse<List<PatchNoteResponse>>> getPatchNotes() {
         List<PatchNoteResponse> response = adminPatchNoteService.getPatchNotes();
         return ResponseEntity.ok(ApiResponse.success("관리자 패치노트 조회 성공", response));
+    }
+
+    @Override
+    @PostMapping("/patch-notes/import/crawl")
+    public ResponseEntity<ApiResponse<PatchNoteCrawlImportResponse>> importPatchNoteByCrawl(
+            @Valid @RequestBody PatchNoteCrawlImportRequest request) {
+        PatchNoteCrawlImportResponse response = patchNoteCrawlerImportService.importPatchNote(request);
+        return ResponseEntity.ok(ApiResponse.success("패치노트 공식 크롤링 import 처리 성공", response));
     }
 
     @Override
