@@ -1,23 +1,31 @@
 import { Bell, ChevronDown, CircleHelp, LogIn, Mail } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { communityDragonProfileIconUrl } from '../../api/communityDragonAssets'
+import { useAuthSession } from '../../hooks/useAuthSession'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
 import useAuthStore from '../../store/useAuthStore'
+import RiotApiStatusBadge from './RiotApiStatusBadge'
 import styles from './Layout.module.css'
 
 const profileIconUrl = communityDragonProfileIconUrl(588)
 
 function TopBar() {
-  const user = useAuthStore((state) => state.user)
-  const isLoggedIn = Boolean(user)
+  const token = useAuthStore((state) => state.token)
+  const isLoggedIn = Boolean(token)
+  const { data: member } = useAuthSession()
   const { data: metaDeckResponse } = useMetaSnapshot()
   const patchVersion = metaDeckResponse?.patchVersion ?? '집계 대기'
+  const displayName = member?.nickname ?? member?.email ?? 'TFTgogo'
+  const memberProfileIconUrl = member?.profileImage || profileIconUrl
 
   return (
     <header className={styles.topBar}>
-      <div className={styles.patchBrief} aria-label="패치 한줄 요약">
-        <span>{patchVersion} 패치 요약</span>
-        <strong>상위권 선봉대 벡스와 6악복 중심으로 압축 중</strong>
+      <div className={styles.topStatusGroup}>
+        <div className={styles.patchBrief} aria-label="패치 한줄 요약">
+          <span>{patchVersion} 패치 요약</span>
+          <strong>상위권 선봉대 벡스와 6악복 중심으로 압축 중</strong>
+        </div>
+        <RiotApiStatusBadge />
       </div>
       <div className={styles.topActions}>
         {isLoggedIn && (
@@ -37,9 +45,9 @@ function TopBar() {
         {isLoggedIn ? (
           <button type="button" className={styles.profileButton}>
             <span>
-              <img src={profileIconUrl} alt="" />
+              <img src={memberProfileIconUrl} alt="" />
             </span>
-            TFTgogo
+            {displayName}
             <ChevronDown size={14} />
           </button>
         ) : (

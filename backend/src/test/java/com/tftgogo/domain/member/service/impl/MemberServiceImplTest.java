@@ -1,10 +1,12 @@
 package com.tftgogo.domain.member.service.impl;
 
+import com.tftgogo.domain.member.dto.command.SocialLoginCommand;
 import com.tftgogo.domain.member.dto.request.LoginRequest;
 import com.tftgogo.domain.member.dto.request.SignupRequest;
 import com.tftgogo.domain.member.dto.response.AuthResponse;
 import com.tftgogo.domain.member.dto.response.MemberResponse;
 import com.tftgogo.domain.member.entity.Member;
+import com.tftgogo.domain.member.entity.SocialProvider;
 import com.tftgogo.domain.member.repository.MemberRepository;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
@@ -40,6 +42,9 @@ class MemberServiceImplTest {
 
     @Mock
     private JwtTokenProvider jwtTokenProvider;
+
+    @Mock
+    private SocialMemberCreationService socialMemberCreationService;
 
     @InjectMocks
     private MemberServiceImpl memberService;
@@ -145,6 +150,123 @@ class MemberServiceImplTest {
     }
 
     @Test
+    void 일반_로그인은_소셜회원의_null_비밀번호를_공통_인증실패로_처리한다() {
+        // given
+        LoginRequest request = loginRequest("social@example.com", "password123");
+        Member member = socialMember("social@example.com", "소셜회원", "google", "google-1");
+
+        when(memberRepository.findByEmail("social@example.com")).thenReturn(Optional.of(member));
+
+        // when, then
+        assertThatThrownBy(() -> memberService.login(request))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_LOGIN_CREDENTIALS));
+
+        verify(passwordEncoder, never()).matches(anyString(), anyString());
+    }
+
+    @Test
+    void 소셜로그인은_기존_소셜회원이면_토큰과_사용자정보를_반환한다() {
+        // given
+        SocialLoginCommand command = socialLoginCommand("social@example.com", "소셜회원");
+        Member member = socialMember("social@example.com", "소셜회원", "google", "google-1");
+        ReflectionTestUtils.setField(member, "userId", 1L);
+
+        when(memberRepository.findBySocialProviderAndSocialId("google", "google-1"))
+                .thenReturn(Optional.of(member));
+        when(jwtTokenProvider.createAccessToken(1L)).thenReturn("access-token");
+
+        // when
+        AuthResponse response = memberService.socialLogin(command);
+
+        // then
+        assertThat(response.getAccessToken()).isEqualTo("access-token");
+        assertThat(response.getUser())
+                .extracting(MemberResponse::getEmail, MemberResponse::getNickname)
+                .containsExactly("social@example.com", "소셜회원");
+        verify(memberRepository, never()).saveAndFlush(any(Member.class));
+    }
+
+    @Test
+    void 소셜로그인은_신규회원이면_비밀번호없이_소셜정보로_저장한다() {
+        // given
+        SocialLoginCommand command = socialLoginCommand("social@example.com", "소셜회원");
+        Member savedMember = socialMember("social@example.com", "소셜회원", "google", "google-1");
+        ReflectionTestUtils.setField(savedMember, "userId", 1L);
+
+        when(memberRepository.findBySocialProviderAndSocialId("google", "google-1"))
+                .thenReturn(Optional.empty());
+        when(memberRepository.existsByEmail("social@example.com")).thenReturn(false);
+        when(socialMemberCreationService.create(command)).thenReturn(savedMember);
+        when(jwtTokenProvider.createAccessToken(1L)).thenReturn("access-token");
+
+        // when
+        AuthResponse response = memberService.socialLogin(command);
+
+        // then
+        assertThat(response.getAccessToken()).isEqualTo("access-token");
+        verify(socialMemberCreationService).create(command);
+    }
+
+    @Test
+    void 소셜로그인은_같은_이메일의_일반회원이_있으면_자동연결하지_않는다() {
+        // given
+        SocialLoginCommand command = socialLoginCommand("sojung@example.com", "소셜회원");
+
+        when(memberRepository.findBySocialProviderAndSocialId("google", "google-1"))
+                .thenReturn(Optional.empty());
+        when(memberRepository.existsByEmail("sojung@example.com")).thenReturn(true);
+
+        // when, then
+        assertThatThrownBy(() -> memberService.socialLogin(command))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.EMAIL_ALREADY_EXISTS));
+
+        verify(socialMemberCreationService, never()).create(any(SocialLoginCommand.class));
+    }
+
+    @Test
+    void 소셜로그인_신규저장중_소셜제약조건이_깨지면_재조회한_회원으로_토큰을_반환한다() {
+        // given
+        SocialLoginCommand command = socialLoginCommand("social@example.com", "소셜회원");
+        Member existingMember = socialMember("social@example.com", "소셜회원", "google", "google-1");
+        ReflectionTestUtils.setField(existingMember, "userId", 1L);
+
+        when(memberRepository.findBySocialProviderAndSocialId("google", "google-1"))
+                .thenReturn(Optional.empty(), Optional.of(existingMember));
+        when(memberRepository.existsByEmail("social@example.com")).thenReturn(false);
+        when(socialMemberCreationService.create(command))
+                .thenThrow(new DataIntegrityViolationException("duplicate social provider"));
+        when(jwtTokenProvider.createAccessToken(1L)).thenReturn("access-token");
+
+        // when
+        AuthResponse response = memberService.socialLogin(command);
+
+        // then
+        assertThat(response.getAccessToken()).isEqualTo("access-token");
+        assertThat(response.getUser())
+                .extracting(MemberResponse::getEmail, MemberResponse::getNickname)
+                .containsExactly("social@example.com", "소셜회원");
+    }
+
+    @Test
+    void 소셜로그인_신규저장중_제약조건이_깨지고_재조회도_실패하면_소셜로그인_실패로_처리한다() {
+        // given
+        SocialLoginCommand command = socialLoginCommand("social@example.com", "소셜회원");
+
+        when(memberRepository.findBySocialProviderAndSocialId("google", "google-1"))
+                .thenReturn(Optional.empty());
+        when(memberRepository.existsByEmail("social@example.com")).thenReturn(false);
+        when(socialMemberCreationService.create(command))
+                .thenThrow(new DataIntegrityViolationException("duplicate social provider"));
+
+        // when, then
+        assertThatThrownBy(() -> memberService.socialLogin(command))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.SOCIAL_LOGIN_FAILED));
+    }
+
+    @Test
     void 내정보_조회_성공시_사용자정보를_반환한다() {
         // given
         Member member = member("sojung@example.com", "encoded-password", "소정");
@@ -172,6 +294,16 @@ class MemberServiceImplTest {
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.MEMBER_NOT_FOUND));
     }
 
+    @Test
+    void 내정보_조회는_인증정보가_없으면_UNAUTHORIZED를_던진다() {
+        // when, then
+        assertThatThrownBy(() -> memberService.getMe(null))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED));
+
+        verify(memberRepository, never()).findById(any());
+    }
+
     private SignupRequest signupRequest(String email, String password, String nickname) {
         SignupRequest request = new SignupRequest();
         ReflectionTestUtils.setField(request, "email", email);
@@ -192,6 +324,27 @@ class MemberServiceImplTest {
                 .email(email)
                 .passwordHash(passwordHash)
                 .nickname(nickname)
+                .build();
+    }
+
+    private SocialLoginCommand socialLoginCommand(String email, String nickname) {
+        return SocialLoginCommand.of(
+                SocialProvider.GOOGLE,
+                "google-1",
+                email,
+                nickname,
+                "https://example.com/profile.png"
+        );
+    }
+
+    private Member socialMember(String email, String nickname, String socialProvider, String socialId) {
+        return Member.builder()
+                .email(email)
+                .passwordHash(null)
+                .nickname(nickname)
+                .profileImage("https://example.com/profile.png")
+                .socialProvider(socialProvider)
+                .socialId(socialId)
                 .build();
     }
 }

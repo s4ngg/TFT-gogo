@@ -403,3 +403,5 @@
   font-size: 12px;
   line-height: 1.55;
 }
+
+.errorMessage { padding: 2rem; color: var(--danger); text-align: center; }

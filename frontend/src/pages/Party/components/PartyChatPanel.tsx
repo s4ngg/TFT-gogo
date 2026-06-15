@@ -1,22 +1,49 @@
 import { type FormEvent } from 'react'
 import { MessageCircle, Send, Users } from 'lucide-react'
-import type { ChatMessage, ChatRoom } from '../types'
+import type { ChatMessage } from '../../../api/chatApi'
+import type { ChatRoom } from '../types'
 import styles from '../Party.module.css'
 
 interface PartyChatPanelProps {
   activeMessages: ChatMessage[]
+  activeRoomId: string
   activeRoomName: string
   chatInput: string
-  onActiveRoomChange: (roomName: string) => void
+  chatNotice: string
+  connectionLabel: string
+  currentUserName: string
+  isLoading: boolean
+  isMessageDisabled: boolean
+  onActiveRoomChange: (roomId: string) => void
   onChatInputChange: (value: string) => void
-  onMessageSubmit: () => void
+  onMessageSubmit: () => Promise<void>
   rooms: ChatRoom[]
+}
+
+function formatMessageTime(createdAt: string) {
+  const createdDate = new Date(createdAt)
+
+  if (Number.isNaN(createdDate.getTime())) {
+    return '--:--'
+  }
+
+  return new Intl.DateTimeFormat('ko-KR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(createdDate)
 }
 
 function PartyChatPanel({
   activeMessages,
+  activeRoomId,
   activeRoomName,
   chatInput,
+  chatNotice,
+  connectionLabel,
+  currentUserName,
+  isLoading,
+  isMessageDisabled,
   onActiveRoomChange,
   onChatInputChange,
   onMessageSubmit,
@@ -24,7 +51,7 @@ function PartyChatPanel({
 }: PartyChatPanelProps) {
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    onMessageSubmit()
+    void onMessageSubmit()
   }
 
   return (
@@ -34,18 +61,18 @@ function PartyChatPanel({
           <h2>실시간 채팅</h2>
           <p>현재 접속 중인 유저들과 빠르게 정보를 나눠보세요.</p>
         </div>
-        <span className={styles.onlineBadge}>온라인 4,113</span>
+        <span className={styles.onlineBadge}>{connectionLabel}</span>
       </div>
 
       <div className={styles.chatLayout}>
         <aside className={styles.channelList} aria-label="채팅 채널">
           {rooms.map((room) => (
             <button
-              aria-pressed={activeRoomName === room.name}
-              className={activeRoomName === room.name ? styles.activeChannel : undefined}
-              onClick={() => onActiveRoomChange(room.name)}
+              aria-pressed={activeRoomId === room.id}
+              className={activeRoomId === room.id ? styles.activeChannel : undefined}
+              onClick={() => onActiveRoomChange(room.id)}
               type="button"
-              key={room.name}
+              key={room.id}
             >
               <strong># {room.name}</strong>
               <span>
@@ -61,24 +88,31 @@ function PartyChatPanel({
           <div className={styles.chatWindowHeader}>
             <strong># {activeRoomName}</strong>
             <span>
-              {activeMessages.length > 0
-                ? `새 메시지 ${activeMessages.length}개`
-                : '대화를 시작해보세요'}
+              {isLoading
+                ? '메시지 불러오는 중'
+                : activeMessages.length > 0
+                  ? `새 메시지 ${activeMessages.length}개`
+                  : '대화를 시작해보세요'}
             </span>
           </div>
-          <div className={styles.messageList}>
+          {chatNotice && (
+            <p className={styles.chatStatus} role="status" aria-live="polite">
+              {chatNotice}
+            </p>
+          )}
+          <div className={styles.messageList} role="log" aria-live="polite">
             {activeMessages.length > 0 ? (
               activeMessages.map((chat) => (
                 <article
-                  className={chat.isMine ? styles.myMessage : undefined}
-                  key={`${chat.roomName}-${chat.name}-${chat.time}-${chat.message}`}
+                  className={chat.senderName === currentUserName ? styles.myMessage : undefined}
+                  key={chat.id}
                 >
                   <div>
-                    <strong>{chat.name}</strong>
-                    <span>{chat.tier}</span>
-                    <time>{chat.time}</time>
+                    <strong>{chat.senderName}</strong>
+                    <span>{chat.tier ?? 'Unranked'}</span>
+                    <time dateTime={chat.createdAt}>{formatMessageTime(chat.createdAt)}</time>
                   </div>
-                  <p>{chat.message}</p>
+                  <p>{chat.content}</p>
                 </article>
               ))
             ) : (
@@ -89,11 +123,17 @@ function PartyChatPanel({
             <MessageCircle size={19} />
             <input
               aria-label="채팅 메시지 입력"
+              disabled={isMessageDisabled}
               onChange={(event) => onChatInputChange(event.target.value)}
-              placeholder="메시지를 입력하세요"
+              placeholder={isMessageDisabled ? '로그인 후 채팅 가능' : '메시지를 입력하세요'}
               value={chatInput}
             />
-            <button type="submit" aria-label="메시지 보내기">
+            <button
+              type="submit"
+              aria-disabled={isMessageDisabled}
+              aria-label="메시지 보내기"
+              disabled={isMessageDisabled}
+            >
               <Send size={18} />
             </button>
           </form>

@@ -4,17 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tftgogo.domain.ai.dto.AiRecommendResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 import java.util.Map;
 
-/**
- * AI 서버(FastAPI) HTTP 클라이언트.
- * AI 서버가 타임아웃되거나 오류를 반환하면 null을 반환하고 호출부에서 fallback 처리.
- */
 @Component
 public class AiServerClient {
 
@@ -23,17 +18,13 @@ public class AiServerClient {
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
 
-    public AiServerClient(
-            @Value("${ai.server.url:http://localhost:8000}") String aiServerUrl,
-            @Value("${ai.server.timeout-seconds:10}") int timeoutSeconds,
-            ObjectMapper objectMapper
-    ) {
+    public AiServerClient(AiServerProperties props, ObjectMapper objectMapper) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(timeoutSeconds * 1000);
-        factory.setReadTimeout(timeoutSeconds * 1000);
+        factory.setConnectTimeout(props.getTimeoutSeconds() * 1000);
+        factory.setReadTimeout(props.getTimeoutSeconds() * 1000);
 
         this.restClient = RestClient.builder()
-                .baseUrl(aiServerUrl)
+                .baseUrl(props.getUrl())
                 .requestFactory(factory)
                 .build();
         this.objectMapper = objectMapper;

@@ -42,20 +42,39 @@
   --space-2xs: 3px;
   --space-xs: 4px;
   --space-sm: 6px;
+  --space-md: 8px;
   --space-lg: 10px;
   --space-xl: 12px;
   --space-2xl: 16px;
+  --space-3xl: 18px;
+  --space-4xl: 20px;
+  --space-5xl: 24px;
+  --space-6xl: 32px;
 
   --size-control-sm: 32px;
+  --size-control-action: 34px;
+  --size-control-md: 36px;
   --size-status-banner: 50px;
   --size-status-icon: 30px;
+  --size-admin-content-max-width: 1280px;
+  --size-admin-note-panel-min-width: 280px;
+  --size-admin-note-form-min-width: 420px;
+  --size-admin-note-version-width: 64px;
+  --size-admin-change-form-min-width: 420px;
+  --size-admin-change-list-min-width: 320px;
+  --size-admin-change-list-max-height: 680px;
+  --size-admin-textarea-min-height: 78px;
 
   --font-size-xs: 12px;
   --font-size-sm: 13px;
+  --font-size-md: 17px;
+  --font-size-lg: 18px;
+  --font-size-xl: 24px;
   --font-size-icon-fallback: 8px;
   --font-main: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 
   --sidebar-width: 222px;
+  --sidebar-collapsed-width: 78px;
   --radius-card: 12px;
   --radius-button: 8px;
   --chevron-col-width: 28px;
@@ -201,4 +220,3 @@
   --badge-normal-bg: rgba(140, 150, 160, 0.1);
   --badge-normal-border: rgba(140, 150, 160, 0.22);
 }
-
