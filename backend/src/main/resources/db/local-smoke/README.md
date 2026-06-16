@@ -1,14 +1,17 @@
-# Guide/PatchNotes 로컬 스모크 데이터
+# v0.4 로컬 스모크 DB 기준
 
-이 폴더는 Guide와 PatchNotes API를 로컬에서 확인하기 위한 수동 DB 기준 데이터를 정의합니다.
+이 폴더는 QA 전에 새 MySQL DB에서 주요 백엔드 기능이 최소 동작하도록 수동 DDL과 스모크 데이터를 정의합니다.
 
 ## 운영 원칙
 
 - 현재 스키마 관리는 수동 SQL로 진행합니다.
 - `spring.jpa.hibernate.ddl-auto`는 `none`입니다.
 - `backend/build.gradle`에는 Flyway/Liquibase가 설정되어 있지 않습니다.
-- 공개 Guide/PatchNotes API는 `RIOT_API_KEY` 없이 확인할 수 있습니다.
+- `01_schema.sql`은 현재 JPA Entity 기준 테이블과 ELD 예약 채팅 테이블을 생성합니다.
+- `02_seed.sql`은 Guide/PatchNotes 공개 API 확인용 데이터와 고정 채팅 room id ELD 데이터를 넣습니다.
+- 공개 Guide/PatchNotes API와 Auth/Party 기본 흐름은 `RIOT_API_KEY` 없이 확인할 수 있습니다.
 - 이 스모크 경로에서는 `ai-server/.env`가 선택 사항이며, MySQL, Redis, backend만 필요합니다.
+- 자세한 DDL/ELD 기준과 QA 범위는 `docs/qa/v0.4-db-ddl-eld.md`를 확인합니다.
 
 ## 로컬 전용 기본값
 
@@ -23,6 +26,13 @@ docker compose up -d mysql redis
 ```
 
 ## 스키마와 시드 적용
+
+Docker Compose의 MySQL 서비스는 빈 `mysql-data` volume이 처음 만들어질 때 `01_schema.sql`, `02_seed.sql`을 자동 실행합니다.
+이미 생성된 volume에는 init SQL이 다시 실행되지 않으므로, 기존 DB를 초기화하려면 먼저 아래 명령을 실행합니다.
+
+```powershell
+docker compose down -v
+```
 
 host MySQL client를 사용할 때:
 
@@ -74,4 +84,9 @@ curl.exe -H "X-Admin-Token: local-admin-token" http://localhost:8081/api/admin/g
 curl.exe -H "X-Admin-Token: local-admin-token" http://localhost:8081/api/admin/patch-notes
 ```
 
-기대 결과: Guide와 PatchNotes 공개 API가 frontend fallback data 없이 시드된 `17.3` 데이터를 반환합니다.
+기대 결과:
+
+- Guide와 PatchNotes 공개 API가 frontend fallback data 없이 시드된 `17.3` 데이터를 반환합니다.
+- Auth signup/login/me, Party create/join/cancel이 임시 테이블 생성 없이 동작합니다.
+- Chat GET messages/SSE는 공개 접근, POST message는 로그인 토큰으로 동작합니다.
+- Chat DB 테이블은 ELD 예약 테이블이며 현재 MVP 런타임은 in-memory chat을 사용합니다.
