@@ -1,17 +1,25 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 
-import { getPartyPosts } from '../../../api/partyApi'
+import { getPartyPosts, type PartyPostsQueryParams } from '../../../api/partyApi'
+import { communityPartyPostsQueryKey } from '../../../api/partyQueryKeys'
 import type { PartyFilter } from '../../Party/partyFilters'
 import { selectPartyPreviewPosts } from '../utils/partyPreview'
 
-const PARTY_PREVIEW_QUERY_KEY = ['community', 'parties'] as const
 const PARTY_PREVIEW_STALE_TIME_MS = 1000 * 60
 
+function toPartyPostsQueryParams(filter: PartyFilter): PartyPostsQueryParams {
+  return filter === '전체' ? {} : { mode: filter }
+}
+
 export function usePartyPreviewPosts(selectedFilter: PartyFilter) {
+  const partyQueryParams = useMemo(
+    () => toPartyPostsQueryParams(selectedFilter),
+    [selectedFilter],
+  )
   const partyQuery = useQuery({
-    queryKey: PARTY_PREVIEW_QUERY_KEY,
-    queryFn: getPartyPosts,
+    queryKey: communityPartyPostsQueryKey(partyQueryParams),
+    queryFn: () => getPartyPosts(partyQueryParams),
     staleTime: PARTY_PREVIEW_STALE_TIME_MS,
   })
   const posts = useMemo(
