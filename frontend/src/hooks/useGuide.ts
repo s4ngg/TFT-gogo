@@ -10,6 +10,7 @@ import {
   type GuideTabItems,
   type GuideTabPageResult,
 } from '../api/guide'
+import { LIVE_CONTENT_QUERY_OPTIONS } from './liveContentQueryOptions'
 
 interface UseGuideCatalogOptions {
   fallbackData: GuideCatalog
@@ -50,7 +51,7 @@ export function useGuideCatalog({ fallbackData }: UseGuideCatalogOptions) {
     placeholderData,
     queryFn: () => getGuideCatalog(fallbackData),
     queryKey: ['guide', 'catalog'],
-    staleTime: 1000 * 60 * 5,
+    ...LIVE_CONTENT_QUERY_OPTIONS,
   })
   const guideResult = guideQuery.data ?? placeholderData
 
@@ -82,7 +83,7 @@ export function useGuideTabItems<T extends GuideTab>({
       params.sortDir ?? '',
       params.cost ?? 'all',
     ],
-    staleTime: 1000 * 60 * 5,
+    ...LIVE_CONTENT_QUERY_OPTIONS,
   })
 
   return {

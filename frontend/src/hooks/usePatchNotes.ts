@@ -9,6 +9,7 @@ import {
   type PatchNoteDetail,
   type PatchNotesResult,
 } from '../api/patchNotes'
+import { LIVE_CONTENT_QUERY_OPTIONS } from './liveContentQueryOptions'
 
 interface UsePatchNotesOptions {
   fallbackData: PatchNoteDetail[]
@@ -24,9 +25,10 @@ export function usePatchNotes({ fallbackData }: UsePatchNotesOptions) {
 
   const patchNotesQuery = useQuery<PatchNotesResult>({
     initialData: { data: fallbackData, source: 'fallback' },
+    initialDataUpdatedAt: 0,
     queryFn: () => getPatchNotes(fallbackData),
     queryKey: ['patch-notes', 'list'],
-    staleTime: 1000 * 60 * 5,
+    ...LIVE_CONTENT_QUERY_OPTIONS,
   })
 
   const patchNotes = patchNotesQuery.data.data
@@ -62,6 +64,6 @@ export function usePatchChanges({ fallbackData, params }: UsePatchChangesOptions
     initialDataUpdatedAt: 0,
     queryFn: () => getPatchChanges(params, fallbackData),
     queryKey: ['patch-notes', params.version, 'changes', params],
-    staleTime: 1000 * 60 * 5,
+    ...LIVE_CONTENT_QUERY_OPTIONS,
   })
 }
