@@ -27,6 +27,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -163,6 +164,7 @@ class CommunityPartyServiceImplTest {
                 2L,
                 PartyApplicationStatus.ACCEPTED
         )).thenReturn(false);
+        givenNoOtherActivePartyParticipation(2L, 1L);
 
         // when
         PartyPostResponse response = communityPartyService.joinParty(2L, 1L);
@@ -183,6 +185,7 @@ class CommunityPartyServiceImplTest {
                 2L,
                 PartyApplicationStatus.ACCEPTED
         )).thenReturn(false);
+        givenNoOtherActivePartyParticipation(2L, 1L);
 
         // when, then
         assertThatThrownBy(() -> communityPartyService.joinParty(2L, 1L))
@@ -203,6 +206,7 @@ class CommunityPartyServiceImplTest {
                 2L,
                 PartyApplicationStatus.ACCEPTED
         )).thenReturn(false);
+        givenNoOtherActivePartyParticipation(2L, 1L);
 
         // when, then
         assertThatThrownBy(() -> communityPartyService.joinParty(2L, 1L))
@@ -229,6 +233,77 @@ class CommunityPartyServiceImplTest {
         // then
         assertThat(response.getCapacity()).isEqualTo("1/3");
         assertThat(response.isJoined()).isTrue();
+        verify(partyApplicationRepository, never()).save(any(PartyApplication.class));
+        verify(partyPostRepository, never()).existsActiveOwnedPartyPostForOtherParty(
+                any(Long.class),
+                any(Long.class),
+                any(LocalDateTime.class)
+        );
+        verify(partyApplicationRepository, never()).existsActiveAcceptedApplicationForOtherParty(
+                any(Long.class),
+                any(PartyApplicationStatus.class),
+                any(Long.class),
+                any(LocalDateTime.class)
+        );
+    }
+
+    @Test
+    void 이미_다른_활성_파티에_참여한_사용자는_새_파티에_참여할_수_없다() {
+        // given
+        PartyPost partyPost = partyPost(1L, 1L, "마스터 듀오 구합니다", PartyGameMode.RANKED_TFT, 1, 3);
+        when(partyPostRepository.findActiveByIdForUpdate(1L)).thenReturn(Optional.of(partyPost));
+        when(partyApplicationRepository.existsByPartyPostAndUserIdAndStatus(
+                partyPost,
+                2L,
+                PartyApplicationStatus.ACCEPTED
+        )).thenReturn(false);
+        when(partyPostRepository.existsActiveOwnedPartyPostForOtherParty(
+                eq(2L),
+                eq(1L),
+                any(LocalDateTime.class)
+        )).thenReturn(false);
+        when(partyApplicationRepository.existsActiveAcceptedApplicationForOtherParty(
+                eq(2L),
+                eq(PartyApplicationStatus.ACCEPTED),
+                eq(1L),
+                any(LocalDateTime.class)
+        )).thenReturn(true);
+
+        // when, then
+        assertThatThrownBy(() -> communityPartyService.joinParty(2L, 1L))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PARTY_ALREADY_JOINED));
+
+        verify(partyApplicationRepository, never()).save(any(PartyApplication.class));
+    }
+
+    @Test
+    void 다른_활성_모집글을_작성한_사용자는_새_파티에_참여할_수_없다() {
+        // given
+        PartyPost partyPost = partyPost(1L, 1L, "마스터 듀오 구합니다", PartyGameMode.RANKED_TFT, 1, 3);
+        when(partyPostRepository.findActiveByIdForUpdate(1L)).thenReturn(Optional.of(partyPost));
+        when(partyApplicationRepository.existsByPartyPostAndUserIdAndStatus(
+                partyPost,
+                2L,
+                PartyApplicationStatus.ACCEPTED
+        )).thenReturn(false);
+        when(partyPostRepository.existsActiveOwnedPartyPostForOtherParty(
+                eq(2L),
+                eq(1L),
+                any(LocalDateTime.class)
+        )).thenReturn(true);
+
+        // when, then
+        assertThatThrownBy(() -> communityPartyService.joinParty(2L, 1L))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PARTY_ALREADY_JOINED));
+
+        verify(partyApplicationRepository, never()).existsActiveAcceptedApplicationForOtherParty(
+                any(Long.class),
+                any(PartyApplicationStatus.class),
+                any(Long.class),
+                any(LocalDateTime.class)
+        );
         verify(partyApplicationRepository, never()).save(any(PartyApplication.class));
     }
 
@@ -288,5 +363,19 @@ class CommunityPartyServiceImplTest {
         ReflectionTestUtils.setField(request, "maxMembers", maxMembers);
         ReflectionTestUtils.setField(request, "tags", List.of("음성 가능", "순방 목표"));
         return request;
+    }
+
+    private void givenNoOtherActivePartyParticipation(Long userId, Long partyPostId) {
+        when(partyPostRepository.existsActiveOwnedPartyPostForOtherParty(
+                eq(userId),
+                eq(partyPostId),
+                any(LocalDateTime.class)
+        )).thenReturn(false);
+        when(partyApplicationRepository.existsActiveAcceptedApplicationForOtherParty(
+                eq(userId),
+                eq(PartyApplicationStatus.ACCEPTED),
+                eq(partyPostId),
+                any(LocalDateTime.class)
+        )).thenReturn(false);
     }
 }

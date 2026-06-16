@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface PartyPostRepository extends JpaRepository<PartyPost, Long> {
@@ -51,4 +52,19 @@ public interface PartyPostRepository extends JpaRepository<PartyPost, Long> {
               and p.deletedAt is null
             """)
     Optional<PartyPost> findActiveByIdForUpdate(@Param("partyPostId") Long partyPostId);
+
+    @Query("""
+            select case when count(partyPost) > 0 then true else false end
+            from PartyPost partyPost
+            where partyPost.userId = :userId
+              and partyPost.id <> :partyPostId
+              and partyPost.deletedAt is null
+              and partyPost.closed = false
+              and (partyPost.deadline is null or partyPost.deadline > :now)
+            """)
+    boolean existsActiveOwnedPartyPostForOtherParty(
+            @Param("userId") Long userId,
+            @Param("partyPostId") Long partyPostId,
+            @Param("now") LocalDateTime now
+    );
 }

@@ -18,6 +18,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -69,6 +70,10 @@ public class CommunityPartyServiceImpl implements CommunityPartyService {
         PartyPost partyPost = getPartyPostForUpdate(partyPostId);
         if (partyPost.isOwner(userId) || hasAcceptedApplication(partyPost, userId)) {
             return PartyPostResponse.from(partyPost, true);
+        }
+
+        if (hasOtherActivePartyParticipation(userId, partyPost.getId())) {
+            throw new BusinessException(ErrorCode.PARTY_ALREADY_JOINED);
         }
 
         partyPost.join();
@@ -143,6 +148,18 @@ public class CommunityPartyServiceImpl implements CommunityPartyService {
                 userId,
                 PartyApplicationStatus.ACCEPTED
         );
+    }
+
+    private boolean hasOtherActivePartyParticipation(Long userId, Long partyPostId) {
+        LocalDateTime now = LocalDateTime.now();
+
+        return partyPostRepository.existsActiveOwnedPartyPostForOtherParty(userId, partyPostId, now)
+                || partyApplicationRepository.existsActiveAcceptedApplicationForOtherParty(
+                        userId,
+                        PartyApplicationStatus.ACCEPTED,
+                        partyPostId,
+                        now
+                );
     }
 
     private void validateAuthenticated(Long userId) {
