@@ -310,22 +310,17 @@ function getPartyApiErrorMessage(error: unknown, fallbackMessage: string) {
   return fallbackMessage
 }
 
-export function buildLocalPartyPost(request: CreatePartyPostRequest, id: string): PartyPost {
-  const style = getPostStyle(request.mode, request.tier)
-
-  return {
-    id,
-    chatRoomId: PARTY_RECRUITMENT_ROOM_ID,
-    title: request.title,
-    mode: request.mode,
-    tier: request.tier,
-    capacity: request.capacity,
-    close: formatCloseLabel(request.deadline),
-    status: '모집중',
-    description: request.description,
-    tags: request.tags.length > 0 ? request.tags : [request.mode, request.tier, '방금 등록'],
-    ...style,
+function normalizeRequiredPartyPost(payload: unknown, fallbackMessage: string): PartyPost {
+  if (!isRecord(payload)) {
+    throw new Error(fallbackMessage)
   }
+
+  const response = payload as PartyPostResponse
+  if (readOptionalId(response.partyPostId ?? response.id) === undefined) {
+    throw new Error(fallbackMessage)
+  }
+
+  return normalizePartyPost(response, 0)
 }
 
 function normalizePartyPost(response: PartyPostResponse, index: number): PartyPost {
@@ -378,7 +373,7 @@ export async function getPartyPosts(): Promise<PartyPostsResult> {
   }
 }
 
-export async function createPartyPost(request: CreatePartyPostRequest): Promise<PartyPost | null> {
+export async function createPartyPost(request: CreatePartyPostRequest): Promise<PartyPost> {
   try {
     const { data } = await axiosInstance.post<ApiResponse<PartyPostResponse | null> | PartyPostResponse | null>(
       '/community/parties',
@@ -398,13 +393,13 @@ export async function createPartyPost(request: CreatePartyPostRequest): Promise<
 
     const payload = unwrapApiResponse(data)
 
-    return isRecord(payload) ? normalizePartyPost(payload, 0) : null
+    return normalizeRequiredPartyPost(payload, '파티 모집글 등록 응답이 올바르지 않습니다.')
   } catch (error) {
     throw new Error(getPartyApiErrorMessage(error, '파티 모집글 등록 실패'))
   }
 }
 
-export async function joinPartyPost(partyPostId: string): Promise<PartyPost | null> {
+export async function joinPartyPost(partyPostId: string): Promise<PartyPost> {
   try {
     const { data } = await axiosInstance.post<ApiResponse<PartyPostResponse | null> | PartyPostResponse | null>(
       `/community/parties/${partyPostId}/join`,
@@ -416,13 +411,13 @@ export async function joinPartyPost(partyPostId: string): Promise<PartyPost | nu
 
     const payload = unwrapApiResponse(data)
 
-    return isRecord(payload) ? normalizePartyPost(payload, 0) : null
+    return normalizeRequiredPartyPost(payload, '파티 참여 응답이 올바르지 않습니다.')
   } catch (error) {
     throw new Error(getPartyApiErrorMessage(error, '파티 참여 요청 실패'))
   }
 }
 
-export async function cancelPartyJoin(partyPostId: string): Promise<PartyPost | null> {
+export async function cancelPartyJoin(partyPostId: string): Promise<PartyPost> {
   try {
     const { data } = await axiosInstance.delete<ApiResponse<PartyPostResponse | null> | PartyPostResponse | null>(
       `/community/parties/${partyPostId}/join`,
@@ -434,7 +429,7 @@ export async function cancelPartyJoin(partyPostId: string): Promise<PartyPost | 
 
     const payload = unwrapApiResponse(data)
 
-    return isRecord(payload) ? normalizePartyPost(payload, 0) : null
+    return normalizeRequiredPartyPost(payload, '파티 참여 취소 응답이 올바르지 않습니다.')
   } catch (error) {
     throw new Error(getPartyApiErrorMessage(error, '파티 참여 취소 실패'))
   }

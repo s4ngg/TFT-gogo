@@ -7,6 +7,7 @@ interface PartyCreateFormProps {
   composeError: string
   deadlineDraft: string
   descriptionDraft: string
+  isAuthenticated: boolean
   isSubmitting: boolean
   minDeadline: string
   modeDraft: PartyMode
@@ -29,6 +30,7 @@ function PartyCreateForm({
   composeError,
   deadlineDraft,
   descriptionDraft,
+  isAuthenticated,
   isSubmitting,
   minDeadline,
   modeDraft,
@@ -105,8 +107,12 @@ function PartyCreateForm({
         placeholder="플레이 스타일이나 요청사항을 적어주세요."
         value={descriptionDraft}
       />
-      <button type="submit" className={styles.primaryButton} disabled={isSubmitting}>
-        {isSubmitting ? '등록중' : '등록'}
+      <button
+        type="submit"
+        className={styles.primaryButton}
+        disabled={isSubmitting || !isAuthenticated}
+      >
+        {!isAuthenticated ? '로그인 후 등록' : isSubmitting ? '등록중' : '등록'}
       </button>
       {composeError && (
         <p className={styles.composeError} role="alert">

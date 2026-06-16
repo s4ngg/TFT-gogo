@@ -5,6 +5,7 @@ import styles from '../Party.module.css'
 
 interface PartyPostListProps {
   currentPage: number
+  isAuthenticated: boolean
   joinedPostId: string | null
   joiningPostId: string | null
   onJoinToggle: (postId: string) => void
@@ -15,6 +16,7 @@ interface PartyPostListProps {
 
 function PartyPostList({
   currentPage,
+  isAuthenticated,
   joinedPostId,
   joiningPostId,
   onJoinToggle,
@@ -34,6 +36,7 @@ function PartyPostList({
             return (
               <PartyPostCard
                 hasJoinedOtherPost={hasJoinedOtherPost}
+                isAuthenticated={isAuthenticated}
                 isJoined={isJoined}
                 isJoinPending={joiningPostId === post.id}
                 isOwner={isOwner}
