@@ -35,6 +35,10 @@ export interface PartyPostsResult {
   source: PartyPostsSource
 }
 
+export interface PartyPostsQueryParams {
+  mode?: PartyMode
+}
+
 export interface CreatePartyPostRequest {
   capacity: string
   deadline: string
@@ -264,6 +268,16 @@ function toGameMode(mode: PartyMode) {
   return 'RANKED_TFT'
 }
 
+function buildPartyPostRequestParams(params: PartyPostsQueryParams) {
+  if (!params.mode) {
+    return undefined
+  }
+
+  return {
+    mode: toGameMode(params.mode),
+  }
+}
+
 function readPartyPostArray(value: unknown[]): PartyListPayloadResult {
   const posts = value.filter((item): item is PartyPostResponse => isRecord(item))
 
@@ -350,9 +364,12 @@ function normalizePartyPost(response: PartyPostResponse, index: number): PartyPo
   }
 }
 
-export async function getPartyPosts(): Promise<PartyPostsResult> {
+export async function getPartyPosts(params: PartyPostsQueryParams = {}): Promise<PartyPostsResult> {
   try {
-    const { data } = await axiosInstance.get<ApiResponse<PartyPostsPayload> | PartyPostsPayload>('/community/parties')
+    const { data } = await axiosInstance.get<ApiResponse<PartyPostsPayload> | PartyPostsPayload>(
+      '/community/parties',
+      { params: buildPartyPostRequestParams(params) },
+    )
 
     if (hasFailedApiResponse(data)) {
       return { data: fallbackPartyPosts, source: 'fallback' }
