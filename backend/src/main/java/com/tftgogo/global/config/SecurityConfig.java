@@ -51,6 +51,7 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/decks/meta").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/community/parties").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/community/chat/rooms/*/messages").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/community/chat/rooms/*/stream").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/riot/status").permitAll()
                         .requestMatchers(
                                 "/api/v1/auth/login",

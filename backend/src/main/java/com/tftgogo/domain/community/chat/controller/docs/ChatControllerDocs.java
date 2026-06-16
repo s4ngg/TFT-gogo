@@ -33,7 +33,7 @@ public interface ChatControllerDocs {
             @Valid @RequestBody ChatMessageCreateRequest request
     );
 
-    @Operation(summary = "채팅방 SSE 구독", description = "고정 커뮤니티 채널의 snapshot/message SSE 이벤트를 구독합니다. 응답은 text/event-stream 형식이라 ApiResponse로 감싸지 않습니다.")
+    @Operation(summary = "채팅방 SSE 구독", description = "고정 커뮤니티 채널의 snapshot/message SSE 이벤트를 인증 없이 구독합니다. 응답은 text/event-stream 형식이라 ApiResponse로 감싸지 않습니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "SSE 구독 연결 성공")
     })

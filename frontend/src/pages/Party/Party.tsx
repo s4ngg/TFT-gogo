@@ -125,8 +125,10 @@ function Party() {
           chatNotice={chat.chatNotice}
           connectionLabel={chat.connectionLabel}
           currentUserName={chat.currentUserName}
+          isAuthenticated={chat.isAuthenticated}
           isLoading={chat.isLoading}
           isMessageDisabled={chat.isMessageDisabled}
+          isSendBlockedByAuth={chat.isSendBlockedByAuth}
           onActiveRoomChange={setActiveRoomId}
           onChatInputChange={chat.setChatInput}
           onMessageSubmit={chat.sendMessage}

@@ -42,6 +42,7 @@ public enum ErrorCode {
     PARTY_POST_NOT_FOUND(HttpStatus.NOT_FOUND, "파티 모집글을 찾을 수 없습니다."),
     PARTY_POST_FULL(HttpStatus.CONFLICT, "파티 모집 정원이 가득 찼습니다."),
     PARTY_POST_CLOSED(HttpStatus.CONFLICT, "마감된 파티 모집글입니다."),
+    CHAT_STREAM_CONNECTION_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "채팅 연결 수가 많습니다. 잠시 후 다시 시도해주세요."),
 
     // ── 전적 ────────────────────────────────────────────
     ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "소환사 계정을 찾을 수 없습니다."),

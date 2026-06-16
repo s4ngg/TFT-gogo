@@ -13,8 +13,10 @@ interface PartyChatPanelProps {
   chatNotice: string
   connectionLabel: string
   currentUserName: string
+  isAuthenticated: boolean
   isLoading: boolean
   isMessageDisabled: boolean
+  isSendBlockedByAuth: boolean
   onActiveRoomChange: (roomId: CommunityChatRoomId) => void
   onChatInputChange: (value: string) => void
   onMessageSubmit: () => Promise<void>
@@ -43,8 +45,10 @@ function PartyChatPanel({
   chatNotice,
   connectionLabel,
   currentUserName,
+  isAuthenticated,
   isLoading,
   isMessageDisabled,
+  isSendBlockedByAuth,
   onActiveRoomChange,
   onChatInputChange,
   onMessageSubmit,
@@ -105,7 +109,7 @@ function PartyChatPanel({
             {activeMessages.length > 0 ? (
               activeMessages.map((chat) => (
                 <article
-                  className={chat.senderName === currentUserName ? styles.myMessage : undefined}
+                  className={isAuthenticated && chat.senderName === currentUserName ? styles.myMessage : undefined}
                   key={chat.id}
                 >
                   <div>
@@ -126,7 +130,7 @@ function PartyChatPanel({
               aria-label="채팅 메시지 입력"
               disabled={isMessageDisabled}
               onChange={(event) => onChatInputChange(event.target.value)}
-              placeholder={isMessageDisabled ? '로그인 후 채팅 가능' : '메시지를 입력하세요'}
+              placeholder={isSendBlockedByAuth ? '로그인 후 메시지 전송 가능' : '메시지를 입력하세요'}
               value={chatInput}
             />
             <button
