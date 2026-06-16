@@ -18,6 +18,10 @@ public interface PatchNoteRepository extends JpaRepository<PatchNote, Long> {
 
     Optional<PatchNote> findByVersion(String version);
 
+    Optional<PatchNote> findBySourceKey(String sourceKey);
+
+    Optional<PatchNote> findBySourceUrl(String sourceUrl);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     List<PatchNote> findByCurrentTrueAndDeletedAtIsNull();
 

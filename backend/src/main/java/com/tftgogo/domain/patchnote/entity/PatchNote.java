@@ -8,8 +8,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
 import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -50,19 +51,23 @@ public class PatchNote {
     @Column(name = "representative_image_url", length = 500)
     private String imageUrl;
 
-    @Transient
+    @Column(name = "source_key", length = 150)
+    private String sourceKey;
+
+    @Column(name = "source_url", length = 500)
     private String sourceUrl;
 
-    @Transient
+    @Column(name = "source_locale", length = 20)
     private String sourceLocale;
 
-    @Transient
+    @Enumerated(EnumType.STRING)
+    @Column(name = "import_source", length = 30)
     private PatchNoteImportSource importSource;
 
-    @Transient
+    @Column(name = "imported_at")
     private LocalDateTime importedAt;
 
-    @Transient
+    @Column(name = "manually_edited", nullable = false)
     private boolean manuallyEdited;
 
     @Column(name = "published_at", nullable = false)
@@ -85,9 +90,9 @@ public class PatchNote {
 
     @Builder
     public PatchNote(String version, String title, String summary, String description,
-                     String focus, String imageUrl, String sourceUrl, String sourceLocale,
-                     PatchNoteImportSource importSource, LocalDateTime importedAt,
-                     boolean manuallyEdited, LocalDateTime publishedAt, boolean current,
+                     String focus, String imageUrl, String sourceKey, String sourceUrl,
+                     String sourceLocale, PatchNoteImportSource importSource,
+                     LocalDateTime importedAt, boolean manuallyEdited, LocalDateTime publishedAt, boolean current,
                      String highlightsJson) {
         this.version = version;
         this.title = title;
@@ -95,6 +100,7 @@ public class PatchNote {
         this.description = description;
         this.focus = focus;
         this.imageUrl = imageUrl;
+        this.sourceKey = sourceKey;
         this.sourceUrl = sourceUrl;
         this.sourceLocale = sourceLocale;
         this.importSource = importSource;
@@ -103,6 +109,26 @@ public class PatchNote {
         this.publishedAt = publishedAt;
         this.current = current;
         this.highlightsJson = highlightsJson;
+    }
+
+    public void applyImportedData(String version, String title, String summary, String description,
+                                  String focus, String imageUrl, String sourceKey, String sourceUrl,
+                                  String sourceLocale, PatchNoteImportSource importSource,
+                                  LocalDateTime importedAt, boolean current, String highlightsJson) {
+        this.version = version;
+        this.title = title;
+        this.summary = summary;
+        this.description = description;
+        this.focus = focus;
+        this.imageUrl = imageUrl;
+        this.sourceKey = sourceKey;
+        this.sourceUrl = sourceUrl;
+        this.sourceLocale = sourceLocale;
+        this.importSource = importSource;
+        this.importedAt = importedAt;
+        this.current = current;
+        this.highlightsJson = highlightsJson;
+        this.deletedAt = null;
     }
 
     public void update(String version, String title, String summary, String description,
@@ -130,7 +156,7 @@ public class PatchNote {
     }
 
     public boolean isImported() {
-        return importSource != null;
+        return importSource != null || sourceKey != null || sourceUrl != null;
     }
 
     public void softDelete() {

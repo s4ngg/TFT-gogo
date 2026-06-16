@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface PatchChangeRepository extends JpaRepository<PatchChange, Long> {
 
@@ -28,6 +29,8 @@ public interface PatchChangeRepository extends JpaRepository<PatchChange, Long> 
     List<PatchChangeCount> countByPatchNotes(@Param("patchNotes") List<PatchNote> patchNotes);
 
     List<PatchChange> findByPatchNoteOrderBySortOrderAscIdAsc(PatchNote patchNote);
+
+    Optional<PatchChange> findByPatchNoteAndSourceKey(PatchNote patchNote, String sourceKey);
 
     @Query("""
             SELECT c

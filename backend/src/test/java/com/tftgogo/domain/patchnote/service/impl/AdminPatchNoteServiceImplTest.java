@@ -1,8 +1,15 @@
 package com.tftgogo.domain.patchnote.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tftgogo.domain.patchnote.config.PatchNoteCrawlerProperties;
+import com.tftgogo.domain.patchnote.dto.crawl.PatchChangeCrawlRow;
+import com.tftgogo.domain.patchnote.dto.crawl.PatchNoteCrawlDocument;
+import com.tftgogo.domain.patchnote.dto.crawl.PatchNoteCrawlFetchedPage;
+import com.tftgogo.domain.patchnote.dto.crawl.PatchNoteCrawlListItem;
 import com.tftgogo.domain.patchnote.dto.request.AdminPatchChangeRequest;
+import com.tftgogo.domain.patchnote.dto.request.AdminPatchNoteImportRequest;
 import com.tftgogo.domain.patchnote.dto.request.AdminPatchNoteRequest;
+import com.tftgogo.domain.patchnote.dto.response.AdminPatchNoteImportResponse;
 import com.tftgogo.domain.patchnote.dto.response.PatchChangeResponse;
 import com.tftgogo.domain.patchnote.dto.response.PatchNoteResponse;
 import com.tftgogo.domain.patchnote.entity.PatchChange;
@@ -13,6 +20,8 @@ import com.tftgogo.domain.patchnote.entity.PatchNote;
 import com.tftgogo.domain.patchnote.entity.PatchNoteImportSource;
 import com.tftgogo.domain.patchnote.repository.PatchChangeRepository;
 import com.tftgogo.domain.patchnote.repository.PatchNoteRepository;
+import com.tftgogo.domain.patchnote.service.PatchNoteCrawlerFetchService;
+import com.tftgogo.domain.patchnote.service.PatchNoteCrawlerParser;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import org.junit.jupiter.api.Test;
@@ -31,6 +40,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -46,6 +56,15 @@ class AdminPatchNoteServiceImplTest {
 
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
+
+    @Mock
+    private PatchNoteCrawlerFetchService crawlerFetchService;
+
+    @Mock
+    private PatchNoteCrawlerParser crawlerParser;
+
+    @Mock
+    private PatchNoteCrawlerProperties crawlerProperties;
 
     @InjectMocks
     private AdminPatchNoteServiceImpl adminPatchNoteService;
@@ -97,6 +116,94 @@ class AdminPatchNoteServiceImplTest {
         ArgumentCaptor<PatchNote> captor = ArgumentCaptor.forClass(PatchNote.class);
         verify(patchNoteRepository).save(captor.capture());
         assertThat(captor.getValue().getDescription()).isEqualTo("summary");
+    }
+
+    @Test
+    void importRiotPatchNote_whenRequestIsEmpty_importsLatestPatchFromTagPage() {
+        // given
+        PatchNote existingCurrent = patchNote(1L, "17.3", true);
+        PatchNoteCrawlFetchedPage listPage = fetchedPage("https://www.leagueoflegends.com/ko-kr/news/tags/teamfight-tactics-patch-notes/");
+        PatchNoteCrawlFetchedPage detailPage = fetchedPage("https://www.leagueoflegends.com/ko-kr/news/game-updates/patch-17-4-notes/");
+        PatchNoteCrawlListItem listItem = new PatchNoteCrawlListItem(
+                "17.4 Patch Notes",
+                LocalDateTime.of(2026, 6, 15, 9, 0),
+                "summary",
+                "https://example.com/patch.png",
+                "riot-content-17-4",
+                detailPage.sourceUrl()
+        );
+        PatchChangeCrawlRow row = new PatchChangeCrawlRow(
+                "candidate",
+                "source-row-key",
+                "Champions > Jinx",
+                3,
+                "Champions",
+                "Jinx",
+                "Attack damage increased",
+                "<li>Attack damage increased</li>",
+                "50",
+                "55",
+                List.of()
+        );
+        PatchNoteCrawlDocument document = new PatchNoteCrawlDocument(
+                detailPage.sourceUrl(),
+                "ko-kr",
+                "riot-content-17-4",
+                "17.4 Patch Notes",
+                "17.4",
+                "Riot summary",
+                LocalDateTime.of(2026, 6, 15, 9, 0),
+                "https://example.com/patch.png",
+                List.of("Riot"),
+                List.of("Champions > Jinx"),
+                List.of(row),
+                List.of("parser warning")
+        );
+
+        when(crawlerProperties.getDefaultLocale()).thenReturn("ko-kr");
+        when(crawlerFetchService.fetchTagPage("ko-kr")).thenReturn(listPage);
+        when(crawlerParser.parseListPage(listPage)).thenReturn(List.of(listItem));
+        when(crawlerFetchService.fetch(detailPage.sourceUrl())).thenReturn(detailPage);
+        when(crawlerParser.parseDetailPage(detailPage, null, "ko-kr")).thenReturn(document);
+        when(patchNoteRepository.findBySourceKey("riot-content-17-4")).thenReturn(Optional.empty());
+        when(patchNoteRepository.findBySourceUrl(detailPage.sourceUrl())).thenReturn(Optional.empty());
+        when(patchNoteRepository.findByVersion("17.4")).thenReturn(Optional.empty());
+        when(patchNoteRepository.findByCurrentTrueAndDeletedAtIsNull()).thenReturn(List.of(existingCurrent));
+        when(patchNoteRepository.save(any(PatchNote.class))).thenAnswer(invocation -> {
+            PatchNote patchNote = invocation.getArgument(0);
+            ReflectionTestUtils.setField(patchNote, "id", 2L);
+            return patchNote;
+        });
+        when(patchChangeRepository.findByPatchNoteAndSourceKey(any(PatchNote.class), eq("source-row-key")))
+                .thenReturn(Optional.empty());
+        when(patchChangeRepository.save(any(PatchChange.class))).thenAnswer(invocation -> {
+            PatchChange patchChange = invocation.getArgument(0);
+            ReflectionTestUtils.setField(patchChange, "id", 10L);
+            return patchChange;
+        });
+
+        // when
+        AdminPatchNoteImportResponse response = adminPatchNoteService.importRiotPatchNote(new AdminPatchNoteImportRequest());
+
+        // then
+        assertThat(existingCurrent.isCurrent()).isFalse();
+        assertThat(response.isPatchNoteCreated()).isTrue();
+        assertThat(response.getCreatedChanges()).isEqualTo(1);
+        assertThat(response.getParserWarnings()).containsExactly("parser warning");
+
+        ArgumentCaptor<PatchNote> patchNoteCaptor = ArgumentCaptor.forClass(PatchNote.class);
+        verify(patchNoteRepository).save(patchNoteCaptor.capture());
+        assertThat(patchNoteCaptor.getValue().getSourceKey()).isEqualTo("riot-content-17-4");
+        assertThat(patchNoteCaptor.getValue().getImportSource()).isEqualTo(PatchNoteImportSource.RIOT_OFFICIAL);
+        assertThat(patchNoteCaptor.getValue().isCurrent()).isTrue();
+
+        ArgumentCaptor<PatchChange> patchChangeCaptor = ArgumentCaptor.forClass(PatchChange.class);
+        verify(patchChangeRepository).save(patchChangeCaptor.capture());
+        assertThat(patchChangeCaptor.getValue().getSourceKey()).isEqualTo("source-row-key");
+        assertThat(patchChangeCaptor.getValue().getSourceHeadingPath()).isEqualTo("Champions > Jinx");
+        assertThat(patchChangeCaptor.getValue().getSourceOrder()).isEqualTo(3);
+        assertThat(patchChangeCaptor.getValue().getCategory()).isEqualTo(PatchChangeCategory.CHAMPION);
+        assertThat(patchChangeCaptor.getValue().getChangeType()).isEqualTo(PatchChangeType.BUFF);
     }
 
     @Test
@@ -243,6 +350,7 @@ class AdminPatchNoteServiceImplTest {
                 .description("description")
                 .focus("balance")
                 .imageUrl("https://example.com/patch.png")
+                .sourceKey("riot-content-17-3")
                 .sourceUrl("https://www.leagueoflegends.com/ko-kr/news/game-updates/patch-17-3-notes/")
                 .sourceLocale("ko_KR")
                 .importSource(PatchNoteImportSource.RIOT_OFFICIAL)
@@ -282,11 +390,8 @@ class AdminPatchNoteServiceImplTest {
         PatchChange patchChange = PatchChange.builder()
                 .patchNote(patchNote)
                 .sourceKey("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
-                .sourceUrl("https://www.leagueoflegends.com/ko-kr/news/game-updates/patch-17-3-notes/")
                 .sourceHeadingPath("Champion > Jinx")
                 .sourceOrder(1)
-                .sourceLocale("ko_KR")
-                .importSource(PatchNoteImportSource.RIOT_OFFICIAL)
                 .importedAt(LocalDateTime.of(2026, 6, 1, 10, 0))
                 .category(PatchChangeCategory.CHAMPION)
                 .changeType(PatchChangeType.BUFF)
@@ -302,6 +407,15 @@ class AdminPatchNoteServiceImplTest {
                 .build();
         ReflectionTestUtils.setField(patchChange, "id", id);
         return patchChange;
+    }
+
+    private PatchNoteCrawlFetchedPage fetchedPage(String sourceUrl) {
+        return new PatchNoteCrawlFetchedPage(
+                sourceUrl,
+                "<html></html>",
+                LocalDateTime.of(2026, 6, 16, 9, 0),
+                200
+        );
     }
 
     private AdminPatchNoteRequest patchNoteRequest(String version, boolean current, List<String> highlights) {
