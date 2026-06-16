@@ -19,7 +19,7 @@ export interface ChatMessageCreateRequest {
 
 interface ChatStreamHandlers {
   onClose: () => void
-  onError: () => void
+  onError: (reason: ChatStreamErrorReason) => void
   onMessage: (message: ChatMessage) => void
   onOpen: () => void
   onSnapshot: (messages: ChatMessage[]) => void
@@ -29,6 +29,8 @@ interface ChatStreamHandlers {
 export interface ChatStreamSubscription {
   close: () => void
 }
+
+export type ChatStreamErrorReason = 'client' | 'parse' | 'server' | 'network'
 
 interface ParsedSseEvent {
   data: string
@@ -86,26 +88,26 @@ async function readChatStream(
       signal: controller.signal,
     })
 
-    if (response.status === 401) {
+    if (response.status === 401 || response.status === 403) {
       useAuthStore.getState().clearAuth()
       handlers.onUnauthorized()
       return
     }
 
     if (!response.ok || !response.body) {
-      handlers.onError()
+      handlers.onError(response.status >= 400 && response.status < 500 ? 'client' : 'server')
       return
     }
 
     handlers.onOpen()
-    await readSseBody(response.body, handlers, controller.signal)
+    await readSseBody(response.body, handlers, controller)
 
     if (!controller.signal.aborted) {
       handlers.onClose()
     }
   } catch {
     if (!controller.signal.aborted) {
-      handlers.onError()
+      handlers.onError('network')
     }
   }
 }
@@ -133,13 +135,13 @@ function buildChatStreamUrl(roomId: string) {
 async function readSseBody(
   body: ReadableStream<Uint8Array>,
   handlers: ChatStreamHandlers,
-  signal: AbortSignal,
+  controller: AbortController,
 ) {
   const reader = body.getReader()
   const decoder = new TextDecoder()
   let buffer = ''
 
-  while (!signal.aborted) {
+  while (!controller.signal.aborted) {
     const { done, value } = await reader.read()
 
     if (done) {
@@ -150,7 +152,14 @@ async function readSseBody(
     const parsed = drainSseEvents(buffer)
 
     buffer = parsed.remaining
-    parsed.events.forEach((event) => handleSseEvent(event, handlers))
+    for (const event of parsed.events) {
+      const handled = handleSseEvent(event, handlers)
+
+      if (!handled) {
+        controller.abort()
+        break
+      }
+    }
   }
 }
 
@@ -221,8 +230,8 @@ function handleSseEvent(event: ParsedSseEvent, handlers: ChatStreamHandlers) {
   try {
     parsedPayload = JSON.parse(event.data)
   } catch {
-    handlers.onError()
-    return
+    handlers.onError('parse')
+    return false
   }
 
   if (event.event === 'snapshot') {
@@ -231,12 +240,14 @@ function handleSseEvent(event: ParsedSseEvent, handlers: ChatStreamHandlers) {
       : []
 
     handlers.onSnapshot(messages)
-    return
+    return true
   }
 
   if (event.event === 'message' && isChatMessage(parsedPayload)) {
     handlers.onMessage(parsedPayload)
   }
+
+  return true
 }
 
 function isChatMessage(value: unknown): value is ChatMessage {

@@ -114,6 +114,8 @@ Page: Party (/party).
 - Recent chat message reads are public for dashboard previews. Sending chat messages requires authentication.
 - Fixed community channel SSE reads are public, but the backend limits open SSE emitters to reduce abuse risk.
 - Dashboard party preview reads the same public party list through TanStack Query and shows loading/fallback state separately from empty state.
+- Frontend realtime chat retries SSE stream failures up to 3 times with 1s, 2.5s, and 5s backoff. 400/404-style client errors and 401/403 authentication failures are terminal and must not retry.
+- Reconnecting SSE does not block REST message sending; successfully sent messages are merged into the local query cache.
 - The MVP chat API does not yet enforce party membership for room access; membership validation and chat_rooms.type = PARTY persistence are later slices.
 </business-rules>
 
@@ -128,8 +130,7 @@ Page: Party (/party).
 </validation>
 
 <open-issues>
-- Realtime chat transport uses SSE with snapshot/message events in the MVP.
-- SSE reconnect/backoff policy beyond disconnected fallback should be refined in a later slice.
+- Realtime chat transport uses SSE with snapshot/message events in the MVP. Reconnect restores the latest server snapshot, but messages beyond the backend room retention limit are not guaranteed after long offline periods.
 - Party close/delete policy for owners is still undecided.
 - The party_post_tags helper table is required for custom tags because tags are not present in the shared ERD snapshot.
 </open-issues>
