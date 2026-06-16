@@ -56,7 +56,7 @@ class AdminPatchNoteServiceImplTest {
         PatchNote existingCurrent = patchNote(1L, "17.3", true);
         AdminPatchNoteRequest request = patchNoteRequest("17.4", true, List.of("current patch"));
         when(patchNoteRepository.findByVersion("17.4")).thenReturn(Optional.empty());
-        when(patchNoteRepository.findByCurrentTrueAndActiveTrueAndDeletedAtIsNull())
+        when(patchNoteRepository.findByCurrentTrueAndDeletedAtIsNull())
                 .thenReturn(List.of(existingCurrent));
         when(patchNoteRepository.save(any(PatchNote.class))).thenAnswer(invocation -> {
             PatchNote patchNote = invocation.getArgument(0);
@@ -76,6 +76,27 @@ class AdminPatchNoteServiceImplTest {
         ArgumentCaptor<PatchNote> captor = ArgumentCaptor.forClass(PatchNote.class);
         verify(patchNoteRepository).save(captor.capture());
         assertThat(captor.getValue().getHighlightsJson()).isEqualTo("[\"current patch\"]");
+    }
+
+    @Test
+    void createPatchNote_whenDescriptionBlank_usesSummaryAsContent() {
+        // given
+        AdminPatchNoteRequest request = patchNoteRequest("17.4", false, List.of());
+        ReflectionTestUtils.setField(request, "description", " ");
+        when(patchNoteRepository.findByVersion("17.4")).thenReturn(Optional.empty());
+        when(patchNoteRepository.save(any(PatchNote.class))).thenAnswer(invocation -> {
+            PatchNote patchNote = invocation.getArgument(0);
+            ReflectionTestUtils.setField(patchNote, "id", 2L);
+            return patchNote;
+        });
+
+        // when
+        adminPatchNoteService.createPatchNote(request);
+
+        // then
+        ArgumentCaptor<PatchNote> captor = ArgumentCaptor.forClass(PatchNote.class);
+        verify(patchNoteRepository).save(captor.capture());
+        assertThat(captor.getValue().getDescription()).isEqualTo("summary");
     }
 
     @Test
@@ -100,7 +121,7 @@ class AdminPatchNoteServiceImplTest {
         AdminPatchNoteRequest request = patchNoteRequest("17.3", true, List.of("manual highlight"));
         when(patchNoteRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(patchNote));
         when(patchNoteRepository.findByVersion("17.3")).thenReturn(Optional.of(patchNote));
-        when(patchChangeRepository.findByPatchNoteAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchNote))
+        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote))
                 .thenReturn(List.of());
 
         // when
@@ -117,18 +138,16 @@ class AdminPatchNoteServiceImplTest {
         PatchNote patchNote = patchNote(1L, "17.3", true);
         PatchChange patchChange = patchChange(10L, patchNote);
         when(patchNoteRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(patchNote));
-        when(patchChangeRepository.findByPatchNoteAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchNote))
+        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote))
                 .thenReturn(List.of(patchChange));
 
         // when
         adminPatchNoteService.deletePatchNote(1L);
 
         // then
-        assertThat(patchNote.isActive()).isFalse();
         assertThat(patchNote.isCurrent()).isFalse();
         assertThat(patchNote.getDeletedAt()).isNotNull();
-        assertThat(patchChange.isActive()).isFalse();
-        assertThat(patchChange.getDeletedAt()).isNotNull();
+        verify(patchChangeRepository).delete(patchChange);
     }
 
     @Test
@@ -137,7 +156,7 @@ class AdminPatchNoteServiceImplTest {
         PatchNote patchNote = importedPatchNote(1L, "17.3", true);
         PatchChange patchChange = importedPatchChange(10L, patchNote);
         when(patchNoteRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(patchNote));
-        when(patchChangeRepository.findByPatchNoteAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchNote))
+        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote))
                 .thenReturn(List.of(patchChange));
 
         // when
@@ -147,17 +166,17 @@ class AdminPatchNoteServiceImplTest {
         assertThat(patchNote.isManuallyEdited()).isTrue();
         assertThat(patchChange.isManuallyEdited()).isTrue();
         assertThat(patchNote.getDeletedAt()).isNotNull();
-        assertThat(patchChange.getDeletedAt()).isNotNull();
+        verify(patchChangeRepository).delete(patchChange);
     }
 
     @Test
     void getPatchChanges_returnsNonDeletedChangesForAdmin() {
         // given
         PatchNote patchNote = patchNote(1L, "17.3", true);
-        PatchChange firstChange = patchChange(10L, patchNote, 1, true);
-        PatchChange hiddenChange = patchChange(11L, patchNote, 2, false);
+        PatchChange firstChange = patchChange(10L, patchNote, 1);
+        PatchChange hiddenChange = patchChange(11L, patchNote, 2);
         when(patchNoteRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(patchNote));
-        when(patchChangeRepository.findByPatchNoteAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchNote))
+        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote))
                 .thenReturn(List.of(firstChange, hiddenChange));
 
         // when
@@ -166,7 +185,7 @@ class AdminPatchNoteServiceImplTest {
         // then
         assertThat(responses).extracting(PatchChangeResponse::getId).containsExactly(10L, 11L);
         assertThat(responses).extracting(PatchChangeResponse::getSortOrder).containsExactly(1, 2);
-        verify(patchChangeRepository).findByPatchNoteAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchNote);
+        verify(patchChangeRepository).findByPatchNoteOrderBySortOrderAscIdAsc(patchNote);
     }
 
     @Test
@@ -189,7 +208,7 @@ class AdminPatchNoteServiceImplTest {
         PatchNote patchNote = patchNote(1L, "17.3", true);
         PatchChange patchChange = importedPatchChange(10L, patchNote);
         AdminPatchChangeRequest request = patchChangeRequest(1L, "CHAMPION");
-        when(patchChangeRepository.findByIdAndDeletedAtIsNull(10L)).thenReturn(Optional.of(patchChange));
+        when(patchChangeRepository.findById(10L)).thenReturn(Optional.of(patchChange));
         when(patchNoteRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(patchNote));
 
         // when
@@ -211,7 +230,6 @@ class AdminPatchNoteServiceImplTest {
                 .publishedAt(LocalDateTime.of(2026, 6, 1, 9, 0))
                 .current(current)
                 .highlightsJson("[\"highlight\"]")
-                .active(true)
                 .build();
         ReflectionTestUtils.setField(patchNote, "id", id);
         return patchNote;
@@ -232,17 +250,16 @@ class AdminPatchNoteServiceImplTest {
                 .publishedAt(LocalDateTime.of(2026, 6, 1, 9, 0))
                 .current(current)
                 .highlightsJson("[\"highlight\"]")
-                .active(true)
                 .build();
         ReflectionTestUtils.setField(patchNote, "id", id);
         return patchNote;
     }
 
     private PatchChange patchChange(Long id, PatchNote patchNote) {
-        return patchChange(id, patchNote, 1, true);
+        return patchChange(id, patchNote, 1);
     }
 
-    private PatchChange patchChange(Long id, PatchNote patchNote, int sortOrder, boolean active) {
+    private PatchChange patchChange(Long id, PatchNote patchNote, int sortOrder) {
         PatchChange patchChange = PatchChange.builder()
                 .patchNote(patchNote)
                 .category(PatchChangeCategory.CHAMPION)
@@ -256,7 +273,6 @@ class AdminPatchNoteServiceImplTest {
                 .imageUrl("https://example.com/jinx.png")
                 .tagsJson("[\"champion\"]")
                 .sortOrder(sortOrder)
-                .active(active)
                 .build();
         ReflectionTestUtils.setField(patchChange, "id", id);
         return patchChange;
@@ -283,7 +299,6 @@ class AdminPatchNoteServiceImplTest {
                 .imageUrl("https://example.com/jinx.png")
                 .tagsJson("[\"champion\"]")
                 .sortOrder(1)
-                .active(true)
                 .build();
         ReflectionTestUtils.setField(patchChange, "id", id);
         return patchChange;

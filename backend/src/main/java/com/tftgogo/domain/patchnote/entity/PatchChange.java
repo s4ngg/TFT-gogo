@@ -13,7 +13,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.Transient;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -22,12 +22,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "patch_changes",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"patch_note_id", "source_key"})
-        }
-)
+@Table(name = "patch_note_changes")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PatchChange {
@@ -40,29 +35,28 @@ public class PatchChange {
     @JoinColumn(name = "patch_note_id", nullable = false)
     private PatchNote patchNote;
 
-    @Column(name = "source_key", length = 64)
+    @Transient
     private String sourceKey;
 
-    @Column(name = "source_url", length = 500)
+    @Transient
     private String sourceUrl;
 
-    @Column(name = "source_heading_path", length = 500)
+    @Transient
     private String sourceHeadingPath;
 
-    @Column(name = "source_order")
+    @Transient
     private Integer sourceOrder;
 
-    @Column(name = "source_locale", length = 20)
+    @Transient
     private String sourceLocale;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "import_source", length = 30)
+    @Transient
     private PatchNoteImportSource importSource;
 
-    @Column(name = "imported_at")
+    @Transient
     private LocalDateTime importedAt;
 
-    @Column(name = "manually_edited", nullable = false)
+    @Transient
     private boolean manuallyEdited;
 
     @Enumerated(EnumType.STRING)
@@ -77,19 +71,19 @@ public class PatchChange {
     @Column(nullable = false, length = 20)
     private PatchChangeImpact impact;
 
-    @Column(name = "target_key", nullable = false, length = 100)
+    @Column(name = "target_key", length = 100)
     private String targetKey;
 
     @Column(name = "target_name", nullable = false, length = 100)
     private String targetName;
 
-    @Column(nullable = false, length = 500)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String summary;
 
-    @Column(name = "before_value", length = 300)
+    @Column(name = "before_value", columnDefinition = "TEXT")
     private String beforeValue;
 
-    @Column(name = "after_value", length = 300)
+    @Column(name = "after_value", columnDefinition = "TEXT")
     private String afterValue;
 
     @Column(name = "image_url", length = 500)
@@ -101,17 +95,11 @@ public class PatchChange {
     @Column(name = "sort_order", nullable = false)
     private int sortOrder;
 
-    @Column(name = "is_active", nullable = false)
-    private boolean active;
-
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-
-    @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
 
     @Builder
     public PatchChange(PatchNote patchNote, String sourceKey, String sourceUrl, String sourceHeadingPath,
@@ -119,7 +107,7 @@ public class PatchChange {
                        LocalDateTime importedAt, boolean manuallyEdited, PatchChangeCategory category,
                        PatchChangeType changeType, PatchChangeImpact impact, String targetKey,
                        String targetName, String summary, String beforeValue, String afterValue,
-                       String imageUrl, String tagsJson, int sortOrder, boolean active) {
+                       String imageUrl, String tagsJson, int sortOrder) {
         this.patchNote = patchNote;
         this.sourceKey = sourceKey;
         this.sourceUrl = sourceUrl;
@@ -140,7 +128,6 @@ public class PatchChange {
         this.imageUrl = imageUrl;
         this.tagsJson = tagsJson;
         this.sortOrder = sortOrder;
-        this.active = active;
     }
 
     public void update(PatchNote patchNote, PatchChangeCategory category, PatchChangeType changeType,
@@ -159,12 +146,6 @@ public class PatchChange {
         this.imageUrl = imageUrl;
         this.tagsJson = tagsJson;
         this.sortOrder = sortOrder;
-    }
-
-    public void softDelete() {
-        LocalDateTime now = LocalDateTime.now();
-        this.active = false;
-        this.deletedAt = now;
     }
 
     public void markManuallyEditedIfImported() {

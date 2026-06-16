@@ -67,13 +67,12 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
                 .version(request.getVersion())
                 .title(request.getTitle())
                 .summary(request.getSummary())
-                .description(request.getDescription())
+                .description(resolveContent(request))
                 .focus(request.getFocus())
                 .imageUrl(request.getImageUrl())
                 .publishedAt(request.getPublishedAt())
                 .current(request.isCurrent())
                 .highlightsJson(toJsonArray(request.getHighlights()))
-                .active(true)
                 .build();
 
         PatchNote savedPatchNote = patchNoteRepository.save(patchNote);
@@ -93,7 +92,7 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
                 request.getVersion(),
                 request.getTitle(),
                 request.getSummary(),
-                request.getDescription(),
+                resolveContent(request),
                 request.getFocus(),
                 request.getImageUrl(),
                 request.getPublishedAt(),
@@ -101,7 +100,7 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
                 toJsonArray(request.getHighlights())
         );
         patchNote.markManuallyEditedIfImported();
-        return toPatchNoteResponse(patchNote, countActiveChanges(patchNote));
+        return toPatchNoteResponse(patchNote, countChanges(patchNote));
     }
 
     @Override
@@ -110,7 +109,7 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
         PatchNote patchNote = findPatchNote(patchNoteId);
         patchNote.markManuallyEditedIfImported();
         patchNote.softDelete();
-        patchChangeRepository.findByPatchNoteAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchNote)
+        patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote)
                 .forEach(this::deletePatchChangeByAdmin);
     }
 
@@ -118,7 +117,7 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
     @Transactional(readOnly = true)
     public List<PatchChangeResponse> getPatchChanges(Long patchNoteId) {
         PatchNote patchNote = findPatchNote(patchNoteId);
-        return patchChangeRepository.findByPatchNoteAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchNote).stream()
+        return patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote).stream()
                 .map(this::toPatchChangeResponse)
                 .toList();
     }
@@ -140,7 +139,6 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
                 .imageUrl(request.getImageUrl())
                 .tagsJson(toJsonArray(request.getTags()))
                 .sortOrder(request.getSortOrder())
-                .active(true)
                 .build();
 
         return toPatchChangeResponse(patchChangeRepository.save(patchChange));
@@ -182,13 +180,13 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
     }
 
     private PatchChange findPatchChange(Long changeId) {
-        return patchChangeRepository.findByIdAndDeletedAtIsNull(changeId)
+        return patchChangeRepository.findById(changeId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PATCH_CHANGE_NOT_FOUND));
     }
 
     private void deletePatchChangeByAdmin(PatchChange patchChange) {
         patchChange.markManuallyEditedIfImported();
-        patchChange.softDelete();
+        patchChangeRepository.delete(patchChange);
     }
 
     private void validateUniqueVersion(String version, Long excludedPatchNoteId) {
@@ -201,8 +199,8 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
 
     private void clearCurrentPatchNotes(Long excludedPatchNoteId) {
         List<PatchNote> currentPatchNotes = excludedPatchNoteId == null
-                ? patchNoteRepository.findByCurrentTrueAndActiveTrueAndDeletedAtIsNull()
-                : patchNoteRepository.findByCurrentTrueAndActiveTrueAndDeletedAtIsNullAndIdNot(excludedPatchNoteId);
+                ? patchNoteRepository.findByCurrentTrueAndDeletedAtIsNull()
+                : patchNoteRepository.findByCurrentTrueAndDeletedAtIsNullAndIdNot(excludedPatchNoteId);
         currentPatchNotes.forEach(PatchNote::markNotCurrent);
     }
 
@@ -218,9 +216,9 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
         return changeCounts;
     }
 
-    private long countActiveChanges(PatchNote patchNote) {
+    private long countChanges(PatchNote patchNote) {
         return patchChangeRepository
-                .findByPatchNoteAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchNote)
+                .findByPatchNoteOrderBySortOrderAscIdAsc(patchNote)
                 .size();
     }
 
@@ -255,6 +253,10 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
             logger.error("Failed to serialize patch note admin JSON array.", e);
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
+    }
+
+    private String resolveContent(AdminPatchNoteRequest request) {
+        return hasText(request.getDescription()) ? request.getDescription().trim() : request.getSummary();
     }
 
     private List<String> parseStringArray(String json, String fieldName, Long ownerId) {

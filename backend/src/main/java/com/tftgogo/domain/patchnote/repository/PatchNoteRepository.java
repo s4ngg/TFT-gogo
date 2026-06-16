@@ -10,19 +10,17 @@ import java.util.Optional;
 
 public interface PatchNoteRepository extends JpaRepository<PatchNote, Long> {
 
-    List<PatchNote> findByActiveTrueAndDeletedAtIsNullOrderByCurrentDescPublishedAtDescIdDesc();
-
     List<PatchNote> findByDeletedAtIsNullOrderByCurrentDescPublishedAtDescIdDesc();
 
-    Optional<PatchNote> findByVersionAndActiveTrueAndDeletedAtIsNull(String version);
+    Optional<PatchNote> findByVersionAndDeletedAtIsNull(String version);
 
     Optional<PatchNote> findByIdAndDeletedAtIsNull(Long id);
 
     Optional<PatchNote> findByVersion(String version);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    List<PatchNote> findByCurrentTrueAndActiveTrueAndDeletedAtIsNull();
+    List<PatchNote> findByCurrentTrueAndDeletedAtIsNull();
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    List<PatchNote> findByCurrentTrueAndActiveTrueAndDeletedAtIsNullAndIdNot(Long id);
+    List<PatchNote> findByCurrentTrueAndDeletedAtIsNullAndIdNot(Long id);
 }

@@ -2,14 +2,13 @@ package com.tftgogo.domain.patchnote.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -36,35 +35,34 @@ public class PatchNote {
     @Column(nullable = false, length = 20)
     private String version;
 
-    @Column(nullable = false, length = 150)
+    @Column(nullable = false, length = 200)
     private String title;
 
-    @Column(nullable = false, length = 500)
+    @Column(columnDefinition = "TEXT")
     private String summary;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "content", nullable = false, columnDefinition = "MEDIUMTEXT")
     private String description;
 
     @Column(length = 200)
     private String focus;
 
-    @Column(name = "image_url", length = 500)
+    @Column(name = "representative_image_url", length = 500)
     private String imageUrl;
 
-    @Column(name = "source_url", length = 500)
+    @Transient
     private String sourceUrl;
 
-    @Column(name = "source_locale", length = 20)
+    @Transient
     private String sourceLocale;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "import_source", length = 30)
+    @Transient
     private PatchNoteImportSource importSource;
 
-    @Column(name = "imported_at")
+    @Transient
     private LocalDateTime importedAt;
 
-    @Column(name = "manually_edited", nullable = false)
+    @Transient
     private boolean manuallyEdited;
 
     @Column(name = "published_at", nullable = false)
@@ -75,9 +73,6 @@ public class PatchNote {
 
     @Column(name = "highlights_json", columnDefinition = "JSON")
     private String highlightsJson;
-
-    @Column(name = "is_active", nullable = false)
-    private boolean active;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -93,7 +88,7 @@ public class PatchNote {
                      String focus, String imageUrl, String sourceUrl, String sourceLocale,
                      PatchNoteImportSource importSource, LocalDateTime importedAt,
                      boolean manuallyEdited, LocalDateTime publishedAt, boolean current,
-                     String highlightsJson, boolean active) {
+                     String highlightsJson) {
         this.version = version;
         this.title = title;
         this.summary = summary;
@@ -108,7 +103,6 @@ public class PatchNote {
         this.publishedAt = publishedAt;
         this.current = current;
         this.highlightsJson = highlightsJson;
-        this.active = active;
     }
 
     public void update(String version, String title, String summary, String description,
@@ -141,7 +135,6 @@ public class PatchNote {
 
     public void softDelete() {
         LocalDateTime now = LocalDateTime.now();
-        this.active = false;
         this.current = false;
         this.deletedAt = now;
     }

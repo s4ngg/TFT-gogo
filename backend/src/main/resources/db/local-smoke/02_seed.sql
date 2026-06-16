@@ -99,7 +99,6 @@ START TRANSACTION;
 UPDATE patch_notes
 SET is_current = 0
 WHERE is_current = 1
-  AND is_active = 1
   AND deleted_at IS NULL
   AND version <> '17.3';
 
@@ -107,44 +106,41 @@ INSERT INTO patch_notes (
     version,
     title,
     summary,
-    description,
     focus,
-    image_url,
-    published_at,
-    is_current,
+    content,
     highlights_json,
-    is_active
+    representative_image_url,
+    published_at,
+    is_current
 ) VALUES (
     '17.3',
     '17.3 Local Patch',
     'Local smoke test patch note.',
-    'Minimal data for checking Guide/PatchNotes public APIs without frontend fallback.',
     'Local smoke',
+    'Minimal data for checking Guide/PatchNotes public APIs without frontend fallback.',
+    JSON_ARRAY('Guide and PatchNotes smoke data added', 'Public APIs work without Riot API key'),
     NULL,
     '2026-06-09 00:00:00',
-    1,
-    JSON_ARRAY('Guide and PatchNotes smoke data added', 'Public APIs work without Riot API key'),
     1
 )
 ON DUPLICATE KEY UPDATE
     title = VALUES(title),
     summary = VALUES(summary),
-    description = VALUES(description),
     focus = VALUES(focus),
-    image_url = VALUES(image_url),
+    content = VALUES(content),
+    highlights_json = VALUES(highlights_json),
+    representative_image_url = VALUES(representative_image_url),
     published_at = VALUES(published_at),
     is_current = VALUES(is_current),
-    highlights_json = VALUES(highlights_json),
-    is_active = VALUES(is_active),
     deleted_at = NULL;
 
 DELETE pc
-FROM patch_changes pc
+FROM patch_note_changes pc
 JOIN patch_notes pn ON pn.id = pc.patch_note_id
 WHERE pn.version = '17.3'
   AND pc.target_key LIKE 'local-smoke-%';
 
-INSERT INTO patch_changes (
+INSERT INTO patch_note_changes (
     patch_note_id,
     category,
     change_type,
@@ -156,8 +152,7 @@ INSERT INTO patch_changes (
     after_value,
     image_url,
     tags_json,
-    sort_order,
-    is_active
+    sort_order
 ) VALUES
 (
     (SELECT id FROM patch_notes WHERE version = '17.3'),
@@ -171,8 +166,7 @@ INSERT INTO patch_changes (
     'Damage 120',
     NULL,
     JSON_ARRAY('champion', 'buff'),
-    10,
-    1
+    10
 ),
 (
     (SELECT id FROM patch_notes WHERE version = '17.3'),
@@ -186,8 +180,7 @@ INSERT INTO patch_changes (
     '2/4/6',
     NULL,
     JSON_ARRAY('trait', 'adjust'),
-    20,
-    1
+    20
 );
 
 COMMIT;

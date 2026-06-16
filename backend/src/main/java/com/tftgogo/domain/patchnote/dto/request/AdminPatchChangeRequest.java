@@ -34,8 +34,7 @@ public class AdminPatchChangeRequest {
     @Size(max = 20, message = "영향도는 20자 이하로 입력해주세요.")
     private String impact;
 
-    @Schema(description = "변경 대상의 내부 key. 챔피언/특성/아이템 식별에 사용합니다.", example = "TFT17_Jinx", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotBlank(message = "대상 key는 필수입니다.")
+    @Schema(description = "변경 대상의 내부 key. 챔피언/특성/아이템 식별에 사용합니다.", example = "TFT17_Jinx")
     @Size(max = 100, message = "대상 key는 100자 이하로 입력해주세요.")
     private String targetKey;
 
@@ -46,15 +45,12 @@ public class AdminPatchChangeRequest {
 
     @Schema(description = "변경사항 요약", example = "스킬 피해량이 증가해 후반 캐리 안정성이 개선되었습니다.", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "변경 요약은 필수입니다.")
-    @Size(max = 500, message = "변경 요약은 500자 이하로 입력해주세요.")
     private String summary;
 
     @Schema(description = "변경 전 수치 또는 설명", example = "스킬 피해량 220/330/500")
-    @Size(max = 300, message = "변경 전 값은 300자 이하로 입력해주세요.")
     private String beforeValue;
 
     @Schema(description = "변경 후 수치 또는 설명", example = "스킬 피해량 240/360/550")
-    @Size(max = 300, message = "변경 후 값은 300자 이하로 입력해주세요.")
     private String afterValue;
 
     @Schema(description = "변경 대상 이미지 URL", example = "https://raw.communitydragon.org/latest/game/assets/characters/tft17_jinx/skins/base/images/tft17_jinx_splash_tile_38.tft_set17.png")

@@ -48,7 +48,7 @@ public class PatchNoteServiceImpl implements PatchNoteService {
     @Override
     public List<PatchNoteResponse> getPatchNotes() {
         List<PatchNote> patchNotes = patchNoteRepository
-                .findByActiveTrueAndDeletedAtIsNullOrderByCurrentDescPublishedAtDescIdDesc();
+                .findByDeletedAtIsNullOrderByCurrentDescPublishedAtDescIdDesc();
         Map<Long, Long> changeCounts = getChangeCounts(patchNotes);
 
         return patchNotes.stream()
@@ -69,7 +69,7 @@ public class PatchNoteServiceImpl implements PatchNoteService {
             Integer page,
             Integer pageSize
     ) {
-        PatchNote patchNote = patchNoteRepository.findByVersionAndActiveTrueAndDeletedAtIsNull(version)
+        PatchNote patchNote = patchNoteRepository.findByVersionAndDeletedAtIsNull(version)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PATCH_NOTE_NOT_FOUND));
         PatchChangeCategory parsedCategory = parseCategory(category);
         PatchChangeType parsedType = parseType(type);
@@ -78,7 +78,7 @@ public class PatchNoteServiceImpl implements PatchNoteService {
         int normalizedPageSize = normalizePageSize(pageSize);
 
         List<PatchChange> allChanges = patchChangeRepository
-                .findByPatchNoteAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchNote);
+                .findByPatchNoteOrderBySortOrderAscIdAsc(patchNote);
         PatchChangeStatsResponse stats = buildStats(allChanges);
 
         List<PatchChange> filteredChanges = patchChangeRepository.findFilteredChanges(
