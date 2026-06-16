@@ -31,7 +31,7 @@ public class CachedRank {
     private int leaguePoints;
     @Column(name = "wins" ,  nullable = false)
     private int wins;
-    @Column(name = "loses" , nullable = false)
+    @Column(name = "losses", nullable = false)
     private int losses;
 
     @Column(nullable = false)
