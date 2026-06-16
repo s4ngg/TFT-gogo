@@ -328,6 +328,29 @@
   font-size: var(--font-size-lg);
 }
 
+.importConfirmBox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xl);
+  padding: var(--space-xl);
+  background: var(--cyan-bg-faint);
+  border: 1px solid color-mix(in srgb, var(--accent) 36%, transparent);
+  border-radius: var(--radius-button);
+}
+
+.importConfirmBox strong {
+  color: var(--text-main);
+  font-size: var(--font-size-sm);
+}
+
+.importConfirmBox p {
+  margin: var(--space-xs) 0 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  line-height: 1.45;
+}
+
 .importMessageBlock {
   display: flex;
   flex-direction: column;
@@ -479,7 +502,8 @@
 
   .header,
   .panelHeader,
-  .footerActions {
+  .footerActions,
+  .importConfirmBox {
     align-items: stretch;
     flex-direction: column;
   }

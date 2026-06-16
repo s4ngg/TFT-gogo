@@ -342,6 +342,7 @@ Page: PatchNotes (/patch-notes).
 - UX safety:
   - First click should default to dryRun.
   - Actual write import should require dryRun=false and a visible result preview or explicit admin confirmation.
+  - After a successful dryRun, the admin UI may provide a dedicated confirm action that reuses the same sourceUrl, version, locale, and overwrite options with dryRun=false.
   - forceOverwrite should explain that it overwrites crawler-owned fields only and does not bypass manual-edit protection unless backend allows it.
 </crawler-admin-ui-plan>
 

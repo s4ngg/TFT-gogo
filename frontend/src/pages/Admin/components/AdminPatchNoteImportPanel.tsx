@@ -44,24 +44,45 @@ function buildImportPayload(form: ImportFormState): PatchNoteCrawlImportRequest 
 
 function AdminPatchNoteImportPanel({ importing, onImport, result }: AdminPatchNoteImportPanelProps) {
   const [form, setForm] = useState<ImportFormState>(DEFAULT_IMPORT_FORM)
+  const [lastDryRunPayload, setLastDryRunPayload] = useState<PatchNoteCrawlImportRequest | null>(null)
   const [localError, setLocalError] = useState('')
 
   function patch<K extends keyof ImportFormState>(key: K, value: ImportFormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
+    setLastDryRunPayload(null)
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setLocalError('')
 
-    if (!form.dryRun && !confirm('실제 DB에 패치노트 import를 반영할까요?')) {
+    const payload = buildImportPayload(form)
+    if (!payload.dryRun && !confirm('실제 DB에 패치노트 import를 반영할까요?')) {
       return
     }
 
     try {
-      await onImport(buildImportPayload(form))
+      await onImport(payload)
+      setLastDryRunPayload(payload.dryRun ? payload : null)
     } catch {
       setLocalError('공식 패치노트 import에 실패했습니다. URL, 관리자 토큰, 서버 로그를 확인해주세요.')
+    }
+  }
+
+  async function handleConfirmDryRunImport() {
+    if (!lastDryRunPayload || importing) return
+    setLocalError('')
+
+    if (!confirm('미리 확인한 결과를 기준으로 실제 DB에 패치노트 import를 반영할까요?')) {
+      return
+    }
+
+    try {
+      await onImport({ ...lastDryRunPayload, dryRun: false })
+      setLastDryRunPayload(null)
+      setForm((prev) => ({ ...prev, dryRun: false }))
+    } catch {
+      setLocalError('미리 확인 결과 반영에 실패했습니다. URL, 관리자 토큰, 서버 로그를 확인해주세요.')
     }
   }
 
@@ -74,6 +95,7 @@ function AdminPatchNoteImportPanel({ importing, onImport, result }: AdminPatchNo
         { label: '실패', value: result.failedCount },
       ]
     : []
+  const canConfirmDryRunImport = result?.dryRun === true && lastDryRunPayload !== null
 
   return (
     <section className={styles.panel}>
@@ -155,6 +177,23 @@ function AdminPatchNoteImportPanel({ importing, onImport, result }: AdminPatchNo
               </div>
             ))}
           </div>
+
+          {canConfirmDryRunImport && (
+            <div className={styles.importConfirmBox}>
+              <div>
+                <strong>미리 확인 결과를 저장 반영할 수 있습니다.</strong>
+                <p>입력값을 바꾸지 않은 상태에서 같은 sourceUrl, version, locale로 실제 import를 실행합니다.</p>
+              </div>
+              <button
+                className={styles.primaryButton}
+                type="button"
+                disabled={importing}
+                onClick={() => void handleConfirmDryRunImport()}
+              >
+                {importing ? '처리 중' : '결과 그대로 Import 반영'}
+              </button>
+            </div>
+          )}
 
           {result.parserWarnings.length > 0 && (
             <div className={styles.importMessageBlock}>
