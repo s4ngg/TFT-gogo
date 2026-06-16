@@ -514,6 +514,22 @@
   border-radius: 7px;
 }
 
+.partyStatus {
+  margin: 0 0 var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--status-loading-border);
+  border-radius: var(--radius-xs);
+  background: var(--status-loading-icon-bg);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.partyStatusFallback {
+  border-color: var(--status-fallback-border);
+  background: var(--status-fallback-icon-bg);
+}
+
 .partyRow {
   min-height: 0;
   display: grid;
@@ -610,6 +626,18 @@
   border: 1px solid rgba(118, 151, 160, 0.22);
   border-radius: 4px;
   background: rgba(10, 22, 30, 0.8);
+}
+
+.partyRow p .partyStateOpen {
+  border-color: var(--cyan-border-subtle);
+  background: var(--cyan-bg-faint);
+  color: var(--text-ui);
+}
+
+.partyRow p .partyStateClosed {
+  border-color: var(--status-fallback-border);
+  background: var(--status-fallback-icon-bg);
+  color: var(--text-secondary);
 }
 
 .partyRow em {

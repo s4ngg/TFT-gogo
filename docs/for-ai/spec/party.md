@@ -35,6 +35,8 @@ Page: Party (/party).
 - frontend/src/pages/Party/partyFilters.ts
 - API layer: frontend/src/api/partyApi.ts
 - Chat API layer: frontend/src/api/chatApi.ts
+- Dashboard preview: frontend/src/pages/Dashboard/components/PartyFinderCard.tsx
+- Dashboard preview hook: frontend/src/pages/Dashboard/hooks/usePartyPreviewPosts.ts
 - Server-state hook: frontend/src/pages/Party/hooks/usePartyPosts.ts
 - Realtime chat hook: frontend/src/pages/Party/hooks/useRealtimeChat.ts
 - GET /api/community/chat/rooms/{roomId}/messages reads recent fixed-channel messages without authentication.
@@ -111,6 +113,7 @@ Page: Party (/party).
 - Normal users cannot create community chat channels by sending arbitrary roomId values.
 - Recent chat message reads are public for dashboard previews. Sending chat messages requires authentication.
 - Fixed community channel SSE reads are public, but the backend limits open SSE emitters to reduce abuse risk.
+- Dashboard party preview reads the same public party list through TanStack Query and shows loading/fallback state separately from empty state.
 - The MVP chat API does not yet enforce party membership for room access; membership validation and chat_rooms.type = PARTY persistence are later slices.
 </business-rules>
 
@@ -121,6 +124,7 @@ Page: Party (/party).
 - Service implementation must live in service/impl/.
 - Service tests use Mockito and must not connect to a real DB.
 - Frontend should use TanStack Query when Party.tsx is connected to this API. Do not store party server data in Zustand.
+- Dashboard PartyFinderCard must reuse the community party query data instead of local mock party posts.
 </validation>
 
 <open-issues>

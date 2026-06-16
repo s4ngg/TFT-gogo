@@ -1,27 +1,41 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { ChevronRight, Crown, Leaf, Sparkles, Swords, Users } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { partyPosts, type PartyPost } from '../dashboardData'
+import type { PartyPost } from '../../../api/partyApi'
 import styles from '../Dashboard.module.css'
 import { partyFilters, type PartyFilter } from '../../Party/partyFilters'
+import { getPartyPreviewStatusLabel } from '../utils/partyPreview'
+import { usePartyPreviewPosts } from '../hooks/usePartyPreviewPosts'
 
 const partyPostIcons: Record<PartyPost['icon'], typeof Crown> = {
   crown: Crown,
   leaf: Leaf,
   spark: Sparkles,
-  goal: Swords,
+  swords: Swords,
+}
+
+const partyToneClassNames: Record<PartyPost['tone'], string> = {
+  purple: styles.purple,
+  green: styles.green,
+  cyan: styles.cyan,
+  gold: styles.gold,
+}
+
+const partyStatusClassNames: Record<PartyPost['status'], string> = {
+  모집중: styles.partyStateOpen,
+  대기중: styles.partyStateClosed,
 }
 
 function PartyFinderCard() {
   const [selectedFilter, setSelectedFilter] = useState<PartyFilter>('전체')
   const navigate = useNavigate()
-  const visiblePosts = useMemo(() => {
-    const filteredPosts = selectedFilter === '전체'
-      ? partyPosts
-      : partyPosts.filter((post) => post.mode === selectedFilter)
-
-    return filteredPosts.slice(0, 4)
-  }, [selectedFilter])
+  const {
+    emptyMessage,
+    isFallback,
+    isLoading,
+    posts: visiblePosts,
+    statusMessage,
+  } = usePartyPreviewPosts(selectedFilter)
 
   return (
     <section className={`${styles.panel} ${styles.partyPanel}`}>
@@ -32,7 +46,7 @@ function PartyFinderCard() {
           <ChevronRight size={16} />
         </button>
       </div>
-      <div className={styles.smallTabs}>
+      <div aria-label="파티원 찾기 필터" className={styles.smallTabs} role="group">
         {partyFilters.map((filter) => (
           <button
             aria-pressed={selectedFilter === filter}
@@ -45,14 +59,25 @@ function PartyFinderCard() {
           </button>
         ))}
       </div>
-      <div className={styles.partyList}>
-        {visiblePosts.length > 0 ? (
+      {statusMessage && (
+        <p
+          aria-live="polite"
+          className={`${styles.partyStatus} ${isFallback ? styles.partyStatusFallback : ''}`}
+          role="status"
+        >
+          {statusMessage}
+        </p>
+      )}
+      <div aria-busy={isLoading} className={styles.partyList}>
+        {isLoading ? (
+          <p className={styles.emptyState}>잠시만 기다려주세요.</p>
+        ) : visiblePosts.length > 0 ? (
           visiblePosts.map((post) => {
             const Icon = partyPostIcons[post.icon]
 
             return (
-              <article className={styles.partyRow} key={post.title}>
-                <span className={`${styles.partyIcon} ${styles[post.tone]}`}>
+              <article className={styles.partyRow} key={post.id}>
+                <span className={`${styles.partyIcon} ${partyToneClassNames[post.tone]}`}>
                   <Icon size={21} strokeWidth={2.2} />
                 </span>
                 <div>
@@ -61,7 +86,10 @@ function PartyFinderCard() {
                     <span>{post.mode}</span>
                     <span>{post.tier}</span>
                     <Users size={14} />
-                    {post.count}
+                    {post.capacity}
+                    <span className={partyStatusClassNames[post.status]}>
+                      {getPartyPreviewStatusLabel(post.status)}
+                    </span>
                   </p>
                 </div>
                 <em>{post.close}</em>
@@ -69,7 +97,7 @@ function PartyFinderCard() {
             )
           })
         ) : (
-          <p className={styles.emptyState}>조건에 맞는 모집글이 없습니다.</p>
+          <p className={styles.emptyState}>{emptyMessage}</p>
         )}
       </div>
     </section>
