@@ -2,7 +2,7 @@
 
 목표: 2026-06-17까지 서울 리전 `ap-northeast-2`에 백엔드 배포가 가능한 MVP 인프라를 만든다.
 
-이 파일은 콘솔 작업용 요약이다. 상세 설명은 `docs/team-share/aws-infra-mvp-runbook.md`를 기준으로 한다.
+이 파일은 체크박스 진행용 요약이다. 콘솔 앞에서 빠르게 볼 순서는 `docs/team-share/aws-infra-console-quickstart.md`, 상세 설명은 `docs/team-share/aws-infra-mvp-runbook.md`를 기준으로 한다.
 
 ## 0. 팀에 먼저 받아야 하는 값
 

@@ -2,7 +2,7 @@
 
 목표: 도메인이 아직 없는 상태에서 서울 리전(ap-northeast-2)에 TFT-gogo 백엔드를 먼저 배포할 수 있는 최소 AWS 인프라를 만든다.
 
-내일 콘솔 작업만 빠르게 진행해야 하면 먼저 [AWS MVP 구축 체크리스트](./aws-infra-mvp-checklist.md)를 보고, 막히는 항목만 이 런북의 상세 섹션을 확인한다.
+내일 콘솔 작업만 빠르게 진행해야 하면 먼저 [AWS 콘솔 빠른 시작](./aws-infra-console-quickstart.md)을 보고, 체크박스 관리는 [AWS MVP 구축 체크리스트](./aws-infra-mvp-checklist.md)를 사용한다. 막히는 항목만 이 런북의 상세 섹션을 확인한다.
 
 ## 내일 작업 요약
 
