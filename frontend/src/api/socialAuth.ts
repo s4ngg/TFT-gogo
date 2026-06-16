@@ -12,15 +12,46 @@ export interface SocialLoginStartResponse {
   authorizationUrl: string
 }
 
+const MISSING_AUTHORIZATION_URL_MESSAGE =
+  'Social login start response does not include an authorizationUrl'
+const INVALID_AUTHORIZATION_URL_MESSAGE =
+  'Social login start response includes an invalid authorizationUrl'
+const UNSUPPORTED_AUTHORIZATION_URL_MESSAGE =
+  'Social login start response includes an unsupported authorizationUrl'
+
+function normalizeAuthorizationUrl(value: string | undefined): string {
+  if (value === undefined || value.trim().length === 0) {
+    throw new Error(MISSING_AUTHORIZATION_URL_MESSAGE)
+  }
+
+  const trimmedValue = value.trim()
+  if (/\s/.test(trimmedValue)) {
+    throw new Error(INVALID_AUTHORIZATION_URL_MESSAGE)
+  }
+
+  let authorizationUrl: URL
+  try {
+    authorizationUrl = new URL(trimmedValue)
+  } catch {
+    throw new Error(INVALID_AUTHORIZATION_URL_MESSAGE)
+  }
+
+  if (authorizationUrl.protocol !== 'http:' && authorizationUrl.protocol !== 'https:') {
+    throw new Error(UNSUPPORTED_AUTHORIZATION_URL_MESSAGE)
+  }
+
+  if (authorizationUrl.username || authorizationUrl.password) {
+    throw new Error(UNSUPPORTED_AUTHORIZATION_URL_MESSAGE)
+  }
+
+  return authorizationUrl.toString()
+}
+
 function normalizeSocialLoginStartResponse(
   payload: RawSocialLoginStartResponse,
 ): SocialLoginStartResponse {
-  if (!payload.authorizationUrl) {
-    throw new Error('Social login start response does not include an authorizationUrl')
-  }
-
   return {
-    authorizationUrl: payload.authorizationUrl,
+    authorizationUrl: normalizeAuthorizationUrl(payload.authorizationUrl),
   }
 }
 

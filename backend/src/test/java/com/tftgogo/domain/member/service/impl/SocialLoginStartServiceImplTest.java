@@ -5,6 +5,8 @@ import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.ObjectProvider;
@@ -57,6 +59,26 @@ class SocialLoginStartServiceImplTest {
         // then
         assertThat(response.getAuthorizationUrl())
                 .isEqualTo("https://api.example.com/app/oauth2/authorization/google");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "ftp://api.example.com",
+            "//api.example.com",
+            "https://user:pass@api.example.com",
+            "https://api.example.com/oauth path"
+    })
+    void base_URL이_http_https_절대_URL이_아니면_INVALID_INPUT을_던진다(String invalidBaseUrl) {
+        // given
+        SocialLoginStartServiceImpl service = new SocialLoginStartServiceImpl(clientRegistrationRepositoryProvider);
+        when(clientRegistrationRepositoryProvider.getIfAvailable()).thenReturn(clientRegistrationRepository);
+        when(clientRegistrationRepository.findByRegistrationId("google"))
+                .thenReturn(mock(ClientRegistration.class));
+
+        // when, then
+        assertThatThrownBy(() -> service.getStartUrl("google", invalidBaseUrl))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
     }
 
     @Test
