@@ -10,6 +10,7 @@
 - `01_schema.sql`은 현재 JPA Entity 기준 테이블과 ELD 예약 채팅 테이블을 생성합니다.
 - `02_seed.sql`은 Guide/PatchNotes 공개 API 확인용 데이터와 고정 채팅 room id ELD 데이터를 넣습니다.
 - 공개 Guide/PatchNotes API와 Auth/Party 기본 흐름은 `RIOT_API_KEY` 없이 확인할 수 있습니다.
+- 소셜 OAuth E2E는 DB만으로 완료되지 않으며 provider `client-id`/`client-secret`과 callback URL 설정이 필요합니다.
 - 이 스모크 경로에서는 `ai-server/.env`가 선택 사항이며, MySQL, Redis, backend만 필요합니다.
 - 자세한 DDL/ELD 기준과 QA 범위는 `docs/qa/v0.4-db-ddl-eld.md`를 확인합니다.
 
@@ -30,9 +31,22 @@ docker compose up -d mysql redis
 Docker Compose의 MySQL 서비스는 빈 `mysql-data` volume이 처음 만들어질 때 `01_schema.sql`, `02_seed.sql`을 자동 실행합니다.
 이미 생성된 volume에는 init SQL이 다시 실행되지 않으므로, 기존 DB를 초기화하려면 먼저 아래 명령을 실행합니다.
 
+주의: `docker compose down -v`는 Compose named volume을 삭제하므로 로컬 QA DB 데이터가 사라집니다.
+
 ```powershell
 docker compose down -v
 ```
+
+## 적용 검증
+
+2026-06-16 기준 MySQL 8.0.44 임시 DB에서 `01_schema.sql`, `02_seed.sql` 순차 적용을 확인했습니다.
+
+- 생성 테이블: 19개
+- `chat_rooms` seed: 4개
+- `guides` seed: 4개
+- `patch_notes` seed: 1개
+- `patch_changes` seed: 2개
+- `backend` `compileJava`: Pass
 
 host MySQL client를 사용할 때:
 
