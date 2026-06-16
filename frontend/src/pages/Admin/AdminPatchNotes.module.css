@@ -257,6 +257,125 @@
   accent-color: var(--accent);
 }
 
+.importForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.importOptions {
+  display: grid;
+  grid-template-columns: minmax(var(--size-admin-note-version-width), 0.4fr) repeat(2, minmax(0, 1fr));
+  gap: var(--space-xl);
+  align-items: end;
+}
+
+.inlineError {
+  color: var(--danger);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+}
+
+.importResult {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+  padding: var(--space-xl);
+  background: var(--bg-main);
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-button);
+}
+
+.importMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  align-items: center;
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+}
+
+.importMeta strong {
+  color: var(--accent);
+  font-size: var(--font-size-sm);
+}
+
+.importMetricGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-md);
+}
+
+.importMetric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-lg);
+  background: var(--bg-card);
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-button);
+}
+
+.importMetric span {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+}
+
+.importMetric strong {
+  color: var(--text-main);
+  font-size: var(--font-size-lg);
+}
+
+.importMessageBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.importMessageBlock h3 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: var(--font-size-sm);
+}
+
+.importMessageBlock ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin: 0;
+  padding-left: var(--space-xl);
+  color: var(--text-soft);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+.rowErrorTableWrap {
+  overflow-x: auto;
+}
+
+.rowErrorTable {
+  width: 100%;
+  min-width: var(--size-admin-change-list-min-width);
+  border-collapse: collapse;
+  color: var(--text-soft);
+  font-size: var(--font-size-xs);
+}
+
+.rowErrorTable th,
+.rowErrorTable td {
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--border-faint);
+  text-align: left;
+  vertical-align: top;
+}
+
+.rowErrorTable th {
+  color: var(--text-muted);
+  font-weight: 900;
+}
+
 .changeLayout {
   display: grid;
   grid-template-columns: minmax(var(--size-admin-change-form-min-width), 1fr)
@@ -346,7 +465,9 @@
 
 @media (max-width: 1040px) {
   .grid,
-  .changeLayout {
+  .changeLayout,
+  .importMetricGrid,
+  .importOptions {
     grid-template-columns: 1fr;
   }
 }
