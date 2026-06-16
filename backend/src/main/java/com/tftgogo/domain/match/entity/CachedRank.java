@@ -27,11 +27,13 @@ public class CachedRank {
     @Column(name = "rank_value", length = 10)
     private String rank;
 
-    @Column(name = "league_points",  nullable = false)
+    @Column(name = "league_points", nullable = false)
     private int leaguePoints;
-    @Column(name = "wins" ,  nullable = false)
+
+    @Column(name = "wins", nullable = false)
     private int wins;
-    @Column(name = "loses" , nullable = false)
+
+    @Column(name = "losses", nullable = false)
     private int losses;
 
     @Column(nullable = false)
@@ -39,7 +41,7 @@ public class CachedRank {
 
     @Builder
     public CachedRank(String puuid, String tier, String rank,
-                    int leaguePoints, int wins, int losses, LocalDateTime cachedAt) {
+                      int leaguePoints, int wins, int losses, LocalDateTime cachedAt) {
         this.puuid = puuid;
         this.tier = tier;
         this.rank = rank;
