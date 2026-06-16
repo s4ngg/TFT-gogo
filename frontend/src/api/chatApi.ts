@@ -88,7 +88,7 @@ async function readChatStream(
       signal: controller.signal,
     })
 
-    if (response.status === 401 || response.status === 403) {
+    if (response.status === 401) {
       useAuthStore.getState().clearAuth()
       handlers.onUnauthorized()
       return
