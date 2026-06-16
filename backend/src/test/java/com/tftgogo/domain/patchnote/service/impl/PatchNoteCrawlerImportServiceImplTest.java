@@ -26,6 +26,9 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.support.SimpleTransactionStatus;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionOperations;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -59,17 +62,21 @@ class PatchNoteCrawlerImportServiceImplTest {
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
 
+    private RecordingTransactionOperations transactionOperations;
+
     private PatchNoteCrawlerImportServiceImpl importService;
 
     @BeforeEach
     void setUp() {
+        transactionOperations = new RecordingTransactionOperations();
         importService = new PatchNoteCrawlerImportServiceImpl(
                 fetchService,
                 parser,
                 patchNoteRepository,
                 patchChangeRepository,
                 new PatchNoteCrawlerProperties(),
-                objectMapper
+                objectMapper,
+                transactionOperations
         );
     }
 
@@ -128,6 +135,43 @@ class PatchNoteCrawlerImportServiceImplTest {
         verify(patchNoteRepository).save(patchNoteCaptor.capture());
         assertThat(patchNoteCaptor.getValue().getVersion()).isEqualTo("17.2");
         assertThat(patchNoteCaptor.getValue().getImportSource()).isEqualTo(PatchNoteImportSource.RIOT_OFFICIAL);
+        verify(patchChangeRepository, times(2)).save(any(PatchChange.class));
+    }
+
+    @Test
+    void importPatchNote_fetchesAndParsesOutsideTransaction_thenWritesInsideTransaction() {
+        // given
+        PatchNoteCrawlImportRequest request = request(DETAIL_URL, "17.2", "ko-kr", false, false);
+        PatchNoteCrawlFetchedPage detailPage = fetchedPage(DETAIL_URL);
+        PatchNoteCrawlDocument document = document();
+        when(fetchService.fetch(DETAIL_URL)).thenAnswer(invocation -> {
+            assertThat(transactionOperations.isInTransaction()).isFalse();
+            return detailPage;
+        });
+        when(parser.parseDetailPage(detailPage, "17.2", "ko-kr")).thenAnswer(invocation -> {
+            assertThat(transactionOperations.isInTransaction()).isFalse();
+            return document;
+        });
+        when(patchNoteRepository.findByVersion("17.2")).thenAnswer(invocation -> {
+            assertThat(transactionOperations.isInTransaction()).isTrue();
+            return Optional.empty();
+        });
+        when(patchNoteRepository.save(any(PatchNote.class))).thenAnswer(invocation -> {
+            assertThat(transactionOperations.isInTransaction()).isTrue();
+            PatchNote patchNote = invocation.getArgument(0);
+            ReflectionTestUtils.setField(patchNote, "id", 1L);
+            return patchNote;
+        });
+        when(patchChangeRepository.save(any(PatchChange.class))).thenAnswer(invocation -> {
+            assertThat(transactionOperations.isInTransaction()).isTrue();
+            return invocation.getArgument(0);
+        });
+
+        // when
+        PatchNoteCrawlImportResponse response = importService.importPatchNote(request);
+
+        // then
+        assertThat(response.getPatchNoteId()).isEqualTo(1L);
         verify(patchChangeRepository, times(2)).save(any(PatchChange.class));
     }
 
@@ -343,5 +387,24 @@ class PatchNoteCrawlerImportServiceImplTest {
         ReflectionTestUtils.setField(request, "dryRun", dryRun);
         ReflectionTestUtils.setField(request, "forceOverwrite", forceOverwrite);
         return request;
+    }
+
+    private static class RecordingTransactionOperations implements TransactionOperations {
+
+        private boolean inTransaction;
+
+        @Override
+        public <T> T execute(TransactionCallback<T> action) {
+            inTransaction = true;
+            try {
+                return action.doInTransaction(new SimpleTransactionStatus());
+            } finally {
+                inTransaction = false;
+            }
+        }
+
+        private boolean isInTransaction() {
+            return inTransaction;
+        }
     }
 }
