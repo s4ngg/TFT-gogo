@@ -276,6 +276,10 @@ CREATE TABLE IF NOT EXISTS party_posts (
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     deleted_at DATETIME(6) NULL,
+    CONSTRAINT chk_party_posts_max_members_positive
+        CHECK (max_members > 0),
+    CONSTRAINT chk_party_posts_current_members_bounds
+        CHECK (current_members >= 0 AND current_members <= max_members),
     PRIMARY KEY (id),
     KEY idx_party_posts_list (deleted_at, game_mode, is_closed, created_at, id),
     KEY idx_party_posts_user (user_id),
