@@ -7,8 +7,13 @@ import {
   getPartyPosts,
   joinPartyPost,
   type CreatePartyPostRequest,
+  type PartyPostsQueryParams,
   type PartyPostsResult,
 } from '../../../api/partyApi'
+import {
+  COMMUNITY_PARTY_POSTS_QUERY_KEY,
+  communityPartyPostsQueryKey,
+} from '../../../api/partyQueryKeys'
 import type { PartyFilter } from '../partyFilters'
 import type { PartyMode, PartyPost } from '../types'
 import {
@@ -26,7 +31,6 @@ import {
 import { usePartyAuth } from './usePartyAuth'
 
 const PARTY_PAGE_SIZE = 3
-const PARTY_QUERY_KEY = ['community', 'parties'] as const
 
 interface UsePartyPostsOptions {
   onPartyMessage: (post: PartyPost, message: string) => void
@@ -53,6 +57,10 @@ function readMutationErrorMessage(error: unknown, fallbackMessage: string) {
     : fallbackMessage
 }
 
+function toPartyPostsQueryParams(filter: PartyFilter): PartyPostsQueryParams {
+  return filter === '전체' ? {} : { mode: filter }
+}
+
 export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPostsOptions) {
   const queryClient = useQueryClient()
   const { token: authToken, userId: authUserId } = usePartyAuth()
@@ -76,10 +84,18 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
   const minDeadline = useMemo(getDefaultDeadlineInput, [])
   const titleInputRef = useRef<HTMLInputElement>(null)
   const joinRequestPostIdRef = useRef<string | null>(null)
+  const partyQueryParams = useMemo(
+    () => toPartyPostsQueryParams(selectedFilter),
+    [selectedFilter],
+  )
+  const partyQueryKey = useMemo(
+    () => communityPartyPostsQueryKey(partyQueryParams),
+    [partyQueryParams],
+  )
 
   const partyQuery = useQuery({
-    queryKey: PARTY_QUERY_KEY,
-    queryFn: getPartyPosts,
+    queryKey: partyQueryKey,
+    queryFn: () => getPartyPosts(partyQueryParams),
     staleTime: 1000 * 60,
   })
   const createMutation = useMutation({
@@ -212,7 +228,7 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
         setCurrentPage(1)
         onPartyPostCreated(serverPost)
 
-        void queryClient.invalidateQueries({ queryKey: PARTY_QUERY_KEY })
+        void queryClient.invalidateQueries({ queryKey: COMMUNITY_PARTY_POSTS_QUERY_KEY })
       },
       onError: (error) => {
         setPartyStatusMessage(readMutationErrorMessage(error, '파티 모집글 등록에 실패했습니다.'))
@@ -281,9 +297,9 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
             [postId]: confirmedPost,
           }))
           onPartyMessage(confirmedPost, nextMessage)
-          await queryClient.invalidateQueries({ queryKey: PARTY_QUERY_KEY })
+          await queryClient.invalidateQueries({ queryKey: COMMUNITY_PARTY_POSTS_QUERY_KEY })
 
-          const refreshedPosts = queryClient.getQueryData<PartyPostsResult>(PARTY_QUERY_KEY)
+          const refreshedPosts = queryClient.getQueryData<PartyPostsResult>(partyQueryKey)
 
           if (refreshedPosts?.source === 'api') {
             setPostOverrides((currentOverrides) => removePostOverride(currentOverrides, postId))
@@ -303,7 +319,7 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
           joinRequestPostIdRef.current = null
 
           if (error) {
-            void queryClient.invalidateQueries({ queryKey: PARTY_QUERY_KEY })
+            void queryClient.invalidateQueries({ queryKey: COMMUNITY_PARTY_POSTS_QUERY_KEY })
           }
         },
       },

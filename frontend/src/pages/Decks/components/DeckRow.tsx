@@ -41,9 +41,9 @@ function DeckRow({ deck, showTier = true, showRank = true, locale, rankFilter }:
       <td className={styles.nameCol}>
         <span className={styles.deckName}>{deckDisplayName(deck, locale)}</span>
         <span className={styles.traits}>
-          {deck.traits.slice(0, MAX_VISIBLE_TRAITS).map((t) => (
+          {deck.traits.slice(0, MAX_VISIBLE_TRAITS).map((t, i) => (
             <span
-              key={`${t.name}-${t.count}`}
+              key={`${t.name}-${t.count}-${i}`}
               className={`${styles.traitTag} ${TONE_CLASS_MAP[t.tone] ?? ''}`}
             >
               {t.count} {getTraitName(t.name, locale)}
