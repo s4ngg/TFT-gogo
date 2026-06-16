@@ -29,7 +29,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionOperations;
 
 import java.text.Normalizer;
 import java.time.LocalDateTime;
@@ -58,9 +58,9 @@ public class PatchNoteCrawlerImportServiceImpl implements PatchNoteCrawlerImport
     private final PatchChangeRepository patchChangeRepository;
     private final PatchNoteCrawlerProperties properties;
     private final ObjectMapper objectMapper;
+    private final TransactionOperations transactionOperations;
 
     @Override
-    @Transactional
     public PatchNoteCrawlImportResponse importPatchNote(PatchNoteCrawlImportRequest request) {
         if (request == null) {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
@@ -75,13 +75,33 @@ public class PatchNoteCrawlerImportServiceImpl implements PatchNoteCrawlerImport
         );
 
         ImportCandidates candidates = normalize(document, fetchedPage.fetchedAt());
-        Optional<PatchNote> existingPatchNote = patchNoteRepository.findByVersion(candidates.patchNote().version());
-        ImportCounter counter = new ImportCounter();
         List<PatchNoteCrawlRowErrorResponse> rowErrors = validateCandidates(candidates);
-        counter.failedCount += rowErrors.size();
-        counter.reviewRequiredCount += (int) candidates.patchChanges().stream()
+        int reviewRequiredCount = (int) candidates.patchChanges().stream()
                 .filter(PatchChangeImportCandidate::reviewRequired)
                 .count();
+
+        return transactionOperations.execute(status -> importCandidates(
+                request,
+                locale,
+                document,
+                candidates,
+                rowErrors,
+                reviewRequiredCount
+        ));
+    }
+
+    private PatchNoteCrawlImportResponse importCandidates(
+            PatchNoteCrawlImportRequest request,
+            String locale,
+            PatchNoteCrawlDocument document,
+            ImportCandidates candidates,
+            List<PatchNoteCrawlRowErrorResponse> rowErrors,
+            int reviewRequiredCount
+    ) {
+        Optional<PatchNote> existingPatchNote = patchNoteRepository.findByVersion(candidates.patchNote().version());
+        ImportCounter counter = new ImportCounter();
+        counter.failedCount += rowErrors.size();
+        counter.reviewRequiredCount += reviewRequiredCount;
 
         PatchNote patchNote = handlePatchNote(
                 candidates.patchNote(),
