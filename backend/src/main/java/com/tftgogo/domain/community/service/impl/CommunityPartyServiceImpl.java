@@ -11,6 +11,7 @@ import com.tftgogo.domain.community.entity.PartyPost;
 import com.tftgogo.domain.community.repository.PartyApplicationRepository;
 import com.tftgogo.domain.community.repository.PartyPostRepository;
 import com.tftgogo.domain.community.service.CommunityPartyService;
+import com.tftgogo.domain.member.repository.MemberRepository;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ public class CommunityPartyServiceImpl implements CommunityPartyService {
 
     private final PartyPostRepository partyPostRepository;
     private final PartyApplicationRepository partyApplicationRepository;
+    private final MemberRepository memberRepository;
     private final ChatService chatService;
 
     @Override
@@ -66,6 +68,7 @@ public class CommunityPartyServiceImpl implements CommunityPartyService {
     @Transactional
     public PartyPostResponse joinParty(Long userId, Long partyPostId) {
         validateAuthenticated(userId);
+        lockMemberForPartyJoin(userId);
 
         PartyPost partyPost = getPartyPostForUpdate(partyPostId);
         if (partyPost.isOwner(userId) || hasAcceptedApplication(partyPost, userId)) {
@@ -111,6 +114,11 @@ public class CommunityPartyServiceImpl implements CommunityPartyService {
     private PartyPost getPartyPostForUpdate(Long partyPostId) {
         return partyPostRepository.findActiveByIdForUpdate(partyPostId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PARTY_POST_NOT_FOUND));
+    }
+
+    private void lockMemberForPartyJoin(Long userId) {
+        memberRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
     }
 
     private boolean isJoined(PartyPost partyPost, Long userId, Set<Long> joinedPartyPostIds) {
