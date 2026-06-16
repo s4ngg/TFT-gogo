@@ -6,6 +6,7 @@ import {
   subscribeChatRoom,
   type ChatMessage,
 } from '../../../api/chatApi'
+import { communityChatMessagesQueryKey } from '../../../api/chatQueryKeys'
 
 type ChatConnectionStatus = 'connected' | 'connecting' | 'disconnected'
 
@@ -13,8 +14,6 @@ interface SendMessageParams {
   content: string
   roomId?: string
 }
-
-const chatMessagesQueryKey = (roomId: string) => ['chatMessages', roomId] as const
 
 function mergeMessages(currentMessages: ChatMessage[] | undefined, nextMessages: ChatMessage[]) {
   const messageMap = new Map<string, ChatMessage>()
@@ -38,7 +37,7 @@ export function useRealtimeChat(roomId: string, enabled = true) {
 
   const messagesQuery = useQuery({
     enabled,
-    queryKey: chatMessagesQueryKey(roomId),
+    queryKey: communityChatMessagesQueryKey(roomId),
     queryFn: () => getChatMessages(roomId),
     staleTime: 10_000,
   })
@@ -65,7 +64,7 @@ export function useRealtimeChat(roomId: string, enabled = true) {
       },
       onMessage: (message) => {
         queryClient.setQueryData<ChatMessage[]>(
-          chatMessagesQueryKey(message.roomId),
+          communityChatMessagesQueryKey(message.roomId),
           (currentMessages) => mergeMessages(currentMessages, [message]),
         )
       },
@@ -77,7 +76,7 @@ export function useRealtimeChat(roomId: string, enabled = true) {
       },
       onSnapshot: (messages) => {
         queryClient.setQueryData<ChatMessage[]>(
-          chatMessagesQueryKey(roomId),
+          communityChatMessagesQueryKey(roomId),
           mergeMessages(undefined, messages),
         )
       },
@@ -103,7 +102,7 @@ export function useRealtimeChat(roomId: string, enabled = true) {
     onSuccess: (message) => {
       setErrorMessage('')
       queryClient.setQueryData<ChatMessage[]>(
-        chatMessagesQueryKey(message.roomId),
+        communityChatMessagesQueryKey(message.roomId),
         (currentMessages) => mergeMessages(currentMessages, [message]),
       )
     },
