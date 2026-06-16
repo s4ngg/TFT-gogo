@@ -21,7 +21,7 @@ Page: PatchNotes (/patch-notes).
 - POST   /api/admin/patch-note-changes           -> create patch change
 - PATCH  /api/admin/patch-note-changes/{changeId} -> update patch change
 - DELETE /api/admin/patch-note-changes/{changeId} -> soft delete patch change
-- POST   /api/admin/patch-notes/import/crawl     -> planned official Riot/TFT patch-note crawl import
+- POST   /api/admin/patch-notes/import/crawl     -> planned write-side official Riot/TFT patch-note import endpoint; not present in current develop
 </backend>
 <frontend>
 - frontend/src/api/patchNotes.ts
@@ -33,6 +33,7 @@ Page: PatchNotes (/patch-notes).
 - frontend/src/pages/Admin/AdminPatchNotes.tsx -> admin patch-note page wrapper
 - frontend/src/pages/Admin/components/AdminPatchNotesManager.tsx -> admin patch note and patch change CRUD screen
 - frontend/src/api/adminApi.ts -> admin patch note/change request functions and admin-token headers
+- Current develop has no admin patch-note crawler/import UI yet.
 </frontend>
 </api>
 
@@ -59,6 +60,10 @@ Page: PatchNotes (/patch-notes).
 - Editing a patch change must not drift across selected patch notes. If the selected patch note changes while editing, clear the edit state before saving.
 - Admin patch-note API functions must include X-Admin-Token headers and wrap request failures so auth failures can still be detected by callers.
 - Admin delete uses soft delete through active/deletedAt. Do not hard delete patch note or patch change rows.
+- PatchNote and PatchChange entities include crawler/import metadata fields in current develop: sourceUrl, sourceLocale, importSource, importedAt, and manuallyEdited.
+- PatchChange also includes sourceKey, sourceHeadingPath, and sourceOrder for imported-row duplicate detection and diagnostics.
+- Manual admin updates mark imported patch notes or patch changes as manuallyEdited so later imports can preserve curated edits.
+- Current develop includes crawler fetcher/parser infrastructure and tests, but no DB write-side import service, import endpoint, dryRun/forceOverwrite request DTO, or admin import UI.
 - highlightsJson and tagsJson must validate as JSON string arrays.
 - isCurrent must stay unique among active, non-deleted patch notes.
 - When a patch note is created or updated with current=true, existing active current patch notes must be unset.
@@ -75,6 +80,11 @@ Page: PatchNotes (/patch-notes).
 - Services: backend/src/main/java/com/tftgogo/domain/patchnote/service/ and service/impl/
 - Repositories: PatchNoteRepository, PatchChangeRepository
 - Entities: PatchNote, PatchChange
+- Import source enum: backend/src/main/java/com/tftgogo/domain/patchnote/entity/PatchNoteImportSource.java
+- Crawler config: backend/src/main/java/com/tftgogo/domain/patchnote/config/PatchNoteCrawlerProperties.java
+- Current crawler services: PatchNoteCrawlerFetchService, PatchNoteCrawlerParser
+- Current crawler implementations: RiotPatchNoteCrawlerFetchServiceImpl, JsoupPatchNoteCrawlerParser
+- Current crawler DTOs: PatchNoteCrawlFetchedPage, PatchNoteCrawlListItem, PatchNoteCrawlDocument, PatchChangeCrawlRow
 </backend-structure>
 
 <backend-implementation>
@@ -85,6 +95,12 @@ Page: PatchNotes (/patch-notes).
 - AdminPatchNoteServiceImpl owns patch note CRUD, patch change list lookup, patch change CRUD, JSON array serialization/validation, current-patch clearing, and soft delete.
 - Creating or updating a patch note with current=true must unset other active current patch notes in the same transaction.
 - Deleting a patch note must soft-delete its active/non-deleted patch changes.
+- AdminPatchNoteServiceImpl marks imported rows as manuallyEdited when an admin edits them through normal CRUD paths.
+- RiotPatchNoteCrawlerFetchServiceImpl fetches official Riot/TFT pages only, using PatchNoteCrawlerProperties for tagUrl, locale, user-agent, and timeouts.
+- RiotPatchNoteCrawlerFetchServiceImpl allows exact official hosts only: www.leagueoflegends.com and teamfighttactics.leagueoflegends.com.
+- JsoupPatchNoteCrawlerParser parses the Next.js __NEXT_DATA__ payload from official list/detail pages into crawler DTOs.
+- JsoupPatchNoteCrawlerParser generates a fixed-length sourceKeyHash for rows from normalized source material.
+- Current develop does not include PatchNoteCrawlerImportService or POST /api/admin/patch-notes/import/crawl yet.
 </backend-implementation>
 
 <crawler-research-2026-06-14>
@@ -120,20 +136,20 @@ Page: PatchNotes (/patch-notes).
 </crawler-research-2026-06-14>
 
 <crawler-implementation-slices>
-- PR 1, DB metadata contract:
-  - Add source/import metadata to patch_notes and patch_changes before write-side import.
-  - Keep the public/admin CRUD behavior unchanged.
-  - Add repository/service tests for sourceKey duplicate matching and manual-edit preservation.
-- PR 2, fetcher/parser/snapshot:
-  - Add jsoup dependency.
-  - Add HTTP fetch abstraction and parser records.
-  - Add reduced HTML snapshots under backend/src/test/resources/patchnote/crawl/.
-  - No DB writes in this PR.
-- PR 3, importer upsert/dryRun:
+- PR 1, DB metadata contract: landed in current develop.
+  - source/import metadata exists on patch_notes and patch_changes.
+  - Public/admin CRUD behavior remains unchanged.
+  - Manual admin edits mark imported rows as manuallyEdited.
+- PR 2, fetcher/parser/snapshot: landed in current develop.
+  - jsoup dependency is present.
+  - HTTP fetch abstraction and parser DTOs are present.
+  - Reduced HTML snapshots and parser/fetcher tests are present under backend/src/test/resources/patchnote/crawl/ and backend/src/test/java.
+  - No DB writes are performed by the crawler parser/fetcher slice.
+- PR 3, importer upsert/dryRun: planned next write-side slice.
   - Convert parser output into import candidates.
   - Match existing patch_notes by version and patch_changes by patchNoteId + sourceKey.
   - Implement dryRun, forceOverwrite, warning/error result reporting, and manual-edit skip rules.
-- PR 4, admin endpoint/UI:
+- PR 4, admin endpoint/UI: planned after write-side importer.
   - Expose POST /api/admin/patch-notes/import/crawl.
   - Add admin API function and admin import controls.
   - Display created/updated/skipped/review-required/error counts before and after confirmed import.
@@ -142,24 +158,27 @@ Page: PatchNotes (/patch-notes).
 </crawler-implementation-slices>
 
 <crawler-backend-structure>
-- Suggested packages under backend/src/main/java/com/tftgogo/domain/patchnote/:
+- Current packages under backend/src/main/java/com/tftgogo/domain/patchnote/:
   - service/PatchNoteCrawlerFetchService.java
   - service/PatchNoteCrawlerParser.java
-  - service/PatchNoteCrawlerImportService.java
   - service/impl/RiotPatchNoteCrawlerFetchServiceImpl.java
   - service/impl/JsoupPatchNoteCrawlerParser.java
+  - dto/crawl/PatchNoteCrawlFetchedPage.java
+  - dto/crawl/PatchNoteCrawlListItem.java
+  - dto/crawl/PatchNoteCrawlDocument.java
+  - dto/crawl/PatchChangeCrawlRow.java
+  - config/PatchNoteCrawlerProperties.java
+- Still planned for write-side import:
+  - service/PatchNoteCrawlerImportService.java
   - service/impl/PatchNoteCrawlerImportServiceImpl.java
   - dto/request/PatchNoteCrawlImportRequest.java
   - dto/response/PatchNoteCrawlImportResponse.java
   - dto/response/PatchNoteCrawlRowErrorResponse.java
-  - dto/crawl/PatchNoteCrawlListItem.java
-  - dto/crawl/PatchNoteCrawlDocument.java
-  - dto/crawl/PatchChangeCrawlRow.java
   - dto/crawl/PatchNoteImportCandidate.java
   - dto/crawl/PatchChangeImportCandidate.java
-- Suggested config:
-  - global/config or domain/patchnote/config/PatchNoteCrawlerProperties.java using @ConfigurationProperties.
-  - Properties should cover tagUrl, defaultLocale, userAgent, connectTimeoutMillis, readTimeoutMillis, and maxDetailRows.
+- Config:
+  - PatchNoteCrawlerProperties uses @ConfigurationProperties.
+  - Properties cover tagUrl, defaultLocale, userAgent, connectTimeoutMillis, readTimeoutMillis, and maxDetailRows.
 - Controller rule:
   - Add the import endpoint to AdminPatchNoteController.
   - Swagger annotations belong in AdminPatchNoteControllerDocs only.
@@ -269,7 +288,7 @@ Page: PatchNotes (/patch-notes).
 </crawler-normalization-contract>
 
 <crawler-import-contract>
-- Planned endpoint is POST /api/admin/patch-notes/import/crawl. Treat it as planned until the crawler implementation PR lands; existing admin CRUD must keep working without it.
+- Planned endpoint is POST /api/admin/patch-notes/import/crawl. Treat it as planned until the write-side import implementation lands; existing admin CRUD must keep working without it.
 - Request DTO fields:
   - sourceUrl: optional official Riot/TFT detail URL. If omitted, importer may discover the latest detail URL from the tag/list page.
   - version: optional major.minor value. If present, it overrides version parsed from the title or slug.
@@ -306,14 +325,14 @@ Page: PatchNotes (/patch-notes).
 </crawler-parser-rules>
 
 <crawler-persistence>
-- Current PatchNote/PatchChange entities do not yet store crawler source metadata. Add this metadata before implementing write-side import instead of hiding it in summary or tagsJson only.
-- Recommended PatchNote metadata: sourceUrl, sourceLocale, importedAt, importSource, and manuallyEdited. Keep version as the upsert key.
-- Recommended PatchChange metadata: sourceKey, sourceUrl, sourceHeadingPath, sourceOrder, importedAt, importSource, and manuallyEdited.
+- Current PatchNote/PatchChange entities store crawler source metadata before write-side import.
+- PatchNote metadata: sourceUrl, sourceLocale, importedAt, importSource, and manuallyEdited. Keep version as the upsert key.
+- PatchChange metadata: sourceKey, sourceUrl, sourceHeadingPath, sourceOrder, sourceLocale, importedAt, importSource, and manuallyEdited.
 - PatchNote upsert key is version. Importing the same version twice must not create duplicate patch_notes rows.
 - PatchChange upsert must use a stable fixed-length sourceKey hash derived from official source structure when available. Preferred sourceKey format is a sha-256 hex hash of normalized sourceUrl, version, contentId, heading path, category, targetName, normalized row text, and source order.
 - Do not store long headingPath or raw row text as the unique sourceKey. Store raw diagnostics separately in sourceHeadingPath/sourceOrder and keep sourceKey suitable for DB indexing.
 - If MySQL index constraints are added, prefer a uniqueness guarantee for imported rows by patch_note_id + source_key while still allowing manually created rows without a sourceKey. If the database cannot express the desired partial uniqueness cleanly, enforce the imported-row uniqueness in service logic and cover it with tests.
-- Manual admin edits must be preserved. Admin update endpoints should mark imported PatchNote/PatchChange rows as manuallyEdited or equivalent.
+- Manual admin edits must be preserved. Admin update endpoints currently mark imported PatchNote/PatchChange rows as manuallyEdited.
 - PatchNote manuallyEdited=true must protect admin-edited title, summary, description, focus, imageUrl, highlightsJson, and current flag from normal re-import overwrites.
 - Repeated import behavior:
   - existing imported patch note/change + manuallyEdited=false + forceOverwrite=false: update crawler-owned fields.
@@ -379,16 +398,16 @@ Page: PatchNotes (/patch-notes).
 - Crawler/import tests should cover parser success, missing __NEXT_DATA__, missing articleCardGrid, missing patchNotesRichText, parser markup drift, repeated import idempotency, sourceKey/hash generation, review-required rows, manual edit preservation, dryRun behavior, and forceOverwrite behavior.
 - Crawler parser tests should verify that rows with multiple change-indicator arrows preserve the full summary and avoid unsafe beforeValue/afterValue splitting.
 - Frontend tests should continue to cover nested stats payload handling via readPatchChangeStatsPayload.
-- Admin frontend tests should cover admin API request shape, admin-token headers for patch note and patch change read/write calls, request error wrapping, and core form payload mapping before crawler/import is added.
+- Admin frontend tests should cover admin API request shape, admin-token headers for patch note and patch change read/write calls, request error wrapping, and core form payload mapping before crawler import UI is added.
 - Admin UI validation should be verified around empty sortOrder handling and patch-change edit state reset when the selected patch note changes.
 - Swagger smoke testing should verify public APIs without admin token and admin APIs with X-Admin-Token.
 </validation>
 
 <data-ingestion>
-- Current stage: public PatchNotes browsing, backend admin CRUD, admin patch change list lookup, and frontend AdminPatchNotes curation screen are implemented for curated DB/admin data.
-- Next stage before crawling/import: merge the admin screen/API work, keep the spec in sync, and repeat smoke testing against the admin endpoints.
-- Patch-note crawling/import comes after admin UI wiring, current-patch uniqueness, public stats contracts, and smoke testing are stable in develop. The implementation direction is official Riot/TFT patch-note crawling, not manual fixture/seed import.
-- External crawling/import must write into the same patch_notes and patch_changes contract used by admin curation, with additional source metadata or equivalent duplicate-detection strategy when needed.
+- Current stage: public PatchNotes browsing, backend admin CRUD, admin patch change list lookup, frontend AdminPatchNotes curation screen, crawler metadata fields, and crawler fetcher/parser are implemented.
+- Next stage before public crawler use: implement write-side import with dryRun/forceOverwrite, then expose POST /api/admin/patch-notes/import/crawl and add admin import controls.
+- Patch-note crawling/import direction is official Riot/TFT patch-note crawling, not manual fixture/seed import.
+- External crawling/import must write into the same patch_notes and patch_changes contract used by admin curation, using source metadata and sourceKey duplicate detection.
 - AI server/FastAPI is not required for patch-note CRUD. Add it only when AI summarization/search/RAG behavior needs patch-note data.
 </data-ingestion>
 
