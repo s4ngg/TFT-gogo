@@ -1,12 +1,15 @@
 package com.tftgogo.domain.match.entity;
 
-import jakarta.persistence.*;
+import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "cached_rank")
@@ -24,8 +27,13 @@ public class CachedRank {
     @Column(name = "rank_value", length = 10)
     private String rank;
 
+    @Column(name = "league_points", nullable = false)
     private int leaguePoints;
+
+    @Column(name = "wins", nullable = false)
     private int wins;
+
+    @Column(name = "losses", nullable = false)
     private int losses;
 
     @Column(nullable = false)
