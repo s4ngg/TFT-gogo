@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { afterEach, describe, it } from 'node:test'
-import type { AxiosAdapter, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
+import { AxiosError, type AxiosAdapter, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
 
 import axiosInstance from '../axiosInstance'
 import useAuthStore from '../../store/useAuthStore'
@@ -84,27 +84,27 @@ function createMemberAdapter(): AxiosAdapter {
   }
 }
 
-function createForbiddenAdapter(): AxiosAdapter {
+function createErrorAdapter(status: number): AxiosAdapter {
   return async (config: InternalAxiosRequestConfig) => {
+    const statusText = status === 403 ? 'Forbidden' : 'Unauthorized'
     requestCalls.push({
       data: config.data,
       method: config.method,
       url: config.url,
     })
 
-    return Promise.reject({
+    const response: AxiosResponse = {
       config,
-      response: {
-        config,
-        data: {
-          message: 'Forbidden',
-          success: false,
-        },
-        headers: {},
-        status: 403,
-        statusText: 'Forbidden',
+      data: {
+        message: statusText,
+        success: false,
       },
-    })
+      headers: {},
+      status,
+      statusText,
+    }
+
+    return Promise.reject(new AxiosError(statusText, undefined, config, undefined, response))
   }
 }
 
@@ -173,9 +173,9 @@ describe('memberApi', () => {
     assert.equal(response.notificationEnabled, false)
   })
 
-  it('getMe가 403이면 저장된 인증 토큰을 정리한다', async () => {
+  it('getMe가 401이면 저장된 인증 토큰을 정리한다', async () => {
     // given
-    axiosInstance.defaults.adapter = createForbiddenAdapter()
+    axiosInstance.defaults.adapter = createErrorAdapter(401)
     useAuthStore.getState().setAuth({ token: 'expired-token' })
     const { getMe } = await import('../memberApi')
 
@@ -186,5 +186,38 @@ describe('memberApi', () => {
     assert.equal(requestCalls[0]?.method, 'get')
     assert.equal(requestCalls[0]?.url, '/v1/members/me')
     assert.equal(useAuthStore.getState().token, null)
+  })
+
+  it('getMe가 403이면 저장된 인증 토큰을 정리한다', async () => {
+    // given
+    axiosInstance.defaults.adapter = createErrorAdapter(403)
+    useAuthStore.getState().setAuth({ token: 'denied-token' })
+    const { getMe } = await import('../memberApi')
+
+    // when
+    await assert.rejects(() => getMe(), /Fetch current member failed/)
+
+    // then
+    assert.equal(requestCalls[0]?.method, 'get')
+    assert.equal(requestCalls[0]?.url, '/v1/members/me')
+    assert.equal(useAuthStore.getState().token, null)
+  })
+
+  it('일반 API 403은 저장된 인증 토큰을 정리하지 않는다', async () => {
+    // given
+    axiosInstance.defaults.adapter = createErrorAdapter(403)
+    useAuthStore.getState().setAuth({ token: 'valid-but-forbidden-token' })
+    const { login } = await import('../memberApi')
+
+    // when
+    await assert.rejects(
+      () => login({ email: 'sojung@example.com', password: 'wrong-password' }),
+      /Login failed/,
+    )
+
+    // then
+    assert.equal(requestCalls[0]?.method, 'post')
+    assert.equal(requestCalls[0]?.url, '/v1/auth/login')
+    assert.equal(useAuthStore.getState().token, 'valid-but-forbidden-token')
   })
 })
