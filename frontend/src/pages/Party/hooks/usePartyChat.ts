@@ -20,10 +20,14 @@ export function usePartyChat({ activeRoomId, onActiveRoomChange }: UsePartyChatO
   const {
     connectionStatus,
     errorMessage: chatErrorMessage,
+    hasReconnectFailed,
     isLoading,
+    isReconnecting,
     isSending,
+    maxReconnectAttempts,
     messages: activeMessages,
     queryError,
+    reconnectAttempt,
     sendMessage: sendRealtimeMessage,
   } = useRealtimeChat(activeRoomId)
 
@@ -35,10 +39,19 @@ export function usePartyChat({ activeRoomId, onActiveRoomChange }: UsePartyChatO
   const canSendMessages = isAuthenticated
   const connectionLabel = connectionStatus === 'connected'
     ? '실시간 연결됨'
-    : connectionStatus === 'connecting'
+    : isReconnecting
+      ? '재연결 중'
+      : connectionStatus === 'connecting'
       ? '연결 중'
       : '실시간 연결 대기'
-  const chatReadNotice = chatStatusMessage || chatErrorMessage || (queryError ? '채팅 메시지를 불러오지 못했습니다.' : '')
+  const reconnectNotice = isReconnecting
+    ? `실시간 연결을 다시 시도하고 있습니다. (${reconnectAttempt}/${maxReconnectAttempts})`
+    : ''
+  const chatReadNotice = chatStatusMessage
+    || reconnectNotice
+    || chatErrorMessage
+    || (hasReconnectFailed ? '실시간 연결을 복구하지 못했습니다.' : '')
+    || (queryError ? '채팅 메시지를 불러오지 못했습니다.' : '')
   const chatNotice = chatReadNotice || (!canSendMessages ? '채팅은 조회할 수 있고 메시지 전송은 로그인 후 가능합니다.' : '')
   const isMessageDisabled = !canSendMessages || isSending || !activeRoom
 
