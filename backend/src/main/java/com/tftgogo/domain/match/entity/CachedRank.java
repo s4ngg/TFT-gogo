@@ -36,10 +36,10 @@ public class CachedRank {
 
     @Column(nullable = false)
     private LocalDateTime cachedAt;
- 
+
     @Builder
     public CachedRank(String puuid, String tier, String rank,
-                      int leaguePoints, int wins, int losses, LocalDateTime cachedAt) {
+                    int leaguePoints, int wins, int losses, LocalDateTime cachedAt) {
         this.puuid = puuid;
         this.tier = tier;
         this.rank = rank;
