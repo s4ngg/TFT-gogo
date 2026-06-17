@@ -36,7 +36,7 @@ public class CachedRank {
     @Column(name = "losses", nullable = false)
     private int losses;
 
-    @Column(nullable = false)
+    @Column(name = "cached_at", nullable = false)
     private LocalDateTime cachedAt;
  
     @Builder
