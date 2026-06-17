@@ -6,7 +6,6 @@ import {
   type ImpactLevel,
   type PatchChange,
 } from '../../../api/patchNotes'
-import { getPatchChangeImageUrl, PATCH_FALLBACK_IMAGE } from '../patchNotesImages'
 import styles from '../PatchNotes.module.css'
 
 const CATEGORY_ICON: Record<ChangeCategory, LucideIcon> = {
@@ -30,10 +29,38 @@ const IMPACT_CLASS: Record<ImpactLevel, string> = {
   낮음: styles.lowImpact,
 }
 
+const GENERIC_TARGET_NAMES = new Set([
+  '기타',
+  '버그 수정',
+  '변경사항',
+  '시스템',
+  '시작 조우자',
+  '아이템',
+  '유닛',
+  '증강',
+  '증강체',
+  '챔피언',
+  '특성',
+])
+
 interface PatchChangeListProps {
   expandedChangeIds: number[]
   patchChanges: PatchChange[]
   onToggleExpandedChange: (id: number) => void
+}
+
+function getChangeTitle(change: PatchChange) {
+  const target = change.target.trim()
+  const summary = change.summary.trim()
+
+  if (!target) return summary || '패치 변경사항'
+  if (GENERIC_TARGET_NAMES.has(target) && summary) return summary
+  return target
+}
+
+function getChangeSummary(change: PatchChange, title: string) {
+  const summary = change.summary.trim()
+  return summary && summary !== title ? summary : ''
 }
 
 function PatchChangeList({
@@ -46,7 +73,8 @@ function PatchChangeList({
       {patchChanges.map((change) => {
         const CategoryIcon = CATEGORY_ICON[change.category]
         const isExpanded = expandedChangeIds.includes(change.id)
-        const imageUrl = getPatchChangeImageUrl(change)
+        const title = getChangeTitle(change)
+        const summary = getChangeSummary(change, title)
 
         return (
           <article key={change.id} className={styles.changeItem}>
@@ -60,19 +88,9 @@ function PatchChangeList({
             </div>
 
             <div className={styles.changeBody}>
-              <span className={styles.changeThumb}>
-                <img
-                  src={imageUrl}
-                  alt=""
-                  onError={(event) => {
-                    event.currentTarget.onerror = null
-                    event.currentTarget.src = PATCH_FALLBACK_IMAGE
-                  }}
-                />
-              </span>
               <div className={styles.changeText}>
-                <h3>{change.target}</h3>
-                <p>{change.summary}</p>
+                <h3>{title}</h3>
+                {summary && <p>{summary}</p>}
               </div>
               <button
                 type="button"
@@ -98,11 +116,13 @@ function PatchChangeList({
               </div>
             )}
 
-            <div className={styles.tagRow}>
-              {change.tags.map((tag) => (
-                <span key={tag}>{tag}</span>
-              ))}
-            </div>
+            {change.tags.length > 0 && (
+              <div className={styles.tagRow}>
+                {change.tags.map((tag) => (
+                  <span key={tag}>{tag}</span>
+                ))}
+              </div>
+            )}
           </article>
         )
       })}

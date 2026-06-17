@@ -41,11 +41,13 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HexFormat;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -138,6 +140,7 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
                         locale,
                         PatchNoteImportSource.RIOT_OFFICIAL,
                         importedAt,
+                        resolvePublishedAt(document, importedAt),
                         importRequest.shouldMarkCurrent(),
                         toJsonArray(resolveHighlights(document))
                 );
@@ -169,7 +172,7 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
 
         ImportChangeStats changeStats = patchNoteSkipped
                 ? ImportChangeStats.skipped(document.rows().size())
-                : importChanges(patchNote, document.rows(), importedAt);
+                : importChanges(patchNote, document.rows(), importedAt, !patchNoteCreated);
 
         return AdminPatchNoteImportResponse.of(
                 patchNote.getId(),
@@ -308,19 +311,25 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
         return patchNoteRepository.findByVersion(version);
     }
 
-    private ImportChangeStats importChanges(PatchNote patchNote, List<PatchChangeCrawlRow> rows, LocalDateTime importedAt) {
+    private ImportChangeStats importChanges(
+            PatchNote patchNote,
+            List<PatchChangeCrawlRow> rows,
+            LocalDateTime importedAt,
+            boolean deleteStaleChanges
+    ) {
         int created = 0;
         int updated = 0;
         int skipped = 0;
+        Set<String> importedSourceKeys = new HashSet<>();
 
         for (PatchChangeCrawlRow row : rows) {
             String sourceKey = resolveChangeSourceKey(row);
+            importedSourceKeys.add(sourceKey);
             PatchChangeCategory category = inferCategory(row);
             PatchChangeType changeType = inferChangeType(row);
             PatchChangeImpact impact = PatchChangeImpact.MEDIUM;
             String targetName = resolveTargetName(row);
             String summary = requireText(row.rowText(), ErrorCode.PATCH_NOTE_INVALID_DATA);
-            String tagsJson = toJsonArray(List.of(category.name().toLowerCase(Locale.ROOT)));
 
             Optional<PatchChange> existingChange = patchChangeRepository.findByPatchNoteAndSourceKey(patchNote, sourceKey);
             if (existingChange.isPresent()) {
@@ -344,7 +353,7 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
                         normalizeNullable(row.beforeText()),
                         normalizeNullable(row.afterText()),
                         null,
-                        tagsJson,
+                        null,
                         row.sourceOrder()
                 );
                 updated++;
@@ -366,14 +375,26 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
                     .beforeValue(normalizeNullable(row.beforeText()))
                     .afterValue(normalizeNullable(row.afterText()))
                     .imageUrl(null)
-                    .tagsJson(tagsJson)
+                    .tagsJson(null)
                     .sortOrder(row.sourceOrder())
                     .build();
             patchChangeRepository.save(patchChange);
             created++;
         }
 
+        if (deleteStaleChanges) {
+            deleteStaleImportedChanges(patchNote, importedSourceKeys);
+        }
+
         return new ImportChangeStats(created, updated, skipped);
+    }
+
+    private void deleteStaleImportedChanges(PatchNote patchNote, Set<String> importedSourceKeys) {
+        patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote).stream()
+                .filter(patchChange -> !patchChange.isManuallyEdited())
+                .filter(patchChange -> !hasText(patchChange.getSourceKey())
+                        || !importedSourceKeys.contains(patchChange.getSourceKey()))
+                .forEach(patchChangeRepository::delete);
     }
 
     private PatchNote findPatchNote(Long patchNoteId) {
@@ -434,6 +455,10 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
             return highlights;
         }
         return hasText(document.summary()) ? List.of(document.summary().trim()) : List.of();
+    }
+
+    private LocalDateTime resolvePublishedAt(PatchNoteCrawlDocument document, LocalDateTime fallback) {
+        return document.publishedAt() == null ? fallback : document.publishedAt();
     }
 
     private PatchChangeCategory inferCategory(PatchChangeCrawlRow row) {

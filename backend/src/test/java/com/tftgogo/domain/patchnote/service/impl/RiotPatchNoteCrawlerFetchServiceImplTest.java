@@ -79,7 +79,7 @@ class RiotPatchNoteCrawlerFetchServiceImplTest {
     @Test
     void fetchTagPage_usesConfiguredLocale() {
         // given
-        String expectedUrl = "https://www.leagueoflegends.com/en-us/news/tags/teamfight-tactics-patch-notes/";
+        String expectedUrl = "https://teamfighttactics.leagueoflegends.com/en-us/news/tags/patch-notes/";
         when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(HttpEntity.class), eq(String.class)))
                 .thenReturn(ResponseEntity.ok("<html>list</html>"));
 

@@ -114,7 +114,8 @@ public class PatchNote {
     public void applyImportedData(String version, String title, String summary, String description,
                                   String focus, String imageUrl, String sourceKey, String sourceUrl,
                                   String sourceLocale, PatchNoteImportSource importSource,
-                                  LocalDateTime importedAt, boolean current, String highlightsJson) {
+                                  LocalDateTime importedAt, LocalDateTime publishedAt,
+                                  boolean current, String highlightsJson) {
         this.version = version;
         this.title = title;
         this.summary = summary;
@@ -126,6 +127,7 @@ public class PatchNote {
         this.sourceLocale = sourceLocale;
         this.importSource = importSource;
         this.importedAt = importedAt;
+        this.publishedAt = publishedAt;
         this.current = current;
         this.highlightsJson = highlightsJson;
         this.deletedAt = null;

@@ -204,6 +204,74 @@ class AdminPatchNoteServiceImplTest {
         assertThat(patchChangeCaptor.getValue().getSourceOrder()).isEqualTo(3);
         assertThat(patchChangeCaptor.getValue().getCategory()).isEqualTo(PatchChangeCategory.CHAMPION);
         assertThat(patchChangeCaptor.getValue().getChangeType()).isEqualTo(PatchChangeType.BUFF);
+        assertThat(patchChangeCaptor.getValue().getTagsJson()).isNull();
+    }
+
+    @Test
+    void importRiotPatchNote_whenExistingPatchFound_updatesOfficialMetadataAndDeletesStaleChanges() {
+        // given
+        PatchNote existingPatchNote = patchNote(1L, "17.3", true);
+        PatchChange staleChange = patchChange(99L, existingPatchNote);
+        PatchNoteCrawlFetchedPage detailPage = fetchedPage("https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-3/");
+        LocalDateTime officialPublishedAt = LocalDateTime.of(2026, 5, 12, 18, 0);
+        PatchChangeCrawlRow row = new PatchChangeCrawlRow(
+                "official-candidate",
+                "official-row-key",
+                "Augments",
+                1,
+                "Augments",
+                "",
+                "Augment balance adjusted",
+                "<li>Augment balance adjusted</li>",
+                null,
+                null,
+                List.of()
+        );
+        PatchNoteCrawlDocument document = new PatchNoteCrawlDocument(
+                detailPage.sourceUrl(),
+                "ko-kr",
+                "riot-content-17-3",
+                "17.3 Patch Notes",
+                "17.3",
+                "Official summary",
+                officialPublishedAt,
+                "https://example.com/official.png",
+                List.of("Riot"),
+                List.of("Augments"),
+                List.of(row),
+                List.of()
+        );
+        AdminPatchNoteImportRequest request = new AdminPatchNoteImportRequest();
+        ReflectionTestUtils.setField(request, "sourceUrl", detailPage.sourceUrl());
+        ReflectionTestUtils.setField(request, "current", false);
+
+        when(crawlerProperties.getDefaultLocale()).thenReturn("ko-kr");
+        when(crawlerFetchService.fetch(detailPage.sourceUrl())).thenReturn(detailPage);
+        when(crawlerParser.parseDetailPage(detailPage, null, "ko-kr")).thenReturn(document);
+        when(patchNoteRepository.findBySourceKey("riot-content-17-3")).thenReturn(Optional.empty());
+        when(patchNoteRepository.findBySourceUrl(detailPage.sourceUrl())).thenReturn(Optional.empty());
+        when(patchNoteRepository.findByVersion("17.3")).thenReturn(Optional.of(existingPatchNote));
+        when(patchChangeRepository.findByPatchNoteAndSourceKey(existingPatchNote, "official-row-key"))
+                .thenReturn(Optional.empty());
+        when(patchChangeRepository.save(any(PatchChange.class))).thenAnswer(invocation -> {
+            PatchChange patchChange = invocation.getArgument(0);
+            ReflectionTestUtils.setField(patchChange, "id", 10L);
+            return patchChange;
+        });
+        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(existingPatchNote))
+                .thenReturn(List.of(staleChange));
+
+        // when
+        AdminPatchNoteImportResponse response = adminPatchNoteService.importRiotPatchNote(request);
+
+        // then
+        assertThat(response.isPatchNoteUpdated()).isTrue();
+        assertThat(response.getCreatedChanges()).isEqualTo(1);
+        assertThat(existingPatchNote.getTitle()).isEqualTo("17.3 Patch Notes");
+        assertThat(existingPatchNote.getPublishedAt()).isEqualTo(officialPublishedAt);
+        assertThat(existingPatchNote.isCurrent()).isFalse();
+        assertThat(existingPatchNote.getSourceUrl()).isEqualTo(detailPage.sourceUrl());
+        verify(patchChangeRepository).delete(staleChange);
     }
 
     @Test

@@ -63,7 +63,7 @@ function PatchNotes() {
   return (
     <AppLayout>
       <div className={styles.page}>
-        <PatchHero changeStats={changeStats} selectedPatch={selectedPatch} />
+        <PatchHero selectedPatch={selectedPatch} />
 
         <PatchStatusBanner
           isFallbackData={(isFallbackData || patchChangesQuery.data.source === 'fallback') && !isFetching && !patchChangesQuery.isFetching}
@@ -74,9 +74,21 @@ function PatchNotes() {
           }}
         />
 
-        <PatchSummaryGrid buffCount={changeStats.buffCount} nerfCount={changeStats.nerfCount} />
+        <PatchSummaryGrid
+          buffCount={changeStats.buffCount}
+          highImpactCount={changeStats.highImpactCount}
+          nerfCount={changeStats.nerfCount}
+          totalChanges={changeStats.totalChanges}
+        />
 
         <div className={styles.contentGrid}>
+          <PatchSideRail
+            onPatchSelect={handlePatchSelect}
+            patchHistory={patchHistory}
+            selectedPatch={selectedPatch}
+            selectedPatchVersion={selectedPatchVersion}
+          />
+
           <section className={styles.changePanel}>
             <div className={styles.panelHeader}>
               <div>
@@ -105,13 +117,6 @@ function PatchNotes() {
 
             <PatchPagination currentPage={safePage} totalPages={changesPage.totalPages} onPageChange={setCurrentPage} />
           </section>
-
-          <PatchSideRail
-            onPatchSelect={handlePatchSelect}
-            patchHistory={patchHistory}
-            selectedPatch={selectedPatch}
-            selectedPatchVersion={selectedPatchVersion}
-          />
         </div>
       </div>
     </AppLayout>
