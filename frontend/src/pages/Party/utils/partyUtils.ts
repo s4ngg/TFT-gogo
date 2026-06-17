@@ -1,6 +1,19 @@
 import type { PartyFilter } from '../partyFilters'
 import type { PartyMode, PartyPost, PartyPostStyle } from '../types'
 
+interface MergePartyPostSourcesOptions {
+  localPosts: PartyPost[]
+  postOverrides: Record<string, PartyPost>
+  serverPosts?: PartyPost[]
+}
+
+interface PartyListEmptyMessageOptions {
+  isAuthenticated: boolean
+  isLoading: boolean
+  isUnavailable: boolean
+  selectedFilter: PartyFilter
+}
+
 interface PartyJoinActionStateOptions {
   hasJoinedOtherPost: boolean
   isAuthenticated: boolean
@@ -87,6 +100,50 @@ export function updatePostJoinState(post: PartyPost, isJoining: boolean): PartyP
     isJoined: isJoining,
     status: nextCurrent >= total ? '대기중' : '모집중',
   }
+}
+
+export function mergePartyPostSources({
+  localPosts,
+  postOverrides,
+  serverPosts = [],
+}: MergePartyPostSourcesOptions): PartyPost[] {
+  const mergedPosts = [...localPosts]
+  const localPostIds = new Set(localPosts.map((post) => post.id))
+
+  serverPosts.forEach((post) => {
+    if (!localPostIds.has(post.id)) {
+      mergedPosts.push(postOverrides[post.id] ?? post)
+    }
+  })
+
+  return mergedPosts.map((post) => postOverrides[post.id] ?? post)
+}
+
+export function getPartyActionNotice(isAuthenticated: boolean) {
+  return isAuthenticated
+    ? ''
+    : '로그인이 필요합니다. 모집글 작성과 참여는 로그인 후 사용할 수 있습니다.'
+}
+
+export function getPartyListEmptyMessage({
+  isAuthenticated,
+  isLoading,
+  isUnavailable,
+  selectedFilter,
+}: PartyListEmptyMessageOptions) {
+  if (isLoading) {
+    return '파티 모집글을 불러오는 중입니다.'
+  }
+
+  if (isUnavailable) {
+    return isAuthenticated
+      ? '파티 모집글을 불러오지 못했습니다.'
+      : '로그인이 필요합니다.'
+  }
+
+  return selectedFilter === '전체'
+    ? '등록된 모집글이 없습니다.'
+    : '조건에 맞는 모집글이 없습니다.'
 }
 
 export function getPartyJoinActionState({
