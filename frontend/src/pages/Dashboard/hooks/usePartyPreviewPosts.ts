@@ -32,11 +32,11 @@ export function usePartyPreviewPosts(selectedFilter: PartyFilter) {
     : isUnavailable
       ? '파티 모집글을 불러오지 못했습니다.'
       : ''
-  const emptyMessage = selectedFilter === '전체'
-    ? isUnavailable
-      ? '목록을 다시 불러오면 모집글이 표시됩니다.'
-      : '등록된 모집글이 없습니다.'
-    : '선택한 조건에 맞는 모집글이 없습니다.'
+  const emptyMessage = isUnavailable
+    ? '목록을 다시 불러오면 모집글이 표시됩니다.'
+    : selectedFilter === '전체'
+      ? '등록된 모집글이 없습니다.'
+      : '선택한 조건에 맞는 모집글이 없습니다.'
 
   return {
     emptyMessage,

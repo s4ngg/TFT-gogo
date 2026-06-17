@@ -51,6 +51,19 @@ describe('partyUtils', () => {
     assert.deepEqual(result.map((post) => post.id), ['local-party', 'server-party'])
   })
 
+  it('서버 모집글 배열 내부 중복 ID는 1건만 유지한다', () => {
+    const serverPost = partyPost('dup-party')
+    const duplicatedServerPost = { ...partyPost('dup-party'), title: '중복 모집글' }
+
+    const result = mergePartyPostSources({
+      localPosts: [],
+      postOverrides: {},
+      serverPosts: [serverPost, duplicatedServerPost],
+    })
+
+    assert.deepEqual(result.map((post) => post.id), ['dup-party'])
+  })
+
   it('비로그인 사용자는 파티 액션 로그인 필요 안내를 본다', () => {
     assert.equal(
       getPartyActionNotice(false),

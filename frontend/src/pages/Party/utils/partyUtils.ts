@@ -113,6 +113,7 @@ export function mergePartyPostSources({
   serverPosts.forEach((post) => {
     if (!localPostIds.has(post.id)) {
       mergedPosts.push(postOverrides[post.id] ?? post)
+      localPostIds.add(post.id)
     }
   })
 

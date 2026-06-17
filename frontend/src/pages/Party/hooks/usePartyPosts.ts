@@ -122,6 +122,7 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
     setLocalPosts([])
     setPostOverrides({})
     setJoinedPostId(undefined)
+    setPartyStatusMessage('')
   }, [isAuthenticated])
 
   const posts = useMemo(() => {
