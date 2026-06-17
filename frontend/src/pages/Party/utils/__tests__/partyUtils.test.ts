@@ -1,9 +1,51 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import { getPartyJoinActionState } from '../partyUtils'
+import { PARTY_RECRUITMENT_ROOM_ID } from '../../../../constants/communityChatRooms'
+import type { PartyPost } from '../../types'
+import { getPartyJoinActionState, mergePartyPostSources } from '../partyUtils'
+
+function partyPost(id: string): PartyPost {
+  return {
+    id,
+    chatRoomId: PARTY_RECRUITMENT_ROOM_ID,
+    title: '서버 모집글',
+    mode: '랭크',
+    tier: '마스터+',
+    capacity: '1/2',
+    close: '마감 예정',
+    status: '모집중',
+    description: '같이 플레이할 파티원을 구합니다.',
+    tags: ['랭크'],
+    icon: 'crown',
+    tone: 'purple',
+  }
+}
 
 describe('partyUtils', () => {
+  it('서버 쿼리 데이터가 없을 때 더미 모집글을 병합하지 않는다', () => {
+    const result = mergePartyPostSources({
+      localPosts: [],
+      postOverrides: {},
+      serverPosts: undefined,
+    })
+
+    assert.deepEqual(result, [])
+  })
+
+  it('서버 모집글과 로컬 모집글을 중복 없이 병합한다', () => {
+    const localPost = partyPost('local-party')
+    const serverPost = partyPost('server-party')
+
+    const result = mergePartyPostSources({
+      localPosts: [localPost],
+      postOverrides: {},
+      serverPosts: [serverPost],
+    })
+
+    assert.deepEqual(result.map((post) => post.id), ['local-party', 'server-party'])
+  })
+
   it('비로그인 사용자는 참여 버튼을 누를 수 없고 로그인 안내를 본다', () => {
     const result = getPartyJoinActionState({
       hasJoinedOtherPost: false,

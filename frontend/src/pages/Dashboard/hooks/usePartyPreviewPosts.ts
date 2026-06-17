@@ -26,19 +26,21 @@ export function usePartyPreviewPosts(selectedFilter: PartyFilter) {
     () => selectPartyPreviewPosts(partyQuery.data?.data ?? [], selectedFilter),
     [partyQuery.data?.data, selectedFilter],
   )
+  const isUnavailable = partyQuery.isError || partyQuery.data?.source === 'unavailable'
   const statusMessage = partyQuery.isPending
     ? '파티 모집글을 불러오는 중입니다.'
-    : partyQuery.data?.source === 'fallback'
-      ? '파티 API 응답을 불러오지 못해 예시 모집글을 표시합니다.'
+    : isUnavailable
+      ? '파티 모집글을 불러오지 못했습니다.'
       : ''
-  const isFallback = partyQuery.data?.source === 'fallback'
   const emptyMessage = selectedFilter === '전체'
-    ? '등록된 모집글이 없습니다.'
+    ? isUnavailable
+      ? '목록을 다시 불러오면 모집글이 표시됩니다.'
+      : '등록된 모집글이 없습니다.'
     : '선택한 조건에 맞는 모집글이 없습니다.'
 
   return {
     emptyMessage,
-    isFallback,
+    isUnavailable,
     isLoading: partyQuery.isPending,
     posts,
     statusMessage,

@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   cancelPartyJoin,
   createPartyPost,
-  fallbackPartyPosts,
   getPartyPosts,
   joinPartyPost,
   type CreatePartyPostRequest,
@@ -20,6 +19,7 @@ import {
   filterPartyPosts,
   formatDeadlineForRequest,
   getDefaultDeadlineInput,
+  mergePartyPostSources,
   normalizeCapacity,
   paginatePartyPosts,
   parseCapacity,
@@ -107,17 +107,13 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
   })
 
   const posts = useMemo(() => {
-    const serverPosts = partyQuery.data?.data ?? fallbackPartyPosts
-    const mergedPosts = [...localPosts]
-    const localPostIds = new Set(localPosts.map((post) => post.id))
-
-    serverPosts.forEach((post) => {
-      if (!localPostIds.has(post.id)) {
-        mergedPosts.push(postOverrides[post.id] ?? post)
-      }
+    const mergedPosts = mergePartyPostSources({
+      localPosts,
+      postOverrides,
+      serverPosts: partyQuery.data?.data,
     })
 
-    return mergedPosts.map((post) => withOwnerState(postOverrides[post.id] ?? post, authUserId))
+    return mergedPosts.map((post) => withOwnerState(post, authUserId))
   }, [authUserId, localPosts, partyQuery.data?.data, postOverrides])
   const activeJoinedPostId = useMemo(() => {
     if (joinedPostId !== undefined) {
@@ -134,10 +130,8 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
     () => paginatePartyPosts(filteredPartyPosts, currentPage, PARTY_PAGE_SIZE),
     [currentPage, filteredPartyPosts],
   )
+  const isPartyListUnavailable = partyQuery.isError || partyQuery.data?.source === 'unavailable'
   const statusMessage = partyStatusMessage
-    || (partyQuery.data?.source === 'fallback'
-      ? '파티 API 응답을 불러오지 못해 목업 모집글을 표시합니다.'
-      : '')
 
   useEffect(() => {
     if (currentPage !== safePage) {
@@ -339,6 +333,8 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
     isAuthenticated,
     joinedPostId: activeJoinedPostId,
     joiningPostId: joinMutation.isPending ? joinMutation.variables?.postId ?? null : null,
+    isLoading: partyQuery.isPending,
+    isUnavailable: isPartyListUnavailable,
     minDeadline,
     modeDraft,
     pageItems,
