@@ -33,6 +33,11 @@ CREATE TABLE IF NOT EXISTS patch_notes (
     description TEXT NULL,
     focus VARCHAR(200) NULL,
     image_url VARCHAR(500) NULL,
+    source_url VARCHAR(500) NULL,
+    source_locale VARCHAR(20) NULL,
+    import_source VARCHAR(30) NULL,
+    imported_at DATETIME(6) NULL,
+    manually_edited TINYINT(1) NOT NULL DEFAULT 0,
     published_at DATETIME(6) NOT NULL,
     is_current TINYINT(1) NOT NULL DEFAULT 0,
     highlights_json JSON NULL,
@@ -49,12 +54,21 @@ CREATE TABLE IF NOT EXISTS patch_notes (
     PRIMARY KEY (id),
     UNIQUE KEY uk_patch_notes_version (version),
     UNIQUE KEY uk_patch_notes_single_current_active (current_active_key),
-    KEY idx_patch_notes_public (is_active, deleted_at, is_current, published_at, id)
+    KEY idx_patch_notes_public (is_active, deleted_at, is_current, published_at, id),
+    KEY idx_patch_notes_import_source (import_source, source_locale, imported_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS patch_changes (
     id BIGINT NOT NULL AUTO_INCREMENT,
     patch_note_id BIGINT NOT NULL,
+    source_key VARCHAR(64) NULL,
+    source_url VARCHAR(500) NULL,
+    source_heading_path VARCHAR(500) NULL,
+    source_order INT NULL,
+    source_locale VARCHAR(20) NULL,
+    import_source VARCHAR(30) NULL,
+    imported_at DATETIME(6) NULL,
+    manually_edited TINYINT(1) NOT NULL DEFAULT 0,
     category VARCHAR(20) NOT NULL,
     change_type VARCHAR(20) NOT NULL,
     impact VARCHAR(20) NOT NULL,
@@ -73,6 +87,8 @@ CREATE TABLE IF NOT EXISTS patch_changes (
     PRIMARY KEY (id),
     CONSTRAINT fk_patch_changes_patch_note
         FOREIGN KEY (patch_note_id) REFERENCES patch_notes (id),
+    UNIQUE KEY uk_patch_changes_source_key (patch_note_id, source_key),
     KEY idx_patch_changes_public (patch_note_id, is_active, deleted_at, sort_order, id),
-    KEY idx_patch_changes_filters (patch_note_id, category, change_type, impact, is_active, deleted_at)
+    KEY idx_patch_changes_filters (patch_note_id, category, change_type, impact, is_active, deleted_at),
+    KEY idx_patch_changes_import_source (import_source, source_locale, imported_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

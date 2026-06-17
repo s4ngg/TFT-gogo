@@ -1,10 +1,22 @@
 import { ChevronRight, MessageCircle, Users } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
-import { chatChannels } from '../dashboardData'
+import { Link, useNavigate } from 'react-router-dom'
+import {
+  COMMUNITY_CHAT_ROOM_QUERY_PARAM,
+  type CommunityChatRoomId,
+} from '../../../constants/communityChatRooms'
+import { useCommunityChatPreviews } from '../../../hooks/useCommunityChatPreviews'
 import styles from '../Dashboard.module.css'
+
+function buildChatRoomSearch(roomId: CommunityChatRoomId) {
+  const params = new URLSearchParams()
+  params.set(COMMUNITY_CHAT_ROOM_QUERY_PARAM, roomId)
+
+  return `?${params.toString()}`
+}
 
 function LiveChat() {
   const navigate = useNavigate()
+  const chatChannels = useCommunityChatPreviews()
 
   return (
     <section className={`${styles.panel} ${styles.chatPanel}`}>
@@ -17,7 +29,15 @@ function LiveChat() {
       </div>
       <div className={styles.chatList}>
         {chatChannels.map((channel) => (
-          <article className={styles.chatRow} key={channel.name}>
+          <Link
+            aria-label={`${channel.name} 채팅 열기`}
+            className={styles.chatRow}
+            key={channel.id}
+            to={{
+              pathname: '/party',
+              search: buildChatRoomSearch(channel.id),
+            }}
+          >
             <strong>#</strong>
             <b>{channel.name}</b>
             <span>
@@ -26,7 +46,7 @@ function LiveChat() {
             </span>
             <p>{channel.message}</p>
             <time>{channel.time}</time>
-          </article>
+          </Link>
         ))}
       </div>
       <button type="button" className={styles.chatButton} onClick={() => navigate('/party')}>

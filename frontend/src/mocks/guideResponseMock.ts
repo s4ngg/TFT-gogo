@@ -1,4 +1,9 @@
-﻿import { communityDragonAssetUrl, tftChampSquareUrl } from '../api/communityDragonAssets'
+﻿import {
+  TFT_ASSET_CONFIG,
+  tftChampSquareUrl,
+  tftItemIconUrl,
+  tftTraitIconUrl,
+} from '../api/communityDragonAssets'
 import {
   CHAMPION_PAGE_SIZE,
   DEFAULT_GUIDE_PAGE_SIZE,
@@ -15,17 +20,21 @@ import {
   type TraitGuide,
 } from '../api/guide'
 
+function fallbackItemIconUrl(itemId: string) {
+  return tftItemIconUrl(itemId, TFT_ASSET_CONFIG.fallbackItemSetTag)
+}
+
 const traitIconUrls = {
-  animaSquad: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_AnimaTech.TFT_Set17.tex'),
-  bastion: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_9_Bastion.tex'),
-  challenger: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Challenger.TFT_Set17.tex'),
-  darkStar: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_DarkStar.TFT_Set17.tex'),
-  fateweaver: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Fateweaver.TFT_Set17.tex'),
-  nova: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_NOVA.TFT_Set17.tex'),
-  rogue: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Rogue.TFT_Set17.tex'),
-  spirit: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Astronaut.TFT_Set17.tex'),
-  stargazer: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Stargazer.TFT_Set17.tex'),
-  vanguard: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_12_Vanguard.TFT_Set12.tex'),
+  animaSquad: tftTraitIconUrl('TFT17_AnimaTech'),
+  bastion: tftTraitIconUrl('TFT17_Bastion'),
+  challenger: tftTraitIconUrl('TFT17_Challenger'),
+  darkStar: tftTraitIconUrl('TFT17_DarkStar'),
+  fateweaver: tftTraitIconUrl('TFT17_Fateweaver'),
+  nova: tftTraitIconUrl('TFT17_NOVA'),
+  rogue: tftTraitIconUrl('TFT17_Rogue'),
+  spirit: tftTraitIconUrl('TFT17_Astronaut'),
+  stargazer: tftTraitIconUrl('TFT17_Stargazer'),
+  vanguard: tftTraitIconUrl('TFT17_Vanguard'),
 }
 
 const championUrls = {
@@ -58,30 +67,22 @@ const championUrls = {
 }
 
 const itemUrls = {
-  adaptiveHelm: communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_AdaptiveHelm.TFT_Set13.tex'),
-  archangelsStaff: communityDragonAssetUrl(
-    'ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_ArchangelsStaff.TFT_Set13.tex',
-  ),
-  bloodthirster: communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_Bloodthirster.TFT_Set13.tex'),
-  blueBuff: communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_BlueBuff.TFT_Set13.tex'),
-  dragonsClaw: communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_DragonsClaw.TFT_Set13.tex'),
-  gargoyleStoneplate: communityDragonAssetUrl(
-    'ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_GargoyleStoneplate.TFT_Set13.tex',
-  ),
-  guinsoosRageblade: communityDragonAssetUrl(
-    'ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_GuinsoosRageblade.TFT_Set13.tex',
-  ),
-  handOfJustice: communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_UnstableConcoction.TFT_Set13.tex'),
-  infinityEdge: communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_InfinityEdge.TFT_Set13.tex'),
-  jeweledGauntlet: communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_JeweledGauntlet.TFT_Set13.tex'),
-  lastWhisper: communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_LastWhisper.TFT_Set13.tex'),
-  morellonomicon: communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_Morellonomicon.TFT_Set13.tex'),
-  rabadonsDeathcap: communityDragonAssetUrl(
-    'ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_RabadonsDeathcap.TFT_Set13.tex',
-  ),
-  spearOfShojin: communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_SpearOfShojin.TFT_Set13.tex'),
-  titansResolve: communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_TitansResolve.TFT_Set13.tex'),
-  warmogsArmor: communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_WarmogsArmor.TFT_Set13.tex'),
+  adaptiveHelm: fallbackItemIconUrl('TFT_Item_AdaptiveHelm'),
+  archangelsStaff: fallbackItemIconUrl('TFT_Item_ArchangelsStaff'),
+  bloodthirster: fallbackItemIconUrl('TFT_Item_Bloodthirster'),
+  blueBuff: fallbackItemIconUrl('TFT_Item_BlueBuff'),
+  dragonsClaw: fallbackItemIconUrl('TFT_Item_DragonsClaw'),
+  gargoyleStoneplate: fallbackItemIconUrl('TFT_Item_GargoyleStoneplate'),
+  guinsoosRageblade: fallbackItemIconUrl('TFT_Item_GuinsoosRageblade'),
+  handOfJustice: fallbackItemIconUrl('TFT_Item_UnstableConcoction'),
+  infinityEdge: fallbackItemIconUrl('TFT_Item_InfinityEdge'),
+  jeweledGauntlet: fallbackItemIconUrl('TFT_Item_JeweledGauntlet'),
+  lastWhisper: fallbackItemIconUrl('TFT_Item_LastWhisper'),
+  morellonomicon: fallbackItemIconUrl('TFT_Item_Morellonomicon'),
+  rabadonsDeathcap: fallbackItemIconUrl('TFT_Item_RabadonsDeathcap'),
+  spearOfShojin: fallbackItemIconUrl('TFT_Item_SpearOfShojin'),
+  titansResolve: fallbackItemIconUrl('TFT_Item_TitansResolve'),
+  warmogsArmor: fallbackItemIconUrl('TFT_Item_WarmogsArmor'),
 }
 
 const itemRefs = {
@@ -797,6 +798,7 @@ const CHAMPION_GUIDES = expandGuideSamples(
 )
 
 export const guideFallbackData: GuideCatalog = {
+  // API unavailable fallback sample; production guide rows should come from backend guide APIs.
   augments: AUGMENT_GUIDES,
   augmentPlans: AUGMENT_PLANS,
   champions: CHAMPION_GUIDES,

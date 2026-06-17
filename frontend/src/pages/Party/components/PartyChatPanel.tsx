@@ -1,20 +1,23 @@
 import { type FormEvent } from 'react'
 import { MessageCircle, Send, Users } from 'lucide-react'
 import type { ChatMessage } from '../../../api/chatApi'
+import type { CommunityChatRoomId } from '../../../constants/communityChatRooms'
 import type { ChatRoom } from '../types'
 import styles from '../Party.module.css'
 
 interface PartyChatPanelProps {
   activeMessages: ChatMessage[]
-  activeRoomId: string
+  activeRoomId: CommunityChatRoomId
   activeRoomName: string
   chatInput: string
   chatNotice: string
   connectionLabel: string
   currentUserName: string
+  isAuthenticated: boolean
   isLoading: boolean
   isMessageDisabled: boolean
-  onActiveRoomChange: (roomId: string) => void
+  isSendBlockedByAuth: boolean
+  onActiveRoomChange: (roomId: CommunityChatRoomId) => void
   onChatInputChange: (value: string) => void
   onMessageSubmit: () => Promise<void>
   rooms: ChatRoom[]
@@ -42,8 +45,10 @@ function PartyChatPanel({
   chatNotice,
   connectionLabel,
   currentUserName,
+  isAuthenticated,
   isLoading,
   isMessageDisabled,
+  isSendBlockedByAuth,
   onActiveRoomChange,
   onChatInputChange,
   onMessageSubmit,
@@ -96,7 +101,7 @@ function PartyChatPanel({
             </span>
           </div>
           {chatNotice && (
-            <p className={styles.chatStatus} role="status" aria-live="polite">
+            <p aria-atomic="true" aria-live="polite" className={styles.chatStatus} role="status">
               {chatNotice}
             </p>
           )}
@@ -104,7 +109,7 @@ function PartyChatPanel({
             {activeMessages.length > 0 ? (
               activeMessages.map((chat) => (
                 <article
-                  className={chat.senderName === currentUserName ? styles.myMessage : undefined}
+                  className={isAuthenticated && chat.senderName === currentUserName ? styles.myMessage : undefined}
                   key={chat.id}
                 >
                   <div>
@@ -125,7 +130,7 @@ function PartyChatPanel({
               aria-label="채팅 메시지 입력"
               disabled={isMessageDisabled}
               onChange={(event) => onChatInputChange(event.target.value)}
-              placeholder={isMessageDisabled ? '로그인 후 채팅 가능' : '메시지를 입력하세요'}
+              placeholder={isSendBlockedByAuth ? '로그인 후 메시지 전송 가능' : '메시지를 입력하세요'}
               value={chatInput}
             />
             <button

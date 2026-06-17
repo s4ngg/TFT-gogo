@@ -21,9 +21,9 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -45,16 +45,15 @@ class AiRecommendServiceTest {
     private static final String PUUID = "test-puuid-1234";
 
     @Test
-    void 소환사_조회_실패시_null을_반환하고_AI서버_미호출() {
+    void 소환사_조회_실패시_BusinessException을_던지고_AI서버_미호출() {
         // given
         when(summonerService.getProfile(GAME_NAME, TAG_LINE))
                 .thenThrow(new BusinessException(ErrorCode.SUMMONER_NOT_FOUND));
 
-        // when
-        AiRecommendResponse result = aiRecommendService.recommend(GAME_NAME, TAG_LINE);
-
-        // then
-        assertThat(result).isNull();
+        // when & then
+        assertThatThrownBy(() -> aiRecommendService.recommend(GAME_NAME, TAG_LINE))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SUMMONER_NOT_FOUND);
         verify(aiServerClient, never()).analyzeWithMeta(any());
     }
 
@@ -131,7 +130,9 @@ class AiRecommendServiceTest {
                 .thenReturn(List.of(match));
         when(metaDeckService.getMetaDecks(RankFilter.MASTER_PLUS))
                 .thenReturn(MetaDeckListResponse.builder().decks(List.of()).build());
-        when(aiServerClient.analyzeWithMeta(any())).thenReturn(null);
+        // analyzeWithMeta는 실제로 null을 반환하지 않는다(빈 응답이면 BusinessException).
+        // 여기서는 바디 구성 검증이 목적이므로 정상 응답으로 stub한다.
+        when(aiServerClient.analyzeWithMeta(any())).thenReturn(new AiRecommendResponse());
 
         // when
         aiRecommendService.recommend(GAME_NAME, TAG_LINE);

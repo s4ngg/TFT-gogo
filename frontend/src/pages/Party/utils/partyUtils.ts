@@ -1,6 +1,15 @@
 import type { PartyFilter } from '../partyFilters'
 import type { PartyMode, PartyPost, PartyPostStyle } from '../types'
 
+interface PartyJoinActionStateOptions {
+  hasJoinedOtherPost: boolean
+  isAuthenticated: boolean
+  isFull: boolean
+  isJoined: boolean
+  isJoinPending: boolean
+  isOwner: boolean
+}
+
 export function getCurrentTime() {
   return new Intl.DateTimeFormat('ko-KR', {
     hour: '2-digit',
@@ -78,6 +87,41 @@ export function updatePostJoinState(post: PartyPost, isJoining: boolean): PartyP
     isJoined: isJoining,
     status: nextCurrent >= total ? '대기중' : '모집중',
   }
+}
+
+export function getPartyJoinActionState({
+  hasJoinedOtherPost,
+  isAuthenticated,
+  isFull,
+  isJoined,
+  isJoinPending,
+  isOwner,
+}: PartyJoinActionStateOptions) {
+  if (isOwner) {
+    return { disabled: true, label: '작성자' }
+  }
+
+  if (isJoinPending) {
+    return { disabled: true, label: '처리중' }
+  }
+
+  if (!isAuthenticated) {
+    return { disabled: true, label: '로그인 후 참여' }
+  }
+
+  if (isJoined) {
+    return { disabled: false, label: '참여중' }
+  }
+
+  if (isFull) {
+    return { disabled: true, label: '마감' }
+  }
+
+  if (hasJoinedOtherPost) {
+    return { disabled: true, label: '잠김' }
+  }
+
+  return { disabled: false, label: '참여' }
 }
 
 export function getDefaultDeadlineInput() {

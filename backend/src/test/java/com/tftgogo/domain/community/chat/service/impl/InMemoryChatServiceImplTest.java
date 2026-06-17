@@ -12,7 +12,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,12 +39,12 @@ class InMemoryChatServiceImplTest {
     void 채팅방_준비는_기존_메시지를_지우지_않는다() {
         // given
         givenMember("소정");
-        ChatMessageCreateRequest request = request("party-10", "참여했습니다");
+        ChatMessageCreateRequest request = request("party-recruitment", "참여했습니다");
         ChatMessageResponse sentMessage = chatService.sendMessage(USER_ID, request);
 
         // when
-        chatService.ensureRoom("party-10");
-        List<ChatMessageResponse> messages = chatService.getRecentMessages("party-10");
+        chatService.ensureRoom("party-recruitment");
+        List<ChatMessageResponse> messages = chatService.getRecentMessages("party-recruitment");
 
         // then
         assertThat(messages).hasSize(1);
@@ -61,11 +63,11 @@ class InMemoryChatServiceImplTest {
     void 메시지를_전송하면_방별_최근_메시지로_조회된다() {
         // given
         givenMember("소정");
-        ChatMessageCreateRequest request = request("party-1", "  안녕하세요  ");
+        ChatMessageCreateRequest request = request("party-recruitment", "  안녕하세요  ");
 
         // when
         ChatMessageResponse sentMessage = chatService.sendMessage(USER_ID, request);
-        List<ChatMessageResponse> messages = chatService.getRecentMessages("party-1");
+        List<ChatMessageResponse> messages = chatService.getRecentMessages("party-recruitment");
 
         // then
         assertThat(sentMessage.getContent()).isEqualTo("안녕하세요");
@@ -78,14 +80,14 @@ class InMemoryChatServiceImplTest {
                         ChatMessageResponse::getTier,
                         ChatMessageResponse::getContent
                 )
-                .containsExactly(sentMessage.getId(), "party-1", "소정", "Unranked", "안녕하세요");
+                .containsExactly(sentMessage.getId(), "party-recruitment", "소정", "Unranked", "안녕하세요");
     }
 
     @Test
     void 채팅_작성자는_요청값이_아니라_회원_닉네임을_사용한다() {
         // given
         givenMember("서버닉네임");
-        ChatMessageCreateRequest request = request("party-1", "안녕하세요");
+        ChatMessageCreateRequest request = request("party-recruitment", "안녕하세요");
 
         // when
         ChatMessageResponse response = chatService.sendMessage(USER_ID, request);
@@ -122,6 +124,74 @@ class InMemoryChatServiceImplTest {
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
         verifyNoInteractions(memberRepository);
+    }
+
+    @Test
+    void 지원하지_않는_방_ID는_INVALID_INPUT을_던진다() {
+        // given
+        ChatMessageCreateRequest request = request("party-1", "안녕하세요");
+
+        // when, then
+        assertThatThrownBy(() -> chatService.sendMessage(USER_ID, request))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
+        verifyNoInteractions(memberRepository);
+    }
+
+    @Test
+    void 지원하지_않는_방_ID는_최근_메시지를_조회할_수_없다() {
+        // when, then
+        assertThatThrownBy(() -> chatService.getRecentMessages("party-1"))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
+        verifyNoInteractions(memberRepository);
+    }
+
+    @Test
+    void 지원하지_않는_방_ID는_SSE를_구독할_수_없다() {
+        // when, then
+        assertThatThrownBy(() -> chatService.subscribe("party-1"))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
+        verifyNoInteractions(memberRepository);
+    }
+
+    @Test
+    void 방별_SSE_연결_한도를_초과하면_TOO_MANY_REQUESTS를_던진다() {
+        // given
+        List<SseEmitter> emitters = new ArrayList<>();
+        for (int index = 0; index < 100; index++) {
+            emitters.add(chatService.subscribe("general"));
+        }
+
+        try {
+            // when, then
+            assertThatThrownBy(() -> chatService.subscribe("general"))
+                    .isInstanceOfSatisfying(BusinessException.class, exception ->
+                            assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.CHAT_STREAM_CONNECTION_LIMIT_EXCEEDED));
+        } finally {
+            emitters.forEach(SseEmitter::complete);
+        }
+    }
+
+    @Test
+    void 전체_SSE_연결_한도를_초과하면_TOO_MANY_REQUESTS를_던진다() {
+        // given
+        List<SseEmitter> emitters = new ArrayList<>();
+        for (int index = 0; index < 100; index++) {
+            emitters.add(chatService.subscribe("general"));
+            emitters.add(chatService.subscribe("deck-guide"));
+            emitters.add(chatService.subscribe("party-recruitment"));
+        }
+
+        try {
+            // when, then
+            assertThatThrownBy(() -> chatService.subscribe("question-answer"))
+                    .isInstanceOfSatisfying(BusinessException.class, exception ->
+                            assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.CHAT_STREAM_CONNECTION_LIMIT_EXCEEDED));
+        } finally {
+            emitters.forEach(SseEmitter::complete);
+        }
     }
 
     @Test

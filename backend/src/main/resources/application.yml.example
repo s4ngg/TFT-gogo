@@ -84,6 +84,16 @@ app:
     login-failure-redirect-uri: http://localhost:5173/login
   meta-deck:
     startup-aggregate: false
+  guide:
+    cdragon:
+      startup-import: false
+      patch-version: "17.3"
+      set-number: 17
+      mutator: TFTSet17
+      include-champions: true
+      include-traits: true
+      include-items: true
+      include-augments: true
   # CORS 허용 origin 목록 — allowCredentials=true이므로 wildcard(*) 사용 불가
   # 환경별로 실제 배포 도메인을 명시적으로 추가하세요
   cors:

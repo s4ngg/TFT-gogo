@@ -64,6 +64,7 @@ export function usePartyAuth() {
 
   return {
     displayName: legacyUser?.nickname ?? legacyUser?.summonerName ?? '나',
+    isAuthenticated: Boolean(token),
     token,
     userId: readUserId(legacyUser?.id) ?? readJwtSubject(token),
   }

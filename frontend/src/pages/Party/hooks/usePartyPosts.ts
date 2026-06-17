@@ -1,15 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  buildLocalPartyPost,
   cancelPartyJoin,
   createPartyPost,
   fallbackPartyPosts,
   getPartyPosts,
   joinPartyPost,
   type CreatePartyPostRequest,
+  type PartyPostsQueryParams,
   type PartyPostsResult,
 } from '../../../api/partyApi'
+import {
+  COMMUNITY_PARTY_POSTS_QUERY_KEY,
+  communityPartyPostsQueryKey,
+} from '../../../api/partyQueryKeys'
 import type { PartyFilter } from '../partyFilters'
 import type { PartyMode, PartyPost } from '../types'
 import {
@@ -27,7 +31,6 @@ import {
 import { usePartyAuth } from './usePartyAuth'
 
 const PARTY_PAGE_SIZE = 3
-const PARTY_QUERY_KEY = ['community', 'parties'] as const
 
 interface UsePartyPostsOptions {
   onPartyMessage: (post: PartyPost, message: string) => void
@@ -48,9 +51,20 @@ function withOwnerState(post: PartyPost, authUserId: string | null): PartyPost {
   }
 }
 
+function readMutationErrorMessage(error: unknown, fallbackMessage: string) {
+  return error instanceof Error && error.message.trim().length > 0
+    ? error.message
+    : fallbackMessage
+}
+
+function toPartyPostsQueryParams(filter: PartyFilter): PartyPostsQueryParams {
+  return filter === '전체' ? {} : { mode: filter }
+}
+
 export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPostsOptions) {
   const queryClient = useQueryClient()
-  const { userId: authUserId } = usePartyAuth()
+  const { token: authToken, userId: authUserId } = usePartyAuth()
+  const isAuthenticated = (authToken?.trim().length ?? 0) > 0
   const [localPosts, setLocalPosts] = useState<PartyPost[]>([])
   const [postOverrides, setPostOverrides] = useState<Record<string, PartyPost>>({})
   const [selectedFilter, setSelectedFilter] = useState<PartyFilter>('전체')
@@ -70,10 +84,18 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
   const minDeadline = useMemo(getDefaultDeadlineInput, [])
   const titleInputRef = useRef<HTMLInputElement>(null)
   const joinRequestPostIdRef = useRef<string | null>(null)
+  const partyQueryParams = useMemo(
+    () => toPartyPostsQueryParams(selectedFilter),
+    [selectedFilter],
+  )
+  const partyQueryKey = useMemo(
+    () => communityPartyPostsQueryKey(partyQueryParams),
+    [partyQueryParams],
+  )
 
   const partyQuery = useQuery({
-    queryKey: PARTY_QUERY_KEY,
-    queryFn: getPartyPosts,
+    queryKey: partyQueryKey,
+    queryFn: () => getPartyPosts(partyQueryParams),
     staleTime: 1000 * 60,
   })
   const createMutation = useMutation({
@@ -148,6 +170,12 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
   const submitPartyPost = () => {
     createMutation.reset()
 
+    if (!isAuthenticated) {
+      setComposeError('로그인 후 파티 모집글을 등록할 수 있습니다.')
+      setPartyStatusMessage('')
+      return
+    }
+
     const title = titleDraft.trim()
     const description = descriptionDraft.trim()
     const deadline = formatDeadlineForRequest(deadlineDraft)
@@ -176,52 +204,45 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
       description,
       tags: parsedTags,
     }
-    const localId = `party-${crypto.randomUUID()}`
-    const localPost = withOwnerState(
-      {
-        ...buildLocalPartyPost(request, localId),
-        isJoined: authUserId !== null,
-        userId: authUserId ?? undefined,
-      },
-      authUserId,
-    )
-
-    setLocalPosts((currentPosts) => [localPost, ...currentPosts])
-    setSelectedFilter('전체')
-    setSearchDraft('')
-    setQuery('')
-    setTitleDraft('')
-    setModeDraft('랭크')
-    setTierDraft('마스터+')
-    setCapacityDraft('2')
-    setDeadlineDraft(getDefaultDeadlineInput())
-    setTagsDraft('')
-    setDescriptionDraft('')
-    setComposeError('')
-    setPartyStatusMessage('모집글을 등록했습니다.')
-    setCurrentPage(1)
 
     createMutation.mutate(request, {
       onSuccess: (createdPost) => {
-        if (createdPost) {
-          const serverPost = withOwnerState(createdPost, authUserId)
+        const serverPost = withOwnerState(createdPost, authUserId)
 
-          setLocalPosts((currentPosts) =>
-            currentPosts.map((post) => (post.id === localId ? serverPost : post)),
-          )
-          onPartyPostCreated(serverPost)
-        }
+        setLocalPosts((currentPosts) => [
+          serverPost,
+          ...currentPosts.filter((post) => post.id !== serverPost.id),
+        ])
+        setSelectedFilter('전체')
+        setSearchDraft('')
+        setQuery('')
+        setTitleDraft('')
+        setModeDraft('랭크')
+        setTierDraft('마스터+')
+        setCapacityDraft('2')
+        setDeadlineDraft(getDefaultDeadlineInput())
+        setTagsDraft('')
+        setDescriptionDraft('')
+        setComposeError('')
+        setPartyStatusMessage('모집글을 등록했습니다.')
+        setCurrentPage(1)
+        onPartyPostCreated(serverPost)
 
-        void queryClient.invalidateQueries({ queryKey: PARTY_QUERY_KEY })
+        void queryClient.invalidateQueries({ queryKey: COMMUNITY_PARTY_POSTS_QUERY_KEY })
       },
-      onError: () => {
-        setPartyStatusMessage('API 연결 실패로 방금 등록한 글은 임시로만 표시됩니다.')
+      onError: (error) => {
+        setPartyStatusMessage(readMutationErrorMessage(error, '파티 모집글 등록에 실패했습니다.'))
       },
     })
   }
 
   const toggleJoin = (postId: string) => {
     if (joinRequestPostIdRef.current !== null || joinMutation.isPending) {
+      return
+    }
+
+    if (!isAuthenticated) {
+      setPartyStatusMessage('로그인 후 파티에 참여할 수 있습니다.')
       return
     }
 
@@ -268,7 +289,7 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
       { postId, isJoining: !alreadyJoined },
       {
         onSuccess: async (serverPost) => {
-          const confirmedPost = withOwnerState(serverPost ?? nextPost, authUserId)
+          const confirmedPost = withOwnerState(serverPost, authUserId)
 
           setLocalPosts((currentPosts) => replacePost(currentPosts, confirmedPost))
           setPostOverrides((currentOverrides) => ({
@@ -276,27 +297,29 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
             [postId]: confirmedPost,
           }))
           onPartyMessage(confirmedPost, nextMessage)
-          await queryClient.invalidateQueries({ queryKey: PARTY_QUERY_KEY })
+          await queryClient.invalidateQueries({ queryKey: COMMUNITY_PARTY_POSTS_QUERY_KEY })
 
-          const refreshedPosts = queryClient.getQueryData<PartyPostsResult>(PARTY_QUERY_KEY)
+          const refreshedPosts = queryClient.getQueryData<PartyPostsResult>(partyQueryKey)
 
           if (refreshedPosts?.source === 'api') {
             setPostOverrides((currentOverrides) => removePostOverride(currentOverrides, postId))
           }
         },
-        onError: () => {
+        onError: (error) => {
           setLocalPosts((currentPosts) => replacePost(currentPosts, targetPost))
           setPostOverrides((currentOverrides) =>
             restorePostOverride(currentOverrides, postId, previousOverride),
           )
           setJoinedPostId(previousJoinedPostId)
-          setPartyStatusMessage('API 연결 실패로 참여 상태를 되돌렸습니다.')
+          setPartyStatusMessage(
+            readMutationErrorMessage(error, '파티 참여 상태를 되돌렸습니다.'),
+          )
         },
         onSettled: (_data, error) => {
           joinRequestPostIdRef.current = null
 
           if (error) {
-            void queryClient.invalidateQueries({ queryKey: PARTY_QUERY_KEY })
+            void queryClient.invalidateQueries({ queryKey: COMMUNITY_PARTY_POSTS_QUERY_KEY })
           }
         },
       },
@@ -313,6 +336,7 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
     filteredCount: filteredPartyPosts.length,
     focusCompose,
     isCreating: createMutation.isPending,
+    isAuthenticated,
     joinedPostId: activeJoinedPostId,
     joiningPostId: joinMutation.isPending ? joinMutation.variables?.postId ?? null : null,
     minDeadline,

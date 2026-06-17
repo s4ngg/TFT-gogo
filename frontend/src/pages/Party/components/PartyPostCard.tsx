@@ -1,6 +1,6 @@
 import { Clock3, Crown, Leaf, Sparkles, Swords, Users } from 'lucide-react'
 import type { PartyPost } from '../types'
-import { parseCapacity } from '../utils/partyUtils'
+import { getPartyJoinActionState, parseCapacity } from '../utils/partyUtils'
 import styles from '../Party.module.css'
 
 const partyIconMap = {
@@ -12,6 +12,7 @@ const partyIconMap = {
 
 interface PartyPostCardProps {
   hasJoinedOtherPost: boolean
+  isAuthenticated: boolean
   isJoined: boolean
   isJoinPending: boolean
   isOwner: boolean
@@ -21,6 +22,7 @@ interface PartyPostCardProps {
 
 function PartyPostCard({
   hasJoinedOtherPost,
+  isAuthenticated,
   isJoined,
   isJoinPending,
   isOwner,
@@ -30,6 +32,14 @@ function PartyPostCard({
   const Icon = partyIconMap[post.icon]
   const { current, total } = parseCapacity(post.capacity)
   const isFull = current >= total
+  const joinAction = getPartyJoinActionState({
+    hasJoinedOtherPost,
+    isAuthenticated,
+    isFull,
+    isJoined,
+    isJoinPending,
+    isOwner,
+  })
 
   return (
     <article className={styles.partyCard}>
@@ -64,20 +74,10 @@ function PartyPostCard({
         type="button"
         aria-pressed={isJoined}
         className={styles.joinButton}
-        disabled={isOwner || isJoinPending || (isFull && !isJoined) || hasJoinedOtherPost}
+        disabled={joinAction.disabled}
         onClick={() => onJoinToggle(post.id)}
       >
-        {isOwner
-          ? '작성자'
-          : isJoinPending
-            ? '처리중'
-            : isJoined
-              ? '참여중'
-              : isFull
-                ? '마감'
-                : hasJoinedOtherPost
-                  ? '잠김'
-                  : '참여'}
+        {joinAction.label}
       </button>
     </article>
   )

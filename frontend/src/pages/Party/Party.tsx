@@ -1,4 +1,12 @@
+import { useEffect, useMemo, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { AppLayout } from '../../components/layout'
+import {
+  COMMUNITY_CHAT_ROOM_QUERY_PARAM,
+  DEFAULT_COMMUNITY_CHAT_ROOM_ID,
+  normalizeCommunityChatRoomId,
+  type CommunityChatRoomId,
+} from '../../constants/communityChatRooms'
 import PartyChatPanel from './components/PartyChatPanel'
 import PartyCreateForm from './components/PartyCreateForm'
 import PartyFilterBar from './components/PartyFilterBar'
@@ -8,11 +16,37 @@ import { usePartyPosts } from './hooks/usePartyPosts'
 import styles from './Party.module.css'
 
 function Party() {
-  const chat = usePartyChat()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeRoomId = useMemo(
+    () =>
+      normalizeCommunityChatRoomId(searchParams.get(COMMUNITY_CHAT_ROOM_QUERY_PARAM))
+        ?? DEFAULT_COMMUNITY_CHAT_ROOM_ID,
+    [searchParams],
+  )
+  const setActiveRoomId = useCallback(
+    (roomId: CommunityChatRoomId) => {
+      if (searchParams.get(COMMUNITY_CHAT_ROOM_QUERY_PARAM) === roomId) {
+        return
+      }
+
+      const nextParams = new URLSearchParams(searchParams)
+      nextParams.set(COMMUNITY_CHAT_ROOM_QUERY_PARAM, roomId)
+      setSearchParams(nextParams, { replace: true })
+    },
+    [searchParams, setSearchParams],
+  )
+  const chat = usePartyChat({
+    activeRoomId,
+    onActiveRoomChange: setActiveRoomId,
+  })
   const party = usePartyPosts({
     onPartyMessage: chat.appendPartyMessage,
     onPartyPostCreated: chat.preparePartyRoom,
   })
+
+  useEffect(() => {
+    setActiveRoomId(activeRoomId)
+  }, [activeRoomId, setActiveRoomId])
 
   return (
     <AppLayout>
@@ -49,6 +83,7 @@ function Party() {
             composeError={party.composeError}
             deadlineDraft={party.deadlineDraft}
             descriptionDraft={party.descriptionDraft}
+            isAuthenticated={party.isAuthenticated}
             isSubmitting={party.isCreating}
             minDeadline={party.minDeadline}
             modeDraft={party.modeDraft}
@@ -74,6 +109,7 @@ function Party() {
 
           <PartyPostList
             currentPage={party.currentPage}
+            isAuthenticated={party.isAuthenticated}
             joinedPostId={party.joinedPostId}
             joiningPostId={party.joiningPostId}
             onJoinToggle={party.toggleJoin}
@@ -91,9 +127,11 @@ function Party() {
           chatNotice={chat.chatNotice}
           connectionLabel={chat.connectionLabel}
           currentUserName={chat.currentUserName}
+          isAuthenticated={chat.isAuthenticated}
           isLoading={chat.isLoading}
           isMessageDisabled={chat.isMessageDisabled}
-          onActiveRoomChange={chat.setActiveRoomId}
+          isSendBlockedByAuth={chat.isSendBlockedByAuth}
+          onActiveRoomChange={setActiveRoomId}
           onChatInputChange={chat.setChatInput}
           onMessageSubmit={chat.sendMessage}
           rooms={chat.rooms}

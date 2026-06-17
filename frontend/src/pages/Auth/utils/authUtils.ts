@@ -76,5 +76,13 @@ export function mapSocialAuthError(error: unknown): string {
     return '소셜 로그인 API 경로를 찾을 수 없습니다. 잠시 후 다시 시도해 주세요.'
   }
 
+  if (
+    normalizedMessage.includes('503') ||
+    normalizedMessage.includes('service unavailable') ||
+    normalizedMessage.includes('social_provider_not_configured')
+  ) {
+    return '해당 소셜 로그인은 현재 사용할 수 없습니다. 이메일 로그인을 이용해 주세요.'
+  }
+
   return '소셜 로그인 시작 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.'
 }

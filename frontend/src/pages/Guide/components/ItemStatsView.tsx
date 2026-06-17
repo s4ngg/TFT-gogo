@@ -3,6 +3,7 @@ import {
   DEFAULT_GUIDE_PAGE_SIZE,
   type GuideCatalog,
 } from '../../../api/guide'
+import { formatGuideRankMetric } from '../../../api/guideText'
 import { useGuideTabItems } from '../../../hooks/useGuide'
 import { useGuideMetricSort } from '../hooks/useGuideMetricSort'
 import {
@@ -120,7 +121,7 @@ function ItemStatsView({
                 </td>
                 <td className={styles.winRate}>{itemStat.winRate}</td>
                 <td className={styles.top4}>{itemStat.top4}</td>
-                <td className={styles.avgPlace}>#{itemStat.avgPlace}</td>
+                <td className={styles.avgPlace}>{formatGuideRankMetric(itemStat.avgPlace)}</td>
                 <td className={styles.pickRate}>{itemStat.pickRate}</td>
                 <td>
                   <div className={styles.avatarStack}>

@@ -1,0 +1,56 @@
+export const COMMUNITY_CHAT_ROOM_IDS = [
+  'general',
+  'deck-guide',
+  'party-recruitment',
+  'question-answer',
+] as const
+
+export type CommunityChatRoomId = (typeof COMMUNITY_CHAT_ROOM_IDS)[number]
+
+export const DEFAULT_COMMUNITY_CHAT_ROOM_ID: CommunityChatRoomId = 'general'
+export const COMMUNITY_CHAT_ROOM_QUERY_PARAM = 'room'
+
+export interface CommunityChatRoom {
+  id: CommunityChatRoomId
+  lastMessage: string
+  lastMessageTime: string
+  name: string
+  users: string
+}
+
+export interface CommunityChatRoomPreview {
+  id: CommunityChatRoomId
+  lastMessage: string
+  name: string
+  users: string
+}
+
+export const PARTY_RECRUITMENT_ROOM_ID: CommunityChatRoomId = 'party-recruitment'
+
+export const COMMUNITY_CHAT_ROOMS: readonly CommunityChatRoom[] = [
+  { id: 'general', name: '일반', users: '1,234', lastMessage: '새로운 패치 적응 중입니다!', lastMessageTime: '14:58' },
+  { id: 'deck-guide', name: '덱 공략', users: '856', lastMessage: '증강 추천 부탁드려요', lastMessageTime: '14:57' },
+  { id: PARTY_RECRUITMENT_ROOM_ID, name: '파티 모집', users: '622', lastMessage: '마스터 듀오 구해요~', lastMessageTime: '14:56' },
+  { id: 'question-answer', name: '질문 & 답변', users: '741', lastMessage: '초보 운영 질문 있습니다', lastMessageTime: '14:56' },
+]
+
+export function createCommunityChatRooms(): CommunityChatRoomPreview[] {
+  return COMMUNITY_CHAT_ROOMS.map((room) => ({
+    id: room.id,
+    lastMessage: room.lastMessage,
+    name: room.name,
+    users: room.users,
+  }))
+}
+
+export function normalizeCommunityChatRoomId(
+  value: string | null | undefined,
+): CommunityChatRoomId | null {
+  const normalizedValue = value?.trim()
+
+  if (!normalizedValue) {
+    return null
+  }
+
+  return COMMUNITY_CHAT_ROOM_IDS.find((roomId) => roomId === normalizedValue) ?? null
+}

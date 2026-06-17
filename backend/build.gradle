@@ -46,6 +46,9 @@ dependencies {
     // Swagger (SpringDoc OpenAPI)
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
 
+    // HTML parser
+    implementation 'org.jsoup:jsoup:1.22.2'
+
     // Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
@@ -55,10 +58,20 @@ dependencies {
     testImplementation 'org.springframework.security:spring-security-test'
 }
 
-tasks.named('test') {
-    useJUnitPlatform()
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-parameters'
 }
 
-tasks.withType(JavaCompile) {
-    options.compilerArgs << '-parameters'
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+    systemProperty 'file.encoding', 'UTF-8'
+    systemProperty 'sun.stdout.encoding', 'UTF-8'
+    systemProperty 'sun.stderr.encoding', 'UTF-8'
+}
+
+tasks.withType(JavaExec).configureEach {
+    systemProperty 'file.encoding', 'UTF-8'
+    systemProperty 'sun.stdout.encoding', 'UTF-8'
+    systemProperty 'sun.stderr.encoding', 'UTF-8'
 }

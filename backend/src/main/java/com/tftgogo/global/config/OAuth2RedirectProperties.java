@@ -1,5 +1,7 @@
 package com.tftgogo.global.config;
 
+import com.tftgogo.global.security.oauth.OAuth2UrlValidator;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,4 +19,14 @@ public class OAuth2RedirectProperties {
 
     @NotBlank(message = "소셜 로그인 실패 리다이렉트 URI는 필수입니다.")
     private String loginFailureRedirectUri;
+
+    @AssertTrue(message = "소셜 로그인 성공 리다이렉트 URI는 http/https 절대 URI여야 합니다.")
+    public boolean isAuthorizedRedirectUriValid() {
+        return OAuth2UrlValidator.isHttpOrHttpsAbsoluteUrl(authorizedRedirectUri);
+    }
+
+    @AssertTrue(message = "소셜 로그인 실패 리다이렉트 URI는 http/https 절대 URI여야 합니다.")
+    public boolean isLoginFailureRedirectUriValid() {
+        return OAuth2UrlValidator.isHttpOrHttpsAbsoluteUrl(loginFailureRedirectUri);
+    }
 }

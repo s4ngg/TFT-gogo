@@ -22,6 +22,7 @@ public enum ErrorCode {
     INVALID_LOGIN_CREDENTIALS(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다."),
     SOCIAL_LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "소셜 로그인 처리에 실패했습니다."),
     SOCIAL_EMAIL_REQUIRED(HttpStatus.UNAUTHORIZED, "소셜 계정 이메일 정보를 확인할 수 없습니다."),
+    SOCIAL_PROVIDER_NOT_CONFIGURED(HttpStatus.SERVICE_UNAVAILABLE, "소셜 로그인 설정이 완료되지 않았습니다."),
 
     // ── 덱 ─────────────────────────────────────────────
     DECK_NOT_FOUND(HttpStatus.NOT_FOUND, "덱 정보를 찾을 수 없습니다."),
@@ -41,6 +42,7 @@ public enum ErrorCode {
     PARTY_POST_NOT_FOUND(HttpStatus.NOT_FOUND, "파티 모집글을 찾을 수 없습니다."),
     PARTY_POST_FULL(HttpStatus.CONFLICT, "파티 모집 정원이 가득 찼습니다."),
     PARTY_POST_CLOSED(HttpStatus.CONFLICT, "마감된 파티 모집글입니다."),
+    CHAT_STREAM_CONNECTION_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "채팅 연결 수가 많습니다. 잠시 후 다시 시도해주세요."),
 
     // ── 전적 ────────────────────────────────────────────
     ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "소환사 계정을 찾을 수 없습니다."),
@@ -51,7 +53,8 @@ public enum ErrorCode {
     // ── 외부 API ─────────────────────────────────────────
     RIOT_API_RATE_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "Riot API 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요."),
     RIOT_API_ERROR(HttpStatus.BAD_GATEWAY, "Riot API 호출 중 오류가 발생했습니다."),
-    EXTERNAL_API_ERROR(HttpStatus.BAD_GATEWAY, "외부 데이터 호출 중 오류가 발생했습니다.");
+    EXTERNAL_API_ERROR(HttpStatus.BAD_GATEWAY, "외부 데이터 호출 중 오류가 발생했습니다."),
+    AI_SERVER_ERROR(HttpStatus.BAD_GATEWAY, "AI 서버 연결에 실패했습니다.");
 
     private final HttpStatus status;
     private final String message;

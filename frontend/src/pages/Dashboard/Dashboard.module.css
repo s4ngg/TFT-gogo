@@ -514,6 +514,22 @@
   border-radius: 7px;
 }
 
+.partyStatus {
+  margin: 0 0 var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--status-loading-border);
+  border-radius: var(--radius-xs);
+  background: var(--status-loading-icon-bg);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.partyStatusFallback {
+  border-color: var(--status-fallback-border);
+  background: var(--status-fallback-icon-bg);
+}
+
 .partyRow {
   min-height: 0;
   display: grid;
@@ -612,6 +628,18 @@
   background: rgba(10, 22, 30, 0.8);
 }
 
+.partyRow p .partyStateOpen {
+  border-color: var(--cyan-border-subtle);
+  background: var(--cyan-bg-faint);
+  color: var(--text-ui);
+}
+
+.partyRow p .partyStateClosed {
+  border-color: var(--status-fallback-border);
+  background: var(--status-fallback-icon-bg);
+  color: var(--text-secondary);
+}
+
 .partyRow em {
   color: #ff4945;
   font-size: 12px;
@@ -634,13 +662,28 @@
 
 .chatRow {
   min-height: 0;
+  width: 100%;
   display: grid;
   grid-template-columns: 22px 84px 58px minmax(0, 1fr) 42px;
   align-items: center;
   gap: 5px;
   border-bottom: 1px solid rgba(114, 145, 153, 0.1);
+  background: transparent;
   color: #aeb7c0;
+  text-align: left;
+  text-decoration: none;
   font-size: 11px;
+  cursor: pointer;
+}
+
+.chatRow:hover,
+.chatRow:focus-visible {
+  background: var(--bg-row-hover);
+}
+
+.chatRow:focus-visible {
+  outline: 2px solid var(--border-active);
+  outline-offset: -2px;
 }
 
 .chatRow strong {

@@ -1,41 +1,59 @@
 import { useEffect, useMemo, useState } from 'react'
+import { PARTY_RECRUITMENT_ROOM_ID } from '../../../constants/communityChatRooms'
+import type { CommunityChatRoomId } from '../../../constants/communityChatRooms'
 import { initialChatRooms } from '../data/partyMockData'
 import type { PartyPost } from '../types'
-import { createPartyChatRoom, upsertChatRoom } from '../utils/partyChatRooms'
+import { updateChatRoomPreview, updatePartyRecruitmentPreview } from '../utils/partyChatRooms'
 import { usePartyAuth } from './usePartyAuth'
 import { useRealtimeChat } from './useRealtimeChat'
 
-export function usePartyChat() {
-  const { displayName: currentUserName, token: authToken } = usePartyAuth()
+interface UsePartyChatOptions {
+  activeRoomId: CommunityChatRoomId
+  onActiveRoomChange: (roomId: CommunityChatRoomId) => void
+}
+
+export function usePartyChat({ activeRoomId, onActiveRoomChange }: UsePartyChatOptions) {
+  const { displayName: currentUserName, isAuthenticated } = usePartyAuth()
   const [rooms, setRooms] = useState(initialChatRooms)
-  const [activeRoomId, setActiveRoomId] = useState(initialChatRooms[0]?.id ?? 'general')
   const [chatInput, setChatInput] = useState('')
   const [chatStatusMessage, setChatStatusMessage] = useState('')
   const {
     connectionStatus,
     errorMessage: chatErrorMessage,
+    hasReconnectFailed,
     isLoading,
+    isReconnecting,
     isSending,
+    maxReconnectAttempts,
     messages: activeMessages,
     queryError,
+    reconnectAttempt,
     sendMessage: sendRealtimeMessage,
-  } = useRealtimeChat(activeRoomId, Boolean(authToken))
+  } = useRealtimeChat(activeRoomId)
 
   const activeRoom = useMemo(
     () => rooms.find((room) => room.id === activeRoomId),
     [activeRoomId, rooms],
   )
   const activeRoomName = activeRoom?.name ?? '채팅'
-  const isChatAvailable = Boolean(authToken)
+  const canSendMessages = isAuthenticated
   const connectionLabel = connectionStatus === 'connected'
     ? '실시간 연결됨'
-    : connectionStatus === 'connecting'
+    : isReconnecting
+      ? '재연결 중'
+      : connectionStatus === 'connecting'
       ? '연결 중'
       : '실시간 연결 대기'
-  const chatNotice = !isChatAvailable
-    ? '로그인 후 채팅을 조회하고 메시지를 보낼 수 있습니다.'
-    : chatStatusMessage || chatErrorMessage || (queryError ? '채팅 메시지를 불러오지 못했습니다.' : '')
-  const isMessageDisabled = !isChatAvailable || isSending || !activeRoom
+  const reconnectNotice = isReconnecting
+    ? `실시간 연결을 다시 시도하고 있습니다. (${reconnectAttempt}/${maxReconnectAttempts})`
+    : ''
+  const chatReadNotice = chatStatusMessage
+    || reconnectNotice
+    || chatErrorMessage
+    || (hasReconnectFailed ? '실시간 연결을 복구하지 못했습니다.' : '')
+    || (queryError ? '채팅 메시지를 불러오지 못했습니다.' : '')
+  const chatNotice = chatReadNotice || (!canSendMessages ? '채팅은 조회할 수 있고 메시지 전송은 로그인 후 가능합니다.' : '')
+  const isMessageDisabled = !canSendMessages || isSending || !activeRoom
 
   useEffect(() => {
     const lastMessage = activeMessages[activeMessages.length - 1]
@@ -44,47 +62,50 @@ export function usePartyChat() {
       return
     }
 
-    setRooms((currentRooms) =>
-      currentRooms.map((room) =>
-        room.id === lastMessage.roomId ? { ...room, lastMessage: lastMessage.content } : room,
-      ),
-    )
+    setRooms((currentRooms) => updateChatRoomPreview(currentRooms, lastMessage.roomId, lastMessage.content))
   }, [activeMessages])
 
   const updateLastMessage = (roomId: string, message: string) => {
-    setRooms((currentRooms) =>
-      currentRooms.map((room) =>
-        room.id === roomId ? { ...room, lastMessage: message } : room,
-      ),
-    )
+    setRooms((currentRooms) => updateChatRoomPreview(currentRooms, roomId, message))
   }
 
-  const preparePartyRoom = (post: PartyPost, lastMessage?: string) => {
-    setRooms((currentRooms) => upsertChatRoom(currentRooms, createPartyChatRoom(post, lastMessage)))
-    setActiveRoomId(post.chatRoomId)
+  const openPartyRecruitmentRoom = (message: string) => {
+    setRooms((currentRooms) => updatePartyRecruitmentPreview(currentRooms, message))
+    onActiveRoomChange(PARTY_RECRUITMENT_ROOM_ID)
   }
 
-  const appendPartyMessage = (post: PartyPost, message: string) => {
-    preparePartyRoom(post, message)
+  const sendPartyRecruitmentMessage = (message: string, failureMessage: string) => {
     setChatStatusMessage('')
 
-    if (!isChatAvailable) {
+    if (!canSendMessages) {
       setChatStatusMessage('로그인 후 파티 채팅 알림을 보낼 수 있습니다.')
       return
     }
 
     void sendRealtimeMessage({
       content: message,
-      roomId: post.chatRoomId,
+      roomId: PARTY_RECRUITMENT_ROOM_ID,
     })
       .then((sentMessage) => updateLastMessage(sentMessage.roomId, sentMessage.content))
-      .catch(() => setChatStatusMessage('참여 상태는 반영됐지만 채팅 알림 전송에 실패했습니다.'))
+      .catch(() => setChatStatusMessage(failureMessage))
+  }
+
+  const preparePartyRoom = (post: PartyPost, lastMessage?: string) => {
+    const nextMessage = lastMessage ?? `${post.title} 모집글이 등록되었습니다.`
+
+    openPartyRecruitmentRoom(nextMessage)
+    sendPartyRecruitmentMessage(nextMessage, '모집글은 등록됐지만 채팅 알림 전송에 실패했습니다.')
+  }
+
+  const appendPartyMessage = (post: PartyPost, message: string) => {
+    openPartyRecruitmentRoom(message)
+    sendPartyRecruitmentMessage(message, '참여 상태는 반영됐지만 채팅 알림 전송에 실패했습니다.')
   }
 
   const sendMessage = async () => {
     const trimmedMessage = chatInput.trim()
 
-    if (trimmedMessage.length === 0 || !activeRoom || !isChatAvailable) {
+    if (trimmedMessage.length === 0 || !activeRoom || !canSendMessages) {
       return
     }
 
@@ -111,12 +132,14 @@ export function usePartyChat() {
     chatNotice,
     connectionLabel,
     currentUserName,
+    isAuthenticated,
     isLoading,
     isMessageDisabled,
+    isSendBlockedByAuth: !canSendMessages,
     preparePartyRoom,
     rooms,
     sendMessage,
-    setActiveRoomId,
+    setActiveRoomId: onActiveRoomChange,
     setChatInput,
   }
 }

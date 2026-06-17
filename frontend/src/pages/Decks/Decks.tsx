@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { AppLayout } from '../../components/layout'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
 import { useCDragonLocale } from '../../hooks/useCDragonLocale'
+import { deduplicateDecks } from '../../api/deckApi'
 import type { RankFilter } from '../Dashboard/dashboardData'
 import DeckListView from './components/DeckListView'
 import MetaStatsView from './components/MetaStatsView'
@@ -25,7 +26,7 @@ function Decks() {
   const [tab, setTab] = useState<Tab>('덱모음')
   const { data: metaDeckResponse, isError: isDeckError } = useMetaSnapshot(rankFilter)
   const { data: locale } = useCDragonLocale()
-  const decks = metaDeckResponse?.decks ?? []
+  const decks = deduplicateDecks(metaDeckResponse?.decks ?? [])
   const patchVersion = metaDeckResponse?.patchVersion ?? '집계 대기'
   const dataRangeLabel = metaDeckResponse?.dataStartDate
     ? `${metaDeckResponse.dataStartDate} 이후 수집 데이터`
