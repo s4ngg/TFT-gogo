@@ -38,7 +38,7 @@ public class PatchNoteServiceImpl implements PatchNoteService {
     private static final int DEFAULT_PAGE = 1;
     private static final int MAX_PAGE = 10_000;
     private static final int DEFAULT_PAGE_SIZE = 10;
-    private static final int MAX_PAGE_SIZE = 100;
+    private static final int MAX_PAGE_SIZE = 1000;
     private static final String LIKE_ESCAPE = "\\";
 
     private final PatchNoteRepository patchNoteRepository;

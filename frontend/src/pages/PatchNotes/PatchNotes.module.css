@@ -496,24 +496,25 @@
 
 .changeBulletList {
   display: grid;
+  gap: var(--space-xl);
   margin: 0;
   padding: var(--space-md) var(--space-xl) var(--space-xl);
   list-style: none;
 }
 
-.changeBulletItem {
+.changeTargetGroup {
   position: relative;
   display: grid;
-  gap: var(--space-sm);
+  gap: var(--space-md);
   padding: var(--space-lg) 0 var(--space-lg) var(--space-2xl);
   border-bottom: 1px solid rgba(112, 144, 152, 0.1);
 }
 
-.changeBulletItem:last-child {
+.changeTargetGroup:last-child {
   border-bottom: 0;
 }
 
-.changeBulletItem::before {
+.changeTargetGroup::before {
   content: "";
   position: absolute;
   top: 24px;
@@ -525,14 +526,22 @@
   box-shadow: 0 0 0 4px var(--cyan-bg-faint);
 }
 
-.changeBulletTitle {
+.changeTargetHeader {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-md);
 }
 
-.changeBulletTitle strong {
+.changeTargetTitle {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.changeTargetTitle strong {
   min-width: 0;
   color: var(--text-main);
   font-size: var(--font-size-md);
@@ -541,7 +550,48 @@
   word-break: keep-all;
 }
 
-.changeBulletItem p {
+.changeGroupCount {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  height: 22px;
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--cyan-border-subtle);
+  border-radius: var(--radius-xs);
+  color: var(--color-cyan);
+  background: var(--cyan-bg-faint);
+  font-size: var(--font-size-xs);
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.changeTypeStack {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+}
+
+.changeDetailList {
+  display: grid;
+  gap: var(--space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.changeDetailItem {
+  display: grid;
+  gap: var(--space-xs);
+  padding: var(--space-sm) 0 0;
+}
+
+.changeDetailItem + .changeDetailItem {
+  border-top: 1px solid var(--border-faint);
+}
+
+.changeDetailSummary {
   margin: 0;
   color: var(--text-soft);
   font-size: var(--font-size-sm);
@@ -554,6 +604,10 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-sm);
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.65;
+  word-break: keep-all;
 }
 
 .changeValueLine span {
@@ -872,5 +926,9 @@
 
   .typeFilters {
     width: 100%;
+  }
+
+  .changeTypeStack {
+    justify-content: flex-start;
   }
 }

@@ -231,6 +231,52 @@ class PatchNoteServiceImplTest {
                 0
         )).isInstanceOfSatisfying(BusinessException.class, exception ->
                 assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
+
+        assertThatThrownBy(() -> patchNoteService.getPatchChanges(
+                "17.0",
+                null,
+                null,
+                null,
+                null,
+                1,
+                1001
+        )).isInstanceOfSatisfying(BusinessException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
+    }
+
+    @Test
+    void pageSize_1000은_한_패치_전체_조회용으로_허용한다() {
+        // given
+        PatchNote patchNote = patchNote("17.0", true);
+        PatchChange buff = patchChange(patchNote, PatchChangeCategory.CHAMPION, PatchChangeType.BUFF, PatchChangeImpact.HIGH, "카이사", 1);
+        PatchChange nerf = patchChange(patchNote, PatchChangeCategory.ITEM, PatchChangeType.NERF, PatchChangeImpact.LOW, "죽음검", 2);
+        when(patchNoteRepository.findByVersionAndDeletedAtIsNull("17.0"))
+                .thenReturn(Optional.of(patchNote));
+        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote))
+                .thenReturn(List.of(buff, nerf));
+        when(patchChangeRepository.findFilteredChanges(
+                patchNote,
+                null,
+                null,
+                null,
+                null
+        )).thenReturn(List.of(buff, nerf));
+
+        // when
+        PatchChangePageResponse response = patchNoteService.getPatchChanges(
+                "17.0",
+                null,
+                null,
+                null,
+                null,
+                1,
+                1000
+        );
+
+        // then
+        assertThat(response.getItems()).hasSize(2);
+        assertThat(response.getPageSize()).isEqualTo(1000);
+        assertThat(response.getTotalPages()).isEqualTo(1);
     }
 
     @Test

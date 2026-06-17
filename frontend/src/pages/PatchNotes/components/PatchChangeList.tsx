@@ -41,6 +41,11 @@ interface PatchChangeListProps {
   patchChanges: PatchChange[]
 }
 
+interface PatchChangeGroup {
+  title: string
+  changes: PatchChange[]
+}
+
 function getChangeTitle(change: PatchChange) {
   const target = change.target.trim()
   const summary = change.summary.trim()
@@ -55,6 +60,36 @@ function getChangeSummary(change: PatchChange, title: string) {
   return summary && summary !== title ? summary : ''
 }
 
+function getChangeGroupKey(title: string) {
+  return title.trim().toLowerCase()
+}
+
+function groupChangesByTitle(changes: PatchChange[]): PatchChangeGroup[] {
+  const groups = new Map<string, PatchChangeGroup>()
+
+  changes.forEach((change) => {
+    const title = getChangeTitle(change)
+    const key = getChangeGroupKey(title)
+    const group = groups.get(key)
+
+    if (group) {
+      group.changes.push(change)
+      return
+    }
+
+    groups.set(key, {
+      title,
+      changes: [change],
+    })
+  })
+
+  return Array.from(groups.values())
+}
+
+function getChangeGroupTypes(changes: PatchChange[]) {
+  return Array.from(new Set(changes.map((change) => change.type)))
+}
+
 function groupChangesByCategory(patchChanges: PatchChange[]) {
   return CHANGE_CATEGORIES
     .map((category) => ({
@@ -65,7 +100,10 @@ function groupChangesByCategory(patchChanges: PatchChange[]) {
 }
 
 function PatchChangeList({ patchChanges }: PatchChangeListProps) {
-  const sections = groupChangesByCategory(patchChanges)
+  const sections = groupChangesByCategory(patchChanges).map((section) => ({
+    ...section,
+    groups: groupChangesByTitle(section.changes),
+  }))
 
   return (
     <div className={styles.changeTimeline}>
@@ -83,23 +121,52 @@ function PatchChangeList({ patchChanges }: PatchChangeListProps) {
             </div>
 
             <ul className={styles.changeBulletList}>
-              {section.changes.map((change) => {
-                const title = getChangeTitle(change)
-                const summary = getChangeSummary(change, title)
+              {section.groups.map((group) => {
+                const changeTypes = getChangeGroupTypes(group.changes)
+                const changeDetails = group.changes
+                  .map((change) => ({
+                    change,
+                    hasValueChange: Boolean(change.before || change.after),
+                    summary: getChangeSummary(change, group.title),
+                  }))
+                  .filter((changeDetail) => changeDetail.summary || changeDetail.hasValueChange)
 
                 return (
-                  <li key={change.id} className={styles.changeBulletItem}>
-                    <div className={styles.changeBulletTitle}>
-                      <strong>{title}</strong>
-                      <span className={`${styles.changeType} ${CHANGE_TYPE_CLASS[change.type]}`}>{change.type}</span>
+                  <li key={`${section.category}-${group.title}`} className={styles.changeTargetGroup}>
+                    <div className={styles.changeTargetHeader}>
+                      <div className={styles.changeTargetTitle}>
+                        <strong>{group.title}</strong>
+                        {group.changes.length > 1 && (
+                          <span className={styles.changeGroupCount}>{group.changes.length}개</span>
+                        )}
+                      </div>
+                      <div className={styles.changeTypeStack}>
+                        {changeTypes.map((changeType) => (
+                          <span
+                            key={changeType}
+                            className={`${styles.changeType} ${CHANGE_TYPE_CLASS[changeType]}`}
+                          >
+                            {changeType}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                    {summary && <p>{summary}</p>}
-                    {(change.before || change.after) && (
-                      <p className={styles.changeValueLine}>
-                        <span>{change.before || '-'}</span>
-                        <strong>→</strong>
-                        <span>{change.after || '-'}</span>
-                      </p>
+
+                    {changeDetails.length > 0 && (
+                      <ul className={styles.changeDetailList}>
+                        {changeDetails.map(({ change, hasValueChange, summary }) => (
+                          <li key={change.id} className={styles.changeDetailItem}>
+                            {summary && <p className={styles.changeDetailSummary}>{summary}</p>}
+                            {hasValueChange && (
+                              <p className={styles.changeValueLine}>
+                                <span>{change.before || '-'}</span>
+                                <strong>→</strong>
+                                <span>{change.after || '-'}</span>
+                              </p>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
                     )}
                   </li>
                 )

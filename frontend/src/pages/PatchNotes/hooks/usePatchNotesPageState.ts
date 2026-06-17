@@ -7,7 +7,7 @@ import {
   type PatchCategory,
 } from '../../../api/patchNotes'
 
-const PATCH_PAGE_SIZE = 50
+const PATCH_PAGE_SIZE = 1000
 
 interface UsePatchNotesPageStateOptions {
   selectedPatchVersion: string
