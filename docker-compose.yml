@@ -11,6 +11,8 @@ services:
       - "${MYSQL_HOST_PORT:-3307}:3306"
     volumes:
       - mysql-data:/var/lib/mysql
+      - ./backend/src/main/resources/db/local-smoke/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./backend/src/main/resources/db/local-smoke/02_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
       interval: 10s
