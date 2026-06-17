@@ -13,7 +13,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -35,28 +34,19 @@ public class PatchChange {
     @JoinColumn(name = "patch_note_id", nullable = false)
     private PatchNote patchNote;
 
-    @Transient
+    @Column(name = "source_key", length = 150)
     private String sourceKey;
 
-    @Transient
-    private String sourceUrl;
-
-    @Transient
+    @Column(name = "source_heading_path", length = 500)
     private String sourceHeadingPath;
 
-    @Transient
+    @Column(name = "source_order")
     private Integer sourceOrder;
 
-    @Transient
-    private String sourceLocale;
-
-    @Transient
-    private PatchNoteImportSource importSource;
-
-    @Transient
+    @Column(name = "imported_at")
     private LocalDateTime importedAt;
 
-    @Transient
+    @Column(name = "manually_edited", nullable = false)
     private boolean manuallyEdited;
 
     @Enumerated(EnumType.STRING)
@@ -102,21 +92,42 @@ public class PatchChange {
     private LocalDateTime updatedAt;
 
     @Builder
-    public PatchChange(PatchNote patchNote, String sourceKey, String sourceUrl, String sourceHeadingPath,
-                       Integer sourceOrder, String sourceLocale, PatchNoteImportSource importSource,
-                       LocalDateTime importedAt, boolean manuallyEdited, PatchChangeCategory category,
-                       PatchChangeType changeType, PatchChangeImpact impact, String targetKey,
-                       String targetName, String summary, String beforeValue, String afterValue,
+    public PatchChange(PatchNote patchNote, String sourceKey, String sourceHeadingPath,
+                       Integer sourceOrder, LocalDateTime importedAt, boolean manuallyEdited,
+                       PatchChangeCategory category, PatchChangeType changeType,
+                       PatchChangeImpact impact, String targetKey, String targetName,
+                       String summary, String beforeValue, String afterValue,
                        String imageUrl, String tagsJson, int sortOrder) {
         this.patchNote = patchNote;
         this.sourceKey = sourceKey;
-        this.sourceUrl = sourceUrl;
         this.sourceHeadingPath = sourceHeadingPath;
         this.sourceOrder = sourceOrder;
-        this.sourceLocale = sourceLocale;
-        this.importSource = importSource;
         this.importedAt = importedAt;
         this.manuallyEdited = manuallyEdited;
+        this.category = category;
+        this.changeType = changeType;
+        this.impact = impact;
+        this.targetKey = targetKey;
+        this.targetName = targetName;
+        this.summary = summary;
+        this.beforeValue = beforeValue;
+        this.afterValue = afterValue;
+        this.imageUrl = imageUrl;
+        this.tagsJson = tagsJson;
+        this.sortOrder = sortOrder;
+    }
+
+    public void applyImportedData(PatchNote patchNote, String sourceKey, String sourceHeadingPath,
+                                  Integer sourceOrder, LocalDateTime importedAt,
+                                  PatchChangeCategory category, PatchChangeType changeType,
+                                  PatchChangeImpact impact, String targetKey, String targetName,
+                                  String summary, String beforeValue, String afterValue,
+                                  String imageUrl, String tagsJson, int sortOrder) {
+        this.patchNote = patchNote;
+        this.sourceKey = sourceKey;
+        this.sourceHeadingPath = sourceHeadingPath;
+        this.sourceOrder = sourceOrder;
+        this.importedAt = importedAt;
         this.category = category;
         this.changeType = changeType;
         this.impact = impact;
@@ -155,7 +166,7 @@ public class PatchChange {
     }
 
     public boolean isImported() {
-        return importSource != null;
+        return sourceKey != null || importedAt != null;
     }
 
     @PrePersist

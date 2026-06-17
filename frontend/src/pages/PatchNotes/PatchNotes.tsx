@@ -26,8 +26,6 @@ function PatchNotes() {
   const {
     activeCategory,
     activeChangeType,
-    expandedChangeIds,
-    highImpactOnly,
     patchChangesParams,
     query,
     resetChangeListState,
@@ -35,8 +33,6 @@ function PatchNotes() {
     setActiveChangeType,
     setCurrentPage,
     setQuery,
-    toggleExpandedChange,
-    toggleHighImpactOnly,
   } = usePatchNotesPageState({
     selectedPatchVersion,
   })
@@ -63,7 +59,7 @@ function PatchNotes() {
   return (
     <AppLayout>
       <div className={styles.page}>
-        <PatchHero changeStats={changeStats} selectedPatch={selectedPatch} />
+        <PatchHero selectedPatch={selectedPatch} />
 
         <PatchStatusBanner
           isFallbackData={(isFallbackData || patchChangesQuery.data.source === 'fallback') && !isFetching && !patchChangesQuery.isFetching}
@@ -74,44 +70,43 @@ function PatchNotes() {
           }}
         />
 
-        <PatchSummaryGrid buffCount={changeStats.buffCount} nerfCount={changeStats.nerfCount} />
+        <PatchSummaryGrid
+          buffCount={changeStats.buffCount}
+          nerfCount={changeStats.nerfCount}
+        />
 
         <div className={styles.contentGrid}>
-          <section className={styles.changePanel}>
-            <div className={styles.panelHeader}>
-              <div>
-                <span className={styles.sectionLabel}>변경사항</span>
-                <h2>패치 상세 목록</h2>
-              </div>
-            </div>
-
-            <PatchChangeFilters
-              activeCategory={activeCategory}
-              activeChangeType={activeChangeType}
-              highImpactOnly={highImpactOnly}
-              onCategoryChange={setActiveCategory}
-              onChangeTypeChange={setActiveChangeType}
-              onHighImpactOnlyToggle={toggleHighImpactOnly}
-              onQueryChange={setQuery}
-              query={query}
-              stats={changeStats}
-            />
-
-            <PatchChangeList
-              expandedChangeIds={expandedChangeIds}
-              onToggleExpandedChange={toggleExpandedChange}
-              patchChanges={patchChanges}
-            />
-
-            <PatchPagination currentPage={safePage} totalPages={changesPage.totalPages} onPageChange={setCurrentPage} />
-          </section>
-
           <PatchSideRail
             onPatchSelect={handlePatchSelect}
             patchHistory={patchHistory}
             selectedPatch={selectedPatch}
             selectedPatchVersion={selectedPatchVersion}
           />
+
+          <section className={styles.changePanel}>
+            <div className={styles.panelHeader}>
+              <div>
+                <span className={styles.sectionLabel}>카테고리별 변경사항</span>
+                <h2>{selectedPatch.date} 적용 변경</h2>
+              </div>
+            </div>
+
+            <PatchChangeFilters
+              activeCategory={activeCategory}
+              activeChangeType={activeChangeType}
+              onCategoryChange={setActiveCategory}
+              onChangeTypeChange={setActiveChangeType}
+              onQueryChange={setQuery}
+              query={query}
+              stats={changeStats}
+            />
+
+            <PatchChangeList
+              patchChanges={patchChanges}
+            />
+
+            <PatchPagination currentPage={safePage} totalPages={changesPage.totalPages} onPageChange={setCurrentPage} />
+          </section>
         </div>
       </div>
     </AppLayout>

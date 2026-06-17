@@ -1,7 +1,9 @@
 package com.tftgogo.domain.patchnote.service;
 
 import com.tftgogo.domain.patchnote.dto.request.AdminPatchChangeRequest;
+import com.tftgogo.domain.patchnote.dto.request.AdminPatchNoteImportRequest;
 import com.tftgogo.domain.patchnote.dto.request.AdminPatchNoteRequest;
+import com.tftgogo.domain.patchnote.dto.response.AdminPatchNoteImportResponse;
 import com.tftgogo.domain.patchnote.dto.response.PatchChangeResponse;
 import com.tftgogo.domain.patchnote.dto.response.PatchNoteResponse;
 
@@ -12,6 +14,8 @@ public interface AdminPatchNoteService {
     List<PatchNoteResponse> getPatchNotes();
 
     PatchNoteResponse createPatchNote(AdminPatchNoteRequest request);
+
+    AdminPatchNoteImportResponse importRiotPatchNote(AdminPatchNoteImportRequest request);
 
     PatchNoteResponse updatePatchNote(Long patchNoteId, AdminPatchNoteRequest request);
 

@@ -2,7 +2,9 @@ package com.tftgogo.domain.patchnote.controller;
 
 import com.tftgogo.domain.patchnote.controller.docs.AdminPatchNoteControllerDocs;
 import com.tftgogo.domain.patchnote.dto.request.AdminPatchChangeRequest;
+import com.tftgogo.domain.patchnote.dto.request.AdminPatchNoteImportRequest;
 import com.tftgogo.domain.patchnote.dto.request.AdminPatchNoteRequest;
+import com.tftgogo.domain.patchnote.dto.response.AdminPatchNoteImportResponse;
 import com.tftgogo.domain.patchnote.dto.response.PatchChangeResponse;
 import com.tftgogo.domain.patchnote.dto.response.PatchNoteResponse;
 import com.tftgogo.domain.patchnote.service.AdminPatchNoteService;
@@ -41,6 +43,14 @@ public class AdminPatchNoteController implements AdminPatchNoteControllerDocs {
             @Valid @RequestBody AdminPatchNoteRequest request) {
         PatchNoteResponse response = adminPatchNoteService.createPatchNote(request);
         return ResponseEntity.ok(ApiResponse.success("패치노트 생성 성공", response));
+    }
+
+    @Override
+    @PostMapping("/patch-notes/import/riot")
+    public ResponseEntity<ApiResponse<AdminPatchNoteImportResponse>> importRiotPatchNote(
+            @Valid @RequestBody(required = false) AdminPatchNoteImportRequest request) {
+        AdminPatchNoteImportResponse response = adminPatchNoteService.importRiotPatchNote(request);
+        return ResponseEntity.ok(ApiResponse.success("Riot patch note import success", response));
     }
 
     @Override

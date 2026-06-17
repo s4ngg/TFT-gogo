@@ -17,7 +17,7 @@ import org.springframework.validation.annotation.Validated;
 public class PatchNoteCrawlerProperties {
 
     @NotBlank
-    private String tagUrl = "https://www.leagueoflegends.com/ko-kr/news/tags/teamfight-tactics-patch-notes/";
+    private String tagUrl = "https://teamfighttactics.leagueoflegends.com/ko-kr/news/tags/patch-notes/";
 
     @NotBlank
     @Pattern(regexp = "^[a-z]{2}-[a-z]{2}$")
@@ -33,5 +33,5 @@ public class PatchNoteCrawlerProperties {
     private int readTimeoutMillis = 10000;
 
     @Positive
-    private int maxDetailRows = 200;
+    private int maxDetailRows = 1000;
 }

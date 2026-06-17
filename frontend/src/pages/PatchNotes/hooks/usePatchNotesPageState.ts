@@ -7,7 +7,7 @@ import {
   type PatchCategory,
 } from '../../../api/patchNotes'
 
-const PATCH_PAGE_SIZE = 5
+const PATCH_PAGE_SIZE = 1000
 
 interface UsePatchNotesPageStateOptions {
   selectedPatchVersion: string
@@ -18,28 +18,25 @@ export function usePatchNotesPageState({
 }: UsePatchNotesPageStateOptions) {
   const [activeCategory, setActiveCategory] = useState<PatchCategory>(PATCH_CATEGORIES[0])
   const [activeChangeType, setActiveChangeType] = useState<ChangeTypeFilter>(CHANGE_TYPE_FILTERS[0])
-  const [highImpactOnly, setHighImpactOnly] = useState(false)
-  const [expandedChangeIds, setExpandedChangeIds] = useState<number[]>([])
   const [query, setQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const selectedPatchVersionRef = useRef(selectedPatchVersion)
 
   const resetChangeListState = useCallback(() => {
     setCurrentPage((page) => (page === 1 ? page : 1))
-    setExpandedChangeIds((currentIds) => (currentIds.length === 0 ? currentIds : []))
   }, [])
 
   const patchChangesParams = useMemo<PatchChangesQuery>(
     () => ({
       category: activeCategory,
       changeType: activeChangeType,
-      highImpactOnly,
+      highImpactOnly: false,
       page: currentPage,
       pageSize: PATCH_PAGE_SIZE,
       query,
       version: selectedPatchVersion,
     }),
-    [activeCategory, activeChangeType, currentPage, highImpactOnly, query, selectedPatchVersion],
+    [activeCategory, activeChangeType, currentPage, query, selectedPatchVersion],
   )
 
   const setActiveCategoryAndReset = useCallback((category: PatchCategory) => {
@@ -69,19 +66,6 @@ export function usePatchNotesPageState({
     })
   }, [resetChangeListState])
 
-  const toggleHighImpactOnly = useCallback(() => {
-    setHighImpactOnly((enabled) => !enabled)
-    resetChangeListState()
-  }, [resetChangeListState])
-
-  const toggleExpandedChange = useCallback((id: number) => {
-    setExpandedChangeIds((currentIds) => (
-      currentIds.includes(id)
-        ? currentIds.filter((currentId) => currentId !== id)
-        : [...currentIds, id]
-    ))
-  }, [])
-
   useEffect(() => {
     if (selectedPatchVersionRef.current === selectedPatchVersion) return
 
@@ -93,8 +77,6 @@ export function usePatchNotesPageState({
     activeCategory,
     activeChangeType,
     currentPage,
-    expandedChangeIds,
-    highImpactOnly,
     patchChangesParams,
     query,
     resetChangeListState,
@@ -102,7 +84,5 @@ export function usePatchNotesPageState({
     setActiveChangeType: setActiveChangeTypeAndReset,
     setCurrentPage,
     setQuery: setQueryAndReset,
-    toggleExpandedChange,
-    toggleHighImpactOnly,
   }
 }
