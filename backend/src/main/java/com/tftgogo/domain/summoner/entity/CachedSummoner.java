@@ -15,24 +15,24 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CachedSummoner {
 
-    @Id
-    @Column(length = 100)
-    private String puuid;
+	@Id
+	@Column(name = "puuid", length = 100, nullable = false)
+	private String puuid;
 
-    @Column(nullable = false, length = 100)
-    private String gameName;
+	@Column(name = "game_name", length = 100, nullable = false)
+	private String gameName;
 
-    @Column(nullable = false, length = 50)
-    private String tagLine;
+	@Column(name = "tag_line",length = 50, nullable = false)
+	private String tagLine;
 
-    @Column(nullable = false)
-    private int profileIconId;
+	@Column(name = "profile_icon_id", nullable = false)
+	private int profileIconId;
 
-    @Column(nullable = false)
-    private long summonerLevel;
+	@Column(name = "summoner_level", nullable = false)
+	private long summonerLevel;
 
-    @Column(nullable = false)
-    private LocalDateTime cachedAt;
+	@Column(name = "cached_at", nullable = false)
+	private LocalDateTime cachedAt;
 
     @Builder
     public CachedSummoner(String puuid, String gameName, String tagLine,
