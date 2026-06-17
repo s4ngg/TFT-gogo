@@ -44,22 +44,23 @@
 .brand {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 8px;
   height: 45px;
-  padding: 0 12px;
+  padding: 0 4px;
   min-width: 0;
   color: inherit;
   text-decoration: none;
 }
 
 .brand strong {
-  min-width: 0;
-  overflow: hidden;
+  flex: 0 0 auto;
+  min-width: max-content;
+  overflow: visible;
   color: #ffffff;
-  font-size: 25px;
+  font-size: var(--font-size-xl);
   font-weight: 800;
-  letter-spacing: -0.04em;
-  text-overflow: ellipsis;
+  letter-spacing: 0;
+  text-overflow: clip;
   white-space: nowrap;
 }
 
@@ -157,6 +158,7 @@
 
 .sidebarCollapsed .brand strong,
 .sidebarCollapsed .navItem span {
+  min-width: 0;
   width: 0;
   opacity: 0;
   overflow: hidden;
