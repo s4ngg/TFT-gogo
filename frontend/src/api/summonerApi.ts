@@ -7,6 +7,55 @@ interface ApiResponse<T> {
   data: T
 }
 
+interface HttpErrorResponse {
+  headers?: unknown
+  status?: number
+}
+
+interface HttpError {
+  response?: HttpErrorResponse
+}
+
+const DEFAULT_RETRY_AFTER_SECONDS = 120
+
+export class SummonerRateLimitError extends Error {
+  retryAfterSeconds: number
+
+  constructor(retryAfterSeconds = DEFAULT_RETRY_AFTER_SECONDS) {
+    super('RATE_LIMITED')
+    this.name = 'SummonerRateLimitError'
+    this.retryAfterSeconds = retryAfterSeconds
+  }
+}
+
+function readHeaderValue(headers: unknown, headerName: string): unknown {
+  if (!headers || typeof headers !== 'object') {
+    return undefined
+  }
+
+  const maybeHeadersWithGet = headers as { get?: unknown }
+
+  if (typeof maybeHeadersWithGet.get === 'function') {
+    return maybeHeadersWithGet.get(headerName)
+  }
+
+  const headerMap = headers as Record<string, unknown>
+  const lowerHeaderName = headerName.toLowerCase()
+
+  return Object.entries(headerMap).find(([key]) => key.toLowerCase() === lowerHeaderName)?.[1]
+}
+
+function readRetryAfterSeconds(headers: unknown): number {
+  const retryAfter = readHeaderValue(headers, 'retry-after')
+  const seconds = Number(retryAfter)
+
+  if (!Number.isFinite(seconds) || seconds <= 0) {
+    return DEFAULT_RETRY_AFTER_SECONDS
+  }
+
+  return Math.max(1, Math.round(seconds))
+}
+
 // ── Spring이 내려줄 DTO 타입 ─────────────────────────────────
 
 export interface SummonerProfileResponse {
@@ -75,8 +124,9 @@ export const getSummonerProfile = async (
     )
     return data.data
   } catch (err: unknown) {
-    const status = (err as { response?: { status?: number } })?.response?.status
-    if (status === 429) throw new Error('RATE_LIMITED')
+    const response = (err as HttpError)?.response
+    const status = response?.status
+    if (status === 429) throw new SummonerRateLimitError(readRetryAfterSeconds(response?.headers))
     if (status === 404) throw new Error('NOT_FOUND')
     throw err
   }

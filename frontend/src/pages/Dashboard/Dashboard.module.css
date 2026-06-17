@@ -1,5 +1,6 @@
 .dashboardGrid {
-  --top-row-height: 188px;
+  --snapshot-height: 618px;
+  --top-row-height: 292px;
   --grid-gap: 15px;
   --right-top-row: 360px;
   --right-bottom-row: 120px;
@@ -102,7 +103,10 @@
 }
 
 .searchPanel {
-  padding: 25px 20px 18px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 22px 20px 18px;
 }
 
 .searchPanel h1 {
@@ -151,15 +155,21 @@
 }
 
 .searchTags {
-  display: none;
+  min-height: 27px;
+  display: flex;
   align-items: center;
   gap: 8px;
   margin-top: 13px;
   overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
 }
 
 .searchPanel:focus-within .searchTags {
-  display: flex;
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
 }
 
 .searchTags span {
@@ -181,6 +191,148 @@
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
+}
+
+.searchResultCard {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  align-items: center;
+  gap: var(--space-lg);
+  margin-top: var(--space-xl);
+  padding: var(--space-xl);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-button);
+  background: var(--bg-btn-dark-soft);
+}
+
+.searchResultSuccess {
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  border-color: var(--cyan-border-subtle);
+  background: var(--cyan-bg-faint);
+}
+
+.searchResultAvatar {
+  width: 52px;
+  height: 52px;
+  border: 1px solid var(--border-active);
+  border-radius: var(--radius-button);
+  object-fit: cover;
+}
+
+.searchResultContent {
+  min-width: 0;
+}
+
+.searchResultContent h2 {
+  margin: 0;
+  overflow: hidden;
+  color: var(--text-main);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.searchResultContent h2 span {
+  margin-left: var(--space-xs);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+}
+
+.searchResultContent p {
+  margin: var(--space-sm) 0 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.searchResultStats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-md);
+  margin: var(--space-md) 0 0;
+}
+
+.searchResultStats div {
+  min-width: 0;
+}
+
+.searchResultStats dt {
+  margin: 0 0 var(--space-xs);
+  color: var(--text-muted);
+  font-size: var(--font-size-2xs);
+  font-weight: 600;
+}
+
+.searchResultStats dd {
+  margin: 0;
+  overflow: hidden;
+  color: var(--text-ui);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.searchResultCta {
+  height: var(--size-control-action);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: 0 var(--space-md);
+  border: 1px solid var(--border-active);
+  border-radius: var(--radius-button);
+  color: var(--text-main);
+  background: var(--search-btn-bg);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.searchResultState {
+  grid-template-columns: 38px minmax(0, 1fr);
+}
+
+.searchResultError {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+}
+
+.searchResultStateIcon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--cyan-border-subtle);
+  border-radius: var(--radius-button);
+  color: var(--color-cyan);
+  background: var(--cyan-bg-faint);
+}
+
+.searchResultError .searchResultStateIcon {
+  border-color: var(--danger-border);
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.searchResultSpin {
+  animation: searchResultSpin 0.9s linear infinite;
+}
+
+@keyframes searchResultSpin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .apiPanel {
@@ -851,7 +1003,8 @@ button:hover {
 
 @media (max-height: 980px) {
   .dashboardGrid {
-    --top-row-height: 170px;
+    --snapshot-height: 622px;
+    --top-row-height: 270px;
     --grid-gap: 12px;
     --right-top-row: 338px;
     --right-bottom-row: 108px;
@@ -879,7 +1032,7 @@ button:hover {
   }
 
   .searchPanel {
-    padding: 21px 20px 16px;
+    padding: 18px 20px 16px;
   }
 
   .searchPanel h1 {
@@ -899,6 +1052,30 @@ button:hover {
   .searchTags button {
     height: 25px;
     padding: 0 10px;
+  }
+
+  .searchResultCard {
+    gap: var(--space-md);
+    margin-top: var(--space-md);
+    padding: var(--space-md);
+  }
+
+  .searchResultSuccess {
+    grid-template-columns: 46px minmax(0, 1fr) auto;
+  }
+
+  .searchResultAvatar {
+    width: 46px;
+    height: 46px;
+  }
+
+  .searchResultStats {
+    gap: var(--space-sm);
+    margin-top: var(--space-sm);
+  }
+
+  .searchResultCta {
+    padding: 0 var(--space-sm);
   }
 
   .apiPanel {
