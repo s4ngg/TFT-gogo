@@ -18,13 +18,13 @@ import lombok.NoArgsConstructor;
 public class CachedRank {
 
     @Id
-    @Column(length = 100)
+    @Column(name = "puuid", length = 100, nullable = false)
     private String puuid;
 
-    @Column(length = 20)
+    @Column(name = "tier", length = 20, nullable = true)
     private String tier;
 
-    @Column(name = "rank_value", length = 10)
+    @Column(name = "rank_value", length = 10, nullable = true)
     private String rank;
 
     @Column(name = "league_points", nullable = false)

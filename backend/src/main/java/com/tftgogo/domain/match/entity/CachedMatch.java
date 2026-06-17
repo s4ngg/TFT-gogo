@@ -17,7 +17,7 @@ import java.util.Set;
 public class CachedMatch {
 
     @Id
-    @Column(name = "match_id", length = 50)
+    @Column(name = "match_id", length = 50, nullable = false)
     private String matchId;
 
     @Column(name = "queue_id", nullable = false)
