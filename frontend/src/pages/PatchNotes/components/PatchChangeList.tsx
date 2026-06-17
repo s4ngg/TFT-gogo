@@ -4,8 +4,15 @@ import {
   CHANGE_CATEGORIES,
   type ChangeCategory,
   type ChangeType,
+  type ChangeTypeFilter,
   type PatchChange,
 } from '../../../api/patchNotes'
+import {
+  getPatchChangeDetailSummary,
+  getVisiblePatchChangeTypes,
+  groupPatchChangesByTitle,
+  shouldShowPatchChangeValueLine,
+} from '../utils/patchChangeDisplay'
 import styles from '../PatchNotes.module.css'
 
 const CATEGORY_ICON: Record<ChangeCategory, LucideIcon> = {
@@ -23,71 +30,9 @@ const CHANGE_TYPE_CLASS: Record<ChangeType, string> = {
   신규: styles.new,
 }
 
-const GENERIC_TARGET_NAMES = new Set([
-  '기타',
-  '버그 수정',
-  '변경사항',
-  '시스템',
-  '시작 조우자',
-  '아이템',
-  '유닛',
-  '증강',
-  '증강체',
-  '챔피언',
-  '특성',
-])
-
 interface PatchChangeListProps {
+  activeChangeType: ChangeTypeFilter
   patchChanges: PatchChange[]
-}
-
-interface PatchChangeGroup {
-  title: string
-  changes: PatchChange[]
-}
-
-function getChangeTitle(change: PatchChange) {
-  const target = change.target.trim()
-  const summary = change.summary.trim()
-
-  if (!target) return summary || '패치 변경사항'
-  if (GENERIC_TARGET_NAMES.has(target) && summary) return summary
-  return target
-}
-
-function getChangeSummary(change: PatchChange, title: string) {
-  const summary = change.summary.trim()
-  return summary && summary !== title ? summary : ''
-}
-
-function getChangeGroupKey(title: string) {
-  return title.trim().toLowerCase()
-}
-
-function groupChangesByTitle(changes: PatchChange[]): PatchChangeGroup[] {
-  const groups = new Map<string, PatchChangeGroup>()
-
-  changes.forEach((change) => {
-    const title = getChangeTitle(change)
-    const key = getChangeGroupKey(title)
-    const group = groups.get(key)
-
-    if (group) {
-      group.changes.push(change)
-      return
-    }
-
-    groups.set(key, {
-      title,
-      changes: [change],
-    })
-  })
-
-  return Array.from(groups.values())
-}
-
-function getChangeGroupTypes(changes: PatchChange[]) {
-  return Array.from(new Set(changes.map((change) => change.type)))
 }
 
 function groupChangesByCategory(patchChanges: PatchChange[]) {
@@ -99,10 +44,10 @@ function groupChangesByCategory(patchChanges: PatchChange[]) {
     .filter((section) => section.changes.length > 0)
 }
 
-function PatchChangeList({ patchChanges }: PatchChangeListProps) {
+function PatchChangeList({ activeChangeType, patchChanges }: PatchChangeListProps) {
   const sections = groupChangesByCategory(patchChanges).map((section) => ({
     ...section,
-    groups: groupChangesByTitle(section.changes),
+    groups: groupPatchChangesByTitle(section.changes),
   }))
 
   return (
@@ -122,14 +67,14 @@ function PatchChangeList({ patchChanges }: PatchChangeListProps) {
 
             <ul className={styles.changeBulletList}>
               {section.groups.map((group) => {
-                const changeTypes = getChangeGroupTypes(group.changes)
+                const changeTypes = getVisiblePatchChangeTypes(group.changes, activeChangeType)
                 const changeDetails = group.changes
                   .map((change) => ({
                     change,
-                    hasValueChange: Boolean(change.before || change.after),
-                    summary: getChangeSummary(change, group.title),
+                    showValueChange: shouldShowPatchChangeValueLine(change),
+                    summary: getPatchChangeDetailSummary(change, group.title),
                   }))
-                  .filter((changeDetail) => changeDetail.summary || changeDetail.hasValueChange)
+                  .filter((changeDetail) => changeDetail.summary || changeDetail.showValueChange)
 
                 return (
                   <li key={`${section.category}-${group.title}`} className={styles.changeTargetGroup}>
@@ -140,24 +85,26 @@ function PatchChangeList({ patchChanges }: PatchChangeListProps) {
                           <span className={styles.changeGroupCount}>{group.changes.length}개</span>
                         )}
                       </div>
-                      <div className={styles.changeTypeStack}>
-                        {changeTypes.map((changeType) => (
-                          <span
-                            key={changeType}
-                            className={`${styles.changeType} ${CHANGE_TYPE_CLASS[changeType]}`}
-                          >
-                            {changeType}
-                          </span>
-                        ))}
-                      </div>
+                      {changeTypes.length > 0 && (
+                        <div className={styles.changeTypeStack}>
+                          {changeTypes.map((changeType) => (
+                            <span
+                              key={changeType}
+                              className={`${styles.changeType} ${CHANGE_TYPE_CLASS[changeType]}`}
+                            >
+                              {changeType}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {changeDetails.length > 0 && (
                       <ul className={styles.changeDetailList}>
-                        {changeDetails.map(({ change, hasValueChange, summary }) => (
+                        {changeDetails.map(({ change, showValueChange, summary }) => (
                           <li key={change.id} className={styles.changeDetailItem}>
                             {summary && <p className={styles.changeDetailSummary}>{summary}</p>}
-                            {hasValueChange && (
+                            {showValueChange && (
                               <p className={styles.changeValueLine}>
                                 <span>{change.before || '-'}</span>
                                 <strong>→</strong>
