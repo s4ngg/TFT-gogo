@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
-import { ChevronRight, Shield, Sparkles, Swords, Wand2, Zap } from 'lucide-react'
+import { Shield, Sparkles, Swords, Wand2, Zap } from 'lucide-react'
 import {
+  CHANGE_CATEGORIES,
   type ChangeCategory,
   type ChangeType,
   type PatchChange,
@@ -37,9 +38,7 @@ const GENERIC_TARGET_NAMES = new Set([
 ])
 
 interface PatchChangeListProps {
-  expandedChangeIds: number[]
   patchChanges: PatchChange[]
-  onToggleExpandedChange: (id: number) => void
 }
 
 function getChangeTitle(change: PatchChange) {
@@ -56,70 +55,61 @@ function getChangeSummary(change: PatchChange, title: string) {
   return summary && summary !== title ? summary : ''
 }
 
-function PatchChangeList({
-  expandedChangeIds,
-  onToggleExpandedChange,
-  patchChanges,
-}: PatchChangeListProps) {
+function groupChangesByCategory(patchChanges: PatchChange[]) {
+  return CHANGE_CATEGORIES
+    .map((category) => ({
+      category,
+      changes: patchChanges.filter((change) => change.category === category),
+    }))
+    .filter((section) => section.changes.length > 0)
+}
+
+function PatchChangeList({ patchChanges }: PatchChangeListProps) {
+  const sections = groupChangesByCategory(patchChanges)
+
   return (
-    <div className={styles.changeList}>
-      {patchChanges.map((change) => {
-        const CategoryIcon = CATEGORY_ICON[change.category]
-        const isExpanded = expandedChangeIds.includes(change.id)
-        const title = getChangeTitle(change)
-        const summary = getChangeSummary(change, title)
+    <div className={styles.changeTimeline}>
+      {sections.map((section) => {
+        const CategoryIcon = CATEGORY_ICON[section.category]
 
         return (
-          <article key={change.id} className={styles.changeItem}>
-            <div className={styles.changeTop}>
-              <span className={styles.categoryBadge}>
-                <CategoryIcon size={15} />
-                {change.category}
+          <section key={section.category} className={styles.changeSection}>
+            <div className={styles.changeSectionHeader}>
+              <span>
+                <CategoryIcon size={16} />
+                {section.category}
               </span>
-              <span className={`${styles.changeType} ${CHANGE_TYPE_CLASS[change.type]}`}>{change.type}</span>
+              <strong>{section.changes.length}</strong>
             </div>
 
-            <div className={styles.changeBody}>
-              <div className={styles.changeText}>
-                <h3>{title}</h3>
-                {summary && <p>{summary}</p>}
-              </div>
-              <button
-                type="button"
-                className={styles.detailButton}
-                onClick={() => onToggleExpandedChange(change.id)}
-                aria-expanded={isExpanded}
-              >
-                {isExpanded ? '접기' : '상세 보기'}
-                <ChevronRight size={16} className={isExpanded ? styles.expandedArrow : undefined} />
-              </button>
-            </div>
+            <ul className={styles.changeBulletList}>
+              {section.changes.map((change) => {
+                const title = getChangeTitle(change)
+                const summary = getChangeSummary(change, title)
 
-            {isExpanded && (
-              <div className={styles.compareGrid}>
-                <div>
-                  <span>이전</span>
-                  <p>{change.before}</p>
-                </div>
-                <div>
-                  <span>변경</span>
-                  <p>{change.after}</p>
-                </div>
-              </div>
-            )}
-
-            {change.tags.length > 0 && (
-              <div className={styles.tagRow}>
-                {change.tags.map((tag) => (
-                  <span key={tag}>{tag}</span>
-                ))}
-              </div>
-            )}
-          </article>
+                return (
+                  <li key={change.id} className={styles.changeBulletItem}>
+                    <div className={styles.changeBulletTitle}>
+                      <strong>{title}</strong>
+                      <span className={`${styles.changeType} ${CHANGE_TYPE_CLASS[change.type]}`}>{change.type}</span>
+                    </div>
+                    {summary && <p>{summary}</p>}
+                    {(change.before || change.after) && (
+                      <p className={styles.changeValueLine}>
+                        <span>{change.before || '-'}</span>
+                        <strong>→</strong>
+                        <span>{change.after || '-'}</span>
+                      </p>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          </section>
         )
       })}
 
-      {patchChanges.length === 0 && (
+      {sections.length === 0 && (
         <div className={styles.emptyState}>
           검색 조건에 맞는 패치 변경사항이 없습니다.
         </div>

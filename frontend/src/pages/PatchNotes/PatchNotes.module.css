@@ -67,7 +67,7 @@
 }
 
 .heroMeta span,
-.tagRow span {
+.heroMeta a {
   display: inline-flex;
   align-items: center;
   height: 28px;
@@ -273,8 +273,6 @@
 
 .panelHeader,
 .toolBar,
-.changeTop,
-.changeBody,
 .historyHeader {
   display: flex;
   align-items: center;
@@ -379,7 +377,6 @@
 
 .categoryTabs button:focus-visible,
 .quickFilters button:focus-visible,
-.detailButton:focus-visible,
 .pagination button:focus-visible,
 .seasonHeaderButton:focus-visible,
 .seasonPatchButton:focus-visible {
@@ -447,36 +444,128 @@
   background: rgba(5, 243, 231, 0.08);
 }
 
-.changeList {
+.changeTimeline {
   display: grid;
-  gap: 10px;
-  margin-top: 15px;
+  gap: var(--space-xl);
+  margin-top: var(--space-xl);
 }
 
-.changeItem {
-  padding: 16px;
+.changeSection {
+  overflow: hidden;
   border: 1px solid rgba(112, 144, 152, 0.13);
-  border-radius: 10px;
+  border-radius: var(--radius-button);
   background: rgba(255, 255, 255, 0.026);
-  transition:
-    border-color 0.16s,
-    background 0.16s,
-    transform 0.16s;
 }
 
-.changeItem:hover {
-  border-color: rgba(5, 243, 231, 0.3);
-  background: rgba(18, 40, 52, 0.42);
-  transform: translateY(-1px);
+.changeSectionHeader {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  padding: 0 var(--space-xl);
+  border-bottom: 1px solid rgba(112, 144, 152, 0.13);
+  background: rgba(5, 14, 20, 0.72);
 }
 
-.changeTop {
-  gap: 8px;
-  justify-content: flex-start;
-  margin-bottom: 11px;
+.changeSectionHeader span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--text-main);
+  font-size: var(--font-size-sm);
+  font-weight: 900;
 }
 
-.categoryBadge,
+.changeSectionHeader svg {
+  color: var(--color-cyan);
+}
+
+.changeSectionHeader strong {
+  display: inline-grid;
+  place-items: center;
+  min-width: var(--size-control-sm);
+  height: var(--space-5xl);
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--cyan-border-subtle);
+  border-radius: var(--radius-xs);
+  color: var(--color-cyan);
+  background: var(--cyan-bg-faint);
+  font-size: var(--font-size-xs);
+}
+
+.changeBulletList {
+  display: grid;
+  margin: 0;
+  padding: var(--space-md) var(--space-xl) var(--space-xl);
+  list-style: none;
+}
+
+.changeBulletItem {
+  position: relative;
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-lg) 0 var(--space-lg) var(--space-2xl);
+  border-bottom: 1px solid rgba(112, 144, 152, 0.1);
+}
+
+.changeBulletItem:last-child {
+  border-bottom: 0;
+}
+
+.changeBulletItem::before {
+  content: "";
+  position: absolute;
+  top: 24px;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--color-cyan);
+  box-shadow: 0 0 0 4px var(--cyan-bg-faint);
+}
+
+.changeBulletTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.changeBulletTitle strong {
+  min-width: 0;
+  color: var(--text-main);
+  font-size: var(--font-size-md);
+  font-weight: 900;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
+.changeBulletItem p {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: var(--font-size-sm);
+  line-height: 1.65;
+  word-break: keep-all;
+}
+
+.changeValueLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.changeValueLine span {
+  max-width: 100%;
+  color: var(--text-muted);
+}
+
+.changeValueLine strong {
+  color: var(--color-cyan);
+  font-weight: 900;
+}
+
 .changeType {
   display: inline-flex;
   align-items: center;
@@ -487,12 +576,6 @@
   font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
-}
-
-.categoryBadge {
-  border: 1px solid rgba(112, 144, 152, 0.16);
-  color: #d7e0ea;
-  background: rgba(10, 20, 30, 0.8);
 }
 
 .changeType {
@@ -513,105 +596,6 @@
 
 .new {
   background: #f7d26d;
-}
-
-.changeBody {
-  gap: 12px;
-}
-
-.changeText {
-  min-width: 0;
-}
-
-.changeBody h3 {
-  margin: 0 0 5px;
-  color: #fff;
-  font-size: 17px;
-  font-weight: 800;
-  letter-spacing: -0.015em;
-}
-
-.changeBody p {
-  margin: 0;
-  color: #aeb7c4;
-  font-size: 13px;
-  line-height: 1.6;
-  word-break: keep-all;
-}
-
-.detailButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  flex: 0 0 auto;
-  height: 32px;
-  padding: 0 10px;
-  border: 1px solid rgba(112, 144, 152, 0.16);
-  border-radius: 8px;
-  color: #9aa6b5;
-  background: rgba(255, 255, 255, 0.028);
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-  white-space: nowrap;
-  transition:
-    border-color 0.16s,
-    color 0.16s,
-    background 0.16s;
-}
-
-.detailButton:hover {
-  border-color: rgba(5, 243, 231, 0.42);
-  color: #05f3e7;
-  background: rgba(5, 243, 231, 0.06);
-}
-
-.expandedArrow {
-  transform: rotate(90deg);
-}
-
-.compareGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 13px;
-}
-
-.compareGrid div {
-  min-width: 0;
-  padding: 11px;
-  border-radius: 8px;
-  background: rgba(3, 10, 16, 0.72);
-}
-
-.compareGrid span {
-  display: block;
-  margin-bottom: 6px;
-  color: #667382;
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.compareGrid p {
-  margin: 0;
-  color: #d8e0ea;
-  font-size: 12px;
-  line-height: 1.45;
-  word-break: keep-all;
-}
-
-.tagRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 12px;
-}
-
-.tagRow span {
-  height: 25px;
-  color: #8794a3;
-  font-size: 11px;
 }
 
 .emptyState {
@@ -756,6 +740,16 @@
   white-space: nowrap;
 }
 
+.heroMeta a {
+  color: var(--color-cyan);
+  text-decoration: none;
+}
+
+.heroMeta a:hover {
+  border-color: var(--cyan-border-light);
+  background: var(--cyan-bg-faint);
+}
+
 .seasonPatchList {
   display: grid;
   gap: var(--space-xl);
@@ -878,9 +872,5 @@
 
   .typeFilters {
     width: 100%;
-  }
-
-  .compareGrid {
-    grid-template-columns: 1fr;
   }
 }

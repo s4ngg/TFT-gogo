@@ -26,7 +26,6 @@ function PatchNotes() {
   const {
     activeCategory,
     activeChangeType,
-    expandedChangeIds,
     patchChangesParams,
     query,
     resetChangeListState,
@@ -34,7 +33,6 @@ function PatchNotes() {
     setActiveChangeType,
     setCurrentPage,
     setQuery,
-    toggleExpandedChange,
   } = usePatchNotesPageState({
     selectedPatchVersion,
   })
@@ -88,8 +86,8 @@ function PatchNotes() {
           <section className={styles.changePanel}>
             <div className={styles.panelHeader}>
               <div>
-                <span className={styles.sectionLabel}>변경사항</span>
-                <h2>패치 상세 목록</h2>
+                <span className={styles.sectionLabel}>카테고리별 변경사항</span>
+                <h2>{selectedPatch.date} 적용 변경</h2>
               </div>
             </div>
 
@@ -104,8 +102,6 @@ function PatchNotes() {
             />
 
             <PatchChangeList
-              expandedChangeIds={expandedChangeIds}
-              onToggleExpandedChange={toggleExpandedChange}
               patchChanges={patchChanges}
             />
 

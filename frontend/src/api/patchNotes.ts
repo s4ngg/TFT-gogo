@@ -31,7 +31,10 @@ export interface PatchNoteSummary {
   focus: string
   highlights: string[]
   imageUrl: string
+  importedAt?: string
+  importSource?: string
   status: '현재' | '이전'
+  sourceUrl?: string
   title: string
   version: string
 }
@@ -118,11 +121,14 @@ interface PatchNoteResponse {
   highlights?: Array<string | PatchHighlightResponse> | null
   id?: number | null
   imageUrl?: string | null
+  importedAt?: string | null
+  importSource?: string | null
   isCurrent?: boolean | null
   patchNoteChanges?: PatchChangeResponse[] | null
   patchNoteHighlights?: PatchHighlightResponse[] | null
   publishedAt?: string | null
   representativeImageUrl?: string | null
+  sourceUrl?: string | null
   status?: 'CURRENT' | 'PREVIOUS' | '현재' | '이전' | null
   summary?: string | null
   title?: string | null
@@ -306,7 +312,10 @@ function normalizePatchNote(note: PatchNoteResponse): PatchNoteDetail {
     focus: readString(note.focus ?? summary),
     highlights: normalizeHighlights(note),
     imageUrl,
+    importedAt: readNonEmptyString(note.importedAt),
+    importSource: readNonEmptyString(note.importSource),
     status: note.status === '현재' || note.status === 'CURRENT' || note.isCurrent ? '현재' : '이전',
+    sourceUrl: readNonEmptyString(note.sourceUrl),
     title: readString(note.title, `${readString(note.version)} 패치`),
     version: readString(note.version),
   }
