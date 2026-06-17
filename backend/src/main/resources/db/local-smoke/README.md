@@ -7,12 +7,14 @@
 - 현재 스키마 관리는 수동 SQL로 진행합니다.
 - `spring.jpa.hibernate.ddl-auto`는 `none`입니다.
 - `backend/build.gradle`에는 Flyway/Liquibase가 설정되어 있지 않습니다.
-- `01_schema.sql`은 현재 JPA Entity 기준 테이블과 ELD 예약 채팅 테이블을 생성합니다.
-- `02_seed.sql`은 Guide/PatchNotes 공개 API 확인용 데이터와 고정 채팅 room id ELD 데이터를 넣습니다.
+- DB 스키마 변경 PR은 `docs/qa/db-schema-change-rules.md`를 따릅니다.
+- `01_schema.sql`은 현재 JPA Entity 기준 테이블과 예약 채팅 테이블을 생성하는 QA 신규 DB 부트스트랩 기준 DDL입니다.
+- ERD Cloud export SQL은 #419 해결 전까지 실행 DDL의 정본으로 보지 않습니다.
+- `02_seed.sql`은 Guide/PatchNotes 공개 API 확인용 데이터와 고정 채팅 room id 데이터를 넣습니다.
 - 공개 Guide/PatchNotes API와 Auth/Party 기본 흐름은 `RIOT_API_KEY` 없이 확인할 수 있습니다.
 - 소셜 OAuth E2E는 DB만으로 완료되지 않으며 provider `client-id`/`client-secret`과 callback URL 설정이 필요합니다.
 - 이 스모크 경로에서는 `ai-server/.env`가 선택 사항이며, MySQL, Redis, backend만 필요합니다.
-- 자세한 DDL/ELD 기준과 QA 범위는 `docs/qa/v0.4-db-ddl-eld.md`를 확인합니다.
+- 자세한 DDL/ERD 기준과 QA 범위는 `docs/qa/v0.4-db-ddl-eld.md`를 확인합니다.
 
 ## 로컬 전용 기본값
 
