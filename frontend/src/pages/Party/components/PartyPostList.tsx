@@ -6,6 +6,8 @@ import styles from '../Party.module.css'
 interface PartyPostListProps {
   currentPage: number
   isAuthenticated: boolean
+  isLoading: boolean
+  isUnavailable: boolean
   joinedPostId: string | null
   joiningPostId: string | null
   onJoinToggle: (postId: string) => void
@@ -17,6 +19,8 @@ interface PartyPostListProps {
 function PartyPostList({
   currentPage,
   isAuthenticated,
+  isLoading,
+  isUnavailable,
   joinedPostId,
   joiningPostId,
   onJoinToggle,
@@ -26,8 +30,12 @@ function PartyPostList({
 }: PartyPostListProps) {
   return (
     <>
-      <div className={styles.partyList}>
-        {posts.length > 0 ? (
+      <div aria-busy={isLoading} className={styles.partyList}>
+        {isLoading ? (
+          <p className={styles.emptyState}>파티 모집글을 불러오는 중입니다.</p>
+        ) : isUnavailable ? (
+          <p className={styles.emptyState}>파티 모집글을 불러오지 못했습니다.</p>
+        ) : posts.length > 0 ? (
           posts.map((post) => {
             const isJoined = joinedPostId === post.id || post.isJoined === true
             const isOwner = post.isOwner === true

@@ -8,6 +8,7 @@ import {
   type ChatStreamErrorReason,
   type ChatStreamSubscription,
 } from '../../../api/chatApi'
+import { communityChatMessagesQueryKey } from '../../../api/chatQueryKeys'
 import {
   getChatReconnectDelay,
   getNextChatReconnectAttempt,
@@ -20,8 +21,6 @@ interface SendMessageParams {
   content: string
   roomId?: string
 }
-
-const chatMessagesQueryKey = (roomId: string) => ['chatMessages', roomId] as const
 
 function isTerminalStreamError(reason: ChatStreamErrorReason) {
   return reason === 'client'
@@ -52,7 +51,7 @@ export function useRealtimeChat(roomId: string, streamEnabled = true) {
 
   const messagesQuery = useQuery({
     enabled: Boolean(roomId),
-    queryKey: chatMessagesQueryKey(roomId),
+    queryKey: communityChatMessagesQueryKey(roomId),
     queryFn: () => getChatMessages(roomId),
     staleTime: 10_000,
   })
@@ -155,7 +154,7 @@ export function useRealtimeChat(roomId: string, streamEnabled = true) {
         onError: (reason) => handleStreamFailure(reason),
         onMessage: (message) => {
           queryClient.setQueryData<ChatMessage[]>(
-            chatMessagesQueryKey(message.roomId),
+            communityChatMessagesQueryKey(message.roomId),
             (currentMessages) => mergeMessages(currentMessages, [message]),
           )
         },
@@ -171,7 +170,7 @@ export function useRealtimeChat(roomId: string, streamEnabled = true) {
         },
         onSnapshot: (messages) => {
           queryClient.setQueryData<ChatMessage[]>(
-            chatMessagesQueryKey(roomId),
+            communityChatMessagesQueryKey(roomId),
             mergeMessages(undefined, messages),
           )
         },
@@ -211,7 +210,7 @@ export function useRealtimeChat(roomId: string, streamEnabled = true) {
     onSuccess: (message) => {
       setErrorMessage('')
       queryClient.setQueryData<ChatMessage[]>(
-        chatMessagesQueryKey(message.roomId),
+        communityChatMessagesQueryKey(message.roomId),
         (currentMessages) => mergeMessages(currentMessages, [message]),
       )
     },

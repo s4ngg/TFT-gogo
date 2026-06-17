@@ -28,10 +28,10 @@ export interface CommunityChatRoomPreview {
 export const PARTY_RECRUITMENT_ROOM_ID: CommunityChatRoomId = 'party-recruitment'
 
 export const COMMUNITY_CHAT_ROOMS: readonly CommunityChatRoom[] = [
-  { id: 'general', name: '일반', users: '1,234', lastMessage: '새로운 패치 적응 중입니다!', lastMessageTime: '14:58' },
-  { id: 'deck-guide', name: '덱 공략', users: '856', lastMessage: '증강 추천 부탁드려요', lastMessageTime: '14:57' },
-  { id: PARTY_RECRUITMENT_ROOM_ID, name: '파티 모집', users: '622', lastMessage: '마스터 듀오 구해요~', lastMessageTime: '14:56' },
-  { id: 'question-answer', name: '질문 & 답변', users: '741', lastMessage: '초보 운영 질문 있습니다', lastMessageTime: '14:56' },
+  { id: 'general', name: '일반', users: '0', lastMessage: '아직 메시지가 없습니다.', lastMessageTime: '--:--' },
+  { id: 'deck-guide', name: '덱 공략', users: '0', lastMessage: '아직 메시지가 없습니다.', lastMessageTime: '--:--' },
+  { id: PARTY_RECRUITMENT_ROOM_ID, name: '파티 모집', users: '0', lastMessage: '아직 메시지가 없습니다.', lastMessageTime: '--:--' },
+  { id: 'question-answer', name: '질문 & 답변', users: '0', lastMessage: '아직 메시지가 없습니다.', lastMessageTime: '--:--' },
 ]
 
 export function createCommunityChatRooms(): CommunityChatRoomPreview[] {

@@ -79,6 +79,6 @@ PR 본문, 첨부 이미지, Discord, 문서에는 실제 비밀값을 남기지
 ## 관련 이슈와 PR
 
 - #419: ERD Cloud export SQL 실행 오류 추적
-- #427: QA DB DDL/ELD 기준 정리
+- #427: QA DB DDL/ERD 기준 정리
 - #428: `local-smoke` DDL/ERD 체크리스트 반영 PR
 - #441: 이 문서와 PR 템플릿으로 DB 변경 PR 체크 규칙을 확정

@@ -1,5 +1,6 @@
 import { useQueries } from '@tanstack/react-query'
 import { getChatMessages, type ChatMessage } from '../api/chatApi'
+import { communityChatMessagesQueryKey } from '../api/chatQueryKeys'
 import { COMMUNITY_CHAT_ROOMS, type CommunityChatRoomId } from '../constants/communityChatRooms'
 
 export interface CommunityChatPreview {
@@ -32,7 +33,8 @@ export function useCommunityChatPreviews(): CommunityChatPreview[] {
   const messageQueries = useQueries({
     queries: COMMUNITY_CHAT_ROOMS.map((room) => ({
       queryFn: () => getChatMessages(room.id),
-      queryKey: ['communityChatPreview', room.id],
+      queryKey: communityChatMessagesQueryKey(room.id),
+      refetchInterval: 10_000,
       staleTime: 10_000,
     })),
   })

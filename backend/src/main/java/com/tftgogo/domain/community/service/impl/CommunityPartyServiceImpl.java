@@ -11,6 +11,7 @@ import com.tftgogo.domain.community.entity.PartyPost;
 import com.tftgogo.domain.community.repository.PartyApplicationRepository;
 import com.tftgogo.domain.community.repository.PartyPostRepository;
 import com.tftgogo.domain.community.service.CommunityPartyService;
+import com.tftgogo.domain.member.repository.MemberRepository;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -32,6 +34,7 @@ public class CommunityPartyServiceImpl implements CommunityPartyService {
 
     private final PartyPostRepository partyPostRepository;
     private final PartyApplicationRepository partyApplicationRepository;
+    private final MemberRepository memberRepository;
     private final ChatService chatService;
 
     @Override
@@ -54,21 +57,32 @@ public class CommunityPartyServiceImpl implements CommunityPartyService {
     @Transactional
     public PartyPostResponse createPartyPost(Long userId, PartyPostCreateRequest request) {
         validateAuthenticated(userId);
+        PartyPost partyPost = PartyPost.create(userId, request);
 
-        PartyPost partyPost = partyPostRepository.save(PartyPost.create(userId, request));
+        lockMemberForPartyMutation(userId);
+        if (hasActivePartyParticipation(userId)) {
+            throw new BusinessException(ErrorCode.PARTY_ALREADY_JOINED);
+        }
+
+        PartyPost savedPartyPost = partyPostRepository.save(partyPost);
         chatService.ensureRoom(CommunityChatRoomIds.PARTY_RECRUITMENT);
 
-        return PartyPostResponse.from(partyPost, true);
+        return PartyPostResponse.from(savedPartyPost, true);
     }
 
     @Override
     @Transactional
     public PartyPostResponse joinParty(Long userId, Long partyPostId) {
         validateAuthenticated(userId);
+        lockMemberForPartyMutation(userId);
 
         PartyPost partyPost = getPartyPostForUpdate(partyPostId);
         if (partyPost.isOwner(userId) || hasAcceptedApplication(partyPost, userId)) {
             return PartyPostResponse.from(partyPost, true);
+        }
+
+        if (hasOtherActivePartyParticipation(userId, partyPost.getId())) {
+            throw new BusinessException(ErrorCode.PARTY_ALREADY_JOINED);
         }
 
         partyPost.join();
@@ -108,6 +122,11 @@ public class CommunityPartyServiceImpl implements CommunityPartyService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.PARTY_POST_NOT_FOUND));
     }
 
+    private void lockMemberForPartyMutation(Long userId) {
+        memberRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+    }
+
     private boolean isJoined(PartyPost partyPost, Long userId, Set<Long> joinedPartyPostIds) {
         if (userId == null) {
             return false;
@@ -143,6 +162,29 @@ public class CommunityPartyServiceImpl implements CommunityPartyService {
                 userId,
                 PartyApplicationStatus.ACCEPTED
         );
+    }
+
+    private boolean hasActivePartyParticipation(Long userId) {
+        LocalDateTime now = LocalDateTime.now();
+
+        return partyPostRepository.existsActiveOwnedPartyPost(userId, now)
+                || partyApplicationRepository.existsActiveAcceptedApplication(
+                        userId,
+                        PartyApplicationStatus.ACCEPTED,
+                        now
+                );
+    }
+
+    private boolean hasOtherActivePartyParticipation(Long userId, Long partyPostId) {
+        LocalDateTime now = LocalDateTime.now();
+
+        return partyPostRepository.existsActiveOwnedPartyPostForOtherParty(userId, partyPostId, now)
+                || partyApplicationRepository.existsActiveAcceptedApplicationForOtherParty(
+                        userId,
+                        PartyApplicationStatus.ACCEPTED,
+                        partyPostId,
+                        now
+                );
     }
 
     private void validateAuthenticated(Long userId) {

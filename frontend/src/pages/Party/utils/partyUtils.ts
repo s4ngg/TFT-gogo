@@ -1,6 +1,12 @@
 import type { PartyFilter } from '../partyFilters'
 import type { PartyMode, PartyPost, PartyPostStyle } from '../types'
 
+interface MergePartyPostSourcesOptions {
+  localPosts: PartyPost[]
+  postOverrides: Record<string, PartyPost>
+  serverPosts?: PartyPost[]
+}
+
 interface PartyJoinActionStateOptions {
   hasJoinedOtherPost: boolean
   isAuthenticated: boolean
@@ -87,6 +93,23 @@ export function updatePostJoinState(post: PartyPost, isJoining: boolean): PartyP
     isJoined: isJoining,
     status: nextCurrent >= total ? '대기중' : '모집중',
   }
+}
+
+export function mergePartyPostSources({
+  localPosts,
+  postOverrides,
+  serverPosts = [],
+}: MergePartyPostSourcesOptions): PartyPost[] {
+  const mergedPosts = [...localPosts]
+  const localPostIds = new Set(localPosts.map((post) => post.id))
+
+  serverPosts.forEach((post) => {
+    if (!localPostIds.has(post.id)) {
+      mergedPosts.push(postOverrides[post.id] ?? post)
+    }
+  })
+
+  return mergedPosts.map((post) => postOverrides[post.id] ?? post)
 }
 
 export function getPartyJoinActionState({

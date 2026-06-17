@@ -23,15 +23,6 @@ export interface PartyPost {
   userId?: string
 }
 
-export interface ChatMessage {
-  isMine?: boolean
-  message: string
-  name: string
-  roomName: string
-  time: string
-  tier: string
-}
-
 export interface ChatRoom {
   id: CommunityChatRoomId
   lastMessage: string
