@@ -38,6 +38,12 @@
 - Do not filter large datasets with Java streams. Apply conditions at the DB query level.
 </code-quality>
 
+<database-change>
+- When changing tables, columns, indexes, constraints, or seed/init data, follow docs/qa/db-schema-change-rules.md.
+- Do not rely on JPA ddl-auto. The project runs with ddl-auto=none, and the executable QA bootstrap DDL is backend/src/main/resources/db/local-smoke/01_schema.sql.
+- ERD Cloud is a sync/tracking artifact. Until #419 is resolved, do not treat exported ERD SQL as the executable DDL source of truth.
+</database-change>
+
 <security>
 - Never store passwords or auth codes in plain text. Use BCrypt.
 - Never log JWT tokens.

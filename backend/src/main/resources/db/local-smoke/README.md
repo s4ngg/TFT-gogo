@@ -7,6 +7,8 @@
 - 현재 스키마 관리는 수동 SQL로 진행합니다.
 - `spring.jpa.hibernate.ddl-auto`는 `none`입니다.
 - `backend/build.gradle`에는 Flyway/Liquibase가 설정되어 있지 않습니다.
+- DB 스키마 변경 PR은 `docs/qa/db-schema-change-rules.md`를 따릅니다.
+- `01_schema.sql`은 QA 신규 DB 부트스트랩 기준 DDL로 관리하며, ERD Cloud export SQL은 #419 해결 전까지 실행 DDL의 정본으로 보지 않습니다.
 - 공개 Guide/PatchNotes API는 `RIOT_API_KEY` 없이 확인할 수 있습니다.
 - 이 스모크 경로에서는 `ai-server/.env`가 선택 사항이며, MySQL, Redis, backend만 필요합니다.
 
