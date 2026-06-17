@@ -31,8 +31,8 @@ function PartyFinderCard() {
   const navigate = useNavigate()
   const {
     emptyMessage,
-    isFallback,
     isLoading,
+    isUnavailable,
     posts: visiblePosts,
     statusMessage,
   } = usePartyPreviewPosts(selectedFilter)
@@ -62,7 +62,7 @@ function PartyFinderCard() {
       {statusMessage && (
         <p
           aria-live="polite"
-          className={`${styles.partyStatus} ${isFallback ? styles.partyStatusFallback : ''}`}
+          className={`${styles.partyStatus} ${isUnavailable ? styles.partyStatusFallback : ''}`}
           role="status"
         >
           {statusMessage}

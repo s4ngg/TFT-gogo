@@ -17,27 +17,27 @@ import java.util.Set;
 public class CachedMatch {
 
     @Id
-    @Column(length = 50)
+    @Column(name = "match_id", length = 50, nullable = false)
     private String matchId;
 
-    @Column(nullable = false)
+    @Column(name = "queue_id", nullable = false)
     private int queueId;
 
-    @Column(nullable = false)
+    @Column(name = "game_datetime", nullable = false)
     private long gameDatetime;
 
-    @Column(columnDefinition = "MEDIUMTEXT", nullable = false)
+    @Column(name = "match_json", columnDefinition = "MEDIUMTEXT", nullable = false)
     private String matchJson;
 
-    @Column(nullable = false)
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(
             name = "cached_match_participant",
-            joinColumns = @JoinColumn(name = "match_id")
+            joinColumns = @JoinColumn(name = "match_id", nullable = false)
     )
-    @Column(name = "puuid", length = 100)
+    @Column(name = "puuid", length = 100, nullable = false)
     private Set<String> participantPuuids = new HashSet<>();
 
     @Builder
@@ -51,3 +51,4 @@ public class CachedMatch {
         this.participantPuuids = participantPuuids != null ? participantPuuids : new HashSet<>();
     }
 }
+ 

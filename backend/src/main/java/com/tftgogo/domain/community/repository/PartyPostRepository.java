@@ -3,13 +3,16 @@ package com.tftgogo.domain.community.repository;
 import com.tftgogo.domain.community.entity.PartyGameMode;
 import com.tftgogo.domain.community.entity.PartyPost;
 import jakarta.persistence.LockModeType;
+import jakarta.persistence.QueryHint;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface PartyPostRepository extends JpaRepository<PartyPost, Long> {
@@ -44,6 +47,7 @@ public interface PartyPostRepository extends JpaRepository<PartyPost, Long> {
     );
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000"))
     @Query("""
             select p
             from PartyPost p
@@ -51,4 +55,32 @@ public interface PartyPostRepository extends JpaRepository<PartyPost, Long> {
               and p.deletedAt is null
             """)
     Optional<PartyPost> findActiveByIdForUpdate(@Param("partyPostId") Long partyPostId);
+
+    @Query("""
+            select case when count(partyPost) > 0 then true else false end
+            from PartyPost partyPost
+            where partyPost.userId = :userId
+              and partyPost.id <> :partyPostId
+              and partyPost.deletedAt is null
+              and partyPost.closed = false
+              and (partyPost.deadline is null or partyPost.deadline > :now)
+            """)
+    boolean existsActiveOwnedPartyPostForOtherParty(
+            @Param("userId") Long userId,
+            @Param("partyPostId") Long partyPostId,
+            @Param("now") LocalDateTime now
+    );
+
+    @Query("""
+            select case when count(partyPost) > 0 then true else false end
+            from PartyPost partyPost
+            where partyPost.userId = :userId
+              and partyPost.deletedAt is null
+              and partyPost.closed = false
+              and (partyPost.deadline is null or partyPost.deadline > :now)
+            """)
+    boolean existsActiveOwnedPartyPost(
+            @Param("userId") Long userId,
+            @Param("now") LocalDateTime now
+    );
 }

@@ -138,7 +138,6 @@ function SummonerDetail() {
       await refreshSummoner(name, tag)
       await queryClient.invalidateQueries({ queryKey: ['summoner', 'profile', name, tag] })
       await queryClient.invalidateQueries({ queryKey: ['summoner', 'matches', profile?.puuid] })
-      await queryClient.invalidateQueries({ queryKey: ['summoner', 'stats', profile?.puuid] })
     } catch (err: unknown) {
       const status = (err as HttpError)?.response?.status
       if (status === 429) {

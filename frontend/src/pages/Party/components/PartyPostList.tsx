@@ -5,7 +5,10 @@ import styles from '../Party.module.css'
 
 interface PartyPostListProps {
   currentPage: number
+  emptyMessage: string
   isAuthenticated: boolean
+  isLoading: boolean
+  isUnavailable: boolean
   joinedPostId: string | null
   joiningPostId: string | null
   onJoinToggle: (postId: string) => void
@@ -16,7 +19,10 @@ interface PartyPostListProps {
 
 function PartyPostList({
   currentPage,
+  emptyMessage,
   isAuthenticated,
+  isLoading,
+  isUnavailable,
   joinedPostId,
   joiningPostId,
   onJoinToggle,
@@ -26,8 +32,10 @@ function PartyPostList({
 }: PartyPostListProps) {
   return (
     <>
-      <div className={styles.partyList}>
-        {posts.length > 0 ? (
+      <div aria-busy={isLoading} className={styles.partyList}>
+        {isLoading || isUnavailable ? (
+          <p className={styles.emptyState}>{emptyMessage}</p>
+        ) : posts.length > 0 ? (
           posts.map((post) => {
             const isJoined = joinedPostId === post.id || post.isJoined === true
             const isOwner = post.isOwner === true
@@ -47,7 +55,7 @@ function PartyPostList({
             )
           })
         ) : (
-          <p className={styles.emptyState}>조건에 맞는 모집글이 없습니다.</p>
+          <p className={styles.emptyState}>{emptyMessage}</p>
         )}
       </div>
 

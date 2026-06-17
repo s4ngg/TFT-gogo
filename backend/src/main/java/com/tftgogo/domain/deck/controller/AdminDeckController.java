@@ -26,7 +26,7 @@ public class AdminDeckController {
     /** 전체 메타 덱 목록 (큐레이션 포함) */
     @GetMapping
     public ResponseEntity<ApiResponse<List<AdminDeckResponse>>> listDecks(
-            @RequestParam(defaultValue = "MASTER_PLUS") RankFilter rankFilter) {
+            @RequestParam(name = "rankFilter", defaultValue = "MASTER_PLUS") RankFilter rankFilter) {
 
         List<AdminDeckResponse> responses = adminDeckService.getAdminDecks(rankFilter);
         return ResponseEntity.ok(ApiResponse.success("관리자 덱 목록 조회 성공", responses));

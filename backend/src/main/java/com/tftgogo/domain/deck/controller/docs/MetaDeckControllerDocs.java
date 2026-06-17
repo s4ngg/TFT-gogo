@@ -19,6 +19,6 @@ public interface MetaDeckControllerDocs {
     })
     ResponseEntity<ApiResponse<MetaDeckListResponse>> getMetaDecks(
             @Parameter(description = "랭크 구간 필터", example = "EMERALD_PLUS")
-            @RequestParam(defaultValue = "EMERALD_PLUS") RankFilter rankFilter);
+            @RequestParam(name = "rankFilter", defaultValue = "EMERALD_PLUS") RankFilter rankFilter);
 
 }
