@@ -4,7 +4,7 @@ import { readPatchChangeStatsPayload } from './patchNoteStatsPayload'
 
 export const CHANGE_CATEGORIES = ['챔피언', '시너지', '아이템', '증강체', '시스템'] as const
 export const PATCH_CATEGORIES = ['전체', ...CHANGE_CATEGORIES] as const
-export const CHANGE_TYPE_FILTERS = ['전체 변경', '상향', '하향', '조정', '신규'] as const
+export const CHANGE_TYPE_FILTERS = ['전체', '상향', '하향', '조정', '신규'] as const
 
 export type ChangeCategory = (typeof CHANGE_CATEGORIES)[number]
 export type PatchCategory = (typeof PATCH_CATEGORIES)[number]
@@ -259,7 +259,7 @@ function getBackendChangeType(changeType: ChangeTypeFilter) {
     하향: 'NERF',
   }
 
-  return changeType === '전체 변경' ? undefined : changeTypeMap[changeType]
+  return changeType === '전체' ? undefined : changeTypeMap[changeType]
 }
 
 function normalizeHighlights(note: PatchNoteResponse) {
@@ -489,7 +489,7 @@ export function getFallbackPatchChangePage(
   const stats = countPatchChangeStats(patchChanges)
   const filteredChanges = patchChanges.filter((change) => {
     const matchesCategory = params.category === '전체' || change.category === params.category
-    const matchesType = params.changeType === '전체 변경' || change.type === params.changeType
+    const matchesType = params.changeType === '전체' || change.type === params.changeType
     const matchesImpact = !params.highImpactOnly || change.impact === '높음'
     const searchableText = [change.target, change.summary, change.category, change.type, ...change.tags].join(' ').toLowerCase()
     const matchesQuery = !normalizedQuery || searchableText.includes(normalizedQuery)

@@ -2,8 +2,8 @@
   --snapshot-height: 722px;
   --sidebar-current-width: var(--sidebar-width);
 
-  width: 1529px;
-  min-width: 1529px;
+  width: 100%;
+  min-width: 0;
   min-height: 100vh;
   display: grid;
   grid-template-columns: var(--sidebar-current-width) minmax(0, 1fr);
@@ -261,8 +261,8 @@
 }
 
 .main {
-  width: calc(1529px - var(--sidebar-current-width));
-  min-width: calc(1529px - var(--sidebar-current-width));
+  width: 100%;
+  min-width: 0;
   min-height: 100vh;
   overflow: visible;
   padding: 17px 15px 0 19px;

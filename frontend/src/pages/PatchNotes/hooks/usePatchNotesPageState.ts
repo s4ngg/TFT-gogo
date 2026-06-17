@@ -18,7 +18,6 @@ export function usePatchNotesPageState({
 }: UsePatchNotesPageStateOptions) {
   const [activeCategory, setActiveCategory] = useState<PatchCategory>(PATCH_CATEGORIES[0])
   const [activeChangeType, setActiveChangeType] = useState<ChangeTypeFilter>(CHANGE_TYPE_FILTERS[0])
-  const [highImpactOnly, setHighImpactOnly] = useState(false)
   const [expandedChangeIds, setExpandedChangeIds] = useState<number[]>([])
   const [query, setQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -33,13 +32,13 @@ export function usePatchNotesPageState({
     () => ({
       category: activeCategory,
       changeType: activeChangeType,
-      highImpactOnly,
+      highImpactOnly: false,
       page: currentPage,
       pageSize: PATCH_PAGE_SIZE,
       query,
       version: selectedPatchVersion,
     }),
-    [activeCategory, activeChangeType, currentPage, highImpactOnly, query, selectedPatchVersion],
+    [activeCategory, activeChangeType, currentPage, query, selectedPatchVersion],
   )
 
   const setActiveCategoryAndReset = useCallback((category: PatchCategory) => {
@@ -69,11 +68,6 @@ export function usePatchNotesPageState({
     })
   }, [resetChangeListState])
 
-  const toggleHighImpactOnly = useCallback(() => {
-    setHighImpactOnly((enabled) => !enabled)
-    resetChangeListState()
-  }, [resetChangeListState])
-
   const toggleExpandedChange = useCallback((id: number) => {
     setExpandedChangeIds((currentIds) => (
       currentIds.includes(id)
@@ -94,7 +88,6 @@ export function usePatchNotesPageState({
     activeChangeType,
     currentPage,
     expandedChangeIds,
-    highImpactOnly,
     patchChangesParams,
     query,
     resetChangeListState,
@@ -103,6 +96,5 @@ export function usePatchNotesPageState({
     setCurrentPage,
     setQuery: setQueryAndReset,
     toggleExpandedChange,
-    toggleHighImpactOnly,
   }
 }

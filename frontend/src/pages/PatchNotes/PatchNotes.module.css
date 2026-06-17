@@ -199,7 +199,7 @@
 
 .summaryGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -237,14 +237,6 @@
 
 .warnIcon {
   background: #ff5b57;
-}
-
-.goldIcon {
-  background: #f7d26d;
-}
-
-.blueIcon {
-  background: #60a5fa;
 }
 
 .summaryCard strong {
@@ -438,10 +430,6 @@
   background: rgba(5, 243, 231, 0.05);
 }
 
-.quickFilters > button {
-  padding: 0 12px;
-}
-
 .typeFilters {
   display: flex;
   align-items: center;
@@ -453,7 +441,6 @@
   padding: 0 10px;
 }
 
-.quickFilters .activeQuickFilter,
 .typeFilters .activeTypeFilter {
   border-color: rgba(5, 243, 231, 0.62);
   color: #05f3e7;
@@ -490,8 +477,7 @@
 }
 
 .categoryBadge,
-.changeType,
-.impactBadge {
+.changeType {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -527,29 +513,6 @@
 
 .new {
   background: #f7d26d;
-}
-
-.impactBadge {
-  margin-left: auto;
-  border: 1px solid transparent;
-}
-
-.highImpact {
-  color: #ffb4b1;
-  border-color: rgba(255, 91, 87, 0.32);
-  background: rgba(255, 91, 87, 0.1);
-}
-
-.midImpact {
-  color: #f7d26d;
-  border-color: rgba(247, 210, 109, 0.28);
-  background: rgba(247, 210, 109, 0.08);
-}
-
-.lowImpact {
-  color: #98d6ff;
-  border-color: rgba(96, 165, 250, 0.25);
-  background: rgba(96, 165, 250, 0.08);
 }
 
 .changeBody {

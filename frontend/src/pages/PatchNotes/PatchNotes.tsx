@@ -27,7 +27,6 @@ function PatchNotes() {
     activeCategory,
     activeChangeType,
     expandedChangeIds,
-    highImpactOnly,
     patchChangesParams,
     query,
     resetChangeListState,
@@ -36,7 +35,6 @@ function PatchNotes() {
     setCurrentPage,
     setQuery,
     toggleExpandedChange,
-    toggleHighImpactOnly,
   } = usePatchNotesPageState({
     selectedPatchVersion,
   })
@@ -76,9 +74,7 @@ function PatchNotes() {
 
         <PatchSummaryGrid
           buffCount={changeStats.buffCount}
-          highImpactCount={changeStats.highImpactCount}
           nerfCount={changeStats.nerfCount}
-          totalChanges={changeStats.totalChanges}
         />
 
         <div className={styles.contentGrid}>
@@ -100,10 +96,8 @@ function PatchNotes() {
             <PatchChangeFilters
               activeCategory={activeCategory}
               activeChangeType={activeChangeType}
-              highImpactOnly={highImpactOnly}
               onCategoryChange={setActiveCategory}
               onChangeTypeChange={setActiveChangeType}
-              onHighImpactOnlyToggle={toggleHighImpactOnly}
               onQueryChange={setQuery}
               query={query}
               stats={changeStats}

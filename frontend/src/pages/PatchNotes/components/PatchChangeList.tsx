@@ -3,7 +3,6 @@ import { ChevronRight, Shield, Sparkles, Swords, Wand2, Zap } from 'lucide-react
 import {
   type ChangeCategory,
   type ChangeType,
-  type ImpactLevel,
   type PatchChange,
 } from '../../../api/patchNotes'
 import styles from '../PatchNotes.module.css'
@@ -21,12 +20,6 @@ const CHANGE_TYPE_CLASS: Record<ChangeType, string> = {
   하향: styles.nerf,
   조정: styles.adjust,
   신규: styles.new,
-}
-
-const IMPACT_CLASS: Record<ImpactLevel, string> = {
-  높음: styles.highImpact,
-  중간: styles.midImpact,
-  낮음: styles.lowImpact,
 }
 
 const GENERIC_TARGET_NAMES = new Set([
@@ -84,7 +77,6 @@ function PatchChangeList({
                 {change.category}
               </span>
               <span className={`${styles.changeType} ${CHANGE_TYPE_CLASS[change.type]}`}>{change.type}</span>
-              <span className={`${styles.impactBadge} ${IMPACT_CLASS[change.impact]}`}>영향 {change.impact}</span>
             </div>
 
             <div className={styles.changeBody}>
