@@ -35,6 +35,7 @@ public interface CommunityPartyControllerDocs {
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "등록 성공"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "사용자 없음"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "이미 활성 파티 작성 또는 참여 중")
     })
     ResponseEntity<ApiResponse<PartyPostResponse>> createPartyPost(
@@ -46,8 +47,8 @@ public interface CommunityPartyControllerDocs {
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "참여 성공"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "모집글 없음"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "정원 초과, 모집 마감 또는 이미 다른 활성 파티 참여 중")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "사용자 없음 또는 모집글 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "정원 초과, 모집 마감 또는 이미 다른 활성 파티 참여/작성 중")
     })
     ResponseEntity<ApiResponse<PartyPostResponse>> joinParty(
             @AuthenticationPrincipal Long userId,

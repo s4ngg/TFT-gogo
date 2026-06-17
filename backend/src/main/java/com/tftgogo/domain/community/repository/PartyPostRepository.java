@@ -3,11 +3,13 @@ package com.tftgogo.domain.community.repository;
 import com.tftgogo.domain.community.entity.PartyGameMode;
 import com.tftgogo.domain.community.entity.PartyPost;
 import jakarta.persistence.LockModeType;
+import jakarta.persistence.QueryHint;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
@@ -45,6 +47,7 @@ public interface PartyPostRepository extends JpaRepository<PartyPost, Long> {
     );
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000"))
     @Query("""
             select p
             from PartyPost p
