@@ -46,6 +46,22 @@ describe('patchChangeDisplay', () => {
     )
   })
 
+  it('target에 값 변화가 붙어 있어도 콜론 앞 설명만 제목으로 사용한다', () => {
+    const change = patchChange({
+      after: '공격력 290/435/730/1,250',
+      before: '공격력 280/420/670/1,000',
+      summary: '꽁! (나서스) 스킬 피해량: 공격력 280/420/670/1,000 ⇒ 공격력 290/435/730/1,250',
+      target: '꽁! (나서스) 스킬 피해량: 공격력 280/420/670/1',
+    })
+
+    assert.equal(getPatchChangeTitle(change), '꽁! (나서스) 스킬 피해량')
+    assert.equal(
+      getPatchChangeDetailSummary(change, '꽁! (나서스) 스킬 피해량'),
+      '공격력 280/420/670/1,000 → 공격력 290/435/730/1,250',
+    )
+    assert.equal(shouldShowPatchChangeValueLine(change), false)
+  })
+
   it('summary에 before와 after가 이미 포함되면 별도 값 라인을 숨긴다', () => {
     const change = patchChange({
       after: '5/8%',

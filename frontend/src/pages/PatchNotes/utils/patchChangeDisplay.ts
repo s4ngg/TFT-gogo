@@ -33,52 +33,76 @@ export function normalizePatchChangeArrow(value: string) {
     .trim()
 }
 
-function getTitleDelimiterIndex(summary: string) {
-  const commaIndex = summary.indexOf(',')
-  if (commaIndex > 0) return commaIndex
+function getTitleDelimiterIndex(value: string, shouldUseCommaDelimiter: boolean) {
+  const commaIndex = value.indexOf(',')
+  if (shouldUseCommaDelimiter && commaIndex > 0) return commaIndex
 
-  const colonIndex = summary.indexOf(':')
+  const colonIndex = value.indexOf(':')
   if (colonIndex > 0) return colonIndex
 
   return -1
 }
 
-function getTitleFromSummary(summary: string) {
-  const normalizedSummary = normalizePatchChangeArrow(summary)
-  const delimiterIndex = getTitleDelimiterIndex(normalizedSummary)
+function getTitleFromText(value: string, shouldUseCommaDelimiter: boolean) {
+  const normalizedValue = normalizePatchChangeArrow(value)
+  const delimiterIndex = getTitleDelimiterIndex(normalizedValue, shouldUseCommaDelimiter)
 
   if (delimiterIndex > 0) {
-    return normalizedSummary.slice(0, delimiterIndex).trim()
+    return normalizedValue.slice(0, delimiterIndex).trim()
   }
 
-  return normalizedSummary || '패치 변경사항'
+  return normalizedValue || '패치 변경사항'
 }
 
-export function getPatchChangeTitle(change: PatchChange) {
-  const target = change.target.trim()
-  const summary = change.summary.trim()
-
-  if (!target) return getTitleFromSummary(summary)
-  if (GENERIC_TARGET_NAMES.has(target) && summary) return getTitleFromSummary(summary)
-  return target
-}
-
-export function getPatchChangeDetailSummary(change: PatchChange, title: string) {
-  const summary = normalizePatchChangeArrow(change.summary)
+function getDetailFromText(value: string, title: string) {
+  const normalizedValue = normalizePatchChangeArrow(value)
   const normalizedTitle = normalizePatchChangeArrow(title)
 
-  if (!summary || summary === normalizedTitle) return ''
+  if (!normalizedValue || normalizedValue === normalizedTitle) return ''
 
-  if (!summary.startsWith(normalizedTitle)) return summary
+  if (!normalizedValue.startsWith(normalizedTitle)) return normalizedValue
 
-  const remainingSummary = summary.slice(normalizedTitle.length)
-  const firstCharacter = remainingSummary[0]
+  const remainingValue = normalizedValue.slice(normalizedTitle.length)
+  const firstCharacter = remainingValue[0]
 
   if (firstCharacter === ',' || firstCharacter === ':' || firstCharacter === ' ') {
-    return remainingSummary.slice(1).trim()
+    return remainingValue.slice(1).trim()
   }
 
-  return summary
+  return normalizedValue
+}
+
+function hasValueChangeIndicator(value: string) {
+  return normalizePatchChangeArrow(value).includes(' → ')
+}
+
+function getPreferredDetailSummary(summary: string, target: string, title: string) {
+  const summaryDetail = getDetailFromText(summary, title)
+  const targetDetail = getDetailFromText(target, title)
+
+  if (!targetDetail) return summaryDetail
+  if (!summaryDetail) return targetDetail
+
+  const comparableSummaryDetail = normalizeComparableText(summaryDetail)
+  const comparableTargetDetail = normalizeComparableText(targetDetail)
+
+  if (comparableSummaryDetail.includes(comparableTargetDetail)) {
+    return summaryDetail
+  }
+
+  if (hasValueChangeIndicator(targetDetail)) {
+    return targetDetail
+  }
+
+  return summaryDetail
+}
+
+function getTitleFromSummary(summary: string) {
+  return getTitleFromText(summary, true)
+}
+
+function getTitleFromTarget(target: string) {
+  return getTitleFromText(target, false)
 }
 
 function normalizeComparableText(value: string) {
@@ -95,12 +119,29 @@ function summaryIncludesValueChange(summary: string, before: string, after: stri
     && comparableSummary.includes(normalizeComparableText(after))
 }
 
+function changeTextIncludesValueChange(change: PatchChange, before: string, after: string) {
+  return [change.summary, change.target].some((value) => summaryIncludesValueChange(value, before, after))
+}
+
+export function getPatchChangeTitle(change: PatchChange) {
+  const target = change.target.trim()
+  const summary = change.summary.trim()
+
+  if (!target) return getTitleFromSummary(summary)
+  if (GENERIC_TARGET_NAMES.has(target) && summary) return getTitleFromSummary(summary)
+  return getTitleFromTarget(target)
+}
+
+export function getPatchChangeDetailSummary(change: PatchChange, title: string) {
+  return getPreferredDetailSummary(change.summary, change.target, title)
+}
+
 export function shouldShowPatchChangeValueLine(change: PatchChange) {
   const before = change.before.trim()
   const after = change.after.trim()
 
   if (!before && !after) return false
-  return !summaryIncludesValueChange(change.summary, before, after)
+  return !changeTextIncludesValueChange(change, before, after)
 }
 
 function getPatchChangeGroupKey(title: string) {
