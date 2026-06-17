@@ -33,30 +33,46 @@ export function normalizePatchChangeArrow(value: string) {
     .trim()
 }
 
+function normalizeDisplayText(value: string) {
+  return normalizePatchChangeArrow(value).replace(/^\(\d+\)\s*/u, '')
+}
+
 function getTitleDelimiterIndex(value: string, shouldUseCommaDelimiter: boolean) {
   const commaIndex = value.indexOf(',')
-  if (shouldUseCommaDelimiter && commaIndex > 0) return commaIndex
-
   const colonIndex = value.indexOf(':')
+
+  if (
+    shouldUseCommaDelimiter
+    && commaIndex > 0
+    && (colonIndex === -1 || commaIndex < colonIndex)
+  ) {
+    return commaIndex
+  }
+
   if (colonIndex > 0) return colonIndex
 
   return -1
 }
 
+function shouldKeepTitleColon(title: string, value: string, delimiterIndex: number) {
+  return value[delimiterIndex] === ':' && title.endsWith('스킬')
+}
+
 function getTitleFromText(value: string, shouldUseCommaDelimiter: boolean) {
-  const normalizedValue = normalizePatchChangeArrow(value)
+  const normalizedValue = normalizeDisplayText(value)
   const delimiterIndex = getTitleDelimiterIndex(normalizedValue, shouldUseCommaDelimiter)
 
   if (delimiterIndex > 0) {
-    return normalizedValue.slice(0, delimiterIndex).trim()
+    const title = normalizedValue.slice(0, delimiterIndex).trim()
+    return shouldKeepTitleColon(title, normalizedValue, delimiterIndex) ? title + ':' : title
   }
 
   return normalizedValue || '패치 변경사항'
 }
 
 function getDetailFromText(value: string, title: string) {
-  const normalizedValue = normalizePatchChangeArrow(value)
-  const normalizedTitle = normalizePatchChangeArrow(title)
+  const normalizedValue = normalizeDisplayText(value)
+  const normalizedTitle = normalizeDisplayText(title)
 
   if (!normalizedValue || normalizedValue === normalizedTitle) return ''
 

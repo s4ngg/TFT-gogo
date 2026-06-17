@@ -115,4 +115,19 @@ describe('patchChangeDisplay', () => {
       patchChange({ id: 2, type: '하향' }),
     ], '전체'), ['상향', '하향'])
   })
+
+  it('leading numeric trait tier is hidden and skill prefix is used as the title', () => {
+    const change = patchChange({
+      summary: '(10) 정령족 정령군주 스킬: 거대 강타 1차 피해량: 주문력 1,100 ⇒ 주문력 1,500, 광역 강타 피해량: 주문력 700 ⇒ 주문력 1,000, 기절 지속시간: 1.5초 ⇒ 3초, 기절 스킬 피해량: 주문력 150 ⇒ 주문력 400',
+      target: '특성',
+    })
+
+    const title = getPatchChangeTitle(change)
+
+    assert.equal(title, '정령족 정령군주 스킬:')
+    assert.equal(
+      getPatchChangeDetailSummary(change, title),
+      '거대 강타 1차 피해량: 주문력 1,100 → 주문력 1,500, 광역 강타 피해량: 주문력 700 → 주문력 1,000, 기절 지속시간: 1.5초 → 3초, 기절 스킬 피해량: 주문력 150 → 주문력 400',
+    )
+  })
 })
