@@ -463,6 +463,9 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
 
     private PatchChangeCategory inferCategory(PatchChangeCrawlRow row) {
         String text = normalizeLower(row.headingPath() + " " + row.sectionTitle() + " " + row.groupTitle());
+        if (isBugFixRow(row)) {
+            return PatchChangeCategory.SYSTEM;
+        }
         if (text.contains("champion") || text.contains("챔피언")) {
             return PatchChangeCategory.CHAMPION;
         }
@@ -480,6 +483,9 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
 
     private PatchChangeType inferChangeType(PatchChangeCrawlRow row) {
         String text = normalizeLower(row.headingPath() + " " + row.rowText());
+        if (isBugFixRow(row)) {
+            return PatchChangeType.ADJUST;
+        }
         if (text.contains("new") || text.contains("신규")) {
             return PatchChangeType.NEW;
         }
@@ -492,6 +498,14 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
             return PatchChangeType.NERF;
         }
         return PatchChangeType.ADJUST;
+    }
+
+    private boolean isBugFixRow(PatchChangeCrawlRow row) {
+        String text = normalizeLower(row.headingPath() + " "
+                + row.sectionTitle() + " "
+                + row.groupTitle() + " "
+                + row.rowText());
+        return text.contains("bug") || text.contains("버그");
     }
 
     private String resolveTargetName(PatchChangeCrawlRow row) {

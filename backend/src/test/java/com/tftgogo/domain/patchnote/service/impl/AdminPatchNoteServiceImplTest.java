@@ -208,6 +208,73 @@ class AdminPatchNoteServiceImplTest {
     }
 
     @Test
+    void importRiotPatchNote_whenBugFixMentionsIncrease_savesAsSystemAdjust() {
+        // given
+        PatchNote existingCurrent = patchNote(1L, "17.3", true);
+        PatchNoteCrawlFetchedPage detailPage = fetchedPage("https://www.leagueoflegends.com/ko-kr/news/game-updates/patch-17-5-notes/");
+        PatchChangeCrawlRow row = new PatchChangeCrawlRow(
+                "bug-candidate",
+                "bug-row-key",
+                "버그 수정",
+                1,
+                "버그 수정",
+                "",
+                "사미라의 처형타 확률 증가에 따른 상호작용이 잘못 적용되던 버그를 수정했습니다.",
+                "<li>사미라의 처형타 확률 증가에 따른 상호작용이 잘못 적용되던 버그를 수정했습니다.</li>",
+                null,
+                null,
+                List.of()
+        );
+        PatchNoteCrawlDocument document = new PatchNoteCrawlDocument(
+                detailPage.sourceUrl(),
+                "ko-kr",
+                "riot-content-17-5",
+                "17.5 Patch Notes",
+                "17.5",
+                "Official summary",
+                LocalDateTime.of(2026, 6, 9, 18, 0),
+                "https://example.com/official.png",
+                List.of("Riot"),
+                List.of("버그 수정"),
+                List.of(row),
+                List.of()
+        );
+        AdminPatchNoteImportRequest request = new AdminPatchNoteImportRequest();
+        ReflectionTestUtils.setField(request, "sourceUrl", detailPage.sourceUrl());
+
+        when(crawlerProperties.getDefaultLocale()).thenReturn("ko-kr");
+        when(crawlerFetchService.fetch(detailPage.sourceUrl())).thenReturn(detailPage);
+        when(crawlerParser.parseDetailPage(detailPage, null, "ko-kr")).thenReturn(document);
+        when(patchNoteRepository.findBySourceKey("riot-content-17-5")).thenReturn(Optional.empty());
+        when(patchNoteRepository.findBySourceUrl(detailPage.sourceUrl())).thenReturn(Optional.empty());
+        when(patchNoteRepository.findByVersion("17.5")).thenReturn(Optional.empty());
+        when(patchNoteRepository.findByCurrentTrueAndDeletedAtIsNull()).thenReturn(List.of(existingCurrent));
+        when(patchNoteRepository.save(any(PatchNote.class))).thenAnswer(invocation -> {
+            PatchNote patchNote = invocation.getArgument(0);
+            ReflectionTestUtils.setField(patchNote, "id", 2L);
+            return patchNote;
+        });
+        when(patchChangeRepository.findByPatchNoteAndSourceKey(any(PatchNote.class), eq("bug-row-key")))
+                .thenReturn(Optional.empty());
+        when(patchChangeRepository.save(any(PatchChange.class))).thenAnswer(invocation -> {
+            PatchChange patchChange = invocation.getArgument(0);
+            ReflectionTestUtils.setField(patchChange, "id", 10L);
+            return patchChange;
+        });
+
+        // when
+        AdminPatchNoteImportResponse response = adminPatchNoteService.importRiotPatchNote(request);
+
+        // then
+        assertThat(response.getCreatedChanges()).isEqualTo(1);
+
+        ArgumentCaptor<PatchChange> patchChangeCaptor = ArgumentCaptor.forClass(PatchChange.class);
+        verify(patchChangeRepository).save(patchChangeCaptor.capture());
+        assertThat(patchChangeCaptor.getValue().getCategory()).isEqualTo(PatchChangeCategory.SYSTEM);
+        assertThat(patchChangeCaptor.getValue().getChangeType()).isEqualTo(PatchChangeType.ADJUST);
+    }
+
+    @Test
     void importRiotPatchNote_whenExistingPatchFound_updatesOfficialMetadataAndDeletesStaleChanges() {
         // given
         PatchNote existingPatchNote = patchNote(1L, "17.3", true);
