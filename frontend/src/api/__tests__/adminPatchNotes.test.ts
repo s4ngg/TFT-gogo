@@ -7,10 +7,12 @@ import {
   createAdminPatchNote,
   fetchAdminPatchChanges,
   fetchAdminPatchNotes,
+  importAdminPatchNoteFromRiot,
   isAdminAuthFailure,
   setAdminToken,
   updateAdminPatchChange,
   type AdminPatchChangePayload,
+  type AdminPatchNoteImportRequest,
   type AdminPatchNotePayload,
 } from '../adminApi'
 import axiosInstance from '../axiosInstance'
@@ -19,6 +21,7 @@ interface RequestCall {
   data?: unknown
   method?: string
   params?: unknown
+  timeout?: unknown
   token?: unknown
   url?: string
 }
@@ -54,6 +57,7 @@ function createAdapter(responseData: unknown): AxiosAdapter {
       data: parseRequestData(config.data),
       method: config.method,
       params: config.params,
+      timeout: config.timeout,
       token: readAdminToken(config),
       url: config.url,
     })
@@ -148,6 +152,37 @@ describe('admin patch note api', () => {
     assert.equal(requestCalls[0]?.method, 'post')
     assert.equal(requestCalls[0]?.url, '/admin/patch-notes')
     assert.deepEqual(requestCalls[0]?.data, payload)
+  })
+
+  it('Riot patch note import uses the admin import endpoint', async () => {
+    axiosInstance.defaults.adapter = createAdapter({
+      createdChanges: 3,
+      parserWarnings: [],
+      patchNoteCreated: true,
+      patchNoteId: 7,
+      patchNoteSkipped: false,
+      patchNoteUpdated: false,
+      skippedChanges: 0,
+      sourceUrl: 'https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/test',
+      updatedChanges: 0,
+      version: '17.5',
+    })
+    setAdminToken('admin-token')
+    const payload: AdminPatchNoteImportRequest = {
+      current: true,
+      locale: 'ko-kr',
+      sourceUrl: null,
+      version: null,
+    }
+
+    const response = await importAdminPatchNoteFromRiot(payload)
+
+    assert.equal(requestCalls[0]?.method, 'post')
+    assert.equal(requestCalls[0]?.url, '/admin/patch-notes/import/riot')
+    assert.equal(requestCalls[0]?.token, 'admin-token')
+    assert.equal(requestCalls[0]?.timeout, 120_000)
+    assert.deepEqual(requestCalls[0]?.data, payload)
+    assert.equal(response.patchNoteId, 7)
   })
 
   it('선택 패치의 변경사항은 관리자 변경사항 조회 API를 사용한다', async () => {
