@@ -110,6 +110,8 @@ function Party() {
           <PartyPostList
             currentPage={party.currentPage}
             isAuthenticated={party.isAuthenticated}
+            isLoading={party.isLoading}
+            isUnavailable={party.isUnavailable}
             joinedPostId={party.joinedPostId}
             joiningPostId={party.joiningPostId}
             onJoinToggle={party.toggleJoin}
