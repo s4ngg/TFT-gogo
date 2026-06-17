@@ -102,6 +102,7 @@ function PatchNotes() {
             />
 
             <PatchChangeList
+              activeChangeType={activeChangeType}
               patchChanges={patchChanges}
             />
 
