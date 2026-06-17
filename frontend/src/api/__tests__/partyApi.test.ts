@@ -155,6 +155,42 @@ describe('partyApi', () => {
     assert.deepEqual(response.data, [])
   })
 
+  it('getPartyPosts는 실패 응답에서 더미 모집글 대신 빈 unavailable 결과를 반환한다', async () => {
+    axiosInstance.defaults.adapter = createPartyAdapter({
+      success: false,
+      message: '파티 목록 조회 실패',
+    })
+
+    const response = await getPartyPosts()
+
+    assert.equal(response.source, 'unavailable')
+    assert.deepEqual(response.data, [])
+  })
+
+  it('getPartyPosts는 잘못된 payload에서 더미 모집글 대신 빈 unavailable 결과를 반환한다', async () => {
+    axiosInstance.defaults.adapter = createPartyAdapter({
+      data: {
+        id: 1,
+        title: '배열이 아닌 payload',
+      },
+      success: true,
+    })
+
+    const response = await getPartyPosts()
+
+    assert.equal(response.source, 'unavailable')
+    assert.deepEqual(response.data, [])
+  })
+
+  it('getPartyPosts는 네트워크 오류에서 더미 모집글 대신 빈 unavailable 결과를 반환한다', async () => {
+    axiosInstance.defaults.adapter = createFailingPartyAdapter()
+
+    const response = await getPartyPosts()
+
+    assert.equal(response.source, 'unavailable')
+    assert.deepEqual(response.data, [])
+  })
+
   it('createPartyPost는 파티 생성 스펙 경로와 payload로 요청한다', async () => {
     axiosInstance.defaults.adapter = createPartyAdapter({
       data: {

@@ -7,6 +7,7 @@ import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -39,6 +40,7 @@ public class RiotPatchNoteCrawlerFetchServiceImpl implements PatchNoteCrawlerFet
     private final RestTemplate restTemplate;
     private final PatchNoteCrawlerProperties properties;
 
+    @Autowired
     public RiotPatchNoteCrawlerFetchServiceImpl(PatchNoteCrawlerProperties properties) {
         this(createRestTemplate(properties), properties);
     }

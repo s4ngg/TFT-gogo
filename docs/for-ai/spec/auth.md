@@ -94,7 +94,9 @@ General signup/login APIs issue access tokens, and authenticated requests are re
 - Social OAuth success: provider attributes -> existing or new social member -> frontend callback with accessToken fragment.
 - Social OAuth failure: provider error/email missing/email conflict -> frontend login redirect with whitelist oauthError code.
 - Social OAuth redirect config failure: authorizedRedirectUri/loginFailureRedirectUri is not an http/https absolute URL -> app startup validation fails, and runtime redirect builder throws INVALID_INPUT if reached.
+- Local social OAuth setup: copy the non-secret backend/src/main/resources/application-social-login.yml.example blocks into ignored application-local.yml, register provider console callbacks to backend /login/oauth2/code/{provider}, and never commit or share real client-secret values.
 - Social OAuth callback frontend success: accessToken fragment -> token persisted -> GET /api/v1/members/me user restore.
+- Frontend auth restore failure: /api/v1/members/me 401 or 403 -> persisted accessToken is cleared so logged-in UI is not shown with an invalid token.
 - Auth request validation failure: invalid request body -> common validation error response.
 - JWT success: valid Bearer token -> SecurityContext contains authenticated userId.
 - JWT failure: missing token -> no authentication is created.

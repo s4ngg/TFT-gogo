@@ -68,13 +68,21 @@ Page: Guide (/guide).
 - If a soft-deleted row already reserves the same key, CDragon import skips that key instead of recreating it.
 - CDragon import item filtering includes only completed craftable TFT_Item_* rows with exactly two composition components and no associatedTraits.
 - CDragon item import excludes component-only rows, emblem/trait-associated rows, radiant/artifact/support/non-craftable rows that do not match the completed-item policy.
-- CDragon item import fills statistic fields and bestUsers from cached match data when available, otherwise keeps "-" and [] fallbacks.
+- CDragon item import creates base static ITEM rows from CDragon item data and keeps display-safe metric fallbacks when cached match data is unavailable.
+- Current develop may opportunistically enrich item metric fields and bestUsers from a bounded cached_match sample during CDragon import, but this is an MVP/QA enrichment path only, not the final production metric sourcing policy tracked by #393.
 - CDragon augment import reads only the requested set/mutator augments and requires apiName, name, description, and icon.
 - CDragon augment import excludes debug/dummy/test/placeholder/inactive/disabled entries by apiName/name/description keywords.
-- CDragon augment import fills statistic fields from cached match data when available, otherwise keeps "-" fallbacks.
+- CDragon augment import creates base static AUGMENT rows from the requested set/mutator and keeps display-safe metric fallbacks when cached match data is unavailable.
+- Current develop may opportunistically enrich augment metric fields from a bounded cached_match sample during CDragon import, but this is an MVP/QA enrichment path only, not the final production metric sourcing policy tracked by #393.
+- #393 guide metric strategy separates static guide import from performance metric refresh: CDragon provides names/descriptions/images/tags/rewards, while Riot match detail stored in cached_match provides avgPlace, pickRate, TOP4 rate, winRate, and sampleCount.
+- Current metric source is existing cached_match data created by user match searches. This is acceptable for local QA and MVP verification, but it can be biased or too small because it only reflects searched users.
+- Current metric enrichment reads no new Riot matches. It only samples already stored cached_match rows.
 - Cached match guide metrics use queueId 1090 and 1100 only.
 - Cached match guide metrics must read a bounded recent sample instead of all cached matches. The current cap is 500 matches, sorted by gameDatetime DESC and matchId DESC.
 - The bounded cached match query requires a matching DB index on cached_match(queue_id, game_datetime DESC, match_id DESC) when applying production-like schema changes manually.
+- #393 next implementation should introduce a CDragon-import-independent metric refresh path, such as an admin/manual refresh API or batch job, before treating guide metrics as production-quality service data.
+- #393 later collection policy should decide whether to keep using only cached_match, add top-tier/statistics-oriented Riot match collection, or combine both. Raw match detail should remain stored in cached_match so changed formulas or bugs can be re-aggregated.
+- Metric refresh must keep "-" and [] fallbacks when an item or augment is below the minimum sample size; do not invent numbers from insufficient samples.
 - CDragon import request fields: patchVersion (required, max 20), setNumber (default 17), mutator (default TFTSet{setNumber}), includeChampions (default true), includeTraits (default true), includeItems (default false), includeAugments (default false).
 - CDragon import rejects requests where includeChampions, includeTraits, includeItems, and includeAugments all resolve to false.
 - CDragon import response fields: createdCount, updatedCount, skippedCount, championCount, traitCount, itemCount, augmentCount, importedCount (= createdCount + updatedCount).
@@ -127,6 +135,7 @@ Page: Guide (/guide).
 - pickRate: cached match pick rate or "-"
 - top4: cached match TOP4 rate or "-"
 - winRate: cached match win rate or "-"
+- sampleCount: not persisted by the current CDragon import; add this with the #393 metric refresh contract before presenting production-quality guide metrics
 - bestUsers: top cached match users or []
 - combinations: [{ label: "조합식", note: "CDragon 조합 기준", items: [{ imageUrl, name }] }]
 </cdragon-item-data-json>
@@ -139,7 +148,9 @@ Page: Guide (/guide).
 - reward: "-"
 - avgPlace: cached match average placement or "-"
 - pickRate: cached match pick rate or "-"
+- top4: not persisted by the current CDragon augment import; add this with the #393 metric refresh contract before presenting production-quality guide metrics
 - winRate: cached match win rate or "-"
+- sampleCount: not persisted by the current CDragon import; add this with the #393 metric refresh contract before presenting production-quality guide metrics
 </cdragon-augment-data-json>
 </data-contracts>
 
@@ -149,9 +160,10 @@ Page: Guide (/guide).
 - AdminGuideController owns admin CRUD and /api/admin/guides/import/cdragon.
 - AdminGuideServiceImpl owns admin validation, duplicate prevention, dataJson serialization, and soft delete.
 - GuideCdragonImportServiceImpl fetches CommunityDragonProperties.tftKoKrUrl using RestTemplate and builds guide candidates.
-- GuideCdragonImportServiceImpl enriches ITEM and AUGMENT guide candidates with cached match metrics when matching patch data exists.
+- GuideCdragonImportServiceImpl currently enriches ITEM and AUGMENT guide candidates with cached match metrics when matching patch data exists. Treat this as import-time MVP enrichment, not a dedicated metric refresh service.
 - GuideCdragonImportServiceImpl reads recent cached matches through CachedMatchRepository.findRecentByQueueIds with PageRequest.of(0, 500).
 - CachedMatchRepository.findRecentByQueueIds filters by queueId and orders by gameDatetime DESC, matchId DESC; keep the query and DB index aligned.
+- No separate GuideMetricRefreshService, admin refresh endpoint, scheduler, or top-tier Riot match collector exists in current develop. Add those in a separate #393 implementation PR instead of expanding the CDragon import contract further.
 - CDragon set data resolution first searches root.setData by setNumber + mutator, then falls back to root.sets[setNumber] if champions and traits exist.
 - Champion import includes only shop champions whose apiName starts with TFT{setNumber}_, cost is 1..5, and name is present.
 - Import asset URLs use CommunityDragonProperties.assetBaseUrl plus a lowercased asset path with .tex replaced by .png.
@@ -175,15 +187,17 @@ Page: Guide (/guide).
 - Admin guide tests should cover list filtering, create, update, duplicate prevention, invalid dataJson, not found, and soft delete.
 - CDragon import tests should cover create, update, active state preservation, skipped soft-deleted key behavior, and missing set/mutator input.
 - CDragon import tests should verify that cached match stats use page=0 and pageSize=500 when item or augment metrics are requested.
+- #393 metric refresh tests should be added with the dedicated refresh implementation: cached match fixture aggregation, queue/patch filtering, duplicate match handling, minimum sample fallback, sampleCount, and idempotent guide dataJson updates.
 - Public guide tests should continue to cover tab parsing, page/pageSize bounds, sortKey/sortDir validation, cost filtering, dataJson object response, metric sorting, latest patch fallback, empty latest patch behavior, and LIKE escaping.
 - Import tests should keep asserting importedCount semantics through createdCount + updatedCount, not championCount + traitCount.
 - Frontend guide tests should cover asset helper behavior when set-specific champion, trait, or item paths are derived from shared config.
 </validation>
 
 <data-ingestion>
-- Current stage: CDragon champion/trait/item/augment guide import with cached match statistics after admin CRUD and public query contracts are stable.
-- Current match-stat stage intentionally uses a recent bounded sample. Broader match/stat aggregation quality improvements should be separate from the CDragon import path.
-- Next stage for this domain is season/asset checklist completion and any remaining guide UI structure cleanup after open guide PRs are merged.
+- Current stage: CDragon champion/trait/item/augment guide import plus import-time cached_match metric enrichment for item/augment rows.
+- Current match-stat stage intentionally uses a recent bounded sample. This verifies the calculation/display path, but does not solve the production data quality question from #393.
+- Next #393 stage is to decide and implement the metric data source/collection policy, then move metric recomputation into a separate refresh path from CDragon static import.
+- After #393, broader guide quality work can expand match collection by tier/patch/queue/region and increase sample size beyond local QA defaults.
 - AI server/FastAPI is not required for guide CRUD. Add it only when AI/RAG/recommendation behavior needs guide data.
 - Current CDragon import does not curate bestItems/tips and should not be treated as final editorial guide quality.
 </data-ingestion>
