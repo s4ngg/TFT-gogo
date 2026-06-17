@@ -56,4 +56,20 @@ public interface PartyApplicationRepository extends JpaRepository<PartyApplicati
             @Param("partyPostId") Long partyPostId,
             @Param("now") LocalDateTime now
     );
+
+    @Query("""
+            select case when count(application) > 0 then true else false end
+            from PartyApplication application
+            join application.partyPost partyPost
+            where application.userId = :userId
+              and application.status = :status
+              and partyPost.deletedAt is null
+              and partyPost.closed = false
+              and (partyPost.deadline is null or partyPost.deadline > :now)
+            """)
+    boolean existsActiveAcceptedApplication(
+            @Param("userId") Long userId,
+            @Param("status") PartyApplicationStatus status,
+            @Param("now") LocalDateTime now
+    );
 }

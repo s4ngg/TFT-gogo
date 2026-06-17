@@ -57,18 +57,24 @@ public class CommunityPartyServiceImpl implements CommunityPartyService {
     @Transactional
     public PartyPostResponse createPartyPost(Long userId, PartyPostCreateRequest request) {
         validateAuthenticated(userId);
+        PartyPost partyPost = PartyPost.create(userId, request);
 
-        PartyPost partyPost = partyPostRepository.save(PartyPost.create(userId, request));
+        lockMemberForPartyMutation(userId);
+        if (hasActivePartyParticipation(userId)) {
+            throw new BusinessException(ErrorCode.PARTY_ALREADY_JOINED);
+        }
+
+        PartyPost savedPartyPost = partyPostRepository.save(partyPost);
         chatService.ensureRoom(CommunityChatRoomIds.PARTY_RECRUITMENT);
 
-        return PartyPostResponse.from(partyPost, true);
+        return PartyPostResponse.from(savedPartyPost, true);
     }
 
     @Override
     @Transactional
     public PartyPostResponse joinParty(Long userId, Long partyPostId) {
         validateAuthenticated(userId);
-        lockMemberForPartyJoin(userId);
+        lockMemberForPartyMutation(userId);
 
         PartyPost partyPost = getPartyPostForUpdate(partyPostId);
         if (partyPost.isOwner(userId) || hasAcceptedApplication(partyPost, userId)) {
@@ -116,7 +122,7 @@ public class CommunityPartyServiceImpl implements CommunityPartyService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.PARTY_POST_NOT_FOUND));
     }
 
-    private void lockMemberForPartyJoin(Long userId) {
+    private void lockMemberForPartyMutation(Long userId) {
         memberRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
     }
@@ -156,6 +162,17 @@ public class CommunityPartyServiceImpl implements CommunityPartyService {
                 userId,
                 PartyApplicationStatus.ACCEPTED
         );
+    }
+
+    private boolean hasActivePartyParticipation(Long userId) {
+        LocalDateTime now = LocalDateTime.now();
+
+        return partyPostRepository.existsActiveOwnedPartyPost(userId, now)
+                || partyApplicationRepository.existsActiveAcceptedApplication(
+                        userId,
+                        PartyApplicationStatus.ACCEPTED,
+                        now
+                );
     }
 
     private boolean hasOtherActivePartyParticipation(Long userId, Long partyPostId) {

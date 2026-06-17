@@ -111,6 +111,8 @@ class CommunityPartyServiceImplTest {
     void 파티_모집글_작성은_작성자를_현재인원으로_계산한다() {
         // given
         PartyPostCreateRequest request = partyPostCreateRequest("마스터 듀오 구합니다", PartyGameMode.RANKED_TFT, 2);
+        givenMemberLocked(1L);
+        givenNoActivePartyParticipation(1L);
         when(partyPostRepository.save(any(PartyPost.class))).thenAnswer(invocation -> {
             PartyPost partyPost = invocation.getArgument(0);
             ReflectionTestUtils.setField(partyPost, "id", 10L);
@@ -125,8 +127,82 @@ class CommunityPartyServiceImplTest {
         assertThat(response.getCapacity()).isEqualTo("1/2");
         assertThat(response.getChatRoomId()).isEqualTo("party-recruitment");
         assertThat(response.isJoined()).isTrue();
-        verify(partyPostRepository).save(any(PartyPost.class));
+        InOrder inOrder = inOrder(memberRepository, partyPostRepository, partyApplicationRepository);
+        inOrder.verify(memberRepository).findByIdForUpdate(1L);
+        inOrder.verify(partyPostRepository).existsActiveOwnedPartyPost(eq(1L), any(LocalDateTime.class));
+        inOrder.verify(partyApplicationRepository).existsActiveAcceptedApplication(
+                eq(1L),
+                eq(PartyApplicationStatus.ACCEPTED),
+                any(LocalDateTime.class)
+        );
+        inOrder.verify(partyPostRepository).save(any(PartyPost.class));
         verify(chatService).ensureRoom("party-recruitment");
+        verify(partyApplicationRepository, never()).save(any(PartyApplication.class));
+    }
+
+    @Test
+    void 파티_모집글_작성_사용자를_잠글_수_없으면_작성할_수_없다() {
+        // given
+        PartyPostCreateRequest request = partyPostCreateRequest("마스터 듀오 구합니다", PartyGameMode.RANKED_TFT, 2);
+        when(memberRepository.findByIdForUpdate(1L)).thenReturn(Optional.empty());
+
+        // when, then
+        assertThatThrownBy(() -> communityPartyService.createPartyPost(1L, request))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.MEMBER_NOT_FOUND));
+
+        verify(partyPostRepository, never()).existsActiveOwnedPartyPost(any(Long.class), any(LocalDateTime.class));
+        verify(partyApplicationRepository, never()).existsActiveAcceptedApplication(
+                any(Long.class),
+                any(PartyApplicationStatus.class),
+                any(LocalDateTime.class)
+        );
+        verify(partyPostRepository, never()).save(any(PartyPost.class));
+        verify(chatService, never()).ensureRoom(any());
+        verify(partyApplicationRepository, never()).save(any(PartyApplication.class));
+    }
+
+    @Test
+    void 이미_활성_모집글을_작성한_사용자는_모집글을_작성할_수_없다() {
+        // given
+        PartyPostCreateRequest request = partyPostCreateRequest("마스터 듀오 구합니다", PartyGameMode.RANKED_TFT, 2);
+        givenMemberLocked(1L);
+        when(partyPostRepository.existsActiveOwnedPartyPost(eq(1L), any(LocalDateTime.class))).thenReturn(true);
+
+        // when, then
+        assertThatThrownBy(() -> communityPartyService.createPartyPost(1L, request))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PARTY_ALREADY_JOINED));
+
+        verify(partyApplicationRepository, never()).existsActiveAcceptedApplication(
+                any(Long.class),
+                any(PartyApplicationStatus.class),
+                any(LocalDateTime.class)
+        );
+        verify(partyPostRepository, never()).save(any(PartyPost.class));
+        verify(chatService, never()).ensureRoom(any());
+        verify(partyApplicationRepository, never()).save(any(PartyApplication.class));
+    }
+
+    @Test
+    void 이미_다른_활성_파티에_참여한_사용자는_모집글을_작성할_수_없다() {
+        // given
+        PartyPostCreateRequest request = partyPostCreateRequest("마스터 듀오 구합니다", PartyGameMode.RANKED_TFT, 2);
+        givenMemberLocked(1L);
+        when(partyPostRepository.existsActiveOwnedPartyPost(eq(1L), any(LocalDateTime.class))).thenReturn(false);
+        when(partyApplicationRepository.existsActiveAcceptedApplication(
+                eq(1L),
+                eq(PartyApplicationStatus.ACCEPTED),
+                any(LocalDateTime.class)
+        )).thenReturn(true);
+
+        // when, then
+        assertThatThrownBy(() -> communityPartyService.createPartyPost(1L, request))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PARTY_ALREADY_JOINED));
+
+        verify(partyPostRepository, never()).save(any(PartyPost.class));
+        verify(chatService, never()).ensureRoom(any());
         verify(partyApplicationRepository, never()).save(any(PartyApplication.class));
     }
 
@@ -412,6 +488,18 @@ class CommunityPartyServiceImplTest {
                 .passwordHash("encoded-password")
                 .nickname("회원" + userId)
                 .build()));
+    }
+
+    private void givenNoActivePartyParticipation(Long userId) {
+        when(partyPostRepository.existsActiveOwnedPartyPost(
+                eq(userId),
+                any(LocalDateTime.class)
+        )).thenReturn(false);
+        when(partyApplicationRepository.existsActiveAcceptedApplication(
+                eq(userId),
+                eq(PartyApplicationStatus.ACCEPTED),
+                any(LocalDateTime.class)
+        )).thenReturn(false);
     }
 
     private void givenNoOtherActivePartyParticipation(Long userId, Long partyPostId) {

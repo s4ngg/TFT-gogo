@@ -67,4 +67,17 @@ public interface PartyPostRepository extends JpaRepository<PartyPost, Long> {
             @Param("partyPostId") Long partyPostId,
             @Param("now") LocalDateTime now
     );
+
+    @Query("""
+            select case when count(partyPost) > 0 then true else false end
+            from PartyPost partyPost
+            where partyPost.userId = :userId
+              and partyPost.deletedAt is null
+              and partyPost.closed = false
+              and (partyPost.deadline is null or partyPost.deadline > :now)
+            """)
+    boolean existsActiveOwnedPartyPost(
+            @Param("userId") Long userId,
+            @Param("now") LocalDateTime now
+    );
 }
