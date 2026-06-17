@@ -322,10 +322,10 @@
 }
 
 .searchResultSpin {
-  animation: searchResultSpin 0.9s linear infinite;
+  animation: search-result-spin 0.9s linear infinite;
 }
 
-@keyframes searchResultSpin {
+@keyframes search-result-spin {
   from {
     transform: rotate(0deg);
   }

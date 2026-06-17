@@ -98,4 +98,17 @@ describe('summonerApi', () => {
       return true
     })
   })
+
+  it('getSummonerProfile은 429의 retry-after 소문자 헤더도 파싱한다', async () => {
+    axiosInstance.defaults.adapter = createErrorAdapter(429, {
+      'retry-after': '42',
+    })
+
+    await assert.rejects(getSummonerProfile('Hide on Bush', 'KR1'), (error: unknown) => {
+      assert.ok(error instanceof SummonerRateLimitError)
+      assert.equal(error.retryAfterSeconds, 42)
+
+      return true
+    })
+  })
 })
