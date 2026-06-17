@@ -19,6 +19,8 @@ import {
   filterPartyPosts,
   formatDeadlineForRequest,
   getDefaultDeadlineInput,
+  getPartyActionNotice,
+  getPartyListEmptyMessage,
   mergePartyPostSources,
   normalizeCapacity,
   paginatePartyPosts,
@@ -42,11 +44,16 @@ interface JoinMutationVariables {
   postId: string
 }
 
-function withOwnerState(post: PartyPost, authUserId: string | null): PartyPost {
-  const isOwner = authUserId !== null && post.userId === authUserId
+function withAuthDisplayState(
+  post: PartyPost,
+  authUserId: string | null,
+  isAuthenticated: boolean,
+): PartyPost {
+  const isOwner = isAuthenticated && authUserId !== null && post.userId === authUserId
 
   return {
     ...post,
+    isJoined: isAuthenticated ? post.isJoined : false,
     isOwner,
   }
 }
@@ -105,23 +112,40 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
     mutationFn: ({ postId, isJoining }: JoinMutationVariables) =>
       isJoining ? joinPartyPost(postId) : cancelPartyJoin(postId),
   })
+  const isPartyListUnavailable = partyQuery.isError || partyQuery.data?.source === 'unavailable'
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      return
+    }
+
+    setLocalPosts([])
+    setPostOverrides({})
+    setJoinedPostId(undefined)
+    setPartyStatusMessage('')
+  }, [isAuthenticated])
 
   const posts = useMemo(() => {
+    const shouldIgnoreLocalState = isPartyListUnavailable || !isAuthenticated
     const mergedPosts = mergePartyPostSources({
-      localPosts,
-      postOverrides,
+      localPosts: shouldIgnoreLocalState ? [] : localPosts,
+      postOverrides: shouldIgnoreLocalState ? {} : postOverrides,
       serverPosts: partyQuery.data?.data,
     })
 
-    return mergedPosts.map((post) => withOwnerState(post, authUserId))
-  }, [authUserId, localPosts, partyQuery.data?.data, postOverrides])
+    return mergedPosts.map((post) => withAuthDisplayState(post, authUserId, isAuthenticated))
+  }, [authUserId, isAuthenticated, isPartyListUnavailable, localPosts, partyQuery.data?.data, postOverrides])
   const activeJoinedPostId = useMemo(() => {
+    if (!isAuthenticated) {
+      return null
+    }
+
     if (joinedPostId !== undefined) {
       return joinedPostId
     }
 
     return posts.find((post) => post.isJoined === true)?.id ?? null
-  }, [joinedPostId, posts])
+  }, [isAuthenticated, joinedPostId, posts])
   const filteredPartyPosts = useMemo(
     () => filterPartyPosts(posts, selectedFilter, query),
     [posts, query, selectedFilter],
@@ -130,8 +154,13 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
     () => paginatePartyPosts(filteredPartyPosts, currentPage, PARTY_PAGE_SIZE),
     [currentPage, filteredPartyPosts],
   )
-  const isPartyListUnavailable = partyQuery.isError || partyQuery.data?.source === 'unavailable'
-  const statusMessage = partyStatusMessage
+  const emptyMessage = getPartyListEmptyMessage({
+    isAuthenticated,
+    isLoading: partyQuery.isPending,
+    isUnavailable: isPartyListUnavailable,
+    selectedFilter,
+  })
+  const statusMessage = partyStatusMessage || getPartyActionNotice(isAuthenticated)
 
   useEffect(() => {
     if (currentPage !== safePage) {
@@ -201,7 +230,7 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
 
     createMutation.mutate(request, {
       onSuccess: (createdPost) => {
-        const serverPost = withOwnerState(createdPost, authUserId)
+        const serverPost = withAuthDisplayState(createdPost, authUserId, isAuthenticated)
 
         setLocalPosts((currentPosts) => [
           serverPost,
@@ -268,7 +297,11 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
     const nextMessage = alreadyJoined
       ? `${targetPost.title} 참여 신청을 취소했어요.`
       : `${targetPost.title} 참여 신청했습니다. (${nextCurrent}/${total})`
-    const nextPost = withOwnerState(updatePostJoinState(targetPost, !alreadyJoined), authUserId)
+    const nextPost = withAuthDisplayState(
+      updatePostJoinState(targetPost, !alreadyJoined),
+      authUserId,
+      isAuthenticated,
+    )
 
     setLocalPosts((currentPosts) => replacePost(currentPosts, nextPost))
     setPostOverrides((currentOverrides) => ({
@@ -283,7 +316,7 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
       { postId, isJoining: !alreadyJoined },
       {
         onSuccess: async (serverPost) => {
-          const confirmedPost = withOwnerState(serverPost, authUserId)
+          const confirmedPost = withAuthDisplayState(serverPost, authUserId, isAuthenticated)
 
           setLocalPosts((currentPosts) => replacePost(currentPosts, confirmedPost))
           setPostOverrides((currentOverrides) => ({
@@ -331,10 +364,11 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
     focusCompose,
     isCreating: createMutation.isPending,
     isAuthenticated,
-    joinedPostId: activeJoinedPostId,
-    joiningPostId: joinMutation.isPending ? joinMutation.variables?.postId ?? null : null,
     isLoading: partyQuery.isPending,
     isUnavailable: isPartyListUnavailable,
+    joinedPostId: activeJoinedPostId,
+    joiningPostId: joinMutation.isPending ? joinMutation.variables?.postId ?? null : null,
+    emptyMessage,
     minDeadline,
     modeDraft,
     pageItems,

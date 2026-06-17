@@ -3,7 +3,12 @@ import { describe, it } from 'node:test'
 
 import { PARTY_RECRUITMENT_ROOM_ID } from '../../../../constants/communityChatRooms'
 import type { PartyPost } from '../../types'
-import { getPartyJoinActionState, mergePartyPostSources } from '../partyUtils'
+import {
+  getPartyActionNotice,
+  getPartyJoinActionState,
+  getPartyListEmptyMessage,
+  mergePartyPostSources,
+} from '../partyUtils'
 
 function partyPost(id: string): PartyPost {
   return {
@@ -44,6 +49,57 @@ describe('partyUtils', () => {
     })
 
     assert.deepEqual(result.map((post) => post.id), ['local-party', 'server-party'])
+  })
+
+  it('서버 모집글 배열 내부 중복 ID는 1건만 유지한다', () => {
+    const serverPost = partyPost('dup-party')
+    const duplicatedServerPost = { ...partyPost('dup-party'), title: '중복 모집글' }
+
+    const result = mergePartyPostSources({
+      localPosts: [],
+      postOverrides: {},
+      serverPosts: [serverPost, duplicatedServerPost],
+    })
+
+    assert.deepEqual(result.map((post) => post.id), ['dup-party'])
+  })
+
+  it('비로그인 사용자는 파티 액션 로그인 필요 안내를 본다', () => {
+    assert.equal(
+      getPartyActionNotice(false),
+      '로그인이 필요합니다. 모집글 작성과 참여는 로그인 후 사용할 수 있습니다.',
+    )
+    assert.equal(getPartyActionNotice(true), '')
+  })
+
+  it('파티 목록 상태별 빈 문구를 구분한다', () => {
+    assert.equal(
+      getPartyListEmptyMessage({
+        isAuthenticated: false,
+        isLoading: true,
+        isUnavailable: false,
+        selectedFilter: '전체',
+      }),
+      '파티 모집글을 불러오는 중입니다.',
+    )
+    assert.equal(
+      getPartyListEmptyMessage({
+        isAuthenticated: false,
+        isLoading: false,
+        isUnavailable: true,
+        selectedFilter: '전체',
+      }),
+      '로그인이 필요합니다.',
+    )
+    assert.equal(
+      getPartyListEmptyMessage({
+        isAuthenticated: true,
+        isLoading: false,
+        isUnavailable: false,
+        selectedFilter: '전체',
+      }),
+      '등록된 모집글이 없습니다.',
+    )
   })
 
   it('비로그인 사용자는 참여 버튼을 누를 수 없고 로그인 안내를 본다', () => {

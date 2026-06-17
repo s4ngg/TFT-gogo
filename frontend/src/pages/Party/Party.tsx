@@ -66,7 +66,7 @@ function Party() {
               <p>티어와 플레이 스타일에 맞는 TFT 듀오를 찾아보세요.</p>
             </div>
             <button type="button" className={styles.primaryButton} onClick={party.focusCompose}>
-              모집글 작성
+              {party.isAuthenticated ? '모집글 작성' : '로그인 후 작성'}
             </button>
           </div>
 
@@ -109,6 +109,7 @@ function Party() {
 
           <PartyPostList
             currentPage={party.currentPage}
+            emptyMessage={party.emptyMessage}
             isAuthenticated={party.isAuthenticated}
             isLoading={party.isLoading}
             isUnavailable={party.isUnavailable}
