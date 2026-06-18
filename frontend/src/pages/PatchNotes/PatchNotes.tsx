@@ -77,6 +77,9 @@ function PatchNotes() {
 
         <div className={styles.contentGrid}>
           <PatchSideRail
+            activeCategory={activeCategory}
+            categoryCounts={changeStats.categoryCounts}
+            onCategorySelect={setActiveCategory}
             onPatchSelect={handlePatchSelect}
             patchHistory={patchHistory}
             selectedPatch={selectedPatch}

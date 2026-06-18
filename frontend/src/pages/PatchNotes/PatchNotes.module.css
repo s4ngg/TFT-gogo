@@ -661,7 +661,7 @@
 .insightPanel ul {
   display: grid;
   gap: 12px;
-  margin: 16px 0 0;
+  margin: var(--space-lg) 0 0;
   padding: 0;
   list-style: none;
 }
@@ -676,8 +676,72 @@
   word-break: keep-all;
 }
 
-.insightPanel svg {
-  color: #4ade80;
+.insightPanel li svg {
+  color: var(--color-success);
+}
+
+.insightSummary {
+  margin: var(--space-xl) 0 0;
+  color: var(--text-soft);
+  font-size: var(--font-size-sm);
+  line-height: 1.65;
+  word-break: keep-all;
+}
+
+.insightSection,
+.quickCategorySection {
+  display: grid;
+  gap: var(--space-lg);
+  margin-top: var(--space-2xl);
+  padding-top: var(--space-2xl);
+  border-top: 1px solid var(--border-faint);
+}
+
+.insightSectionTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 900;
+}
+
+.quickCategoryGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.quickCategoryButton {
+  min-height: var(--size-control-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 0 var(--space-lg);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-button);
+  color: var(--text-soft);
+  background: var(--bg-btn-dark-soft);
+  font-size: var(--font-size-xs);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.quickCategoryButton:hover {
+  border-color: var(--cyan-border-subtle);
+  color: var(--text-main);
+  background: var(--cyan-bg-faint);
+}
+
+.quickCategoryButton strong {
+  color: var(--accent-bright);
+  font-size: var(--font-size-xs);
+}
+
+.activeQuickCategoryButton {
+  border-color: var(--color-cyan);
+  color: var(--color-cyan);
+  background: var(--cyan-bg-subtle);
 }
 
 .historyHeader {
