@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  CHANGE_TYPE_FILTERS,
   PATCH_CATEGORIES,
-  type ChangeTypeFilter,
   type PatchChangesQuery,
   type PatchCategory,
 } from '../../../api/patchNotes'
@@ -17,7 +15,6 @@ export function usePatchNotesPageState({
   selectedPatchVersion,
 }: UsePatchNotesPageStateOptions) {
   const [activeCategory, setActiveCategory] = useState<PatchCategory>(PATCH_CATEGORIES[0])
-  const [activeChangeType, setActiveChangeType] = useState<ChangeTypeFilter>(CHANGE_TYPE_FILTERS[0])
   const [query, setQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const selectedPatchVersionRef = useRef(selectedPatchVersion)
@@ -29,14 +26,14 @@ export function usePatchNotesPageState({
   const patchChangesParams = useMemo<PatchChangesQuery>(
     () => ({
       category: activeCategory,
-      changeType: activeChangeType,
+      changeType: '전체',
       highImpactOnly: false,
       page: currentPage,
       pageSize: PATCH_PAGE_SIZE,
       query,
       version: selectedPatchVersion,
     }),
-    [activeCategory, activeChangeType, currentPage, query, selectedPatchVersion],
+    [activeCategory, currentPage, query, selectedPatchVersion],
   )
 
   const setActiveCategoryAndReset = useCallback((category: PatchCategory) => {
@@ -45,15 +42,6 @@ export function usePatchNotesPageState({
 
       resetChangeListState()
       return category
-    })
-  }, [resetChangeListState])
-
-  const setActiveChangeTypeAndReset = useCallback((changeType: ChangeTypeFilter) => {
-    setActiveChangeType((currentChangeType) => {
-      if (currentChangeType === changeType) return currentChangeType
-
-      resetChangeListState()
-      return changeType
     })
   }, [resetChangeListState])
 
@@ -75,13 +63,11 @@ export function usePatchNotesPageState({
 
   return {
     activeCategory,
-    activeChangeType,
     currentPage,
     patchChangesParams,
     query,
     resetChangeListState,
     setActiveCategory: setActiveCategoryAndReset,
-    setActiveChangeType: setActiveChangeTypeAndReset,
     setCurrentPage,
     setQuery: setQueryAndReset,
   }

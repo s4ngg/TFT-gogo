@@ -235,8 +235,8 @@
   background: #05f3e7;
 }
 
-.warnIcon {
-  background: #ff5b57;
+.newSummaryIcon {
+  background: #f7d26d;
 }
 
 .summaryCard strong {
@@ -376,7 +376,6 @@
 }
 
 .categoryTabs button:focus-visible,
-.quickFilters button:focus-visible,
 .pagination button:focus-visible,
 .seasonHeaderButton:focus-visible,
 .seasonPatchButton:focus-visible {
@@ -393,53 +392,6 @@
 
 .categoryTabs .activeTab {
   border-color: rgba(5, 243, 231, 0.55);
-  color: #05f3e7;
-  background: rgba(5, 243, 231, 0.08);
-}
-
-.quickFilters {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 13px;
-}
-
-.quickFilters button {
-  height: 32px;
-  border: 1px solid rgba(112, 144, 152, 0.18);
-  border-radius: 8px;
-  color: #8f9aaa;
-  background: rgba(255, 255, 255, 0.025);
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-  white-space: nowrap;
-  transition:
-    border-color 0.16s,
-    color 0.16s,
-    background 0.16s;
-}
-
-.quickFilters button:hover {
-  border-color: rgba(5, 243, 231, 0.35);
-  color: #dce3ec;
-  background: rgba(5, 243, 231, 0.05);
-}
-
-.typeFilters {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  overflow-x: auto;
-}
-
-.typeFilters button {
-  padding: 0 10px;
-}
-
-.typeFilters .activeTypeFilter {
-  border-color: rgba(5, 243, 231, 0.62);
   color: #05f3e7;
   background: rgba(5, 243, 231, 0.08);
 }
@@ -634,18 +586,6 @@
 
 .changeType {
   color: #071116;
-}
-
-.buff {
-  background: #4ade80;
-}
-
-.nerf {
-  background: #ff5b57;
-}
-
-.adjust {
-  background: #60a5fa;
 }
 
 .new {
@@ -917,15 +857,6 @@
 
   .categoryTabs {
     overflow-x: auto;
-  }
-
-  .quickFilters {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .typeFilters {
-    width: 100%;
   }
 
   .changeTypeStack {

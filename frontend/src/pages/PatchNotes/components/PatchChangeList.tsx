@@ -3,13 +3,11 @@ import { Shield, Sparkles, Swords, Wand2, Zap } from 'lucide-react'
 import {
   CHANGE_CATEGORIES,
   type ChangeCategory,
-  type ChangeType,
-  type ChangeTypeFilter,
   type PatchChange,
 } from '../../../api/patchNotes'
 import {
   getPatchChangeDetailSummary,
-  getVisiblePatchChangeTypes,
+  getVisibleNewChangeTypes,
   groupPatchChangesByTitle,
   shouldShowPatchChangeValueLine,
 } from '../utils/patchChangeDisplay'
@@ -23,15 +21,7 @@ const CATEGORY_ICON: Record<ChangeCategory, LucideIcon> = {
   시스템: Zap,
 }
 
-const CHANGE_TYPE_CLASS: Record<ChangeType, string> = {
-  상향: styles.buff,
-  하향: styles.nerf,
-  조정: styles.adjust,
-  신규: styles.new,
-}
-
 interface PatchChangeListProps {
-  activeChangeType: ChangeTypeFilter
   patchChanges: PatchChange[]
 }
 
@@ -44,7 +34,7 @@ function groupChangesByCategory(patchChanges: PatchChange[]) {
     .filter((section) => section.changes.length > 0)
 }
 
-function PatchChangeList({ activeChangeType, patchChanges }: PatchChangeListProps) {
+function PatchChangeList({ patchChanges }: PatchChangeListProps) {
   const sections = groupChangesByCategory(patchChanges).map((section) => ({
     ...section,
     groups: groupPatchChangesByTitle(section.changes),
@@ -67,7 +57,7 @@ function PatchChangeList({ activeChangeType, patchChanges }: PatchChangeListProp
 
             <ul className={styles.changeBulletList}>
               {section.groups.map((group) => {
-                const changeTypes = getVisiblePatchChangeTypes(group.changes, activeChangeType)
+                const changeTypes = getVisibleNewChangeTypes(group.changes)
                 const changeDetails = group.changes
                   .map((change) => ({
                     change,
@@ -90,7 +80,7 @@ function PatchChangeList({ activeChangeType, patchChanges }: PatchChangeListProp
                           {changeTypes.map((changeType) => (
                             <span
                               key={changeType}
-                              className={`${styles.changeType} ${CHANGE_TYPE_CLASS[changeType]}`}
+                              className={`${styles.changeType} ${styles.new}`}
                             >
                               {changeType}
                             </span>

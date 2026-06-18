@@ -1,6 +1,5 @@
 import {
   type ChangeType,
-  type ChangeTypeFilter,
   type PatchChange,
 } from '../../../api/patchNotes'
 
@@ -186,15 +185,6 @@ export function groupPatchChangesByTitle(changes: PatchChange[]): PatchChangeGro
   return Array.from(groups.values())
 }
 
-export function getVisiblePatchChangeTypes(
-  changes: PatchChange[],
-  activeChangeType: ChangeTypeFilter,
-): ChangeType[] {
-  const changeTypes = Array.from(new Set(changes.map((change) => change.type)))
-
-  if (activeChangeType !== '전체') {
-    return changeTypes.filter((changeType) => changeType !== activeChangeType)
-  }
-
-  return changeTypes.length > 1 ? changeTypes : []
+export function getVisibleNewChangeTypes(changes: PatchChange[]): ChangeType[] {
+  return changes.some((change) => change.type === '신규') ? ['신규'] : []
 }

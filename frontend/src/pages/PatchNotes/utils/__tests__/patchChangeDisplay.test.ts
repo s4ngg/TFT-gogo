@@ -4,7 +4,7 @@ import type { PatchChange } from '../../../../api/patchNotes'
 import {
   getPatchChangeDetailSummary,
   getPatchChangeTitle,
-  getVisiblePatchChangeTypes,
+  getVisibleNewChangeTypes,
   groupPatchChangesByTitle,
   shouldShowPatchChangeValueLine,
 } from '../patchChangeDisplay'
@@ -101,19 +101,20 @@ describe('patchChangeDisplay', () => {
     assert.equal(groups[0].changes.length, 2)
   })
 
-  it('단일 타입이거나 현재 선택된 타입은 항목별 칩으로 반복 표시하지 않는다', () => {
-    assert.deepEqual(getVisiblePatchChangeTypes([
+  it('신규 타입만 항목별 칩으로 표시한다', () => {
+    assert.deepEqual(getVisibleNewChangeTypes([
       patchChange({ type: '조정' }),
-    ], '전체'), [])
+    ]), [])
 
-    assert.deepEqual(getVisiblePatchChangeTypes([
-      patchChange({ type: '조정' }),
-    ], '조정'), [])
-
-    assert.deepEqual(getVisiblePatchChangeTypes([
+    assert.deepEqual(getVisibleNewChangeTypes([
       patchChange({ id: 1, type: '상향' }),
       patchChange({ id: 2, type: '하향' }),
-    ], '전체'), ['상향', '하향'])
+    ]), [])
+
+    assert.deepEqual(getVisibleNewChangeTypes([
+      patchChange({ id: 1, type: '신규' }),
+      patchChange({ id: 2, type: '하향' }),
+    ]), ['신규'])
   })
 
   it('leading numeric trait tier is hidden and skill prefix is used as the title', () => {

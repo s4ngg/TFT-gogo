@@ -489,14 +489,6 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
         if (text.contains("new") || text.contains("신규")) {
             return PatchChangeType.NEW;
         }
-        if (text.contains("buff") || text.contains("increase") || text.contains("increased")
-                || text.contains("상향") || text.contains("증가")) {
-            return PatchChangeType.BUFF;
-        }
-        if (text.contains("nerf") || text.contains("decrease") || text.contains("decreased")
-                || text.contains("하향") || text.contains("감소")) {
-            return PatchChangeType.NERF;
-        }
         return PatchChangeType.ADJUST;
     }
 

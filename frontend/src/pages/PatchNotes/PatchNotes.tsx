@@ -25,12 +25,10 @@ function PatchNotes() {
   const selectedPatch = selectedPatchFromQuery ?? patchNotesFallbackData[0]
   const {
     activeCategory,
-    activeChangeType,
     patchChangesParams,
     query,
     resetChangeListState,
     setActiveCategory,
-    setActiveChangeType,
     setCurrentPage,
     setQuery,
   } = usePatchNotesPageState({
@@ -71,8 +69,8 @@ function PatchNotes() {
         />
 
         <PatchSummaryGrid
-          buffCount={changeStats.buffCount}
-          nerfCount={changeStats.nerfCount}
+          newCount={changeStats.typeCounts.신규}
+          totalCount={changeStats.totalChanges}
         />
 
         <div className={styles.contentGrid}>
@@ -93,16 +91,13 @@ function PatchNotes() {
 
             <PatchChangeFilters
               activeCategory={activeCategory}
-              activeChangeType={activeChangeType}
               onCategoryChange={setActiveCategory}
-              onChangeTypeChange={setActiveChangeType}
               onQueryChange={setQuery}
               query={query}
               stats={changeStats}
             />
 
             <PatchChangeList
-              activeChangeType={activeChangeType}
               patchChanges={patchChanges}
             />
 
