@@ -109,6 +109,13 @@ const DEFAULT_PATCH_NOTE_IMPORT_FORM: PatchNoteImportFormState = {
   version: '',
 }
 
+const LATEST_PATCH_NOTE_IMPORT_PAYLOAD: AdminPatchNoteImportRequest = {
+  current: true,
+  locale: 'ko-kr',
+  sourceUrl: null,
+  version: null,
+}
+
 const EMPTY_PATCH_CHANGE_FORM: PatchChangeFormState = {
   afterValue: '',
   beforeValue: '',
@@ -595,6 +602,16 @@ function AdminPatchNotesManager() {
     }
   }
 
+  async function handleLatestPatchNoteImportClick() {
+    clearNotice()
+
+    try {
+      await importPatchNoteMutation.mutateAsync(LATEST_PATCH_NOTE_IMPORT_PAYLOAD)
+    } catch {
+      setError('최신 Riot 패치노트 가져오기에 실패했습니다. 관리자 토큰과 Riot 페이지 상태를 확인해주세요.')
+    }
+  }
+
   async function handlePatchNoteDelete(note: AdminPatchNote) {
     if (!confirm(`${note.version} 패치노트를 삭제할까요? 연결된 변경사항도 함께 숨김 처리됩니다.`)) return
     clearNotice()
@@ -695,10 +712,21 @@ function AdminPatchNotesManager() {
             <h2 className={styles.panelTitle}>Riot 패치노트 가져오기</h2>
             <p className={styles.panelHint}>공식 Riot 패치노트 데이터를 관리자 DB에 반영합니다.</p>
           </div>
-          <button className={styles.primaryButton} type="submit" disabled={isPatchNoteImporting}>
-            <Download size={16} />
-            {isPatchNoteImporting ? '가져오는 중' : '가져오기'}
-          </button>
+          <div className={styles.actionsEnd}>
+            <button
+              className={styles.secondaryButton}
+              type="button"
+              disabled={isPatchNoteImporting}
+              onClick={() => void handleLatestPatchNoteImportClick()}
+            >
+              <RefreshCcw size={16} />
+              최신 자동 가져오기
+            </button>
+            <button className={styles.primaryButton} type="submit" disabled={isPatchNoteImporting}>
+              <Download size={16} />
+              {isPatchNoteImporting ? '가져오는 중' : '지정값으로 가져오기'}
+            </button>
+          </div>
         </div>
 
         <div className={styles.importGrid}>
