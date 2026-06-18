@@ -17,6 +17,8 @@ import MatchDetailPanel from './components/MatchDetailPanel'
 import EmptyState from './components/EmptyState'
 import RateLimitState from './components/RateLimitState'
 import { placementTone, timeAgo, formatDate } from './utils/summonerUtils'
+import AiChat from '../AiRecommend/components/AiChat'
+import type { ChatContext } from '../../api/chatApi'
 import styles from './SummonerDetail.module.css'
 
 interface HttpError { response?: { status?: number; headers?: Record<string, string> } }
@@ -114,6 +116,20 @@ function SummonerDetail() {
   const filteredMatches = gameTypeFilter === 'ALL'
     ? matches
     : matches.filter((m) => m.gameType === gameTypeFilter)
+
+  const avgPlace = matches.length > 0
+    ? (matches.reduce((sum, m) => sum + m.placement, 0) / matches.length).toFixed(1)
+    : '-'
+
+  const chatContext: ChatContext | undefined = profile
+    ? {
+        summonerName: name,
+        tagLine: tag,
+        statsSummary: `평균 ${avgPlace}등, 최근 ${matches.length}게임`,
+        goodTraits: topTraits.slice(0, 3).map((t) => t.name),
+        badTraits: [],
+      }
+    : undefined
 
   useEffect(() => {
     if (profile) {
@@ -223,140 +239,142 @@ function SummonerDetail() {
               </div>
             </section>
 
-            {/* 많이 플레이한 시너지 / 챔피언 */}
-            {matches.length > 0 && (
-              <div className={styles.statGrid}>
-                <section className={styles.statSection}>
-                  <h2 className={styles.statSectionTitle}>많이 플레이한 시너지</h2>
-                  <div className={styles.topTraitList}>
-                    {topTraits.map((tr, i) => (
-                      <div key={tr.traitId} className={styles.topTraitRow}>
-                        <span className={styles.topRank}>{i + 1}</span>
-                        <TraitHexBadge count={tr.count} iconUrl={tr.iconUrl} name={tr.name} tone={tr.tone} />
-                        <span className={styles.topName}>{tr.name}</span>
-                        <span className={styles.topGames}>{tr.games}게임</span>
-                        <span className={styles.topAvg}>평균 {tr.avgPlace}등</span>
-                      </div>
-                    ))}
-                  </div>
-                </section>
+            {/* 매치 히스토리 + 우측 패널 */}
+            <div className={styles.mainGrid}>
+              <section className={styles.matchSection}>
+                <h2>{filteredMatches.length > 0 ? `최근 ${filteredMatches.length}게임` : '매치 히스토리'}</h2>
 
-                <section className={styles.statSection}>
-                  <h2 className={styles.statSectionTitle}>많이 플레이한 챔피언</h2>
-                  <div className={styles.topChampList}>
-                    {topChampions.map((champ, i) => (
-                      <div key={champ.characterId} className={styles.topChampRow}>
-                        <span className={styles.topRank}>{i + 1}</span>
-                        <div className={styles.champThumbWrap}>
-                          <img className={styles.champThumb} src={champ.imageUrl} alt={champ.name} />
-                        </div>
-                        <span className={styles.topName}>{champ.name}</span>
-                        <span className={styles.topGames}>{champ.games}게임</span>
-                        <span className={styles.topAvg}>평균 {champ.avgPlace}등</span>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              </div>
-            )}
-
-            {/* 매치 히스토리 */}
-            <section className={styles.matchSection}>
-              <h2>{filteredMatches.length > 0 ? `최근 ${filteredMatches.length}게임` : '매치 히스토리'}</h2>
-              <RecentSummary matches={filteredMatches} />
-
-              {/* 게임 유형 필터 */}
-              {matches.length > 0 && (
-                <div className={styles.filterBar}>
-                  {GAME_TYPE_FILTERS.map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      className={`${styles.filterBtn} ${gameTypeFilter === type ? styles.filterBtnActive : ''}`}
-                      onClick={() => handleFilterChange(type)}
-                    >
-                      {type === 'ALL' ? '전체' : type === 'RANKED' ? '랭크' : '일반'}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              <div className={styles.matchList}>
-                {filteredMatches.length === 0 ? (
-                  <p className={styles.matchEmptyState}>
-                    {matches.length === 0
-                      ? '아직 플레이한 기록이 없습니다'
-                      : '선택한 게임 유형의 전적이 없습니다'}
-                  </p>
-                ) : filteredMatches.map((match) => {
-                  const isOpen = expandedId === match.matchId
-                  return (
-                    <div key={match.matchId} className={styles.matchItem}>
-                      <article
-                        className={`${styles.matchRow} ${placementTone(match.placement, styles)} ${isOpen ? styles.matchRowOpen : ''}`}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => setExpandedId(isOpen ? null : match.matchId)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault()
-                            setExpandedId(isOpen ? null : match.matchId)
-                          }
-                        }}
+                {/* 게임 유형 필터 */}
+                {matches.length > 0 && (
+                  <div className={styles.filterBar}>
+                    {GAME_TYPE_FILTERS.map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        className={`${styles.filterBtn} ${gameTypeFilter === type ? styles.filterBtnActive : ''}`}
+                        onClick={() => handleFilterChange(type)}
                       >
-                        <div className={styles.placementBadge}>
-                          <span>{match.placement}위</span>
-                        </div>
-                        <div className={styles.matchMeta}>
-                          <p className={styles.deckName}>
-                            <span className={`${styles.gameTypeBadge} ${match.gameType === 'RANKED' ? styles.gameTypeBadgeRanked : styles.gameTypeBadgeNormal}`}>
-                              {match.gameType === 'RANKED' ? '랭크' : '일반'}
-                            </span>
-                            {match.compositionName}
-                          </p>
-                          <p className={styles.timeAgo}>{formatDate(match.gameDateTime)} · {timeAgo(match.gameDateTime)}</p>
-                        </div>
-                        <div className={styles.unitList}>
-                          {match.units.map((unit, i) => (
-                            <ChampionCard
-                              key={`${unit.characterId}-${i}`}
-                              imageUrl={unit.imageUrl || tftChampSquareUrl(unit.characterId)}
-                              stars={unit.stars}
-                              label={unit.characterId}
-                              items={itemsFromUrls(unit.itemImageUrls)}
-                              toneIndex={0}
-                            />
-                          ))}
-                        </div>
-                        <div className={styles.matchChevron}>
-                          {isOpen
-                            ? <ChevronUp size={14} />
-                            : <ChevronDown size={14} />}
-                        </div>
-                      </article>
-                      {isOpen && (
-                        <MatchDetailPanel match={match} myPuuid={profile?.puuid ?? ''} />
-                      )}
-                    </div>
-                  )
-                })}
+                        {type === 'ALL' ? '전체' : type === 'RANKED' ? '랭크' : '일반'}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div className={styles.matchList}>
+                  {filteredMatches.length === 0 ? (
+                    <p className={styles.matchEmptyState}>
+                      {matches.length === 0
+                        ? '아직 플레이한 기록이 없습니다'
+                        : '선택한 게임 유형의 전적이 없습니다'}
+                    </p>
+                  ) : filteredMatches.map((match) => {
+                    const isOpen = expandedId === match.matchId
+                    return (
+                      <div key={match.matchId} className={styles.matchItem}>
+                        <article
+                          className={`${styles.matchRow} ${placementTone(match.placement, styles)} ${isOpen ? styles.matchRowOpen : ''}`}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => setExpandedId(isOpen ? null : match.matchId)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault()
+                              setExpandedId(isOpen ? null : match.matchId)
+                            }
+                          }}
+                        >
+                          <div className={styles.placementBadge}>
+                            <span>{match.placement}위</span>
+                          </div>
+                          <div className={styles.matchMeta}>
+                            <p className={styles.deckName}>
+                              <span className={`${styles.gameTypeBadge} ${match.gameType === 'RANKED' ? styles.gameTypeBadgeRanked : styles.gameTypeBadgeNormal}`}>
+                                {match.gameType === 'RANKED' ? '랭크' : '일반'}
+                              </span>
+                              {match.compositionName}
+                            </p>
+                            <p className={styles.timeAgo}>{formatDate(match.gameDateTime)} · {timeAgo(match.gameDateTime)}</p>
+                          </div>
+                          <div className={styles.unitList}>
+                            {match.units.map((unit, i) => (
+                              <ChampionCard
+                                key={`${unit.characterId}-${i}`}
+                                imageUrl={unit.imageUrl || tftChampSquareUrl(unit.characterId)}
+                                stars={unit.stars}
+                                label={unit.characterId}
+                                items={itemsFromUrls(unit.itemImageUrls)}
+                                toneIndex={0}
+                              />
+                            ))}
+                          </div>
+                          <div className={styles.matchChevron}>
+                            {isOpen
+                              ? <ChevronUp size={14} />
+                              : <ChevronDown size={14} />}
+                          </div>
+                        </article>
+                        {isOpen && (
+                          <MatchDetailPanel match={match} myPuuid={profile?.puuid ?? ''} />
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+                {matchRateLimited && (
+                  <p className={styles.matchError}>
+                    전적 갱신에 실패했습니다. 잠시 후 다시 시도해주세요.
+                  </p>
+                )}
+                {hasNextPage && (
+                  <button
+                    type="button"
+                    className={styles.loadMoreBtn}
+                    onClick={() => fetchNextPage()}
+                    disabled={isFetchingNextPage}
+                  >
+                    {isFetchingNextPage ? '불러오는 중...' : '더 보기'}
+                  </button>
+                )}
+              </section>
+              <div className={styles.rightCol}>
+                <AiChat context={chatContext} />
+                <RecentSummary matches={filteredMatches} />
+                {matches.length > 0 && (
+                  <>
+                    <section className={styles.statSection}>
+                      <h2 className={styles.statSectionTitle}>많이 플레이한 시너지</h2>
+                      <div className={styles.topTraitList}>
+                        {topTraits.map((tr, i) => (
+                          <div key={tr.traitId} className={styles.topTraitRow}>
+                            <span className={styles.topRank}>{i + 1}</span>
+                            <TraitHexBadge count={tr.count} iconUrl={tr.iconUrl} name={tr.name} tone={tr.tone} />
+                            <span className={styles.topName}>{tr.name}</span>
+                            <span className={styles.topGames}>{tr.games}게임</span>
+                            <span className={styles.topAvg}>평균 {tr.avgPlace}등</span>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                    <section className={styles.statSection}>
+                      <h2 className={styles.statSectionTitle}>많이 플레이한 챔피언</h2>
+                      <div className={styles.topChampList}>
+                        {topChampions.map((champ, i) => (
+                          <div key={champ.characterId} className={styles.topChampRow}>
+                            <span className={styles.topRank}>{i + 1}</span>
+                            <div className={styles.champThumbWrap}>
+                              <img className={styles.champThumb} src={champ.imageUrl} alt={champ.name} />
+                            </div>
+                            <span className={styles.topName}>{champ.name}</span>
+                            <span className={styles.topGames}>{champ.games}게임</span>
+                            <span className={styles.topAvg}>평균 {champ.avgPlace}등</span>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  </>
+                )}
               </div>
-              {matchRateLimited && (
-                <p className={styles.matchError}>
-                  전적 갱신에 실패했습니다. 잠시 후 다시 시도해주세요.
-                </p>
-              )}
-              {hasNextPage && (
-                <button
-                  type="button"
-                  className={styles.loadMoreBtn}
-                  onClick={() => fetchNextPage()}
-                  disabled={isFetchingNextPage}
-                >
-                  {isFetchingNextPage ? '불러오는 중...' : '더 보기'}
-                </button>
-              )}
-            </section>
+            </div>
           </>
         )}
       </div>
