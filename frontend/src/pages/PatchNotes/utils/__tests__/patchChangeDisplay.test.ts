@@ -227,7 +227,7 @@ describe('patchChangeDisplay', () => {
     ])
   })
 
-  it('상태 문구 제목에서는 정상적으로 같은 설명용 부사를 제거한다', () => {
+  it('상태 문구 제목에서는 설명용 부사와 반복 대상명을 일반 규칙으로 제거한다', () => {
     const status = getPatchChangeStatusDisplay(patchChange({
       summary: '펑구의 파티: 조우자 없음 조우자가 정상적으로 비활성화됩니다.',
       target: '시스템',
@@ -238,5 +238,41 @@ describe('patchChangeDisplay', () => {
       title: '펑구의 파티: 조우자 없음',
       tone: 'disabled',
     })
+
+    assert.deepEqual(
+      getPatchChangeStatusDisplay(patchChange({
+        summary: '오른의 유물 아이템이 제대로 삭제됩니다.',
+        target: '아이템',
+      })),
+      {
+        label: '제거',
+        title: '오른의 유물 아이템',
+        tone: 'removed',
+      },
+    )
+
+    assert.deepEqual(
+      getPatchChangeStatusDisplay(patchChange({
+        summary: '프리즘 보관함 보관함이 올바르게 추가됩니다.',
+        target: '시스템',
+      })),
+      {
+        label: '신규',
+        title: '프리즘 보관함',
+        tone: 'added',
+      },
+    )
+
+    assert.deepEqual(
+      getPatchChangeStatusDisplay(patchChange({
+        summary: '전략가 체력 체력이 정삭적으로 비활성화됩니다.',
+        target: '시스템',
+      })),
+      {
+        label: '제외',
+        title: '전략가 체력',
+        tone: 'disabled',
+      },
+    )
   })
 })

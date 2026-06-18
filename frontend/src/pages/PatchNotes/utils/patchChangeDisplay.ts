@@ -32,54 +32,31 @@ interface StatusPattern {
   tone: PatchChangeStatusTone
 }
 
+const STATUS_FILLER_ADVERBS = '(?:정상적으로|정삭적으로|올바르게|제대로)'
+
 const STATUS_PATTERNS: StatusPattern[] = [
   {
-    expression: /^(.+?)(?:이|가)\s+다시\s+활성화됩니다\.?$/u,
+    expression: new RegExp(`^(.+?)(?:이|가)?\\s+(?:${STATUS_FILLER_ADVERBS}\\s+)?다시\\s+활성화됩니다\\.?$`, 'u'),
     label: '복귀',
     tone: 'enabled',
   },
   {
-    expression: /^(.+?)\s+다시\s+활성화됩니다\.?$/u,
-    label: '복귀',
-    tone: 'enabled',
-  },
-  {
-    expression: /^(.+?)(?:이|가)\s+비활성화됩니다\.?$/u,
+    expression: new RegExp(`^(.+?)(?:이|가)?\\s+(?:${STATUS_FILLER_ADVERBS}\\s+)?비활성화됩니다\\.?$`, 'u'),
     label: '제외',
     tone: 'disabled',
   },
   {
-    expression: /^(.+?)\s+비활성화됩니다\.?$/u,
-    label: '제외',
-    tone: 'disabled',
-  },
-  {
-    expression: /^(.+?)(?:이|가)\s+활성화됩니다\.?$/u,
+    expression: new RegExp(`^(.+?)(?:이|가)?\\s+(?:${STATUS_FILLER_ADVERBS}\\s+)?활성화됩니다\\.?$`, 'u'),
     label: '사용 가능',
     tone: 'enabled',
   },
   {
-    expression: /^(.+?)\s+활성화됩니다\.?$/u,
-    label: '사용 가능',
-    tone: 'enabled',
-  },
-  {
-    expression: /^(.+?)(?:이|가)\s+추가됩니다\.?$/u,
+    expression: new RegExp(`^(.+?)(?:이|가)?\\s+(?:${STATUS_FILLER_ADVERBS}\\s+)?추가됩니다\\.?$`, 'u'),
     label: '신규',
     tone: 'added',
   },
   {
-    expression: /^(.+?)\s+추가됩니다\.?$/u,
-    label: '신규',
-    tone: 'added',
-  },
-  {
-    expression: /^(.+?)(?:이|가)\s+삭제됩니다\.?$/u,
-    label: '제거',
-    tone: 'removed',
-  },
-  {
-    expression: /^(.+?)\s+삭제됩니다\.?$/u,
+    expression: new RegExp(`^(.+?)(?:이|가)?\\s+(?:${STATUS_FILLER_ADVERBS}\\s+)?삭제됩니다\\.?$`, 'u'),
     label: '제거',
     tone: 'removed',
   },
@@ -109,11 +86,25 @@ function normalizeDisplayTitle(value: string) {
   return normalizeDisplayText(value)
 }
 
+function removeTrailingRepeatedToken(value: string) {
+  const words = value.split(/\s+/u).filter(Boolean)
+  const trailingWord = words[words.length - 1]
+
+  if (!trailingWord || words.length < 2) return value
+
+  const prefixWords = words.slice(0, -1).flatMap((word) => word.split(/[:()[\],.]+/u)).filter(Boolean)
+
+  if (!prefixWords.includes(trailingWord)) return value
+
+  return words.slice(0, -1).join(' ')
+}
+
 function normalizeStatusTitle(value: string) {
-  return normalizeDisplayTitle(value)
-    .replace(/\s+(?:정상적으로|올바르게|제대로)$/u, '')
-    .replace(/(조우자 없음)\s+조우자(?:이|가)?$/u, '$1')
+  const title = normalizeDisplayTitle(value)
+    .replace(new RegExp(`\\s+${STATUS_FILLER_ADVERBS}$`, 'u'), '')
     .trim()
+
+  return removeTrailingRepeatedToken(title).trim()
 }
 
 function getStatusDisplayFromText(value: string): PatchChangeStatusDisplay | undefined {
