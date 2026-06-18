@@ -1,4 +1,5 @@
 import { ClipboardList, Search } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import styles from '../Dashboard.module.css'
@@ -21,39 +22,26 @@ function PatchMetaCard() {
   )
 }
 
-const STORAGE_KEY = 'tft_recent_searches'
-
-function getRecentSearches(): string[] {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]')
-    if (!Array.isArray(parsed)) return []
-    return parsed.filter((s): s is string => typeof s === 'string').slice(0, 5)
-  } catch {
-    return []
-  }
+interface SummonerSearchCardProps {
+  isSearchInvalid: boolean
+  onSearchSubmit: (input: string) => void
+  recentSearches: string[]
+  result: ReactNode
+  searchDescriptionId?: string
 }
 
-function saveRecentSearch(input: string) {
-  const prev = getRecentSearches()
-  const next = [input, ...prev.filter((s) => s !== input)].slice(0, 5)
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-}
-
-function SummonerSearchCard() {
+function SummonerSearchCard({
+  isSearchInvalid,
+  onSearchSubmit,
+  recentSearches,
+  result,
+  searchDescriptionId,
+}: SummonerSearchCardProps) {
   const [query, setQuery] = useState('')
-  const navigate = useNavigate()
 
   function handleSearch(input: string) {
-    const trimmed = input.trim()
-    if (!trimmed) return
-    saveRecentSearch(trimmed)
-    const parts = trimmed.split('#').map((s) => s.trim())
-    const name = parts[0] || trimmed
-    const tag = parts[1] || 'KR1'
-    navigate(`/summoner/${encodeURIComponent(name)}/${encodeURIComponent(tag)}`)
+    onSearchSubmit(input)
   }
-
-  const recentSearches = getRecentSearches()
 
   return (
     <section className={`${styles.panel} ${styles.searchPanel}`}>
@@ -67,6 +55,8 @@ function SummonerSearchCard() {
         }}
       >
         <input
+          aria-describedby={searchDescriptionId}
+          aria-invalid={isSearchInvalid}
           aria-label="소환사명 검색"
           placeholder="소환사명#태그 입력"
           value={query}
@@ -83,22 +73,46 @@ function SummonerSearchCard() {
             <button
               key={tag}
               type="button"
-              onClick={() => handleSearch(tag)}
+              onClick={() => {
+                setQuery(tag)
+                handleSearch(tag)
+              }}
             >
               {tag}
             </button>
           ))}
         </div>
       )}
+      {result}
     </section>
   )
 }
 
-function TopSummaryCards() {
+interface TopSummaryCardsProps {
+  isSummonerSearchInvalid: boolean
+  onSummonerSearchSubmit: (input: string) => void
+  recentSearches: string[]
+  searchDescriptionId?: string
+  searchResult: ReactNode
+}
+
+function TopSummaryCards({
+  isSummonerSearchInvalid,
+  onSummonerSearchSubmit,
+  recentSearches,
+  searchDescriptionId,
+  searchResult,
+}: TopSummaryCardsProps) {
   return (
     <>
       <PatchMetaCard />
-      <SummonerSearchCard />
+      <SummonerSearchCard
+        isSearchInvalid={isSummonerSearchInvalid}
+        onSearchSubmit={onSummonerSearchSubmit}
+        recentSearches={recentSearches}
+        result={searchResult}
+        searchDescriptionId={searchDescriptionId}
+      />
     </>
   )
 }
