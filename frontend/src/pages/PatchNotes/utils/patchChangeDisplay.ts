@@ -35,52 +35,52 @@ interface StatusPattern {
 const STATUS_PATTERNS: StatusPattern[] = [
   {
     expression: /^(.+?)(?:이|가)\s+다시\s+활성화됩니다\.?$/u,
-    label: '다시 활성화',
+    label: '복귀',
     tone: 'enabled',
   },
   {
     expression: /^(.+?)\s+다시\s+활성화됩니다\.?$/u,
-    label: '다시 활성화',
+    label: '복귀',
     tone: 'enabled',
   },
   {
     expression: /^(.+?)(?:이|가)\s+비활성화됩니다\.?$/u,
-    label: '비활성화',
+    label: '제외',
     tone: 'disabled',
   },
   {
     expression: /^(.+?)\s+비활성화됩니다\.?$/u,
-    label: '비활성화',
+    label: '제외',
     tone: 'disabled',
   },
   {
     expression: /^(.+?)(?:이|가)\s+활성화됩니다\.?$/u,
-    label: '활성화',
+    label: '사용 가능',
     tone: 'enabled',
   },
   {
     expression: /^(.+?)\s+활성화됩니다\.?$/u,
-    label: '활성화',
+    label: '사용 가능',
     tone: 'enabled',
   },
   {
     expression: /^(.+?)(?:이|가)\s+추가됩니다\.?$/u,
-    label: '추가',
+    label: '신규',
     tone: 'added',
   },
   {
     expression: /^(.+?)\s+추가됩니다\.?$/u,
-    label: '추가',
+    label: '신규',
     tone: 'added',
   },
   {
     expression: /^(.+?)(?:이|가)\s+삭제됩니다\.?$/u,
-    label: '삭제',
+    label: '제거',
     tone: 'removed',
   },
   {
     expression: /^(.+?)\s+삭제됩니다\.?$/u,
-    label: '삭제',
+    label: '제거',
     tone: 'removed',
   },
 ]
@@ -100,7 +100,13 @@ export function normalizePatchChangeArrow(value: string) {
 }
 
 function normalizeDisplayText(value: string) {
-  return normalizePatchChangeArrow(value).replace(/^\(\d+\)\s*/u, '')
+  return normalizePatchChangeArrow(value)
+    .replace(/^(?:[\s,.;:，、·•\-–—"'“”‘’`]+|\(\d+\)\s*)+/u, '')
+    .trim()
+}
+
+function normalizeDisplayTitle(value: string) {
+  return normalizeDisplayText(value)
 }
 
 function getStatusDisplayFromText(value: string): PatchChangeStatusDisplay | undefined {
@@ -108,7 +114,7 @@ function getStatusDisplayFromText(value: string): PatchChangeStatusDisplay | und
 
   for (const pattern of STATUS_PATTERNS) {
     const match = normalizedValue.match(pattern.expression)
-    const title = match?.[1]?.trim()
+    const title = normalizeDisplayTitle(match?.[1] ?? '')
 
     if (title) {
       return {

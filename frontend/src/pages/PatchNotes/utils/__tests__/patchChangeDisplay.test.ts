@@ -144,7 +144,7 @@ describe('patchChangeDisplay', () => {
     assert.equal(getPatchChangeTitle(change), '번들 현상금 I')
     assert.equal(getPatchChangeDetailSummary(change, '번들 현상금 I'), '')
     assert.deepEqual(getPatchChangeStatusDisplay(change), {
-      label: '다시 활성화',
+      label: '복귀',
       title: '번들 현상금 I',
       tone: 'enabled',
     })
@@ -161,10 +161,54 @@ describe('patchChangeDisplay', () => {
     assert.equal(getPatchChangeDetailSummary(change, '황혼의 시험 II'), '')
     assert.deepEqual(getVisiblePatchChangeStatuses([change]), [
       {
-        label: '비활성화',
+        label: '제외',
         title: '황혼의 시험 II',
         tone: 'disabled',
       },
     ])
+  })
+
+  it('제목 앞에 붙은 쉼표, 따옴표, 숫자 티어 표기는 숨긴다', () => {
+    assert.equal(
+      getPatchChangeTitle(patchChange({
+        summary: "', (5) 도전자 공격 속도: 100/125% ⇒ 90/115%",
+        target: '특성',
+      })),
+      '도전자 공격 속도',
+    )
+
+    assert.equal(
+      getPatchChangeTitle(patchChange({
+        summary: '‘이전 준비 단계 동안 새로고침한 경우 획득하는 보호막의 최대 체력 계수: 40/60% ⇒ 44/66%',
+        target: '시너지',
+      })),
+      '이전 준비 단계 동안 새로고침한 경우 획득하는 보호막의 최대 체력 계수',
+    )
+  })
+
+  it('추가와 삭제 상태 문구는 사용자용 짧은 배지 라벨로 표시한다', () => {
+    assert.deepEqual(
+      getPatchChangeStatusDisplay(patchChange({
+        summary: '새로운 증강이 추가됩니다.',
+        target: '증강',
+      })),
+      {
+        label: '신규',
+        title: '새로운 증강',
+        tone: 'added',
+      },
+    )
+
+    assert.deepEqual(
+      getPatchChangeStatusDisplay(patchChange({
+        summary: '오래된 증강이 삭제됩니다.',
+        target: '증강',
+      })),
+      {
+        label: '제거',
+        title: '오래된 증강',
+        tone: 'removed',
+      },
+    )
   })
 })
