@@ -33,6 +33,7 @@ export interface PatchNoteSummary {
   imageUrl: string
   importedAt?: string
   importSource?: string
+  summary?: string
   status: '현재' | '이전'
   sourceUrl?: string
   title: string
@@ -268,18 +269,42 @@ function getBackendChangeType(changeType: ChangeTypeFilter) {
   return changeType === '전체' ? undefined : changeTypeMap[changeType]
 }
 
+function normalizePatchHeadingLabel(value: string) {
+  const normalizedValue = value.replace(/\s+/g, ' ').trim()
+  if (!normalizedValue) return ''
+
+  const segments = normalizedValue
+    .split('>')
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+  const label = segments[segments.length - 1] ?? normalizedValue
+
+  return label
+    .replace(/^\d{1,2}월\s+\d{1,2}일\s*/u, '')
+    .replace(/^\d{1,2}(?:[.-]\d{1,2}[a-zA-Z]?)?\s*(?:추가\s*)?패치(?:\s*노트)?\s*/u, '')
+    .trim() || label
+}
+
+function uniqueNonEmpty(values: string[]) {
+  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)))
+}
+
 function normalizeHighlights(note: PatchNoteResponse) {
-  if (Array.isArray(note.highlights)) {
-    return note.highlights
-      .map((highlight) => (typeof highlight === 'string' ? highlight : readString(highlight.content)))
-      .filter(Boolean)
-  }
+  const rawHighlights = Array.isArray(note.highlights)
+    ? note.highlights.map((highlight) => (typeof highlight === 'string' ? highlight : readString(highlight.content)))
+    : Array.isArray(note.patchNoteHighlights)
+      ? note.patchNoteHighlights.map((highlight) => readString(highlight.content))
+      : []
 
-  if (Array.isArray(note.patchNoteHighlights)) {
-    return note.patchNoteHighlights.map((highlight) => readString(highlight.content)).filter(Boolean)
-  }
+  return uniqueNonEmpty(rawHighlights.map(normalizePatchHeadingLabel))
+}
 
-  return []
+function normalizePatchFocus(focus: unknown, summary: string, description: string) {
+  const focusText = readString(focus).trim()
+  if (!focusText) return summary || description
+  if (focusText.includes('>')) return summary || description || normalizePatchHeadingLabel(focusText)
+
+  return focusText
 }
 
 function normalizeChange(change: PatchChangeResponse, index: number): PatchChange {
@@ -301,6 +326,7 @@ function normalizePatchNote(note: PatchNoteResponse): PatchNoteDetail {
   const changes = note.changes ?? note.patchNoteChanges ?? []
   const publishedDate = readString(note.date ?? note.publishedAt)
   const summary = readString(note.summary)
+  const description = readString(note.description ?? note.content ?? summary)
   const imageUrl = readNonEmptyString(note.imageUrl)
     ?? readNonEmptyString(note.representativeImageUrl)
     ?? PATCH_NOTE_DEFAULT_IMAGE
@@ -308,12 +334,13 @@ function normalizePatchNote(note: PatchNoteResponse): PatchNoteDetail {
   return {
     changes: changes.map(normalizeChange),
     date: formatDateLabel(publishedDate),
-    description: readString(note.description ?? note.content ?? summary),
-    focus: readString(note.focus ?? summary),
+    description,
+    focus: normalizePatchFocus(note.focus, summary, description),
     highlights: normalizeHighlights(note),
     imageUrl,
     importedAt: readNonEmptyString(note.importedAt),
     importSource: readNonEmptyString(note.importSource),
+    summary,
     status: note.status === '현재' || note.status === 'CURRENT' || note.isCurrent ? '현재' : '이전',
     sourceUrl: readNonEmptyString(note.sourceUrl),
     title: readString(note.title, `${readString(note.version)} 패치`),

@@ -25,6 +25,7 @@ function formatImportedAt(value: string | undefined) {
 function PatchHero({ selectedPatch }: PatchHeroProps) {
   const importedAt = formatImportedAt(selectedPatch.importedAt)
   const sourceLabel = selectedPatch.importSource === 'RIOT_OFFICIAL' ? 'Riot 공식' : '패치 데이터'
+  const releaseSummary = selectedPatch.summary || selectedPatch.focus || selectedPatch.description
 
   return (
     <header className={styles.hero}>
@@ -60,7 +61,7 @@ function PatchHero({ selectedPatch }: PatchHeroProps) {
         <div>
           <span className={styles.releaseLabel}>{selectedPatch.status === '현재' ? '현재 버전' : '선택한 버전'}</span>
           <strong>v{selectedPatch.version}</strong>
-          <p>{selectedPatch.focus}</p>
+          <p>{releaseSummary}</p>
         </div>
       </aside>
     </header>

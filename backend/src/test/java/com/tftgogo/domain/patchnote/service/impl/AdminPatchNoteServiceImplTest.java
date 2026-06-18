@@ -195,6 +195,8 @@ class AdminPatchNoteServiceImplTest {
         verify(patchNoteRepository).save(patchNoteCaptor.capture());
         assertThat(patchNoteCaptor.getValue().getSourceKey()).isEqualTo("riot-content-17-4");
         assertThat(patchNoteCaptor.getValue().getImportSource()).isEqualTo(PatchNoteImportSource.RIOT_OFFICIAL);
+        assertThat(patchNoteCaptor.getValue().getFocus()).isEqualTo("Riot summary");
+        assertThat(patchNoteCaptor.getValue().getHighlightsJson()).isEqualTo("[\"Jinx\"]");
         assertThat(patchNoteCaptor.getValue().isCurrent()).isTrue();
 
         ArgumentCaptor<PatchChange> patchChangeCaptor = ArgumentCaptor.forClass(PatchChange.class);
@@ -203,8 +205,74 @@ class AdminPatchNoteServiceImplTest {
         assertThat(patchChangeCaptor.getValue().getSourceHeadingPath()).isEqualTo("Champions > Jinx");
         assertThat(patchChangeCaptor.getValue().getSourceOrder()).isEqualTo(3);
         assertThat(patchChangeCaptor.getValue().getCategory()).isEqualTo(PatchChangeCategory.CHAMPION);
-        assertThat(patchChangeCaptor.getValue().getChangeType()).isEqualTo(PatchChangeType.BUFF);
+        assertThat(patchChangeCaptor.getValue().getChangeType()).isEqualTo(PatchChangeType.ADJUST);
         assertThat(patchChangeCaptor.getValue().getTagsJson()).isNull();
+    }
+
+    @Test
+    void importRiotPatchNote_whenNewKeywordExists_savesAsNew() {
+        // given
+        PatchNote existingCurrent = patchNote(1L, "17.4", true);
+        PatchNoteCrawlFetchedPage detailPage = fetchedPage("https://www.leagueoflegends.com/ko-kr/news/game-updates/patch-17-5-notes/");
+        PatchChangeCrawlRow row = new PatchChangeCrawlRow(
+                "new-candidate",
+                "new-row-key",
+                "시스템",
+                1,
+                "시스템",
+                "",
+                "신규 조우자가 추가됩니다.",
+                "<li>신규 조우자가 추가됩니다.</li>",
+                null,
+                null,
+                List.of()
+        );
+        PatchNoteCrawlDocument document = new PatchNoteCrawlDocument(
+                detailPage.sourceUrl(),
+                "ko-kr",
+                "riot-content-17-5-new",
+                "17.5 Patch Notes",
+                "17.5",
+                "Official summary",
+                LocalDateTime.of(2026, 6, 9, 18, 0),
+                "https://example.com/official.png",
+                List.of("Riot"),
+                List.of("시스템"),
+                List.of(row),
+                List.of()
+        );
+        AdminPatchNoteImportRequest request = new AdminPatchNoteImportRequest();
+        ReflectionTestUtils.setField(request, "sourceUrl", detailPage.sourceUrl());
+
+        when(crawlerProperties.getDefaultLocale()).thenReturn("ko-kr");
+        when(crawlerFetchService.fetch(detailPage.sourceUrl())).thenReturn(detailPage);
+        when(crawlerParser.parseDetailPage(detailPage, null, "ko-kr")).thenReturn(document);
+        when(patchNoteRepository.findBySourceKey("riot-content-17-5-new")).thenReturn(Optional.empty());
+        when(patchNoteRepository.findBySourceUrl(detailPage.sourceUrl())).thenReturn(Optional.empty());
+        when(patchNoteRepository.findByVersion("17.5")).thenReturn(Optional.empty());
+        when(patchNoteRepository.findByCurrentTrueAndDeletedAtIsNull()).thenReturn(List.of(existingCurrent));
+        when(patchNoteRepository.save(any(PatchNote.class))).thenAnswer(invocation -> {
+            PatchNote patchNote = invocation.getArgument(0);
+            ReflectionTestUtils.setField(patchNote, "id", 2L);
+            return patchNote;
+        });
+        when(patchChangeRepository.findByPatchNoteAndSourceKey(any(PatchNote.class), eq("new-row-key")))
+                .thenReturn(Optional.empty());
+        when(patchChangeRepository.save(any(PatchChange.class))).thenAnswer(invocation -> {
+            PatchChange patchChange = invocation.getArgument(0);
+            ReflectionTestUtils.setField(patchChange, "id", 10L);
+            return patchChange;
+        });
+
+        // when
+        AdminPatchNoteImportResponse response = adminPatchNoteService.importRiotPatchNote(request);
+
+        // then
+        assertThat(response.getCreatedChanges()).isEqualTo(1);
+
+        ArgumentCaptor<PatchChange> patchChangeCaptor = ArgumentCaptor.forClass(PatchChange.class);
+        verify(patchChangeRepository).save(patchChangeCaptor.capture());
+        assertThat(patchChangeCaptor.getValue().getChangeType()).isEqualTo(PatchChangeType.NEW);
     }
 
     @Test
@@ -336,6 +404,8 @@ class AdminPatchNoteServiceImplTest {
         assertThat(response.getCreatedChanges()).isEqualTo(1);
         assertThat(existingPatchNote.getTitle()).isEqualTo("17.3 Patch Notes");
         assertThat(existingPatchNote.getPublishedAt()).isEqualTo(officialPublishedAt);
+        assertThat(existingPatchNote.getFocus()).isEqualTo("Official summary");
+        assertThat(existingPatchNote.getHighlightsJson()).isEqualTo("[\"Augments\"]");
         assertThat(existingPatchNote.isCurrent()).isFalse();
         assertThat(existingPatchNote.getSourceUrl()).isEqualTo(detailPage.sourceUrl());
         verify(patchChangeRepository).deleteAllInBatch(List.of(staleChange));

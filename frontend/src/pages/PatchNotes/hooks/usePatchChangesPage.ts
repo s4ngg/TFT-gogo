@@ -1,5 +1,9 @@
-import { useEffect } from 'react'
-import type { PatchChangesQuery, PatchNoteDetail } from '../../../api/patchNotes'
+import { useEffect, useMemo } from 'react'
+import {
+  getFallbackPatchChangePage,
+  type PatchChangesQuery,
+  type PatchNoteDetail,
+} from '../../../api/patchNotes'
 import { usePatchChanges } from '../../../hooks/usePatchNotes'
 
 interface UsePatchChangesPageOptions {
@@ -15,11 +19,16 @@ export function usePatchChangesPage({
   params,
   patchHistory,
 }: UsePatchChangesPageOptions) {
+  const patchChangesFallbackData = patchHistory.length > 0 ? patchHistory : fallbackData
+  const fallbackChangesPage = useMemo(
+    () => getFallbackPatchChangePage(params, patchChangesFallbackData),
+    [params, patchChangesFallbackData],
+  )
   const patchChangesQuery = usePatchChanges({
-    fallbackData: patchHistory.length > 0 ? patchHistory : fallbackData,
+    fallbackData: patchChangesFallbackData,
     params,
   })
-  const changesPage = patchChangesQuery.data.data
+  const changesPage = patchChangesQuery.data?.data ?? fallbackChangesPage
   const patchChanges = changesPage.items
   const changeStats = changesPage.stats
   const safePage = Math.max(1, Math.min(params.page, changesPage.totalPages))

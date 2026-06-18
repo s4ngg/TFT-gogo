@@ -1,8 +1,15 @@
 import {
   type ChangeType,
-  type ChangeTypeFilter,
   type PatchChange,
 } from '../../../api/patchNotes'
+
+export type PatchChangeStatusTone = 'added' | 'disabled' | 'enabled' | 'removed'
+
+export interface PatchChangeStatusDisplay {
+  label: string
+  title: string
+  tone: PatchChangeStatusTone
+}
 
 const GENERIC_TARGET_NAMES = new Set([
   '기타',
@@ -19,6 +26,42 @@ const GENERIC_TARGET_NAMES = new Set([
   '특성',
 ])
 
+interface StatusPattern {
+  expression: RegExp
+  label: string
+  tone: PatchChangeStatusTone
+}
+
+const STATUS_FILLER_ADVERBS = '(?:정상적으로|정삭적으로|올바르게|제대로)'
+
+const STATUS_PATTERNS: StatusPattern[] = [
+  {
+    expression: new RegExp(`^(.+?)(?:이|가)?\\s+(?:${STATUS_FILLER_ADVERBS}\\s+)?다시\\s+활성화됩니다\\.?$`, 'u'),
+    label: '복귀',
+    tone: 'enabled',
+  },
+  {
+    expression: new RegExp(`^(.+?)(?:이|가)?\\s+(?:${STATUS_FILLER_ADVERBS}\\s+)?비활성화됩니다\\.?$`, 'u'),
+    label: '제외',
+    tone: 'disabled',
+  },
+  {
+    expression: new RegExp(`^(.+?)(?:이|가)?\\s+(?:${STATUS_FILLER_ADVERBS}\\s+)?활성화됩니다\\.?$`, 'u'),
+    label: '사용 가능',
+    tone: 'enabled',
+  },
+  {
+    expression: new RegExp(`^(.+?)(?:이|가)?\\s+(?:${STATUS_FILLER_ADVERBS}\\s+)?추가됩니다\\.?$`, 'u'),
+    label: '신규',
+    tone: 'added',
+  },
+  {
+    expression: new RegExp(`^(.+?)(?:이|가)?\\s+(?:${STATUS_FILLER_ADVERBS}\\s+)?삭제됩니다\\.?$`, 'u'),
+    label: '제거',
+    tone: 'removed',
+  },
+]
+
 export interface PatchChangeGroup {
   title: string
   changes: PatchChange[]
@@ -33,30 +76,92 @@ export function normalizePatchChangeArrow(value: string) {
     .trim()
 }
 
+function normalizeDisplayText(value: string) {
+  return normalizePatchChangeArrow(value)
+    .replace(/^(?:[\s,.;:，、·•\-–—"'“”‘’`]+|\(\d+\)\s*)+/u, '')
+    .trim()
+}
+
+function normalizeDisplayTitle(value: string) {
+  return normalizeDisplayText(value)
+}
+
+function removeTrailingRepeatedToken(value: string) {
+  const words = value.split(/\s+/u).filter(Boolean)
+  const trailingWord = words[words.length - 1]
+
+  if (!trailingWord || words.length < 2) return value
+
+  const prefixWords = words.slice(0, -1).flatMap((word) => word.split(/[:()[\],.]+/u)).filter(Boolean)
+
+  if (!prefixWords.includes(trailingWord)) return value
+
+  return words.slice(0, -1).join(' ')
+}
+
+function normalizeStatusTitle(value: string) {
+  const title = normalizeDisplayTitle(value)
+    .replace(new RegExp(`\\s+${STATUS_FILLER_ADVERBS}$`, 'u'), '')
+    .trim()
+
+  return removeTrailingRepeatedToken(title).trim()
+}
+
+function getStatusDisplayFromText(value: string): PatchChangeStatusDisplay | undefined {
+  const normalizedValue = normalizeDisplayText(value)
+
+  for (const pattern of STATUS_PATTERNS) {
+    const match = normalizedValue.match(pattern.expression)
+    const title = normalizeStatusTitle(match?.[1] ?? '')
+
+    if (title) {
+      return {
+        label: pattern.label,
+        title,
+        tone: pattern.tone,
+      }
+    }
+  }
+
+  return undefined
+}
+
 function getTitleDelimiterIndex(value: string, shouldUseCommaDelimiter: boolean) {
   const commaIndex = value.indexOf(',')
-  if (shouldUseCommaDelimiter && commaIndex > 0) return commaIndex
-
   const colonIndex = value.indexOf(':')
+
+  if (
+    shouldUseCommaDelimiter
+    && commaIndex > 0
+    && (colonIndex === -1 || commaIndex < colonIndex)
+  ) {
+    return commaIndex
+  }
+
   if (colonIndex > 0) return colonIndex
 
   return -1
 }
 
+function shouldKeepTitleColon(title: string, value: string, delimiterIndex: number) {
+  return value[delimiterIndex] === ':' && title.endsWith('스킬')
+}
+
 function getTitleFromText(value: string, shouldUseCommaDelimiter: boolean) {
-  const normalizedValue = normalizePatchChangeArrow(value)
+  const normalizedValue = normalizeDisplayText(value)
   const delimiterIndex = getTitleDelimiterIndex(normalizedValue, shouldUseCommaDelimiter)
 
   if (delimiterIndex > 0) {
-    return normalizedValue.slice(0, delimiterIndex).trim()
+    const title = normalizedValue.slice(0, delimiterIndex).trim()
+    return shouldKeepTitleColon(title, normalizedValue, delimiterIndex) ? title + ':' : title
   }
 
   return normalizedValue || '패치 변경사항'
 }
 
 function getDetailFromText(value: string, title: string) {
-  const normalizedValue = normalizePatchChangeArrow(value)
-  const normalizedTitle = normalizePatchChangeArrow(title)
+  const normalizedValue = normalizeDisplayText(value)
+  const normalizedTitle = normalizeDisplayText(title)
 
   if (!normalizedValue || normalizedValue === normalizedTitle) return ''
 
@@ -97,6 +202,18 @@ function getPreferredDetailSummary(summary: string, target: string, title: strin
   return summaryDetail
 }
 
+function splitDetailSummaryLines(value: string) {
+  const normalizedValue = normalizePatchChangeArrow(value)
+  const arrowCount = normalizedValue.match(/ → /gu)?.length ?? 0
+
+  if (arrowCount < 2) return normalizedValue ? [normalizedValue] : []
+
+  return normalizedValue
+    .split(/,\s+/u)
+    .map((line) => line.trim())
+    .filter(Boolean)
+}
+
 function getTitleFromSummary(summary: string) {
   return getTitleFromText(summary, true)
 }
@@ -126,14 +243,26 @@ function changeTextIncludesValueChange(change: PatchChange, before: string, afte
 export function getPatchChangeTitle(change: PatchChange) {
   const target = change.target.trim()
   const summary = change.summary.trim()
+  const statusDisplay = getPatchChangeStatusDisplay(change)
+
+  if (statusDisplay) return statusDisplay.title
 
   if (!target) return getTitleFromSummary(summary)
   if (GENERIC_TARGET_NAMES.has(target) && summary) return getTitleFromSummary(summary)
   return getTitleFromTarget(target)
 }
 
+export function getPatchChangeStatusDisplay(change: PatchChange) {
+  return getStatusDisplayFromText(change.summary) ?? getStatusDisplayFromText(change.target)
+}
+
 export function getPatchChangeDetailSummary(change: PatchChange, title: string) {
+  if (getPatchChangeStatusDisplay(change)) return ''
   return getPreferredDetailSummary(change.summary, change.target, title)
+}
+
+export function getPatchChangeDetailLines(change: PatchChange, title: string) {
+  return splitDetailSummaryLines(getPatchChangeDetailSummary(change, title))
 }
 
 export function shouldShowPatchChangeValueLine(change: PatchChange) {
@@ -170,15 +299,19 @@ export function groupPatchChangesByTitle(changes: PatchChange[]): PatchChangeGro
   return Array.from(groups.values())
 }
 
-export function getVisiblePatchChangeTypes(
-  changes: PatchChange[],
-  activeChangeType: ChangeTypeFilter,
-): ChangeType[] {
-  const changeTypes = Array.from(new Set(changes.map((change) => change.type)))
+export function getVisiblePatchChangeStatuses(changes: PatchChange[]): PatchChangeStatusDisplay[] {
+  const statuses = new Map<string, PatchChangeStatusDisplay>()
 
-  if (activeChangeType !== '전체') {
-    return changeTypes.filter((changeType) => changeType !== activeChangeType)
-  }
+  changes.forEach((change) => {
+    const status = getPatchChangeStatusDisplay(change)
+    if (!status) return
 
-  return changeTypes.length > 1 ? changeTypes : []
+    statuses.set(`${status.tone}:${status.label}`, status)
+  })
+
+  return Array.from(statuses.values())
+}
+
+export function getVisibleNewChangeTypes(changes: PatchChange[]): ChangeType[] {
+  return changes.some((change) => change.type === '신규') ? ['신규'] : []
 }

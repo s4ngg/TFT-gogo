@@ -1,12 +1,20 @@
-import { CheckCircle2, ChevronDown, ChevronRight, History } from 'lucide-react'
+import { CheckCircle2, ChevronDown, ChevronRight, History, ListFilter } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import type { PatchNoteDetail } from '../../../api/patchNotes'
+import {
+  CHANGE_CATEGORIES,
+  type PatchCategory,
+  type PatchChangeStats,
+  type PatchNoteDetail,
+} from '../../../api/patchNotes'
 import styles from '../PatchNotes.module.css'
 
 interface PatchSideRailProps {
+  activeCategory: PatchCategory
+  categoryCounts: PatchChangeStats['categoryCounts']
   patchHistory: PatchNoteDetail[]
   selectedPatch: PatchNoteDetail
   selectedPatchVersion: string
+  onCategorySelect: (category: PatchCategory) => void
   onPatchSelect: (version: string) => void
 }
 
@@ -59,13 +67,45 @@ function buildSeasonGroups(patchHistory: PatchNoteDetail[]) {
     })
 }
 
+function getInsightLabel(highlight: string) {
+  const trimmedHighlight = highlight.trim()
+  if (!trimmedHighlight) return ''
+
+  if (/유닛.*\d단계|\d단계.*유닛/u.test(trimmedHighlight)) return '유닛 단계별 밸런스'
+  if (trimmedHighlight.includes('특성')) return '특성 밸런스'
+  if (trimmedHighlight.includes('증강')) return '증강 변경'
+  if (trimmedHighlight.includes('아이템')) return '아이템 조정'
+  if (trimmedHighlight.includes('버그 수정')) return '버그 수정'
+  if (trimmedHighlight.includes('밸런스 변경')) return '밸런스 변경'
+
+  return trimmedHighlight
+}
+
+function buildInsightItems(highlights: string[]) {
+  return Array.from(new Set(highlights.map(getInsightLabel).filter(Boolean))).slice(0, 4)
+}
+
 function PatchSideRail({
+  activeCategory,
+  categoryCounts,
+  onCategorySelect,
   onPatchSelect,
   patchHistory,
   selectedPatch,
   selectedPatchVersion,
 }: PatchSideRailProps) {
   const seasonGroups = useMemo(() => buildSeasonGroups(patchHistory), [patchHistory])
+  const insightItems = useMemo(() => buildInsightItems(selectedPatch.highlights), [selectedPatch.highlights])
+  const quickCategories = useMemo(
+    () => CHANGE_CATEGORIES
+      .map((category) => ({
+        category,
+        count: categoryCounts[category] ?? 0,
+      }))
+      .filter((category) => category.count > 0),
+    [categoryCounts],
+  )
+  const summaryText = selectedPatch.summary || selectedPatch.description || selectedPatch.focus
   const selectedSeason = getPatchSeason(selectedPatchVersion)
   const [openSeasons, setOpenSeasons] = useState<Set<string>>(() => new Set([selectedSeason]))
 
@@ -152,14 +192,44 @@ function PatchSideRail({
       <section className={styles.insightPanel}>
         <span className={styles.sectionLabel}>요약</span>
         <h2>이번 패치 핵심</h2>
-        <ul>
-          {selectedPatch.highlights.map((highlight) => (
-            <li key={highlight}>
-              <CheckCircle2 size={16} />
-              <span>{highlight}</span>
-            </li>
-          ))}
-        </ul>
+        {summaryText && <p className={styles.insightSummary}>{summaryText}</p>}
+
+        {insightItems.length > 0 && (
+          <div className={styles.insightSection}>
+            <span className={styles.insightSectionTitle}>주요 변경</span>
+            <ul>
+              {insightItems.map((highlight) => (
+                <li key={highlight}>
+                  <CheckCircle2 size={16} />
+                  <span>{highlight}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {quickCategories.length > 0 && (
+          <div className={styles.quickCategorySection}>
+            <span className={styles.insightSectionTitle}>
+              <ListFilter size={14} />
+              빠른 보기
+            </span>
+            <div className={styles.quickCategoryGrid}>
+              {quickCategories.map(({ category, count }) => (
+                <button
+                  key={category}
+                  type="button"
+                  className={`${styles.quickCategoryButton} ${activeCategory === category ? styles.activeQuickCategoryButton : ''}`}
+                  onClick={() => onCategorySelect(category)}
+                  aria-pressed={activeCategory === category}
+                >
+                  <span>{category}</span>
+                  <strong>{count}</strong>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
     </aside>
   )

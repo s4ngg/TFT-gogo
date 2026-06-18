@@ -2,9 +2,12 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import type { PatchChange } from '../../../../api/patchNotes'
 import {
+  getPatchChangeDetailLines,
   getPatchChangeDetailSummary,
+  getPatchChangeStatusDisplay,
   getPatchChangeTitle,
-  getVisiblePatchChangeTypes,
+  getVisiblePatchChangeStatuses,
+  getVisibleNewChangeTypes,
   groupPatchChangesByTitle,
   shouldShowPatchChangeValueLine,
 } from '../patchChangeDisplay'
@@ -101,18 +104,175 @@ describe('patchChangeDisplay', () => {
     assert.equal(groups[0].changes.length, 2)
   })
 
-  it('단일 타입이거나 현재 선택된 타입은 항목별 칩으로 반복 표시하지 않는다', () => {
-    assert.deepEqual(getVisiblePatchChangeTypes([
+  it('신규 타입만 항목별 칩으로 표시한다', () => {
+    assert.deepEqual(getVisibleNewChangeTypes([
       patchChange({ type: '조정' }),
-    ], '전체'), [])
+    ]), [])
 
-    assert.deepEqual(getVisiblePatchChangeTypes([
-      patchChange({ type: '조정' }),
-    ], '조정'), [])
-
-    assert.deepEqual(getVisiblePatchChangeTypes([
+    assert.deepEqual(getVisibleNewChangeTypes([
       patchChange({ id: 1, type: '상향' }),
       patchChange({ id: 2, type: '하향' }),
-    ], '전체'), ['상향', '하향'])
+    ]), [])
+
+    assert.deepEqual(getVisibleNewChangeTypes([
+      patchChange({ id: 1, type: '신규' }),
+      patchChange({ id: 2, type: '하향' }),
+    ]), ['신규'])
+  })
+
+  it('leading numeric trait tier is hidden and skill prefix is used as the title', () => {
+    const change = patchChange({
+      summary: '(10) 정령족 정령군주 스킬: 거대 강타 1차 피해량: 주문력 1,100 ⇒ 주문력 1,500, 광역 강타 피해량: 주문력 700 ⇒ 주문력 1,000, 기절 지속시간: 1.5초 ⇒ 3초, 기절 스킬 피해량: 주문력 150 ⇒ 주문력 400',
+      target: '특성',
+    })
+
+    const title = getPatchChangeTitle(change)
+
+    assert.equal(title, '정령족 정령군주 스킬:')
+    assert.equal(
+      getPatchChangeDetailSummary(change, title),
+      '거대 강타 1차 피해량: 주문력 1,100 → 주문력 1,500, 광역 강타 피해량: 주문력 700 → 주문력 1,000, 기절 지속시간: 1.5초 → 3초, 기절 스킬 피해량: 주문력 150 → 주문력 400',
+    )
+  })
+
+  it('증강체 활성화 상태 문구는 이름과 상태 배지 정보로 분리한다', () => {
+    const change = patchChange({
+      category: '증강체',
+      summary: '번들 현상금 I이 다시 활성화됩니다.',
+      target: '증강',
+    })
+
+    assert.equal(getPatchChangeTitle(change), '번들 현상금 I')
+    assert.equal(getPatchChangeDetailSummary(change, '번들 현상금 I'), '')
+    assert.deepEqual(getPatchChangeStatusDisplay(change), {
+      label: '복귀',
+      title: '번들 현상금 I',
+      tone: 'enabled',
+    })
+  })
+
+  it('증강체 비활성화 상태 문구도 같은 방식으로 분리한다', () => {
+    const change = patchChange({
+      category: '증강체',
+      summary: '황혼의 시험 II가 비활성화됩니다.',
+      target: '증강',
+    })
+
+    assert.equal(getPatchChangeTitle(change), '황혼의 시험 II')
+    assert.equal(getPatchChangeDetailSummary(change, '황혼의 시험 II'), '')
+    assert.deepEqual(getVisiblePatchChangeStatuses([change]), [
+      {
+        label: '제외',
+        title: '황혼의 시험 II',
+        tone: 'disabled',
+      },
+    ])
+  })
+
+  it('제목 앞에 붙은 쉼표, 따옴표, 숫자 티어 표기는 숨긴다', () => {
+    assert.equal(
+      getPatchChangeTitle(patchChange({
+        summary: "', (5) 도전자 공격 속도: 100/125% ⇒ 90/115%",
+        target: '특성',
+      })),
+      '도전자 공격 속도',
+    )
+
+    assert.equal(
+      getPatchChangeTitle(patchChange({
+        summary: '‘이전 준비 단계 동안 새로고침한 경우 획득하는 보호막의 최대 체력 계수: 40/60% ⇒ 44/66%',
+        target: '시너지',
+      })),
+      '이전 준비 단계 동안 새로고침한 경우 획득하는 보호막의 최대 체력 계수',
+    )
+  })
+
+  it('추가와 삭제 상태 문구는 사용자용 짧은 배지 라벨로 표시한다', () => {
+    assert.deepEqual(
+      getPatchChangeStatusDisplay(patchChange({
+        summary: '새로운 증강이 추가됩니다.',
+        target: '증강',
+      })),
+      {
+        label: '신규',
+        title: '새로운 증강',
+        tone: 'added',
+      },
+    )
+
+    assert.deepEqual(
+      getPatchChangeStatusDisplay(patchChange({
+        summary: '오래된 증강이 삭제됩니다.',
+        target: '증강',
+      })),
+      {
+        label: '제거',
+        title: '오래된 증강',
+        tone: 'removed',
+      },
+    )
+  })
+
+  it('여러 값 변화가 이어지는 상세 문장은 항목별 줄로 나눈다', () => {
+    const change = patchChange({
+      summary: '혼돈의 부름: 찬란한 행운의 아이템 상자 + 15골드 ⇒ 찬란한 행운의 아이템 상자 + 8골드, 58골드 ⇒ 52골드, 경험치 64 ⇒ 경험치 58, 새로고침: 40 ⇒ 36',
+      target: '증강',
+    })
+
+    assert.deepEqual(getPatchChangeDetailLines(change, '혼돈의 부름'), [
+      '찬란한 행운의 아이템 상자 + 15골드 → 찬란한 행운의 아이템 상자 + 8골드',
+      '58골드 → 52골드',
+      '경험치 64 → 경험치 58',
+      '새로고침: 40 → 36',
+    ])
+  })
+
+  it('상태 문구 제목에서는 설명용 부사와 반복 대상명을 일반 규칙으로 제거한다', () => {
+    const status = getPatchChangeStatusDisplay(patchChange({
+      summary: '펑구의 파티: 조우자 없음 조우자가 정상적으로 비활성화됩니다.',
+      target: '시스템',
+    }))
+
+    assert.deepEqual(status, {
+      label: '제외',
+      title: '펑구의 파티: 조우자 없음',
+      tone: 'disabled',
+    })
+
+    assert.deepEqual(
+      getPatchChangeStatusDisplay(patchChange({
+        summary: '오른의 유물 아이템이 제대로 삭제됩니다.',
+        target: '아이템',
+      })),
+      {
+        label: '제거',
+        title: '오른의 유물 아이템',
+        tone: 'removed',
+      },
+    )
+
+    assert.deepEqual(
+      getPatchChangeStatusDisplay(patchChange({
+        summary: '프리즘 보관함 보관함이 올바르게 추가됩니다.',
+        target: '시스템',
+      })),
+      {
+        label: '신규',
+        title: '프리즘 보관함',
+        tone: 'added',
+      },
+    )
+
+    assert.deepEqual(
+      getPatchChangeStatusDisplay(patchChange({
+        summary: '전략가 체력 체력이 정삭적으로 비활성화됩니다.',
+        target: '시스템',
+      })),
+      {
+        label: '제외',
+        title: '전략가 체력',
+        tone: 'disabled',
+      },
+    )
   })
 })

@@ -3,16 +3,16 @@ import { Shield, Sparkles, Swords, Wand2, Zap } from 'lucide-react'
 import {
   CHANGE_CATEGORIES,
   type ChangeCategory,
-  type ChangeType,
-  type ChangeTypeFilter,
   type PatchChange,
 } from '../../../api/patchNotes'
 import {
-  getPatchChangeDetailSummary,
+  getPatchChangeDetailLines,
   getPatchChangeGroupKey,
-  getVisiblePatchChangeTypes,
+  getVisiblePatchChangeStatuses,
+  getVisibleNewChangeTypes,
   groupPatchChangesByTitle,
   shouldShowPatchChangeValueLine,
+  type PatchChangeStatusTone,
 } from '../utils/patchChangeDisplay'
 import styles from '../PatchNotes.module.css'
 
@@ -24,15 +24,14 @@ const CATEGORY_ICON: Record<ChangeCategory, LucideIcon> = {
   시스템: Zap,
 }
 
-const CHANGE_TYPE_CLASS: Record<ChangeType, string> = {
-  상향: styles.buff,
-  하향: styles.nerf,
-  조정: styles.adjust,
-  신규: styles.new,
+const STATUS_TONE_CLASS: Record<PatchChangeStatusTone, string> = {
+  added: styles.statusAdded,
+  disabled: styles.statusDisabled,
+  enabled: styles.statusEnabled,
+  removed: styles.statusRemoved,
 }
 
 interface PatchChangeListProps {
-  activeChangeType: ChangeTypeFilter
   patchChanges: PatchChange[]
 }
 
@@ -45,7 +44,7 @@ function groupChangesByCategory(patchChanges: PatchChange[]) {
     .filter((section) => section.changes.length > 0)
 }
 
-function PatchChangeList({ activeChangeType, patchChanges }: PatchChangeListProps) {
+function PatchChangeList({ patchChanges }: PatchChangeListProps) {
   const sections = groupChangesByCategory(patchChanges).map((section) => ({
     ...section,
     groups: groupPatchChangesByTitle(section.changes),
@@ -68,14 +67,15 @@ function PatchChangeList({ activeChangeType, patchChanges }: PatchChangeListProp
 
             <ul className={styles.changeBulletList}>
               {section.groups.map((group) => {
-                const changeTypes = getVisiblePatchChangeTypes(group.changes, activeChangeType)
+                const changeStatuses = getVisiblePatchChangeStatuses(group.changes)
+                const changeTypes = getVisibleNewChangeTypes(group.changes)
                 const changeDetails = group.changes
                   .map((change) => ({
                     change,
                     showValueChange: shouldShowPatchChangeValueLine(change),
-                    summary: getPatchChangeDetailSummary(change, group.title),
+                    summaryLines: getPatchChangeDetailLines(change, group.title),
                   }))
-                  .filter((changeDetail) => changeDetail.summary || changeDetail.showValueChange)
+                  .filter((changeDetail) => changeDetail.summaryLines.length > 0 || changeDetail.showValueChange)
 
                 return (
                   <li key={`${section.category}-${getPatchChangeGroupKey(group.title)}`} className={styles.changeTargetGroup}>
@@ -86,12 +86,20 @@ function PatchChangeList({ activeChangeType, patchChanges }: PatchChangeListProp
                           <span className={styles.changeGroupCount}>{group.changes.length}개</span>
                         )}
                       </div>
-                      {changeTypes.length > 0 && (
-                        <div className={styles.changeTypeStack}>
+                      {(changeStatuses.length > 0 || changeTypes.length > 0) && (
+                        <div className={styles.changeMetaStack}>
+                          {changeStatuses.map((status) => (
+                            <span
+                              key={`${status.tone}-${status.label}`}
+                              className={`${styles.changeStatusBadge} ${STATUS_TONE_CLASS[status.tone]}`}
+                            >
+                              {status.label}
+                            </span>
+                          ))}
                           {changeTypes.map((changeType) => (
                             <span
                               key={changeType}
-                              className={`${styles.changeType} ${CHANGE_TYPE_CLASS[changeType]}`}
+                              className={`${styles.changeType} ${styles.new}`}
                             >
                               {changeType}
                             </span>
@@ -102,9 +110,17 @@ function PatchChangeList({ activeChangeType, patchChanges }: PatchChangeListProp
 
                     {changeDetails.length > 0 && (
                       <ul className={styles.changeDetailList}>
-                        {changeDetails.map(({ change, showValueChange, summary }) => (
+                        {changeDetails.map(({ change, showValueChange, summaryLines }) => (
                           <li key={change.id} className={styles.changeDetailItem}>
-                            {summary && <p className={styles.changeDetailSummary}>{summary}</p>}
+                            {summaryLines.length > 0 && (
+                              <p className={styles.changeDetailSummary}>
+                                {summaryLines.map((line) => (
+                                  <span key={line} className={styles.changeDetailSummaryLine}>
+                                    {line}
+                                  </span>
+                                ))}
+                              </p>
+                            )}
                             {showValueChange && (
                               <p className={styles.changeValueLine}>
                                 <span>{change.before || '-'}</span>
