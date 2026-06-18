@@ -107,6 +107,92 @@ class JsoupPatchNoteCrawlerParserTest {
     }
 
     @Test
+    void parseDetailPage_whenH3AndH4AreNested_preservesTargetAndStatContext() throws IOException {
+        // given
+        String body = """
+                <div id="patch-notes-container">
+                    <h2>Augments</h2>
+                    <h3>Chaos Calling</h3>
+                    <h4>Damage Amp</h4>
+                    <ul>
+                        <li>10%</li>
+                        <li>15%</li>
+                    </ul>
+                    <h3>Items</h3>
+                    <h4>Radiant Items</h4>
+                    <ul>
+                        <li>Attack Speed: 20% <span class="change-indicator">⇒</span> 25%</li>
+                    </ul>
+                </div>
+                """;
+        PatchNoteCrawlFetchedPage fetchedPage = fetchedPage(
+                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-5-notes/",
+                detailFixture(body)
+        );
+
+        // when
+        PatchNoteCrawlDocument document = parser.parseDetailPage(fetchedPage, null, "ko-kr");
+
+        // then
+        assertThat(document.rows()).hasSize(3);
+        PatchChangeCrawlRow firstRow = document.rows().get(0);
+        assertThat(firstRow.headingPath()).isEqualTo("Augments > Chaos Calling > Damage Amp");
+        assertThat(firstRow.groupTitle()).isEqualTo("Chaos Calling");
+        assertThat(firstRow.rowText()).isEqualTo("Damage Amp: 10%");
+
+        PatchChangeCrawlRow secondRow = document.rows().get(1);
+        assertThat(secondRow.groupTitle()).isEqualTo("Chaos Calling");
+        assertThat(secondRow.rowText()).isEqualTo("Damage Amp: 15%");
+
+        PatchChangeCrawlRow itemRow = document.rows().get(2);
+        assertThat(itemRow.headingPath()).isEqualTo("Augments > Items > Radiant Items");
+        assertThat(itemRow.groupTitle()).isEqualTo("Radiant Items");
+        assertThat(itemRow.rowText()).isEqualTo("Attack Speed: 20% ⇒ 25%");
+        assertThat(itemRow.beforeText()).isEqualTo("Attack Speed: 20%");
+        assertThat(itemRow.afterText()).isEqualTo("25%");
+    }
+
+    @Test
+    void parseDetailPage_whenListItemsAreNested_usesParentItemAsTargetAndStatAsDetail() throws IOException {
+        // given
+        String body = """
+                <div id="patch-notes-container">
+                    <h2>Augments</h2>
+                    <ul>
+                        <li>Treasure Trove
+                            <ul>
+                                <li>Damage Amp
+                                    <ul>
+                                        <li>10%</li>
+                                        <li>15%</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+                """;
+        PatchNoteCrawlFetchedPage fetchedPage = fetchedPage(
+                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-5-notes/",
+                detailFixture(body)
+        );
+
+        // when
+        PatchNoteCrawlDocument document = parser.parseDetailPage(fetchedPage, null, "ko-kr");
+
+        // then
+        assertThat(document.rows()).hasSize(2);
+        PatchChangeCrawlRow firstRow = document.rows().get(0);
+        assertThat(firstRow.headingPath()).isEqualTo("Augments > Treasure Trove > Damage Amp");
+        assertThat(firstRow.groupTitle()).isEqualTo("Treasure Trove");
+        assertThat(firstRow.rowText()).isEqualTo("Damage Amp: 10%");
+
+        PatchChangeCrawlRow secondRow = document.rows().get(1);
+        assertThat(secondRow.groupTitle()).isEqualTo("Treasure Trove");
+        assertThat(secondRow.rowText()).isEqualTo("Damage Amp: 15%");
+    }
+
+    @Test
     void parseDetailPage_whenNextDataMissing_throwsInvalidData() {
         // given
         PatchNoteCrawlFetchedPage fetchedPage = fetchedPage(
@@ -132,5 +218,50 @@ class JsoupPatchNoteCrawlerParserTest {
             }
             return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
         }
+    }
+
+    private String detailFixture(String richTextBody) throws IOException {
+        return """
+                <!doctype html>
+                <html lang="ko">
+                <body>
+                <script id="__NEXT_DATA__" type="application/json">
+                {
+                  "props": {
+                    "pageProps": {
+                      "page": {
+                        "analytics": {
+                          "contentId": "tft-patch-17-5"
+                        },
+                        "blades": [
+                          {
+                            "type": "articleMasthead",
+                            "title": "Teamfight Tactics Patch 17.5 Notes",
+                            "publishDate": "2026-06-09T09:00:00+09:00",
+                            "description": {
+                              "body": "<p>Patch summary</p>"
+                            },
+                            "authors": [
+                              {
+                                "name": "Riot Prism"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "patchNotesRichText",
+                            "richText": {
+                              "type": "html",
+                              "body": %s
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+                </script>
+                </body>
+                </html>
+                """.formatted(objectMapper.writeValueAsString(richTextBody));
     }
 }
