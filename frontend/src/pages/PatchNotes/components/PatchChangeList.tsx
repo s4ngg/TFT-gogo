@@ -8,9 +8,11 @@ import {
 import {
   getPatchChangeDetailSummary,
   getPatchChangeGroupKey,
+  getVisiblePatchChangeStatuses,
   getVisibleNewChangeTypes,
   groupPatchChangesByTitle,
   shouldShowPatchChangeValueLine,
+  type PatchChangeStatusTone,
 } from '../utils/patchChangeDisplay'
 import styles from '../PatchNotes.module.css'
 
@@ -20,6 +22,13 @@ const CATEGORY_ICON: Record<ChangeCategory, LucideIcon> = {
   아이템: Wand2,
   증강체: Sparkles,
   시스템: Zap,
+}
+
+const STATUS_TONE_CLASS: Record<PatchChangeStatusTone, string> = {
+  added: styles.statusAdded,
+  disabled: styles.statusDisabled,
+  enabled: styles.statusEnabled,
+  removed: styles.statusRemoved,
 }
 
 interface PatchChangeListProps {
@@ -58,6 +67,7 @@ function PatchChangeList({ patchChanges }: PatchChangeListProps) {
 
             <ul className={styles.changeBulletList}>
               {section.groups.map((group) => {
+                const changeStatuses = getVisiblePatchChangeStatuses(group.changes)
                 const changeTypes = getVisibleNewChangeTypes(group.changes)
                 const changeDetails = group.changes
                   .map((change) => ({
@@ -76,8 +86,16 @@ function PatchChangeList({ patchChanges }: PatchChangeListProps) {
                           <span className={styles.changeGroupCount}>{group.changes.length}개</span>
                         )}
                       </div>
-                      {changeTypes.length > 0 && (
-                        <div className={styles.changeTypeStack}>
+                      {(changeStatuses.length > 0 || changeTypes.length > 0) && (
+                        <div className={styles.changeMetaStack}>
+                          {changeStatuses.map((status) => (
+                            <span
+                              key={`${status.tone}-${status.label}`}
+                              className={`${styles.changeStatusBadge} ${STATUS_TONE_CLASS[status.tone]}`}
+                            >
+                              {status.label}
+                            </span>
+                          ))}
                           {changeTypes.map((changeType) => (
                             <span
                               key={changeType}

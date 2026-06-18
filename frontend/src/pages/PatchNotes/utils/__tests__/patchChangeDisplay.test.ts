@@ -3,7 +3,9 @@ import { describe, it } from 'node:test'
 import type { PatchChange } from '../../../../api/patchNotes'
 import {
   getPatchChangeDetailSummary,
+  getPatchChangeStatusDisplay,
   getPatchChangeTitle,
+  getVisiblePatchChangeStatuses,
   getVisibleNewChangeTypes,
   groupPatchChangesByTitle,
   shouldShowPatchChangeValueLine,
@@ -130,5 +132,39 @@ describe('patchChangeDisplay', () => {
       getPatchChangeDetailSummary(change, title),
       '거대 강타 1차 피해량: 주문력 1,100 → 주문력 1,500, 광역 강타 피해량: 주문력 700 → 주문력 1,000, 기절 지속시간: 1.5초 → 3초, 기절 스킬 피해량: 주문력 150 → 주문력 400',
     )
+  })
+
+  it('증강체 활성화 상태 문구는 이름과 상태 배지 정보로 분리한다', () => {
+    const change = patchChange({
+      category: '증강체',
+      summary: '번들 현상금 I이 다시 활성화됩니다.',
+      target: '증강',
+    })
+
+    assert.equal(getPatchChangeTitle(change), '번들 현상금 I')
+    assert.equal(getPatchChangeDetailSummary(change, '번들 현상금 I'), '')
+    assert.deepEqual(getPatchChangeStatusDisplay(change), {
+      label: '다시 활성화',
+      title: '번들 현상금 I',
+      tone: 'enabled',
+    })
+  })
+
+  it('증강체 비활성화 상태 문구도 같은 방식으로 분리한다', () => {
+    const change = patchChange({
+      category: '증강체',
+      summary: '황혼의 시험 II가 비활성화됩니다.',
+      target: '증강',
+    })
+
+    assert.equal(getPatchChangeTitle(change), '황혼의 시험 II')
+    assert.equal(getPatchChangeDetailSummary(change, '황혼의 시험 II'), '')
+    assert.deepEqual(getVisiblePatchChangeStatuses([change]), [
+      {
+        label: '비활성화',
+        title: '황혼의 시험 II',
+        tone: 'disabled',
+      },
+    ])
   })
 })

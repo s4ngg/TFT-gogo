@@ -3,6 +3,14 @@ import {
   type PatchChange,
 } from '../../../api/patchNotes'
 
+export type PatchChangeStatusTone = 'added' | 'disabled' | 'enabled' | 'removed'
+
+export interface PatchChangeStatusDisplay {
+  label: string
+  title: string
+  tone: PatchChangeStatusTone
+}
+
 const GENERIC_TARGET_NAMES = new Set([
   '기타',
   '버그 수정',
@@ -17,6 +25,65 @@ const GENERIC_TARGET_NAMES = new Set([
   '챔피언',
   '특성',
 ])
+
+interface StatusPattern {
+  expression: RegExp
+  label: string
+  tone: PatchChangeStatusTone
+}
+
+const STATUS_PATTERNS: StatusPattern[] = [
+  {
+    expression: /^(.+?)(?:이|가)\s+다시\s+활성화됩니다\.?$/u,
+    label: '다시 활성화',
+    tone: 'enabled',
+  },
+  {
+    expression: /^(.+?)\s+다시\s+활성화됩니다\.?$/u,
+    label: '다시 활성화',
+    tone: 'enabled',
+  },
+  {
+    expression: /^(.+?)(?:이|가)\s+비활성화됩니다\.?$/u,
+    label: '비활성화',
+    tone: 'disabled',
+  },
+  {
+    expression: /^(.+?)\s+비활성화됩니다\.?$/u,
+    label: '비활성화',
+    tone: 'disabled',
+  },
+  {
+    expression: /^(.+?)(?:이|가)\s+활성화됩니다\.?$/u,
+    label: '활성화',
+    tone: 'enabled',
+  },
+  {
+    expression: /^(.+?)\s+활성화됩니다\.?$/u,
+    label: '활성화',
+    tone: 'enabled',
+  },
+  {
+    expression: /^(.+?)(?:이|가)\s+추가됩니다\.?$/u,
+    label: '추가',
+    tone: 'added',
+  },
+  {
+    expression: /^(.+?)\s+추가됩니다\.?$/u,
+    label: '추가',
+    tone: 'added',
+  },
+  {
+    expression: /^(.+?)(?:이|가)\s+삭제됩니다\.?$/u,
+    label: '삭제',
+    tone: 'removed',
+  },
+  {
+    expression: /^(.+?)\s+삭제됩니다\.?$/u,
+    label: '삭제',
+    tone: 'removed',
+  },
+]
 
 export interface PatchChangeGroup {
   title: string
@@ -34,6 +101,25 @@ export function normalizePatchChangeArrow(value: string) {
 
 function normalizeDisplayText(value: string) {
   return normalizePatchChangeArrow(value).replace(/^\(\d+\)\s*/u, '')
+}
+
+function getStatusDisplayFromText(value: string): PatchChangeStatusDisplay | undefined {
+  const normalizedValue = normalizeDisplayText(value)
+
+  for (const pattern of STATUS_PATTERNS) {
+    const match = normalizedValue.match(pattern.expression)
+    const title = match?.[1]?.trim()
+
+    if (title) {
+      return {
+        label: pattern.label,
+        title,
+        tone: pattern.tone,
+      }
+    }
+  }
+
+  return undefined
 }
 
 function getTitleDelimiterIndex(value: string, shouldUseCommaDelimiter: boolean) {
@@ -141,13 +227,21 @@ function changeTextIncludesValueChange(change: PatchChange, before: string, afte
 export function getPatchChangeTitle(change: PatchChange) {
   const target = change.target.trim()
   const summary = change.summary.trim()
+  const statusDisplay = getPatchChangeStatusDisplay(change)
+
+  if (statusDisplay) return statusDisplay.title
 
   if (!target) return getTitleFromSummary(summary)
   if (GENERIC_TARGET_NAMES.has(target) && summary) return getTitleFromSummary(summary)
   return getTitleFromTarget(target)
 }
 
+export function getPatchChangeStatusDisplay(change: PatchChange) {
+  return getStatusDisplayFromText(change.summary) ?? getStatusDisplayFromText(change.target)
+}
+
 export function getPatchChangeDetailSummary(change: PatchChange, title: string) {
+  if (getPatchChangeStatusDisplay(change)) return ''
   return getPreferredDetailSummary(change.summary, change.target, title)
 }
 
@@ -183,6 +277,19 @@ export function groupPatchChangesByTitle(changes: PatchChange[]): PatchChangeGro
   })
 
   return Array.from(groups.values())
+}
+
+export function getVisiblePatchChangeStatuses(changes: PatchChange[]): PatchChangeStatusDisplay[] {
+  const statuses = new Map<string, PatchChangeStatusDisplay>()
+
+  changes.forEach((change) => {
+    const status = getPatchChangeStatusDisplay(change)
+    if (!status) return
+
+    statuses.set(`${status.tone}:${status.label}`, status)
+  })
+
+  return Array.from(statuses.values())
 }
 
 export function getVisibleNewChangeTypes(changes: PatchChange[]): ChangeType[] {

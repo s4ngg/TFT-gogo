@@ -517,12 +517,44 @@
   white-space: nowrap;
 }
 
+.changeMetaStack,
 .changeTypeStack {
   display: flex;
   flex: 0 0 auto;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--space-sm);
+}
+
+.changeStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  height: 27px;
+  padding: 0 var(--space-lg);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-button);
+  font-size: var(--font-size-xs);
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.statusEnabled {
+  border-color: var(--cyan-border-subtle);
+  color: var(--color-cyan);
+  background: var(--cyan-bg-faint);
+}
+
+.statusDisabled,
+.statusRemoved {
+  border-color: var(--danger-border);
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.statusAdded {
+  border-color: var(--tone-gold-border);
+  color: var(--color-gold);
+  background: var(--tone-gold-bg);
 }
 
 .changeDetailList {
@@ -923,6 +955,7 @@
     overflow-x: auto;
   }
 
+  .changeMetaStack,
   .changeTypeStack {
     justify-content: flex-start;
   }
