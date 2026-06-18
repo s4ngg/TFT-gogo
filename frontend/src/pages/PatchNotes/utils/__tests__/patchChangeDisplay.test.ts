@@ -333,8 +333,10 @@ describe('patchChangeDisplay', () => {
 
     const title = getPatchChangeTitle(change)
 
-    assert.equal(title, '킨드레드 [업데이트] 이제 스킬이 아군의 사망을 방지하지 않습니다. 이제 영역 지속시간 동안 아군에게 주문력의 350/750/10,000%에 해당하는 보호막을 씌웁니다.')
-    assert.deepEqual(getPatchChangeDetailLines(change, title), [])
+    assert.equal(title, '킨드레드 [업데이트] 이제 스킬이 아군의 사망을 방지하지 않습니다.')
+    assert.deepEqual(getPatchChangeDetailLines(change, title), [
+      '이제 영역 지속시간 동안 아군에게 주문력의 350/750/10,000%에 해당하는 보호막을 씌웁니다.',
+    ])
   })
 
   it('버그 수정 뒤에 수치 변경이 이어지는 항목은 제목과 수치 상세를 분리한다', () => {
@@ -382,6 +384,48 @@ describe('patchChangeDisplay', () => {
 
     assert.deepEqual(getPatchChangeDetailLines(change, 'Arbiter'), [
       'Trait bonus: 8/12% → 5/8%',
+    ])
+  })
+
+  it('긴 설명형 문장은 첫 핵심 문장을 제목으로 쓰고 나머지 문장을 상세로 분리한다', () => {
+    const change = patchChange({
+      summary: '신 짜오는 현재 K.O. 콜로세움에 건강하게 살아있습니다. 다만 행동이 약간 이상해졌고, 다르킨과 관련해 소리를 지르고 다닌다고 하네요. 최근 황혼의 종말 영상을 보셨다면 농담이 이해되실 겁니다. 멋진 영상이죠.',
+      target: '유닛',
+    })
+
+    const title = getPatchChangeTitle(change)
+
+    assert.equal(title, '신 짜오는 현재 K.O. 콜로세움에 건강하게 살아있습니다.')
+    assert.deepEqual(getPatchChangeDetailLines(change, title), [
+      '다만 행동이 약간 이상해졌고, 다르킨과 관련해 소리를 지르고 다닌다고 하네요. 최근 황혼의 종말 영상을 보셨다면 농담이 이해되실 겁니다. 멋진 영상이죠.',
+    ])
+  })
+
+  it('긴 조건형 변경 문장은 앞 조건절을 줄이고 원문을 상세로 보존한다', () => {
+    const change = patchChange({
+      summary: '챔피언이 치명적인 칼날 증강과 함께 죽음의 검을 여러 개 장착한 경우, 처치 관여 시 공격력 중첩을 정상적으로 여러 번 획득합니다. (이전에는 라운드 시작 시 자동으로 수정되었습니다.)',
+      target: '버그 수정',
+    })
+
+    const title = getPatchChangeTitle(change)
+
+    assert.equal(title, '처치 관여 시 공격력 중첩을 정상적으로 여러 번 획득합니다.')
+    assert.deepEqual(getPatchChangeDetailLines(change, title), [
+      '챔피언이 치명적인 칼날 증강과 함께 죽음의 검을 여러 개 장착한 경우, 처치 관여 시 공격력 중첩을 정상적으로 여러 번 획득합니다. (이전에는 라운드 시작 시 자동으로 수정되었습니다.)',
+    ])
+  })
+
+  it('긴 버그 수정 조건문은 핵심 문제 제목으로 줄이고 원문을 상세로 보존한다', () => {
+    const change = patchChange({
+      summary: '상징을 통해 N.O.V.A. 유닛 6명을 전장에 배치한 상태에서 N.O.V.A. 상징을 제거한 다음 이를 다른 유닛에 장착하지 않은 경우, 원래 상징을 갖고 있던 유닛에 그 효과가 계속해서 적용되던 버그를 수정했습니다.',
+      target: '버그 수정',
+    })
+
+    const title = getPatchChangeTitle(change)
+
+    assert.equal(title, '원래 상징을 갖고 있던 유닛에 그 효과가 계속해서 적용되던 문제 수정')
+    assert.deepEqual(getPatchChangeDetailLines(change, title), [
+      '상징을 통해 N.O.V.A. 유닛 6명을 전장에 배치한 상태에서 N.O.V.A. 상징을 제거한 다음 이를 다른 유닛에 장착하지 않은 경우, 원래 상징을 갖고 있던 유닛에 그 효과가 계속해서 적용되던 버그를 수정했습니다.',
     ])
   })
 })
