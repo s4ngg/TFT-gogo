@@ -136,7 +136,7 @@ function SummonerDetail() {
       setCooldownSeconds((prev) => (prev <= 1 ? 0 : prev - 1))
     }, 1000)
     return () => clearInterval(timer)
-  }, [refreshRateLimitSeconds > 0 || cooldownSeconds > 0])
+  }, [refreshRateLimitSeconds, cooldownSeconds])
 
   useEffect(() => {
     if (profile) {
