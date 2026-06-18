@@ -109,12 +109,19 @@ function normalizeDisplayTitle(value: string) {
   return normalizeDisplayText(value)
 }
 
+function normalizeStatusTitle(value: string) {
+  return normalizeDisplayTitle(value)
+    .replace(/\s+(?:정상적으로|올바르게|제대로)$/u, '')
+    .replace(/(조우자 없음)\s+조우자(?:이|가)?$/u, '$1')
+    .trim()
+}
+
 function getStatusDisplayFromText(value: string): PatchChangeStatusDisplay | undefined {
   const normalizedValue = normalizeDisplayText(value)
 
   for (const pattern of STATUS_PATTERNS) {
     const match = normalizedValue.match(pattern.expression)
-    const title = normalizeDisplayTitle(match?.[1] ?? '')
+    const title = normalizeStatusTitle(match?.[1] ?? '')
 
     if (title) {
       return {
@@ -204,6 +211,18 @@ function getPreferredDetailSummary(summary: string, target: string, title: strin
   return summaryDetail
 }
 
+function splitDetailSummaryLines(value: string) {
+  const normalizedValue = normalizePatchChangeArrow(value)
+  const arrowCount = normalizedValue.match(/ → /gu)?.length ?? 0
+
+  if (arrowCount < 2) return normalizedValue ? [normalizedValue] : []
+
+  return normalizedValue
+    .split(/,\s+/u)
+    .map((line) => line.trim())
+    .filter(Boolean)
+}
+
 function getTitleFromSummary(summary: string) {
   return getTitleFromText(summary, true)
 }
@@ -249,6 +268,10 @@ export function getPatchChangeStatusDisplay(change: PatchChange) {
 export function getPatchChangeDetailSummary(change: PatchChange, title: string) {
   if (getPatchChangeStatusDisplay(change)) return ''
   return getPreferredDetailSummary(change.summary, change.target, title)
+}
+
+export function getPatchChangeDetailLines(change: PatchChange, title: string) {
+  return splitDetailSummaryLines(getPatchChangeDetailSummary(change, title))
 }
 
 export function shouldShowPatchChangeValueLine(change: PatchChange) {

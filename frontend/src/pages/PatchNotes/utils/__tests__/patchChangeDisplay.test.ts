@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import type { PatchChange } from '../../../../api/patchNotes'
 import {
+  getPatchChangeDetailLines,
   getPatchChangeDetailSummary,
   getPatchChangeStatusDisplay,
   getPatchChangeTitle,
@@ -210,5 +211,32 @@ describe('patchChangeDisplay', () => {
         tone: 'removed',
       },
     )
+  })
+
+  it('여러 값 변화가 이어지는 상세 문장은 항목별 줄로 나눈다', () => {
+    const change = patchChange({
+      summary: '혼돈의 부름: 찬란한 행운의 아이템 상자 + 15골드 ⇒ 찬란한 행운의 아이템 상자 + 8골드, 58골드 ⇒ 52골드, 경험치 64 ⇒ 경험치 58, 새로고침: 40 ⇒ 36',
+      target: '증강',
+    })
+
+    assert.deepEqual(getPatchChangeDetailLines(change, '혼돈의 부름'), [
+      '찬란한 행운의 아이템 상자 + 15골드 → 찬란한 행운의 아이템 상자 + 8골드',
+      '58골드 → 52골드',
+      '경험치 64 → 경험치 58',
+      '새로고침: 40 → 36',
+    ])
+  })
+
+  it('상태 문구 제목에서는 정상적으로 같은 설명용 부사를 제거한다', () => {
+    const status = getPatchChangeStatusDisplay(patchChange({
+      summary: '펑구의 파티: 조우자 없음 조우자가 정상적으로 비활성화됩니다.',
+      target: '시스템',
+    }))
+
+    assert.deepEqual(status, {
+      label: '제외',
+      title: '펑구의 파티: 조우자 없음',
+      tone: 'disabled',
+    })
   })
 })

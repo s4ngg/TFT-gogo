@@ -6,7 +6,7 @@ import {
   type PatchChange,
 } from '../../../api/patchNotes'
 import {
-  getPatchChangeDetailSummary,
+  getPatchChangeDetailLines,
   getPatchChangeGroupKey,
   getVisiblePatchChangeStatuses,
   getVisibleNewChangeTypes,
@@ -73,9 +73,9 @@ function PatchChangeList({ patchChanges }: PatchChangeListProps) {
                   .map((change) => ({
                     change,
                     showValueChange: shouldShowPatchChangeValueLine(change),
-                    summary: getPatchChangeDetailSummary(change, group.title),
+                    summaryLines: getPatchChangeDetailLines(change, group.title),
                   }))
-                  .filter((changeDetail) => changeDetail.summary || changeDetail.showValueChange)
+                  .filter((changeDetail) => changeDetail.summaryLines.length > 0 || changeDetail.showValueChange)
 
                 return (
                   <li key={`${section.category}-${getPatchChangeGroupKey(group.title)}`} className={styles.changeTargetGroup}>
@@ -110,9 +110,17 @@ function PatchChangeList({ patchChanges }: PatchChangeListProps) {
 
                     {changeDetails.length > 0 && (
                       <ul className={styles.changeDetailList}>
-                        {changeDetails.map(({ change, showValueChange, summary }) => (
+                        {changeDetails.map(({ change, showValueChange, summaryLines }) => (
                           <li key={change.id} className={styles.changeDetailItem}>
-                            {summary && <p className={styles.changeDetailSummary}>{summary}</p>}
+                            {summaryLines.length > 0 && (
+                              <p className={styles.changeDetailSummary}>
+                                {summaryLines.map((line) => (
+                                  <span key={line} className={styles.changeDetailSummaryLine}>
+                                    {line}
+                                  </span>
+                                ))}
+                              </p>
+                            )}
                             {showValueChange && (
                               <p className={styles.changeValueLine}>
                                 <span>{change.before || '-'}</span>

@@ -583,6 +583,14 @@
   word-break: keep-all;
 }
 
+.changeDetailSummaryLine {
+  display: block;
+}
+
+.changeDetailSummaryLine + .changeDetailSummaryLine {
+  margin-top: var(--space-xs);
+}
+
 .changeValueLine {
   display: flex;
   flex-wrap: wrap;
