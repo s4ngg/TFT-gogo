@@ -8,10 +8,12 @@ import com.tftgogo.global.cdragon.service.TftAssetCacheService;
 import com.tftgogo.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Validated
 @RestController
 @RequestMapping("/api/match")
 @RequiredArgsConstructor

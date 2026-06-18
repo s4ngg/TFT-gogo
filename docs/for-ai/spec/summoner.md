@@ -21,7 +21,9 @@ Detailed human spec: docs/for-humans/spec/summoner.md
       traits: [ { traitId, name, iconUrl, count, tone(bronze|silver|gold|prismatic) } ],
       units:  [ { characterId, imageUrl, stars, itemImageUrls } ],
       participants: [ { puuid, riotIdGameName, riotIdTagline, placement, stage, traits, units, playersEliminated, goldLeft } ] }
-  — start 기본값 0, count 기본값 20. queue 1100(랭크)·1090(일반) 순차 조회 후 LinkedHashSet 병합 (랭크 순서 우선). 모든 Riot API 호출은 RiotRateLimiter(단기 20req/1s · 장기 100req/2min 이중 토큰 버킷)를 통해 rate limit 적용.
+  — start: 0 이상 (기본값 0). count: 1~20 (기본값 20). 위반 시 400 반환.
+  — queue 1100(랭크)·1090(일반) 각각 count개 조회 후 LinkedHashSet 병합, 병합 결과를 count개로 제한 (랭크 순서 우선). 응답도 count개 초과 불가.
+  — 모든 Riot API 호출은 RiotRateLimiter(단기 20req/1s · 장기 100req/2min 이중 토큰 버킷)를 통해 rate limit 적용.
 
 - GET /api/match/detail/{matchId}
   → MatchDetailResponse — 매치에 참가한 8인 전체 상세 데이터
@@ -48,7 +50,7 @@ Detailed human spec: docs/for-humans/spec/summoner.md
 - Trait activation tone: Riot API `style` (0–4) → 0=none, 1=bronze, 2=silver, 3=gold, 4=chromatic.
 - LP change and augments are not provided by Riot API — never fabricate these values.
 - CDragon image fallback: if registered URL missing, auto-generate `Trait_Icon_17_{TraitName}.TFT_Set17.tex` pattern.
-- Match list: count 파라미터로 배치 크기 지정 (기본값 20). "더 보기" 버튼 클릭 시 start를 count 단위로 증가. getNextPageParam 조건: lastPage.length > 0이면 다음 페이지 존재로 간주. 모든 Riot API 호출은 백엔드 RiotRateLimiter가 rate limit 보장.
+- Match list: count 파라미터로 배치 크기 지정 (1~20, 기본값 20). "더 보기" 버튼 클릭 시 start를 count 단위로 증가. getNextPageParam 조건: lastPage.length > 0이면 다음 페이지 존재로 간주. start < 0 또는 count 범위 위반 시 400. 모든 Riot API 호출은 백엔드 RiotRateLimiter가 rate limit 보장.
 - Game type filter: 전체 / 랭크 / 일반 — applied client-side on fetched match list.
 - Expanding a match row shows all 8 participants: placement, summonerName, stage (last_round → Spring notation), traits, units, kills, gold_left.
 - My row in expanded view is highlighted in teal.

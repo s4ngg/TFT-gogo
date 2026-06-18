@@ -58,7 +58,7 @@ export function itemsFromUrls(urls: string[]): { imageUrl: string; name: string 
   }))
 }
 
-export function tftItemIconUrl(itemId: string, setTag = TFT_ASSET_CONFIG.currentSetTag): string {
+export function tftItemIconUrl(itemId: string, setTag: string = TFT_ASSET_CONFIG.currentSetTag): string {
   const normalized = itemId.toLowerCase()
   return `${TFT_ASSET_CONFIG.communityDragonGameBaseUrl}/assets/maps/tft/icons/items/hexcore/${normalized}.${setTag}.png`
 }

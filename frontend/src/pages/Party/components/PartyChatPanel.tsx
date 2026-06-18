@@ -101,7 +101,7 @@ function PartyChatPanel({
             </span>
           </div>
           {chatNotice && (
-            <p className={styles.chatStatus} role="status" aria-live="polite">
+            <p aria-atomic="true" aria-live="polite" className={styles.chatStatus} role="status">
               {chatNotice}
             </p>
           )}

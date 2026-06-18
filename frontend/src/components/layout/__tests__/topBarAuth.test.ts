@@ -1,0 +1,76 @@
+import assert from 'node:assert/strict'
+import { describe, it } from 'node:test'
+
+import { AUTH_ME_QUERY_KEY } from '../../../hooks/useAuthSession'
+import { clearTopBarAuthSession } from '../topBarAuth'
+
+interface QueryCall {
+  exact: true
+  queryKey: typeof AUTH_ME_QUERY_KEY
+}
+
+function createQueryClient(options: { rejectCancel?: boolean } = {}) {
+  const calls: string[] = []
+  const cancelFilters: QueryCall[] = []
+  const removeFilters: QueryCall[] = []
+
+  return {
+    calls,
+    client: {
+      cancelQueries: async (filters: QueryCall) => {
+        calls.push('cancel')
+        cancelFilters.push(filters)
+
+        if (options.rejectCancel) {
+          throw new Error('cancel failed')
+        }
+      },
+      removeQueries: (filters: QueryCall) => {
+        calls.push('remove')
+        removeFilters.push(filters)
+      },
+    },
+    cancelFilters,
+    removeFilters,
+  }
+}
+
+describe('clearTopBarAuthSession', () => {
+  it('토큰을 먼저 지우고 auth/me 쿼리를 취소한 뒤 제거한다', async () => {
+    const queryClient = createQueryClient()
+    const calls: string[] = []
+
+    await clearTopBarAuthSession(queryClient.client, () => {
+      calls.push('clearAuth')
+      queryClient.calls.push('clearAuth')
+    })
+
+    assert.deepEqual(queryClient.calls, ['clearAuth', 'cancel', 'remove'])
+    assert.deepEqual(queryClient.cancelFilters[0], {
+      exact: true,
+      queryKey: AUTH_ME_QUERY_KEY,
+    })
+    assert.deepEqual(queryClient.removeFilters[0], {
+      exact: true,
+      queryKey: AUTH_ME_QUERY_KEY,
+    })
+    assert.deepEqual(calls, ['clearAuth'])
+  })
+
+  it('쿼리 취소가 실패해도 로컬 세션과 캐시 제거 흐름을 유지한다', async () => {
+    const queryClient = createQueryClient({ rejectCancel: true })
+    let clearAuthCount = 0
+
+    await clearTopBarAuthSession(queryClient.client, () => {
+      clearAuthCount += 1
+      queryClient.calls.push('clearAuth')
+    })
+
+    assert.equal(clearAuthCount, 1)
+    assert.deepEqual(queryClient.calls, ['clearAuth', 'cancel', 'remove'])
+    assert.deepEqual(queryClient.removeFilters[0], {
+      exact: true,
+      queryKey: AUTH_ME_QUERY_KEY,
+    })
+  })
+})

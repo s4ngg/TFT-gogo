@@ -5,7 +5,15 @@ import {
   sendChatMessage,
   subscribeChatRoom,
   type ChatMessage,
+  type ChatStreamErrorReason,
+  type ChatStreamSubscription,
 } from '../../../api/chatApi'
+import { communityChatMessagesQueryKey } from '../../../api/chatQueryKeys'
+import {
+  getChatReconnectDelay,
+  getNextChatReconnectAttempt,
+  MAX_CHAT_RECONNECT_ATTEMPTS,
+} from '../utils/chatReconnect'
 
 type ChatConnectionStatus = 'connected' | 'connecting' | 'disconnected'
 
@@ -14,7 +22,9 @@ interface SendMessageParams {
   roomId?: string
 }
 
-const chatMessagesQueryKey = (roomId: string) => ['chatMessages', roomId] as const
+function isTerminalStreamError(reason: ChatStreamErrorReason) {
+  return reason === 'client'
+}
 
 function mergeMessages(currentMessages: ChatMessage[] | undefined, nextMessages: ChatMessage[]) {
   const messageMap = new Map<string, ChatMessage>()
@@ -31,69 +41,166 @@ function mergeMessages(currentMessages: ChatMessage[] | undefined, nextMessages:
   )
 }
 
-export function useRealtimeChat(roomId: string, enabled = true) {
+export function useRealtimeChat(roomId: string, streamEnabled = true) {
   const queryClient = useQueryClient()
   const [connectionStatus, setConnectionStatus] = useState<ChatConnectionStatus>('connecting')
   const [errorMessage, setErrorMessage] = useState('')
+  const [hasReconnectFailed, setHasReconnectFailed] = useState(false)
+  const [isReconnecting, setIsReconnecting] = useState(false)
+  const [reconnectAttempt, setReconnectAttempt] = useState(0)
 
   const messagesQuery = useQuery({
-    enabled,
-    queryKey: chatMessagesQueryKey(roomId),
+    enabled: Boolean(roomId),
+    queryKey: communityChatMessagesQueryKey(roomId),
     queryFn: () => getChatMessages(roomId),
     staleTime: 10_000,
   })
 
   useEffect(() => {
-    if (!enabled) {
+    if (!streamEnabled) {
       setConnectionStatus('disconnected')
+      setErrorMessage('')
+      setHasReconnectFailed(false)
+      setIsReconnecting(false)
+      setReconnectAttempt(0)
       return undefined
     }
 
     let active = true
+    let activeSubscription: ChatStreamSubscription | null = null
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+    let currentReconnectAttempt = 0
+    let hasOpenedOnce = false
 
-    setConnectionStatus('connecting')
-    const subscription = subscribeChatRoom(roomId, {
-      onClose: () => {
-        if (active) {
-          setConnectionStatus('disconnected')
+    const clearReconnectTimer = () => {
+      if (reconnectTimer !== null) {
+        clearTimeout(reconnectTimer)
+        reconnectTimer = null
+      }
+    }
+
+    const closeActiveSubscription = () => {
+      if (activeSubscription !== null) {
+        activeSubscription.close()
+        activeSubscription = null
+      }
+    }
+
+    const resetReconnectState = () => {
+      currentReconnectAttempt = 0
+      setHasReconnectFailed(false)
+      setIsReconnecting(false)
+      setReconnectAttempt(0)
+    }
+
+    const stopWithError = (message: string) => {
+      clearReconnectTimer()
+      closeActiveSubscription()
+      setConnectionStatus('disconnected')
+      setErrorMessage(message)
+      setHasReconnectFailed(true)
+      setIsReconnecting(false)
+    }
+
+    const connect = () => {
+      if (!active) {
+        return
+      }
+
+      let failureHandled = false
+
+      clearReconnectTimer()
+      closeActiveSubscription()
+      setConnectionStatus('connecting')
+
+      const handleStreamFailure = (reason: ChatStreamErrorReason | 'close') => {
+        if (!active || failureHandled) {
+          return
         }
-      },
-      onError: () => {
-        if (active) {
-          setConnectionStatus('disconnected')
+
+        failureHandled = true
+        closeActiveSubscription()
+
+        if (reason !== 'close' && isTerminalStreamError(reason)) {
+          stopWithError('채팅방 연결 정보를 확인해주세요.')
+          return
         }
-      },
-      onMessage: (message) => {
-        queryClient.setQueryData<ChatMessage[]>(
-          chatMessagesQueryKey(message.roomId),
-          (currentMessages) => mergeMessages(currentMessages, [message]),
-        )
-      },
-      onOpen: () => {
-        if (active) {
+
+        const nextAttempt = getNextChatReconnectAttempt(currentReconnectAttempt)
+
+        if (nextAttempt === null) {
+          stopWithError('실시간 연결을 복구하지 못했습니다.')
+          return
+        }
+
+        const delay = getChatReconnectDelay(nextAttempt)
+
+        if (delay === null) {
+          stopWithError('실시간 연결을 복구하지 못했습니다.')
+          return
+        }
+
+        currentReconnectAttempt = nextAttempt
+        setConnectionStatus('connecting')
+        setErrorMessage('')
+        setHasReconnectFailed(false)
+        setIsReconnecting(hasOpenedOnce)
+        setReconnectAttempt(nextAttempt)
+        reconnectTimer = setTimeout(connect, delay)
+      }
+
+      activeSubscription = subscribeChatRoom(roomId, {
+        onClose: () => handleStreamFailure('close'),
+        onError: (reason) => handleStreamFailure(reason),
+        onMessage: (message) => {
+          queryClient.setQueryData<ChatMessage[]>(
+            communityChatMessagesQueryKey(message.roomId),
+            (currentMessages) => mergeMessages(currentMessages, [message]),
+          )
+        },
+        onOpen: () => {
+          if (!active || failureHandled) {
+            return
+          }
+
+          hasOpenedOnce = true
+          resetReconnectState()
           setConnectionStatus('connected')
           setErrorMessage('')
-        }
-      },
-      onSnapshot: (messages) => {
-        queryClient.setQueryData<ChatMessage[]>(
-          chatMessagesQueryKey(roomId),
-          mergeMessages(undefined, messages),
-        )
-      },
-      onUnauthorized: () => {
-        if (active) {
+        },
+        onSnapshot: (messages) => {
+          queryClient.setQueryData<ChatMessage[]>(
+            communityChatMessagesQueryKey(roomId),
+            mergeMessages(undefined, messages),
+          )
+        },
+        onUnauthorized: () => {
+          if (!active || failureHandled) {
+            return
+          }
+
+          failureHandled = true
+          clearReconnectTimer()
+          closeActiveSubscription()
           setConnectionStatus('disconnected')
           setErrorMessage('로그인이 만료되었습니다. 다시 로그인해주세요.')
-        }
-      },
-    })
+          setHasReconnectFailed(false)
+          setIsReconnecting(false)
+          setReconnectAttempt(0)
+        },
+      })
+    }
+
+    resetReconnectState()
+    setErrorMessage('')
+    connect()
 
     return () => {
       active = false
-      subscription.close()
+      clearReconnectTimer()
+      closeActiveSubscription()
     }
-  }, [enabled, queryClient, roomId])
+  }, [queryClient, roomId, streamEnabled])
 
   const sendMutation = useMutation({
     mutationFn: sendChatMessage,
@@ -103,7 +210,7 @@ export function useRealtimeChat(roomId: string, enabled = true) {
     onSuccess: (message) => {
       setErrorMessage('')
       queryClient.setQueryData<ChatMessage[]>(
-        chatMessagesQueryKey(message.roomId),
+        communityChatMessagesQueryKey(message.roomId),
         (currentMessages) => mergeMessages(currentMessages, [message]),
       )
     },
@@ -131,10 +238,14 @@ export function useRealtimeChat(roomId: string, enabled = true) {
   return {
     connectionStatus,
     errorMessage,
+    hasReconnectFailed,
     isLoading: messagesQuery.isLoading,
+    isReconnecting,
     isSending: sendMutation.isPending,
+    maxReconnectAttempts: MAX_CHAT_RECONNECT_ATTEMPTS,
     messages,
     queryError: messagesQuery.error,
+    reconnectAttempt,
     sendMessage,
   }
 }

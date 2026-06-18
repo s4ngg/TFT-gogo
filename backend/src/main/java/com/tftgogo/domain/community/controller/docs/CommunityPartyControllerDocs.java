@@ -34,7 +34,9 @@ public interface CommunityPartyControllerDocs {
     @Operation(summary = "파티 모집글 등록", description = "인증된 사용자가 파티 모집글을 등록합니다. MVP에서는 파티별 채팅방을 만들지 않고 응답의 chatRoomId는 고정 파티 모집 채널(party-recruitment)을 반환합니다. 파티별 전용 채팅방과 멤버십 검증은 후속 과제로 둡니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "등록 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "사용자 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "이미 활성 파티 작성 또는 참여 중")
     })
     ResponseEntity<ApiResponse<PartyPostResponse>> createPartyPost(
             @AuthenticationPrincipal Long userId,
@@ -45,8 +47,8 @@ public interface CommunityPartyControllerDocs {
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "참여 성공"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "모집글 없음"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "정원 초과 또는 모집 마감")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "사용자 없음 또는 모집글 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "정원 초과, 모집 마감 또는 이미 다른 활성 파티 참여/작성 중")
     })
     ResponseEntity<ApiResponse<PartyPostResponse>> joinParty(
             @AuthenticationPrincipal Long userId,

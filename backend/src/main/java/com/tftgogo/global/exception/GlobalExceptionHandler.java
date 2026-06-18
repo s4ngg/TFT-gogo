@@ -1,6 +1,7 @@
 package com.tftgogo.global.exception;
 
 import com.tftgogo.global.response.ApiResponse;
+import jakarta.validation.ConstraintViolationException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
@@ -33,6 +34,19 @@ public class GlobalExceptionHandler {
                 e.getErrorCode().getMessage(),
                 e.getErrorCode().getStatus()
         ));
+    }
+
+    // ── @Validated @RequestParam/@PathVariable 검증 실패 ────
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleConstraintViolationException(ConstraintViolationException e) {
+        String message = e.getConstraintViolations().stream()
+                .findFirst()
+                .map(v -> v.getMessage())
+                .orElse(ErrorCode.INVALID_INPUT.getMessage());
+        logger.warn("ConstraintViolationException - {}", message);
+        return ResponseEntity
+                .status(ErrorCode.INVALID_INPUT.getStatus())
+                .body(ApiResponse.fail(message, ErrorCode.INVALID_INPUT.getStatus()));
     }
 
     // ── @Valid 검증 실패 ───────────────────────────────────

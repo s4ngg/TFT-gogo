@@ -44,22 +44,23 @@
 .brand {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 8px;
   height: 45px;
-  padding: 0 12px;
+  padding: 0 4px;
   min-width: 0;
   color: inherit;
   text-decoration: none;
 }
 
 .brand strong {
-  min-width: 0;
-  overflow: hidden;
+  flex: 0 0 auto;
+  min-width: max-content;
+  overflow: visible;
   color: #ffffff;
-  font-size: 25px;
+  font-size: var(--font-size-xl);
   font-weight: 800;
-  letter-spacing: -0.04em;
-  text-overflow: ellipsis;
+  letter-spacing: 0;
+  text-overflow: clip;
   white-space: nowrap;
 }
 
@@ -157,6 +158,7 @@
 
 .sidebarCollapsed .brand strong,
 .sidebarCollapsed .navItem span {
+  min-width: 0;
   width: 0;
   opacity: 0;
   overflow: hidden;
@@ -416,12 +418,89 @@
 }
 
 .profileButton {
+  max-width: 210px;
+  height: 38px;
   display: inline-flex;
   align-items: center;
   gap: 9px;
+  min-width: 0;
+  padding: 0 2px;
   color: #ffffff;
   font-size: 13px;
   font-weight: 600;
+  white-space: nowrap;
+}
+
+.profileName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profileMenuShell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.profileButton:hover,
+.profileButton[aria-expanded='true'] {
+  color: var(--text-main);
+}
+
+.profileButton[aria-expanded='true'] .profileChevron {
+  transform: rotate(180deg);
+}
+
+.profileChevron {
+  flex: 0 0 auto;
+  transition: transform 0.16s ease;
+}
+
+.profileMenu {
+  position: absolute;
+  top: calc(100% + var(--space-sm));
+  right: 0;
+  z-index: 30;
+  width: 178px;
+  padding: var(--space-sm);
+  border: 1px solid var(--border-tooltip);
+  border-radius: var(--radius-button);
+  background: var(--bg-tooltip);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.34);
+}
+
+.profileMenuName {
+  overflow: hidden;
+  margin: 0 2px var(--space-sm);
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profileMenuDangerButton {
+  width: 100%;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-button);
+  color: var(--danger);
+  background: transparent;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.profileMenuDangerButton:hover,
+.profileMenuDangerButton:focus-visible {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
 }
 
 .loginButton {
@@ -442,9 +521,10 @@
   white-space: nowrap;
 }
 
-.profileButton span {
+.profileAvatar {
   width: 37px;
   height: 37px;
+  flex: 0 0 auto;
   overflow: hidden;
   display: grid;
   place-items: center;
@@ -458,7 +538,7 @@
   box-shadow: 0 0 12px rgba(231, 66, 255, 0.45);
 }
 
-.profileButton span img {
+.profileAvatar img {
   width: 100%;
   height: 100%;
   display: block;

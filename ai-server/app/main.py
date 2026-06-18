@@ -1,4 +1,5 @@
 import logging
+import sys
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,9 +7,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import analyze
 from app.core.config import settings
 
+sys.stdout.reconfigure(encoding="utf-8")
+sys.stderr.reconfigure(encoding="utf-8")
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s - %(message)s",
+    stream=sys.stdout,
 )
 
 app = FastAPI(
