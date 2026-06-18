@@ -195,6 +195,8 @@ class AdminPatchNoteServiceImplTest {
         verify(patchNoteRepository).save(patchNoteCaptor.capture());
         assertThat(patchNoteCaptor.getValue().getSourceKey()).isEqualTo("riot-content-17-4");
         assertThat(patchNoteCaptor.getValue().getImportSource()).isEqualTo(PatchNoteImportSource.RIOT_OFFICIAL);
+        assertThat(patchNoteCaptor.getValue().getFocus()).isEqualTo("Riot summary");
+        assertThat(patchNoteCaptor.getValue().getHighlightsJson()).isEqualTo("[\"Jinx\"]");
         assertThat(patchNoteCaptor.getValue().isCurrent()).isTrue();
 
         ArgumentCaptor<PatchChange> patchChangeCaptor = ArgumentCaptor.forClass(PatchChange.class);
@@ -402,6 +404,8 @@ class AdminPatchNoteServiceImplTest {
         assertThat(response.getCreatedChanges()).isEqualTo(1);
         assertThat(existingPatchNote.getTitle()).isEqualTo("17.3 Patch Notes");
         assertThat(existingPatchNote.getPublishedAt()).isEqualTo(officialPublishedAt);
+        assertThat(existingPatchNote.getFocus()).isEqualTo("Official summary");
+        assertThat(existingPatchNote.getHighlightsJson()).isEqualTo("[\"Augments\"]");
         assertThat(existingPatchNote.isCurrent()).isFalse();
         assertThat(existingPatchNote.getSourceUrl()).isEqualTo(detailPage.sourceUrl());
         verify(patchChangeRepository).deleteAllInBatch(List.of(staleChange));

@@ -443,22 +443,37 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
     }
 
     private String resolvePatchNoteFocus(PatchNoteCrawlDocument document) {
-        return document.sections().stream()
-                .filter(this::hasText)
-                .findFirst()
-                .map(value -> truncate(value.trim(), 200))
-                .orElse(null);
+        if (hasText(document.summary())) {
+            return truncate(document.summary().trim(), 200);
+        }
+        if (hasText(document.title())) {
+            return truncate(document.title().trim(), 200);
+        }
+        return null;
     }
 
     private List<String> resolveHighlights(PatchNoteCrawlDocument document) {
         List<String> highlights = document.sections().stream()
                 .filter(this::hasText)
+                .map(this::toDisplaySectionLabel)
+                .filter(this::hasText)
+                .distinct()
                 .limit(5)
                 .toList();
         if (!highlights.isEmpty()) {
             return highlights;
         }
         return hasText(document.summary()) ? List.of(document.summary().trim()) : List.of();
+    }
+
+    private String toDisplaySectionLabel(String value) {
+        String[] segments = value.trim().split(">");
+        String label = segments.length == 0 ? value.trim() : segments[segments.length - 1].trim();
+        String normalizedLabel = label
+                .replaceAll("^\\d{1,2}월\\s+\\d{1,2}일\\s*", "")
+                .replaceAll("^\\d{1,2}(?:[.-]\\d{1,2}[a-zA-Z]?)?\\s*(?:추가\\s*)?패치(?:\\s*노트)?\\s*", "")
+                .trim();
+        return hasText(normalizedLabel) ? normalizedLabel : label;
     }
 
     private LocalDateTime resolvePublishedAt(PatchNoteCrawlDocument document, LocalDateTime fallback) {

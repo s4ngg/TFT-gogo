@@ -1,9 +1,30 @@
 import assert from 'node:assert/strict'
-import { describe, it } from 'node:test'
+import { afterEach, describe, it } from 'node:test'
+import type { AxiosAdapter, AxiosResponse } from 'axios'
 
 import { getPatchChangeImageUrl } from '../../pages/PatchNotes/patchNotesImages'
-import type { PatchChange } from '../patchNotes'
+import axiosInstance from '../axiosInstance'
+import { getPatchNotes, type PatchChange, type PatchNoteDetail } from '../patchNotes'
 import { readPatchChangeStatsPayload } from '../patchNoteStatsPayload'
+
+const originalAdapter = axiosInstance.defaults.adapter
+
+function createAdapter(responseData: unknown): AxiosAdapter {
+  return async (config): Promise<AxiosResponse> => ({
+    config,
+    data: {
+      data: responseData,
+      success: true,
+    },
+    headers: {},
+    status: 200,
+    statusText: 'OK',
+  })
+}
+
+afterEach(() => {
+  axiosInstance.defaults.adapter = originalAdapter
+})
 
 function toRecord(value: unknown): Record<string, unknown> {
   if (typeof value !== 'object' || value === null) {
@@ -89,6 +110,49 @@ describe('readPatchChangeStatsPayload', () => {
     assert.equal(stats.totalChanges, 5)
     assert.deepEqual(stats.categoryCounts, { CHAMPION: 2 })
     assert.deepEqual(stats.typeCounts, { BUFF: 1 })
+  })
+})
+
+const fallbackPatchNotes: PatchNoteDetail[] = [
+  {
+    changes: [],
+    date: '2026.05.12',
+    description: 'fallback description',
+    focus: 'fallback focus',
+    highlights: [],
+    imageUrl: '/fallback.png',
+    status: '이전',
+    title: '17.3 패치',
+    version: '17.3',
+  },
+]
+
+describe('getPatchNotes', () => {
+  it('크롤링 목차 경로로 들어온 focus와 highlights를 사용자용 요약 문구로 정리한다', async () => {
+    axiosInstance.defaults.adapter = createAdapter([
+      {
+        description: '공식 패치 요약입니다.',
+        focus: '추가 패치 노트 > 밸런스 변경 사항',
+        highlights: [
+          '추가 패치 노트 > 밸런스 변경 사항',
+          '체계 > 시작 조우자',
+          '체계 > 시작 조우자',
+        ],
+        isCurrent: true,
+        publishedAt: '2026-06-09T18:00:00',
+        summary: '공식 패치 요약입니다.',
+        title: '전략적 팀 전투 17.5 패치',
+        version: '17.5',
+      },
+    ])
+
+    const response = await getPatchNotes(fallbackPatchNotes)
+    const patchNote = response.data[0]
+
+    assert.equal(response.source, 'api')
+    assert.equal(patchNote?.summary, '공식 패치 요약입니다.')
+    assert.equal(patchNote?.focus, '공식 패치 요약입니다.')
+    assert.deepEqual(patchNote?.highlights, ['밸런스 변경 사항', '시작 조우자'])
   })
 })
 
