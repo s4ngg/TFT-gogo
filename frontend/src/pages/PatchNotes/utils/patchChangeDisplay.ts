@@ -126,8 +126,27 @@ function getStatusDisplayFromText(value: string): PatchChangeStatusDisplay | und
   return undefined
 }
 
+function isDigit(char: string | undefined) {
+  return char !== undefined && /\d/u.test(char)
+}
+
+function isNumericCommaSeparator(value: string, commaIndex: number) {
+  return isDigit(value[commaIndex - 1]) && isDigit(value[commaIndex + 1])
+}
+
+function findTitleCommaDelimiterIndex(value: string) {
+  let commaIndex = value.indexOf(',')
+
+  while (commaIndex > 0) {
+    if (!isNumericCommaSeparator(value, commaIndex)) return commaIndex
+    commaIndex = value.indexOf(',', commaIndex + 1)
+  }
+
+  return -1
+}
+
 function getTitleDelimiterIndex(value: string, shouldUseCommaDelimiter: boolean) {
-  const commaIndex = value.indexOf(',')
+  const commaIndex = shouldUseCommaDelimiter ? findTitleCommaDelimiterIndex(value) : -1
   const colonIndex = value.indexOf(':')
 
   if (

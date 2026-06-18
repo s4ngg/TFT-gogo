@@ -343,10 +343,11 @@ class AdminPatchNoteServiceImplTest {
     }
 
     @Test
-    void importRiotPatchNote_whenExistingPatchFound_updatesOfficialMetadataAndDeletesStaleChanges() {
+    void importRiotPatchNote_whenExistingPatchFound_updatesOfficialMetadataAndDeletesOnlyImportedStaleChanges() {
         // given
         PatchNote existingPatchNote = patchNote(1L, "17.3", true);
-        PatchChange staleChange = patchChange(99L, existingPatchNote);
+        PatchChange staleChange = importedPatchChange(99L, existingPatchNote);
+        PatchChange manualChange = patchChange(100L, existingPatchNote);
         PatchNoteCrawlFetchedPage detailPage = fetchedPage("https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-3/");
         LocalDateTime officialPublishedAt = LocalDateTime.of(2026, 5, 12, 18, 0);
         PatchChangeCrawlRow row = new PatchChangeCrawlRow(
@@ -394,7 +395,7 @@ class AdminPatchNoteServiceImplTest {
             return patchChange;
         });
         when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(existingPatchNote))
-                .thenReturn(List.of(staleChange));
+                .thenReturn(List.of(staleChange, manualChange));
 
         // when
         AdminPatchNoteImportResponse response = adminPatchNoteService.importRiotPatchNote(request);
@@ -497,6 +498,28 @@ class AdminPatchNoteServiceImplTest {
         assertThat(responses).extracting(PatchChangeResponse::getId).containsExactly(10L, 11L);
         assertThat(responses).extracting(PatchChangeResponse::getSortOrder).containsExactly(1, 2);
         verify(patchChangeRepository).findByPatchNoteOrderBySortOrderAscIdAsc(patchNote);
+    }
+
+    @Test
+    void createPatchChange_marksManuallyEdited() {
+        // given
+        PatchNote patchNote = patchNote(1L, "17.3", true);
+        AdminPatchChangeRequest request = patchChangeRequest(1L, "CHAMPION");
+        when(patchNoteRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(patchNote));
+        when(patchChangeRepository.save(any(PatchChange.class))).thenAnswer(invocation -> {
+            PatchChange patchChange = invocation.getArgument(0);
+            ReflectionTestUtils.setField(patchChange, "id", 10L);
+            return patchChange;
+        });
+
+        // when
+        PatchChangeResponse response = adminPatchNoteService.createPatchChange(request);
+
+        // then
+        ArgumentCaptor<PatchChange> patchChangeCaptor = ArgumentCaptor.forClass(PatchChange.class);
+        verify(patchChangeRepository).save(patchChangeCaptor.capture());
+        assertThat(response.getTargetName()).isEqualTo("Jinx");
+        assertThat(patchChangeCaptor.getValue().isManuallyEdited()).isTrue();
     }
 
     @Test
