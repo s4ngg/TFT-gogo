@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS patch_note_changes (
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     PRIMARY KEY (id),
     CONSTRAINT fk_patch_note_changes_patch_note
-        FOREIGN KEY (patch_note_id) REFERENCES patch_notes (id),
+        FOREIGN KEY (patch_note_id) REFERENCES patch_notes (id) ON DELETE RESTRICT,
     UNIQUE KEY uk_patch_note_changes_source_key (patch_note_id, source_key),
     KEY idx_patch_note_changes_public (patch_note_id, sort_order, id),
     KEY idx_patch_note_changes_source_order (patch_note_id, source_order),

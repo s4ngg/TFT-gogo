@@ -338,7 +338,7 @@ class AdminPatchNoteServiceImplTest {
         assertThat(existingPatchNote.getPublishedAt()).isEqualTo(officialPublishedAt);
         assertThat(existingPatchNote.isCurrent()).isFalse();
         assertThat(existingPatchNote.getSourceUrl()).isEqualTo(detailPage.sourceUrl());
-        verify(patchChangeRepository).delete(staleChange);
+        verify(patchChangeRepository).deleteAllInBatch(List.of(staleChange));
     }
 
     @Test
@@ -363,8 +363,7 @@ class AdminPatchNoteServiceImplTest {
         AdminPatchNoteRequest request = patchNoteRequest("17.3", true, List.of("manual highlight"));
         when(patchNoteRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(patchNote));
         when(patchNoteRepository.findByVersion("17.3")).thenReturn(Optional.of(patchNote));
-        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote))
-                .thenReturn(List.of());
+        when(patchChangeRepository.countByPatchNote(patchNote)).thenReturn(0L);
 
         // when
         PatchNoteResponse response = adminPatchNoteService.updatePatchNote(1L, request);
@@ -375,7 +374,7 @@ class AdminPatchNoteServiceImplTest {
     }
 
     @Test
-    void deletePatchNote_softDeletesPatchNoteAndChanges() {
+    void deletePatchNote_softDeletesPatchNoteAndHardDeletesChanges() {
         // given
         PatchNote patchNote = patchNote(1L, "17.3", true);
         PatchChange patchChange = patchChange(10L, patchNote);
@@ -393,7 +392,7 @@ class AdminPatchNoteServiceImplTest {
     }
 
     @Test
-    void deletePatchNote_whenImported_marksPatchNoteAndChangesManuallyEdited() {
+    void deletePatchNote_whenImported_marksManuallyEditedAndHardDeletesChanges() {
         // given
         PatchNote patchNote = importedPatchNote(1L, "17.3", true);
         PatchChange patchChange = importedPatchChange(10L, patchNote);

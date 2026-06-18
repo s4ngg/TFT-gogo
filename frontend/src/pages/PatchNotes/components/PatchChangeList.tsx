@@ -9,6 +9,7 @@ import {
 } from '../../../api/patchNotes'
 import {
   getPatchChangeDetailSummary,
+  getPatchChangeGroupKey,
   getVisiblePatchChangeTypes,
   groupPatchChangesByTitle,
   shouldShowPatchChangeValueLine,
@@ -77,7 +78,7 @@ function PatchChangeList({ activeChangeType, patchChanges }: PatchChangeListProp
                   .filter((changeDetail) => changeDetail.summary || changeDetail.showValueChange)
 
                 return (
-                  <li key={`${section.category}-${group.title}`} className={styles.changeTargetGroup}>
+                  <li key={`${section.category}-${getPatchChangeGroupKey(group.title)}`} className={styles.changeTargetGroup}>
                     <div className={styles.changeTargetHeader}>
                       <div className={styles.changeTargetTitle}>
                         <strong>{group.title}</strong>
