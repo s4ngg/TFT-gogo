@@ -1,32 +1,42 @@
-import { communityDragonAssetUrl } from '../../api/communityDragonAssets'
+import {
+  communityDragonAssetUrl,
+  TFT_ASSET_CONFIG,
+  tftChampSquareUrl,
+  tftItemIconUrl,
+  tftTraitIconUrl,
+} from '../../api/communityDragonAssets'
 import type { ChangeCategory, PatchChange } from '../../api/patchNotes'
 
 export const PATCH_FALLBACK_IMAGE = '/assets/emblems/patch-meta-emblem-pink.png'
 
+function fallbackItemIconUrl(itemId: string) {
+  return tftItemIconUrl(itemId, TFT_ASSET_CONFIG.fallbackItemSetTag)
+}
+
 const categoryImageUrl: Record<ChangeCategory, string> = {
-  챔피언: communityDragonAssetUrl('ASSETS/Characters/TFT17_Kaisa/Skins/Base/Images/TFT17_Kaisa_splash_tile_69.TFT_Set17.tex'),
-  시너지: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Challenger.TFT_Set17.tex'),
-  아이템: communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_GuinsoosRageblade.TFT_Set13.tex'),
+  챔피언: tftChampSquareUrl('TFT17_Kaisa'),
+  시너지: tftTraitIconUrl('TFT17_Challenger'),
+  아이템: fallbackItemIconUrl('TFT_Item_GuinsoosRageblade'),
   증강체: communityDragonAssetUrl('ASSETS/UX/TFT/Augments/Augment_Silver.tex'),
   시스템: PATCH_FALLBACK_IMAGE,
 }
 
 const targetImageUrl: Record<string, string> = {
-  아펠리오스: communityDragonAssetUrl('ASSETS/Characters/TFT17_Aphelios/Skins/Base/Images/TFT17_Aphelios_splash_tile_1.TFT_Set17.tex'),
-  세주아니: communityDragonAssetUrl('ASSETS/Characters/TFT17_Sejuani/Skins/Base/Images/TFT17_Sejuani_splash_tile_1.TFT_Set17.tex'),
-  럭스: communityDragonAssetUrl('ASSETS/Characters/TFT17_Lux/Skins/Base/Images/TFT17_Lux_splash_tile_1.TFT_Set17.tex'),
-  카이사: communityDragonAssetUrl('ASSETS/Characters/TFT17_Kaisa/Skins/Base/Images/TFT17_Kaisa_splash_tile_69.TFT_Set17.tex'),
-  오른: communityDragonAssetUrl('ASSETS/Characters/TFT17_Ornn/Skins/Base/Images/TFT17_Ornn_splash_tile_11.TFT_Set17.tex'),
-  학살자: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Rogue.TFT_Set17.tex'),
-  마법사: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Fateweaver.TFT_Set17.tex'),
-  감시자: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_12_Vanguard.TFT_Set12.tex'),
-  전략가: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Stargazer.TFT_Set17.tex'),
-  결투가: communityDragonAssetUrl('ASSETS/UX/TraitIcons/Trait_Icon_17_Challenger.TFT_Set17.tex'),
-  '구인수의 격노검': communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_GuinsoosRageblade.TFT_Set13.tex'),
-  '워모그의 갑옷': communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_WarmogsArmor.TFT_Set13.tex'),
-  '쇼진의 창': communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_SpearOfShojin.TFT_Set13.tex'),
-  '이온 충격기': communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_IonicSpark.TFT_Set13.tex'),
-  '거인 학살자': communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_GiantSlayer.TFT_Set13.tex'),
+  아펠리오스: tftChampSquareUrl('TFT17_Aphelios'),
+  세주아니: tftChampSquareUrl('TFT17_Sejuani'),
+  럭스: tftChampSquareUrl('TFT17_Lux'),
+  카이사: tftChampSquareUrl('TFT17_Kaisa'),
+  오른: tftChampSquareUrl('TFT17_Ornn'),
+  학살자: tftTraitIconUrl('TFT17_Rogue'),
+  마법사: tftTraitIconUrl('TFT17_Fateweaver'),
+  감시자: tftTraitIconUrl('TFT17_Vanguard'),
+  전략가: tftTraitIconUrl('TFT17_Stargazer'),
+  결투가: tftTraitIconUrl('TFT17_Challenger'),
+  '구인수의 격노검': fallbackItemIconUrl('TFT_Item_GuinsoosRageblade'),
+  '워모그의 갑옷': fallbackItemIconUrl('TFT_Item_WarmogsArmor'),
+  '쇼진의 창': fallbackItemIconUrl('TFT_Item_SpearOfShojin'),
+  '이온 충격기': fallbackItemIconUrl('TFT_Item_IonicSpark'),
+  '거인 학살자': fallbackItemIconUrl('TFT_Item_GiantSlayer'),
 }
 
 function getBaseTarget(target: string) {

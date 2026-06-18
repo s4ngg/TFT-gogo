@@ -3,18 +3,25 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   cancelPartyJoin,
   createPartyPost,
-  fallbackPartyPosts,
   getPartyPosts,
   joinPartyPost,
   type CreatePartyPostRequest,
+  type PartyPostsQueryParams,
   type PartyPostsResult,
 } from '../../../api/partyApi'
+import {
+  COMMUNITY_PARTY_POSTS_QUERY_KEY,
+  communityPartyPostsQueryKey,
+} from '../../../api/partyQueryKeys'
 import type { PartyFilter } from '../partyFilters'
 import type { PartyMode, PartyPost } from '../types'
 import {
   filterPartyPosts,
   formatDeadlineForRequest,
   getDefaultDeadlineInput,
+  getPartyActionNotice,
+  getPartyListEmptyMessage,
+  mergePartyPostSources,
   normalizeCapacity,
   paginatePartyPosts,
   parseCapacity,
@@ -26,7 +33,6 @@ import {
 import { usePartyAuth } from './usePartyAuth'
 
 const PARTY_PAGE_SIZE = 3
-const PARTY_QUERY_KEY = ['community', 'parties'] as const
 
 interface UsePartyPostsOptions {
   onPartyMessage: (post: PartyPost, message: string) => void
@@ -38,11 +44,16 @@ interface JoinMutationVariables {
   postId: string
 }
 
-function withOwnerState(post: PartyPost, authUserId: string | null): PartyPost {
-  const isOwner = authUserId !== null && post.userId === authUserId
+function withAuthDisplayState(
+  post: PartyPost,
+  authUserId: string | null,
+  isAuthenticated: boolean,
+): PartyPost {
+  const isOwner = isAuthenticated && authUserId !== null && post.userId === authUserId
 
   return {
     ...post,
+    isJoined: isAuthenticated ? post.isJoined : false,
     isOwner,
   }
 }
@@ -51,6 +62,10 @@ function readMutationErrorMessage(error: unknown, fallbackMessage: string) {
   return error instanceof Error && error.message.trim().length > 0
     ? error.message
     : fallbackMessage
+}
+
+function toPartyPostsQueryParams(filter: PartyFilter): PartyPostsQueryParams {
+  return filter === '전체' ? {} : { mode: filter }
 }
 
 export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPostsOptions) {
@@ -76,10 +91,18 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
   const minDeadline = useMemo(getDefaultDeadlineInput, [])
   const titleInputRef = useRef<HTMLInputElement>(null)
   const joinRequestPostIdRef = useRef<string | null>(null)
+  const partyQueryParams = useMemo(
+    () => toPartyPostsQueryParams(selectedFilter),
+    [selectedFilter],
+  )
+  const partyQueryKey = useMemo(
+    () => communityPartyPostsQueryKey(partyQueryParams),
+    [partyQueryParams],
+  )
 
   const partyQuery = useQuery({
-    queryKey: PARTY_QUERY_KEY,
-    queryFn: getPartyPosts,
+    queryKey: partyQueryKey,
+    queryFn: () => getPartyPosts(partyQueryParams),
     staleTime: 1000 * 60,
   })
   const createMutation = useMutation({
@@ -89,27 +112,40 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
     mutationFn: ({ postId, isJoining }: JoinMutationVariables) =>
       isJoining ? joinPartyPost(postId) : cancelPartyJoin(postId),
   })
+  const isPartyListUnavailable = partyQuery.isError || partyQuery.data?.source === 'unavailable'
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      return
+    }
+
+    setLocalPosts([])
+    setPostOverrides({})
+    setJoinedPostId(undefined)
+    setPartyStatusMessage('')
+  }, [isAuthenticated])
 
   const posts = useMemo(() => {
-    const serverPosts = partyQuery.data?.data ?? fallbackPartyPosts
-    const mergedPosts = [...localPosts]
-    const localPostIds = new Set(localPosts.map((post) => post.id))
-
-    serverPosts.forEach((post) => {
-      if (!localPostIds.has(post.id)) {
-        mergedPosts.push(postOverrides[post.id] ?? post)
-      }
+    const shouldIgnoreLocalState = isPartyListUnavailable || !isAuthenticated
+    const mergedPosts = mergePartyPostSources({
+      localPosts: shouldIgnoreLocalState ? [] : localPosts,
+      postOverrides: shouldIgnoreLocalState ? {} : postOverrides,
+      serverPosts: partyQuery.data?.data,
     })
 
-    return mergedPosts.map((post) => withOwnerState(postOverrides[post.id] ?? post, authUserId))
-  }, [authUserId, localPosts, partyQuery.data?.data, postOverrides])
+    return mergedPosts.map((post) => withAuthDisplayState(post, authUserId, isAuthenticated))
+  }, [authUserId, isAuthenticated, isPartyListUnavailable, localPosts, partyQuery.data?.data, postOverrides])
   const activeJoinedPostId = useMemo(() => {
+    if (!isAuthenticated) {
+      return null
+    }
+
     if (joinedPostId !== undefined) {
       return joinedPostId
     }
 
     return posts.find((post) => post.isJoined === true)?.id ?? null
-  }, [joinedPostId, posts])
+  }, [isAuthenticated, joinedPostId, posts])
   const filteredPartyPosts = useMemo(
     () => filterPartyPosts(posts, selectedFilter, query),
     [posts, query, selectedFilter],
@@ -118,10 +154,13 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
     () => paginatePartyPosts(filteredPartyPosts, currentPage, PARTY_PAGE_SIZE),
     [currentPage, filteredPartyPosts],
   )
-  const statusMessage = partyStatusMessage
-    || (partyQuery.data?.source === 'fallback'
-      ? '파티 API 응답을 불러오지 못해 목업 모집글을 표시합니다.'
-      : '')
+  const emptyMessage = getPartyListEmptyMessage({
+    isAuthenticated,
+    isLoading: partyQuery.isPending,
+    isUnavailable: isPartyListUnavailable,
+    selectedFilter,
+  })
+  const statusMessage = partyStatusMessage || getPartyActionNotice(isAuthenticated)
 
   useEffect(() => {
     if (currentPage !== safePage) {
@@ -191,7 +230,7 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
 
     createMutation.mutate(request, {
       onSuccess: (createdPost) => {
-        const serverPost = withOwnerState(createdPost, authUserId)
+        const serverPost = withAuthDisplayState(createdPost, authUserId, isAuthenticated)
 
         setLocalPosts((currentPosts) => [
           serverPost,
@@ -212,7 +251,7 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
         setCurrentPage(1)
         onPartyPostCreated(serverPost)
 
-        void queryClient.invalidateQueries({ queryKey: PARTY_QUERY_KEY })
+        void queryClient.invalidateQueries({ queryKey: COMMUNITY_PARTY_POSTS_QUERY_KEY })
       },
       onError: (error) => {
         setPartyStatusMessage(readMutationErrorMessage(error, '파티 모집글 등록에 실패했습니다.'))
@@ -258,7 +297,11 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
     const nextMessage = alreadyJoined
       ? `${targetPost.title} 참여 신청을 취소했어요.`
       : `${targetPost.title} 참여 신청했습니다. (${nextCurrent}/${total})`
-    const nextPost = withOwnerState(updatePostJoinState(targetPost, !alreadyJoined), authUserId)
+    const nextPost = withAuthDisplayState(
+      updatePostJoinState(targetPost, !alreadyJoined),
+      authUserId,
+      isAuthenticated,
+    )
 
     setLocalPosts((currentPosts) => replacePost(currentPosts, nextPost))
     setPostOverrides((currentOverrides) => ({
@@ -273,7 +316,7 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
       { postId, isJoining: !alreadyJoined },
       {
         onSuccess: async (serverPost) => {
-          const confirmedPost = withOwnerState(serverPost, authUserId)
+          const confirmedPost = withAuthDisplayState(serverPost, authUserId, isAuthenticated)
 
           setLocalPosts((currentPosts) => replacePost(currentPosts, confirmedPost))
           setPostOverrides((currentOverrides) => ({
@@ -281,9 +324,9 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
             [postId]: confirmedPost,
           }))
           onPartyMessage(confirmedPost, nextMessage)
-          await queryClient.invalidateQueries({ queryKey: PARTY_QUERY_KEY })
+          await queryClient.invalidateQueries({ queryKey: COMMUNITY_PARTY_POSTS_QUERY_KEY })
 
-          const refreshedPosts = queryClient.getQueryData<PartyPostsResult>(PARTY_QUERY_KEY)
+          const refreshedPosts = queryClient.getQueryData<PartyPostsResult>(partyQueryKey)
 
           if (refreshedPosts?.source === 'api') {
             setPostOverrides((currentOverrides) => removePostOverride(currentOverrides, postId))
@@ -303,7 +346,7 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
           joinRequestPostIdRef.current = null
 
           if (error) {
-            void queryClient.invalidateQueries({ queryKey: PARTY_QUERY_KEY })
+            void queryClient.invalidateQueries({ queryKey: COMMUNITY_PARTY_POSTS_QUERY_KEY })
           }
         },
       },
@@ -321,8 +364,11 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
     focusCompose,
     isCreating: createMutation.isPending,
     isAuthenticated,
+    isLoading: partyQuery.isPending,
+    isUnavailable: isPartyListUnavailable,
     joinedPostId: activeJoinedPostId,
     joiningPostId: joinMutation.isPending ? joinMutation.variables?.postId ?? null : null,
+    emptyMessage,
     minDeadline,
     modeDraft,
     pageItems,

@@ -46,7 +46,7 @@
 - 챔피언·아이템 이미지 호버 시 이름 툴팁 (`[data-tip]::after` CSS 방식)
 - 게임 유형 배지 (랭크 / 일반) — queue_id 기준 (1100=랭크, 1090=일반)
 - 게임 유형 필터: 전체 / 랭크 / 일반
-- 30개씩 표시, "30개 더 보기" 버튼으로 추가 로드 (마지막 배치에 결과가 1개 이상이면 버튼 유지)
+- 20개씩 표시, "더 보기" 버튼으로 추가 로드 (마지막 배치에 결과가 1개 이상이면 버튼 유지)
 - 존재하지 않는 소환사 검색 시 빈 상태(Empty State) 안내 표시
 - 전적이 없는 소환사 검색 시: 게임 요약 도넛·필터바 숨김, 매치 목록 영역에 "아직 플레이한 기록이 없습니다" 표시
 - 게임 유형 필터 적용 후 결과 없을 시: "선택한 게임 유형의 전적이 없습니다" 표시
@@ -98,7 +98,7 @@
 | 4 | tft-match-v1 (IDs) `GET /tft/match/v1/matches/by-puuid/{puuid}/ids` | 매치 ID 목록 |
 | 5 | tft-match-v1 (상세) `GET /tft/match/v1/matches/{matchId}` | 참가자, 유닛, 시너지 등 |
 
-- start 기본값 0, count 기본값 20. 모든 Riot API 호출은 이중 토큰 버킷(단기 20req/1s · 장기 100req/2min)으로 rate limit 적용
+- start: 0 이상 (기본값 0). count: 1~20 (기본값 20). 범위 위반 시 400. 응답 항목 수는 count를 초과하지 않음. 모든 Riot API 호출은 이중 토큰 버킷(단기 20req/1s · 장기 100req/2min)으로 rate limit 적용
 - queue_id 1100(랭크) / 1090(일반)만 수집. 하이퍼롤 등 그 외 제외
 - wins = placement ≤ 4 횟수, losses = placement > 4 횟수
 - Riot API의 `win` 필드(1위 여부)는 사용하지 않음 — 반드시 placement로 직접 판정

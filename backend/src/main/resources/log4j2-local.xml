@@ -8,11 +8,11 @@
 
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} [%thread] %highlight{%-5level}{FATAL=red blink, ERROR=red bold, WARN=yellow bold, INFO=green, DEBUG=cyan, TRACE=white} %logger{36} - ${maskedMessage}%n" disableAnsi="false"/>
+            <PatternLayout charset="UTF-8" pattern="%d{yyyy-MM-dd HH:mm:ss} [%thread] %highlight{%-5level}{FATAL=red blink, ERROR=red bold, WARN=yellow bold, INFO=green, DEBUG=cyan, TRACE=white} %logger{36} - ${maskedMessage}%n" disableAnsi="false"/>
         </Console>
         <RollingFile name="ErrorFile" fileName="logs/error.log"
                      filePattern="logs/error-%d{yyyy-MM-dd}.log">
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - ${maskedMessage}%n%ex"/>
+            <PatternLayout charset="UTF-8" pattern="%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - ${maskedMessage}%n%ex"/>
             <Policies>
                 <TimeBasedTriggeringPolicy/>
             </Policies>

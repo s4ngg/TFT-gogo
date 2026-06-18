@@ -10,7 +10,7 @@ export type PartyMode = '랭크' | '일반' | '커스텀'
 export type PartyStatus = '모집중' | '대기중'
 export type PartyIcon = 'crown' | 'leaf' | 'spark' | 'swords'
 export type PartyTone = 'purple' | 'green' | 'cyan' | 'gold'
-export type PartyPostsSource = 'api' | 'fallback'
+export type PartyPostsSource = 'api' | 'unavailable'
 
 export interface PartyPost {
   capacity: string
@@ -33,6 +33,10 @@ export interface PartyPost {
 export interface PartyPostsResult {
   data: PartyPost[]
   source: PartyPostsSource
+}
+
+export interface PartyPostsQueryParams {
+  mode?: PartyMode
 }
 
 export interface CreatePartyPostRequest {
@@ -83,64 +87,9 @@ interface PartyListPayloadResult {
   posts: PartyPostResponse[]
 }
 
-export const fallbackPartyPosts: PartyPost[] = [
-  {
-    id: 'party-master-duo',
-    chatRoomId: PARTY_RECRUITMENT_ROOM_ID,
-    title: '마스터 이상 듀오 구합니다',
-    mode: '랭크',
-    tier: '마스터+',
-    capacity: '2/2',
-    close: '마감 15분 전',
-    status: '모집중',
-    description: '17.3 추천 메타 기준으로 빠르게 점수 올리실 분 찾아요.',
-    tags: ['음성 가능', '연승 목표', '빠른 매칭'],
-    icon: 'crown',
-    tone: 'purple',
-  },
-  {
-    id: 'party-diamond-practice',
-    chatRoomId: PARTY_RECRUITMENT_ROOM_ID,
-    title: '다이아 구간 야부/연습 같이해요',
-    mode: '랭크',
-    tier: '다이아+',
-    capacity: '1/2',
-    close: '마감 42분 전',
-    status: '모집중',
-    description: '운영 피드백 주고받으면서 편하게 연습하실 분이면 좋아요.',
-    tags: ['피드백 환영', '저녁 접속', '마이크 선택'],
-    icon: 'leaf',
-    tone: 'green',
-  },
-  {
-    id: 'party-casual-evening',
-    chatRoomId: PARTY_RECRUITMENT_ROOM_ID,
-    title: '저녁 근접, 편하게 즐기실 분!',
-    mode: '일반',
-    tier: '제한 없음',
-    capacity: '3/4',
-    close: '마감 1시간 전',
-    status: '대기중',
-    description: '랭크 부담 없이 조합 테스트하면서 같이 하실 분 구해요.',
-    tags: ['초보 환영', '일반전', '덱 실험'],
-    icon: 'spark',
-    tone: 'cyan',
-  },
-  {
-    id: 'party-weekend-master',
-    chatRoomId: PARTY_RECRUITMENT_ROOM_ID,
-    title: '주말 마스터 달성 목표!',
-    mode: '랭크',
-    tier: '플래티넘+',
-    capacity: '2/3',
-    close: '마감 2시간 전',
-    status: '모집중',
-    description: '순방 위주로 안정적인 운영 맞춰가실 분이면 좋습니다.',
-    tags: ['주말 집중', '순방 운영', '멘탈 좋음'],
-    icon: 'swords',
-    tone: 'gold',
-  },
-]
+function unavailablePartyPosts(): PartyPostsResult {
+  return { data: [], source: 'unavailable' }
+}
 
 function readString(value: unknown, fallback = '') {
   return typeof value === 'string' ? value : fallback
@@ -264,6 +213,16 @@ function toGameMode(mode: PartyMode) {
   return 'RANKED_TFT'
 }
 
+function buildPartyPostRequestParams(params: PartyPostsQueryParams) {
+  if (!params.mode) {
+    return undefined
+  }
+
+  return {
+    mode: toGameMode(params.mode),
+  }
+}
+
 function readPartyPostArray(value: unknown[]): PartyListPayloadResult {
   const posts = value.filter((item): item is PartyPostResponse => isRecord(item))
 
@@ -350,26 +309,29 @@ function normalizePartyPost(response: PartyPostResponse, index: number): PartyPo
   }
 }
 
-export async function getPartyPosts(): Promise<PartyPostsResult> {
+export async function getPartyPosts(params: PartyPostsQueryParams = {}): Promise<PartyPostsResult> {
   try {
-    const { data } = await axiosInstance.get<ApiResponse<PartyPostsPayload> | PartyPostsPayload>('/community/parties')
+    const { data } = await axiosInstance.get<ApiResponse<PartyPostsPayload> | PartyPostsPayload>(
+      '/community/parties',
+      { params: buildPartyPostRequestParams(params) },
+    )
 
     if (hasFailedApiResponse(data)) {
-      return { data: fallbackPartyPosts, source: 'fallback' }
+      return unavailablePartyPosts()
     }
 
     const payload = unwrapApiResponse(data)
     const payloadResult = readPartyListPayload(payload)
 
     if (!payloadResult.isValid) {
-      return { data: fallbackPartyPosts, source: 'fallback' }
+      return unavailablePartyPosts()
     }
 
     const posts = payloadResult.posts.map(normalizePartyPost)
 
     return { data: posts, source: 'api' }
   } catch {
-    return { data: fallbackPartyPosts, source: 'fallback' }
+    return unavailablePartyPosts()
   }
 }
 

@@ -21,7 +21,7 @@ public class MetaDeckController implements MetaDeckControllerDocs {
 
     @GetMapping("/meta")
     public ResponseEntity<ApiResponse<MetaDeckListResponse>> getMetaDecks(
-            @RequestParam(defaultValue = "EMERALD_PLUS") RankFilter rankFilter) {
+            @RequestParam(name = "rankFilter", defaultValue = "EMERALD_PLUS") RankFilter rankFilter) {
         MetaDeckListResponse response = metaDeckService.getMetaDecks(rankFilter);
         return ResponseEntity.ok(ApiResponse.success("메타 덱 조회 성공", response));
     }

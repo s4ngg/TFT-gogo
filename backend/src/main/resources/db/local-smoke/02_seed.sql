@@ -1,7 +1,28 @@
--- Minimal local smoke data for Guide and PatchNotes.
--- Safe to re-run: guide rows are upserted and local patch changes are replaced.
+-- Minimal local smoke data for Guide, PatchNotes, and ELD reserved chat rooms.
+-- Safe to re-run: rows are upserted or local namespaced patch changes are replaced.
 
 SET NAMES utf8mb4;
+
+-- Current MVP chat does not read chat_rooms. These rows document the fixed room ids
+-- that CommunityChatRoomIds accepts and keep the ELD ready for a later persistent chat slice.
+INSERT INTO chat_rooms (
+    room_key,
+    creator_id,
+    party_post_id,
+    name,
+    type,
+    is_active
+) VALUES
+('general', NULL, NULL, 'General', 'PUBLIC', 1),
+('deck-guide', NULL, NULL, 'Deck Guide', 'PUBLIC', 1),
+('party-recruitment', NULL, NULL, 'Party Recruitment', 'PUBLIC', 1),
+('question-answer', NULL, NULL, 'Question Answer', 'PUBLIC', 1)
+ON DUPLICATE KEY UPDATE
+    creator_id = VALUES(creator_id),
+    party_post_id = VALUES(party_post_id),
+    name = VALUES(name),
+    type = VALUES(type),
+    is_active = VALUES(is_active);
 
 INSERT INTO guides (
     guide_type,

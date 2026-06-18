@@ -1,6 +1,8 @@
+import axios from 'axios'
 import axiosInstance from './axiosInstance'
 import type { ApiResponse } from './apiResponse'
 import { unwrapApiResponse } from './apiResponse'
+import useAuthStore from '../store/useAuthStore'
 import {
   normalizeAuthResponse,
   normalizeMemberResponse,
@@ -17,6 +19,11 @@ export interface LoginRequest {
 
 export interface SignupRequest extends LoginRequest {
   nickname: string
+}
+
+function isAuthRestoreFailure(error: unknown): boolean {
+  return axios.isAxiosError(error)
+    && (error.response?.status === 401 || error.response?.status === 403)
 }
 
 export async function login(request: LoginRequest): Promise<AuthResponse> {
@@ -59,6 +66,10 @@ export async function getMe(): Promise<MemberProfile> {
 
     return normalizeMemberResponse(payload)
   } catch (error) {
+    if (isAuthRestoreFailure(error)) {
+      useAuthStore.getState().clearAuth()
+    }
+
     const message = error instanceof Error ? error.message : String(error)
     throw new Error(`Fetch current member failed: ${message}`)
   }

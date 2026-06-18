@@ -97,6 +97,8 @@ Page: Party (/party).
 - Creating, joining, and canceling participation require JWT authentication.
 - The frontend must block unauthenticated create/join/cancel attempts before calling mutations and show a login-required state.
 - Unauthenticated create/join/cancel attempts must not create optimistic local posts, joined state, chat previews, success messages, or query invalidation.
+- Unauthenticated users may still see actual public API party posts, but the UI must show that writing and joining require login.
+- Party API failures must not show mock or temporary recruitment posts; show loading/unavailable/empty states separately from real API data.
 - If creating a recruitment post fails, the frontend keeps the user's draft input so the user can retry after fixing the problem.
 - The authenticated JWT principal is the numeric userId set by JwtAuthenticationFilter.
 - The post creator is automatically counted as the first current member.
@@ -113,7 +115,9 @@ Page: Party (/party).
 - Normal users cannot create community chat channels by sending arbitrary roomId values.
 - Recent chat message reads are public for dashboard previews. Sending chat messages requires authentication.
 - Fixed community channel SSE reads are public, but the backend limits open SSE emitters to reduce abuse risk.
-- Dashboard party preview reads the same public party list through TanStack Query and shows loading/fallback state separately from empty state.
+- Dashboard party preview reads the same public party list through TanStack Query and shows loading/unavailable state separately from empty state.
+- Frontend realtime chat retries SSE stream failures up to 3 times with 1s, 2.5s, and 5s backoff. 400/403/404-style client errors and 401 authentication failures are terminal and must not retry.
+- Reconnecting SSE does not block REST message sending; successfully sent messages are merged into the local query cache.
 - The MVP chat API does not yet enforce party membership for room access; membership validation and chat_rooms.type = PARTY persistence are later slices.
 </business-rules>
 
@@ -128,8 +132,7 @@ Page: Party (/party).
 </validation>
 
 <open-issues>
-- Realtime chat transport uses SSE with snapshot/message events in the MVP.
-- SSE reconnect/backoff policy beyond disconnected fallback should be refined in a later slice.
+- Realtime chat transport uses SSE with snapshot/message events in the MVP. Reconnect restores the latest server snapshot, but messages beyond the backend room retention limit are not guaranteed after long offline periods.
 - Party close/delete policy for owners is still undecided.
 - The party_post_tags helper table is required for custom tags because tags are not present in the shared ERD snapshot.
 </open-issues>
