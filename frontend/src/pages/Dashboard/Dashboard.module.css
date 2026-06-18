@@ -161,15 +161,6 @@
   gap: 8px;
   margin-top: 13px;
   overflow: hidden;
-  opacity: 0;
-  pointer-events: none;
-  visibility: hidden;
-}
-
-.searchPanel:focus-within .searchTags {
-  opacity: 1;
-  pointer-events: auto;
-  visibility: visible;
 }
 
 .searchTags span {
