@@ -45,12 +45,15 @@ public class AdminPatchChangeRequest {
 
     @Schema(description = "변경사항 요약", example = "스킬 피해량이 증가해 후반 캐리 안정성이 개선되었습니다.", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "변경 요약은 필수입니다.")
+    @Size(max = 5000)
     private String summary;
 
     @Schema(description = "변경 전 수치 또는 설명", example = "스킬 피해량 220/330/500")
+    @Size(max = 2000)
     private String beforeValue;
 
     @Schema(description = "변경 후 수치 또는 설명", example = "스킬 피해량 240/360/550")
+    @Size(max = 2000)
     private String afterValue;
 
     @Schema(description = "변경 대상 이미지 URL", example = "https://raw.communitydragon.org/latest/game/assets/characters/tft17_jinx/skins/base/images/tft17_jinx_splash_tile_38.tft_set17.png")

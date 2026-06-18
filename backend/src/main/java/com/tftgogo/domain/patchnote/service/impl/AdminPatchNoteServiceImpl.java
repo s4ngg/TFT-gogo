@@ -131,10 +131,10 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
                 patchNote.applyImportedData(
                         version,
                         resolvePatchNoteTitle(document, version),
-                        normalizeNullable(document.summary()),
+                        normalizeText(document.summary()),
                         resolvePatchNoteContent(document),
                         resolvePatchNoteFocus(document),
-                        normalizeNullable(document.imageUrl()),
+                        normalizeText(document.imageUrl()),
                         sourceKey,
                         sourceUrl,
                         locale,
@@ -153,10 +153,10 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
             patchNote = PatchNote.builder()
                     .version(version)
                     .title(resolvePatchNoteTitle(document, version))
-                    .summary(normalizeNullable(document.summary()))
+                    .summary(normalizeText(document.summary()))
                     .description(resolvePatchNoteContent(document))
                     .focus(resolvePatchNoteFocus(document))
-                    .imageUrl(normalizeNullable(document.imageUrl()))
+                    .imageUrl(normalizeText(document.imageUrl()))
                     .sourceKey(sourceKey)
                     .sourceUrl(sourceUrl)
                     .sourceLocale(locale)
@@ -341,7 +341,7 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
                 patchChange.applyImportedData(
                         patchNote,
                         sourceKey,
-                        normalizeNullable(row.headingPath()),
+                        normalizeText(row.headingPath()),
                         row.sourceOrder(),
                         importedAt,
                         category,
@@ -350,8 +350,8 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
                         null,
                         targetName,
                         summary,
-                        normalizeNullable(row.beforeText()),
-                        normalizeNullable(row.afterText()),
+                        normalizeText(row.beforeText()),
+                        normalizeText(row.afterText()),
                         null,
                         null,
                         row.sourceOrder()
@@ -363,7 +363,7 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
             PatchChange patchChange = PatchChange.builder()
                     .patchNote(patchNote)
                     .sourceKey(sourceKey)
-                    .sourceHeadingPath(normalizeNullable(row.headingPath()))
+                    .sourceHeadingPath(normalizeText(row.headingPath()))
                     .sourceOrder(row.sourceOrder())
                     .importedAt(importedAt)
                     .category(category)
@@ -372,8 +372,8 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
                     .targetKey(null)
                     .targetName(targetName)
                     .summary(summary)
-                    .beforeValue(normalizeNullable(row.beforeText()))
-                    .afterValue(normalizeNullable(row.afterText()))
+                    .beforeValue(normalizeText(row.beforeText()))
+                    .afterValue(normalizeText(row.afterText()))
                     .imageUrl(null)
                     .tagsJson(null)
                     .sortOrder(row.sourceOrder())
@@ -390,11 +390,15 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
     }
 
     private void deleteStaleImportedChanges(PatchNote patchNote, Set<String> importedSourceKeys) {
-        patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote).stream()
+        List<PatchChange> staleChanges = patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote).stream()
                 .filter(patchChange -> !patchChange.isManuallyEdited())
                 .filter(patchChange -> !hasText(patchChange.getSourceKey())
                         || !importedSourceKeys.contains(patchChange.getSourceKey()))
-                .forEach(patchChangeRepository::delete);
+                .toList();
+
+        if (!staleChanges.isEmpty()) {
+            patchChangeRepository.deleteAllInBatch(staleChanges);
+        }
     }
 
     private PatchNote findPatchNote(Long patchNoteId) {
@@ -543,9 +547,7 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
     }
 
     private long countChanges(PatchNote patchNote) {
-        return patchChangeRepository
-                .findByPatchNoteOrderBySortOrderAscIdAsc(patchNote)
-                .size();
+        return patchChangeRepository.countByPatchNote(patchNote);
     }
 
     private PatchNoteResponse toPatchNoteResponse(PatchNote patchNote, long changeCount) {
@@ -591,10 +593,6 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
     }
 
     private String normalizeText(String value) {
-        return hasText(value) ? value.trim() : null;
-    }
-
-    private String normalizeNullable(String value) {
         return hasText(value) ? value.trim() : null;
     }
 

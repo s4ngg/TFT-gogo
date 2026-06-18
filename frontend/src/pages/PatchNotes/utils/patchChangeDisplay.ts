@@ -159,7 +159,7 @@ export function shouldShowPatchChangeValueLine(change: PatchChange) {
   return !changeTextIncludesValueChange(change, before, after)
 }
 
-function getPatchChangeGroupKey(title: string) {
+export function getPatchChangeGroupKey(title: string) {
   return normalizePatchChangeArrow(title).toLowerCase()
 }
 

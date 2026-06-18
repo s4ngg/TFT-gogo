@@ -15,6 +15,11 @@ function getPatchSeason(version: string) {
   return match ? match[1] : '기타'
 }
 
+function getDateSortValue(date: string) {
+  const timestamp = Date.parse(date.replace(/\./g, '-'))
+  return Number.isNaN(timestamp) ? 0 : timestamp
+}
+
 function buildSeasonGroups(patchHistory: PatchNoteDetail[]) {
   const seasonMap = new Map<string, PatchNoteDetail[]>()
 
@@ -37,10 +42,12 @@ function buildSeasonGroups(patchHistory: PatchNoteDetail[]) {
       return {
         season,
         patchCount: patches.length,
-        dateGroups: Array.from(dateMap.entries()).map(([date, datePatches]) => ({
-          date,
-          patches: datePatches,
-        })),
+        dateGroups: Array.from(dateMap.entries())
+          .map(([date, datePatches]) => ({
+            date,
+            patches: datePatches,
+          }))
+          .sort((left, right) => getDateSortValue(right.date) - getDateSortValue(left.date)),
       }
     })
     .sort((left, right) => {

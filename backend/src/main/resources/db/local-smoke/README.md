@@ -47,7 +47,7 @@ docker compose down -v
 - `chat_rooms` seed: 4개
 - `guides` seed: 4개
 - `patch_notes` seed: 1개
-- `patch_changes` seed: 2개
+- `patch_note_changes` seed: 2개
 - `backend` `compileJava`: Pass
 
 host MySQL client를 사용할 때:

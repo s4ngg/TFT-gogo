@@ -28,6 +28,8 @@ public interface PatchChangeRepository extends JpaRepository<PatchChange, Long> 
             """)
     List<PatchChangeCount> countByPatchNotes(@Param("patchNotes") List<PatchNote> patchNotes);
 
+    long countByPatchNote(PatchNote patchNote);
+
     List<PatchChange> findByPatchNoteOrderBySortOrderAscIdAsc(PatchNote patchNote);
 
     Optional<PatchChange> findByPatchNoteAndSourceKey(PatchNote patchNote, String sourceKey);
