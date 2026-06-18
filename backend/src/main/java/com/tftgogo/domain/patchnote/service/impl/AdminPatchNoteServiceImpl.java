@@ -237,6 +237,7 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
         PatchNote patchNote = findPatchNote(request.getPatchNoteId());
         PatchChange patchChange = PatchChange.builder()
                 .patchNote(patchNote)
+                .manuallyEdited(true)
                 .category(PatchChangeCategory.from(request.getCategory()))
                 .changeType(PatchChangeType.from(request.getType()))
                 .impact(PatchChangeImpact.from(request.getImpact()))
@@ -391,6 +392,7 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
 
     private void deleteStaleImportedChanges(PatchNote patchNote, Set<String> importedSourceKeys) {
         List<PatchChange> staleChanges = patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote).stream()
+                .filter(patchChange -> patchChange.getImportedAt() != null)
                 .filter(patchChange -> !patchChange.isManuallyEdited())
                 .filter(patchChange -> !hasText(patchChange.getSourceKey())
                         || !importedSourceKeys.contains(patchChange.getSourceKey()))

@@ -201,6 +201,14 @@ function getBugFixDetailFromText(value: string, title: string) {
   return normalizeDisplayText(value)
 }
 
+function isDigit(char: string | undefined) {
+  return char !== undefined && /\d/u.test(char)
+}
+
+function isNumericCommaSeparator(value: string, commaIndex: number) {
+  return isDigit(value[commaIndex - 1]) && isDigit(value[commaIndex + 1])
+}
+
 function getDelimiterIndexOutsideParentheses(value: string, delimiter: string) {
   let parenthesisDepth = 0
 
@@ -217,7 +225,10 @@ function getDelimiterIndexOutsideParentheses(value: string, delimiter: string) {
       continue
     }
 
-    if (parenthesisDepth === 0 && character === delimiter) return index
+    if (parenthesisDepth === 0 && character === delimiter) {
+      if (delimiter === ',' && isNumericCommaSeparator(value, index)) continue
+      return index
+    }
   }
 
   return -1

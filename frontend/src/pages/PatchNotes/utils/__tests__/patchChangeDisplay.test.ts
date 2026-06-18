@@ -135,6 +135,18 @@ describe('patchChangeDisplay', () => {
     )
   })
 
+  it('thousand separators are not treated as title delimiters', () => {
+    const change = patchChange({
+      summary: 'Attack 1,000 ⇒ 1,200',
+      target: '',
+    })
+
+    const title = getPatchChangeTitle(change)
+
+    assert.equal(title, 'Attack 1,000 → 1,200')
+    assert.equal(getPatchChangeDetailSummary(change, title), '')
+  })
+
   it('증강체 활성화 상태 문구는 이름과 상태 배지 정보로 분리한다', () => {
     const change = patchChange({
       category: '증강체',
