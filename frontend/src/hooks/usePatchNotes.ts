@@ -71,12 +71,16 @@ export function usePatchNotes({ fallbackData }: UsePatchNotesOptions) {
 }
 
 export function usePatchChanges({ fallbackData, params }: UsePatchChangesOptions) {
-  return useQuery<PatchChangesResult>({
-    initialData: {
+  const fallbackResult = useMemo<PatchChangesResult>(
+    () => ({
       data: getFallbackPatchChangePage(params, fallbackData),
       source: 'fallback',
-    },
-    initialDataUpdatedAt: 0,
+    }),
+    [fallbackData, params],
+  )
+
+  return useQuery<PatchChangesResult>({
+    placeholderData: (previousData) => previousData ?? fallbackResult,
     queryFn: () => getPatchChanges(params, fallbackData),
     queryKey: ['patch-notes', params.version, 'changes', params],
     ...LIVE_CONTENT_QUERY_OPTIONS,

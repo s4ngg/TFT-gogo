@@ -6,6 +6,7 @@ import {
 } from '../../../api/patchNotes'
 
 const PATCH_PAGE_SIZE = 1000
+const SEARCH_QUERY_DEBOUNCE_MS = 300
 
 interface UsePatchNotesPageStateOptions {
   selectedPatchVersion: string
@@ -16,6 +17,7 @@ export function usePatchNotesPageState({
 }: UsePatchNotesPageStateOptions) {
   const [activeCategory, setActiveCategory] = useState<PatchCategory>(PATCH_CATEGORIES[0])
   const [query, setQuery] = useState('')
+  const [debouncedQuery, setDebouncedQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const selectedPatchVersionRef = useRef(selectedPatchVersion)
 
@@ -30,10 +32,10 @@ export function usePatchNotesPageState({
       highImpactOnly: false,
       page: currentPage,
       pageSize: PATCH_PAGE_SIZE,
-      query,
+      query: debouncedQuery,
       version: selectedPatchVersion,
     }),
-    [activeCategory, currentPage, query, selectedPatchVersion],
+    [activeCategory, currentPage, debouncedQuery, selectedPatchVersion],
   )
 
   const setActiveCategoryAndReset = useCallback((category: PatchCategory) => {
@@ -53,6 +55,14 @@ export function usePatchNotesPageState({
       return nextQuery
     })
   }, [resetChangeListState])
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedQuery(query)
+    }, SEARCH_QUERY_DEBOUNCE_MS)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [query])
 
   useEffect(() => {
     if (selectedPatchVersionRef.current === selectedPatchVersion) return

@@ -46,6 +46,8 @@ function PatchNotes() {
     params: patchChangesParams,
     patchHistory,
   })
+  const isPatchChangesFallback = patchChangesQuery.data?.source === 'fallback'
+  const showFallbackStatus = (isFallbackData || isPatchChangesFallback) && !isFetching && !patchChangesQuery.isFetching
 
   function handlePatchSelect(version: string) {
     if (version === selectedPatchVersion) return
@@ -60,8 +62,8 @@ function PatchNotes() {
         <PatchHero selectedPatch={selectedPatch} />
 
         <PatchStatusBanner
-          isFallbackData={(isFallbackData || patchChangesQuery.data.source === 'fallback') && !isFetching && !patchChangesQuery.isFetching}
-          isFetching={isFetching || patchChangesQuery.isFetching}
+          isFallbackData={showFallbackStatus}
+          isFetching={isFetching}
           onRetry={() => {
             void refetchPatchNotes()
             void patchChangesQuery.refetch()
