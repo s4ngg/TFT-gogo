@@ -52,3 +52,12 @@ TASK_PROGRESS.md
 # Logs
 logs/
 *.log
+
+# Local AWS deploy artifacts
+/.aws-deploy/
+/aws-deploy-progress.txt
+/response.json
+
+# Python cache
+__pycache__/
+*.py[cod]
