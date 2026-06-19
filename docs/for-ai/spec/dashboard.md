@@ -28,7 +28,7 @@ Pages: Dashboard (/), MetaStats.
 - Dashboard에서 검색 결과 카드의 상세 보기 CTA를 누를 때만 /summoner/:gameName/:tagLine으로 이동한다.
 - Meta snapshot is shown on Dashboard even without a search (default state).
 - Meta snapshot tabs: 종합 / 상위권 / 마스터+ — each filters the displayed deck list.
-- Recent searches: localStorage key `tft_recent_searches`, max 5 entries, latest first. Shown in TopSummaryCards when the search panel has focus (`:focus-within` — input or recent-search button focused, keyboard-accessible). Reflects the user's own successful profile lookups — not a fixed popular list. Empty, failed, not found, or rate-limited searches are not saved.
+- Recent searches: localStorage key `tft_recent_searches`, max 5 entries, latest first. Always visible below the search box on page load (no focus required). Reflects the user's own successful profile lookups — not a fixed popular list. Empty, failed, not found, or rate-limited searches are not saved.
 </business-rules>
 
 <frontend-structure>
