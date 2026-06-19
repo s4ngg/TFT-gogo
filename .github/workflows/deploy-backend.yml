@@ -12,8 +12,9 @@ env:
   AWS_REGION: ap-northeast-2
   ECR_REPOSITORY: tftgogo-backend
   ECS_CLUSTER: tftgogo-cluster
-  ECS_SERVICE: tftgogo-backend
-  CONTAINER_NAME: tftgogo-backend
+  ECS_SERVICE: tftgogo-backend-service
+  ECS_TASK_DEFINITION: tftgogo-backend-task
+  CONTAINER_NAME: backend
 
 jobs:
   deploy:
@@ -48,7 +49,7 @@ jobs:
       - name: Download task definition
         run: |
           aws ecs describe-task-definition \
-            --task-definition $CONTAINER_NAME \
+            --task-definition $ECS_TASK_DEFINITION \
             --query taskDefinition \
             > task-definition.json
 

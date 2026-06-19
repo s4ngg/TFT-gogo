@@ -12,8 +12,9 @@ env:
   AWS_REGION: ap-northeast-2
   ECR_REPOSITORY: tftgogo-ai-server
   ECS_CLUSTER: tftgogo-cluster
-  ECS_SERVICE: tftgogo-ai-server
-  CONTAINER_NAME: tftgogo-ai-server
+  ECS_SERVICE: tftgogo-ai-server-service
+  ECS_TASK_DEFINITION: tftgogo-ai-server-task
+  CONTAINER_NAME: ai-server
 
 jobs:
   deploy:
@@ -48,7 +49,7 @@ jobs:
       - name: Download task definition
         run: |
           aws ecs describe-task-definition \
-            --task-definition $CONTAINER_NAME \
+            --task-definition $ECS_TASK_DEFINITION \
             --query taskDefinition \
             > task-definition.json
 
