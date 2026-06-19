@@ -8,6 +8,10 @@ on:
       - 'backend/**'
   workflow_dispatch:
 
+concurrency:
+  group: deploy-backend-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   AWS_REGION: ap-northeast-2
   ECR_REPOSITORY: tftgogo-backend

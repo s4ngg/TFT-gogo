@@ -8,6 +8,10 @@ on:
       - 'frontend/**'
   workflow_dispatch:
 
+concurrency:
+  group: deploy-frontend-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   AWS_REGION: ap-northeast-2
   ECR_REPOSITORY: tftgogo-frontend

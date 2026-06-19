@@ -8,6 +8,10 @@ on:
       - 'ai-server/**'
   workflow_dispatch:
 
+concurrency:
+  group: deploy-ai-server-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   AWS_REGION: ap-northeast-2
   ECR_REPOSITORY: tftgogo-ai-server
