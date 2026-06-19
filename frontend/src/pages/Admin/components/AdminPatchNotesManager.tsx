@@ -205,7 +205,7 @@ function toPatchChangeForm(change: AdminPatchChange): PatchChangeFormState {
     sortOrder: String(change.sortOrder),
     summary: change.summary,
     tags: joinLines(change.tags),
-    targetKey: change.targetKey,
+    targetKey: change.targetKey ?? '',
     targetName: change.targetName,
     type: change.type,
   }
@@ -253,11 +253,11 @@ function buildPatchChangePayload(
 ): AdminPatchChangePayload | null {
   const sortOrderText = form.sortOrder.trim()
   const sortOrder = Number(sortOrderText)
-  const targetKey = form.targetKey.trim()
+  const targetKey = trimToNull(form.targetKey)
   const targetName = form.targetName.trim()
   const summary = form.summary.trim()
 
-  if (!sortOrderText || !Number.isInteger(sortOrder) || sortOrder < 0 || !targetKey || !targetName || !summary) {
+  if (!sortOrderText || !Number.isInteger(sortOrder) || sortOrder < 0 || !targetName || !summary) {
     return null
   }
 
@@ -641,7 +641,7 @@ function AdminPatchNotesManager() {
 
     const payload = buildPatchChangePayload(patchChangeForm, patchNoteId)
     if (!payload) {
-      setError('대상 key, 대상 이름, 요약, 정렬 순서를 확인해주세요.')
+      setError('대상 이름, 요약, 정렬 순서를 확인해주세요.')
       return
     }
 
@@ -1094,7 +1094,7 @@ function AdminPatchNotesManager() {
 
                 <div className={styles.formGrid}>
                   <label className={styles.field}>
-                    <span>대상 key</span>
+                    <span>대상 key(선택)</span>
                     <input
                       value={patchChangeForm.targetKey}
                       onChange={(event) => updatePatchChangeForm('targetKey', event.target.value)}

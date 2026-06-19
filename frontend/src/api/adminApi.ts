@@ -219,7 +219,7 @@ export interface AdminPatchChange {
   sortOrder: number
   summary: string
   tags: string[]
-  targetKey: string
+  targetKey: string | null
   targetName: string
   type: AdminPatchChangeType
 }
@@ -234,7 +234,7 @@ export interface AdminPatchChangePayload {
   sortOrder: number
   summary: string
   tags: string[]
-  targetKey: string
+  targetKey: string | null
   targetName: string
   type: AdminPatchChangeType
 }
