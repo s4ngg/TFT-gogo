@@ -7,23 +7,7 @@ interface PatchHeroProps {
   selectedPatch: PatchNoteDetail
 }
 
-function formatImportedAt(value: string | undefined) {
-  if (!value) return ''
-
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return ''
-
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  const hour = String(date.getHours()).padStart(2, '0')
-  const minute = String(date.getMinutes()).padStart(2, '0')
-
-  return `${year}.${month}.${day} ${hour}:${minute}`
-}
-
 function PatchHero({ selectedPatch }: PatchHeroProps) {
-  const importedAt = formatImportedAt(selectedPatch.importedAt)
   const sourceLabel = selectedPatch.importSource === 'RIOT_OFFICIAL' ? 'Riot 공식' : '패치 데이터'
   const releaseSummary = selectedPatch.summary || selectedPatch.focus || selectedPatch.description
 
@@ -43,7 +27,6 @@ function PatchHero({ selectedPatch }: PatchHeroProps) {
               {sourceLabel} 원문
             </a>
           )}
-          {importedAt && <span>수집 {importedAt}</span>}
         </div>
       </div>
 

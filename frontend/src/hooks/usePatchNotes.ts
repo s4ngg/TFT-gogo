@@ -21,19 +21,19 @@ interface UsePatchChangesOptions {
   params: PatchChangesQuery
 }
 
+const EMPTY_PATCH_NOTES: PatchNoteDetail[] = []
+
 export function usePatchNotes({ fallbackData }: UsePatchNotesOptions) {
-  const [selectedPatchVersion, setSelectedPatchVersion] = useState(fallbackData[0]?.version ?? '')
+  const [selectedPatchVersion, setSelectedPatchVersion] = useState('')
   const hasUserSelectedPatchRef = useRef(false)
 
   const patchNotesQuery = useQuery<PatchNotesResult>({
-    initialData: { data: fallbackData, source: 'fallback' },
-    initialDataUpdatedAt: 0,
     queryFn: () => getPatchNotes(fallbackData),
     queryKey: ['patch-notes', 'list'],
     ...LIVE_CONTENT_QUERY_OPTIONS,
   })
 
-  const patchNotes = patchNotesQuery.data.data
+  const patchNotes = patchNotesQuery.data?.data ?? EMPTY_PATCH_NOTES
   const patchVersions = useMemo(() => patchNotes.map((patch) => patch.version), [patchNotes])
 
   const selectedPatch = useMemo(
@@ -47,6 +47,8 @@ export function usePatchNotes({ fallbackData }: UsePatchNotesOptions) {
   }, [])
 
   useEffect(() => {
+    if (!patchNotesQuery.data) return
+
     const nextPatchVersion = resolvePatchSelection({
       hasUserSelectedPatch: hasUserSelectedPatchRef.current,
       isApiData: patchNotesQuery.data.source === 'api',
@@ -57,10 +59,10 @@ export function usePatchNotes({ fallbackData }: UsePatchNotesOptions) {
     if (nextPatchVersion !== selectedPatchVersion) {
       setSelectedPatchVersion(nextPatchVersion)
     }
-  }, [patchNotesQuery.data.source, patchVersions, selectedPatchVersion])
+  }, [patchNotesQuery.data, patchVersions, selectedPatchVersion])
 
   return {
-    isFallbackData: patchNotesQuery.data.source === 'fallback' && !patchNotesQuery.isFetching,
+    isFallbackData: patchNotesQuery.data?.source === 'fallback' && !patchNotesQuery.isFetching,
     isFetching: patchNotesQuery.isFetching,
     patchNotes,
     refetchPatchNotes: patchNotesQuery.refetch,
@@ -80,7 +82,8 @@ export function usePatchChanges({ fallbackData, params }: UsePatchChangesOptions
   )
 
   return useQuery<PatchChangesResult>({
-    placeholderData: (previousData) => previousData ?? fallbackResult,
+    enabled: params.version.length > 0,
+    placeholderData: (previousData) => (params.version ? previousData ?? fallbackResult : undefined),
     queryFn: () => getPatchChanges(params, fallbackData),
     queryKey: ['patch-notes', params.version, 'changes', params],
     ...LIVE_CONTENT_QUERY_OPTIONS,

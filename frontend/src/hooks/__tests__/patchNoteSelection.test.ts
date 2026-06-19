@@ -3,6 +3,15 @@ import { describe, it } from 'node:test'
 import { resolvePatchSelection } from '../patchNoteSelection'
 
 describe('resolvePatchSelection', () => {
+  it('선택된 버전이 아직 없으면 API 최신 패치를 선택한다', () => {
+    assert.equal(resolvePatchSelection({
+      hasUserSelectedPatch: false,
+      isApiData: true,
+      patchVersions: ['17.5', '17.4', '17.3'],
+      selectedPatchVersion: '',
+    }), '17.5')
+  })
+
   it('API 데이터가 처음 도착하면 fallback 기본 선택 대신 최신 패치를 선택한다', () => {
     assert.equal(resolvePatchSelection({
       hasUserSelectedPatch: false,

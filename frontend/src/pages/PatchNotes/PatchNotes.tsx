@@ -22,7 +22,7 @@ function PatchNotes() {
     selectedPatchVersion,
     setSelectedPatchVersion,
   } = usePatchNotes({ fallbackData: patchNotesFallbackData })
-  const selectedPatch = selectedPatchFromQuery ?? patchNotesFallbackData[0]
+  const selectedPatch = selectedPatchFromQuery
   const {
     activeCategory,
     patchChangesParams,
@@ -54,6 +54,22 @@ function PatchNotes() {
 
     resetChangeListState()
     setSelectedPatchVersion(version)
+  }
+
+  if (!selectedPatch) {
+    return (
+      <AppLayout>
+        <div className={styles.page}>
+          <PatchStatusBanner
+            isFallbackData={false}
+            isFetching
+            onRetry={() => {
+              void refetchPatchNotes()
+            }}
+          />
+        </div>
+      </AppLayout>
+    )
   }
 
   return (

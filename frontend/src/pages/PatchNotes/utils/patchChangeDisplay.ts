@@ -26,6 +26,27 @@ const GENERIC_TARGET_NAMES = new Set([
   '특성',
 ])
 
+const COLLAPSIBLE_VALUE_LIST_MIN_LENGTH = 4
+const LONG_EXPLANATORY_TITLE_MIN_LENGTH = 80
+const DISPLAY_ARROW = '→'
+const VALUE_CHANGE_ARROW_PATTERN = /\s*(?:→|⇒|->)\s*/u
+const SENTENCE_END_CHARACTERS = '.!?。！？'
+const CONDITION_CLAUSE_PATTERN = /(?:경우|때|동안|상태에서|상태로|통해)/u
+const DETAIL_LABEL_ONLY_TEXTS = new Set([
+  '버그수정',
+  '복귀',
+  '사용가능',
+  '상향',
+  '삭제',
+  '수정',
+  '신규',
+  '제거',
+  '제외',
+  '조정',
+  '추가',
+  '하향',
+])
+
 interface StatusPattern {
   expression: RegExp
   label: string
@@ -86,6 +107,14 @@ function normalizeDisplayTitle(value: string) {
   return normalizeDisplayText(value)
 }
 
+function isGenericTargetName(value: string) {
+  const normalizedValue = normalizeDisplayText(value)
+  const colonIndex = normalizedValue.indexOf(':')
+  const heading = colonIndex > 0 ? normalizedValue.slice(0, colonIndex).trim() : normalizedValue
+
+  return GENERIC_TARGET_NAMES.has(normalizedValue) || GENERIC_TARGET_NAMES.has(heading)
+}
+
 function removeTrailingRepeatedToken(value: string) {
   const words = value.split(/\s+/u).filter(Boolean)
   const trailingWord = words[words.length - 1]
@@ -126,6 +155,52 @@ function getStatusDisplayFromText(value: string): PatchChangeStatusDisplay | und
   return undefined
 }
 
+interface BugFixTextParts {
+  detail: string
+  isTitleCompacted: boolean
+  title: string
+}
+
+interface LongExplanationParts {
+  detail: string
+  title: string
+}
+
+interface CompactedLongExplanationTitle {
+  isConditionTrimmed: boolean
+  title: string
+}
+
+function getBugFixPartsFromText(value: string): BugFixTextParts | undefined {
+  const normalizedValue = normalizeDisplayText(value)
+  const match = normalizedValue.match(/^(?:버그\s*수정:\s*)?(.+?)\s*버그(?:를|가|는)?\s*수정(?:했습니다|되었습니다|됩니다|됨)?\.?\s*(.*)$/u)
+  const rawTitle = normalizeStatusTitle(match?.[1] ?? '')
+  const { isConditionTrimmed, title } = compactLongExplanationTitle(rawTitle)
+
+  if (!title) return undefined
+
+  return {
+    detail: normalizeDisplayText(match?.[2] ?? ''),
+    isTitleCompacted: isConditionTrimmed || normalizeComparableText(rawTitle) !== normalizeComparableText(title),
+    title: title.endsWith('문제') ? `${title} 수정` : `${title} 문제 수정`,
+  }
+}
+
+function getBugFixTitleFromText(value: string) {
+  return getBugFixPartsFromText(value)?.title
+}
+
+function getBugFixDetailFromText(value: string, title: string) {
+  const parts = getBugFixPartsFromText(value)
+
+  if (!parts) return ''
+  if (parts.detail) return parts.detail
+  if (!parts.isTitleCompacted) return ''
+  if (normalizeComparableText(parts.title) !== normalizeComparableText(title)) return ''
+
+  return normalizeDisplayText(value)
+}
+
 function isDigit(char: string | undefined) {
   return char !== undefined && /\d/u.test(char)
 }
@@ -134,25 +209,169 @@ function isNumericCommaSeparator(value: string, commaIndex: number) {
   return isDigit(value[commaIndex - 1]) && isDigit(value[commaIndex + 1])
 }
 
-function findTitleCommaDelimiterIndex(value: string) {
-  let commaIndex = value.indexOf(',')
+function getDelimiterIndexOutsideParentheses(value: string, delimiter: string) {
+  let parenthesisDepth = 0
 
-  while (commaIndex > 0) {
-    if (!isNumericCommaSeparator(value, commaIndex)) return commaIndex
-    commaIndex = value.indexOf(',', commaIndex + 1)
+  for (let index = 0; index < value.length; index += 1) {
+    const character = value[index]
+
+    if (character === '(') {
+      parenthesisDepth += 1
+      continue
+    }
+
+    if (character === ')') {
+      parenthesisDepth = Math.max(0, parenthesisDepth - 1)
+      continue
+    }
+
+    if (parenthesisDepth === 0 && character === delimiter) {
+      if (delimiter === ',' && isNumericCommaSeparator(value, index)) continue
+      return index
+    }
   }
 
   return -1
 }
 
+function trimLeadingNow(value: string) {
+  return value.replace(/^이제\s+/u, '').trim()
+}
+
+function isUppercaseAcronymPeriod(value: string, index: number) {
+  if (value[index] !== '.') return false
+
+  const textBeforePeriod = value.slice(0, index + 1)
+  return /(?:^|[^A-Za-z])(?:[A-Z]\.){2,}$/u.test(textBeforePeriod.slice(-16))
+}
+
+function isSentenceBoundary(value: string, index: number) {
+  const character = value[index]
+
+  if (!SENTENCE_END_CHARACTERS.includes(character)) return false
+  if (isUppercaseAcronymPeriod(value, index)) return false
+
+  const nextCharacter = value[index + 1]
+  return !nextCharacter || /\s/u.test(nextCharacter)
+}
+
+function splitDisplaySentences(value: string) {
+  const sentences: string[] = []
+  let sentenceStartIndex = 0
+
+  for (let index = 0; index < value.length; index += 1) {
+    if (!isSentenceBoundary(value, index)) continue
+
+    const sentence = value.slice(sentenceStartIndex, index + 1).trim()
+    if (sentence) sentences.push(sentence)
+
+    while (/\s/u.test(value[index + 1] ?? '')) {
+      index += 1
+    }
+
+    sentenceStartIndex = index + 1
+  }
+
+  const tail = value.slice(sentenceStartIndex).trim()
+  if (tail) sentences.push(tail)
+
+  return sentences
+}
+
+function trimLeadingConditionClause(value: string) {
+  const commaIndex = getDelimiterIndexOutsideParentheses(value, ',')
+
+  if (commaIndex <= 0) {
+    return {
+      isConditionTrimmed: false,
+      title: value,
+    }
+  }
+
+  const leadingClause = value.slice(0, commaIndex).trim()
+  const remainingTitle = value.slice(commaIndex + 1).trim()
+
+  if (!remainingTitle || !CONDITION_CLAUSE_PATTERN.test(leadingClause)) {
+    return {
+      isConditionTrimmed: false,
+      title: value,
+    }
+  }
+
+  return {
+    isConditionTrimmed: true,
+    title: remainingTitle,
+  }
+}
+
+function compactLongExplanationTitle(value: string): CompactedLongExplanationTitle {
+  const { isConditionTrimmed, title } = trimLeadingConditionClause(normalizeDisplayTitle(value))
+
+  return {
+    isConditionTrimmed,
+    title: trimLeadingNow(title),
+  }
+}
+
+function isParentheticalOnly(value: string) {
+  return /^\([^)]*\)$/u.test(value.trim())
+}
+
+function getLongExplanationPartsFromText(value: string): LongExplanationParts | undefined {
+  const normalizedValue = normalizeDisplayText(value)
+
+  if (
+    !normalizedValue
+    || normalizedValue.length < LONG_EXPLANATORY_TITLE_MIN_LENGTH
+    || hasValueChangeIndicator(normalizedValue)
+  ) {
+    return undefined
+  }
+
+  const sentences = splitDisplaySentences(normalizedValue)
+  const hasMultipleSentences = sentences.length > 1
+  const rawTitle = hasMultipleSentences ? sentences[0] : normalizedValue
+  const { isConditionTrimmed, title } = compactLongExplanationTitle(rawTitle)
+
+  if (!title || normalizeComparableText(title) === normalizeComparableText(normalizedValue)) {
+    return undefined
+  }
+
+  if (!hasMultipleSentences && !isConditionTrimmed) return undefined
+
+  const remainingDetail = normalizeDisplayText(sentences.slice(1).join(' '))
+
+  if (!isConditionTrimmed && (!remainingDetail || isParentheticalOnly(remainingDetail))) {
+    return undefined
+  }
+
+  return {
+    detail: isConditionTrimmed ? normalizedValue : remainingDetail,
+    title,
+  }
+}
+
+function getLongExplanationTitleFromText(value: string) {
+  return getLongExplanationPartsFromText(value)?.title
+}
+
+function getLongExplanationDetailFromText(value: string, title: string) {
+  const parts = getLongExplanationPartsFromText(value)
+
+  if (!parts) return ''
+  if (normalizeComparableText(parts.title) !== normalizeComparableText(title)) return ''
+
+  return parts.detail
+}
+
 function getTitleDelimiterIndex(value: string, shouldUseCommaDelimiter: boolean) {
-  const commaIndex = shouldUseCommaDelimiter ? findTitleCommaDelimiterIndex(value) : -1
-  const colonIndex = value.indexOf(':')
+  const commaIndex = getDelimiterIndexOutsideParentheses(value, ',')
+  const colonIndex = getDelimiterIndexOutsideParentheses(value, ':')
 
   if (
     shouldUseCommaDelimiter
     && commaIndex > 0
-    && (colonIndex === -1 || commaIndex < colonIndex)
+    && colonIndex > commaIndex
   ) {
     return commaIndex
   }
@@ -200,9 +419,79 @@ function hasValueChangeIndicator(value: string) {
   return normalizePatchChangeArrow(value).includes(' → ')
 }
 
+function splitValueChange(value: string): [string, string] | undefined {
+  const parts = value.split(VALUE_CHANGE_ARROW_PATTERN)
+
+  if (parts.length !== 2) return undefined
+
+  const before = parts[0].trim()
+  const after = parts[1].trim()
+
+  return before && after ? [before, after] : undefined
+}
+
+function splitValueTokens(value: string) {
+  return value
+    .split('/')
+    .map((token) => token.trim())
+    .filter(Boolean)
+}
+
+function normalizeValueToken(value: string) {
+  return value.replace(/\s+/g, '').toLowerCase()
+}
+
+function splitDetailLabel(value: string) {
+  const colonIndex = value.indexOf(':')
+
+  if (colonIndex <= 0) {
+    return {
+      body: value,
+      label: '',
+    }
+  }
+
+  return {
+    body: value.slice(colonIndex + 1).trim(),
+    label: value.slice(0, colonIndex + 1).trim(),
+  }
+}
+
+function getCondensedValueListChangeLines(value: string) {
+  const { body, label } = splitDetailLabel(value)
+  const valueChange = splitValueChange(body)
+
+  if (!valueChange) return undefined
+
+  const [before, after] = valueChange
+  const beforeTokens = splitValueTokens(before)
+  const afterTokens = splitValueTokens(after)
+
+  if (
+    beforeTokens.length < COLLAPSIBLE_VALUE_LIST_MIN_LENGTH
+    || beforeTokens.length !== afterTokens.length
+  ) {
+    return undefined
+  }
+
+  const changedPairs = beforeTokens
+    .map((beforeToken, index) => ({
+      after: afterTokens[index],
+      before: beforeToken,
+    }))
+    .filter(({ before, after }) => normalizeValueToken(before) !== normalizeValueToken(after))
+
+  if (changedPairs.length === 0) return undefined
+
+  const beforeLine = changedPairs.map(({ before }) => before).join(' / ')
+  const afterLine = `${DISPLAY_ARROW} ${changedPairs.map(({ after }) => after).join(' / ')}`
+
+  return label ? [label, beforeLine, afterLine] : [beforeLine, afterLine]
+}
+
 function getPreferredDetailSummary(summary: string, target: string, title: string) {
   const summaryDetail = getDetailFromText(summary, title)
-  const targetDetail = getDetailFromText(target, title)
+  const targetDetail = isGenericTargetName(target) ? '' : getDetailFromText(target, title)
 
   if (!targetDetail) return summaryDetail
   if (!summaryDetail) return targetDetail
@@ -221,15 +510,26 @@ function getPreferredDetailSummary(summary: string, target: string, title: strin
   return summaryDetail
 }
 
+function isLabelOnlyDetail(value: string) {
+  if (!value) return false
+  return DETAIL_LABEL_ONLY_TEXTS.has(normalizeComparableText(value))
+}
+
 function splitDetailSummaryLines(value: string) {
   const normalizedValue = normalizePatchChangeArrow(value)
+  const condensedLines = getCondensedValueListChangeLines(normalizedValue)
+
+  if (condensedLines) return condensedLines
   const arrowCount = normalizedValue.match(/ → /gu)?.length ?? 0
 
   if (arrowCount < 2) return normalizedValue ? [normalizedValue] : []
 
   return normalizedValue
     .split(/,\s+/u)
-    .map((line) => line.trim())
+    .flatMap((line) => {
+      const trimmedLine = line.trim()
+      return getCondensedValueListChangeLines(trimmedLine) ?? [trimmedLine]
+    })
     .filter(Boolean)
 }
 
@@ -263,21 +563,36 @@ export function getPatchChangeTitle(change: PatchChange) {
   const target = change.target.trim()
   const summary = change.summary.trim()
   const statusDisplay = getPatchChangeStatusDisplay(change)
+  const bugFixTitle = getBugFixTitleFromText(summary) ?? getBugFixTitleFromText(target)
+  const longExplanationTitle = getLongExplanationTitleFromText(summary) ?? getLongExplanationTitleFromText(target)
 
   if (statusDisplay) return statusDisplay.title
+  if (bugFixTitle) return bugFixTitle
 
-  if (!target) return getTitleFromSummary(summary)
-  if (GENERIC_TARGET_NAMES.has(target) && summary) return getTitleFromSummary(summary)
+  if (!target) return longExplanationTitle ?? getTitleFromSummary(summary)
+  if (isGenericTargetName(target) && summary) return longExplanationTitle ?? getTitleFromSummary(summary)
+  if (longExplanationTitle) return longExplanationTitle
   return getTitleFromTarget(target)
 }
 
 export function getPatchChangeStatusDisplay(change: PatchChange) {
-  return getStatusDisplayFromText(change.summary) ?? getStatusDisplayFromText(change.target)
+  return getStatusDisplayFromText(change.summary)
+    ?? getStatusDisplayFromText(change.target)
 }
 
 export function getPatchChangeDetailSummary(change: PatchChange, title: string) {
   if (getPatchChangeStatusDisplay(change)) return ''
-  return getPreferredDetailSummary(change.summary, change.target, title)
+  if (getBugFixTitleFromText(change.summary) ?? getBugFixTitleFromText(change.target)) {
+    return getBugFixDetailFromText(change.summary, title) || getBugFixDetailFromText(change.target, title)
+  }
+
+  const longExplanationDetail = getLongExplanationDetailFromText(change.summary, title)
+    || getLongExplanationDetailFromText(change.target, title)
+
+  if (longExplanationDetail) return longExplanationDetail
+
+  const detailSummary = getPreferredDetailSummary(change.summary, change.target, title)
+  return isLabelOnlyDetail(detailSummary) ? '' : detailSummary
 }
 
 export function getPatchChangeDetailLines(change: PatchChange, title: string) {

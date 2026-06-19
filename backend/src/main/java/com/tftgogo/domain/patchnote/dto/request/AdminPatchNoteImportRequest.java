@@ -25,6 +25,15 @@ public class AdminPatchNoteImportRequest {
     @Schema(description = "Whether the imported patch note should become the current patch. Defaults to true.")
     private Boolean current;
 
+    public static AdminPatchNoteImportRequest of(String sourceUrl, String locale, String version, Boolean current) {
+        AdminPatchNoteImportRequest request = new AdminPatchNoteImportRequest();
+        request.sourceUrl = sourceUrl;
+        request.locale = locale;
+        request.version = version;
+        request.current = current;
+        return request;
+    }
+
     public boolean shouldMarkCurrent() {
         return current == null || current;
     }

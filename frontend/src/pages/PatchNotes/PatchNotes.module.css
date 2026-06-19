@@ -499,6 +499,7 @@
   font-size: var(--font-size-md);
   font-weight: 900;
   line-height: 1.45;
+  overflow-wrap: anywhere;
   word-break: keep-all;
 }
 
@@ -580,6 +581,7 @@
   color: var(--text-soft);
   font-size: var(--font-size-sm);
   line-height: 1.65;
+  overflow-wrap: anywhere;
   word-break: keep-all;
 }
 
@@ -599,12 +601,14 @@
   margin: 0;
   font-size: var(--font-size-sm);
   line-height: 1.65;
+  overflow-wrap: anywhere;
   word-break: keep-all;
 }
 
 .changeValueLine span {
   max-width: 100%;
   color: var(--text-muted);
+  overflow-wrap: anywhere;
 }
 
 .changeValueLine strong {
