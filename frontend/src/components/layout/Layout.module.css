@@ -640,7 +640,7 @@
   }
 
   .brand {
-    height: var(--size-control-md);
+    min-height: calc(var(--size-control-md) + var(--space-md));
     padding: 0;
   }
 
@@ -656,14 +656,17 @@
   .navList {
     display: flex;
     gap: var(--space-sm);
+    margin: 0 calc(var(--space-xl) * -1);
     overflow-x: auto;
-    padding-bottom: var(--space-xs);
+    overscroll-behavior-x: contain;
+    padding: 0 var(--space-xl) var(--space-xs);
+    scroll-padding-inline: var(--space-xl);
   }
 
   .navItem {
     flex: 0 0 auto;
     width: auto;
-    height: var(--size-control-md);
+    min-height: calc(var(--size-control-md) + var(--space-md));
     gap: var(--space-sm);
     padding: 0 var(--space-xl);
     font-size: var(--font-size-sm);
@@ -704,6 +707,23 @@
   }
 
   .topActions {
+    gap: var(--space-md);
     justify-content: flex-end;
+  }
+
+  .iconButton,
+  .notificationButton,
+  .loginButton,
+  .profileButton {
+    min-height: calc(var(--size-control-md) + var(--space-md));
+  }
+
+  .iconButton,
+  .notificationButton {
+    width: calc(var(--size-control-md) + var(--space-md));
+  }
+
+  .loginButton {
+    padding: 0 var(--space-2xl);
   }
 }
