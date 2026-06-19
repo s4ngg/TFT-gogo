@@ -18,7 +18,6 @@ ALTER TABLE patch_notes
     MODIFY COLUMN source_locale VARCHAR(20) NULL AFTER import_source,
     MODIFY COLUMN manually_edited TINYINT(1) NOT NULL DEFAULT 0 AFTER source_locale,
     MODIFY COLUMN imported_at DATETIME(6) NULL AFTER manually_edited,
-    DROP COLUMN current_active_key,
     DROP COLUMN is_active;
 
 ALTER TABLE patch_changes
