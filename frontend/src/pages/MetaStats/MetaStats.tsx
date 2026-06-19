@@ -10,14 +10,16 @@ import type { TierBadgeValue } from '../../types/badges'
 import styles from './MetaStats.module.css'
 
 /* ── 티어 순서 및 색상 ── */
-const TIER_ORDER: TierBadgeValue[] = ['S', 'A', 'B', 'C', 'D']
+type RankedTierBadgeValue = Exclude<TierBadgeValue, 'UNKNOWN'>
+
+const TIER_ORDER: RankedTierBadgeValue[] = ['S', 'A', 'B', 'C', 'D']
 
 interface RankFilterOption {
   label: string
   value: RankFilter
 }
 
-const TIER_META: Record<TierBadgeValue, { color: string; label: string }> = {
+const TIER_META: Record<RankedTierBadgeValue, { color: string; label: string }> = {
   S:   { color: '#04f3e5', label: '최상위 픽 · 강력 추천' },
   A:   { color: '#a78bfa', label: '중상위권 범용 덱' },
   B:   { color: '#60a5fa', label: '중위권 상황 의존적' },
@@ -66,7 +68,7 @@ function DeckCard({ deck }: { deck: MetaDeck }) {
 }
 
 /* ── 티어 섹션 ── */
-function TierSection({ tier, decks }: { tier: TierBadgeValue; decks: MetaDeck[] }) {
+function TierSection({ tier, decks }: { tier: RankedTierBadgeValue; decks: MetaDeck[] }) {
   if (decks.length === 0) return null
   const { color, label } = TIER_META[tier]
 
@@ -97,7 +99,7 @@ function MetaStats() {
   const { data: metaDeckResponse } = useMetaSnapshot(rankFilter)
   const decks = metaDeckResponse?.decks ?? []
 
-  const byTier = TIER_ORDER.reduce<Record<TierBadgeValue, MetaDeck[]>>(
+  const byTier = TIER_ORDER.reduce<Record<RankedTierBadgeValue, MetaDeck[]>>(
     (acc, t) => { acc[t] = decks.filter((d) => d.grade === t); return acc },
     { S: [], A: [], B: [], C: [], D: [] },
   )

@@ -681,7 +681,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         if (numericTier == 1) {
             return "B";
         }
-        return "B";
+        return "UNKNOWN";
     }
 
     private int augmentTierSortOrder(JsonNode augment) {

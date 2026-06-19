@@ -111,9 +111,9 @@ function readTraitTone(value: unknown): TraitHexBadgeTone | undefined {
 }
 
 function readTier(value: unknown): TierBadgeValue {
-  return value === 'S' || value === 'A' || value === 'B' || value === 'C' || value === 'D'
+  return value === 'S' || value === 'A' || value === 'B' || value === 'C' || value === 'D' || value === 'UNKNOWN'
     ? value
-    : 'B'
+    : 'UNKNOWN'
 }
 
 function readChampionCost(value: unknown): ChampionGuide['cost'] {
@@ -259,7 +259,7 @@ function isItemStatGuide(payload: unknown): payload is ItemStatGuide {
 }
 
 function isTierBadgeValue(payload: unknown): payload is TierBadgeValue {
-  return payload === 'S' || payload === 'A' || payload === 'B' || payload === 'C' || payload === 'D'
+  return payload === 'S' || payload === 'A' || payload === 'B' || payload === 'C' || payload === 'D' || payload === 'UNKNOWN'
 }
 
 function isAugmentGuide(payload: unknown): payload is AugmentGuide {

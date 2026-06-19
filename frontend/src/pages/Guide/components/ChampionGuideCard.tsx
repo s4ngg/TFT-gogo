@@ -25,18 +25,6 @@ function ChampionGuideCard({
     <article
       className={styles.championCard}
       key={championGuide.name}
-      onClick={() => {
-        onOpen(championGuide)
-      }}
-      onKeyDown={(event) => {
-        if (event.target !== event.currentTarget) return
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault()
-          onOpen(championGuide)
-        }
-      }}
-      role="button"
-      tabIndex={0}
     >
       <button
         aria-pressed={isFavorite}
@@ -53,14 +41,22 @@ function ChampionGuideCard({
       >
         <Star size={14} />
       </button>
-      <div className={styles.championPortrait}>
-        <GuideChampionImage imageUrl={championGuide.imageUrl} name={championGuide.name} />
-        <span className={styles.championCostBadge}>{championGuide.cost}</span>
-      </div>
-      <div className={styles.championInfo}>
-        <strong>{championGuide.name}</strong>
-        <span>{championGuide.role}</span>
-      </div>
+      <button
+        className={styles.championOpenButton}
+        onClick={() => {
+          onOpen(championGuide)
+        }}
+        type="button"
+      >
+        <div className={styles.championPortrait}>
+          <GuideChampionImage imageUrl={championGuide.imageUrl} name={championGuide.name} />
+          <span className={styles.championCostBadge}>{championGuide.cost}</span>
+        </div>
+        <div className={styles.championInfo}>
+          <strong>{championGuide.name}</strong>
+          <span>{championGuide.role}</span>
+        </div>
+      </button>
       <ItemIconStrip items={championGuide.bestItems} onItemSelect={onItemSelect} />
       <div className={styles.championTooltip} role="tooltip">
         <div className={styles.tooltipTop}>

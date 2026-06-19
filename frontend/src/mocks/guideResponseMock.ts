@@ -5,10 +5,6 @@
   tftTraitIconUrl,
 } from '../api/communityDragonAssets'
 import {
-  CHAMPION_PAGE_SIZE,
-  DEFAULT_GUIDE_PAGE_SIZE,
-  TRAIT_PAGE_SIZE,
-  expandGuideSamples,
   type AugmentGuide,
   type AugmentPlan,
   type ChampionGuide,
@@ -773,37 +769,13 @@ const BASE_CHAMPION_GUIDES: ChampionGuide[] = [
   },
 ]
 
-const TRAIT_GUIDES = expandGuideSamples(
-  BASE_TRAIT_GUIDES,
-  TRAIT_PAGE_SIZE,
-  (name, variant, copyIndex) => `${name} ${variant} ${copyIndex}`,
-)
-
-const ITEM_STATS = expandGuideSamples(
-  BASE_ITEM_STATS,
-  DEFAULT_GUIDE_PAGE_SIZE,
-  (name, variant, copyIndex) => `${name} ${variant} 빌드 ${copyIndex}`,
-)
-
-const AUGMENT_GUIDES = expandGuideSamples(
-  BASE_AUGMENT_GUIDES,
-  DEFAULT_GUIDE_PAGE_SIZE,
-  (name, variant, copyIndex) => `${name} ${variant} ${copyIndex}`,
-)
-
-const CHAMPION_GUIDES = expandGuideSamples(
-  BASE_CHAMPION_GUIDES,
-  CHAMPION_PAGE_SIZE,
-  (name, variant, copyIndex) => `${name} ${variant} 빌드 ${copyIndex}`,
-)
-
 export const guideFallbackData: GuideCatalog = {
   // API unavailable fallback sample; production guide rows should come from backend guide APIs.
-  augments: AUGMENT_GUIDES,
+  augments: BASE_AUGMENT_GUIDES,
   augmentPlans: AUGMENT_PLANS,
-  champions: CHAMPION_GUIDES,
-  items: ITEM_STATS,
+  champions: BASE_CHAMPION_GUIDES,
+  items: BASE_ITEM_STATS,
   patchVersion: '17.0',
   rewards: REWARD_ROWS,
-  traits: TRAIT_GUIDES,
+  traits: BASE_TRAIT_GUIDES,
 }

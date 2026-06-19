@@ -9,12 +9,14 @@ import DeckRow from './DeckRow'
 import TableHead from './TableHead'
 import styles from '../Decks.module.css'
 
-const TIER_ORDER: TierBadgeValue[] = ['S', 'A', 'B', 'C', 'D']
-const TIER_COLOR: Record<TierBadgeValue, string> = {
+type RankedTierBadgeValue = Exclude<TierBadgeValue, 'UNKNOWN'>
+
+const TIER_ORDER: RankedTierBadgeValue[] = ['S', 'A', 'B', 'C', 'D']
+const TIER_COLOR: Record<RankedTierBadgeValue, string> = {
   S: '#04f3e5', A: '#a78bfa', B: '#60a5fa', C: '#818cf8', D: '#6b7280',
 }
 
-const TIER_DESC: Record<TierBadgeValue, string> = {
+const TIER_DESC: Record<RankedTierBadgeValue, string> = {
   S: '최상위 픽 · 강력 추천',
   A: '중상위권 범용 덱',
   B: '중위권 상황 의존적',
