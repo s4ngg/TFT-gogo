@@ -72,8 +72,8 @@
 }
 
 .sidebarToggle {
-  width: 36px;
-  height: 36px;
+  width: calc(var(--size-control-md) + var(--space-xs));
+  height: calc(var(--size-control-md) + var(--space-xs));
   display: inline-grid;
   place-items: center;
   padding: 0;
@@ -396,8 +396,8 @@
 .iconButton,
 .notificationButton {
   position: relative;
-  width: 27px;
-  height: 34px;
+  width: calc(var(--size-control-md) + var(--space-xs));
+  height: calc(var(--size-control-md) + var(--space-xs));
   display: grid;
   place-items: center;
   padding: 0;

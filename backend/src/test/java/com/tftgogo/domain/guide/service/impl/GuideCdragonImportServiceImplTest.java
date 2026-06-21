@@ -5,9 +5,11 @@ import com.tftgogo.domain.guide.dto.request.GuideCdragonImportRequest;
 import com.tftgogo.domain.guide.dto.response.GuideImportResponse;
 import com.tftgogo.domain.guide.entity.Guide;
 import com.tftgogo.domain.guide.entity.GuideType;
+import com.tftgogo.domain.guide.repository.GuideAugmentRepository;
+import com.tftgogo.domain.guide.repository.GuideChampionRepository;
+import com.tftgogo.domain.guide.repository.GuideItemRepository;
 import com.tftgogo.domain.guide.repository.GuideRepository;
-import com.tftgogo.domain.match.entity.CachedMatch;
-import com.tftgogo.domain.match.repository.CachedMatchRepository;
+import com.tftgogo.domain.guide.repository.GuideTraitRepository;
 import com.tftgogo.global.cdragon.config.CommunityDragonProperties;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
@@ -20,19 +22,11 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -52,22 +46,19 @@ class GuideCdragonImportServiceImplTest {
     private GuideRepository guideRepository;
 
     @Mock
-    private CachedMatchRepository cachedMatchRepository;
+    private GuideChampionRepository guideChampionRepository;
+
+    @Mock
+    private GuideTraitRepository guideTraitRepository;
+
+    @Mock
+    private GuideItemRepository guideItemRepository;
+
+    @Mock
+    private GuideAugmentRepository guideAugmentRepository;
 
     @Mock
     private RestTemplate restTemplate;
-
-    @Mock
-    private DataSource dataSource;
-
-    @Mock
-    private Connection connection;
-
-    @Mock
-    private DatabaseMetaData databaseMetaData;
-
-    @Mock
-    private ResultSet tablesResultSet;
 
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
@@ -79,14 +70,17 @@ class GuideCdragonImportServiceImplTest {
     private GuideCdragonImportServiceImpl guideCdragonImportService;
 
     @BeforeEach
-    void setUp() throws SQLException {
+    void setUp() {
         communityDragonProperties.setTftKoKrUrl("https://example.com/cdragon/tft/ko_kr.json");
         communityDragonProperties.setAssetBaseUrl("https://raw.communitydragon.org/latest/game");
-        lenient().when(dataSource.getConnection()).thenReturn(connection);
-        lenient().when(connection.getCatalog()).thenReturn("tftgogo");
-        lenient().when(connection.getMetaData()).thenReturn(databaseMetaData);
-        lenient().when(databaseMetaData.getTables(any(), any(), any(), any())).thenReturn(tablesResultSet);
-        lenient().when(tablesResultSet.next()).thenReturn(true);
+        lenient().when(guideChampionRepository.findByChampionKeyAndPatchVersion(any(), any()))
+                .thenReturn(Optional.empty());
+        lenient().when(guideTraitRepository.findByTraitKeyAndPatchVersion(any(), any()))
+                .thenReturn(Optional.empty());
+        lenient().when(guideItemRepository.findByItemKeyAndPatchVersion(any(), any()))
+                .thenReturn(Optional.empty());
+        lenient().when(guideAugmentRepository.findByAugmentKeyAndPatchVersion(any(), any()))
+                .thenReturn(Optional.empty());
     }
 
     @Test
@@ -129,17 +123,32 @@ class GuideCdragonImportServiceImplTest {
         assertThat(championGuide.getTargetKey()).isEqualTo("TFT17_Briar");
         assertThat(championGuide.getName()).isEqualTo("브라이어");
         assertThat(championGuide.getImageUrl()).contains("tft17_briar_splash_tile_10.tft_set17.png");
+        assertThat(championGuide.getSummary()).contains("120");
+        assertThat(championGuide.getSummary()).doesNotContain("@Damage@");
+        assertThat(championGuide.getSummary()).doesNotContain("수치의");
+        assertThat(championGuide.getSummary()).doesNotContain("수치개");
+        assertThat(championGuide.getSummary()).doesNotContain("수치 얻");
+        assertThat(championGuide.getSummary()).doesNotContain("수치일정");
+        assertThat(championGuide.getSummary()).doesNotContain("수치 아래");
         assertThat(championGuide.getDataJson()).contains("\"cost\":1");
         assertThat(championGuide.getDataJson()).contains("\"traits\":[\"동물특공대\"]");
+        assertThat(championGuide.getDataJson()).contains("120");
+        assertThat(championGuide.getDataJson()).doesNotContain("@Damage@");
+        assertThat(championGuide.getDataJson()).doesNotContain("수치의");
+        assertThat(championGuide.getDataJson()).doesNotContain("수치개");
+        assertThat(championGuide.getDataJson()).doesNotContain("수치 얻");
+        assertThat(championGuide.getDataJson()).doesNotContain("수치일정");
+        assertThat(championGuide.getDataJson()).doesNotContain("수치 아래");
 
         Guide traitGuide = savedGuides.stream()
                 .filter(guide -> guide.getGuideType() == GuideType.TRAIT)
                 .findFirst()
                 .orElseThrow();
         assertThat(traitGuide.getTargetKey()).isEqualTo("TFT17_AnimalSquad");
-        assertThat(traitGuide.getSummary()).isEqualTo("아군이 공격력을 10% 얻습니다. (2) 15% (4) 30%");
+        assertThat(traitGuide.getSummary()).isEqualTo("아군이 공격력을 10% 얻습니다.");
         assertThat(traitGuide.getDataJson()).contains("\"tone\":\"gold\"");
-        assertThat(traitGuide.getDataJson()).contains("\"summary\":\"아군이 공격력을 10% 얻습니다. (2) 15% (4) 30%\"");
+        assertThat(traitGuide.getDataJson()).contains("\"summary\":\"아군이 공격력을 10% 얻습니다.\"");
+        assertThat(traitGuide.getDataJson()).contains("\"tierEffects\":[{\"level\":\"2\",\"description\":\"15%\"},{\"level\":\"4+\",\"description\":\"30%\"}]");
         assertThat(traitGuide.getDataJson()).doesNotContain("%i:scaleAS%");
         assertThat(traitGuide.getDataJson()).doesNotContain("@TeamwideAD*100@");
         assertThat(traitGuide.getDataJson()).contains("\"champions\":[{\"cost\":1");
@@ -184,17 +193,20 @@ class GuideCdragonImportServiceImplTest {
         assertThat(itemGuide.getDataJson()).contains("\"category\":\"완성 아이템\"");
         assertThat(itemGuide.getDataJson()).contains("\"bestUsers\":[]");
         assertThat(itemGuide.getDataJson()).doesNotContain("bestUsersNote");
+        assertThat(itemGuide.getDataJson()).doesNotContain("\"avgPlace\"");
+        assertThat(itemGuide.getDataJson()).doesNotContain("\"pickRate\"");
+        assertThat(itemGuide.getDataJson()).doesNotContain("\"top4\"");
+        assertThat(itemGuide.getDataJson()).doesNotContain("\"winRate\"");
         assertThat(itemGuide.getDataJson()).contains("\"label\":\"조합식\"");
         assertThat(itemGuide.getDataJson()).contains("Recurve Bow");
         assertThat(itemGuide.getDataJson()).contains("Needlessly Large Rod");
     }
 
     @Test
-    void CDragon_아이템_import는_cached_match_통계를_반영한다() {
+    void CDragon_아이템_import는_통계_필드를_생성하지_않는다() {
         // given
         when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
                 .thenReturn(cdragonJson());
-        when(cachedMatchRepository.findRecentByQueueIds(any(), any())).thenReturn(List.of(cachedMatch(cachedMatchJson())));
         when(guideRepository.findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
                 any(GuideType.class),
                 any(String.class),
@@ -214,26 +226,18 @@ class GuideCdragonImportServiceImplTest {
         ArgumentCaptor<Guide> guideCaptor = ArgumentCaptor.forClass(Guide.class);
         verify(guideRepository).saveAndFlush(guideCaptor.capture());
         Guide itemGuide = guideCaptor.getValue();
-        assertThat(itemGuide.getDataJson()).contains("\"avgPlace\":\"3.00\"");
-        assertThat(itemGuide.getDataJson()).contains("\"pickRate\":\"100.0%\"");
-        assertThat(itemGuide.getDataJson()).contains("\"top4\":\"50.0%\"");
-        assertThat(itemGuide.getDataJson()).contains("\"winRate\":\"50.0%\"");
-        assertThat(itemGuide.getDataJson()).contains("\"bestUsers\":[{\"cost\":1");
-        assertThat(itemGuide.getDataJson()).contains("\"name\":\"Briar\"");
-        assertThat(itemGuide.getDataJson()).contains("tft17_briar_square.tft_set17.png");
-
-        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
-        verify(cachedMatchRepository).findRecentByQueueIds(any(), pageableCaptor.capture());
-        assertThat(pageableCaptor.getValue().getPageNumber()).isZero();
-        assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(500);
+        assertThat(itemGuide.getDataJson()).doesNotContain("\"avgPlace\"");
+        assertThat(itemGuide.getDataJson()).doesNotContain("\"pickRate\"");
+        assertThat(itemGuide.getDataJson()).doesNotContain("\"top4\"");
+        assertThat(itemGuide.getDataJson()).doesNotContain("\"winRate\"");
+        assertThat(itemGuide.getDataJson()).contains("\"bestUsers\":[]");
     }
 
     @Test
-    void CDragon_item_import_skips_blank_cached_match_json() {
+    void CDragon_item_import_ignores_cached_match_stats() {
         // given
         when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
                 .thenReturn(cdragonJson());
-        when(cachedMatchRepository.findRecentByQueueIds(any(), any())).thenReturn(List.of(cachedMatch("   ")));
         when(guideRepository.findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
                 any(GuideType.class),
                 any(String.class),
@@ -253,10 +257,10 @@ class GuideCdragonImportServiceImplTest {
         ArgumentCaptor<Guide> guideCaptor = ArgumentCaptor.forClass(Guide.class);
         verify(guideRepository).saveAndFlush(guideCaptor.capture());
         Guide itemGuide = guideCaptor.getValue();
-        assertThat(itemGuide.getDataJson()).contains("\"avgPlace\":\"-\"");
-        assertThat(itemGuide.getDataJson()).contains("\"pickRate\":\"-\"");
-        assertThat(itemGuide.getDataJson()).contains("\"top4\":\"-\"");
-        assertThat(itemGuide.getDataJson()).contains("\"winRate\":\"-\"");
+        assertThat(itemGuide.getDataJson()).doesNotContain("\"avgPlace\"");
+        assertThat(itemGuide.getDataJson()).doesNotContain("\"pickRate\"");
+        assertThat(itemGuide.getDataJson()).doesNotContain("\"top4\"");
+        assertThat(itemGuide.getDataJson()).doesNotContain("\"winRate\"");
     }
 
     @Test
@@ -302,7 +306,7 @@ class GuideCdragonImportServiceImplTest {
         assertThat(augmentGuide.getDataJson()).contains("\"reward\":\"전투 능력치\"");
         assertThat(augmentGuide.getDataJson()).contains("\"tags\":[\"전투\"]");
         assertThat(augmentGuide.getDataJson()).doesNotContain("{cf1fd3af}");
-        assertThat(augmentGuide.getDataJson()).contains("\"winRate\":\"-\"");
+        assertThat(augmentGuide.getDataJson()).doesNotContain("\"winRate\"");
     }
 
     @Test
@@ -364,11 +368,10 @@ class GuideCdragonImportServiceImplTest {
     }
 
     @Test
-    void CDragon_증강체_import는_cached_match_통계를_반영한다() {
+    void CDragon_증강체_import는_통계_필드를_생성하지_않는다() {
         // given
         when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
                 .thenReturn(cdragonJson());
-        when(cachedMatchRepository.findRecentByQueueIds(any(), any())).thenReturn(List.of(cachedMatch(cachedMatchJson())));
         when(guideRepository.findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
                 any(GuideType.class),
                 any(String.class),
@@ -388,9 +391,9 @@ class GuideCdragonImportServiceImplTest {
         ArgumentCaptor<Guide> guideCaptor = ArgumentCaptor.forClass(Guide.class);
         verify(guideRepository).saveAndFlush(guideCaptor.capture());
         Guide augmentGuide = guideCaptor.getValue();
-        assertThat(augmentGuide.getDataJson()).contains("\"avgPlace\":\"1.00\"");
-        assertThat(augmentGuide.getDataJson()).contains("\"pickRate\":\"50.0%\"");
-        assertThat(augmentGuide.getDataJson()).contains("\"winRate\":\"100.0%\"");
+        assertThat(augmentGuide.getDataJson()).doesNotContain("\"avgPlace\"");
+        assertThat(augmentGuide.getDataJson()).doesNotContain("\"pickRate\"");
+        assertThat(augmentGuide.getDataJson()).doesNotContain("\"winRate\"");
     }
 
     @Test
@@ -529,11 +532,10 @@ class GuideCdragonImportServiceImplTest {
     }
 
     @Test
-    void CDragon_item_augment_import_continues_when_cached_match_stats_unavailable() throws SQLException {
+    void CDragon_item_augment_import_uses_cdragon_without_cached_match_stats() {
         // given
         when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
                 .thenReturn(cdragonJson());
-        when(tablesResultSet.next()).thenReturn(false);
         when(guideRepository.findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
                 any(GuideType.class),
                 any(String.class),
@@ -563,20 +565,18 @@ class GuideCdragonImportServiceImplTest {
                 .filter(guide -> guide.getGuideType() == GuideType.ITEM)
                 .findFirst()
                 .orElseThrow();
-        assertThat(itemGuide.getDataJson()).contains("\"avgPlace\":\"-\"");
-        assertThat(itemGuide.getDataJson()).contains("\"pickRate\":\"-\"");
-        assertThat(itemGuide.getDataJson()).contains("\"top4\":\"-\"");
-        assertThat(itemGuide.getDataJson()).contains("\"winRate\":\"-\"");
+        assertThat(itemGuide.getDataJson()).doesNotContain("\"avgPlace\"");
+        assertThat(itemGuide.getDataJson()).doesNotContain("\"pickRate\"");
+        assertThat(itemGuide.getDataJson()).doesNotContain("\"top4\"");
+        assertThat(itemGuide.getDataJson()).doesNotContain("\"winRate\"");
 
         Guide augmentGuide = savedGuides.stream()
                 .filter(guide -> guide.getGuideType() == GuideType.AUGMENT)
                 .findFirst()
                 .orElseThrow();
-        assertThat(augmentGuide.getDataJson()).contains("\"avgPlace\":\"-\"");
-        assertThat(augmentGuide.getDataJson()).contains("\"pickRate\":\"-\"");
-        assertThat(augmentGuide.getDataJson()).contains("\"winRate\":\"-\"");
-
-        verify(cachedMatchRepository, never()).findRecentByQueueIds(any(), any());
+        assertThat(augmentGuide.getDataJson()).doesNotContain("\"avgPlace\"");
+        assertThat(augmentGuide.getDataJson()).doesNotContain("\"pickRate\"");
+        assertThat(augmentGuide.getDataJson()).doesNotContain("\"winRate\"");
     }
 
     private GuideCdragonImportRequest request(boolean includeChampions, boolean includeTraits) {
@@ -628,58 +628,6 @@ class GuideCdragonImportServiceImplTest {
                 .build();
     }
 
-    private CachedMatch cachedMatch(String matchJson) {
-        return CachedMatch.builder()
-                .matchId("KR_1")
-                .queueId(1100)
-                .gameDatetime(1_717_200_000_000L)
-                .matchJson(matchJson)
-                .createdAt(LocalDateTime.now())
-                .participantPuuids(Set.of("puuid-1", "puuid-2"))
-                .build();
-    }
-
-    private String cachedMatchJson() {
-        return """
-                {
-                  "info": {
-                    "game_version": "Version 17.3.1234567",
-                    "queue_id": 1100,
-                    "participants": [
-                      {
-                        "puuid": "puuid-1",
-                        "placement": 1,
-                        "augments": ["TFT17_Augment_BattleReady"],
-                        "units": [
-                          {
-                            "character_id": "TFT17_Briar",
-                            "name": "Briar",
-                            "rarity": 0,
-                            "tier": 2,
-                            "itemNames": ["TFT_Item_GuinsoosRageblade"]
-                          }
-                        ]
-                      },
-                      {
-                        "puuid": "puuid-2",
-                        "placement": 5,
-                        "augments": ["TFT17_Augment_Other"],
-                        "units": [
-                          {
-                            "character_id": "TFT17_Briar",
-                            "name": "Briar",
-                            "rarity": 0,
-                            "tier": 2,
-                            "itemNames": ["TFT_Item_GuinsoosRageblade"]
-                          }
-                        ]
-                      }
-                    ]
-                  }
-                }
-                """;
-    }
-
     private String cdragonJson() {
         return """
                 {
@@ -707,7 +655,10 @@ class GuideCdragonImportServiceImplTest {
                           },
                           "ability": {
                             "name": "물고기 광분",
-                            "desc": "<magicDamage>대상</magicDamage>에게 @Damage@ 피해를 입힙니다.",
+                            "desc": "<magicDamage>대상</magicDamage>에게 @Damage@ 피해를 입히고 @Shield@(%i:scaleAP%)의 보호막을 얻습니다. 미니 유성을 @MeteorCount@(%i:scaleAP%)개 떨어뜨려 각각 @SplashDamage@(%i:scaleAP%)의 마법 피해를 입힙니다. 공격 속도를 @Speed@(%i:scaleAS%) 얻습니다. 체력이 @Threshold@(%i:scaleHealth%) 아래인 적에게 @Bonus@(%i:scaleAP%)의 추가 마법 피해를 입힙니다. 다음 @Duration@(%i:scaleDuration%)일정 시간 동안 유지됩니다.",
+                            "effects": {
+                              "Damage": 120
+                            },
                             "icon": "ASSETS/Characters/TFT17_Briar/HUD/TFT17_Briar_Spell.tex"
                           }
                         },

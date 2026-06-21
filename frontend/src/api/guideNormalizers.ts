@@ -20,6 +20,7 @@ import {
   type ItemStatGuide,
   type RewardRow,
   type TraitGuide,
+  type TraitTierEffect,
 } from './guideTypes'
 
 function readString(record: Record<string, unknown>, key: string, fallback = '') {
@@ -108,6 +109,16 @@ function readTraitTone(value: unknown): TraitHexBadgeTone | undefined {
   return value === 'gold' || value === 'silver' || value === 'bronze' || value === 'prismatic'
     ? value
     : undefined
+}
+
+function isTraitTierEffect(payload: unknown): payload is TraitTierEffect {
+  return isRecord(payload)
+    && typeof payload.description === 'string'
+    && typeof payload.level === 'string'
+}
+
+function readTraitTierEffects(value: unknown): TraitTierEffect[] {
+  return Array.isArray(value) ? value.filter(isTraitTierEffect) : []
 }
 
 function readTier(value: unknown): TierBadgeValue {
@@ -231,6 +242,9 @@ function isTraitGuide(payload: unknown): payload is TraitGuide {
     && isStringList(payload.levels)
     && typeof payload.name === 'string'
     && typeof payload.summary === 'string'
+    && (!('tierEffects' in payload) || (
+      Array.isArray(payload.tierEffects) && payload.tierEffects.every(isTraitTierEffect)
+    ))
     && isStringList(payload.tips)
     && typeof payload.type === 'string'
 }
@@ -245,7 +259,6 @@ function isItemCombination(payload: unknown): payload is ItemStatGuide['combinat
 
 function isItemStatGuide(payload: unknown): payload is ItemStatGuide {
   return isRecord(payload)
-    && typeof payload.avgPlace === 'string'
     && Array.isArray(payload.bestUsers)
     && payload.bestUsers.every(isChampionRef)
     && typeof payload.category === 'string'
@@ -253,9 +266,6 @@ function isItemStatGuide(payload: unknown): payload is ItemStatGuide {
     && payload.combinations.every(isItemCombination)
     && typeof payload.imageUrl === 'string'
     && typeof payload.name === 'string'
-    && typeof payload.pickRate === 'string'
-    && typeof payload.top4 === 'string'
-    && typeof payload.winRate === 'string'
 }
 
 function isTierBadgeValue(payload: unknown): payload is TierBadgeValue {
@@ -264,15 +274,12 @@ function isTierBadgeValue(payload: unknown): payload is TierBadgeValue {
 
 function isAugmentGuide(payload: unknown): payload is AugmentGuide {
   return isRecord(payload)
-    && typeof payload.avgPlace === 'string'
     && typeof payload.description === 'string'
     && typeof payload.name === 'string'
-    && typeof payload.pickRate === 'string'
     && typeof payload.reward === 'string'
     && isStringList(payload.tags)
     && isTierBadgeValue(payload.tier)
     && typeof payload.type === 'string'
-    && typeof payload.winRate === 'string'
 }
 
 function isRewardRow(payload: unknown): payload is RewardRow {
@@ -359,6 +366,7 @@ function guideEntriesToCatalog(entries: GuideEntryResponse[], fallbackData: Guid
         levels: readStringArray(data, 'levels'),
         name: entry.name,
         summary,
+        tierEffects: readTraitTierEffects(data.tierEffects),
         tips: readStringArray(data, 'tips'),
         tone: readTraitTone(data.tone),
         type: readString(data, 'type', '시너지'),
@@ -367,29 +375,23 @@ function guideEntriesToCatalog(entries: GuideEntryResponse[], fallbackData: Guid
 
     if (normalizeGuideType(entry) === 'items') {
       catalog.items.push({
-        avgPlace: readString(data, 'avgPlace', readString(data, 'avg_place')),
         bestUsers: readChampionRefs(data.bestUsers ?? data.best_users),
         category: readString(data, 'category', '완성 아이템'),
         combinations: readCombinations(data.combinations),
+        description: sanitizeGuideText(readString(data, 'description', summary)),
         imageUrl,
         name: entry.name,
-        pickRate: readString(data, 'pickRate', readString(data, 'pick_rate')),
-        top4: readString(data, 'top4'),
-        winRate: readString(data, 'winRate', readString(data, 'win_rate')),
       })
     }
 
     if (normalizeGuideType(entry) === 'augments') {
       catalog.augments.push({
-        avgPlace: readString(data, 'avgPlace', readString(data, 'avg_place')),
         description: sanitizeGuideText(readString(data, 'description', summary)),
         name: entry.name,
-        pickRate: readString(data, 'pickRate', readString(data, 'pick_rate')),
         reward: readString(data, 'reward', '-'),
         tags: readDisplayTags(data, 'tags'),
         tier: readTier(data.tier),
         type: readString(data, 'type', '공용'),
-        winRate: readString(data, 'winRate', readString(data, 'win_rate')),
       })
     }
 

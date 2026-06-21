@@ -290,11 +290,15 @@
 }
 
 .sortButton {
+  min-width: calc(var(--size-control-md) + var(--space-xs));
+  min-height: calc(var(--size-control-md) + var(--space-xs));
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
+  padding: 0 var(--space-sm);
   border: 0;
+  border-radius: var(--radius-button);
   color: inherit;
   background: transparent;
   font: inherit;
@@ -320,8 +324,8 @@
 }
 
 .pagination button {
-  min-width: 34px;
-  height: 34px;
+  min-width: 40px;
+  height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -439,13 +443,46 @@
   background: rgba(5, 115, 118, 0.38) !important;
 }
 
-.traitCard p {
+.traitSummary {
   min-height: 42px;
   margin: 13px 0 14px;
-  color: #aab2ba;
+  color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.55;
   word-break: keep-all;
+}
+
+.traitEffectList {
+  display: grid;
+  gap: var(--space-sm);
+  margin: 0 0 14px;
+  padding: var(--space-md);
+  border: 1px solid var(--border-separator);
+  border-radius: var(--radius-button);
+  background: var(--bg-btn-dark-soft);
+}
+
+.traitEffectRow {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: flex-start;
+  gap: var(--space-md);
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.45;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.traitEffectLevel {
+  min-width: 0;
+  padding: 2px var(--space-sm);
+  border: 1px solid var(--cyan-border-subtle);
+  border-radius: var(--radius-xs);
+  color: var(--color-cyan);
+  background: var(--cyan-bg-faint);
+  font-weight: 800;
+  text-align: center;
 }
 
 .championLine {
@@ -455,13 +492,13 @@
 }
 
 .championMini {
-  max-width: 120px;
-  height: 33px;
+  max-width: 128px;
+  height: calc(var(--size-control-md) + var(--space-xs));
   display: inline-grid;
-  grid-template-columns: 29px minmax(0, 1fr) 18px;
+  grid-template-columns: var(--size-control-md) minmax(0, 1fr) 18px;
   align-items: center;
   gap: 6px;
-  padding-right: 7px;
+  padding-right: var(--space-md);
   overflow: hidden;
   border: 1px solid rgba(112, 144, 152, 0.16);
   border-radius: 6px;
@@ -470,8 +507,8 @@
 }
 
 .championMini img {
-  width: 29px;
-  height: 29px;
+  width: var(--size-control-md);
+  height: var(--size-control-md);
   border-radius: 5px;
   object-fit: cover;
 }
@@ -570,8 +607,15 @@ button.championMini:hover {
 .itemTable,
 .augmentTable {
   width: 100%;
-  min-width: 920px;
   border-collapse: collapse;
+}
+
+.itemTable {
+  min-width: 760px;
+}
+
+.augmentTable {
+  min-width: 720px;
 }
 
 .itemTable th,
@@ -612,6 +656,10 @@ button.championMini:hover {
 
 .rewardCol {
   width: 220px;
+}
+
+.descriptionCol {
+  width: 320px;
 }
 
 .itemNameCell {
@@ -717,6 +765,15 @@ button.championMini:hover {
   margin-top: 3px;
   color: #6b7580;
   font-size: 11px;
+}
+
+.itemDescriptionCell {
+  max-width: 360px;
+  color: var(--color-silver) !important;
+  line-height: 1.45;
+  text-align: left !important;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .itemIconStrip {
@@ -850,7 +907,7 @@ button.championMini:hover {
 
 .planTabs button,
 .costFilter button {
-  height: 31px;
+  min-height: calc(var(--size-control-md) + var(--space-xs));
   padding: 0 12px;
   border: 1px solid rgba(110, 142, 150, 0.28);
   border-radius: 6px;
@@ -1009,8 +1066,8 @@ button.championMini:hover {
   top: 9px;
   right: 9px;
   z-index: 3;
-  width: 28px;
-  height: 28px;
+  width: calc(var(--size-control-md) + var(--space-xs));
+  height: calc(var(--size-control-md) + var(--space-xs));
   display: grid;
   place-items: center;
   padding: 0;
@@ -1434,11 +1491,14 @@ button.championMini:hover {
   .quickGroup button,
   .costFilter button,
   .planTabs button,
+  .sortButton,
+  .championMini,
   .pagination button {
     min-height: calc(var(--size-control-md) + var(--space-md));
   }
 
   .quickGroup button,
+  .sortButton,
   .pagination button {
     min-width: calc(var(--size-control-md) + var(--space-md));
   }

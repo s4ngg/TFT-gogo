@@ -44,7 +44,6 @@ function GuideTabPanels({
       <div id="guide-panel-items" role="tabpanel" aria-labelledby="guide-tab-items">
         <ItemStatsView
           fallbackData={guideData}
-          onChampionSelect={(championName) => onGuideJump('champions', championName, championName)}
           query={query}
         />
       </div>
