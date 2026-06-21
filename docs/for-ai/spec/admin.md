@@ -11,6 +11,7 @@ Page: /admin/* (AdminLayout 적용)
 - /admin/decks          → 메타덱 관리
 - /admin/hero-augments  → 영웅증강 덱 관리
 - /admin/guides         → 게임가이드 관리
+- /admin/match-monitor  → 전적 모니터링 (캐시 현황 + Rate Limit)
 - /admin/patch-notes    → 패치노트 관리
 - /admin/members        → 회원 관리 (준비 중)
 - /admin/community      → 커뮤니티 관리 (준비 중)
@@ -32,10 +33,14 @@ frontend/src/
     ├── AdminDecks.tsx
     ├── AdminHeroAugments.tsx
     ├── AdminGuides.tsx
+    ├── AdminMatchMonitor.tsx          ← 전적 모니터링
+    ├── AdminMatchMonitor.module.css
     ├── AdminPatchNotes.tsx
-    ├── AdminMembers.tsx       ← 준비 중 화면
-    ├── AdminCommunity.tsx     ← 준비 중 화면
-    └── Admin.module.css
+    ├── AdminMembers.tsx               ← 준비 중 화면
+    ├── AdminCommunity.tsx             ← 준비 중 화면
+    ├── Admin.module.css
+    └── components/
+        └── RateLimitGauge.tsx         ← Rate Limit 게이지 컴포넌트
 </frontend-structure>
 
 <api>
@@ -54,6 +59,9 @@ frontend/src/
 - POST   /api/admin/guides/import/cdragon         → CDragon에서 챔피언/특성 가이드 항목 가져오기
 - PATCH  /api/admin/guides/{guideId}              → 가이드 수정
 - DELETE /api/admin/guides/{guideId}              → 가이드 소프트삭제
+
+- GET    /api/admin/match/cache-stats              → 매치 캐시 통계 (총수, 랭크/일반 분리, 날짜 범위)
+- GET    /api/admin/match/rate-limit              → Riot API Rate Limit 현재 상태 (단기/장기 버킷)
 
 - GET    /api/admin/patch-notes                   → 패치노트 목록
 - POST   /api/admin/patch-notes                   → 패치노트 생성
@@ -84,6 +92,8 @@ frontend/src/
 - isCurrent=true인 패치노트는 전체에서 하나만 존재해야 한다
 - Swagger 어노테이션은 XxxControllerDocs 인터페이스에 작성, Controller에 직접 작성 금지
 - 준비 중인 기능(회원, 커뮤니티)은 "준비 중입니다." 화면만 표시하고 API 호출하지 않는다
+- Rate Limit 통계는 RiotRateLimiter 내부 상태 스냅샷이며 3초 주기로 자동 갱신된다 (TanStack Query refetchInterval)
+- 캐시 통계는 CachedMatch 테이블 집계이며 수동 새로고침만 지원한다
 </business-rules>
 
 <deck-curation>
