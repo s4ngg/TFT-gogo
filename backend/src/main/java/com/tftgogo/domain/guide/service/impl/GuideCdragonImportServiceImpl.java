@@ -52,6 +52,8 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
     private static final Logger logger = LogManager.getLogger(GuideCdragonImportServiceImpl.class);
     private static final Pattern BREAK_TAG_PATTERN = Pattern.compile("(?i)<br\\s*/?>|</p>|</li>|</div>");
     private static final Pattern ROW_TAG_PATTERN = Pattern.compile("(?is)<row>(.*?)</row>");
+    private static final Pattern SHOW_IF_NOT_BLOCK_PATTERN =
+            Pattern.compile("(?is)<ShowIfNot\\.[^>]*>.*?</ShowIfNot\\.[^>]*>");
     private static final Pattern TAG_PATTERN = Pattern.compile("<[^>]+>");
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("@([^@]+)@");
     private static final Pattern MULTIPLY_EXPRESSION_PATTERN =
@@ -1224,9 +1226,22 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         if (!hasText(value)) {
             return "";
         }
-        String summaryOnly = removeTraitRows(value);
+        String summaryOnly = prepareTraitSummaryText(value);
         String interpolated = interpolatePlaceholders(summaryOnly, firstEffect(effects));
-        return sanitizeText(interpolated);
+        return normalizeRepeatedPeriods(sanitizeText(interpolated));
+    }
+
+    private String prepareTraitSummaryText(String value) {
+        String withoutRows = removeTraitRows(value);
+        String withoutInactiveBlocks = SHOW_IF_NOT_BLOCK_PATTERN.matcher(withoutRows).replaceAll(" ");
+        return BREAK_TAG_PATTERN.matcher(withoutInactiveBlocks).replaceAll(". ");
+    }
+
+    private String normalizeRepeatedPeriods(String value) {
+        return value
+                .replaceAll("(?:\\s*\\.\\s*){2,}", ". ")
+                .replaceAll("^\\.+\\s*", "")
+                .trim();
     }
 
     private String interpolatePlaceholders(String value, JsonNode effect) {

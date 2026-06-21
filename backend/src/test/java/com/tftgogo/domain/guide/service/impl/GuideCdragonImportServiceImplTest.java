@@ -155,6 +155,43 @@ class GuideCdragonImportServiceImplTest {
     }
 
     @Test
+    void CDragon_특성_summary는_ShowIfNot_비활성_문장을_제외하고_줄바꿈을_보존한다() {
+        // given
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonConditionalTraitJson());
+        when(guideRepository.findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(Optional.empty());
+        when(guideRepository.existsByGuideTypeAndTargetKeyAndPatchVersion(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(false);
+        when(guideRepository.saveAndFlush(any(Guide.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request(false, true));
+
+        // then
+        assertThat(response.getCreatedCount()).isEqualTo(1);
+        assertThat(response.getTraitCount()).isEqualTo(1);
+
+        ArgumentCaptor<Guide> guideCaptor = ArgumentCaptor.forClass(Guide.class);
+        verify(guideRepository).saveAndFlush(guideCaptor.capture());
+        Guide traitGuide = guideCaptor.getValue();
+
+        assertThat(traitGuide.getTargetKey()).isEqualTo("TFT17_DRX");
+        assertThat(traitGuide.getSummary())
+                .contains("아트록스: 아군이 입히는 피해가 적에게 30% 파쇄 및 파열 적용.")
+                .contains("케이틀린: 아군 공격 속도 20% 증가");
+        assertThat(traitGuide.getSummary()).doesNotContain("아트록스: 적 파쇄 및 파열 적용");
+        assertThat(traitGuide.getSummary()).doesNotContain("케이틀린: 공격 속도 증가");
+        assertThat(traitGuide.getDataJson()).contains("\"tierEffects\":[{\"level\":\"2+\",\"description\":\"전투 시작 6초 후 N.O.V.A. 유닛이 챔피언에 따라 아군에게 힘의 고조 부여\"}]");
+    }
+
+    @Test
     void CDragon_완성_아이템만_아이템_가이드로_생성한다() {
         // given
         when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
@@ -774,6 +811,51 @@ class GuideCdragonImportServiceImplTest {
                       "icon": "ASSETS/Maps/Particles/TFT/Item_Icons/Radiant/RadiantRageblade.png"
                     }
                   ]
+                }
+                """;
+    }
+
+    private String cdragonConditionalTraitJson() {
+        return """
+                {
+                  "setData": [
+                    {
+                      "number": 17,
+                      "mutator": "TFTSet17",
+                      "champions": [
+                        {
+                          "apiName": "TFT17_Aatrox",
+                          "name": "아트록스",
+                          "cost": 1,
+                          "squareIcon": "ASSETS/Characters/TFT17_Aatrox/Skins/Base/Images/TFT17_Aatrox_splash_tile_30.TFT_Set17.tex",
+                          "traits": ["N.O.V.A."]
+                        }
+                      ],
+                      "traits": [
+                        {
+                          "apiName": "TFT17_DRX",
+                          "name": "N.O.V.A.",
+                          "desc": "<row>(@MinUnits@) 전투 시작 @TeamAttackDelay@초 후 N.O.V.A. 유닛이 챔피언에 따라 아군에게 힘의 고조 부여</row><br><ShowIf.TFT17_DRX_HasAatrox><status>아트록스:</status> 아군이 입히는 피해가 적에게 @ShredAndSunder*100@% <TFTKeyword>파쇄</TFTKeyword> 및 <TFTKeyword>파열</TFTKeyword> 적용</ShowIf.TFT17_DRX_HasAatrox><ShowIfNot.TFT17_DRX_HasAatrox><TFTGuildInactive>아트록스: 적 파쇄 및 파열 적용</TFTGuildInactive></ShowIfNot.TFT17_DRX_HasAatrox><br><ShowIf.TFT17_DRX_HasCaitlyn><status>케이틀린:</status> 아군 공격 속도 @AS*100@% 증가</ShowIf.TFT17_DRX_HasCaitlyn><ShowIfNot.TFT17_DRX_HasCaitlyn><TFTGuildInactive>케이틀린: 공격 속도 증가</TFTGuildInactive></ShowIfNot.TFT17_DRX_HasCaitlyn>",
+                          "icon": "ASSETS/UX/TraitIcons/Trait_Icon_17_Nova.TFT_Set17.tex",
+                          "effects": [
+                            {
+                              "minUnits": 2,
+                              "maxUnits": 25000,
+                              "style": 5,
+                              "variables": {
+                                "AS": 0.2,
+                                "ShredAndSunder": 0.3,
+                                "TeamAttackDelay": 6
+                              }
+                            }
+                          ]
+                        }
+                      ],
+                      "augments": []
+                    }
+                  ],
+                  "sets": {},
+                  "items": []
                 }
                 """;
     }
