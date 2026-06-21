@@ -62,6 +62,7 @@ public class SecurityConfig {
                                 "/api/summoners/**",
                                 "/api/guide",
                                 "/api/guide/**",
+                                "/api/ai/**",
                                 "/api/patch-notes",
                                 "/api/patch-notes/**"
                         ).permitAll()

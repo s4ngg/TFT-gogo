@@ -4,7 +4,7 @@ import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import analyze
+from app.api import analyze, chat
 from app.core.config import settings
 
 sys.stdout.reconfigure(encoding="utf-8")
@@ -32,6 +32,7 @@ app.add_middleware(
 )
 
 app.include_router(analyze.router, prefix="/api")
+app.include_router(chat.router, prefix="/api")
 
 
 @app.get("/health")
