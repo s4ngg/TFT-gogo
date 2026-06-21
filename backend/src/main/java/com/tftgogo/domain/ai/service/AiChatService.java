@@ -29,8 +29,8 @@ public class AiChatService {
         AiChatResponse response = aiServerClient.chat(request);
 
         if (response == null) {
-            logger.warn("AI 서버 채팅 응답 없음, fallback 반환");
-            return AiChatResponse.serviceUnavailable();
+            logger.warn("AI 서버 채팅 응답 없음");
+            return null;
         }
 
         return response;

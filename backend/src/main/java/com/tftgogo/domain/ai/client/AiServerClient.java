@@ -30,7 +30,7 @@ public class AiServerClient {
         factory.setReadTimeout(props.getTimeoutSeconds() * 1000);
 
         SimpleClientHttpRequestFactory chatFactory = new SimpleClientHttpRequestFactory();
-        chatFactory.setConnectTimeout(timeoutSeconds * 1000);
+        chatFactory.setConnectTimeout(props.getTimeoutSeconds() * 1000);
         chatFactory.setReadTimeout(CHAT_READ_TIMEOUT_SECONDS * 1000);
 
         this.restClient = RestClient.builder()
@@ -38,7 +38,7 @@ public class AiServerClient {
                 .requestFactory(factory)
                 .build();
         this.chatRestClient = RestClient.builder()
-                .baseUrl(aiServerUrl)
+                .baseUrl(props.getUrl())
                 .requestFactory(chatFactory)
                 .build();
         this.objectMapper = objectMapper;

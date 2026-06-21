@@ -10,7 +10,7 @@ import re
 from openai import AsyncOpenAI, APIStatusError, APITimeoutError, APIConnectionError
 
 from app.core.config import settings
-from app.models.chat import ChatContext, ChatMessage, ChatRequest
+from app.models.chat import ChatContext, ChatRequest
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +106,7 @@ def _build_context_block(context: ChatContext) -> str:
         lines.append(f"- 많이 사용한 챔피언: {champs}")
 
     if context.recent_matches:
-        lines.append(f"\n## 최근 개별 매치 기록\n{context.recent_matches}")
+        lines.append(f"\n## 최근 개별 매치 기록\n{_sanitize(context.recent_matches)}")
 
     lines.append("\n이 데이터는 실제 Riot API 기반 데이터입니다. 위 수치를 인용할 때 [내 전적] 라벨을 붙이세요.")
     return "\n".join(lines)

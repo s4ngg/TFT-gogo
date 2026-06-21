@@ -41,7 +41,7 @@ class AiChatServiceTest {
     }
 
     @Test
-    void AI_서버가_응답_없으면_서비스불가_메시지를_반환한다() {
+    void AI_서버가_응답_없으면_null을_반환한다() {
         // given
         AiChatRequest request = new AiChatRequest(
                 List.of(new AiChatRequest.MessageDto("user", "어떤 덱 추천해요?")),
@@ -53,6 +53,6 @@ class AiChatServiceTest {
         AiChatResponse result = aiChatService.chat(request);
 
         // then
-        assertThat(result.getReply()).contains("AI 서비스에 연결할 수 없습니다");
+        assertThat(result).isNull();
     }
 }

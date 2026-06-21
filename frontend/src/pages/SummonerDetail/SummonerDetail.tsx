@@ -51,7 +51,7 @@ function SummonerDetail() {
 
   const { data: profile, isError: profileIsError, error: profileErr, isLoading: profileLoading } = useSummonerProfile(name, tag)
   const profileRateLimited = profileIsError && (profileErr as Error)?.message === 'RATE_LIMITED'
-  const profileNotFound = profileIsError && !profileRateLimited
+  const profileNotFound = profileIsError && !profileRateLimited && (profileErr as HttpError)?.response?.status === 404
   const profileRetryAfter = profileRateLimited ? 120 : 0
   const isRateLimited = profileRateLimited || refreshRateLimitSeconds > 0
   const retryAfterSeconds = profileRateLimited ? profileRetryAfter : refreshRateLimitSeconds
@@ -118,10 +118,6 @@ function SummonerDetail() {
   const filteredMatches = gameTypeFilter === 'ALL'
     ? matches
     : matches.filter((m) => m.gameType === gameTypeFilter)
-
-  const avgPlace = matches.length > 0
-    ? (matches.reduce((sum, m) => sum + m.placement, 0) / matches.length).toFixed(1)
-    : '-'
 
   const chatContext: AiChatContext | undefined = profile
     ? (() => {

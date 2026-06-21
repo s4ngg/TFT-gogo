@@ -31,13 +31,17 @@ interface ApiResponse<T> {
 }
 
 export const sendAiChatMessage = async (request: AiChatRequest): Promise<string> => {
-  const { data } = await axiosInstance.post<ApiResponse<AiChatResponse>>('/ai/chat', request, {
-    timeout: 35000,
-  })
+  try {
+    const { data } = await axiosInstance.post<ApiResponse<AiChatResponse>>('/ai/chat', request, {
+      timeout: 35000,
+    })
 
-  if (!data.data) {
-    throw new Error(data.message || 'AI 응답을 받지 못했습니다.')
+    if (!data.success || !data.data) {
+      throw new Error(data.message || 'AI 응답을 받지 못했습니다.')
+    }
+
+    return data.data.reply
+  } catch {
+    throw new Error('AI 요청 중 오류가 발생했습니다.')
   }
-
-  return data.data.reply
 }
