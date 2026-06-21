@@ -25,10 +25,23 @@ interface TraitGuideViewProps {
 }
 
 const INLINE_TIER_EFFECT_PATTERN = /\((\d+\+?)\)\s*/g
+const TRAIT_TIER_EFFECT_SUMMARY = '활성 단계별로 효과가 달라지는 시너지입니다.'
 
-function splitInlineTierEffects(summary: string) {
+interface TraitDisplay {
+  isSummaryFallback: boolean
+  summary: string
+  tierEffects: TraitTierEffect[]
+}
+
+function splitInlineTierEffects(summary: string): TraitDisplay {
   const matches = [...summary.matchAll(INLINE_TIER_EFFECT_PATTERN)]
-  if (matches.length === 0) return { summary, tierEffects: [] }
+  if (matches.length === 0) {
+    return {
+      isSummaryFallback: false,
+      summary: summary.trim(),
+      tierEffects: [],
+    }
+  }
 
   const tierEffects: TraitTierEffect[] = []
   const baseSummary = summary.slice(0, matches[0].index).trim()
@@ -45,15 +58,25 @@ function splitInlineTierEffects(summary: string) {
     }
   })
 
-  return { summary: baseSummary, tierEffects }
+  return {
+    isSummaryFallback: false,
+    summary: baseSummary,
+    tierEffects,
+  }
 }
 
-function getTraitDisplay(traitGuide: TraitGuide) {
+function getTraitDisplay(traitGuide: TraitGuide): TraitDisplay {
   const tierEffects = traitGuide.tierEffects ?? []
+  const summary = traitGuide.summary.trim()
+
   if (tierEffects.length > 0) {
-    return { summary: traitGuide.summary, tierEffects }
+    return {
+      isSummaryFallback: !summary,
+      summary: summary || TRAIT_TIER_EFFECT_SUMMARY,
+      tierEffects,
+    }
   }
-  return splitInlineTierEffects(traitGuide.summary)
+  return splitInlineTierEffects(summary)
 }
 
 function TraitGuideView({
@@ -120,9 +143,21 @@ function TraitGuideView({
                   ))}
                 </div>
               </div>
-              {traitDisplay.summary && <p className={styles.traitSummary}>{traitDisplay.summary}</p>}
+              {traitDisplay.summary && (
+                <p
+                  className={`${styles.traitSummary} ${
+                    traitDisplay.isSummaryFallback ? styles.traitSummaryFallback : ''
+                  }`}
+                >
+                  {traitDisplay.summary}
+                </p>
+              )}
               {traitDisplay.tierEffects.length > 0 && (
                 <div className={styles.traitEffectList} aria-label={`${traitGuide.name} 단계별 효과`}>
+                  <div className={styles.traitEffectHeader}>
+                    <strong>활성 단계 효과</strong>
+                    <span>{traitDisplay.tierEffects.length}개</span>
+                  </div>
                   {traitDisplay.tierEffects.map((tierEffect) => (
                     <div
                       aria-label={`${tierEffect.level}단계 ${tierEffect.description}`}

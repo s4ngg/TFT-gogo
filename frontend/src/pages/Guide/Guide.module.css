@@ -452,6 +452,11 @@
   word-break: keep-all;
 }
 
+.traitSummaryFallback {
+  min-height: auto;
+  color: var(--text-soft);
+}
+
 .traitEffectList {
   display: grid;
   gap: var(--space-sm);
@@ -460,6 +465,31 @@
   border: 1px solid var(--border-separator);
   border-radius: var(--radius-button);
   background: var(--bg-btn-dark-soft);
+}
+
+.traitEffectHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--border-separator);
+}
+
+.traitEffectHeader strong {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.traitEffectHeader span {
+  padding: 2px var(--space-sm);
+  border: 1px solid var(--cyan-border-subtle);
+  border-radius: var(--radius-xs);
+  color: var(--color-cyan);
+  background: var(--cyan-bg-faint);
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .traitEffectRow {
