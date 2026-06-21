@@ -20,6 +20,9 @@ import java.time.format.DateTimeFormatter;
 @RequiredArgsConstructor
 public class AdminMatchController implements AdminMatchControllerDocs {
 
+    private static final int RANKED_QUEUE_ID = 1100;
+    private static final int NORMAL_QUEUE_ID = 1090;
+
     private static final DateTimeFormatter KST_FMT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -30,8 +33,8 @@ public class AdminMatchController implements AdminMatchControllerDocs {
     public ResponseEntity<ApiResponse<CacheStatsResponse>> getCacheStats() {
         CacheStatsResponse stats = CacheStatsResponse.of(
                 cachedMatchRepository.count(),
-                cachedMatchRepository.countByQueueId(1100),
-                cachedMatchRepository.countByQueueId(1090),
+                cachedMatchRepository.countByQueueId(RANKED_QUEUE_ID),
+                cachedMatchRepository.countByQueueId(NORMAL_QUEUE_ID),
                 cachedMatchRepository.findMaxGameDatetime().orElse(null),
                 cachedMatchRepository.findMinGameDatetime().orElse(null),
                 cachedMatchRepository.findLatestCachedAt()

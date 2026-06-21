@@ -22,7 +22,7 @@ function RateLimitGauge({ used, max, label, sub }: RateLimitGaugeProps) {
       <div className={styles.track}>
         <div
           className={`${styles.bar} ${isDanger ? styles.barDanger : ''}`}
-          style={{ width: `${pct}%` }}
+          style={{ '--gauge-pct': `${pct}%` } as React.CSSProperties}
         />
       </div>
       <div className={styles.sub}>{sub}</div>

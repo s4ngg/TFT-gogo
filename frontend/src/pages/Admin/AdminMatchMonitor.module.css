@@ -75,6 +75,11 @@
   color: var(--text-muted);
 }
 
+.iconInline {
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
 .empty {
   color: var(--text-muted);
   font-size: 0.875rem;

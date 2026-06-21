@@ -412,15 +412,23 @@ export interface RateLimitStats {
 }
 
 export async function fetchMatchCacheStats(): Promise<CacheStats> {
-  const { data } = await axiosInstance.get<ApiResponse<CacheStats>>('/admin/match/cache-stats', {
-    headers: adminHeaders(),
-  })
-  return data.data
+  try {
+    const { data } = await axiosInstance.get<ApiResponse<CacheStats>>('/admin/match/cache-stats', {
+      headers: adminHeaders(),
+    })
+    return data.data
+  } catch (error) {
+    throw createAdminRequestError(error, 'Failed to fetch match cache stats.')
+  }
 }
 
 export async function fetchRateLimitStats(): Promise<RateLimitStats> {
-  const { data } = await axiosInstance.get<ApiResponse<RateLimitStats>>('/admin/match/rate-limit', {
-    headers: adminHeaders(),
-  })
-  return data.data
+  try {
+    const { data } = await axiosInstance.get<ApiResponse<RateLimitStats>>('/admin/match/rate-limit', {
+      headers: adminHeaders(),
+    })
+    return data.data
+  } catch (error) {
+    throw createAdminRequestError(error, 'Failed to fetch rate limit stats.')
+  }
 }

@@ -19,6 +19,8 @@ function fmtMs(ms: number): string {
 function AdminMatchMonitor() {
   const {
     data: rateLimit,
+    isLoading: rateLimitLoading,
+    isError: rateLimitError,
   } = useQuery({
     queryKey: ['admin', 'rate-limit'],
     queryFn: fetchRateLimitStats,
@@ -49,7 +51,11 @@ function AdminMatchMonitor() {
           <span className={monStyles.autoTag}>3초 자동 갱신</span>
         </div>
 
-        {rateLimit ? (
+        {rateLimitError && <p className={monStyles.error}>Rate Limit 정보 불러오기 실패</p>}
+
+        {rateLimitLoading && <p className={monStyles.empty}>불러오는 중...</p>}
+
+        {rateLimit && (
           <div className={monStyles.gaugeList}>
             <RateLimitGauge
               used={shortUsed}
@@ -64,8 +70,6 @@ function AdminMatchMonitor() {
               sub={`잔여 토큰 ${rateLimit.longRemaining}개 · 창 리셋까지 ${fmtMs(rateLimit.longWindowRemainMs)}`}
             />
           </div>
-        ) : (
-          <p className={monStyles.empty}>불러오는 중...</p>
         )}
       </section>
 
@@ -79,7 +83,7 @@ function AdminMatchMonitor() {
             onClick={() => refetchCache()}
             disabled={cacheLoading}
           >
-            <RefreshCcw size={13} style={{ marginRight: 4, verticalAlign: 'middle' }} />
+            <RefreshCcw size={13} className={monStyles.iconInline} />
             {cacheLoading ? '조회 중...' : '새로고침'}
           </button>
         </div>
