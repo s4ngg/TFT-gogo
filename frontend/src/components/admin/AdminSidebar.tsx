@@ -1,15 +1,16 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutGrid, Sword, BookOpen, FileText, Users, MessageSquare, LogOut } from 'lucide-react'
+import { LayoutGrid, Sword, BookOpen, FileText, Users, MessageSquare, Activity, LogOut } from 'lucide-react'
 import { clearAdminToken } from '../../api/adminApi'
 import styles from './AdminSidebar.module.css'
 
 const NAV_ITEMS = [
-  { path: '/admin/decks',         label: '메타덱 관리',      icon: LayoutGrid,    ready: true  },
-  { path: '/admin/hero-augments', label: '영웅증강 덱 관리', icon: Sword,         ready: true  },
-  { path: '/admin/guides',        label: '게임가이드 관리',  icon: BookOpen,      ready: true  },
-  { path: '/admin/patch-notes',   label: '패치노트 관리',    icon: FileText,      ready: true  },
-  { path: '/admin/members',       label: '회원 관리',        icon: Users,         ready: false },
-  { path: '/admin/community',     label: '커뮤니티 관리',    icon: MessageSquare, ready: false },
+  { path: '/admin/decks',          label: '메타덱 관리',      icon: LayoutGrid,    ready: true  },
+  { path: '/admin/hero-augments',  label: '영웅증강 덱 관리', icon: Sword,         ready: true  },
+  { path: '/admin/guides',         label: '게임가이드 관리',  icon: BookOpen,      ready: true  },
+  { path: '/admin/match-monitor',  label: '전적 모니터링',    icon: Activity,      ready: true  },
+  { path: '/admin/patch-notes',    label: '패치노트 관리',    icon: FileText,      ready: true  },
+  { path: '/admin/members',        label: '회원 관리',        icon: Users,         ready: false },
+  { path: '/admin/community',      label: '커뮤니티 관리',    icon: MessageSquare, ready: false },
 ]
 
 function AdminSidebar() {

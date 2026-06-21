@@ -388,3 +388,39 @@ export async function deleteHeroAugmentDeck(id: number): Promise<void> {
     headers: adminHeaders(),
   })
 }
+
+// ── 전적 캐시 & Rate Limit 모니터링 ──────────────────────────────────────────
+
+export interface CacheStats {
+  totalCount: number
+  rankedCount: number
+  normalCount: number
+  newestMatchTimestamp: number | null
+  oldestMatchTimestamp: number | null
+  lastCachedAt: string | null
+}
+
+export interface RateLimitStats {
+  shortRemaining: number
+  shortMax: number
+  shortWindowMs: number
+  shortWindowRemainMs: number
+  longRemaining: number
+  longMax: number
+  longWindowMs: number
+  longWindowRemainMs: number
+}
+
+export async function fetchMatchCacheStats(): Promise<CacheStats> {
+  const { data } = await axiosInstance.get<ApiResponse<CacheStats>>('/admin/match/cache-stats', {
+    headers: adminHeaders(),
+  })
+  return data.data
+}
+
+export async function fetchRateLimitStats(): Promise<RateLimitStats> {
+  const { data } = await axiosInstance.get<ApiResponse<RateLimitStats>>('/admin/match/rate-limit', {
+    headers: adminHeaders(),
+  })
+  return data.data
+}
