@@ -343,7 +343,38 @@ class GuideCdragonImportServiceImplTest {
         assertThat(augmentGuide.getDataJson()).contains("\"reward\":\"전투 능력치\"");
         assertThat(augmentGuide.getDataJson()).contains("\"tags\":[\"전투\"]");
         assertThat(augmentGuide.getDataJson()).doesNotContain("{cf1fd3af}");
+        assertThat(augmentGuide.getDataJson()).doesNotContain("@AttackSpeed@");
         assertThat(augmentGuide.getDataJson()).doesNotContain("\"winRate\"");
+    }
+
+    @Test
+    void CDragon_증강체_이름의_아이콘_토큰을_제거한다() {
+        // given
+        String iconTokenNameJson = cdragonJson()
+                .replace("\"name\": \"Battle Ready\"", "\"name\": \"@Gold@골드 획득\"");
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(iconTokenNameJson);
+        when(guideRepository.findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(Optional.empty());
+        when(guideRepository.existsByGuideTypeAndTargetKeyAndPatchVersion(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(false);
+        when(guideRepository.saveAndFlush(any(Guide.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        guideCdragonImportService.importGuides(request(false, false, false, true));
+
+        // then
+        ArgumentCaptor<Guide> guideCaptor = ArgumentCaptor.forClass(Guide.class);
+        verify(guideRepository).saveAndFlush(guideCaptor.capture());
+        Guide augmentGuide = guideCaptor.getValue();
+        assertThat(augmentGuide.getName()).isEqualTo("골드 획득");
+        assertThat(augmentGuide.getDataJson()).doesNotContain("@Gold@");
     }
 
     @Test

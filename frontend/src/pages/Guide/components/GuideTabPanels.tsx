@@ -74,7 +74,6 @@ function GuideTabPanels({
           tab: 'champions',
         })}
         onFavoriteToggle={onFavoriteToggle}
-        onItemSelect={(itemName) => onGuideJump('items', itemName, itemName)}
         query={query}
       />
     </div>

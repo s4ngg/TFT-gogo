@@ -1,16 +1,12 @@
 import { Star } from 'lucide-react'
 import type { ChampionGuide } from '../../../api/guide'
-import {
-  GuideChampionImage,
-  ItemIconStrip,
-} from './GuideShared'
+import { GuideChampionImage } from './GuideShared'
 import styles from '../Guide.module.css'
 
 interface ChampionGuideCardProps {
   championGuide: ChampionGuide
   isFavorite: boolean
   onFavoriteToggle: (championName: string) => void
-  onItemSelect: (itemName: string) => void
   onOpen: (championGuide: ChampionGuide) => void
 }
 
@@ -18,7 +14,6 @@ function ChampionGuideCard({
   championGuide,
   isFavorite,
   onFavoriteToggle,
-  onItemSelect,
   onOpen,
 }: ChampionGuideCardProps) {
   return (
@@ -57,7 +52,6 @@ function ChampionGuideCard({
           <span>{championGuide.role}</span>
         </div>
       </button>
-      <ItemIconStrip items={championGuide.bestItems} onItemSelect={onItemSelect} />
       <div className={styles.championTooltip} role="tooltip">
         <div className={styles.tooltipTop}>
           <GuideChampionImage decorative imageUrl={championGuide.imageUrl} name={championGuide.name} />
@@ -65,10 +59,6 @@ function ChampionGuideCard({
             <strong>{championGuide.name}</strong>
             <span>{championGuide.traits.join(' / ')}</span>
           </div>
-        </div>
-        <div className={styles.tooltipItems}>
-          <b>3신기</b>
-          <ItemIconStrip items={championGuide.bestItems} onItemSelect={onItemSelect} />
         </div>
         <dl className={styles.statGrid}>
           <div><dt>체력</dt><dd>{championGuide.stats.hp}</dd></div>
