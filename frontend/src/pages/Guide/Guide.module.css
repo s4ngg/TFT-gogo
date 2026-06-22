@@ -423,8 +423,9 @@
 }
 
 .levelTrack b {
-  width: 27px;
+  min-width: 36px;
   height: 27px;
+  padding: 0 var(--space-sm);
   display: grid;
   place-items: center;
   border: 1px solid rgba(112, 144, 152, 0.24);
@@ -491,7 +492,7 @@
 
 .traitEffectRow {
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr);
+  grid-template-columns: 42px minmax(0, 1fr);
   align-items: flex-start;
   gap: var(--space-md);
   color: var(--text-soft);

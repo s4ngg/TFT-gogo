@@ -6,10 +6,11 @@ export interface TraitHexBadgeProps {
   count: number
   iconUrl: string
   name: string
+  showCount?: boolean
   tone?: TraitHexBadgeTone
 }
 
-function TraitHexBadge({ count, iconUrl, name, tone = 'gold' }: TraitHexBadgeProps) {
+function TraitHexBadge({ count, iconUrl, name, showCount = true, tone = 'gold' }: TraitHexBadgeProps) {
   const [failed, setFailed] = useState(false)
 
   useEffect(() => {
@@ -24,7 +25,7 @@ function TraitHexBadge({ count, iconUrl, name, tone = 'gold' }: TraitHexBadgePro
           : <img src={iconUrl} alt="" onError={() => setFailed(true)} />
         }
       </i>
-      <b className={styles.count}>{count}</b>
+      {showCount && <b className={styles.count}>{count}</b>}
     </span>
   )
 }

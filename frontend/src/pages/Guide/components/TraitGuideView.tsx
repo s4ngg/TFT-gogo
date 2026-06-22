@@ -51,6 +51,16 @@ function normalizeInlineTierEffectDescription(description: string, summary: stri
   return `${metricLabel} ${description}`
 }
 
+function formatTraitLevel(level: string) {
+  const match = level.trim().match(/^(\d+)(\+?)$/)
+  if (!match) return level
+  return `${match[1]}명${match[2]}`
+}
+
+function isActiveTraitLevel(level: string, activeCount: number) {
+  return level.replace(/\+$/, '') === String(activeCount)
+}
+
 function splitInlineTierEffects(summary: string) {
   const matches = [...summary.matchAll(INLINE_TIER_EFFECT_PATTERN)]
   if (matches.length === 0) return { summary, tierEffects: [] }
@@ -131,19 +141,21 @@ function TraitGuideView({
                   count={traitGuide.count}
                   iconUrl={traitGuide.iconUrl}
                   name={traitGuide.name}
+                  showCount={false}
                   tone={traitGuide.tone}
                 />
                 <div className={styles.traitTitle}>
                   <h2>{traitGuide.name}</h2>
                   <span>{traitGuide.type}</span>
                 </div>
-                <div className={styles.levelTrack}>
+                <div className={styles.levelTrack} aria-label={`${traitGuide.name} 활성 단계`}>
                   {traitGuide.levels.map((level) => (
                     <b
-                      className={level.replace(/\+$/, '') === String(traitGuide.count) ? styles.levelActive : ''}
+                      aria-label={`${formatTraitLevel(level)} 활성 단계`}
+                      className={isActiveTraitLevel(level, traitGuide.count) ? styles.levelActive : ''}
                       key={level}
                     >
-                      {level}
+                      {formatTraitLevel(level)}
                     </b>
                   ))}
                 </div>
@@ -157,11 +169,11 @@ function TraitGuideView({
                   </div>
                   {traitDisplay.tierEffects.map((tierEffect) => (
                     <div
-                      aria-label={`${tierEffect.level}단계 ${tierEffect.description}`}
+                      aria-label={`${formatTraitLevel(tierEffect.level)} 단계 ${tierEffect.description}`}
                       className={styles.traitEffectRow}
                       key={`${tierEffect.level}-${tierEffect.description}`}
                     >
-                      <span className={styles.traitEffectLevel}>{tierEffect.level}</span>
+                      <span className={styles.traitEffectLevel}>{formatTraitLevel(tierEffect.level)}</span>
                       <span>{tierEffect.description}</span>
                     </div>
                   ))}
