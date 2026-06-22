@@ -1,53 +1,39 @@
-import { Gem, Rows3, Trophy } from 'lucide-react'
 import {
   DEFAULT_GUIDE_PAGE_SIZE,
   type GuideCatalog,
 } from '../../../api/guide'
-import { formatGuideRankMetric } from '../../../api/guideText'
 import { useGuideTabItems } from '../../../hooks/useGuide'
-import { useGuideMetricSort } from '../hooks/useGuideMetricSort'
 import {
   useGuidePageBounds,
   useGuideTabPagination,
 } from '../hooks/useGuideTabPagination'
 import {
   EmptyState,
-  GuideChampionImage,
   GuidePagination,
   GuideStatusBanner,
   ItemIconStrip,
-  SortHeaderButton,
 } from './GuideShared'
 import styles from '../Guide.module.css'
 
 interface ItemStatsViewProps {
   fallbackData: GuideCatalog
-  onChampionSelect: (championName: string) => void
   query: string
 }
 
 function ItemStatsView({
   fallbackData,
-  onChampionSelect,
   query,
 }: ItemStatsViewProps) {
   const {
     currentPage,
     setCurrentPage,
   } = useGuideTabPagination({ resetKey: query })
-  const {
-    handleSort,
-    sortDir,
-    sortKey,
-  } = useGuideMetricSort({ onSortChange: () => setCurrentPage(1) })
   const itemsQuery = useGuideTabItems({
     fallbackData,
     params: {
       page: currentPage,
       pageSize: DEFAULT_GUIDE_PAGE_SIZE,
       query,
-      sortDir,
-      sortKey,
       tab: 'items',
     },
   })
@@ -73,40 +59,9 @@ function ItemStatsView({
           <thead>
             <tr>
               <th className={styles.nameCol}>아이템</th>
-              <th>
-                <SortHeaderButton
-                  active={sortKey === 'winRate'}
-                  direction={sortDir}
-                  label="승률"
-                  onClick={() => handleSort('winRate')}
-                />
-              </th>
-              <th>
-                <SortHeaderButton
-                  active={sortKey === 'top4'}
-                  direction={sortDir}
-                  label="TOP4"
-                  onClick={() => handleSort('top4')}
-                />
-              </th>
-              <th>
-                <SortHeaderButton
-                  active={sortKey === 'avgPlace'}
-                  direction={sortDir}
-                  label="평균 등수"
-                  onClick={() => handleSort('avgPlace')}
-                />
-              </th>
-              <th>
-                <SortHeaderButton
-                  active={sortKey === 'pickRate'}
-                  direction={sortDir}
-                  label="픽률"
-                  onClick={() => handleSort('pickRate')}
-                />
-              </th>
-              <th className={styles.userCol}>추천 챔피언</th>
-              <th className={styles.comboCol}>조합 추천</th>
+              <th>분류</th>
+              <th className={styles.comboCol}>조합</th>
+              <th className={styles.descriptionCol}>설명</th>
             </tr>
           </thead>
           <tbody>
@@ -119,25 +74,7 @@ function ItemStatsView({
                     <span>{itemStat.category}</span>
                   </div>
                 </td>
-                <td className={styles.winRate}>{itemStat.winRate}</td>
-                <td className={styles.top4}>{itemStat.top4}</td>
-                <td className={styles.avgPlace}>{formatGuideRankMetric(itemStat.avgPlace)}</td>
-                <td className={styles.pickRate}>{itemStat.pickRate}</td>
-                <td>
-                  <div className={styles.avatarStack}>
-                    {itemStat.bestUsers.map((championRef) => (
-                      <button
-                        className={styles.avatarButton}
-                        key={championRef.name}
-                        onClick={() => onChampionSelect(championRef.name)}
-                        title={`${championRef.name} 챔피언 보기`}
-                        type="button"
-                      >
-                        <GuideChampionImage imageUrl={championRef.imageUrl} name={championRef.name} />
-                      </button>
-                    ))}
-                  </div>
-                </td>
+                <td>{itemStat.category}</td>
                 <td>
                   {itemStat.combinations.map((combination) => (
                     <div className={styles.comboCell} key={combination.label}>
@@ -149,6 +86,9 @@ function ItemStatsView({
                     </div>
                   ))}
                 </td>
+                <td className={styles.itemDescriptionCell}>
+                  {itemStat.description || '-'}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -156,24 +96,6 @@ function ItemStatsView({
         {visibleItems.length === 0 && <EmptyState />}
       </div>
       <GuidePagination currentPage={safePage} onPageChange={setCurrentPage} totalPages={pageData.totalPages} />
-
-      <section className={styles.metricCards}>
-        <article>
-          <Rows3 size={18} />
-          <strong>매치 기반 집계</strong>
-          <span>matchId별 최종 배치와 장착 아이템을 묶어 승률, TOP4, 평균 등수를 계산합니다.</span>
-        </article>
-        <article>
-          <Gem size={18} />
-          <strong>3신기 우선순위</strong>
-          <span>완성 아이템 3개 조합을 캐리 챔피언별로 비교할 수 있게 확장합니다.</span>
-        </article>
-        <article>
-          <Trophy size={18} />
-          <strong>표본 필터</strong>
-          <span>마스터+와 전체 랭크를 분리해 메타 왜곡을 줄이는 구성이 좋습니다.</span>
-        </article>
-      </section>
     </>
   )
 }

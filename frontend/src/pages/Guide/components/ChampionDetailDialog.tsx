@@ -1,15 +1,31 @@
 import { useEffect, useId, useRef } from 'react'
 import { Star, X } from 'lucide-react'
 import type { ChampionGuide } from '../../../api/guide'
-import { GuideChampionImage, ItemIconStrip } from './GuideShared'
+import { GuideChampionImage } from './GuideShared'
 import styles from '../Guide.module.css'
+
+const FOCUSABLE_DIALOG_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',')
+
+function getFocusableDialogElements(dialog: HTMLElement) {
+  return Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE_DIALOG_SELECTOR))
+    .filter((element) => (
+      !element.hasAttribute('hidden')
+      && element.getAttribute('aria-hidden') !== 'true'
+    ))
+}
 
 interface ChampionDetailDialogProps {
   champion: ChampionGuide
   isFavorite: boolean
   onClose: () => void
   onFavoriteToggle: (championName: string) => void
-  onItemSelect: (itemName: string) => void
 }
 
 function ChampionDetailDialog({
@@ -17,8 +33,8 @@ function ChampionDetailDialog({
   isFavorite,
   onClose,
   onFavoriteToggle,
-  onItemSelect,
 }: ChampionDetailDialogProps) {
+  const dialogRef = useRef<HTMLElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   const titleId = useId()
   const traitsId = useId()
@@ -27,7 +43,39 @@ function ChampionDetailDialog({
     closeButtonRef.current?.focus()
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') onClose()
+      if (event.key === 'Escape') {
+        onClose()
+        return
+      }
+
+      if (event.key !== 'Tab') return
+
+      const dialog = dialogRef.current
+      if (!dialog) return
+
+      const focusableElements = getFocusableDialogElements(dialog)
+      const firstElement = focusableElements[0]
+      const lastElement = focusableElements[focusableElements.length - 1]
+
+      if (!firstElement || !lastElement) {
+        event.preventDefault()
+        dialog.focus()
+        return
+      }
+
+      const activeElement = document.activeElement
+      const isFocusOutsideDialog = activeElement ? !dialog.contains(activeElement) : true
+
+      if (event.shiftKey && (isFocusOutsideDialog || activeElement === firstElement)) {
+        event.preventDefault()
+        lastElement.focus()
+        return
+      }
+
+      if (!event.shiftKey && (isFocusOutsideDialog || activeElement === lastElement)) {
+        event.preventDefault()
+        firstElement.focus()
+      }
     }
 
     document.addEventListener('keydown', handleKeyDown)
@@ -42,7 +90,9 @@ function ChampionDetailDialog({
         aria-modal="true"
         className={styles.championDialog}
         onClick={(event) => event.stopPropagation()}
+        ref={dialogRef}
         role="dialog"
+        tabIndex={-1}
       >
         <button
           aria-label={`${champion.name} 상세 정보 닫기`}
@@ -60,10 +110,6 @@ function ChampionDetailDialog({
             <span>{champion.role}</span>
             <p id={traitsId}>{champion.traits.join(' / ')}</p>
           </div>
-        </div>
-        <div className={styles.dialogItems}>
-          <b>3신기</b>
-          <ItemIconStrip items={champion.bestItems} onItemSelect={onItemSelect} />
         </div>
         <dl className={styles.dialogStats}>
           <div><dt>체력</dt><dd>{champion.stats.hp}</dd></div>

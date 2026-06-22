@@ -72,8 +72,8 @@
 }
 
 .sidebarToggle {
-  width: 36px;
-  height: 36px;
+  width: calc(var(--size-control-md) + var(--space-xs));
+  height: calc(var(--size-control-md) + var(--space-xs));
   display: inline-grid;
   place-items: center;
   padding: 0;
@@ -266,6 +266,7 @@
   width: 100%;
   min-width: 0;
   min-height: 100vh;
+  box-sizing: border-box;
   overflow: visible;
   padding: 17px 15px 0 19px;
 }
@@ -395,8 +396,8 @@
 .iconButton,
 .notificationButton {
   position: relative;
-  width: 27px;
-  height: 34px;
+  width: calc(var(--size-control-md) + var(--space-xs));
+  height: calc(var(--size-control-md) + var(--space-xs));
   display: grid;
   place-items: center;
   padding: 0;
@@ -617,8 +618,6 @@
 
 @media (max-width: 860px) {
   .appShell {
-    width: 100%;
-    min-width: 0;
     display: block;
     overflow-x: hidden;
   }
@@ -641,7 +640,7 @@
   }
 
   .brand {
-    height: var(--size-control-md);
+    min-height: calc(var(--size-control-md) + var(--space-md));
     padding: 0;
   }
 
@@ -657,14 +656,17 @@
   .navList {
     display: flex;
     gap: var(--space-sm);
+    margin: 0 calc(var(--space-xl) * -1);
     overflow-x: auto;
-    padding-bottom: var(--space-xs);
+    overscroll-behavior-x: contain;
+    padding: 0 var(--space-xl) var(--space-xs);
+    scroll-padding-inline: var(--space-xl);
   }
 
   .navItem {
     flex: 0 0 auto;
     width: auto;
-    height: var(--size-control-md);
+    min-height: calc(var(--size-control-md) + var(--space-md));
     gap: var(--space-sm);
     padding: 0 var(--space-xl);
     font-size: var(--font-size-sm);
@@ -682,7 +684,6 @@
   .main {
     width: 100%;
     min-width: 0;
-    overflow-x: hidden;
     padding: var(--space-xl);
   }
 
@@ -706,6 +707,23 @@
   }
 
   .topActions {
+    gap: var(--space-md);
     justify-content: flex-end;
+  }
+
+  .iconButton,
+  .notificationButton,
+  .loginButton,
+  .profileButton {
+    min-height: calc(var(--size-control-md) + var(--space-md));
+  }
+
+  .iconButton,
+  .notificationButton {
+    width: calc(var(--size-control-md) + var(--space-md));
+  }
+
+  .loginButton {
+    padding: 0 var(--space-2xl);
   }
 }

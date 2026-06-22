@@ -3,7 +3,6 @@ import type { TierBadgeValue, TraitHexBadgeTone } from '../types/badges'
 export type GuideTab = 'traits' | 'items' | 'augments' | 'champions'
 export type ChampionCostFilter = 'all' | 1 | 2 | 3 | 4 | 5
 export type AugmentPlanKey = 'fast8' | 'reroll' | 'flex'
-export type MetricSortKey = 'avgPlace' | 'pickRate' | 'top4' | 'winRate'
 export type SortDir = 'asc' | 'desc'
 
 export const DEFAULT_GUIDE_PAGE_SIZE = 5
@@ -21,9 +20,9 @@ export interface GuideTabMeta {
 
 export const GUIDE_TABS: GuideTabMeta[] = [
   { key: 'traits', label: '시너지', meta: '설명 + 필요 챔피언' },
-  { key: 'items', label: '아이템', meta: '승률 + 조합 추천' },
-  { key: 'augments', label: '증강체', meta: '티어표 + 보상표' },
-  { key: 'champions', label: '챔피언', meta: '스탯 + 3신기' },
+  { key: 'items', label: '아이템', meta: '효과 + 조합식' },
+  { key: 'augments', label: '증강체', meta: '효과 + 보상' },
+  { key: 'champions', label: '챔피언', meta: '스탯 + 특성' },
 ]
 
 export interface ChampionRef {
@@ -37,6 +36,11 @@ export interface ItemRef {
   name: string
 }
 
+export interface TraitTierEffect {
+  description: string
+  level: string
+}
+
 export interface TraitGuide {
   champions: ChampionRef[]
   count: number
@@ -44,13 +48,14 @@ export interface TraitGuide {
   levels: string[]
   name: string
   summary: string
+  tierEffects?: TraitTierEffect[]
   tips: string[]
   tone?: TraitHexBadgeTone
   type: string
 }
 
 export interface ItemStatGuide {
-  avgPlace: string
+  avgPlace?: string
   bestUsers: ChampionRef[]
   category: string
   combinations: {
@@ -58,23 +63,24 @@ export interface ItemStatGuide {
     label: string
     note: string
   }[]
+  description?: string
   imageUrl: string
   name: string
-  pickRate: string
-  top4: string
-  winRate: string
+  pickRate?: string
+  top4?: string
+  winRate?: string
 }
 
 export interface AugmentGuide {
-  avgPlace: string
+  avgPlace?: string
   description: string
   name: string
-  pickRate: string
+  pickRate?: string
   reward: string
   tags: string[]
   tier: TierBadgeValue
   type: string
-  winRate: string
+  winRate?: string
 }
 
 export interface RewardRow {
@@ -116,13 +122,6 @@ export interface RecentGuide {
   label: string
   query: string
   tab: GuideTab
-}
-
-export interface SortableMetricItem {
-  avgPlace: string
-  pickRate: string
-  top4?: string
-  winRate: string
 }
 
 export interface GuideCatalog {
@@ -180,8 +179,6 @@ export interface GuideListQuery {
   page?: number
   pageSize?: number
   query?: string
-  sortDir?: SortDir
-  sortKey?: MetricSortKey
   tab: GuideTab
 }
 

@@ -79,8 +79,6 @@ export function useGuideTabItems<T extends GuideTab>({
       params.page ?? 1,
       params.pageSize ?? DEFAULT_GUIDE_PAGE_SIZE,
       params.query ?? '',
-      params.sortKey ?? '',
-      params.sortDir ?? '',
       params.cost ?? 'all',
     ],
     ...LIVE_CONTENT_QUERY_OPTIONS,

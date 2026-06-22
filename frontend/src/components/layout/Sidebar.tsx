@@ -8,7 +8,8 @@
   PanelLeftOpen,
   Users,
 } from 'lucide-react'
-import { NavLink } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
 import { navItems, type NavItem } from './layoutData'
 import styles from './Layout.module.css'
 
@@ -32,6 +33,20 @@ interface SidebarProps {
 
 function Sidebar({ isCollapsed, onToggleCollapsed }: SidebarProps) {
   const ToggleIcon = isCollapsed ? PanelLeftOpen : PanelLeftClose
+  const location = useLocation()
+  const navListRef = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    const navList = navListRef.current
+    const activeNavItem = navList?.querySelector<HTMLAnchorElement>('[aria-current="page"]')
+
+    if (!navList || !activeNavItem || navList.scrollWidth <= navList.clientWidth) return
+
+    activeNavItem.scrollIntoView({
+      block: 'nearest',
+      inline: 'center',
+    })
+  }, [location.pathname])
 
   return (
     <aside className={styles.sidebar}>
@@ -51,7 +66,7 @@ function Sidebar({ isCollapsed, onToggleCollapsed }: SidebarProps) {
         </button>
       </div>
 
-      <nav className={styles.navList} aria-label="메인 메뉴">
+      <nav className={styles.navList} aria-label="메인 메뉴" ref={navListRef}>
         {navItems.map((item) => {
           const Icon = navIcons[item.key]
 
