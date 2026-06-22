@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import {
-  DEFAULT_GUIDE_PAGE_SIZE,
   type AugmentPlan,
   type AugmentPlanKey,
   type GuideCatalog,
@@ -16,6 +15,8 @@ import {
 } from './GuideShared'
 import AugmentGuideList from './AugmentGuideList'
 import AugmentPlannerPanel from './AugmentPlannerPanel'
+
+const AUGMENT_GUIDE_PAGE_SIZE = 4
 
 interface AugmentGuideViewProps {
   augmentPlans: AugmentPlan[]
@@ -37,7 +38,7 @@ function AugmentGuideView({
     fallbackData,
     params: {
       page: currentPage,
-      pageSize: DEFAULT_GUIDE_PAGE_SIZE,
+      pageSize: AUGMENT_GUIDE_PAGE_SIZE,
       query,
       tab: 'augments',
     },

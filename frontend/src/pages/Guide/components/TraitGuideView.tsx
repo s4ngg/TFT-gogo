@@ -61,6 +61,11 @@ function isActiveTraitLevel(level: string, activeCount: number) {
   return level.replace(/\+$/, '') === String(activeCount)
 }
 
+function getChampionSectionMeta(championCount: number) {
+  if (championCount === 0) return '특수 조건'
+  return `${championCount}명`
+}
+
 function splitInlineTierEffects(summary: string) {
   const matches = [...summary.matchAll(INLINE_TIER_EFFECT_PATTERN)]
   if (matches.length === 0) return { summary, tierEffects: [] }
@@ -148,19 +153,27 @@ function TraitGuideView({
                   <h2>{traitGuide.name}</h2>
                   <span>{traitGuide.type}</span>
                 </div>
-                <div className={styles.levelTrack} aria-label={`${traitGuide.name} 활성 단계`}>
-                  {traitGuide.levels.map((level) => (
-                    <b
-                      aria-label={`${formatTraitLevel(level)} 활성 단계`}
-                      className={isActiveTraitLevel(level, traitGuide.count) ? styles.levelActive : ''}
-                      key={level}
-                    >
-                      {formatTraitLevel(level)}
-                    </b>
-                  ))}
+                <div className={styles.levelTrackWrap}>
+                  <span>활성 단계</span>
+                  <div className={styles.levelTrack} aria-label={`${traitGuide.name} 활성 단계`}>
+                    {traitGuide.levels.map((level) => (
+                      <b
+                        aria-label={`${formatTraitLevel(level)} 활성 단계`}
+                        className={isActiveTraitLevel(level, traitGuide.count) ? styles.levelActive : ''}
+                        key={level}
+                      >
+                        {formatTraitLevel(level)}
+                      </b>
+                    ))}
+                  </div>
                 </div>
               </div>
-              {traitDisplay.summary && <p className={styles.traitSummary}>{traitDisplay.summary}</p>}
+              {traitDisplay.summary && (
+                <div className={styles.traitSummaryPanel}>
+                  <span>핵심 효과</span>
+                  <p>{traitDisplay.summary}</p>
+                </div>
+              )}
               {traitDisplay.tierEffects.length > 0 && (
                 <div className={styles.traitEffectList} aria-label={`${traitGuide.name} 단계별 효과`}>
                   <div className={styles.traitEffectHeader}>
@@ -179,16 +192,33 @@ function TraitGuideView({
                   ))}
                 </div>
               )}
-              <div className={styles.championLine}>
-                {traitGuide.champions.map((championRef) => (
-                  <LinkedChampionMini champion={championRef} key={championRef.name} onSelect={onChampionSelect} />
-                ))}
+              <div className={styles.traitSection}>
+                <div className={styles.traitSectionHeader}>
+                  <strong>필요 챔피언</strong>
+                  <span>{getChampionSectionMeta(traitGuide.champions.length)}</span>
+                </div>
+                <div className={styles.championLine}>
+                  {traitGuide.champions.length > 0
+                    ? traitGuide.champions.map((championRef) => (
+                      <LinkedChampionMini champion={championRef} key={championRef.name} onSelect={onChampionSelect} />
+                    ))
+                    : <span className={styles.traitEmptyMeta}>챔피언 조합보다 특수 조건으로 활성화되는 시너지입니다.</span>
+                  }
+                </div>
               </div>
-              <div className={styles.tipLine}>
-                {traitGuide.tips.map((tip) => (
-                  <span key={tip}>{tip}</span>
-                ))}
-              </div>
+              {traitGuide.tips.length > 0 && (
+                <div className={styles.traitSection}>
+                  <div className={styles.traitSectionHeader}>
+                    <strong>운영 팁</strong>
+                    <span>{traitGuide.tips.length}개</span>
+                  </div>
+                  <div className={styles.tipLine}>
+                    {traitGuide.tips.map((tip) => (
+                      <span key={tip}>{tip}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </article>
           )
         })}

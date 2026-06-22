@@ -417,6 +417,18 @@
   font-weight: 600;
 }
 
+.levelTrackWrap {
+  display: grid;
+  justify-items: end;
+  gap: var(--space-xs);
+}
+
+.levelTrackWrap > span {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+
 .levelTrack {
   display: flex;
   gap: 4px;
@@ -442,8 +454,31 @@
 }
 
 .traitSummary {
-  min-height: 42px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+
+.traitSummaryPanel {
+  display: grid;
+  gap: var(--space-sm);
   margin: 13px 0 14px;
+  padding: var(--space-md);
+  border: 1px solid var(--border-separator);
+  border-radius: var(--radius-button);
+  background: var(--bg-btn-dark-soft);
+}
+
+.traitSummaryPanel > span {
+  color: var(--color-cyan);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.traitSummaryPanel p {
+  margin: 0;
   color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.55;
@@ -517,6 +552,37 @@
   display: flex;
   flex-wrap: wrap;
   gap: 7px;
+}
+
+.traitSection {
+  display: grid;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+}
+
+.traitSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.traitSectionHeader strong {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.traitSectionHeader span {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.traitEmptyMeta {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .championMini {
