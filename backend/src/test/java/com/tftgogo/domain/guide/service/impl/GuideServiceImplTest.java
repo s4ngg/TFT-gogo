@@ -5,12 +5,11 @@ import com.tftgogo.domain.guide.dto.response.GuideCatalogResponse;
 import com.tftgogo.domain.guide.dto.response.GuideEntryResponse;
 import com.tftgogo.domain.guide.dto.response.GuidePageResponse;
 import com.tftgogo.domain.guide.entity.AugmentGuidePlan;
-import com.tftgogo.domain.guide.entity.AugmentGuideReward;
 import com.tftgogo.domain.guide.entity.Guide;
+import com.tftgogo.domain.guide.entity.GuideAugment;
 import com.tftgogo.domain.guide.entity.GuideTrait;
 import com.tftgogo.domain.guide.entity.GuideType;
 import com.tftgogo.domain.guide.repository.AugmentGuidePlanRepository;
-import com.tftgogo.domain.guide.repository.AugmentGuideRewardRepository;
 import com.tftgogo.domain.guide.repository.GuideAugmentRepository;
 import com.tftgogo.domain.guide.repository.GuideChampionRepository;
 import com.tftgogo.domain.guide.repository.GuideItemRepository;
@@ -56,9 +55,6 @@ class GuideServiceImplTest {
 
     @Mock
     private AugmentGuidePlanRepository augmentGuidePlanRepository;
-
-    @Mock
-    private AugmentGuideRewardRepository augmentGuideRewardRepository;
 
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
@@ -138,15 +134,13 @@ class GuideServiceImplTest {
     }
 
     @Test
-    void 카탈로그는_증강체_운영_플랜과_보상표를_함께_반환한다() {
+    void 카탈로그는_증강체_운영_플랜을_반환한다() {
         // given
         when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.1"));
         when(guideRepository.findByPatchVersionAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc("17.1"))
                 .thenReturn(List.of());
         when(augmentGuidePlanRepository.findByPatchVersionOrderByPlanKeyAscIdAsc("17.1"))
                 .thenReturn(List.of(augmentPlan("fast8", "빠른 8레벨", "17.1")));
-        when(augmentGuideRewardRepository.findByPatchVersionOrderByStageAscIdAsc("17.1"))
-                .thenReturn(List.of(augmentReward("2-1", "실버", "초반 전투 보강", "17.1")));
 
         // when
         GuideCatalogResponse response = guideService.getGuideCatalog();
@@ -161,14 +155,24 @@ class GuideServiceImplTest {
                     assertThat(plan.getLabel()).isEqualTo("빠른 8레벨");
                     assertThat(plan.getStages()).hasSize(1);
                 });
-        assertThat(response.getRewards())
-                .hasSize(1)
-                .first()
-                .satisfies(reward -> {
-                    assertThat(reward.getStage()).isEqualTo("2-1");
-                    assertThat(reward.getCondition()).isEqualTo("실버");
-                    assertThat(reward.getReward()).isEqualTo("초반 전투 보강");
-                });
+    }
+
+    @Test
+    void 카탈로그_기본_패치는_증강체_운영_플랜만으로_선택하지_않는다() {
+        // given
+        when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.1"));
+        when(guideRepository.findByPatchVersionAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc("17.1"))
+                .thenReturn(List.of());
+        when(augmentGuidePlanRepository.findByPatchVersionOrderByPlanKeyAscIdAsc("17.1"))
+                .thenReturn(List.of());
+
+        // when
+        GuideCatalogResponse response = guideService.getGuideCatalog();
+
+        // then
+        assertThat(response.getPatchVersion()).isEqualTo("17.1");
+        verify(augmentGuidePlanRepository, never()).findLatestPatchVersion();
+        verify(augmentGuidePlanRepository).findByPatchVersionOrderByPlanKeyAscIdAsc("17.1");
     }
 
     @Test
@@ -226,6 +230,44 @@ class GuideServiceImplTest {
         assertThat(response.getItems()).hasSize(1);
         verify(guideRepository, never()).findLatestPatchVersion();
         verify(guideRepository).findFilteredGuides(GuideType.CHAMPION.name(), "17.0", null, null);
+    }
+
+    @Test
+    void 분리_증강체_응답은_표시용_설명과_태그만_포함한다() {
+        // given
+        GuideAugment augment = augmentGuide(
+                "TFT17_Augment_BattleReady",
+                "전투 준비",
+                "아군이 공격 속도를 얻습니다.",
+                "[\"전투\"]",
+                "{\"tier\":\"A\",\"type\":\"Combat\",\"reward\":\"전투 능력치\",\"winRate\":\"61.4%\"}",
+                "17.0"
+        );
+        when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
+        when(guideAugmentRepository.findByPatchVersionOrderByNameAscIdAsc("17.0"))
+                .thenReturn(List.of(augment));
+
+        // when
+        GuidePageResponse<GuideEntryResponse> response = guideService.getGuideTabItems(
+                "augments",
+                null,
+                null,
+                1,
+                10,
+                null,
+                null,
+                null
+        );
+
+        // then
+        GuideEntryResponse firstItem = response.getItems().get(0);
+        assertThat(firstItem.getImageUrl()).isEqualTo("https://example.com/TFT17_Augment_BattleReady.png");
+        assertThat(firstItem.getDataJson().path("description").asText()).isEqualTo("아군이 공격 속도를 얻습니다.");
+        assertThat(firstItem.getDataJson().path("tags").get(0).asText()).isEqualTo("전투");
+        assertThat(firstItem.getDataJson().has("tier")).isFalse();
+        assertThat(firstItem.getDataJson().has("type")).isFalse();
+        assertThat(firstItem.getDataJson().has("reward")).isFalse();
+        assertThat(firstItem.getDataJson().has("winRate")).isFalse();
     }
 
     @Test
@@ -381,19 +423,25 @@ class GuideServiceImplTest {
         return plan;
     }
 
-    private AugmentGuideReward augmentReward(
-            String stage,
-            String conditionText,
-            String rewardText,
+    private GuideAugment augmentGuide(
+            String augmentKey,
+            String name,
+            String description,
+            String tagsJson,
+            String statsJson,
             String patchVersion
     ) {
-        AugmentGuideReward reward = instantiate(AugmentGuideReward.class);
-        ReflectionTestUtils.setField(reward, "id", 1L);
-        ReflectionTestUtils.setField(reward, "stage", stage);
-        ReflectionTestUtils.setField(reward, "conditionText", conditionText);
-        ReflectionTestUtils.setField(reward, "rewardText", rewardText);
-        ReflectionTestUtils.setField(reward, "patchVersion", patchVersion);
-        return reward;
+        GuideAugment augment = GuideAugment.builder()
+                .augmentKey(augmentKey)
+                .name(name)
+                .description(description)
+                .iconUrl("https://example.com/" + augmentKey + ".png")
+                .tagsJson(tagsJson)
+                .statsJson(statsJson)
+                .patchVersion(patchVersion)
+                .build();
+        ReflectionTestUtils.setField(augment, "id", 1L);
+        return augment;
     }
 
     private <T> T instantiate(Class<T> type) {

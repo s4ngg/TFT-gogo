@@ -71,8 +71,6 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             {"골드", "동전", "경험치", "황금", "gold", "coin", "xp", "experience", "golden"};
     private static final String[] AUGMENT_ITEM_TAG_KEYWORDS =
             {"아이템", "모루", "상자", "찬란", "장갑", "활", "item", "anvil", "glove", "bow"};
-    private static final String[] AUGMENT_ITEM_REWARD_KEYWORDS =
-            appendKeywords(AUGMENT_ITEM_TAG_KEYWORDS, "component", "bandofthieves");
     private static final String[] AUGMENT_CHAMPION_KEYWORDS =
             {"챔피언", "유닛", "단계", "champion", "unit"};
     private static final String[] AUGMENT_SYNERGY_KEYWORDS =
@@ -101,18 +99,6 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             "mana",
             "critical"
     };
-    private static final String[] AUGMENT_COMBAT_REWARD_KEYWORDS = appendKeywords(
-            AUGMENT_COMBAT_TAG_KEYWORDS,
-            "철퇴",
-            "응징",
-            "집중",
-            "guardbreaker",
-            "lotus",
-            "retribution",
-            "concentration",
-            "powerup",
-            "arcane"
-    );
     private final GuideRepository guideRepository;
     private final GuideChampionRepository guideChampionRepository;
     private final GuideTraitRepository guideTraitRepository;
@@ -442,9 +428,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                 importableAugments.add(augment);
             }
         }
-        importableAugments.sort(Comparator
-                .comparingInt(this::augmentTierSortOrder)
-                .thenComparing(augment -> augment.path("name").asText()));
+        importableAugments.sort(Comparator.comparing(augment -> sanitizeDisplayName(augment.path("name").asText())));
 
         List<GuideCandidate> candidates = new ArrayList<>();
         Set<String> importedAugmentNames = new HashSet<>();
@@ -461,13 +445,10 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                 continue;
             }
             String description = sanitizeCdragonText(readText(augment, "desc", "description", "tooltip"), augment.path("effects"));
-            String type = augmentType(augment);
             ObjectNode dataJson = objectMapper.createObjectNode();
             dataJson.put("description", description);
-            dataJson.put("reward", augmentReward(augment, description));
-            dataJson.set("tags", augmentTags(augment, description, type));
-            dataJson.put("tier", augmentTier(augment));
-            dataJson.put("type", type);
+            dataJson.set("tags", augmentTags(augment, description));
+            ObjectNode splitStatsJson = objectMapper.createObjectNode();
 
             candidates.add(new GuideCandidate(
                     GuideType.AUGMENT,
@@ -476,6 +457,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                     hasText(description) ? description : "CDragon 증강체",
                     assetUrl(augment.path("icon").asText()),
                     dataJson,
+                    splitStatsJson,
                     patchVersion,
                     sortOrder++
             ));
@@ -509,13 +491,6 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         return false;
     }
 
-    private static String[] appendKeywords(String[] baseKeywords, String... extraKeywords) {
-        String[] keywords = new String[baseKeywords.length + extraKeywords.length];
-        System.arraycopy(baseKeywords, 0, keywords, 0, baseKeywords.length);
-        System.arraycopy(extraKeywords, 0, keywords, baseKeywords.length, extraKeywords.length);
-        return keywords;
-    }
-
     private String readText(JsonNode node, String... fields) {
         for (String field : fields) {
             String value = node.path(field).asText();
@@ -526,18 +501,12 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         return "";
     }
 
-    private ArrayNode augmentTags(JsonNode augment, String description, String type) {
+    private ArrayNode augmentTags(JsonNode augment, String description) {
         ArrayNode tags = objectMapper.createArrayNode();
-        JsonNode cdragonTags = augment.path("tags");
-        if (cdragonTags.isArray()) {
-            for (JsonNode tag : cdragonTags) {
-                addDisplayTag(tags, sanitizeText(tag.asText()));
-            }
+        for (JsonNode cdragonTag : augment.path("tags")) {
+            addDisplayTag(tags, sanitizeDisplayName(cdragonTag.asText()));
         }
         addDerivedAugmentTags(tags, description);
-        if (tags.isEmpty()) {
-            addDisplayTag(tags, type);
-        }
         if (tags.isEmpty()) {
             tags.add("공용");
         }
@@ -589,120 +558,6 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             }
         }
         return false;
-    }
-
-    private String augmentReward(JsonNode augment, String description) {
-        String searchable = (description + " "
-                + augment.path("apiName").asText() + " "
-                + augment.path("name").asText()).toLowerCase(Locale.ROOT);
-        List<String> rewardLabels = new ArrayList<>();
-        addRewardLabel(
-                rewardLabels,
-                "리롤",
-                containsAny(searchable, AUGMENT_REROLL_KEYWORDS)
-        );
-        addRewardLabel(
-                rewardLabels,
-                "경제",
-                containsAny(searchable, AUGMENT_ECONOMY_KEYWORDS)
-        );
-        addRewardLabel(
-                rewardLabels,
-                "아이템",
-                containsAny(searchable, AUGMENT_ITEM_REWARD_KEYWORDS)
-        );
-        addRewardLabel(
-                rewardLabels,
-                "챔피언",
-                containsAny(searchable, AUGMENT_CHAMPION_KEYWORDS)
-        );
-        addRewardLabel(
-                rewardLabels,
-                "시너지",
-                containsAny(searchable, AUGMENT_SYNERGY_KEYWORDS)
-        );
-        addRewardLabel(
-                rewardLabels,
-                "퀘스트",
-                containsAny(searchable, AUGMENT_QUEST_KEYWORDS)
-        );
-        if (containsAny(searchable, AUGMENT_COMBAT_REWARD_KEYWORDS)) {
-            addRewardLabel(rewardLabels, "전투 능력치", true);
-        }
-        if (rewardLabels.isEmpty()) {
-            return "효과형 증강";
-        }
-        if (rewardLabels.size() == 1) {
-            return rewardLabels.get(0).endsWith("능력치") ? rewardLabels.get(0) : rewardLabels.get(0) + " 보상";
-        }
-        return String.join(" + ", rewardLabels.subList(0, Math.min(2, rewardLabels.size()))) + " 보상";
-    }
-
-    private void addRewardLabel(List<String> rewardLabels, String label, boolean condition) {
-        if (condition && !rewardLabels.contains(label)) {
-            rewardLabels.add(label);
-        }
-    }
-
-    private String augmentType(JsonNode augment) {
-        String type = sanitizeText(readText(augment, "augmentType", "type", "category"));
-        return hasText(type) ? type : "공용";
-    }
-
-    private String augmentTier(JsonNode augment) {
-        String tier = readText(augment, "tier", "rarity", "quality", "augmentRarity")
-                .toLowerCase(Locale.ROOT);
-        if (tier.contains("prismatic")) {
-            return "S";
-        }
-        if (tier.contains("gold")) {
-            return "A";
-        }
-        if (tier.contains("silver")) {
-            return "B";
-        }
-        if (tier.contains("bronze")) {
-            return "C";
-        }
-
-        int numericTier = readInt(augment, "tier", "rarity", "quality", "augmentRarity");
-        if (numericTier >= 3) {
-            return "S";
-        }
-        if (numericTier == 2) {
-            return "A";
-        }
-        if (numericTier == 1) {
-            return "B";
-        }
-        return "UNKNOWN";
-    }
-
-    private int augmentTierSortOrder(JsonNode augment) {
-        return switch (augmentTier(augment)) {
-            case "S" -> 0;
-            case "A" -> 1;
-            case "B" -> 2;
-            case "C" -> 3;
-            default -> 4;
-        };
-    }
-
-    private int readInt(JsonNode node, String... fields) {
-        for (String field : fields) {
-            JsonNode value = node.path(field);
-            if (value.isInt()) {
-                return value.asInt();
-            }
-            if (value.isTextual()) {
-                try {
-                    return Integer.parseInt(value.asText().trim());
-                } catch (NumberFormatException ignored) {
-                    // Try the next possible CDragon field.
-                }
-            }
-        }
-        return 0;
     }
 
     private String normalizeMetricKey(String value) {
@@ -959,10 +814,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                 .ifPresentOrElse(
                         guideAugment -> guideAugment.update(
                                 candidate.name(),
-                                readText(dataJson, "tier"),
-                                readText(dataJson, "type"),
                                 readText(dataJson, "description"),
-                                readText(dataJson, "reward"),
                                 candidate.imageUrl(),
                                 writeJsonField(dataJson, "tags", objectMapper.createArrayNode()),
                                 writeJson(objectMapper.createObjectNode())
@@ -970,10 +822,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                         () -> guideAugmentRepository.save(GuideAugment.builder()
                                 .augmentKey(candidate.targetKey())
                                 .name(candidate.name())
-                                .tier(readText(dataJson, "tier"))
-                                .type(readText(dataJson, "type"))
                                 .description(readText(dataJson, "description"))
-                                .reward(readText(dataJson, "reward"))
                                 .iconUrl(candidate.imageUrl())
                                 .tagsJson(writeJsonField(dataJson, "tags", objectMapper.createArrayNode()))
                                 .statsJson(writeJson(objectMapper.createObjectNode()))
@@ -1416,9 +1265,22 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             String summary,
             String imageUrl,
             JsonNode dataJson,
+            JsonNode splitStatsJson,
             String patchVersion,
             int sortOrder
     ) {
+        private GuideCandidate(
+                GuideType guideType,
+                String targetKey,
+                String name,
+                String summary,
+                String imageUrl,
+                JsonNode dataJson,
+                String patchVersion,
+                int sortOrder
+        ) {
+            this(guideType, targetKey, name, summary, imageUrl, dataJson, null, patchVersion, sortOrder);
+        }
     }
 
     private static class ImportCounter {

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tftgogo.domain.guide.dto.request.GuideCdragonImportRequest;
 import com.tftgogo.domain.guide.dto.response.GuideImportResponse;
 import com.tftgogo.domain.guide.entity.Guide;
+import com.tftgogo.domain.guide.entity.GuideAugment;
 import com.tftgogo.domain.guide.entity.GuideType;
 import com.tftgogo.domain.guide.repository.GuideAugmentRepository;
 import com.tftgogo.domain.guide.repository.GuideChampionRepository;
@@ -371,13 +372,20 @@ class GuideCdragonImportServiceImplTest {
         assertThat(augmentGuide.getImageUrl()).contains("battle_ready.png");
         assertThat(augmentGuide.getDataJson()).contains("\"description\":\"Your team gains 25 Attack Speed.\"");
         assertThat(augmentGuide.getDataJson()).doesNotContain("%i:scaleAS%");
-        assertThat(augmentGuide.getDataJson()).contains("\"tier\":\"A\"");
-        assertThat(augmentGuide.getDataJson()).contains("\"type\":\"Combat\"");
-        assertThat(augmentGuide.getDataJson()).contains("\"reward\":\"전투 능력치\"");
+        assertThat(augmentGuide.getDataJson()).doesNotContain("\"tier\"");
+        assertThat(augmentGuide.getDataJson()).doesNotContain("\"type\"");
+        assertThat(augmentGuide.getDataJson()).doesNotContain("\"reward\"");
         assertThat(augmentGuide.getDataJson()).contains("\"tags\":[\"전투\"]");
         assertThat(augmentGuide.getDataJson()).doesNotContain("{cf1fd3af}");
         assertThat(augmentGuide.getDataJson()).doesNotContain("@AttackSpeed@");
         assertThat(augmentGuide.getDataJson()).doesNotContain("\"winRate\"");
+
+        ArgumentCaptor<GuideAugment> splitAugmentCaptor = ArgumentCaptor.forClass(GuideAugment.class);
+        verify(guideAugmentRepository).save(splitAugmentCaptor.capture());
+        GuideAugment splitAugment = splitAugmentCaptor.getValue();
+        assertThat(splitAugment.getStatsJson()).doesNotContain("\"tier\"");
+        assertThat(splitAugment.getStatsJson()).doesNotContain("\"type\"");
+        assertThat(splitAugment.getStatsJson()).doesNotContain("\"reward\"");
     }
 
     @Test
@@ -411,7 +419,7 @@ class GuideCdragonImportServiceImplTest {
     }
 
     @Test
-    void CDragon_증강체_티어가_없으면_UNKNOWN으로_저장한다() {
+    void CDragon_증강체_티어가_없어도_티어를_저장하지_않는다() {
         // given
         String missingTierJson = cdragonJson()
                 .replace("\"rarity\": \"gold\"", "\"rarity\": \"unknown\"");
@@ -436,7 +444,11 @@ class GuideCdragonImportServiceImplTest {
         ArgumentCaptor<Guide> guideCaptor = ArgumentCaptor.forClass(Guide.class);
         verify(guideRepository).saveAndFlush(guideCaptor.capture());
         Guide augmentGuide = guideCaptor.getValue();
-        assertThat(augmentGuide.getDataJson()).contains("\"tier\":\"UNKNOWN\"");
+        assertThat(augmentGuide.getDataJson()).doesNotContain("\"tier\"");
+
+        ArgumentCaptor<GuideAugment> splitAugmentCaptor = ArgumentCaptor.forClass(GuideAugment.class);
+        verify(guideAugmentRepository).save(splitAugmentCaptor.capture());
+        assertThat(splitAugmentCaptor.getValue().getStatsJson()).doesNotContain("\"tier\"");
     }
 
     @Test

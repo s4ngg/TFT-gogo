@@ -16,7 +16,6 @@ const fallbackCatalog: GuideCatalog = {
   champions: [],
   items: [],
   patchVersion: 'fallback',
-  rewards: [],
   traits: [],
 }
 
@@ -64,13 +63,6 @@ test('normalizeGuideCatalog reads entries and augment support data from catalog 
       },
     ],
     patchVersion: '17.1',
-    rewards: [
-      {
-        condition: '실버',
-        reward: '초반 전투 보강',
-        stage: '2-1',
-      },
-    ],
   }, fallbackCatalog)
 
   assert.equal(result.patchVersion, '17.1')
@@ -78,6 +70,4 @@ test('normalizeGuideCatalog reads entries and augment support data from catalog 
   assert.equal(result.traits[0].name, '동물특공대')
   assert.equal(result.augmentPlans.length, 1)
   assert.equal(result.augmentPlans[0].label, '빠른 8레벨')
-  assert.equal(result.rewards.length, 1)
-  assert.equal(result.rewards[0].reward, '초반 전투 보강')
 })

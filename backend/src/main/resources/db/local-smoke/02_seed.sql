@@ -115,9 +115,6 @@ ON DUPLICATE KEY UPDATE
     is_active = VALUES(is_active),
     deleted_at = NULL;
 
-DELETE FROM augment_guide_rewards
-WHERE patch_version = '17.3';
-
 DELETE FROM augment_guide_plans
 WHERE patch_version = '17.3';
 
@@ -157,22 +154,6 @@ INSERT INTO augment_guide_plans (
     ),
     '17.3'
 );
-
-INSERT INTO augment_guide_rewards (
-    stage,
-    condition_text,
-    reward_text,
-    patch_version
-) VALUES
-('2-1', '실버 증강', '초반 체력과 필드 안정성을 우선 확인', '17.3'),
-('2-1', '골드 증강', '초반 전투력 또는 경제 기반 확보', '17.3'),
-('2-1', '프리즘 증강', '첫 방향성을 강하게 정하되 아이템 호환성 확인', '17.3'),
-('3-2', '실버 증강', '현재 조합의 부족한 전투 능력 보강', '17.3'),
-('3-2', '골드 증강', '핵심 시너지, 아이템, 경제 중 가장 부족한 축 보완', '17.3'),
-('3-2', '프리즘 증강', '중반 전환 또는 리롤 완성 타이밍 확정', '17.3'),
-('4-2', '실버 증강', '최종 조합의 약점 보완', '17.3'),
-('4-2', '골드 증강', '캐리 화력 또는 앞라인 유지력 강화', '17.3'),
-('4-2', '프리즘 증강', '최종 고점과 순방 안정성을 함께 확보', '17.3');
 
 START TRANSACTION;
 

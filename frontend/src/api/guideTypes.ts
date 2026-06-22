@@ -1,4 +1,4 @@
-import type { TierBadgeValue, TraitHexBadgeTone } from '../types/badges'
+import type { TraitHexBadgeTone } from '../types/badges'
 
 export type GuideTab = 'traits' | 'items' | 'augments' | 'champions'
 export type ChampionCostFilter = 'all' | 1 | 2 | 3 | 4 | 5
@@ -74,19 +74,11 @@ export interface ItemStatGuide {
 export interface AugmentGuide {
   avgPlace?: string
   description: string
+  imageUrl: string
   name: string
   pickRate?: string
-  reward: string
   tags: string[]
-  tier: TierBadgeValue
-  type: string
   winRate?: string
-}
-
-export interface RewardRow {
-  condition: string
-  reward: string
-  stage: string
 }
 
 export interface AugmentPlan {
@@ -130,7 +122,6 @@ export interface GuideCatalog {
   champions: ChampionGuide[]
   items: ItemStatGuide[]
   patchVersion: string
-  rewards: RewardRow[]
   traits: TraitGuide[]
 }
 

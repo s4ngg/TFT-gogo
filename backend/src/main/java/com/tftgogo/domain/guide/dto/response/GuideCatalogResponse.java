@@ -12,19 +12,16 @@ public class GuideCatalogResponse {
     private String patchVersion;
     private List<GuideEntryResponse> entries;
     private List<AugmentGuidePlanResponse> augmentPlans;
-    private List<AugmentGuideRewardResponse> rewards;
 
     public static GuideCatalogResponse of(
             String patchVersion,
             List<GuideEntryResponse> entries,
-            List<AugmentGuidePlanResponse> augmentPlans,
-            List<AugmentGuideRewardResponse> rewards
+            List<AugmentGuidePlanResponse> augmentPlans
     ) {
         return GuideCatalogResponse.builder()
                 .patchVersion(patchVersion)
                 .entries(entries)
                 .augmentPlans(augmentPlans)
-                .rewards(rewards)
                 .build();
     }
 }

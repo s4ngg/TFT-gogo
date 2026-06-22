@@ -59,10 +59,7 @@ CREATE TABLE IF NOT EXISTS tft_guide_augments (
     id BIGINT NOT NULL AUTO_INCREMENT,
     augment_key VARCHAR(100) NOT NULL,
     name VARCHAR(100) NOT NULL,
-    tier VARCHAR(20) NOT NULL,
-    type VARCHAR(50) NOT NULL,
     description TEXT NOT NULL,
-    reward VARCHAR(200) NULL,
     icon_url VARCHAR(500) NULL,
     tags_json JSON NOT NULL,
     stats_json JSON NOT NULL,
@@ -71,19 +68,7 @@ CREATE TABLE IF NOT EXISTS tft_guide_augments (
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     PRIMARY KEY (id),
     UNIQUE KEY uk_tft_guide_augments_key_patch (augment_key, patch_version),
-    KEY idx_tft_guide_augments_patch_tier (patch_version, tier, id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS augment_guide_rewards (
-    id BIGINT NOT NULL AUTO_INCREMENT,
-    stage VARCHAR(20) NOT NULL,
-    condition_text VARCHAR(200) NOT NULL,
-    reward_text VARCHAR(200) NOT NULL,
-    patch_version VARCHAR(20) NOT NULL,
-    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
-    PRIMARY KEY (id),
-    KEY idx_augment_guide_rewards_patch_stage (patch_version, stage, id)
+    KEY idx_tft_guide_augments_patch_name (patch_version, name, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS augment_guide_plans (

@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tftgogo.domain.guide.dto.response.AugmentGuidePlanResponse;
-import com.tftgogo.domain.guide.dto.response.AugmentGuideRewardResponse;
 import com.tftgogo.domain.guide.dto.response.GuideCatalogResponse;
 import com.tftgogo.domain.guide.dto.response.GuideEntryResponse;
 import com.tftgogo.domain.guide.dto.response.GuidePageResponse;
@@ -17,7 +16,6 @@ import com.tftgogo.domain.guide.entity.GuideItem;
 import com.tftgogo.domain.guide.entity.GuideTrait;
 import com.tftgogo.domain.guide.entity.GuideType;
 import com.tftgogo.domain.guide.repository.AugmentGuidePlanRepository;
-import com.tftgogo.domain.guide.repository.AugmentGuideRewardRepository;
 import com.tftgogo.domain.guide.repository.GuideAugmentRepository;
 import com.tftgogo.domain.guide.repository.GuideChampionRepository;
 import com.tftgogo.domain.guide.repository.GuideItemRepository;
@@ -61,7 +59,6 @@ public class GuideServiceImpl implements GuideService {
     private final GuideItemRepository guideItemRepository;
     private final GuideAugmentRepository guideAugmentRepository;
     private final AugmentGuidePlanRepository augmentGuidePlanRepository;
-    private final AugmentGuideRewardRepository augmentGuideRewardRepository;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -72,11 +69,10 @@ public class GuideServiceImpl implements GuideService {
                     return GuideCatalogResponse.of(
                             patchVersion,
                             entries,
-                            findAugmentPlans(patchVersion),
-                            findAugmentRewards(patchVersion)
+                            findAugmentPlans(patchVersion)
                     );
                 })
-                .orElseGet(() -> GuideCatalogResponse.of("", List.of(), List.of(), List.of()));
+                .orElseGet(() -> GuideCatalogResponse.of("", List.of(), List.of()));
     }
 
     @Override
@@ -187,13 +183,6 @@ public class GuideServiceImpl implements GuideService {
                 .toList();
     }
 
-    private List<AugmentGuideRewardResponse> findAugmentRewards(String patchVersion) {
-        return augmentGuideRewardRepository.findByPatchVersionOrderByStageAscIdAsc(patchVersion)
-                .stream()
-                .map(AugmentGuideRewardResponse::from)
-                .toList();
-    }
-
     private AugmentGuidePlanResponse toAugmentPlanResponse(AugmentGuidePlan plan) {
         return AugmentGuidePlanResponse.from(
                 plan,
@@ -213,7 +202,7 @@ public class GuideServiceImpl implements GuideService {
                     guideItemRepository.findByPatchVersionOrderByNameAscIdAsc(patchVersion)
             );
             case AUGMENT -> toAugmentResponses(
-                    guideAugmentRepository.findByPatchVersionOrderByTierAscNameAscIdAsc(patchVersion)
+                    guideAugmentRepository.findByPatchVersionOrderByNameAscIdAsc(patchVersion)
             );
         };
     }
@@ -317,9 +306,6 @@ public class GuideServiceImpl implements GuideService {
         for (GuideAugment augment : augments) {
             ObjectNode dataJson = objectMapper.createObjectNode();
             dataJson.put("description", augment.getDescription());
-            dataJson.put("reward", augment.getReward() == null ? "-" : augment.getReward());
-            dataJson.put("tier", augment.getTier());
-            dataJson.put("type", augment.getType());
             dataJson.set("tags", parseJson(augment.getTagsJson(), "augment.tags", augment.getId()));
 
             responses.add(buildResponse(
@@ -599,8 +585,6 @@ public class GuideServiceImpl implements GuideService {
         guideTraitRepository.findLatestPatchVersion().ifPresent(patchVersions::add);
         guideItemRepository.findLatestPatchVersion().ifPresent(patchVersions::add);
         guideAugmentRepository.findLatestPatchVersion().ifPresent(patchVersions::add);
-        augmentGuidePlanRepository.findLatestPatchVersion().ifPresent(patchVersions::add);
-        augmentGuideRewardRepository.findLatestPatchVersion().ifPresent(patchVersions::add);
 
         return patchVersions.stream().max(this::comparePatchVersion);
     }
