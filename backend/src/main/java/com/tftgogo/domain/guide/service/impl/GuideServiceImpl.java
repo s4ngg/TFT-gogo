@@ -68,6 +68,7 @@ public class GuideServiceImpl implements GuideService {
                             .findByPatchVersionAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchVersion)
                             .stream()
                             .map(this::toResponse)
+                            .filter(this::isDisplayableResponse)
                             .toList();
                 })
                 .orElseGet(List::of);
@@ -115,6 +116,7 @@ public class GuideServiceImpl implements GuideService {
                 )
                 .stream()
                 .map(this::toLegacyGuideItem)
+                .filter(item -> isDisplayableEntry(guideType, item.dataJson()))
                 .sorted(buildComparator(sortKey, sortDir))
                 .toList();
 
@@ -209,6 +211,17 @@ public class GuideServiceImpl implements GuideService {
         int sortOrder = 0;
         for (GuideTrait trait : traits) {
             JsonNode levels = parseJson(trait.getLevelsJson(), "trait.levels", trait.getId());
+            JsonNode champions = parseJson(trait.getChampionsJson(), "trait.champions", trait.getId());
+            if (!hasArrayItems(champions)) {
+                logger.debug(
+                        "Guide trait response skipped because champions_json is empty. id={}, traitKey={}, name={}",
+                        trait.getId(),
+                        trait.getTraitKey(),
+                        trait.getName()
+                );
+                continue;
+            }
+
             ObjectNode dataJson = objectMapper.createObjectNode();
             dataJson.put("count", maxTraitLevel(levels));
             dataJson.put("type", trait.getType());
@@ -216,7 +229,7 @@ public class GuideServiceImpl implements GuideService {
             dataJson.put("tone", trait.getTone());
             dataJson.set("levels", levels);
             dataJson.set("tierEffects", parseJson(trait.getTierEffectsJson(), "trait.tierEffects", trait.getId()));
-            dataJson.set("champions", parseJson(trait.getChampionsJson(), "trait.champions", trait.getId()));
+            dataJson.set("champions", champions);
             dataJson.set("tips", parseJson(trait.getTipsJson(), "trait.tips", trait.getId()));
 
             responses.add(buildResponse(
@@ -385,6 +398,18 @@ public class GuideServiceImpl implements GuideService {
         return cost == null
                 || guideType != GuideType.CHAMPION
                 || item.getDataJson().path("cost").asInt() == cost;
+    }
+
+    private boolean isDisplayableResponse(GuideEntryResponse response) {
+        return isDisplayableEntry(response.getGuideType(), response.getDataJson());
+    }
+
+    private boolean isDisplayableEntry(GuideType guideType, JsonNode dataJson) {
+        return guideType != GuideType.TRAIT || hasArrayItems(dataJson.path("champions"));
+    }
+
+    private boolean hasArrayItems(JsonNode value) {
+        return value != null && value.isArray() && value.size() > 0;
     }
 
     private boolean containsIgnoreCase(String value, String normalizedQuery) {

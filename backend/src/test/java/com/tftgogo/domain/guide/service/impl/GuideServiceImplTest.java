@@ -4,8 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tftgogo.domain.guide.dto.response.GuideEntryResponse;
 import com.tftgogo.domain.guide.dto.response.GuidePageResponse;
 import com.tftgogo.domain.guide.entity.Guide;
+import com.tftgogo.domain.guide.entity.GuideTrait;
 import com.tftgogo.domain.guide.entity.GuideType;
+import com.tftgogo.domain.guide.repository.GuideAugmentRepository;
+import com.tftgogo.domain.guide.repository.GuideChampionRepository;
+import com.tftgogo.domain.guide.repository.GuideItemRepository;
 import com.tftgogo.domain.guide.repository.GuideRepository;
+import com.tftgogo.domain.guide.repository.GuideTraitRepository;
 import com.tftgogo.global.exception.BusinessException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,6 +33,18 @@ class GuideServiceImplTest {
 
     @Mock
     private GuideRepository guideRepository;
+
+    @Mock
+    private GuideChampionRepository guideChampionRepository;
+
+    @Mock
+    private GuideTraitRepository guideTraitRepository;
+
+    @Mock
+    private GuideItemRepository guideItemRepository;
+
+    @Mock
+    private GuideAugmentRepository guideAugmentRepository;
 
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
@@ -104,6 +121,38 @@ class GuideServiceImplTest {
         assertThat(response.get(0).getPatchVersion()).isEqualTo("17.1");
         verify(guideRepository)
                 .findByPatchVersionAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc("17.1");
+    }
+
+    @Test
+    void 분리_시너지_응답은_연결_챔피언이_없는_항목을_제외한다() {
+        // given
+        GuideTrait displayableTrait = traitGuide(
+                "TFT17_AnimalSquad",
+                "동물특공대",
+                "[{\"cost\":1,\"name\":\"브라이어\",\"imageUrl\":\"https://example.com/briar.png\"}]"
+        );
+        GuideTrait hiddenTrait = traitGuide("TFT17_DivineBlessing", "신의 축복", "[]");
+        when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
+        when(guideTraitRepository.findByPatchVersionOrderByNameAscIdAsc("17.0"))
+                .thenReturn(List.of(displayableTrait, hiddenTrait));
+
+        // when
+        GuidePageResponse<GuideEntryResponse> response = guideService.getGuideTabItems(
+                "traits",
+                null,
+                null,
+                1,
+                10,
+                null,
+                null,
+                null
+        );
+
+        // then
+        assertThat(response.getItems())
+                .extracting(GuideEntryResponse::getName)
+                .containsExactly("동물특공대");
+        assertThat(response.getTotalItems()).isEqualTo(1);
     }
 
     @Test
@@ -251,6 +300,22 @@ class GuideServiceImplTest {
                 .patchVersion("17.0")
                 .sortOrder(sortOrder)
                 .active(true)
+                .build();
+    }
+
+    private GuideTrait traitGuide(String traitKey, String name, String championsJson) {
+        return GuideTrait.builder()
+                .traitKey(traitKey)
+                .name(name)
+                .type("시너지")
+                .iconUrl("https://example.com/" + traitKey + ".png")
+                .tone("gold")
+                .summary(name + " 요약")
+                .levelsJson("[\"2\"]")
+                .tierEffectsJson("[{\"level\":\"2\",\"description\":\"효과\"}]")
+                .championsJson(championsJson)
+                .tipsJson("[]")
+                .patchVersion("17.0")
                 .build();
     }
 }

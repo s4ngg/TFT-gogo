@@ -261,12 +261,22 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             dataJson.put("count", maxTraitCount(trait.path("effects")));
             dataJson.put("type", "시너지");
             String summary = sanitizeTraitText(trait.path("desc").asText(), trait.path("effects"));
+            ArrayNode championRefs = traitChampionRefs(name, champions);
+            if (championRefs.size() == 0) {
+                logger.debug(
+                        "CDragon trait skipped because no shop champion references it. apiName={}, name={}",
+                        apiName,
+                        name
+                );
+                continue;
+            }
+
             dataJson.put("summary", summary);
             dataJson.put("tone", traitTone(trait.path("effects")));
             dataJson.set("levels", traitLevels(trait.path("effects")));
             dataJson.set("tierEffects", traitTierEffects(trait.path("desc").asText(), trait.path("effects")));
             dataJson.set("tips", objectMapper.createArrayNode());
-            dataJson.set("champions", traitChampionRefs(name, champions));
+            dataJson.set("champions", championRefs);
 
             candidates.add(new GuideCandidate(
                     GuideType.TRAIT,

@@ -155,6 +155,39 @@ class GuideCdragonImportServiceImplTest {
     }
 
     @Test
+    void CDragon_챔피언이_없는_시너지는_가이드로_생성하지_않는다() {
+        // given
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonTraitWithNoChampionJson());
+        when(guideRepository.findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(Optional.empty());
+        when(guideRepository.existsByGuideTypeAndTargetKeyAndPatchVersion(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(false);
+        when(guideRepository.saveAndFlush(any(Guide.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request(false, true));
+
+        // then
+        assertThat(response.getCreatedCount()).isEqualTo(1);
+        assertThat(response.getTraitCount()).isEqualTo(1);
+        assertThat(response.getImportedCount()).isEqualTo(1);
+
+        ArgumentCaptor<Guide> guideCaptor = ArgumentCaptor.forClass(Guide.class);
+        verify(guideRepository).saveAndFlush(guideCaptor.capture());
+        Guide savedGuide = guideCaptor.getValue();
+        assertThat(savedGuide.getTargetKey()).isEqualTo("TFT17_AnimalSquad");
+        assertThat(savedGuide.getDataJson()).contains("\"champions\":[{\"cost\":1");
+        assertThat(savedGuide.getDataJson()).doesNotContain("TFT17_DivineBlessing");
+    }
+
+    @Test
     void CDragon_특성_summary는_ShowIfNot_비활성_문장을_제외하고_줄바꿈을_보존한다() {
         // given
         when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
@@ -842,6 +875,57 @@ class GuideCdragonImportServiceImplTest {
                       "icon": "ASSETS/Maps/Particles/TFT/Item_Icons/Radiant/RadiantRageblade.png"
                     }
                   ]
+                }
+                """;
+    }
+
+    private String cdragonTraitWithNoChampionJson() {
+        return """
+                {
+                  "setData": [
+                    {
+                      "number": 17,
+                      "mutator": "TFTSet17",
+                      "champions": [
+                        {
+                          "apiName": "TFT17_Briar",
+                          "name": "브라이어",
+                          "cost": 1,
+                          "squareIcon": "ASSETS/Characters/TFT17_Briar/Skins/Base/Images/TFT17_Briar_splash_tile_10.TFT_Set17.tex",
+                          "traits": ["동물특공대"]
+                        }
+                      ],
+                      "traits": [
+                        {
+                          "apiName": "TFT17_AnimalSquad",
+                          "name": "동물특공대",
+                          "desc": "아군이 공격력을 @TeamwideAD*100@% 얻습니다.<br><row>(@MinUnits@) @AttackSpeedPercent*100@%</row>",
+                          "icon": "ASSETS/UX/TraitIcons/Trait_Icon_17_AnimalSquad.TFT_Set17.tex",
+                          "effects": [
+                            {
+                              "minUnits": 2,
+                              "maxUnits": 25000,
+                              "style": 3,
+                              "variables": {
+                                "TeamwideAD": 0.1,
+                                "AttackSpeedPercent": 0.15
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "apiName": "TFT17_DivineBlessing",
+                          "name": "신의 축복",
+                          "desc": "수치. 수치.",
+                          "icon": "ASSETS/UX/TraitIcons/Trait_Icon_17_DivineBlessing.TFT_Set17.tex",
+                          "effects": []
+                        }
+                      ],
+                      "augments": []
+                    }
+                  ],
+                  "sets": {},
+                  "items": []
                 }
                 """;
     }
