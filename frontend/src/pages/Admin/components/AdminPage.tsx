@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useCDragonLocale } from '../../../hooks/useCDragonLocale'
 import type { RankFilter } from '../../Dashboard/dashboardData'
 import { useAdminDecks } from '../hooks/useAdminDecks'
-import { triggerDeckAggregate, isAdminAuthFailure, isNetworkOrTimeoutError, getServerErrorStatus } from '../../../api/adminApi'
+import { triggerDeckAggregate, isAdminAuthFailure, isNetworkOrTimeoutError, getServerErrorStatus, getHttpStatus } from '../../../api/adminApi'
 import styles from '../Admin.module.css'
 import DeckRow from './DeckRow'
 
@@ -15,6 +15,8 @@ const RANK_OPTIONS: { label: string; value: RankFilter }[] = [
 function getAggregateErrorMessage(error: unknown): string {
   if (isAdminAuthFailure(error)) return '인증 실패: 관리자 토큰을 확인해 주세요.'
   if (isNetworkOrTimeoutError(error)) return '네트워크 오류: 연결 상태를 확인 후 다시 시도해 주세요.'
+  const httpStatus = getHttpStatus(error)
+  if (httpStatus === 409) return '집계가 이미 실행 중입니다. 완료 후 다시 시도해 주세요.'
   const status = getServerErrorStatus(error)
   if (status != null) return `서버 오류가 발생했습니다. (${status})`
   return '집계 요청에 실패했습니다.'

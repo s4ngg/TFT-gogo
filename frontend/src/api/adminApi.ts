@@ -20,7 +20,7 @@ function adminHeaders() {
   return { 'X-Admin-Token': getAdminToken() }
 }
 
-function getHttpStatus(error: unknown): number | undefined {
+export function getHttpStatus(error: unknown): number | undefined {
   if (typeof error !== 'object' || error === null || !('response' in error)) {
     return undefined
   }

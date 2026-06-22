@@ -198,8 +198,8 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     @Override
     public CompletableFuture<Void> aggregateAndSaveAsync(LocalDate dataDate) {
         if (!aggregating.compareAndSet(false, true)) {
-            logger.warn("집계 이미 실행 중 - 비동기 요청 skip (date={})", dataDate);
-            return CompletableFuture.completedFuture(null);
+            logger.warn("집계 이미 실행 중 - 중복 요청 거부 (date={})", dataDate);
+            throw new BusinessException(ErrorCode.AGGREGATION_ALREADY_RUNNING);
         }
         try {
             return asyncAggregationRunner.run(() -> {

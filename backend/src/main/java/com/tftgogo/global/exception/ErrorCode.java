@@ -26,6 +26,7 @@ public enum ErrorCode {
 
     // ── 덱 ─────────────────────────────────────────────
     DECK_NOT_FOUND(HttpStatus.NOT_FOUND, "덱 정보를 찾을 수 없습니다."),
+    AGGREGATION_ALREADY_RUNNING(HttpStatus.CONFLICT, "집계가 이미 실행 중입니다. 완료 후 다시 시도해주세요."),
     AGGREGATION_QUEUE_FULL(HttpStatus.SERVICE_UNAVAILABLE, "집계 작업 큐가 가득 찼습니다. 잠시 후 다시 시도해주세요."),
 
     // ── 게임가이드 ─────────────────────────────────────
