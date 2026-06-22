@@ -841,6 +841,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         if (normalized.startsWith(variantIntro)) {
             normalized = normalized.substring(variantIntro.length()).trim();
             normalized = normalized.replaceFirst("^\\([^)]*\\)\\s*", "").trim();
+            normalized = normalized.replaceFirst("^[\\s.]+", "").trim();
         }
         return normalized;
     }

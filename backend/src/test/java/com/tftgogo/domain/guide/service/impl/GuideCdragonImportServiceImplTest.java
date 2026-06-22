@@ -113,6 +113,7 @@ class GuideCdragonImportServiceImplTest {
         Guide traitGuide = guideCaptor.getValue();
         assertThat(traitGuide.getTargetKey()).isEqualTo("TFT17_Stargazer_Huntress");
         assertThat(traitGuide.getName()).isEqualTo("별돌보미");
+        assertThat(traitGuide.getSummary()).doesNotStartWith(".");
         assertThat(traitGuide.getSummary()).contains("전투 시작");
         assertThat(traitGuide.getSummary()).doesNotContain("이번 게임");
         assertThat(traitGuide.getDataJson()).contains("\"variant\":\"여사냥꾼\"");
