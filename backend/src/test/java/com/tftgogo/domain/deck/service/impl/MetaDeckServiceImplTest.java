@@ -20,7 +20,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.tftgogo.global.exception.BusinessException;
+import com.tftgogo.global.exception.ErrorCode;
+
+import java.util.concurrent.RejectedExecutionException;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -158,6 +164,64 @@ class MetaDeckServiceImplTest {
 
         // cleanup
         aggregating.set(false);
+    }
+
+    // ── aggregateAndSaveAsync (비동기 집계 중복·거부 처리) ────────────────
+
+    @Test
+    void 비동기_집계_중_중복_요청은_AGGREGATION_ALREADY_RUNNING_예외() throws Exception {
+        // given: aggregating 플래그를 true로 세팅 (이미 집계 중인 상태)
+        Field aggregatingField = MetaDeckServiceImpl.class.getDeclaredField("aggregating");
+        aggregatingField.setAccessible(true);
+        AtomicBoolean aggregating = (AtomicBoolean) aggregatingField.get(metaDeckService);
+        aggregating.set(true);
+
+        // when / then
+        assertThatThrownBy(() -> metaDeckService.aggregateAndSaveAsync(LocalDate.of(2026, 6, 1)))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.AGGREGATION_ALREADY_RUNNING);
+
+        // cleanup
+        aggregating.set(false);
+    }
+
+    @Test
+    void executor_거부_시_AGGREGATION_QUEUE_FULL_예외_및_플래그_복원() throws Exception {
+        // given: executor가 작업을 거부하도록 설정
+        when(asyncAggregationRunner.run(any())).thenThrow(new RejectedExecutionException("큐 가득참"));
+
+        // when / then
+        assertThatThrownBy(() -> metaDeckService.aggregateAndSaveAsync(LocalDate.of(2026, 6, 1)))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.AGGREGATION_QUEUE_FULL);
+
+        // then: 플래그가 복원되어 다음 요청이 가능한 상태여야 한다
+        Field aggregatingField = MetaDeckServiceImpl.class.getDeclaredField("aggregating");
+        aggregatingField.setAccessible(true);
+        AtomicBoolean aggregating = (AtomicBoolean) aggregatingField.get(metaDeckService);
+        assertThat(aggregating.get()).isFalse();
+    }
+
+    @Test
+    void executor_거부_후_재요청은_정상_등록된다() throws Exception {
+        // given: 첫 번째 호출은 거부, 두 번째 호출은 성공
+        when(asyncAggregationRunner.run(any()))
+                .thenThrow(new RejectedExecutionException("큐 가득참"))
+                .thenReturn(java.util.concurrent.CompletableFuture.completedFuture(null));
+
+        LocalDate date = LocalDate.of(2026, 6, 1);
+
+        // 첫 번째: 거부
+        assertThatThrownBy(() -> metaDeckService.aggregateAndSaveAsync(date))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.AGGREGATION_QUEUE_FULL);
+
+        // 두 번째: 플래그가 복원됐으므로 정상 등록
+        metaDeckService.aggregateAndSaveAsync(date);
+        verify(asyncAggregationRunner, org.mockito.Mockito.times(2)).run(any());
     }
 
     // ── assignTierByRatio (패치 로직 핵심) ──────────────────────────────
