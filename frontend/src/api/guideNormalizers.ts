@@ -275,6 +275,7 @@ function isAugmentGuide(payload: unknown): payload is AugmentGuide {
   return isRecord(payload)
     && typeof payload.description === 'string'
     && typeof payload.imageUrl === 'string'
+    && payload.imageUrl.trim().length > 0
     && typeof payload.name === 'string'
     && isStringList(payload.tags)
 }
@@ -357,6 +358,7 @@ function guideEntriesToCatalog(entries: GuideEntryResponse[], fallbackData: Guid
     }
 
     if (normalizeGuideType(entry) === 'augments') {
+      if (imageUrl.trim().length === 0) return
       catalog.augments.push({
         description: sanitizeGuideText(readString(data, 'description', summary)),
         imageUrl,

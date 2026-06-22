@@ -62,7 +62,8 @@ class GuideServiceImplTest {
     void 챔피언_탭은_cost_필터를_적용한다() {
         // given
         Guide fourCostChampion = championGuide("kaisa", "카이사", 4, 1);
-        when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
+        when(guideRepository.findLatestPatchVersionByGuideType(GuideType.CHAMPION.name()))
+                .thenReturn(Optional.of("17.0"));
         when(guideRepository.findFilteredGuides(GuideType.CHAMPION.name(), "17.0", null, 4))
                 .thenReturn(List.of(fourCostChampion));
 
@@ -87,7 +88,8 @@ class GuideServiceImplTest {
     void dataJson은_JSON_object로_응답한다() {
         // given
         Guide champion = championGuide("kaisa", "카이사", 4, 1);
-        when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
+        when(guideRepository.findLatestPatchVersionByGuideType(GuideType.CHAMPION.name()))
+                .thenReturn(Optional.of("17.0"));
         when(guideRepository.findFilteredGuides(GuideType.CHAMPION.name(), "17.0", null, null))
                 .thenReturn(List.of(champion));
 
@@ -168,7 +170,7 @@ class GuideServiceImplTest {
                 "[{\"cost\":1,\"name\":\"브라이어\",\"imageUrl\":\"https://example.com/briar.png\"}]"
         );
         GuideTrait hiddenTrait = traitGuide("TFT17_DivineBlessing", "신의 축복", "[]");
-        when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
+        when(guideTraitRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
         when(guideTraitRepository.findByPatchVersionOrderByNameAscIdAsc("17.0"))
                 .thenReturn(List.of(displayableTrait, hiddenTrait));
 
@@ -197,7 +199,7 @@ class GuideServiceImplTest {
         String championsJson = "[{\"cost\":3,\"name\":\"룰루\",\"imageUrl\":\"https://example.com/lulu.png\"}]";
         GuideTrait baseTrait = traitGuide("TFT17_Stargazer", "별돌보미", championsJson);
         GuideTrait variantTrait = traitGuide("TFT17_Stargazer_Huntress", "별돌보미", championsJson);
-        when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
+        when(guideTraitRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
         when(guideTraitRepository.findByPatchVersionOrderByNameAscIdAsc("17.0"))
                 .thenReturn(List.of(baseTrait, variantTrait));
 
@@ -227,7 +229,7 @@ class GuideServiceImplTest {
         // given
         GuideChampion fakeUnit = splitChampionGuide("TFT17_DarkStar_FakeUnit", "Black Hole", "[]");
         GuideChampion shopChampion = splitChampionGuide("TFT17_Briar", "Briar", "[\"Animal Squad\"]");
-        when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
+        when(guideChampionRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
         when(guideChampionRepository.findByPatchVersionOrderByNameAscIdAsc("17.0"))
                 .thenReturn(List.of(fakeUnit, shopChampion));
 
@@ -251,12 +253,39 @@ class GuideServiceImplTest {
     }
 
     @Test
+    void 탭_기본_패치는_해당_탭의_최신_패치만_사용한다() {
+        // given
+        Guide champion = championGuide("kaisa", "카이사", 4, 1, "17.0");
+        when(guideRepository.findLatestPatchVersionByGuideType(GuideType.CHAMPION.name()))
+                .thenReturn(Optional.of("17.0"));
+        when(guideRepository.findFilteredGuides(GuideType.CHAMPION.name(), "17.0", null, null))
+                .thenReturn(List.of(champion));
+
+        // when
+        GuidePageResponse<?> response = guideService.getGuideTabItems(
+                "champions",
+                null,
+                null,
+                1,
+                10,
+                null,
+                null,
+                null
+        );
+
+        // then
+        assertThat(response.getItems()).hasSize(1);
+        verify(guideRepository, never()).findLatestPatchVersion();
+        verify(guideRepository).findFilteredGuides(GuideType.CHAMPION.name(), "17.0", null, null);
+    }
+
+    @Test
     void 분리_챔피언_응답은_이름순으로_정렬한다() {
         // given
         GuideChampion jinx = splitChampionGuide("TFT17_Jinx", "징크스", "[\"별돌보미\"]");
         GuideChampion garen = splitChampionGuide("TFT17_Garen", "가렌", "[\"전략가\"]");
         GuideChampion ahri = splitChampionGuide("TFT17_Ahri", "아리", "[\"마법사\"]");
-        when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
+        when(guideChampionRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
         when(guideChampionRepository.findByPatchVersionOrderByNameAscIdAsc("17.0"))
                 .thenReturn(List.of(jinx, garen, ahri));
 
@@ -300,6 +329,7 @@ class GuideServiceImplTest {
         // then
         assertThat(response.getItems()).hasSize(1);
         verify(guideRepository, never()).findLatestPatchVersion();
+        verify(guideRepository, never()).findLatestPatchVersionByGuideType(GuideType.CHAMPION.name());
         verify(guideRepository).findFilteredGuides(GuideType.CHAMPION.name(), "17.0", null, null);
     }
 
@@ -314,7 +344,7 @@ class GuideServiceImplTest {
                 "{\"tier\":\"A\",\"type\":\"Combat\",\"reward\":\"전투 능력치\",\"winRate\":\"61.4%\"}",
                 "17.0"
         );
-        when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
+        when(guideAugmentRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
         when(guideAugmentRepository.findByPatchVersionOrderByNameAscIdAsc("17.0"))
                 .thenReturn(List.of(augment));
 
@@ -345,7 +375,8 @@ class GuideServiceImplTest {
     void 검색어는_LIKE_와일드카드를_escape한다() {
         // given
         Guide champion = championGuide("kaisa", "카이사", 4, 1);
-        when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
+        when(guideRepository.findLatestPatchVersionByGuideType(GuideType.CHAMPION.name()))
+                .thenReturn(Optional.of("17.0"));
         when(guideRepository.findFilteredGuides(
                 GuideType.CHAMPION.name(),
                 "17.0",
@@ -410,7 +441,8 @@ class GuideServiceImplTest {
         // given
         Guide lowTop4Champion = championGuideWithTop4("kaisa", "카이사", "% 15 . 5", 1);
         Guide highTop4Champion = championGuideWithTop4("jinx", "징크스", "20.5%", 2);
-        when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
+        when(guideRepository.findLatestPatchVersionByGuideType(GuideType.CHAMPION.name()))
+                .thenReturn(Optional.of("17.0"));
         when(guideRepository.findFilteredGuides(GuideType.CHAMPION.name(), "17.0", null, null))
                 .thenReturn(List.of(lowTop4Champion, highTop4Champion));
 

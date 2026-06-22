@@ -92,7 +92,7 @@ public class GuideServiceImpl implements GuideService {
         validateSort(sortKey, sortDir);
         validateCost(cost);
 
-        Optional<String> resolvedPatchVersion = resolvePatchVersion(patchVersion);
+        Optional<String> resolvedPatchVersion = resolvePatchVersion(guideType, patchVersion);
         if (resolvedPatchVersion.isEmpty()) {
             return GuidePageResponse.of(List.of(), normalizedPage, normalizedPageSize, 0, 1);
         }
@@ -639,6 +639,22 @@ public class GuideServiceImpl implements GuideService {
         guideTraitRepository.findLatestPatchVersion().ifPresent(patchVersions::add);
         guideItemRepository.findLatestPatchVersion().ifPresent(patchVersions::add);
         guideAugmentRepository.findLatestPatchVersion().ifPresent(patchVersions::add);
+
+        return patchVersions.stream().max(this::comparePatchVersion);
+    }
+
+    private Optional<String> resolvePatchVersion(GuideType guideType, String patchVersion) {
+        if (hasText(patchVersion)) {
+            return Optional.of(patchVersion.trim());
+        }
+        List<String> patchVersions = new ArrayList<>();
+        guideRepository.findLatestPatchVersionByGuideType(guideType.name()).ifPresent(patchVersions::add);
+        switch (guideType) {
+            case CHAMPION -> guideChampionRepository.findLatestPatchVersion().ifPresent(patchVersions::add);
+            case TRAIT -> guideTraitRepository.findLatestPatchVersion().ifPresent(patchVersions::add);
+            case ITEM -> guideItemRepository.findLatestPatchVersion().ifPresent(patchVersions::add);
+            case AUGMENT -> guideAugmentRepository.findLatestPatchVersion().ifPresent(patchVersions::add);
+        }
 
         return patchVersions.stream().max(this::comparePatchVersion);
     }

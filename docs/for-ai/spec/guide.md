@@ -74,7 +74,7 @@ Page: Guide (/guide).
 - CDragon augment import excludes debug/dummy/test/placeholder/inactive/disabled entries by apiName/name/description keywords.
 - CDragon augment import creates base static AUGMENT rows from the requested set/mutator and keeps display-safe metric fallbacks when cached match data is unavailable.
 - Current develop may opportunistically enrich augment metric fields from a bounded cached_match sample during CDragon import, but this is an MVP/QA enrichment path only, not the final production metric sourcing policy tracked by #393.
-- #393 guide metric strategy separates static guide import from performance metric refresh: CDragon provides names/descriptions/images/tags/rewards, while Riot match detail stored in cached_match provides avgPlace, pickRate, TOP4 rate, winRate, and sampleCount.
+- #393 guide metric strategy separates static guide import from performance metric refresh: CDragon provides names/descriptions/images/tags, while Riot match detail stored in cached_match provides avgPlace, pickRate, TOP4 rate, winRate, and sampleCount.
 - Current metric source is existing cached_match data created by user match searches. This is acceptable for local QA and MVP verification, but it can be biased or too small because it only reflects searched users.
 - Current metric enrichment reads no new Riot matches. It only samples already stored cached_match rows.
 - Cached match guide metrics use queueId 1090 and 1100 only.

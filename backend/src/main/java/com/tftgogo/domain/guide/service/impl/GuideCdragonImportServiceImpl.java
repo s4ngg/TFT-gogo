@@ -991,6 +991,9 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
 
     private void upsertGuideAugment(GuideCandidate candidate) {
         JsonNode dataJson = candidate.dataJson();
+        JsonNode splitStatsJson = candidate.splitStatsJson() == null
+                ? objectMapper.createObjectNode()
+                : candidate.splitStatsJson();
         guideAugmentRepository.findByAugmentKeyAndPatchVersion(candidate.targetKey(), candidate.patchVersion())
                 .ifPresentOrElse(
                         guideAugment -> guideAugment.update(
@@ -998,7 +1001,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                                 readText(dataJson, "description"),
                                 candidate.imageUrl(),
                                 writeJsonField(dataJson, "tags", objectMapper.createArrayNode()),
-                                writeJson(objectMapper.createObjectNode())
+                                writeJson(splitStatsJson)
                         ),
                         () -> guideAugmentRepository.save(GuideAugment.builder()
                                 .augmentKey(candidate.targetKey())
@@ -1006,7 +1009,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                                 .description(readText(dataJson, "description"))
                                 .iconUrl(candidate.imageUrl())
                                 .tagsJson(writeJsonField(dataJson, "tags", objectMapper.createArrayNode()))
-                                .statsJson(writeJson(objectMapper.createObjectNode()))
+                                .statsJson(writeJson(splitStatsJson))
                                 .patchVersion(candidate.patchVersion())
                                 .build())
                 );

@@ -228,7 +228,7 @@ class GuideCdragonImportServiceImplTest {
     }
 
     @Test
-    void CDragon_특성_summary는_ShowIfNot_비활성_문장을_제외하고_줄바꿈을_보존한다() {
+    void CDragon_특성_summary는_ShowIfNot_비활성_문장을_제외하고_문장_경계를_정규화한다() {
         // given
         when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
                 .thenReturn(cdragonConditionalTraitJson());
