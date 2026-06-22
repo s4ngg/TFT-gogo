@@ -10,6 +10,7 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -47,6 +48,19 @@ public class AugmentGuidePlan {
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    @Builder
+    public AugmentGuidePlan(String planKey, String label, String stagesJson, String patchVersion) {
+        this.planKey = planKey;
+        this.label = label;
+        this.stagesJson = stagesJson;
+        this.patchVersion = patchVersion;
+    }
+
+    public void update(String label, String stagesJson) {
+        this.label = label;
+        this.stagesJson = stagesJson;
+    }
 
     @PrePersist
     protected void onCreate() {

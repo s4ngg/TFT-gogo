@@ -211,7 +211,7 @@ CREATE TABLE IF NOT EXISTS tft_guide_champions (
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     PRIMARY KEY (id),
     UNIQUE KEY uk_tft_guide_champions_key_patch (champion_key, patch_version),
-    KEY idx_tft_guide_champions_patch_cost (patch_version, cost, id)
+    KEY idx_tft_guide_champions_patch_cost (patch_version, cost, name, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS tft_guide_traits (
@@ -231,7 +231,7 @@ CREATE TABLE IF NOT EXISTS tft_guide_traits (
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     PRIMARY KEY (id),
     UNIQUE KEY uk_tft_guide_traits_key_patch (trait_key, patch_version),
-    KEY idx_tft_guide_traits_patch (patch_version, id)
+    KEY idx_tft_guide_traits_patch (patch_version, name, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS tft_guide_items (
@@ -249,7 +249,7 @@ CREATE TABLE IF NOT EXISTS tft_guide_items (
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     PRIMARY KEY (id),
     UNIQUE KEY uk_tft_guide_items_key_patch (item_key, patch_version),
-    KEY idx_tft_guide_items_patch (patch_version, id)
+    KEY idx_tft_guide_items_patch (patch_version, name, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS tft_guide_augments (
@@ -268,7 +268,7 @@ CREATE TABLE IF NOT EXISTS tft_guide_augments (
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     PRIMARY KEY (id),
     UNIQUE KEY uk_tft_guide_augments_key_patch (augment_key, patch_version),
-    KEY idx_tft_guide_augments_patch_tier (patch_version, tier, id)
+    KEY idx_tft_guide_augments_patch_tier (patch_version, tier, name, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS augment_guide_rewards (

@@ -184,8 +184,9 @@ class GuideCdragonImportServiceImplTest {
 
         assertThat(traitGuide.getTargetKey()).isEqualTo("TFT17_DRX");
         assertThat(traitGuide.getSummary())
-                .contains("아트록스: 아군이 입히는 피해가 적에게 30% 파쇄 및 파열 적용.")
+                .contains("아트록스: 아군이 입히는 피해가 적에게 30% 파쇄 및 파열 적용")
                 .contains("케이틀린: 아군 공격 속도 20% 증가");
+        assertThat(traitGuide.getSummary()).contains("\n");
         assertThat(traitGuide.getSummary()).doesNotContain("아트록스: 적 파쇄 및 파열 적용");
         assertThat(traitGuide.getSummary()).doesNotContain("케이틀린: 공격 속도 증가");
         assertThat(traitGuide.getDataJson()).contains("\"tierEffects\":[{\"level\":\"2+\",\"description\":\"전투 시작 6초 후 N.O.V.A. 유닛이 챔피언에 따라 아군에게 힘의 고조 부여\"}]");
@@ -345,6 +346,37 @@ class GuideCdragonImportServiceImplTest {
         assertThat(augmentGuide.getDataJson()).doesNotContain("{cf1fd3af}");
         assertThat(augmentGuide.getDataJson()).doesNotContain("@AttackSpeed@");
         assertThat(augmentGuide.getDataJson()).doesNotContain("\"winRate\"");
+    }
+
+    @Test
+    void CDragon_아이템_이름의_아이콘_토큰을_제거한다() {
+        // given
+        String iconTokenNameJson = cdragonJson()
+                .replace("\"name\": \"Guinsoo's Rageblade\"", "\"name\": \"%i:scaleAP%구인수의 격노검\"");
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(iconTokenNameJson);
+        when(guideRepository.findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(Optional.empty());
+        when(guideRepository.existsByGuideTypeAndTargetKeyAndPatchVersion(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(false);
+        when(guideRepository.saveAndFlush(any(Guide.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        guideCdragonImportService.importGuides(request(false, false, true));
+
+        // then
+        ArgumentCaptor<Guide> guideCaptor = ArgumentCaptor.forClass(Guide.class);
+        verify(guideRepository).saveAndFlush(guideCaptor.capture());
+        Guide itemGuide = guideCaptor.getValue();
+        assertThat(itemGuide.getName()).isEqualTo("구인수의 격노검");
+        assertThat(itemGuide.getSummary()).doesNotContain("%i:scaleAP%");
+        assertThat(itemGuide.getDataJson()).doesNotContain("%i:scaleAP%");
     }
 
     @Test

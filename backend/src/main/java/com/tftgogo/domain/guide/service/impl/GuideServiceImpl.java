@@ -44,7 +44,7 @@ public class GuideServiceImpl implements GuideService {
     private static final int MAX_PAGE = 10_000;
     private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int MAX_PAGE_SIZE = 100;
-    private static final Set<String> SORT_KEYS = Set.of("avgPlace", "pickRate", "top4", "winRate");
+    private static final Set<String> SORT_KEYS = Set.of();
     private static final Pattern NUMBER_PATTERN = Pattern.compile("-?\\d+(?:\\.\\d+)?");
     private static final Pattern PATCH_VERSION_PATTERN = Pattern.compile("^(\\d+)\\.(\\d+)([A-Za-z]*)$");
     private static final String LIKE_ESCAPE = "\\";
@@ -90,7 +90,7 @@ public class GuideServiceImpl implements GuideService {
         validateSort(sortKey, sortDir);
         validateCost(cost);
 
-        Optional<String> resolvedPatchVersion = resolvePatchVersion(patchVersion);
+        Optional<String> resolvedPatchVersion = resolvePatchVersion(patchVersion, guideType);
         if (resolvedPatchVersion.isEmpty()) {
             return GuidePageResponse.of(List.of(), normalizedPage, normalizedPageSize, 0, 1);
         }
@@ -537,6 +537,22 @@ public class GuideServiceImpl implements GuideService {
         guideAugmentRepository.findLatestPatchVersion().ifPresent(patchVersions::add);
 
         return patchVersions.stream().max(this::comparePatchVersion);
+    }
+
+    private Optional<String> resolvePatchVersion(String patchVersion, GuideType guideType) {
+        if (hasText(patchVersion)) {
+            return Optional.of(patchVersion.trim());
+        }
+        return findLatestSplitPatchVersion(guideType).or(guideRepository::findLatestPatchVersion);
+    }
+
+    private Optional<String> findLatestSplitPatchVersion(GuideType guideType) {
+        return switch (guideType) {
+            case CHAMPION -> guideChampionRepository.findLatestPatchVersion();
+            case TRAIT -> guideTraitRepository.findLatestPatchVersion();
+            case ITEM -> guideItemRepository.findLatestPatchVersion();
+            case AUGMENT -> guideAugmentRepository.findLatestPatchVersion();
+        };
     }
 
     private int comparePatchVersion(String left, String right) {

@@ -479,7 +479,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         String name = sanitizeDisplayName(rawName);
         String description = sanitizeCdragonText(readText(augment, "desc", "description", "tooltip"), augment.path("effects"));
         if (!apiName.startsWith("TFT")
-                || !hasResolvedCdragonText(rawName)
+                || !hasResolvedCdragonText(name)
                 || !hasText(name)
                 || !hasResolvedCdragonText(description)
                 || !hasText(augment.path("icon").asText())) {
@@ -1237,13 +1237,26 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         }
         String summaryOnly = prepareTraitSummaryText(value);
         String interpolated = interpolatePlaceholders(summaryOnly, firstEffect(effects));
-        return sanitizeText(interpolated);
+        return sanitizeTextPreservingLineBreaks(interpolated);
+    }
+
+    private String sanitizeTextPreservingLineBreaks(String value) {
+        String lineBreakMarker = "\uE000";
+        String markedValue = value
+                .replace("\r\n", "\n")
+                .replace("\r", "\n")
+                .replace("\n", lineBreakMarker);
+        return sanitizeText(markedValue)
+                .replace(lineBreakMarker, "\n")
+                .replaceAll("[ \\t]*\\n[ \\t]*", "\n")
+                .replaceAll("\\n{2,}", "\n")
+                .trim();
     }
 
     private String prepareTraitSummaryText(String value) {
         String withoutRows = removeTraitRows(value);
         String withoutInactiveBlocks = SHOW_IF_NOT_BLOCK_PATTERN.matcher(withoutRows).replaceAll(" ");
-        return BREAK_TAG_PATTERN.matcher(withoutInactiveBlocks).replaceAll(". ");
+        return BREAK_TAG_PATTERN.matcher(withoutInactiveBlocks).replaceAll("\n");
     }
 
     private String sanitizeDisplayName(String value) {
