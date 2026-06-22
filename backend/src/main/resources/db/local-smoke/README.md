@@ -10,7 +10,7 @@
 - DB 스키마 변경 PR은 `docs/qa/db-schema-change-rules.md`를 따릅니다.
 - `01_schema.sql`은 현재 JPA Entity 기준 테이블과 예약 채팅 테이블을 생성하는 QA 신규 DB 부트스트랩 기준 DDL입니다.
 - ERD Cloud export SQL은 #419 해결 전까지 실행 DDL의 정본으로 보지 않습니다.
-- `02_seed.sql`은 Guide/PatchNotes 공개 API 확인용 데이터와 고정 채팅 room id 데이터를 넣습니다.
+- `02_seed.sql`은 split Guide/PatchNotes 공개 API 확인용 데이터와 고정 채팅 room id 데이터를 넣습니다.
 - 공개 Guide/PatchNotes API와 Auth/Party 기본 흐름은 `RIOT_API_KEY` 없이 확인할 수 있습니다.
 - 소셜 OAuth E2E는 DB만으로 완료되지 않으며 provider `client-id`/`client-secret`과 callback URL 설정이 필요합니다.
 - 이 스모크 경로에서는 `ai-server/.env`가 선택 사항이며, MySQL, Redis, backend만 필요합니다.
@@ -43,9 +43,9 @@ docker compose down -v
 
 2026-06-16 기준 MySQL 8.0.44 임시 DB에서 `01_schema.sql`, `02_seed.sql` 순차 적용을 확인했습니다.
 
-- 생성 테이블: 17개
+- 생성 테이블: 22개
 - `chat_rooms` seed: 4개
-- `guides` seed: 4개
+- split guide seed: 4개
 - `patch_notes` seed: 1개
 - `patch_changes` seed: 2개
 - `backend` `compileJava`: Pass
@@ -99,7 +99,7 @@ curl.exe http://localhost:8081/api/patch-notes
 curl.exe "http://localhost:8081/api/patch-notes/17.3/changes?page=1&pageSize=10"
 curl.exe "http://localhost:8081/api/patch-notes/17.3/changes?category=CHAMPION&impact=HIGH"
 
-curl.exe -H "X-Admin-Token: local-admin-token" http://localhost:8081/api/admin/guides
+curl.exe -H "X-Admin-Token: local-admin-token" -H "Content-Type: application/json" -d "{\"patchVersion\":\"17.3\",\"setNumber\":17,\"mutator\":\"TFTSet17\",\"includeChampions\":true,\"includeTraits\":true,\"includeItems\":true,\"includeAugments\":true}" http://localhost:8081/api/admin/guides/import/cdragon
 curl.exe -H "X-Admin-Token: local-admin-token" http://localhost:8081/api/admin/patch-notes
 ```
 

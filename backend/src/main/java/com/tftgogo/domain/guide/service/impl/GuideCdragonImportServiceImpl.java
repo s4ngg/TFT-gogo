@@ -9,14 +9,12 @@ import com.tftgogo.domain.guide.dto.request.GuideCdragonImportRequest;
 import com.tftgogo.domain.guide.dto.response.GuideImportResponse;
 import com.tftgogo.domain.guide.entity.GuideAugment;
 import com.tftgogo.domain.guide.entity.GuideChampion;
-import com.tftgogo.domain.guide.entity.Guide;
 import com.tftgogo.domain.guide.entity.GuideItem;
 import com.tftgogo.domain.guide.entity.GuideTrait;
 import com.tftgogo.domain.guide.entity.GuideType;
 import com.tftgogo.domain.guide.repository.GuideAugmentRepository;
 import com.tftgogo.domain.guide.repository.GuideChampionRepository;
 import com.tftgogo.domain.guide.repository.GuideItemRepository;
-import com.tftgogo.domain.guide.repository.GuideRepository;
 import com.tftgogo.domain.guide.repository.GuideTraitRepository;
 import com.tftgogo.domain.guide.service.GuideCdragonImportService;
 import com.tftgogo.global.cdragon.config.CommunityDragonProperties;
@@ -25,7 +23,6 @@ import com.tftgogo.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClientException;
@@ -116,7 +113,6 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             Map.entry("gold", "골드"),
             Map.entry("range", "사거리")
     );
-    private final GuideRepository guideRepository;
     private final GuideChampionRepository guideChampionRepository;
     private final GuideTraitRepository guideTraitRepository;
     private final GuideItemRepository guideItemRepository;
@@ -159,8 +155,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
 
         ImportCounter counter = new ImportCounter();
         for (GuideCandidate candidate : candidates) {
-            upsertGuide(candidate, counter);
-            upsertSplitGuide(candidate);
+            counter.add(upsertSplitGuide(candidate));
         }
 
         return GuideImportResponse.builder()
@@ -476,8 +471,6 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             ObjectNode dataJson = objectMapper.createObjectNode();
             dataJson.put("description", description);
             dataJson.set("tags", augmentTags(augment, description));
-            ObjectNode splitStatsJson = objectMapper.createObjectNode();
-
             candidates.add(new GuideCandidate(
                     GuideType.AUGMENT,
                     augment.path("apiName").asText(),
@@ -485,7 +478,6 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                     hasText(description) ? description : "CDragon 증강체",
                     assetUrl(augment.path("icon").asText()),
                     dataJson,
-                    splitStatsJson,
                     patchVersion,
                     sortOrder++
             ));
@@ -893,218 +885,144 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         return false;
     }
 
-    private void upsertSplitGuide(GuideCandidate candidate) {
-        switch (candidate.guideType()) {
+    private ImportResult upsertSplitGuide(GuideCandidate candidate) {
+        return switch (candidate.guideType()) {
             case CHAMPION -> upsertGuideChampion(candidate);
             case TRAIT -> upsertGuideTrait(candidate);
             case ITEM -> upsertGuideItem(candidate);
             case AUGMENT -> upsertGuideAugment(candidate);
-        }
+        };
     }
 
-    private void upsertGuideChampion(GuideCandidate candidate) {
+    private ImportResult upsertGuideChampion(GuideCandidate candidate) {
         JsonNode dataJson = candidate.dataJson();
-        guideChampionRepository.findByChampionKeyAndPatchVersion(candidate.targetKey(), candidate.patchVersion())
-                .ifPresentOrElse(
-                        guideChampion -> guideChampion.update(
-                                candidate.name(),
-                                dataJson.path("cost").asInt(),
-                                readText(dataJson, "role"),
-                                readText(dataJson, "position"),
-                                candidate.imageUrl(),
-                                writeJsonField(dataJson, "stats", objectMapper.createObjectNode()),
-                                writeJsonField(dataJson, "traits", objectMapper.createArrayNode()),
-                                writeJsonField(dataJson, "bestItems", objectMapper.createArrayNode())
-                        ),
-                        () -> guideChampionRepository.save(GuideChampion.builder()
-                                .championKey(candidate.targetKey())
-                                .name(candidate.name())
-                                .cost(dataJson.path("cost").asInt())
-                                .role(readText(dataJson, "role"))
-                                .position(readText(dataJson, "position"))
-                                .imageUrl(candidate.imageUrl())
-                                .statsJson(writeJsonField(dataJson, "stats", objectMapper.createObjectNode()))
-                                .traitsJson(writeJsonField(dataJson, "traits", objectMapper.createArrayNode()))
-                                .bestItemsJson(writeJsonField(dataJson, "bestItems", objectMapper.createArrayNode()))
-                                .patchVersion(candidate.patchVersion())
-                                .build())
-                );
+        return guideChampionRepository.findByChampionKeyAndPatchVersion(candidate.targetKey(), candidate.patchVersion())
+                .map(guideChampion -> {
+                    guideChampion.update(
+                            candidate.name(),
+                            dataJson.path("cost").asInt(),
+                            readText(dataJson, "role"),
+                            readText(dataJson, "position"),
+                            candidate.imageUrl(),
+                            writeJsonField(dataJson, "stats", objectMapper.createObjectNode()),
+                            writeJsonField(dataJson, "traits", objectMapper.createArrayNode()),
+                            writeJsonField(dataJson, "bestItems", objectMapper.createArrayNode())
+                    );
+                    return ImportResult.UPDATED;
+                })
+                .orElseGet(() -> {
+                    guideChampionRepository.save(GuideChampion.builder()
+                            .championKey(candidate.targetKey())
+                            .name(candidate.name())
+                            .cost(dataJson.path("cost").asInt())
+                            .role(readText(dataJson, "role"))
+                            .position(readText(dataJson, "position"))
+                            .imageUrl(candidate.imageUrl())
+                            .statsJson(writeJsonField(dataJson, "stats", objectMapper.createObjectNode()))
+                            .traitsJson(writeJsonField(dataJson, "traits", objectMapper.createArrayNode()))
+                            .bestItemsJson(writeJsonField(dataJson, "bestItems", objectMapper.createArrayNode()))
+                            .patchVersion(candidate.patchVersion())
+                            .build());
+                    return ImportResult.CREATED;
+                });
     }
 
-    private void upsertGuideTrait(GuideCandidate candidate) {
+    private ImportResult upsertGuideTrait(GuideCandidate candidate) {
         JsonNode dataJson = candidate.dataJson();
-        guideTraitRepository.findByTraitKeyAndPatchVersion(candidate.targetKey(), candidate.patchVersion())
-                .ifPresentOrElse(
-                        guideTrait -> guideTrait.update(
-                                candidate.name(),
-                                readText(dataJson, "type"),
-                                candidate.imageUrl(),
-                                readText(dataJson, "tone"),
-                                candidate.summary(),
-                                writeJsonField(dataJson, "levels", objectMapper.createArrayNode()),
-                                writeJsonField(dataJson, "tierEffects", objectMapper.createArrayNode()),
-                                writeJsonField(dataJson, "champions", objectMapper.createArrayNode()),
-                                writeJsonField(dataJson, "tips", objectMapper.createArrayNode())
-                        ),
-                        () -> guideTraitRepository.save(GuideTrait.builder()
-                                .traitKey(candidate.targetKey())
-                                .name(candidate.name())
-                                .type(readText(dataJson, "type"))
-                                .iconUrl(candidate.imageUrl())
-                                .tone(readText(dataJson, "tone"))
-                                .summary(candidate.summary())
-                                .levelsJson(writeJsonField(dataJson, "levels", objectMapper.createArrayNode()))
-                                .tierEffectsJson(writeJsonField(dataJson, "tierEffects", objectMapper.createArrayNode()))
-                                .championsJson(writeJsonField(dataJson, "champions", objectMapper.createArrayNode()))
-                                .tipsJson(writeJsonField(dataJson, "tips", objectMapper.createArrayNode()))
-                                .patchVersion(candidate.patchVersion())
-                                .build())
-                );
+        return guideTraitRepository.findByTraitKeyAndPatchVersion(candidate.targetKey(), candidate.patchVersion())
+                .map(guideTrait -> {
+                    guideTrait.update(
+                            candidate.name(),
+                            readText(dataJson, "type"),
+                            candidate.imageUrl(),
+                            readText(dataJson, "tone"),
+                            candidate.summary(),
+                            writeJsonField(dataJson, "levels", objectMapper.createArrayNode()),
+                            writeJsonField(dataJson, "tierEffects", objectMapper.createArrayNode()),
+                            writeJsonField(dataJson, "champions", objectMapper.createArrayNode()),
+                            writeJsonField(dataJson, "tips", objectMapper.createArrayNode())
+                    );
+                    return ImportResult.UPDATED;
+                })
+                .orElseGet(() -> {
+                    guideTraitRepository.save(GuideTrait.builder()
+                            .traitKey(candidate.targetKey())
+                            .name(candidate.name())
+                            .type(readText(dataJson, "type"))
+                            .iconUrl(candidate.imageUrl())
+                            .tone(readText(dataJson, "tone"))
+                            .summary(candidate.summary())
+                            .levelsJson(writeJsonField(dataJson, "levels", objectMapper.createArrayNode()))
+                            .tierEffectsJson(writeJsonField(dataJson, "tierEffects", objectMapper.createArrayNode()))
+                            .championsJson(writeJsonField(dataJson, "champions", objectMapper.createArrayNode()))
+                            .tipsJson(writeJsonField(dataJson, "tips", objectMapper.createArrayNode()))
+                            .patchVersion(candidate.patchVersion())
+                            .build());
+                    return ImportResult.CREATED;
+                });
     }
 
-    private void upsertGuideItem(GuideCandidate candidate) {
+    private ImportResult upsertGuideItem(GuideCandidate candidate) {
         JsonNode dataJson = candidate.dataJson();
-        guideItemRepository.findByItemKeyAndPatchVersion(candidate.targetKey(), candidate.patchVersion())
-                .ifPresentOrElse(
-                        guideItem -> guideItem.update(
-                                candidate.name(),
-                                readText(dataJson, "category"),
-                                candidate.imageUrl(),
-                                readText(dataJson, "description"),
-                                writeJson(objectMapper.createObjectNode()),
-                                writeJsonField(dataJson, "bestUsers", objectMapper.createArrayNode()),
-                                writeJsonField(dataJson, "combinations", objectMapper.createArrayNode())
-                        ),
-                        () -> guideItemRepository.save(GuideItem.builder()
-                                .itemKey(candidate.targetKey())
-                                .name(candidate.name())
-                                .category(readText(dataJson, "category"))
-                                .imageUrl(candidate.imageUrl())
-                                .description(readText(dataJson, "description"))
-                                .statsJson(writeJson(objectMapper.createObjectNode()))
-                                .bestUsersJson(writeJsonField(dataJson, "bestUsers", objectMapper.createArrayNode()))
-                                .combinationsJson(writeJsonField(dataJson, "combinations", objectMapper.createArrayNode()))
-                                .patchVersion(candidate.patchVersion())
-                                .build())
-                );
+        return guideItemRepository.findByItemKeyAndPatchVersion(candidate.targetKey(), candidate.patchVersion())
+                .map(guideItem -> {
+                    guideItem.update(
+                            candidate.name(),
+                            readText(dataJson, "category"),
+                            candidate.imageUrl(),
+                            readText(dataJson, "description"),
+                            writeJson(objectMapper.createObjectNode()),
+                            writeJsonField(dataJson, "bestUsers", objectMapper.createArrayNode()),
+                            writeJsonField(dataJson, "combinations", objectMapper.createArrayNode())
+                    );
+                    return ImportResult.UPDATED;
+                })
+                .orElseGet(() -> {
+                    guideItemRepository.save(GuideItem.builder()
+                            .itemKey(candidate.targetKey())
+                            .name(candidate.name())
+                            .category(readText(dataJson, "category"))
+                            .imageUrl(candidate.imageUrl())
+                            .description(readText(dataJson, "description"))
+                            .statsJson(writeJson(objectMapper.createObjectNode()))
+                            .bestUsersJson(writeJsonField(dataJson, "bestUsers", objectMapper.createArrayNode()))
+                            .combinationsJson(writeJsonField(dataJson, "combinations", objectMapper.createArrayNode()))
+                            .patchVersion(candidate.patchVersion())
+                            .build());
+                    return ImportResult.CREATED;
+                });
     }
 
-    private void upsertGuideAugment(GuideCandidate candidate) {
+    private ImportResult upsertGuideAugment(GuideCandidate candidate) {
         JsonNode dataJson = candidate.dataJson();
-        guideAugmentRepository.findByAugmentKeyAndPatchVersion(candidate.targetKey(), candidate.patchVersion())
-                .ifPresentOrElse(
-                        guideAugment -> guideAugment.update(
-                                candidate.name(),
-                                readText(dataJson, "description"),
-                                candidate.imageUrl(),
-                                writeJsonField(dataJson, "tags", objectMapper.createArrayNode()),
-                                writeJson(objectMapper.createObjectNode())
-                        ),
-                        () -> guideAugmentRepository.save(GuideAugment.builder()
-                                .augmentKey(candidate.targetKey())
-                                .name(candidate.name())
-                                .description(readText(dataJson, "description"))
-                                .iconUrl(candidate.imageUrl())
-                                .tagsJson(writeJsonField(dataJson, "tags", objectMapper.createArrayNode()))
-                                .statsJson(writeJson(objectMapper.createObjectNode()))
-                                .patchVersion(candidate.patchVersion())
-                                .build())
-                );
+        return guideAugmentRepository.findByAugmentKeyAndPatchVersion(candidate.targetKey(), candidate.patchVersion())
+                .map(guideAugment -> {
+                    guideAugment.update(
+                            candidate.name(),
+                            readText(dataJson, "description"),
+                            candidate.imageUrl(),
+                            writeJsonField(dataJson, "tags", objectMapper.createArrayNode()),
+                            writeJson(objectMapper.createObjectNode())
+                    );
+                    return ImportResult.UPDATED;
+                })
+                .orElseGet(() -> {
+                    guideAugmentRepository.save(GuideAugment.builder()
+                            .augmentKey(candidate.targetKey())
+                            .name(candidate.name())
+                            .description(readText(dataJson, "description"))
+                            .iconUrl(candidate.imageUrl())
+                            .tagsJson(writeJsonField(dataJson, "tags", objectMapper.createArrayNode()))
+                            .statsJson(writeJson(objectMapper.createObjectNode()))
+                            .patchVersion(candidate.patchVersion())
+                            .build());
+                    return ImportResult.CREATED;
+                });
     }
 
     private String writeJsonField(JsonNode dataJson, String fieldName, JsonNode fallbackValue) {
         JsonNode value = dataJson.path(fieldName);
         return writeJson(value.isMissingNode() || value.isNull() ? fallbackValue : value);
-    }
-
-    private void upsertGuide(GuideCandidate candidate, ImportCounter counter) {
-        guideRepository
-                .findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
-                        candidate.guideType(),
-                        candidate.targetKey(),
-                        candidate.patchVersion()
-                )
-                .ifPresentOrElse(
-                        guide -> {
-                            updateGuide(guide, candidate);
-                            counter.updatedCount++;
-                        },
-                        () -> createOrSkipGuide(candidate, counter)
-                );
-    }
-
-    private void createOrSkipGuide(GuideCandidate candidate, ImportCounter counter) {
-        if (guideRepository.existsByGuideTypeAndTargetKeyAndPatchVersion(
-                candidate.guideType(),
-                candidate.targetKey(),
-                candidate.patchVersion()
-        )) {
-            counter.skippedCount++;
-            return;
-        }
-
-        Guide guide = Guide.builder()
-                .guideType(candidate.guideType())
-                .targetKey(candidate.targetKey())
-                .name(candidate.name())
-                .summary(candidate.summary())
-                .imageUrl(candidate.imageUrl())
-                .dataJson(writeJson(candidate.dataJson()))
-                .patchVersion(candidate.patchVersion())
-                .sortOrder(candidate.sortOrder())
-                .active(true)
-                .build();
-
-        try {
-            guideRepository.saveAndFlush(guide);
-            counter.createdCount++;
-        } catch (DataIntegrityViolationException e) {
-            handleConcurrentCreate(candidate, counter, e);
-        }
-    }
-
-    private void handleConcurrentCreate(
-            GuideCandidate candidate,
-            ImportCounter counter,
-            DataIntegrityViolationException exception
-    ) {
-        guideRepository
-                .findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
-                        candidate.guideType(),
-                        candidate.targetKey(),
-                        candidate.patchVersion()
-                )
-                .ifPresentOrElse(
-                        guide -> {
-                            updateGuide(guide, candidate);
-                            counter.updatedCount++;
-                        },
-                        () -> {
-                            if (guideRepository.existsByGuideTypeAndTargetKeyAndPatchVersion(
-                                    candidate.guideType(),
-                                    candidate.targetKey(),
-                                    candidate.patchVersion()
-                            )) {
-                                counter.skippedCount++;
-                                return;
-                            }
-                            throw exception;
-                        }
-                );
-    }
-
-    private void updateGuide(Guide guide, GuideCandidate candidate) {
-        guide.update(
-                candidate.guideType(),
-                candidate.targetKey(),
-                candidate.name(),
-                candidate.summary(),
-                candidate.imageUrl(),
-                writeJson(candidate.dataJson()),
-                candidate.patchVersion(),
-                candidate.sortOrder(),
-                guide.isActive()
-        );
     }
 
     private String writeJson(JsonNode dataJson) {
@@ -1460,27 +1378,28 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             String summary,
             String imageUrl,
             JsonNode dataJson,
-            JsonNode splitStatsJson,
             String patchVersion,
             int sortOrder
     ) {
-        private GuideCandidate(
-                GuideType guideType,
-                String targetKey,
-                String name,
-                String summary,
-                String imageUrl,
-                JsonNode dataJson,
-                String patchVersion,
-                int sortOrder
-        ) {
-            this(guideType, targetKey, name, summary, imageUrl, dataJson, null, patchVersion, sortOrder);
-        }
     }
 
     private static class ImportCounter {
         private int createdCount;
         private int updatedCount;
         private int skippedCount;
+
+        private void add(ImportResult result) {
+            switch (result) {
+                case CREATED -> createdCount++;
+                case UPDATED -> updatedCount++;
+                case SKIPPED -> skippedCount++;
+            }
+        }
+    }
+
+    private enum ImportResult {
+        CREATED,
+        UPDATED,
+        SKIPPED
     }
 }
