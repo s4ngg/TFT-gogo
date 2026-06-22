@@ -169,8 +169,8 @@ const BASE_TRAIT_GUIDES: TraitGuide[] = [
     type: '운영',
   },
   {
-    champions: [championRefs.lulu, championRefs.nami, championRefs.xayah, championRefs.poppy],
-    count: 4,
+    champions: [championRefs.lulu, championRefs.nami, championRefs.xayah, championRefs.poppy, championRefs.sona],
+    count: 6,
     iconUrl: traitIconUrls.stargazer,
     levels: ['2', '4', '6'],
     name: '별돌보미',

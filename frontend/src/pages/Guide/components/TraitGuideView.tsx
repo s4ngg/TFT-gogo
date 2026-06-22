@@ -57,10 +57,6 @@ function formatTraitLevel(level: string) {
   return `${match[1]}명${match[2]}`
 }
 
-function isActiveTraitLevel(level: string, activeCount: number) {
-  return level.replace(/\+$/, '') === String(activeCount)
-}
-
 function getChampionSectionMeta(championCount: number) {
   if (championCount === 0) return '특수 조건'
   return `${championCount}명`
@@ -154,12 +150,11 @@ function TraitGuideView({
                   <span>{traitGuide.type}</span>
                 </div>
                 <div className={styles.levelTrackWrap}>
-                  <span>활성 단계</span>
-                  <div className={styles.levelTrack} aria-label={`${traitGuide.name} 활성 단계`}>
+                  <span>효과 단계</span>
+                  <div className={styles.levelTrack} aria-label={`${traitGuide.name} 효과 단계`}>
                     {traitGuide.levels.map((level) => (
                       <b
-                        aria-label={`${formatTraitLevel(level)} 활성 단계`}
-                        className={isActiveTraitLevel(level, traitGuide.count) ? styles.levelActive : ''}
+                        aria-label={`${formatTraitLevel(level)} 효과 단계`}
                         key={level}
                       >
                         {formatTraitLevel(level)}
@@ -194,7 +189,7 @@ function TraitGuideView({
               )}
               <div className={styles.traitSection}>
                 <div className={styles.traitSectionHeader}>
-                  <strong>필요 챔피언</strong>
+                  <strong>소속 챔피언</strong>
                   <span>{getChampionSectionMeta(traitGuide.champions.length)}</span>
                 </div>
                 <div className={styles.championLine}>

@@ -447,12 +447,6 @@
   font-size: 12px;
 }
 
-.levelActive {
-  color: #05f3e7 !important;
-  border-color: rgba(5, 243, 231, 0.6) !important;
-  background: rgba(5, 115, 118, 0.38) !important;
-}
-
 .traitSummary {
   margin: 0;
   color: var(--text-secondary);
