@@ -32,7 +32,7 @@ public interface AuthControllerDocs {
     @Operation(
             summary = "소셜 로그인 시작 URL 조회",
             description = """
-                    provider(google, kakao, naver)에 맞는 Spring OAuth2 브라우저 리다이렉트 시작 URL을 반환합니다.
+                    provider(google, naver)에 맞는 Spring OAuth2 브라우저 리다이렉트 시작 URL을 반환합니다.
                     반환되는 authorizationUrl은 http/https 절대 URL이며, 상대 경로 또는 userinfo가 포함된 URL은 허용하지 않습니다.
                     실제 provider 인증 완료에는 각 provider client-id/client-secret과 redirect-uri 설정이 필요합니다.
                     지원 provider라도 OAuth2 client-id/client-secret/redirect-uri 설정이 없으면 이 API는 503 ApiResponse 실패를 반환합니다.
@@ -45,7 +45,7 @@ public interface AuthControllerDocs {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "503", description = "OAuth2 provider client 설정 누락")
     })
     ResponseEntity<ApiResponse<SocialLoginStartResponse>> getSocialLoginStartUrl(
-            @Parameter(description = "소셜 로그인 provider: google, kakao, naver")
+            @Parameter(description = "소셜 로그인 provider: google, naver")
             @PathVariable("provider") String provider
     );
 }

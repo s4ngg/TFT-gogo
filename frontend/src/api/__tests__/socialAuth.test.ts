@@ -76,7 +76,7 @@ describe('socialAuth', () => {
     const { getSocialLoginStart } = await import('../socialAuth')
 
     // when, then
-    await assert.rejects(() => getSocialLoginStart('kakao'), /authorizationUrl/)
+    await assert.rejects(() => getSocialLoginStart('naver'), /authorizationUrl/)
   })
 
   it('소셜 로그인 시작 응답의 authorizationUrl이 공백뿐이면 오류를 던진다', async () => {

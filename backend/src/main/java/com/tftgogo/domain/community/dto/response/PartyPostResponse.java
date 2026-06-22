@@ -22,7 +22,6 @@ public class PartyPostResponse {
     private int currentMembers;
     private int maxMembers;
     private String capacity;
-    private String tier;
     private String chatRoomId;
     private boolean closed;
     private String status;
@@ -44,7 +43,6 @@ public class PartyPostResponse {
                 .currentMembers(partyPost.getCurrentMembers())
                 .maxMembers(partyPost.getMaxMembers())
                 .capacity(partyPost.getCurrentMembers() + "/" + partyPost.getMaxMembers())
-                .tier(partyPost.getTier())
                 .chatRoomId(CommunityChatRoomIds.PARTY_RECRUITMENT)
                 .closed(partyPost.isClosed())
                 .status(partyPost.isClosed() ? "마감" : "모집중")

@@ -47,12 +47,12 @@ Page: Party (/party).
 
 <database>
 - party_posts follows the shared ERD snapshot:
-  user_id, title, content, max_members, current_members, tier(VARCHAR(30), NOT NULL, default 제한 없음), deadline, is_closed, created_at, updated_at, game_mode, deleted_at.
+  user_id, title, content, max_members, current_members, deadline, is_closed, created_at, updated_at, game_mode, deleted_at.
 - party_applications follows the shared ERD snapshot:
   party_post_id, user_id, status(PENDING/ACCEPTED/REJECTED), created_at, message, responded_at.
 - party_applications uses a unique key on (party_post_id, user_id) to prevent duplicate joins by the same user.
 - chat_rooms.party_post_id is reserved for the later PARTY chat slice.
-- The ERD snapshot does not include a party tag column. Custom user tags are stored in a small helper table, party_post_tags, keyed by party_post_id.
+- The ERD snapshot does not include a dedicated party tier column. Tier conditions and other custom user tags are stored in a small helper table, party_post_tags, keyed by party_post_id.
 </database>
 
 <dto-contract>
@@ -61,9 +61,8 @@ Page: Party (/party).
 - content: string, required. This maps to the current Party.tsx description text.
 - gameMode: RANKED_TFT | NORMAL_TFT | CUSTOM, required
 - maxMembers: number, required, 2-8
-- tier: string, optional, max 30 chars. Defaults to 제한 없음.
 - deadline: LocalDateTime, optional
-- tags: custom string array, optional, max 4 items, max 30 chars each
+- tags: custom string array, optional, max 4 items, max 30 chars each. The frontend may include the selected tier condition as a tag.
 </request>
 <response name="PartyPostResponse">
 - id: party post id
@@ -73,7 +72,6 @@ Page: Party (/party).
 - gameMode: enum code for filtering, e.g. RANKED_TFT
 - mode: Korean display label, e.g. 랭크
 - currentMembers / maxMembers / capacity: member count display
-- tier: selected tier condition display, e.g. 마스터+ or 제한 없음
 - closed: boolean used for button disabled state
 - status: Korean display label only, 모집중 or 마감
 - tags: custom user tags
@@ -113,6 +111,7 @@ Page: Party (/party).
 - The owner cannot cancel participation through the join-cancel endpoint. Frontend must treat post.userId === auth.user.id as an owner state, not as a normal joined toggle.
 - A separate close/delete policy should be defined later.
 - Users can enter custom tags. Tags are limited to four items, 30 characters each.
+- Tier conditions must use custom tags instead of a separate party_posts.tier column until the ERD is approved for a dedicated column.
 - Creating a recruitment post returns the fixed party-recruitment chatRoomId. Party-specific chat rooms and extra user-created chat tabs are out of scope for the MVP.
 - Normal users cannot create community chat channels by sending arbitrary roomId values.
 - Recent chat message reads are public for dashboard previews. Sending chat messages requires authentication.
@@ -136,7 +135,7 @@ Page: Party (/party).
 <open-issues>
 - Realtime chat transport uses SSE with snapshot/message events in the MVP. Reconnect restores the latest server snapshot, but messages beyond the backend room retention limit are not guaranteed after long offline periods.
 - Party close/delete policy for owners is still undecided.
-- The party_post_tags helper table is required for custom tags because tags are not present in the shared ERD snapshot.
+- The party_post_tags helper table is required for custom tags and tier-like recruitment conditions because party_posts has no dedicated tag or tier column in the shared ERD snapshot.
 </open-issues>
 
 </spec>

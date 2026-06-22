@@ -33,6 +33,7 @@ import {
 import { usePartyAuth } from './usePartyAuth'
 
 const PARTY_PAGE_SIZE = 3
+const NO_TIER_LIMIT = '제한 없음'
 
 interface UsePartyPostsOptions {
   onPartyMessage: (post: PartyPost, message: string) => void
@@ -66,6 +67,19 @@ function readMutationErrorMessage(error: unknown, fallbackMessage: string) {
 
 function toPartyPostsQueryParams(filter: PartyFilter): PartyPostsQueryParams {
   return filter === '전체' ? {} : { mode: filter }
+}
+
+function mergeTierIntoTags(tags: string[], tier: string) {
+  const normalizedTier = tier.trim()
+
+  if (!normalizedTier || normalizedTier === NO_TIER_LIMIT) {
+    return tags
+  }
+
+  return [
+    normalizedTier,
+    ...tags.filter((tag) => tag !== normalizedTier),
+  ].slice(0, 4)
 }
 
 export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPostsOptions) {
@@ -218,14 +232,14 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
       .map((tag) => tag.trim())
       .filter(Boolean)
       .slice(0, 4)
+    const requestTags = mergeTierIntoTags(parsedTags, tierDraft)
     const request: CreatePartyPostRequest = {
       title,
       mode: modeDraft,
-      tier: tierDraft,
       capacity: normalizeCapacity(capacityDraft),
       deadline,
       description,
-      tags: parsedTags,
+      tags: requestTags,
     }
 
     createMutation.mutate(request, {

@@ -117,4 +117,16 @@ class SocialLoginStartServiceImplTest {
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
         verify(clientRegistrationRepositoryProvider, never()).getIfAvailable();
     }
+
+    @Test
+    void 카카오는_QA_지원_provider에서_제외되어_INVALID_INPUT을_던진다() {
+        // given
+        SocialLoginStartServiceImpl service = new SocialLoginStartServiceImpl(clientRegistrationRepositoryProvider);
+
+        // when, then
+        assertThatThrownBy(() -> service.getStartUrl("kakao", "http://localhost:8080"))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
+        verify(clientRegistrationRepositoryProvider, never()).getIfAvailable();
+    }
 }

@@ -29,7 +29,6 @@ interface SocialProviderConfig {
 
 const socialProviders: SocialProviderConfig[] = [
   { id: 'google', label: 'Google', mark: 'G' },
-  { id: 'kakao', label: 'Kakao', mark: 'K' },
   { id: 'naver', label: 'Naver', mark: 'N' },
 ]
 

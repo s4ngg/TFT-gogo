@@ -31,7 +31,7 @@ public interface CommunityPartyControllerDocs {
             @AuthenticationPrincipal Long userId
     );
 
-    @Operation(summary = "파티 모집글 등록", description = "인증된 사용자가 파티 모집글을 등록합니다. 요청의 tier는 모집글 티어 조건으로 저장되며, MVP에서는 파티별 채팅방을 만들지 않고 응답의 chatRoomId는 고정 파티 모집 채널(party-recruitment)을 반환합니다. 파티별 전용 채팅방과 멤버십 검증은 후속 과제로 둡니다.")
+    @Operation(summary = "파티 모집글 등록", description = "인증된 사용자가 파티 모집글을 등록합니다. 티어 조건은 ERD에 없는 별도 컬럼을 만들지 않고 custom tags에 포함해 저장합니다. MVP에서는 파티별 채팅방을 만들지 않고 응답의 chatRoomId는 고정 파티 모집 채널(party-recruitment)을 반환합니다. 파티별 전용 채팅방과 멤버십 검증은 후속 과제로 둡니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "등록 성공"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요"),
