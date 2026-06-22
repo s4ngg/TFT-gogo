@@ -1,0 +1,51 @@
+.gauge {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-ui);
+}
+
+.count {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.countDanger {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.track {
+  height: 8px;
+  background: var(--bg-main);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.bar {
+  height: 100%;
+  width: var(--gauge-pct, 0%);
+  background: var(--accent);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.barDanger {
+  background: var(--danger);
+}
+
+.sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
