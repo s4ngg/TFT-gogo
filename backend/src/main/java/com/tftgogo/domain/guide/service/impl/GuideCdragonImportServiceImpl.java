@@ -212,6 +212,8 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             if (apiName.startsWith(championPrefix)
                     && cost >= 1
                     && cost <= 5
+                    && champion.path("traits").isArray()
+                    && champion.path("traits").size() > 0
                     && hasText(champion.path("name").asText())) {
                 champions.add(champion);
             }
@@ -1402,9 +1404,23 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
 
     private String normalizeRole(String role) {
         if (!hasText(role)) {
-            return "미분류";
+            return "역할 미정";
         }
-        return role;
+        return switch (role) {
+            case "ADCarry" -> "AD 캐리";
+            case "APCarry" -> "AP 캐리";
+            case "ADCaster" -> "AD 캐스터";
+            case "APCaster" -> "AP 캐스터";
+            case "ADFighter" -> "AD 전사";
+            case "APFighter", "HFighter" -> "AP 전사";
+            case "ADReaper" -> "AD 암살자";
+            case "APReaper" -> "AP 암살자";
+            case "ADSpecialist" -> "AD 특수";
+            case "APSpecialist" -> "AP 특수";
+            case "ADTank" -> "AD 탱커";
+            case "APTank" -> "AP 탱커";
+            default -> role;
+        };
     }
 
     private String normalizeRequired(String value) {

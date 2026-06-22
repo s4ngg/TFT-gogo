@@ -169,6 +169,8 @@ class GuideCdragonImportServiceImplTest {
         assertThat(championGuide.getSummary()).doesNotContain("수치일정");
         assertThat(championGuide.getSummary()).doesNotContain("수치 아래");
         assertThat(championGuide.getDataJson()).contains("\"cost\":1");
+        assertThat(championGuide.getDataJson()).contains("\"role\":\"AD 전사\"");
+        assertThat(championGuide.getDataJson()).doesNotContain("ADFighter");
         assertThat(championGuide.getDataJson()).contains("\"traits\":[\"동물특공대\"]");
         assertThat(championGuide.getDataJson()).contains("120");
         assertThat(championGuide.getDataJson()).doesNotContain("@Damage@");
@@ -892,6 +894,23 @@ class GuideCdragonImportServiceImplTest {
                           "name": "골렘",
                           "cost": 1,
                           "traits": []
+                        },
+                        {
+                          "apiName": "TFT17_DarkStar_FakeUnit",
+                          "name": "소형 블랙홀",
+                          "cost": 1,
+                          "role": "APTank",
+                          "traits": [],
+                          "stats": {
+                            "armor": 40,
+                            "attackSpeed": 4.95,
+                            "damage": 421,
+                            "hp": 1,
+                            "initialMana": 0,
+                            "magicResist": 40,
+                            "mana": 0,
+                            "range": 0
+                          }
                         }
                       ],
                       "traits": [

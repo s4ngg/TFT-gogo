@@ -211,12 +211,23 @@ public class GuideServiceImpl implements GuideService {
         List<GuideEntryResponse> responses = new ArrayList<>();
         int sortOrder = 0;
         for (GuideChampion champion : champions) {
+            JsonNode traits = parseJson(champion.getTraitsJson(), "champion.traits", champion.getId());
+            if (!hasArrayItems(traits)) {
+                logger.debug(
+                        "Guide champion response skipped because traits_json is empty. id={}, championKey={}, name={}",
+                        champion.getId(),
+                        champion.getChampionKey(),
+                        champion.getName()
+                );
+                continue;
+            }
+
             ObjectNode dataJson = objectMapper.createObjectNode();
             dataJson.put("cost", champion.getCost());
             dataJson.put("role", champion.getRole());
             dataJson.put("position", champion.getPosition());
             dataJson.set("stats", parseJson(champion.getStatsJson(), "champion.stats", champion.getId()));
-            dataJson.set("traits", parseJson(champion.getTraitsJson(), "champion.traits", champion.getId()));
+            dataJson.set("traits", traits);
             dataJson.set("bestItems", parseJson(champion.getBestItemsJson(), "champion.bestItems", champion.getId()));
 
             responses.add(buildResponse(

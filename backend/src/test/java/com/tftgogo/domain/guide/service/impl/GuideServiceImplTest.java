@@ -7,6 +7,7 @@ import com.tftgogo.domain.guide.dto.response.GuidePageResponse;
 import com.tftgogo.domain.guide.entity.AugmentGuidePlan;
 import com.tftgogo.domain.guide.entity.Guide;
 import com.tftgogo.domain.guide.entity.GuideAugment;
+import com.tftgogo.domain.guide.entity.GuideChampion;
 import com.tftgogo.domain.guide.entity.GuideTrait;
 import com.tftgogo.domain.guide.entity.GuideType;
 import com.tftgogo.domain.guide.repository.AugmentGuidePlanRepository;
@@ -239,6 +240,34 @@ class GuideServiceImplTest {
     }
 
     @Test
+    void split_champion_response_skips_entries_without_traits() {
+        // given
+        GuideChampion fakeUnit = splitChampionGuide("TFT17_DarkStar_FakeUnit", "Black Hole", "[]");
+        GuideChampion shopChampion = splitChampionGuide("TFT17_Briar", "Briar", "[\"Animal Squad\"]");
+        when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
+        when(guideChampionRepository.findByPatchVersionOrderByCostAscNameAscIdAsc("17.0"))
+                .thenReturn(List.of(fakeUnit, shopChampion));
+
+        // when
+        GuidePageResponse<GuideEntryResponse> response = guideService.getGuideTabItems(
+                "champions",
+                null,
+                null,
+                1,
+                10,
+                null,
+                null,
+                null
+        );
+
+        // then
+        assertThat(response.getItems())
+                .extracting(GuideEntryResponse::getTargetKey)
+                .containsExactly("TFT17_Briar");
+        assertThat(response.getTotalItems()).isEqualTo(1);
+    }
+
+    @Test
     void 명시한_패치버전은_최신_패치_조회없이_사용한다() {
         // given
         Guide champion = championGuide("kaisa", "카이사", 4, 1);
@@ -421,6 +450,21 @@ class GuideServiceImplTest {
                 .patchVersion("17.0")
                 .sortOrder(sortOrder)
                 .active(true)
+                .build();
+    }
+
+    private GuideChampion splitChampionGuide(String championKey, String name, String traitsJson) {
+        return GuideChampion.builder()
+                .championKey(championKey)
+                .name(name)
+                .cost(1)
+                .role("AP Tank")
+                .position("Front")
+                .imageUrl("https://example.com/" + championKey + ".png")
+                .statsJson("{\"hp\":700,\"ad\":40,\"attackSpeed\":\"0.65\",\"mana\":\"0/50\",\"armor\":40,\"mr\":40}")
+                .traitsJson(traitsJson)
+                .bestItemsJson("[]")
+                .patchVersion("17.0")
                 .build();
     }
 
