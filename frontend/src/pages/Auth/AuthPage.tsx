@@ -188,6 +188,7 @@ function AuthPage({ mode }: AuthPageProps) {
                 <button
                     type="button"
                     className={styles.socialButton}
+                    data-provider={provider.id}
                     key={provider.label}
                     aria-label={`${provider.label} 로그인`}
                     disabled={isAuthActionPending}
