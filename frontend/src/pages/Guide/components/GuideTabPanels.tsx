@@ -57,7 +57,6 @@ function GuideTabPanels({
           augmentPlans={guideData.augmentPlans}
           fallbackData={guideData}
           query={query}
-          rewardRows={guideData.rewards}
         />
       </div>
     )

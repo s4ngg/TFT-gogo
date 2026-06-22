@@ -43,11 +43,12 @@ docker compose down -v
 
 2026-06-16 기준 MySQL 8.0.44 임시 DB에서 `01_schema.sql`, `02_seed.sql` 순차 적용을 확인했습니다.
 
-- 생성 테이블: 19개
+- 생성 테이블: 18개
 - `chat_rooms` seed: 4개
 - `guides` seed: 4개
+- `augment_guide_plans` seed: 3개
 - `patch_notes` seed: 1개
-- `patch_note_changes` seed: 2개
+- `patch_changes` seed: 2개
 - `backend` `compileJava`: Pass
 
 host MySQL client를 사용할 때:
@@ -63,8 +64,11 @@ MySQL container를 통해 실행할 때:
 
 ```powershell
 Get-Content -Encoding UTF8 backend/src/main/resources/db/local-smoke/01_schema.sql | docker exec -i tftgogo-mysql mysql --default-character-set=utf8mb4 -utftuser -ptftpass tftgogo
-Get-Content -Encoding UTF8 backend/src/main/resources/db/local-smoke/02_seed.sql | docker exec -i tftgogo-mysql mysql --default-character-set=utf8mb4 -utftuser -ptftpass tftgogo
+docker cp backend/src/main/resources/db/local-smoke/02_seed.sql tftgogo-mysql:/tmp/02_seed.sql
+docker exec tftgogo-mysql sh -c "mysql --default-character-set=utf8mb4 -utftuser -ptftpass tftgogo < /tmp/02_seed.sql"
 ```
+
+`02_seed.sql`에는 한글 QA 데이터가 포함되어 있어 Windows PowerShell 파이프를 사용하면 인코딩이 깨질 수 있습니다. seed 파일은 위처럼 컨테이너에 복사한 뒤 컨테이너 내부에서 실행합니다.
 
 ## 백엔드 실행
 

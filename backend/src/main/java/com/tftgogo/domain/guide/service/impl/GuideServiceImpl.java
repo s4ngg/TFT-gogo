@@ -4,14 +4,18 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.tftgogo.domain.guide.dto.response.AugmentGuidePlanResponse;
+import com.tftgogo.domain.guide.dto.response.GuideCatalogResponse;
 import com.tftgogo.domain.guide.dto.response.GuideEntryResponse;
 import com.tftgogo.domain.guide.dto.response.GuidePageResponse;
+import com.tftgogo.domain.guide.entity.AugmentGuidePlan;
 import com.tftgogo.domain.guide.entity.GuideAugment;
 import com.tftgogo.domain.guide.entity.GuideChampion;
 import com.tftgogo.domain.guide.entity.Guide;
 import com.tftgogo.domain.guide.entity.GuideItem;
 import com.tftgogo.domain.guide.entity.GuideTrait;
 import com.tftgogo.domain.guide.entity.GuideType;
+import com.tftgogo.domain.guide.repository.AugmentGuidePlanRepository;
 import com.tftgogo.domain.guide.repository.GuideAugmentRepository;
 import com.tftgogo.domain.guide.repository.GuideChampionRepository;
 import com.tftgogo.domain.guide.repository.GuideItemRepository;
@@ -44,7 +48,7 @@ public class GuideServiceImpl implements GuideService {
     private static final int MAX_PAGE = 10_000;
     private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int MAX_PAGE_SIZE = 100;
-    private static final Set<String> SORT_KEYS = Set.of();
+    private static final Set<String> SORT_KEYS = Set.of("avgPlace", "pickRate", "top4", "winRate");
     private static final Pattern NUMBER_PATTERN = Pattern.compile("-?\\d+(?:\\.\\d+)?");
     private static final Pattern PATCH_VERSION_PATTERN = Pattern.compile("^(\\d+)\\.(\\d+)([A-Za-z]*)$");
     private static final String LIKE_ESCAPE = "\\";
@@ -54,23 +58,21 @@ public class GuideServiceImpl implements GuideService {
     private final GuideTraitRepository guideTraitRepository;
     private final GuideItemRepository guideItemRepository;
     private final GuideAugmentRepository guideAugmentRepository;
+    private final AugmentGuidePlanRepository augmentGuidePlanRepository;
     private final ObjectMapper objectMapper;
 
     @Override
-    public List<GuideEntryResponse> getGuideCatalog() {
+    public GuideCatalogResponse getGuideCatalog() {
         return resolvePatchVersion(null)
                 .map(patchVersion -> {
-                    List<GuideEntryResponse> splitEntries = findSplitCatalogEntries(patchVersion);
-                    if (!splitEntries.isEmpty()) {
-                        return splitEntries;
-                    }
-                    return guideRepository
-                            .findByPatchVersionAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchVersion)
-                            .stream()
-                            .map(this::toResponse)
-                            .toList();
+                    List<GuideEntryResponse> entries = findCatalogEntries(patchVersion);
+                    return GuideCatalogResponse.of(
+                            patchVersion,
+                            entries,
+                            findAugmentPlans(patchVersion)
+                    );
                 })
-                .orElseGet(List::of);
+                .orElseGet(() -> GuideCatalogResponse.of("", List.of(), List.of()));
     }
 
     @Override
@@ -90,7 +92,7 @@ public class GuideServiceImpl implements GuideService {
         validateSort(sortKey, sortDir);
         validateCost(cost);
 
-        Optional<String> resolvedPatchVersion = resolvePatchVersion(patchVersion, guideType);
+        Optional<String> resolvedPatchVersion = resolvePatchVersion(patchVersion);
         if (resolvedPatchVersion.isEmpty()) {
             return GuidePageResponse.of(List.of(), normalizedPage, normalizedPageSize, 0, 1);
         }
@@ -115,6 +117,7 @@ public class GuideServiceImpl implements GuideService {
                 )
                 .stream()
                 .map(this::toLegacyGuideItem)
+                .filter(item -> isDisplayableEntry(guideType, item.dataJson()))
                 .sorted(buildComparator(sortKey, sortDir))
                 .toList();
 
@@ -160,6 +163,33 @@ public class GuideServiceImpl implements GuideService {
         return entries;
     }
 
+    private List<GuideEntryResponse> findCatalogEntries(String patchVersion) {
+        List<GuideEntryResponse> splitEntries = findSplitCatalogEntries(patchVersion);
+        if (!splitEntries.isEmpty()) {
+            return splitEntries;
+        }
+        return guideRepository
+                .findByPatchVersionAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchVersion)
+                .stream()
+                .map(this::toResponse)
+                .filter(this::isDisplayableResponse)
+                .toList();
+    }
+
+    private List<AugmentGuidePlanResponse> findAugmentPlans(String patchVersion) {
+        return augmentGuidePlanRepository.findByPatchVersionOrderByPlanKeyAscIdAsc(patchVersion)
+                .stream()
+                .map(this::toAugmentPlanResponse)
+                .toList();
+    }
+
+    private AugmentGuidePlanResponse toAugmentPlanResponse(AugmentGuidePlan plan) {
+        return AugmentGuidePlanResponse.from(
+                plan,
+                parseJson(plan.getStagesJson(), "augmentPlan.stages", plan.getId())
+        );
+    }
+
     private List<GuideEntryResponse> findSplitTabEntries(GuideType guideType, String patchVersion) {
         return switch (guideType) {
             case CHAMPION -> toChampionResponses(
@@ -172,7 +202,7 @@ public class GuideServiceImpl implements GuideService {
                     guideItemRepository.findByPatchVersionOrderByNameAscIdAsc(patchVersion)
             );
             case AUGMENT -> toAugmentResponses(
-                    guideAugmentRepository.findByPatchVersionOrderByTierAscNameAscIdAsc(patchVersion)
+                    guideAugmentRepository.findByPatchVersionOrderByNameAscIdAsc(patchVersion)
             );
         };
     }
@@ -209,6 +239,17 @@ public class GuideServiceImpl implements GuideService {
         int sortOrder = 0;
         for (GuideTrait trait : traits) {
             JsonNode levels = parseJson(trait.getLevelsJson(), "trait.levels", trait.getId());
+            JsonNode champions = parseJson(trait.getChampionsJson(), "trait.champions", trait.getId());
+            if (!hasArrayItems(champions)) {
+                logger.debug(
+                        "Guide trait response skipped because champions_json is empty. id={}, traitKey={}, name={}",
+                        trait.getId(),
+                        trait.getTraitKey(),
+                        trait.getName()
+                );
+                continue;
+            }
+
             ObjectNode dataJson = objectMapper.createObjectNode();
             dataJson.put("count", maxTraitLevel(levels));
             dataJson.put("type", trait.getType());
@@ -216,7 +257,7 @@ public class GuideServiceImpl implements GuideService {
             dataJson.put("tone", trait.getTone());
             dataJson.set("levels", levels);
             dataJson.set("tierEffects", parseJson(trait.getTierEffectsJson(), "trait.tierEffects", trait.getId()));
-            dataJson.set("champions", parseJson(trait.getChampionsJson(), "trait.champions", trait.getId()));
+            dataJson.set("champions", champions);
             dataJson.set("tips", parseJson(trait.getTipsJson(), "trait.tips", trait.getId()));
 
             responses.add(buildResponse(
@@ -265,9 +306,6 @@ public class GuideServiceImpl implements GuideService {
         for (GuideAugment augment : augments) {
             ObjectNode dataJson = objectMapper.createObjectNode();
             dataJson.put("description", augment.getDescription());
-            dataJson.put("reward", augment.getReward() == null ? "-" : augment.getReward());
-            dataJson.put("tier", augment.getTier());
-            dataJson.put("type", augment.getType());
             dataJson.set("tags", parseJson(augment.getTagsJson(), "augment.tags", augment.getId()));
 
             responses.add(buildResponse(
@@ -385,6 +423,18 @@ public class GuideServiceImpl implements GuideService {
         return cost == null
                 || guideType != GuideType.CHAMPION
                 || item.getDataJson().path("cost").asInt() == cost;
+    }
+
+    private boolean isDisplayableResponse(GuideEntryResponse response) {
+        return isDisplayableEntry(response.getGuideType(), response.getDataJson());
+    }
+
+    private boolean isDisplayableEntry(GuideType guideType, JsonNode dataJson) {
+        return guideType != GuideType.TRAIT || hasArrayItems(dataJson.path("champions"));
+    }
+
+    private boolean hasArrayItems(JsonNode value) {
+        return value != null && value.isArray() && value.size() > 0;
     }
 
     private boolean containsIgnoreCase(String value, String normalizedQuery) {
@@ -537,22 +587,6 @@ public class GuideServiceImpl implements GuideService {
         guideAugmentRepository.findLatestPatchVersion().ifPresent(patchVersions::add);
 
         return patchVersions.stream().max(this::comparePatchVersion);
-    }
-
-    private Optional<String> resolvePatchVersion(String patchVersion, GuideType guideType) {
-        if (hasText(patchVersion)) {
-            return Optional.of(patchVersion.trim());
-        }
-        return findLatestSplitPatchVersion(guideType).or(guideRepository::findLatestPatchVersion);
-    }
-
-    private Optional<String> findLatestSplitPatchVersion(GuideType guideType) {
-        return switch (guideType) {
-            case CHAMPION -> guideChampionRepository.findLatestPatchVersion();
-            case TRAIT -> guideTraitRepository.findLatestPatchVersion();
-            case ITEM -> guideItemRepository.findLatestPatchVersion();
-            case AUGMENT -> guideAugmentRepository.findLatestPatchVersion();
-        };
     }
 
     private int comparePatchVersion(String left, String right) {

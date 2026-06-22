@@ -1,6 +1,7 @@
 package com.tftgogo.domain.guide.controller;
 
 import com.tftgogo.domain.guide.controller.docs.GuideControllerDocs;
+import com.tftgogo.domain.guide.dto.response.GuideCatalogResponse;
 import com.tftgogo.domain.guide.dto.response.GuideEntryResponse;
 import com.tftgogo.domain.guide.dto.response.GuidePageResponse;
 import com.tftgogo.domain.guide.service.GuideService;
@@ -13,8 +14,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/guide")
 @RequiredArgsConstructor
@@ -23,8 +22,8 @@ public class GuideController implements GuideControllerDocs {
     private final GuideService guideService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<GuideEntryResponse>>> getGuideCatalog() {
-        List<GuideEntryResponse> response = guideService.getGuideCatalog();
+    public ResponseEntity<ApiResponse<GuideCatalogResponse>> getGuideCatalog() {
+        GuideCatalogResponse response = guideService.getGuideCatalog();
         return ResponseEntity.ok(ApiResponse.success("게임가이드 조회 성공", response));
     }
 

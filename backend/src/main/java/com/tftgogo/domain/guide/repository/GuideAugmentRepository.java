@@ -11,7 +11,7 @@ public interface GuideAugmentRepository extends JpaRepository<GuideAugment, Long
 
     Optional<GuideAugment> findByAugmentKeyAndPatchVersion(String augmentKey, String patchVersion);
 
-    List<GuideAugment> findByPatchVersionOrderByTierAscNameAscIdAsc(String patchVersion);
+    List<GuideAugment> findByPatchVersionOrderByNameAscIdAsc(String patchVersion);
 
     @Query(value = """
             SELECT patch_version

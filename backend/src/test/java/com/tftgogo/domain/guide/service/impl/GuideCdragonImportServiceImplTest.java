@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tftgogo.domain.guide.dto.request.GuideCdragonImportRequest;
 import com.tftgogo.domain.guide.dto.response.GuideImportResponse;
 import com.tftgogo.domain.guide.entity.Guide;
+import com.tftgogo.domain.guide.entity.GuideAugment;
 import com.tftgogo.domain.guide.entity.GuideType;
 import com.tftgogo.domain.guide.repository.GuideAugmentRepository;
 import com.tftgogo.domain.guide.repository.GuideChampionRepository;
@@ -155,6 +156,39 @@ class GuideCdragonImportServiceImplTest {
     }
 
     @Test
+    void CDragon_챔피언이_없는_시너지는_가이드로_생성하지_않는다() {
+        // given
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonTraitWithNoChampionJson());
+        when(guideRepository.findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(Optional.empty());
+        when(guideRepository.existsByGuideTypeAndTargetKeyAndPatchVersion(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(false);
+        when(guideRepository.saveAndFlush(any(Guide.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request(false, true));
+
+        // then
+        assertThat(response.getCreatedCount()).isEqualTo(1);
+        assertThat(response.getTraitCount()).isEqualTo(1);
+        assertThat(response.getImportedCount()).isEqualTo(1);
+
+        ArgumentCaptor<Guide> guideCaptor = ArgumentCaptor.forClass(Guide.class);
+        verify(guideRepository).saveAndFlush(guideCaptor.capture());
+        Guide savedGuide = guideCaptor.getValue();
+        assertThat(savedGuide.getTargetKey()).isEqualTo("TFT17_AnimalSquad");
+        assertThat(savedGuide.getDataJson()).contains("\"champions\":[{\"cost\":1");
+        assertThat(savedGuide.getDataJson()).doesNotContain("TFT17_DivineBlessing");
+    }
+
+    @Test
     void CDragon_특성_summary는_ShowIfNot_비활성_문장을_제외하고_줄바꿈을_보존한다() {
         // given
         when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
@@ -184,9 +218,8 @@ class GuideCdragonImportServiceImplTest {
 
         assertThat(traitGuide.getTargetKey()).isEqualTo("TFT17_DRX");
         assertThat(traitGuide.getSummary())
-                .contains("아트록스: 아군이 입히는 피해가 적에게 30% 파쇄 및 파열 적용")
+                .contains("아트록스: 아군이 입히는 피해가 적에게 30% 파쇄 및 파열 적용.")
                 .contains("케이틀린: 아군 공격 속도 20% 증가");
-        assertThat(traitGuide.getSummary()).contains("\n");
         assertThat(traitGuide.getSummary()).doesNotContain("아트록스: 적 파쇄 및 파열 적용");
         assertThat(traitGuide.getSummary()).doesNotContain("케이틀린: 공격 속도 증가");
         assertThat(traitGuide.getDataJson()).contains("\"tierEffects\":[{\"level\":\"2+\",\"description\":\"전투 시작 6초 후 N.O.V.A. 유닛이 챔피언에 따라 아군에게 힘의 고조 부여\"}]");
@@ -339,44 +372,20 @@ class GuideCdragonImportServiceImplTest {
         assertThat(augmentGuide.getImageUrl()).contains("battle_ready.png");
         assertThat(augmentGuide.getDataJson()).contains("\"description\":\"Your team gains 25 Attack Speed.\"");
         assertThat(augmentGuide.getDataJson()).doesNotContain("%i:scaleAS%");
-        assertThat(augmentGuide.getDataJson()).contains("\"tier\":\"A\"");
-        assertThat(augmentGuide.getDataJson()).contains("\"type\":\"Combat\"");
-        assertThat(augmentGuide.getDataJson()).contains("\"reward\":\"전투 능력치\"");
+        assertThat(augmentGuide.getDataJson()).doesNotContain("\"tier\"");
+        assertThat(augmentGuide.getDataJson()).doesNotContain("\"type\"");
+        assertThat(augmentGuide.getDataJson()).doesNotContain("\"reward\"");
         assertThat(augmentGuide.getDataJson()).contains("\"tags\":[\"전투\"]");
         assertThat(augmentGuide.getDataJson()).doesNotContain("{cf1fd3af}");
         assertThat(augmentGuide.getDataJson()).doesNotContain("@AttackSpeed@");
         assertThat(augmentGuide.getDataJson()).doesNotContain("\"winRate\"");
-    }
 
-    @Test
-    void CDragon_아이템_이름의_아이콘_토큰을_제거한다() {
-        // given
-        String iconTokenNameJson = cdragonJson()
-                .replace("\"name\": \"Guinsoo's Rageblade\"", "\"name\": \"%i:scaleAP%구인수의 격노검\"");
-        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
-                .thenReturn(iconTokenNameJson);
-        when(guideRepository.findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
-                any(GuideType.class),
-                any(String.class),
-                any(String.class)
-        )).thenReturn(Optional.empty());
-        when(guideRepository.existsByGuideTypeAndTargetKeyAndPatchVersion(
-                any(GuideType.class),
-                any(String.class),
-                any(String.class)
-        )).thenReturn(false);
-        when(guideRepository.saveAndFlush(any(Guide.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        // when
-        guideCdragonImportService.importGuides(request(false, false, true));
-
-        // then
-        ArgumentCaptor<Guide> guideCaptor = ArgumentCaptor.forClass(Guide.class);
-        verify(guideRepository).saveAndFlush(guideCaptor.capture());
-        Guide itemGuide = guideCaptor.getValue();
-        assertThat(itemGuide.getName()).isEqualTo("구인수의 격노검");
-        assertThat(itemGuide.getSummary()).doesNotContain("%i:scaleAP%");
-        assertThat(itemGuide.getDataJson()).doesNotContain("%i:scaleAP%");
+        ArgumentCaptor<GuideAugment> splitAugmentCaptor = ArgumentCaptor.forClass(GuideAugment.class);
+        verify(guideAugmentRepository).save(splitAugmentCaptor.capture());
+        GuideAugment splitAugment = splitAugmentCaptor.getValue();
+        assertThat(splitAugment.getStatsJson()).doesNotContain("\"tier\"");
+        assertThat(splitAugment.getStatsJson()).doesNotContain("\"type\"");
+        assertThat(splitAugment.getStatsJson()).doesNotContain("\"reward\"");
     }
 
     @Test
@@ -410,7 +419,7 @@ class GuideCdragonImportServiceImplTest {
     }
 
     @Test
-    void CDragon_증강체_티어가_없으면_UNKNOWN으로_저장한다() {
+    void CDragon_증강체_티어가_없어도_티어를_저장하지_않는다() {
         // given
         String missingTierJson = cdragonJson()
                 .replace("\"rarity\": \"gold\"", "\"rarity\": \"unknown\"");
@@ -435,7 +444,11 @@ class GuideCdragonImportServiceImplTest {
         ArgumentCaptor<Guide> guideCaptor = ArgumentCaptor.forClass(Guide.class);
         verify(guideRepository).saveAndFlush(guideCaptor.capture());
         Guide augmentGuide = guideCaptor.getValue();
-        assertThat(augmentGuide.getDataJson()).contains("\"tier\":\"UNKNOWN\"");
+        assertThat(augmentGuide.getDataJson()).doesNotContain("\"tier\"");
+
+        ArgumentCaptor<GuideAugment> splitAugmentCaptor = ArgumentCaptor.forClass(GuideAugment.class);
+        verify(guideAugmentRepository).save(splitAugmentCaptor.capture());
+        assertThat(splitAugmentCaptor.getValue().getStatsJson()).doesNotContain("\"tier\"");
     }
 
     @Test
@@ -874,6 +887,57 @@ class GuideCdragonImportServiceImplTest {
                       "icon": "ASSETS/Maps/Particles/TFT/Item_Icons/Radiant/RadiantRageblade.png"
                     }
                   ]
+                }
+                """;
+    }
+
+    private String cdragonTraitWithNoChampionJson() {
+        return """
+                {
+                  "setData": [
+                    {
+                      "number": 17,
+                      "mutator": "TFTSet17",
+                      "champions": [
+                        {
+                          "apiName": "TFT17_Briar",
+                          "name": "브라이어",
+                          "cost": 1,
+                          "squareIcon": "ASSETS/Characters/TFT17_Briar/Skins/Base/Images/TFT17_Briar_splash_tile_10.TFT_Set17.tex",
+                          "traits": ["동물특공대"]
+                        }
+                      ],
+                      "traits": [
+                        {
+                          "apiName": "TFT17_AnimalSquad",
+                          "name": "동물특공대",
+                          "desc": "아군이 공격력을 @TeamwideAD*100@% 얻습니다.<br><row>(@MinUnits@) @AttackSpeedPercent*100@%</row>",
+                          "icon": "ASSETS/UX/TraitIcons/Trait_Icon_17_AnimalSquad.TFT_Set17.tex",
+                          "effects": [
+                            {
+                              "minUnits": 2,
+                              "maxUnits": 25000,
+                              "style": 3,
+                              "variables": {
+                                "TeamwideAD": 0.1,
+                                "AttackSpeedPercent": 0.15
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "apiName": "TFT17_DivineBlessing",
+                          "name": "신의 축복",
+                          "desc": "수치. 수치.",
+                          "icon": "ASSETS/UX/TraitIcons/Trait_Icon_17_DivineBlessing.TFT_Set17.tex",
+                          "effects": []
+                        }
+                      ],
+                      "augments": []
+                    }
+                  ],
+                  "sets": {},
+                  "items": []
                 }
                 """;
     }

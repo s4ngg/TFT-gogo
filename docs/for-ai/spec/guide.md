@@ -142,15 +142,7 @@ Page: Guide (/guide).
 
 <cdragon-augment-data-json>
 - description: sanitized CDragon desc/description/tooltip
-- type: CDragon augmentType/type/category or "공용"
-- tier: S | A | B | C, derived from CDragon rarity/tier when available
-- tags: CDragon tags or ["CDragon"]
-- reward: "-"
-- avgPlace: cached match average placement or "-"
-- pickRate: cached match pick rate or "-"
-- top4: not persisted by the current CDragon augment import; add this with the #393 metric refresh contract before presenting production-quality guide metrics
-- winRate: cached match win rate or "-"
-- sampleCount: not persisted by the current CDragon import; add this with the #393 metric refresh contract before presenting production-quality guide metrics
+- tags: displayable CDragon tags plus description-derived tags, or ["공용"]
 </cdragon-augment-data-json>
 </data-contracts>
 

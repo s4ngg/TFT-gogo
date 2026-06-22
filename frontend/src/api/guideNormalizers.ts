@@ -2,7 +2,7 @@ import { isRecord } from './apiResponse'
 import { getChampionApiName } from './cdragonLocale'
 import { tftChampSquareUrl } from './communityDragonAssets'
 import { isDisplayableGuideTag, sanitizeGuideText } from './guideText'
-import type { TierBadgeValue, TraitHexBadgeTone } from '../types/badges'
+import type { TraitHexBadgeTone } from '../types/badges'
 import { getTotalPages } from './guideFallback'
 import {
   DEFAULT_GUIDE_PAGE_SIZE,
@@ -18,7 +18,6 @@ import {
   type GuideTabItems,
   type ItemRef,
   type ItemStatGuide,
-  type RewardRow,
   type TraitGuide,
   type TraitTierEffect,
 } from './guideTypes'
@@ -121,12 +120,6 @@ function readTraitTierEffects(value: unknown): TraitTierEffect[] {
   return Array.isArray(value) ? value.filter(isTraitTierEffect) : []
 }
 
-function readTier(value: unknown): TierBadgeValue {
-  return value === 'S' || value === 'A' || value === 'B' || value === 'C' || value === 'D' || value === 'UNKNOWN'
-    ? value
-    : 'UNKNOWN'
-}
-
 function readChampionCost(value: unknown): ChampionGuide['cost'] {
   return value === 1 || value === 2 || value === 3 || value === 4 || value === 5 ? value : 1
 }
@@ -216,6 +209,11 @@ function isGuideEntryList(payload: unknown): payload is GuideEntryResponse[] {
   ))
 }
 
+function readCatalogEntries(payload: unknown): GuideEntryResponse[] | undefined {
+  if (!isRecord(payload)) return undefined
+  return isGuideEntryList(payload.entries) ? payload.entries : undefined
+}
+
 function isStringList(payload: unknown): payload is string[] {
   return Array.isArray(payload) && payload.every((item) => typeof item === 'string')
 }
@@ -268,25 +266,12 @@ function isItemStatGuide(payload: unknown): payload is ItemStatGuide {
     && typeof payload.name === 'string'
 }
 
-function isTierBadgeValue(payload: unknown): payload is TierBadgeValue {
-  return payload === 'S' || payload === 'A' || payload === 'B' || payload === 'C' || payload === 'D' || payload === 'UNKNOWN'
-}
-
 function isAugmentGuide(payload: unknown): payload is AugmentGuide {
   return isRecord(payload)
     && typeof payload.description === 'string'
+    && typeof payload.imageUrl === 'string'
     && typeof payload.name === 'string'
-    && typeof payload.reward === 'string'
     && isStringList(payload.tags)
-    && isTierBadgeValue(payload.tier)
-    && typeof payload.type === 'string'
-}
-
-function isRewardRow(payload: unknown): payload is RewardRow {
-  return isRecord(payload)
-    && typeof payload.condition === 'string'
-    && typeof payload.reward === 'string'
-    && typeof payload.stage === 'string'
 }
 
 function isAugmentPlanStage(payload: unknown): payload is AugmentPlan['stages'][number] {
@@ -349,7 +334,6 @@ function guideEntriesToCatalog(entries: GuideEntryResponse[], fallbackData: Guid
     champions: [],
     items: [],
     patchVersion: entries.map(readPatchVersion).find(Boolean) ?? fallbackData.patchVersion,
-    rewards: fallbackData.rewards,
     traits: [],
   }
 
@@ -387,11 +371,9 @@ function guideEntriesToCatalog(entries: GuideEntryResponse[], fallbackData: Guid
     if (normalizeGuideType(entry) === 'augments') {
       catalog.augments.push({
         description: sanitizeGuideText(readString(data, 'description', summary)),
+        imageUrl,
         name: entry.name,
-        reward: readString(data, 'reward', '-'),
         tags: readDisplayTags(data, 'tags'),
-        tier: readTier(data.tier),
-        type: readString(data, 'type', '공용'),
       })
     }
 
@@ -418,6 +400,11 @@ export function hasGuidePayloadData(payload: unknown): boolean {
     return payload.some((entry) => normalizeGuideType(entry) !== undefined)
   }
 
+  const entries = readCatalogEntries(payload)
+  if (entries) {
+    return entries.some((entry) => normalizeGuideType(entry) !== undefined)
+  }
+
   if (!isRecord(payload)) return false
 
   return ['traits', 'items', 'augments', 'champions'].some((key) => {
@@ -429,6 +416,20 @@ export function hasGuidePayloadData(payload: unknown): boolean {
 export function normalizeGuideCatalog(payload: unknown, fallbackData: GuideCatalog): GuideCatalog {
   if (isGuideEntryList(payload)) {
     return guideEntriesToCatalog(payload, fallbackData)
+  }
+
+  const entries = readCatalogEntries(payload)
+  if (entries && isRecord(payload)) {
+    const catalog = guideEntriesToCatalog(entries, fallbackData)
+    return {
+      ...catalog,
+      augmentPlans: Array.isArray(payload.augmentPlans) && payload.augmentPlans.every(isAugmentPlan)
+        ? payload.augmentPlans
+        : fallbackData.augmentPlans,
+      patchVersion: typeof payload.patchVersion === 'string' && payload.patchVersion
+        ? payload.patchVersion
+        : catalog.patchVersion,
+    }
   }
 
   if (!isRecord(payload)) return fallbackData
@@ -449,9 +450,6 @@ export function normalizeGuideCatalog(payload: unknown, fallbackData: GuideCatal
     patchVersion: typeof payload.patchVersion === 'string' && payload.patchVersion
       ? payload.patchVersion
       : fallbackData.patchVersion,
-    rewards: Array.isArray(payload.rewards) && payload.rewards.every(isRewardRow)
-      ? payload.rewards
-      : fallbackData.rewards,
     traits: Array.isArray(payload.traits) && payload.traits.every(isTraitGuide)
       ? payload.traits
       : fallbackData.traits,
