@@ -367,6 +367,7 @@ CREATE TABLE IF NOT EXISTS party_posts (
     game_mode VARCHAR(30) NULL,
     max_members INT NOT NULL,
     current_members INT NOT NULL,
+    tier VARCHAR(30) NOT NULL DEFAULT '제한 없음',
     deadline DATETIME(6) NULL,
     is_closed TINYINT(1) NOT NULL DEFAULT 0,
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),

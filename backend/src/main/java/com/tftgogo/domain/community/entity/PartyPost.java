@@ -56,6 +56,9 @@ public class PartyPost {
     @Column(name = "current_members", nullable = false)
     private int currentMembers;
 
+    @Column(nullable = false, length = 30)
+    private String tier;
+
     @Column
     private LocalDateTime deadline;
 
@@ -92,6 +95,7 @@ public class PartyPost {
         partyPost.gameMode = request.getGameMode();
         partyPost.maxMembers = request.getMaxMembers();
         partyPost.currentMembers = 1;
+        partyPost.tier = normalizeTier(request.getTier());
         partyPost.deadline = deadline;
         partyPost.closed = false;
         partyPost.createdAt = now;
@@ -157,6 +161,19 @@ public class PartyPost {
                 .distinct()
                 .limit(4)
                 .toList());
+    }
+
+    private static String normalizeTier(String tier) {
+        if (tier == null || tier.trim().isEmpty()) {
+            return "제한 없음";
+        }
+
+        String normalized = tier.trim();
+        if (normalized.length() > 30) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+
+        return normalized;
     }
 
     @PrePersist
