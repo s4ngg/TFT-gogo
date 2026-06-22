@@ -231,7 +231,9 @@ export function ItemIconStrip({
               onItemSelect(itemRef.name)
             }}
             onKeyDown={(event) => {
-              event.stopPropagation()
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.stopPropagation()
+              }
             }}
             title={`${itemRef.name} 아이템 보기`}
             type="button"

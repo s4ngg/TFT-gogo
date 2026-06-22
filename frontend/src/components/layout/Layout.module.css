@@ -2,8 +2,8 @@
   --snapshot-height: 722px;
   --sidebar-current-width: var(--sidebar-width);
 
-  width: 1529px;
-  min-width: 1529px;
+  width: 100%;
+  min-width: 0;
   min-height: 100vh;
   display: grid;
   grid-template-columns: var(--sidebar-current-width) minmax(0, 1fr);
@@ -72,8 +72,8 @@
 }
 
 .sidebarToggle {
-  width: 36px;
-  height: 36px;
+  width: calc(var(--size-control-md) + var(--space-xs));
+  height: calc(var(--size-control-md) + var(--space-xs));
   display: inline-grid;
   place-items: center;
   padding: 0;
@@ -263,9 +263,10 @@
 }
 
 .main {
-  width: calc(1529px - var(--sidebar-current-width));
-  min-width: calc(1529px - var(--sidebar-current-width));
+  width: 100%;
+  min-width: 0;
   min-height: 100vh;
+  box-sizing: border-box;
   overflow: visible;
   padding: 17px 15px 0 19px;
 }
@@ -395,8 +396,8 @@
 .iconButton,
 .notificationButton {
   position: relative;
-  width: 27px;
-  height: 34px;
+  width: calc(var(--size-control-md) + var(--space-xs));
+  height: calc(var(--size-control-md) + var(--space-xs));
   display: grid;
   place-items: center;
   padding: 0;
@@ -612,5 +613,117 @@
 
   .riotStatus {
     max-width: 300px;
+  }
+}
+
+@media (max-width: 860px) {
+  .appShell {
+    display: block;
+    overflow-x: hidden;
+  }
+
+  .sidebar {
+    position: static;
+    min-height: 0;
+    padding: var(--space-xl);
+    border-right: 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .sidebarHeader {
+    grid-template-columns: minmax(0, 1fr);
+    margin-bottom: var(--space-xl);
+  }
+
+  .sidebarToggle {
+    display: none;
+  }
+
+  .brand {
+    min-height: calc(var(--size-control-md) + var(--space-md));
+    padding: 0;
+  }
+
+  .brand strong {
+    font-size: var(--font-size-lg);
+  }
+
+  .brandLogo {
+    width: var(--size-control-sm);
+    height: var(--size-control-sm);
+  }
+
+  .navList {
+    display: flex;
+    gap: var(--space-sm);
+    margin: 0 calc(var(--space-xl) * -1);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding: 0 var(--space-xl) var(--space-xs);
+    scroll-padding-inline: var(--space-xl);
+  }
+
+  .navItem {
+    flex: 0 0 auto;
+    width: auto;
+    min-height: calc(var(--size-control-md) + var(--space-md));
+    gap: var(--space-sm);
+    padding: 0 var(--space-xl);
+    font-size: var(--font-size-sm);
+  }
+
+  .navItem svg {
+    width: var(--space-4xl);
+    height: var(--space-4xl);
+  }
+
+  .sidebarFill {
+    display: none;
+  }
+
+  .main {
+    width: 100%;
+    min-width: 0;
+    padding: var(--space-xl);
+  }
+
+  .topBar {
+    height: auto;
+    align-items: stretch;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .topStatusGroup {
+    width: 100%;
+  }
+
+  .patchBrief {
+    width: 100%;
+  }
+
+  .riotStatus {
+    max-width: none;
+  }
+
+  .topActions {
+    gap: var(--space-md);
+    justify-content: flex-end;
+  }
+
+  .iconButton,
+  .notificationButton,
+  .loginButton,
+  .profileButton {
+    min-height: calc(var(--size-control-md) + var(--space-md));
+  }
+
+  .iconButton,
+  .notificationButton {
+    width: calc(var(--size-control-md) + var(--space-md));
+  }
+
+  .loginButton {
+    padding: 0 var(--space-2xl);
   }
 }
