@@ -404,7 +404,7 @@ CREATE TABLE IF NOT EXISTS party_applications (
 CREATE TABLE IF NOT EXISTS party_post_tags (
     party_post_id BIGINT NOT NULL,
     tag_order INT NOT NULL,
-    tag VARCHAR(30) NOT NULL,
+    tag VARCHAR(50) NOT NULL,
     PRIMARY KEY (party_post_id, tag_order),
     CONSTRAINT fk_party_post_tags_post
         FOREIGN KEY (party_post_id) REFERENCES party_posts (id) ON DELETE CASCADE

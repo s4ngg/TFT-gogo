@@ -34,6 +34,7 @@ import { usePartyAuth } from './usePartyAuth'
 
 const PARTY_PAGE_SIZE = 3
 const noTierLimit = '제한 없음'
+const partyTierTags = new Set(['마스터+', '다이아+', '플래티넘+'])
 
 interface UsePartyPostsOptions {
   onPartyMessage: (post: PartyPost, message: string) => void
@@ -69,17 +70,30 @@ function toPartyPostsQueryParams(filter: PartyFilter): PartyPostsQueryParams {
   return filter === '전체' ? {} : { mode: filter }
 }
 
-function mergeTierIntoTags(tags: string[], tier: string) {
-  const normalizedTier = tier.trim()
+export function normalizePartyDraftTags(tagsDraft: string) {
+  return [...new Set(tagsDraft
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean))]
+}
 
-  if (!normalizedTier || normalizedTier === noTierLimit) {
-    return tags
+export function removePartyTierTags(tags: string[]) {
+  return tags.filter((tag) => !partyTierTags.has(tag))
+}
+
+export function getPartyCustomTagLimit(tier: string) {
+  return partyTierTags.has(tier.trim()) ? 3 : 4
+}
+
+export function mergeTierIntoTags(tags: string[], tier: string) {
+  const normalizedTier = tier.trim()
+  const customTags = removePartyTierTags(tags)
+
+  if (!partyTierTags.has(normalizedTier) || normalizedTier === noTierLimit) {
+    return customTags
   }
 
-  return [
-    normalizedTier,
-    ...tags.filter((tag) => tag !== normalizedTier),
-  ].slice(0, 4)
+  return [normalizedTier, ...customTags]
 }
 
 export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPostsOptions) {
@@ -227,11 +241,15 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
       return
     }
 
-    const parsedTags = tagsDraft
-      .split(',')
-      .map((tag) => tag.trim())
-      .filter(Boolean)
-      .slice(0, 4)
+    const parsedTags = normalizePartyDraftTags(tagsDraft)
+    const customTags = removePartyTierTags(parsedTags)
+    const customTagLimit = getPartyCustomTagLimit(tierDraft)
+
+    if (customTags.length > customTagLimit) {
+      setComposeError(`티어 조건을 선택하면 커스텀 태그는 최대 ${customTagLimit}개까지 입력할 수 있습니다.`)
+      return
+    }
+
     const requestTags = mergeTierIntoTags(parsedTags, tierDraft)
     const request: CreatePartyPostRequest = {
       title,

@@ -62,7 +62,7 @@ Page: Party (/party).
 - gameMode: RANKED_TFT | NORMAL_TFT | CUSTOM, required
 - maxMembers: number, required, 2-8
 - deadline: LocalDateTime, optional
-- tags: custom string array, optional, max 4 items, max 30 chars each. The frontend may include the selected tier condition as a tag.
+- tags: custom string array, optional, max 4 items, max 50 chars each. The frontend may include one selected tier condition as a tag.
 </request>
 <response name="PartyPostResponse">
 - id: party post id
