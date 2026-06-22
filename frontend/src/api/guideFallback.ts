@@ -8,9 +8,6 @@ import {
   type GuidePage,
   type GuideTab,
   type GuideTabItems,
-  type SortableMetricItem,
-  type MetricSortKey,
-  type SortDir,
   type AugmentGuide,
   type ItemStatGuide,
   type TraitGuide,
@@ -49,20 +46,6 @@ export function matchesSearch(query: string, fields: string[]) {
   if (!normalizedQuery) return true
 
   return fields.some((field) => normalizeText(field).includes(normalizedQuery))
-}
-
-export function parseMetric(value: string) {
-  return Number(value.replace(/[^\d.-]/g, '')) || 0
-}
-
-export function sortByMetric<T extends SortableMetricItem>(items: T[], sortKey: MetricSortKey, sortDir: SortDir) {
-  return [...items].sort((a, b) => {
-    const first = parseMetric(sortKey === 'top4' ? a.top4 ?? '0' : a[sortKey])
-    const second = parseMetric(sortKey === 'top4' ? b.top4 ?? '0' : b[sortKey])
-    const base = first < second ? -1 : first > second ? 1 : 0
-
-    return sortDir === 'asc' ? base : -base
-  })
 }
 
 function normalizePositiveInteger(value: number | undefined, fallback: number) {
@@ -146,14 +129,6 @@ function getFallbackGuideItems<T extends GuideTab>(
 
   if (params.tab === 'champions' && params.cost && params.cost !== 'all') {
     items = (items as ChampionGuide[]).filter((championGuide) => championGuide.cost === params.cost) as GuideTabItems[T]
-  }
-
-  if ((params.tab === 'items' || params.tab === 'augments') && params.sortKey && params.sortDir) {
-    items = sortByMetric(
-      items as SortableMetricItem[],
-      params.sortKey,
-      params.sortDir,
-    ) as GuideTabItems[T]
   }
 
   return items

@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  CHANGE_TYPE_FILTERS,
   PATCH_CATEGORIES,
-  type ChangeTypeFilter,
   type PatchChangesQuery,
   type PatchCategory,
 } from '../../../api/patchNotes'
 
-const PATCH_PAGE_SIZE = 5
+const PATCH_PAGE_SIZE = 1000
+const SEARCH_QUERY_DEBOUNCE_MS = 300
 
 interface UsePatchNotesPageStateOptions {
   selectedPatchVersion: string
@@ -17,29 +16,26 @@ export function usePatchNotesPageState({
   selectedPatchVersion,
 }: UsePatchNotesPageStateOptions) {
   const [activeCategory, setActiveCategory] = useState<PatchCategory>(PATCH_CATEGORIES[0])
-  const [activeChangeType, setActiveChangeType] = useState<ChangeTypeFilter>(CHANGE_TYPE_FILTERS[0])
-  const [highImpactOnly, setHighImpactOnly] = useState(false)
-  const [expandedChangeIds, setExpandedChangeIds] = useState<number[]>([])
   const [query, setQuery] = useState('')
+  const [debouncedQuery, setDebouncedQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const selectedPatchVersionRef = useRef(selectedPatchVersion)
 
   const resetChangeListState = useCallback(() => {
     setCurrentPage((page) => (page === 1 ? page : 1))
-    setExpandedChangeIds((currentIds) => (currentIds.length === 0 ? currentIds : []))
   }, [])
 
   const patchChangesParams = useMemo<PatchChangesQuery>(
     () => ({
       category: activeCategory,
-      changeType: activeChangeType,
-      highImpactOnly,
+      changeType: '전체',
+      highImpactOnly: false,
       page: currentPage,
       pageSize: PATCH_PAGE_SIZE,
-      query,
+      query: debouncedQuery,
       version: selectedPatchVersion,
     }),
-    [activeCategory, activeChangeType, currentPage, highImpactOnly, query, selectedPatchVersion],
+    [activeCategory, currentPage, debouncedQuery, selectedPatchVersion],
   )
 
   const setActiveCategoryAndReset = useCallback((category: PatchCategory) => {
@@ -48,15 +44,6 @@ export function usePatchNotesPageState({
 
       resetChangeListState()
       return category
-    })
-  }, [resetChangeListState])
-
-  const setActiveChangeTypeAndReset = useCallback((changeType: ChangeTypeFilter) => {
-    setActiveChangeType((currentChangeType) => {
-      if (currentChangeType === changeType) return currentChangeType
-
-      resetChangeListState()
-      return changeType
     })
   }, [resetChangeListState])
 
@@ -69,18 +56,13 @@ export function usePatchNotesPageState({
     })
   }, [resetChangeListState])
 
-  const toggleHighImpactOnly = useCallback(() => {
-    setHighImpactOnly((enabled) => !enabled)
-    resetChangeListState()
-  }, [resetChangeListState])
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedQuery(query)
+    }, SEARCH_QUERY_DEBOUNCE_MS)
 
-  const toggleExpandedChange = useCallback((id: number) => {
-    setExpandedChangeIds((currentIds) => (
-      currentIds.includes(id)
-        ? currentIds.filter((currentId) => currentId !== id)
-        : [...currentIds, id]
-    ))
-  }, [])
+    return () => window.clearTimeout(timeoutId)
+  }, [query])
 
   useEffect(() => {
     if (selectedPatchVersionRef.current === selectedPatchVersion) return
@@ -91,18 +73,12 @@ export function usePatchNotesPageState({
 
   return {
     activeCategory,
-    activeChangeType,
     currentPage,
-    expandedChangeIds,
-    highImpactOnly,
     patchChangesParams,
     query,
     resetChangeListState,
     setActiveCategory: setActiveCategoryAndReset,
-    setActiveChangeType: setActiveChangeTypeAndReset,
     setCurrentPage,
     setQuery: setQueryAndReset,
-    toggleExpandedChange,
-    toggleHighImpactOnly,
   }
 }

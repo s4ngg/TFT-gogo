@@ -1,8 +1,6 @@
 import { Filter, Search } from 'lucide-react'
 import {
-  CHANGE_TYPE_FILTERS,
   PATCH_CATEGORIES,
-  type ChangeTypeFilter,
   type PatchCategory,
   type PatchChangeStats,
 } from '../../../api/patchNotes'
@@ -10,13 +8,9 @@ import styles from '../PatchNotes.module.css'
 
 interface PatchChangeFiltersProps {
   activeCategory: PatchCategory
-  activeChangeType: ChangeTypeFilter
-  highImpactOnly: boolean
   query: string
   stats: PatchChangeStats
   onCategoryChange: (category: PatchCategory) => void
-  onChangeTypeChange: (changeType: ChangeTypeFilter) => void
-  onHighImpactOnlyToggle: () => void
   onQueryChange: (query: string) => void
 }
 
@@ -26,11 +20,7 @@ function getCategoryCount(category: PatchCategory, stats: PatchChangeStats) {
 
 function PatchChangeFilters({
   activeCategory,
-  activeChangeType,
-  highImpactOnly,
   onCategoryChange,
-  onChangeTypeChange,
-  onHighImpactOnlyToggle,
   onQueryChange,
   query,
   stats,
@@ -65,30 +55,6 @@ function PatchChangeFilters({
             <span>{getCategoryCount(category, stats)}</span>
           </button>
         ))}
-      </div>
-
-      <div className={styles.quickFilters} aria-label="패치 빠른 필터">
-        <button
-          type="button"
-          className={highImpactOnly ? styles.activeQuickFilter : undefined}
-          onClick={onHighImpactOnlyToggle}
-          aria-pressed={highImpactOnly}
-        >
-          영향 높음만
-        </button>
-
-        <div className={styles.typeFilters}>
-          {CHANGE_TYPE_FILTERS.map((type) => (
-            <button
-              key={type}
-              type="button"
-              className={activeChangeType === type ? styles.activeTypeFilter : undefined}
-              onClick={() => onChangeTypeChange(type)}
-            >
-              {type}
-            </button>
-          ))}
-        </div>
       </div>
     </>
   )

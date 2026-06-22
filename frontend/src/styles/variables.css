@@ -1,9 +1,9 @@
 /* Base theme tokens */
 :root {
-  --bg-main: #070d14;
+  --bg-main: #02070d;
   --bg-sidebar: #050a10;
-  --bg-card: #0b1420;
-  --bg-card-soft: #101a27;
+  --bg-card: #0e1926;
+  --bg-card-soft: #142235;
 
   --border: #1f2a37;
   --border-subtle: rgba(114, 145, 153, 0.18);

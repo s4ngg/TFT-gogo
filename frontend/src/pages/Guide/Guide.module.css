@@ -1,5 +1,8 @@
 .page {
-  width: 1270px;
+  width: 100%;
+  max-width: min(1270px, calc(100vw - var(--sidebar-current-width, 0px) - 48px));
+  box-sizing: border-box;
+  margin: 0 auto;
   padding: 28px 0 60px;
 }
 
@@ -151,6 +154,7 @@
 .searchBox input {
   min-width: 0;
   width: 100%;
+  height: 100%;
   border: 0;
   outline: 0;
   color: #ffffff;
@@ -286,11 +290,15 @@
 }
 
 .sortButton {
+  min-width: calc(var(--size-control-md) + var(--space-xs));
+  min-height: calc(var(--size-control-md) + var(--space-xs));
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
+  padding: 0 var(--space-sm);
   border: 0;
+  border-radius: var(--radius-button);
   color: inherit;
   background: transparent;
   font: inherit;
@@ -316,8 +324,8 @@
 }
 
 .pagination button {
-  min-width: 34px;
-  height: 34px;
+  min-width: 40px;
+  height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -435,13 +443,46 @@
   background: rgba(5, 115, 118, 0.38) !important;
 }
 
-.traitCard p {
+.traitSummary {
   min-height: 42px;
   margin: 13px 0 14px;
-  color: #aab2ba;
+  color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.55;
   word-break: keep-all;
+}
+
+.traitEffectList {
+  display: grid;
+  gap: var(--space-sm);
+  margin: 0 0 14px;
+  padding: var(--space-md);
+  border: 1px solid var(--border-separator);
+  border-radius: var(--radius-button);
+  background: var(--bg-btn-dark-soft);
+}
+
+.traitEffectRow {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: flex-start;
+  gap: var(--space-md);
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.45;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.traitEffectLevel {
+  min-width: 0;
+  padding: 2px var(--space-sm);
+  border: 1px solid var(--cyan-border-subtle);
+  border-radius: var(--radius-xs);
+  color: var(--color-cyan);
+  background: var(--cyan-bg-faint);
+  font-weight: 800;
+  text-align: center;
 }
 
 .championLine {
@@ -451,13 +492,13 @@
 }
 
 .championMini {
-  max-width: 120px;
-  height: 33px;
+  max-width: 128px;
+  height: calc(var(--size-control-md) + var(--space-xs));
   display: inline-grid;
-  grid-template-columns: 29px minmax(0, 1fr) 18px;
+  grid-template-columns: var(--size-control-md) minmax(0, 1fr) 18px;
   align-items: center;
   gap: 6px;
-  padding-right: 7px;
+  padding-right: var(--space-md);
   overflow: hidden;
   border: 1px solid rgba(112, 144, 152, 0.16);
   border-radius: 6px;
@@ -466,8 +507,8 @@
 }
 
 .championMini img {
-  width: 29px;
-  height: 29px;
+  width: var(--size-control-md);
+  height: var(--size-control-md);
   border-radius: 5px;
   object-fit: cover;
 }
@@ -553,17 +594,28 @@ button.championMini:hover {
 }
 
 .tableWrap {
-  overflow: hidden;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
   border: 1px solid rgba(112, 144, 152, 0.16);
   border-radius: 10px;
   background: linear-gradient(180deg, rgba(8, 21, 29, 0.96), rgba(5, 15, 21, 0.96));
   box-shadow: 0 18px 38px rgba(0, 0, 0, 0.18);
+  -webkit-overflow-scrolling: touch;
 }
 
 .itemTable,
 .augmentTable {
   width: 100%;
   border-collapse: collapse;
+}
+
+.itemTable {
+  min-width: 760px;
+}
+
+.augmentTable {
+  min-width: 720px;
 }
 
 .itemTable th,
@@ -604,6 +656,10 @@ button.championMini:hover {
 
 .rewardCol {
   width: 220px;
+}
+
+.descriptionCol {
+  width: 320px;
 }
 
 .itemNameCell {
@@ -709,6 +765,15 @@ button.championMini:hover {
   margin-top: 3px;
   color: #6b7580;
   font-size: 11px;
+}
+
+.itemDescriptionCell {
+  max-width: 360px;
+  color: var(--color-silver) !important;
+  line-height: 1.45;
+  text-align: left !important;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .itemIconStrip {
@@ -842,7 +907,7 @@ button.championMini:hover {
 
 .planTabs button,
 .costFilter button {
-  height: 31px;
+  min-height: calc(var(--size-control-md) + var(--space-xs));
   padding: 0 12px;
   border: 1px solid rgba(110, 142, 150, 0.28);
   border-radius: 6px;
@@ -958,14 +1023,32 @@ button.championMini:hover {
   background:
     linear-gradient(180deg, rgba(9, 28, 36, 0.94), rgba(5, 15, 21, 0.96));
   box-shadow: 0 18px 38px rgba(0, 0, 0, 0.18);
-  cursor: pointer;
+  cursor: default;
   outline: 0;
 }
 
 .championCard:hover,
-.championCard:focus-visible {
+.championCard:focus-within {
   z-index: 5;
   border-color: rgba(5, 243, 231, 0.45);
+}
+
+.championOpenButton {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  justify-items: center;
+  gap: 9px;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.championOpenButton:focus-visible {
+  outline: 2px solid var(--accent-bright);
+  outline-offset: 4px;
 }
 
 .championPortrait {
@@ -983,8 +1066,8 @@ button.championMini:hover {
   top: 9px;
   right: 9px;
   z-index: 3;
-  width: 28px;
-  height: 28px;
+  width: calc(var(--size-control-md) + var(--space-xs));
+  height: calc(var(--size-control-md) + var(--space-xs));
   display: grid;
   place-items: center;
   padding: 0;
@@ -1046,6 +1129,7 @@ button.championMini:hover {
 }
 
 .championTooltip {
+  display: none;
   pointer-events: auto;
   position: absolute;
   top: calc(100% + 10px);
@@ -1063,7 +1147,8 @@ button.championMini:hover {
 }
 
 .championCard:hover .championTooltip,
-.championCard:focus-visible .championTooltip {
+.championCard:focus-within .championTooltip {
+  display: block;
   opacity: 1;
   transform: translate(-50%, 0);
 }
@@ -1352,5 +1437,160 @@ button.championMini:hover {
   .championPortrait {
     width: 70px;
     height: 70px;
+  }
+}
+
+@media (max-width: 1180px) {
+  .traitLayout,
+  .augmentLayout,
+  .plannerBody {
+    grid-template-columns: 1fr;
+  }
+
+  .championGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .page {
+    max-width: 100%;
+  }
+
+  .pageHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .headerStats {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .statBadge {
+    flex: 1 1 140px;
+  }
+
+  .controlPanel {
+    grid-template-columns: 1fr;
+  }
+
+  .traitGrid,
+  .metricCards,
+  .stageCards {
+    grid-template-columns: 1fr;
+  }
+
+  .championGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .statusBanner button,
+  .quickGroup button,
+  .costFilter button,
+  .planTabs button,
+  .sortButton,
+  .championMini,
+  .pagination button {
+    min-height: calc(var(--size-control-md) + var(--space-md));
+  }
+
+  .quickGroup button,
+  .sortButton,
+  .pagination button {
+    min-width: calc(var(--size-control-md) + var(--space-md));
+  }
+
+  .favoriteButton {
+    width: calc(var(--size-control-md) + var(--space-md));
+    height: calc(var(--size-control-md) + var(--space-md));
+  }
+
+  .itemIconButton {
+    width: calc(var(--size-control-md) + var(--space-md));
+    height: calc(var(--size-control-md) + var(--space-md));
+  }
+
+  .itemIconButton img {
+    width: calc(var(--size-control-sm) - var(--space-xs));
+    height: calc(var(--size-control-sm) - var(--space-xs));
+  }
+
+  .championCard {
+    grid-template-rows: 86px auto auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .page {
+    max-width: 100%;
+    padding: 20px 0 44px;
+  }
+
+  .tabBar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .quickGroup {
+    align-items: flex-start;
+    flex-direction: column;
+    height: auto;
+    padding: 10px;
+  }
+
+  .quickGroup button {
+    max-width: 100%;
+  }
+
+  .statusBanner {
+    grid-template-columns: var(--size-status-icon) minmax(0, 1fr);
+  }
+
+  .statusBanner button {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .costFilter,
+  .planTabs {
+    flex-wrap: wrap;
+  }
+
+  .championGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .championDialog {
+    width: min(100%, 420px);
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 460px) {
+  .tabBar {
+    grid-template-columns: 1fr;
+  }
+
+  .pagination {
+    flex-wrap: wrap;
+  }
+
+  .championGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .dialogItems,
+  .tooltipItems {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .dialogStats,
+  .statGrid {
+    grid-template-columns: 1fr;
   }
 }

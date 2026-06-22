@@ -32,22 +32,56 @@ const TIER_KO: Record<string, string> = {
 
 type GameTypeFilter = 'ALL' | GameType
 const GAME_TYPE_FILTERS: GameTypeFilter[] = ['ALL', 'RANKED', 'NORMAL']
+const REFRESH_COOLDOWN = 60
+const REFRESH_LS_KEY = 'tft_last_refresh'
+
+function summonerKey(name: string, tag: string): string {
+  return `${name.toLowerCase()}#${tag.toLowerCase()}`
+}
+
+function getInitialCooldown(name: string, tag: string): number {
+  try {
+    const raw = localStorage.getItem(REFRESH_LS_KEY)
+    if (!raw) return 0
+    const parsed: unknown = JSON.parse(raw)
+    if (typeof parsed !== 'object' || parsed === null) return 0
+    const map = parsed as Record<string, unknown>
+    const key = summonerKey(name, tag)
+    const at = map[key]
+    if (typeof at !== 'number') return 0
+    const elapsed = Math.floor((Date.now() - at) / 1000)
+    return elapsed < REFRESH_COOLDOWN ? REFRESH_COOLDOWN - elapsed : 0
+  } catch { return 0 }
+}
+
+function saveCooldownTimestamp(name: string, tag: string): void {
+  try {
+    const raw = localStorage.getItem(REFRESH_LS_KEY)
+    const map: Record<string, number> = raw ? JSON.parse(raw) ?? {} : {}
+    if (typeof map !== 'object' || map === null) {
+      localStorage.setItem(REFRESH_LS_KEY, JSON.stringify({ [summonerKey(name, tag)]: Date.now() }))
+      return
+    }
+    map[summonerKey(name, tag)] = Date.now()
+    localStorage.setItem(REFRESH_LS_KEY, JSON.stringify(map))
+  } catch { /* best-effort */ }
+}
 
 /* ── 메인 ── */
 function SummonerDetail() {
   const { gameName, tagLine } = useParams<{ gameName: string; tagLine: string }>()
+  const name = decodeURIComponent(gameName ?? '')
+  const tag = tagLine ?? 'KR1'
   const [query, setQuery] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [gameTypeFilter, setGameTypeFilter] = useState<GameTypeFilter>('ALL')
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [refreshRateLimitSeconds, setRefreshRateLimitSeconds] = useState(0)
+  const [cooldownSeconds, setCooldownSeconds] = useState(() => getInitialCooldown(name, tag))
   const [refreshError, setRefreshError] = useState<string | null>(null)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const setSummoner = useSummonerStore((s) => s.setSummoner)
-
-  const name = decodeURIComponent(gameName ?? '')
-  const tag = tagLine ?? 'KR1'
 
   const { data: profile, isError: profileIsError, error: profileErr, isLoading: profileLoading } = useSummonerProfile(name, tag)
   const profileRateLimited = profileIsError && (profileErr as Error)?.message === 'RATE_LIMITED'
@@ -189,6 +223,19 @@ function SummonerDetail() {
     : undefined
 
   useEffect(() => {
+    setCooldownSeconds(getInitialCooldown(name, tag))
+  }, [name, tag])
+
+  useEffect(() => {
+    if (refreshRateLimitSeconds <= 0 && cooldownSeconds <= 0) return
+    const timer = setInterval(() => {
+      setRefreshRateLimitSeconds((prev) => (prev <= 1 ? 0 : prev - 1))
+      setCooldownSeconds((prev) => (prev <= 1 ? 0 : prev - 1))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [refreshRateLimitSeconds, cooldownSeconds])
+
+  useEffect(() => {
     if (profile) {
       setSummoner({
         name,
@@ -211,6 +258,8 @@ function SummonerDetail() {
       await queryClient.invalidateQueries({ queryKey: ['summoner', 'profile', name, tag] })
       await queryClient.invalidateQueries({ queryKey: ['summoner', 'matches', profile?.puuid] })
       await queryClient.invalidateQueries({ queryKey: ['summoner', 'stats', profile?.puuid] })
+      setCooldownSeconds(REFRESH_COOLDOWN)
+      saveCooldownTimestamp(name, tag)
     } catch (err: unknown) {
       const status = (err as HttpError)?.response?.status
       if (status === 429) {
@@ -287,10 +336,10 @@ function SummonerDetail() {
                   type="button"
                   className={styles.updateBtn}
                   onClick={handleRefresh}
-                  disabled={isRefreshing}
+                  disabled={isRefreshing || cooldownSeconds > 0}
                 >
                   <RefreshCcw size={16} className={isRefreshing ? styles.spin : ''} />
-                  {isRefreshing ? '갱신 중...' : '전적 업데이트'}
+                  {isRefreshing ? '갱신 중...' : cooldownSeconds > 0 ? `${cooldownSeconds}초 후 가능` : '갱신가능'}
                 </button>
                 {refreshError && <p className={styles.refreshError}>{refreshError}</p>}
               </div>

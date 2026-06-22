@@ -94,6 +94,17 @@ app:
       include-traits: true
       include-items: true
       include-augments: true
+  patch-note:
+    scheduler:
+      # Keep this disabled in local/dev personal environments. Enable only on shared dev/prod servers.
+      enabled: false
+      startup-import: false
+      locale: ko-kr
+      current: true
+      list-scan-limit: 5
+      list-cron: "0 0 * * * *"
+      refresh-cron: "0 30 6 * * *"
+      zone: Asia/Seoul
   # CORS 허용 origin 목록 — allowCredentials=true이므로 wildcard(*) 사용 불가
   # 환경별로 실제 배포 도메인을 명시적으로 추가하세요
   cors:

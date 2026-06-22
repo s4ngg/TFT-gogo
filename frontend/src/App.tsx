@@ -7,6 +7,7 @@ import AdminGuides from './pages/Admin/AdminGuides'
 import AdminPatchNotes from './pages/Admin/AdminPatchNotes'
 import AdminMembers from './pages/Admin/AdminMembers'
 import AdminCommunity from './pages/Admin/AdminCommunity'
+import AdminMatchMonitor from './pages/Admin/AdminMatchMonitor'
 import AuthPage from './pages/Auth/AuthPage'
 import OAuthCallbackPage from './pages/Auth/OAuthCallbackPage'
 import Decks from './pages/Decks/Decks'
@@ -46,6 +47,7 @@ function App() {
         <Route path="/admin/patch-notes" element={<AdminPatchNotes />} />
         <Route path="/admin/members" element={<AdminMembers />} />
         <Route path="/admin/community" element={<AdminCommunity />} />
+        <Route path="/admin/match-monitor" element={<AdminMatchMonitor />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />

@@ -6,9 +6,6 @@ import {
   type PatchNoteSummary,
 } from '../api/patchNotes'
 
-const PATCH_SAMPLE_PAGE_SIZE = 5
-const SAMPLE_PAGE_COUNT = 7
-
 const basePatchChanges: PatchChange[] = [
   {
     id: 1,
@@ -361,34 +358,21 @@ function buildVersionedChange(change: PatchChange, version: string, patchIndex: 
   }
 }
 
-function expandPatchSamples(changes: PatchChange[], patch: PatchNoteSummary) {
-  const targetCount = PATCH_SAMPLE_PAGE_SIZE * SAMPLE_PAGE_COUNT
+function buildPatchChanges(changes: PatchChange[], patch: PatchNoteSummary) {
   const patchIndex = patchHistory.findIndex((historyItem) => historyItem.version === patch.version)
 
   return CHANGE_CATEGORIES.flatMap((category) => {
     const categoryChanges = changes.filter((change) => change.category === category)
     if (categoryChanges.length === 0) return []
 
-    return Array.from({ length: targetCount }, (_, index) => {
-      const source = buildVersionedChange(categoryChanges[index % categoryChanges.length], patch.version, patchIndex)
-      const sampleRound = Math.floor(index / categoryChanges.length) + 1
-      const isOriginal = sampleRound === 1
-      const id = patchIndex * 1000 + CHANGE_CATEGORIES.indexOf(category) * targetCount + index + 1
-
-      return {
-        ...source,
-        id,
-        target: isOriginal ? source.target : `${source.target} 샘플 ${sampleRound}`,
-        summary: isOriginal ? source.summary : `${source.summary} ${sampleRound}차 샘플 기준으로 표시했습니다.`,
-        before: isOriginal ? source.before : `${source.before} · 샘플 ${sampleRound}`,
-        after: isOriginal ? source.after : `${source.after} · 샘플 ${sampleRound}`,
-        tags: isOriginal ? source.tags : [...source.tags.slice(0, 2), `샘플 ${sampleRound}`],
-      }
-    })
+    return categoryChanges.map((change, index) => ({
+      ...buildVersionedChange(change, patch.version, patchIndex),
+      id: patchIndex * 1000 + CHANGE_CATEGORIES.indexOf(category) * 100 + index + 1,
+    }))
   })
 }
 
 export const patchNotesFallbackData: PatchNoteDetail[] = patchHistory.map((patch) => ({
   ...patch,
-  changes: expandPatchSamples(basePatchChanges, patch),
+  changes: buildPatchChanges(basePatchChanges, patch),
 }))

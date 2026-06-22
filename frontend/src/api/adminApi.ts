@@ -3,6 +3,7 @@ import type { RankFilter } from '../pages/Dashboard/dashboardData'
 
 const ADMIN_TOKEN_KEY = 'tftgogo_admin_token'
 const GUIDE_CDRAGON_IMPORT_TIMEOUT_MS = 120_000
+const PATCH_NOTE_RIOT_IMPORT_TIMEOUT_MS = 120_000
 
 export function getAdminToken(): string {
   return localStorage.getItem(ADMIN_TOKEN_KEY) ?? ''
@@ -20,7 +21,7 @@ function adminHeaders() {
   return { 'X-Admin-Token': getAdminToken() }
 }
 
-function getHttpStatus(error: unknown): number | undefined {
+export function getHttpStatus(error: unknown): number | undefined {
   if (typeof error !== 'object' || error === null || !('response' in error)) {
     return undefined
   }
@@ -32,6 +33,22 @@ function getHttpStatus(error: unknown): number | undefined {
 export function isAdminAuthFailure(error: unknown): boolean {
   const status = getHttpStatus(error)
   return status === 401 || status === 403
+}
+
+export function isNetworkOrTimeoutError(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false
+  if ('response' in error) return false  // 서버 응답이 있으면 네트워크 오류 아님
+  if ('code' in error) {
+    const code = (error as { code?: string }).code
+    return code === 'ECONNABORTED' || code === 'ERR_NETWORK' || code === 'ETIMEDOUT'
+  }
+  return true
+}
+
+export function getServerErrorStatus(error: unknown): number | undefined {
+  const status = getHttpStatus(error)
+  if (status != null && status >= 500) return status
+  return undefined
 }
 
 interface AdminRequestError extends Error {
@@ -131,6 +148,13 @@ export async function resetDeckCuration(deckId: number): Promise<void> {
   })
 }
 
+export async function triggerDeckAggregate(date?: string): Promise<void> {
+  const params = date ? `?date=${date}` : ''
+  await axiosInstance.post(`/admin/decks/meta/aggregate${params}`, null, {
+    headers: adminHeaders(),
+  })
+}
+
 // ── 게임가이드 import ─────────────────────────────────────────────────────
 
 export interface GuideCdragonImportRequest {
@@ -188,6 +212,26 @@ export interface AdminPatchNotePayload {
   version: string
 }
 
+export interface AdminPatchNoteImportRequest {
+  current: boolean
+  locale: string | null
+  sourceUrl: string | null
+  version: string | null
+}
+
+export interface AdminPatchNoteImportResponse {
+  createdChanges: number
+  parserWarnings: string[]
+  patchNoteCreated: boolean
+  patchNoteId: number
+  patchNoteSkipped: boolean
+  patchNoteUpdated: boolean
+  skippedChanges: number
+  sourceUrl: string
+  updatedChanges: number
+  version: string
+}
+
 export interface AdminPatchChange {
   afterValue: string | null
   beforeValue: string | null
@@ -198,7 +242,7 @@ export interface AdminPatchChange {
   sortOrder: number
   summary: string
   tags: string[]
-  targetKey: string
+  targetKey: string | null
   targetName: string
   type: AdminPatchChangeType
 }
@@ -213,7 +257,7 @@ export interface AdminPatchChangePayload {
   sortOrder: number
   summary: string
   tags: string[]
-  targetKey: string
+  targetKey: string | null
   targetName: string
   type: AdminPatchChangeType
 }
@@ -265,6 +309,24 @@ export async function deleteAdminPatchNote(patchNoteId: number): Promise<void> {
     })
   } catch (error) {
     throw createAdminRequestError(error, 'Failed to delete admin patch note.')
+  }
+}
+
+export async function importAdminPatchNoteFromRiot(
+  payload: AdminPatchNoteImportRequest,
+): Promise<AdminPatchNoteImportResponse> {
+  try {
+    const { data } = await axiosInstance.post<ApiResponse<AdminPatchNoteImportResponse>>(
+      '/admin/patch-notes/import/riot',
+      payload,
+      {
+        headers: adminHeaders(),
+        timeout: PATCH_NOTE_RIOT_IMPORT_TIMEOUT_MS,
+      },
+    )
+    return data.data
+  } catch (error) {
+    throw createAdminRequestError(error, 'Failed to import Riot patch note.')
   }
 }
 
@@ -387,4 +449,48 @@ export async function deleteHeroAugmentDeck(id: number): Promise<void> {
   await axiosInstance.delete(`/admin/hero-augment-decks/${id}`, {
     headers: adminHeaders(),
   })
+}
+
+// ── 전적 캐시 & Rate Limit 모니터링 ──────────────────────────────────────────
+
+export interface CacheStats {
+  totalCount: number
+  rankedCount: number
+  normalCount: number
+  newestMatchTimestamp: number | null
+  oldestMatchTimestamp: number | null
+  lastCachedAt: string | null
+}
+
+export interface RateLimitStats {
+  shortRemaining: number
+  shortMax: number
+  shortWindowMs: number
+  shortWindowRemainMs: number
+  longRemaining: number
+  longMax: number
+  longWindowMs: number
+  longWindowRemainMs: number
+}
+
+export async function fetchMatchCacheStats(): Promise<CacheStats> {
+  try {
+    const { data } = await axiosInstance.get<ApiResponse<CacheStats>>('/admin/match/cache-stats', {
+      headers: adminHeaders(),
+    })
+    return data.data
+  } catch (error) {
+    throw createAdminRequestError(error, 'Failed to fetch match cache stats.')
+  }
+}
+
+export async function fetchRateLimitStats(): Promise<RateLimitStats> {
+  try {
+    const { data } = await axiosInstance.get<ApiResponse<RateLimitStats>>('/admin/match/rate-limit', {
+      headers: adminHeaders(),
+    })
+    return data.data
+  } catch (error) {
+    throw createAdminRequestError(error, 'Failed to fetch rate limit stats.')
+  }
 }

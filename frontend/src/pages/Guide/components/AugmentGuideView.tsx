@@ -7,7 +7,6 @@ import {
   type RewardRow,
 } from '../../../api/guide'
 import { useGuideTabItems } from '../../../hooks/useGuide'
-import { useGuideMetricSort } from '../hooks/useGuideMetricSort'
 import {
   useGuidePageBounds,
   useGuideTabPagination,
@@ -39,19 +38,12 @@ function AugmentGuideView({
     currentPage,
     setCurrentPage,
   } = useGuideTabPagination({ resetKey: query })
-  const {
-    handleSort,
-    sortDir,
-    sortKey,
-  } = useGuideMetricSort({ onSortChange: () => setCurrentPage(1) })
   const augmentsQuery = useGuideTabItems({
     fallbackData,
     params: {
       page: currentPage,
       pageSize: DEFAULT_GUIDE_PAGE_SIZE,
       query,
-      sortDir,
-      sortKey,
       tab: 'augments',
     },
   })
@@ -75,9 +67,6 @@ function AugmentGuideView({
       <div className={styles.augmentLayout}>
         <AugmentStatsTable
           augments={visibleAugments}
-          onSort={handleSort}
-          sortDir={sortDir}
-          sortKey={sortKey}
         />
         <AugmentRewardPanel rewardRows={rewardRows} />
       </div>

@@ -24,24 +24,20 @@ public interface PatchChangeRepository extends JpaRepository<PatchChange, Long> 
             SELECT c.patchNote.id AS patchNoteId, COUNT(c) AS changeCount
             FROM PatchChange c
             WHERE c.patchNote IN :patchNotes
-              AND c.active = true
-              AND c.deletedAt IS NULL
             GROUP BY c.patchNote.id
             """)
     List<PatchChangeCount> countByPatchNotes(@Param("patchNotes") List<PatchNote> patchNotes);
 
-    List<PatchChange> findByPatchNoteAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc(PatchNote patchNote);
+    long countByPatchNote(PatchNote patchNote);
 
-    List<PatchChange> findByPatchNoteAndDeletedAtIsNullOrderBySortOrderAscIdAsc(PatchNote patchNote);
+    List<PatchChange> findByPatchNoteOrderBySortOrderAscIdAsc(PatchNote patchNote);
 
-    Optional<PatchChange> findByIdAndDeletedAtIsNull(Long id);
+    Optional<PatchChange> findByPatchNoteAndSourceKey(PatchNote patchNote, String sourceKey);
 
     @Query("""
             SELECT c
             FROM PatchChange c
             WHERE c.patchNote = :patchNote
-              AND c.active = true
-              AND c.deletedAt IS NULL
               AND (:category IS NULL OR c.category = :category)
               AND (:changeType IS NULL OR c.changeType = :changeType)
               AND (:impact IS NULL OR c.impact = :impact)

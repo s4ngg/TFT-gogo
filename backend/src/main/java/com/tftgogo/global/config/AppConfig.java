@@ -47,7 +47,7 @@ public class AppConfig {
         executor.setMaxPoolSize(1);
         executor.setQueueCapacity(1);
         executor.setThreadNamePrefix("aggregation-");
-        executor.setRejectedExecutionHandler(new java.util.concurrent.ThreadPoolExecutor.DiscardPolicy());
+        executor.setRejectedExecutionHandler(new java.util.concurrent.ThreadPoolExecutor.AbortPolicy());
         executor.initialize();
         return executor;
     }

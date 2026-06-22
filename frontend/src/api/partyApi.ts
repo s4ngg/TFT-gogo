@@ -199,12 +199,27 @@ function getPostStyle(mode: PartyMode, tier: string): Pick<PartyPost, 'icon' | '
 }
 
 function formatCloseLabel(value: string | null | undefined) {
-  if (!value) return '방금 등록'
+  if (!value) return '마감 시간 없음'
 
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
 
-  return date.getTime() > Date.now() ? '마감 예정' : '방금 등록'
+  if (date.getTime() <= Date.now()) {
+    return '마감됨'
+  }
+
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const today = new Date()
+  const isToday = date.getFullYear() === today.getFullYear()
+    && date.getMonth() === today.getMonth()
+    && date.getDate() === today.getDate()
+
+  if (isToday) {
+    return `오늘 ${hours}:${minutes} 마감`
+  }
+
+  return `${date.getMonth() + 1}/${date.getDate()} ${hours}:${minutes} 마감`
 }
 
 function toGameMode(mode: PartyMode) {
@@ -299,7 +314,7 @@ function normalizePartyPost(response: PartyPostResponse, index: number): PartyPo
     mode,
     tier,
     capacity,
-    close: formatCloseLabel(response.deadline ?? response.close ?? response.createdAt),
+    close: formatCloseLabel(response.deadline ?? response.close),
     status: normalizeStatus(response.status, capacity, isClosed),
     description: readString(response.description ?? response.content, '상세 설명이 없습니다.'),
     tags: readTags(response.tags).slice(0, 4),
@@ -345,6 +360,7 @@ export async function createPartyPost(request: CreatePartyPostRequest): Promise<
         deadline: request.deadline,
         gameMode: toGameMode(request.mode),
         maxMembers: readNumber(request.capacity.split('/')[1]) ?? 2,
+        tier: request.tier,
         tags: request.tags,
       },
     )

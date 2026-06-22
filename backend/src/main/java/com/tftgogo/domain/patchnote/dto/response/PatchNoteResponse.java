@@ -1,6 +1,7 @@
 package com.tftgogo.domain.patchnote.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.tftgogo.domain.patchnote.entity.PatchNoteImportSource;
 import com.tftgogo.domain.patchnote.entity.PatchNote;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -20,6 +21,9 @@ public class PatchNoteResponse {
     private String description;
     private String focus;
     private String imageUrl;
+    private String sourceUrl;
+    private PatchNoteImportSource importSource;
+    private LocalDateTime importedAt;
     private LocalDateTime publishedAt;
     @Getter(AccessLevel.NONE)
     private boolean current;
@@ -35,6 +39,9 @@ public class PatchNoteResponse {
                 .description(patchNote.getDescription())
                 .focus(patchNote.getFocus())
                 .imageUrl(patchNote.getImageUrl())
+                .sourceUrl(patchNote.getSourceUrl())
+                .importSource(patchNote.getImportSource())
+                .importedAt(patchNote.getImportedAt())
                 .publishedAt(patchNote.getPublishedAt())
                 .current(patchNote.isCurrent())
                 .highlights(highlights)
