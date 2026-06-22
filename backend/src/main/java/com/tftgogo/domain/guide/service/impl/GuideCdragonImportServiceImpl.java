@@ -62,6 +62,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
     private static final Pattern DOUBLE_BRACE_TOKEN_PATTERN = Pattern.compile("\\{\\{[^}]+}}");
     private static final Pattern HASH_TAG_PATTERN = Pattern.compile("^\\{[0-9a-fA-F]{6,}\\}$");
     private static final Pattern STANDALONE_PERCENT_PATTERN = Pattern.compile("(^|[^0-9])%");
+    private static final Pattern METRIC_ONLY_PATTERN = Pattern.compile("^[+\\-]?\\d[\\d,./%\\s+\\-]*$");
     private static final Pattern EMPTY_PARENS_PATTERN = Pattern.compile("\\(\\s*\\)");
     private static final int PATCH_VERSION_MAX_LENGTH = 20;
     private static final int AUGMENT_TAG_LIMIT = 4;
@@ -99,6 +100,21 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             "mana",
             "critical"
     };
+    private static final Map<String, String> CDRAGON_ICON_LABELS = Map.ofEntries(
+            Map.entry("scaleas", "공격 속도"),
+            Map.entry("scalead", "공격력"),
+            Map.entry("scaleap", "주문력"),
+            Map.entry("scalehealth", "체력"),
+            Map.entry("scalehp", "체력"),
+            Map.entry("scalearmor", "방어력"),
+            Map.entry("scalemr", "마법 저항력"),
+            Map.entry("scalemagicresist", "마법 저항력"),
+            Map.entry("scalemana", "마나"),
+            Map.entry("scalecrit", "치명타"),
+            Map.entry("scalecritchance", "치명타 확률"),
+            Map.entry("gold", "골드"),
+            Map.entry("range", "사거리")
+    );
     private final GuideRepository guideRepository;
     private final GuideChampionRepository guideChampionRepository;
     private final GuideTraitRepository guideTraitRepository;
@@ -626,9 +642,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                 continue;
             }
 
-            String description = stripTraitLevelPrefix(
-                    sanitizeText(interpolatePlaceholders(rowMatcher.group(1), effect))
-            );
+            String description = traitTierEffectDescription(rowMatcher.group(1), effect);
             if (!hasText(description)) {
                 continue;
             }
@@ -639,6 +653,116 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             tierEffects.add(tierEffect);
         }
         return tierEffects;
+    }
+
+    private String traitTierEffectDescription(String rowText, JsonNode effect) {
+        String metricLabel = inferTraitMetricLabel(rowText);
+        String withIconLabels = replaceCdragonIconTokens(rowText);
+        String description = stripTraitLevelPrefix(sanitizeText(interpolatePlaceholders(withIconLabels, effect)));
+        return normalizeTraitMetricDescription(description, metricLabel);
+    }
+
+    private String replaceCdragonIconTokens(String value) {
+        Matcher tokenMatcher = CDRAGON_TOKEN_PATTERN.matcher(value);
+        StringBuffer replaced = new StringBuffer();
+        while (tokenMatcher.find()) {
+            String label = cdragonIconLabel(tokenMatcher.group());
+            tokenMatcher.appendReplacement(replaced, Matcher.quoteReplacement(label));
+        }
+        tokenMatcher.appendTail(replaced);
+        return replaced.toString();
+    }
+
+    private String cdragonIconLabel(String token) {
+        if (!hasText(token)) {
+            return "";
+        }
+        String normalized = token
+                .replace("%", "")
+                .replaceFirst("(?i)^i:", "")
+                .replaceAll("[^A-Za-z0-9]", "")
+                .toLowerCase(Locale.ROOT);
+        return CDRAGON_ICON_LABELS.getOrDefault(normalized, "");
+    }
+
+    private String inferTraitMetricLabel(String rowText) {
+        if (!hasText(rowText)) {
+            return "";
+        }
+
+        Matcher iconMatcher = CDRAGON_TOKEN_PATTERN.matcher(rowText);
+        while (iconMatcher.find()) {
+            String label = cdragonIconLabel(iconMatcher.group());
+            if (hasText(label)) {
+                return label;
+            }
+        }
+
+        Matcher placeholderMatcher = PLACEHOLDER_PATTERN.matcher(rowText);
+        while (placeholderMatcher.find()) {
+            String label = metricLabelFromExpression(placeholderMatcher.group(1));
+            if (hasText(label)) {
+                return label;
+            }
+        }
+        return "";
+    }
+
+    private String metricLabelFromExpression(String expression) {
+        if (!hasText(expression)) {
+            return "";
+        }
+        String normalized = MULTIPLY_EXPRESSION_PATTERN.matcher(expression.trim())
+                .replaceFirst("$1")
+                .replaceAll("[^A-Za-z0-9]", "")
+                .toLowerCase(Locale.ROOT);
+        if (normalized.contains("attackspeed") || normalized.equals("as")) {
+            return "공격 속도";
+        }
+        if (normalized.contains("abilitypower") || normalized.equals("ap")) {
+            return "주문력";
+        }
+        if (normalized.contains("attackdamage") || normalized.endsWith("ad")) {
+            return "공격력";
+        }
+        if (normalized.contains("health") || normalized.contains("hp")) {
+            return "체력";
+        }
+        if (normalized.contains("magicresist") || normalized.endsWith("mr")) {
+            return "마법 저항력";
+        }
+        if (normalized.contains("armor")) {
+            return "방어력";
+        }
+        if (normalized.contains("mana")) {
+            return "마나";
+        }
+        if (normalized.contains("crit")) {
+            return "치명타";
+        }
+        if (normalized.contains("damage")) {
+            return "피해";
+        }
+        if (normalized.contains("gold")) {
+            return "골드";
+        }
+        return "";
+    }
+
+    private String normalizeTraitMetricDescription(String description, String metricLabel) {
+        if (!hasText(description) || !hasText(metricLabel)) {
+            return description;
+        }
+        if (description.startsWith(metricLabel)) {
+            return description;
+        }
+        if (METRIC_ONLY_PATTERN.matcher(description).matches()) {
+            return metricLabel + " " + description;
+        }
+        if (description.endsWith(" " + metricLabel)) {
+            return metricLabel + " " + description.substring(0, description.length() - metricLabel.length()).trim();
+        }
+        return description;
     }
 
     private String traitLevel(JsonNode effect) {

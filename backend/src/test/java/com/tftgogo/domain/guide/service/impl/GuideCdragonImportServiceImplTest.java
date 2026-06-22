@@ -149,7 +149,7 @@ class GuideCdragonImportServiceImplTest {
         assertThat(traitGuide.getSummary()).isEqualTo("아군이 공격력을 10% 얻습니다.");
         assertThat(traitGuide.getDataJson()).contains("\"tone\":\"gold\"");
         assertThat(traitGuide.getDataJson()).contains("\"summary\":\"아군이 공격력을 10% 얻습니다.\"");
-        assertThat(traitGuide.getDataJson()).contains("\"tierEffects\":[{\"level\":\"2\",\"description\":\"15%\"},{\"level\":\"4+\",\"description\":\"30%\"}]");
+        assertThat(traitGuide.getDataJson()).contains("\"tierEffects\":[{\"level\":\"2\",\"description\":\"공격 속도 15%\"},{\"level\":\"4+\",\"description\":\"공격 속도 30%\"}]");
         assertThat(traitGuide.getDataJson()).doesNotContain("%i:scaleAS%");
         assertThat(traitGuide.getDataJson()).doesNotContain("@TeamwideAD*100@");
         assertThat(traitGuide.getDataJson()).contains("\"champions\":[{\"cost\":1");

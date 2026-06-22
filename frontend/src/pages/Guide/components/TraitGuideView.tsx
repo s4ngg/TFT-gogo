@@ -25,6 +25,31 @@ interface TraitGuideViewProps {
 }
 
 const INLINE_TIER_EFFECT_PATTERN = /\((\d+\+?)\)\s*/g
+const METRIC_ONLY_PATTERN = /^[+-]?\d[\d,./%\s+-]*$/
+const TRAIT_METRIC_LABELS = [
+  '공격 속도',
+  '마법 저항력',
+  '방어력',
+  '공격력',
+  '주문력',
+  '체력',
+  '마나',
+  '치명타',
+  '피해',
+  '골드',
+]
+
+function inferMetricLabel(summary: string) {
+  return TRAIT_METRIC_LABELS.find((label) => summary.includes(label)) ?? ''
+}
+
+function normalizeInlineTierEffectDescription(description: string, summary: string) {
+  const metricLabel = inferMetricLabel(summary)
+  if (!metricLabel || !METRIC_ONLY_PATTERN.test(description) || description.startsWith(metricLabel)) {
+    return description
+  }
+  return `${metricLabel} ${description}`
+}
 
 function splitInlineTierEffects(summary: string) {
   const matches = [...summary.matchAll(INLINE_TIER_EFFECT_PATTERN)]
@@ -36,7 +61,10 @@ function splitInlineTierEffects(summary: string) {
   matches.forEach((match, index) => {
     const startIndex = (match.index ?? 0) + match[0].length
     const endIndex = matches[index + 1]?.index ?? summary.length
-    const description = summary.slice(startIndex, endIndex).trim()
+    const description = normalizeInlineTierEffectDescription(
+      summary.slice(startIndex, endIndex).trim(),
+      baseSummary,
+    )
     if (description) {
       tierEffects.push({
         description,
@@ -123,6 +151,10 @@ function TraitGuideView({
               {traitDisplay.summary && <p className={styles.traitSummary}>{traitDisplay.summary}</p>}
               {traitDisplay.tierEffects.length > 0 && (
                 <div className={styles.traitEffectList} aria-label={`${traitGuide.name} 단계별 효과`}>
+                  <div className={styles.traitEffectHeader}>
+                    <strong>단계별 효과</strong>
+                    <span>{traitDisplay.tierEffects.length}단계</span>
+                  </div>
                   {traitDisplay.tierEffects.map((tierEffect) => (
                     <div
                       aria-label={`${tierEffect.level}단계 ${tierEffect.description}`}
