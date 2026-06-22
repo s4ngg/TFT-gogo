@@ -68,4 +68,33 @@ public class RiotRateLimiter {
                 : Long.MAX_VALUE;
         return Math.max(1L, Math.min(shortWait, longWait));
     }
+
+    public RateLimitSnapshot getStats() {
+        synchronized (lock) {
+            int shortMax = riotProperties.getShortRateLimitMax();
+            int longMax = riotProperties.getLongRateLimitMax();
+            long shortWindowMs = riotProperties.getShortRateLimitWindowMs();
+            long longWindowMs = riotProperties.getLongRateLimitWindowMs();
+
+            boolean initialized = shortTokens >= 0;
+            if (initialized) refill();
+
+            int shortRem = initialized ? Math.max(0, shortTokens) : shortMax;
+            int longRem = initialized ? Math.max(0, longTokens) : longMax;
+
+            long now = System.currentTimeMillis();
+            long shortRemainMs = initialized ? Math.max(0, shortWindowMs - (now - shortWindowStart)) : 0;
+            long longRemainMs = initialized ? Math.max(0, longWindowMs - (now - longWindowStart)) : 0;
+
+            return new RateLimitSnapshot(
+                    shortRem, shortMax, shortWindowMs, shortRemainMs,
+                    longRem, longMax, longWindowMs, longRemainMs
+            );
+        }
+    }
+
+    public record RateLimitSnapshot(
+            int shortRemaining, int shortMax, long shortWindowMs, long shortWindowRemainMs,
+            int longRemaining, int longMax, long longWindowMs, long longWindowRemainMs
+    ) {}
 }
