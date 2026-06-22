@@ -79,6 +79,27 @@
   border-radius: var(--radius-card);
 }
 
+.importPanel {
+  gap: var(--space-xl);
+}
+
+.importGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(120px, 0.7fr) minmax(120px, 0.7fr) auto;
+  gap: var(--space-xl);
+  align-items: end;
+}
+
+.importCurrentField {
+  min-height: var(--size-control-md);
+  align-items: center;
+  padding-bottom: var(--space-xs);
+}
+
+.compactPanel {
+  justify-content: space-between;
+}
+
 .panelHeader {
   justify-content: space-between;
   gap: var(--space-xl);
@@ -88,6 +109,13 @@
   margin: 0;
   color: var(--text-main);
   font-size: var(--font-size-md);
+  line-height: 1.25;
+}
+
+.subPanelTitle {
+  margin: 0;
+  color: var(--text-main);
+  font-size: var(--font-size-sm);
   line-height: 1.25;
 }
 
@@ -272,6 +300,19 @@
   min-width: 0;
 }
 
+.changeEditorColumn,
+.quickChangeForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+  min-width: 0;
+}
+
+.advancedChangeForm {
+  padding-top: var(--space-xl);
+  border-top: 1px solid var(--border-subtle);
+}
+
 .changeList {
   display: flex;
   flex-direction: column;
@@ -346,7 +387,8 @@
 
 @media (max-width: 1040px) {
   .grid,
-  .changeLayout {
+  .changeLayout,
+  .importGrid {
     grid-template-columns: 1fr;
   }
 }

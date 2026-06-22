@@ -3,6 +3,7 @@ import type { RankFilter } from '../pages/Dashboard/dashboardData'
 
 const ADMIN_TOKEN_KEY = 'tftgogo_admin_token'
 const GUIDE_CDRAGON_IMPORT_TIMEOUT_MS = 120_000
+const PATCH_NOTE_RIOT_IMPORT_TIMEOUT_MS = 120_000
 
 export function getAdminToken(): string {
   return localStorage.getItem(ADMIN_TOKEN_KEY) ?? ''
@@ -188,6 +189,26 @@ export interface AdminPatchNotePayload {
   version: string
 }
 
+export interface AdminPatchNoteImportRequest {
+  current: boolean
+  locale: string | null
+  sourceUrl: string | null
+  version: string | null
+}
+
+export interface AdminPatchNoteImportResponse {
+  createdChanges: number
+  parserWarnings: string[]
+  patchNoteCreated: boolean
+  patchNoteId: number
+  patchNoteSkipped: boolean
+  patchNoteUpdated: boolean
+  skippedChanges: number
+  sourceUrl: string
+  updatedChanges: number
+  version: string
+}
+
 export interface AdminPatchChange {
   afterValue: string | null
   beforeValue: string | null
@@ -198,7 +219,7 @@ export interface AdminPatchChange {
   sortOrder: number
   summary: string
   tags: string[]
-  targetKey: string
+  targetKey: string | null
   targetName: string
   type: AdminPatchChangeType
 }
@@ -213,7 +234,7 @@ export interface AdminPatchChangePayload {
   sortOrder: number
   summary: string
   tags: string[]
-  targetKey: string
+  targetKey: string | null
   targetName: string
   type: AdminPatchChangeType
 }
@@ -265,6 +286,24 @@ export async function deleteAdminPatchNote(patchNoteId: number): Promise<void> {
     })
   } catch (error) {
     throw createAdminRequestError(error, 'Failed to delete admin patch note.')
+  }
+}
+
+export async function importAdminPatchNoteFromRiot(
+  payload: AdminPatchNoteImportRequest,
+): Promise<AdminPatchNoteImportResponse> {
+  try {
+    const { data } = await axiosInstance.post<ApiResponse<AdminPatchNoteImportResponse>>(
+      '/admin/patch-notes/import/riot',
+      payload,
+      {
+        headers: adminHeaders(),
+        timeout: PATCH_NOTE_RIOT_IMPORT_TIMEOUT_MS,
+      },
+    )
+    return data.data
+  } catch (error) {
+    throw createAdminRequestError(error, 'Failed to import Riot patch note.')
   }
 }
 

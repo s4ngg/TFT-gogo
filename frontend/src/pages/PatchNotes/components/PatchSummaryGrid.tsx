@@ -1,48 +1,33 @@
-import { AlertTriangle, ArrowUpRight, Clock3, Trophy } from 'lucide-react'
+import { ListChecks, Sparkles } from 'lucide-react'
 import styles from '../PatchNotes.module.css'
 
 interface PatchSummaryGridProps {
-  buffCount: number
-  nerfCount: number
+  newCount: number
+  totalCount: number
 }
 
-function PatchSummaryGrid({ buffCount, nerfCount }: PatchSummaryGridProps) {
+function PatchSummaryGrid({
+  newCount,
+  totalCount,
+}: PatchSummaryGridProps) {
   return (
     <section className={styles.summaryGrid} aria-label="패치 핵심 지표">
       <article className={styles.summaryCard}>
         <span className={styles.summaryIcon}>
-          <ArrowUpRight size={18} />
+          <ListChecks size={18} />
         </span>
         <div>
-          <strong>{buffCount}</strong>
-          <p>상향 항목</p>
+          <strong>{totalCount}</strong>
+          <p>전체 변경사항</p>
         </div>
       </article>
       <article className={styles.summaryCard}>
-        <span className={`${styles.summaryIcon} ${styles.warnIcon}`}>
-          <AlertTriangle size={18} />
+        <span className={`${styles.summaryIcon} ${styles.newSummaryIcon}`}>
+          <Sparkles size={18} />
         </span>
         <div>
-          <strong>{nerfCount}</strong>
-          <p>하향 항목</p>
-        </div>
-      </article>
-      <article className={styles.summaryCard}>
-        <span className={`${styles.summaryIcon} ${styles.goldIcon}`}>
-          <Trophy size={18} />
-        </span>
-        <div>
-          <strong>AP</strong>
-          <p>주요 상승 메타</p>
-        </div>
-      </article>
-      <article className={styles.summaryCard}>
-        <span className={`${styles.summaryIcon} ${styles.blueIcon}`}>
-          <Clock3 size={18} />
-        </span>
-        <div>
-          <strong>중반</strong>
-          <p>운영 전환 구간</p>
+          <strong>{newCount}</strong>
+          <p>신규 항목</p>
         </div>
       </article>
     </section>

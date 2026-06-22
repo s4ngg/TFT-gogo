@@ -13,25 +13,27 @@ import org.springframework.validation.annotation.Validated;
 @Setter
 @Component
 @Validated
-@ConfigurationProperties(prefix = "app.patch-note.crawler")
-public class PatchNoteCrawlerProperties {
+@ConfigurationProperties(prefix = "app.patch-note.scheduler")
+public class PatchNoteImportSchedulerProperties {
 
-    @NotBlank
-    private String tagUrl = "https://teamfighttactics.leagueoflegends.com/ko-kr/news/tags/patch-notes/";
+    private boolean enabled = false;
+    private boolean startupImport = false;
 
     @NotBlank
     @Pattern(regexp = "^[a-z]{2}-[a-z]{2}$")
-    private String defaultLocale = "ko-kr";
+    private String locale = "ko-kr";
+
+    private boolean current = true;
+
+    @Positive
+    private int listScanLimit = 5;
 
     @NotBlank
-    private String userAgent = "TFT-gogo/1.0";
+    private String listCron = "0 0 * * * *";
 
-    @Positive
-    private int connectTimeoutMillis = 5000;
+    @NotBlank
+    private String refreshCron = "0 30 6 * * *";
 
-    @Positive
-    private int readTimeoutMillis = 10000;
-
-    @Positive
-    private int maxDetailRows = 1000;
+    @NotBlank
+    private String zone = "Asia/Seoul";
 }

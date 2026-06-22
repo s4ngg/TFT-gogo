@@ -48,7 +48,7 @@ class PatchNoteServiceImplTest {
     void 패치노트_목록은_highlights와_changeCount를_응답한다() {
         // given
         PatchNote currentPatch = patchNote("17.0", true);
-        when(patchNoteRepository.findByActiveTrueAndDeletedAtIsNullOrderByCurrentDescPublishedAtDescIdDesc())
+        when(patchNoteRepository.findByDeletedAtIsNullOrderByCurrentDescPublishedAtDescIdDesc())
                 .thenReturn(List.of(currentPatch));
         when(patchChangeRepository.countByPatchNotes(List.of(currentPatch)))
                 .thenReturn(List.of(patchChangeCount(currentPatch.getId(), 3L)));
@@ -65,7 +65,7 @@ class PatchNoteServiceImplTest {
     @Test
     void 존재하지_않는_패치버전은_예외를_던진다() {
         // given
-        when(patchNoteRepository.findByVersionAndActiveTrueAndDeletedAtIsNull("17.9"))
+        when(patchNoteRepository.findByVersionAndDeletedAtIsNull("17.9"))
                 .thenReturn(Optional.empty());
 
         // when, then
@@ -87,9 +87,9 @@ class PatchNoteServiceImplTest {
         PatchNote patchNote = patchNote("17.0", true);
         PatchChange buff = patchChange(patchNote, PatchChangeCategory.CHAMPION, PatchChangeType.BUFF, PatchChangeImpact.HIGH, "카이사", 1);
         PatchChange nerf = patchChange(patchNote, PatchChangeCategory.ITEM, PatchChangeType.NERF, PatchChangeImpact.LOW, "죽음검", 2);
-        when(patchNoteRepository.findByVersionAndActiveTrueAndDeletedAtIsNull("17.0"))
+        when(patchNoteRepository.findByVersionAndDeletedAtIsNull("17.0"))
                 .thenReturn(Optional.of(patchNote));
-        when(patchChangeRepository.findByPatchNoteAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchNote))
+        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote))
                 .thenReturn(List.of(buff, nerf));
         when(patchChangeRepository.findFilteredChanges(
                 patchNote,
@@ -129,9 +129,9 @@ class PatchNoteServiceImplTest {
     void 검색어는_like_와일드카드를_이스케이프해서_조회한다() {
         // given
         PatchNote patchNote = patchNote("17.0", true);
-        when(patchNoteRepository.findByVersionAndActiveTrueAndDeletedAtIsNull("17.0"))
+        when(patchNoteRepository.findByVersionAndDeletedAtIsNull("17.0"))
                 .thenReturn(Optional.of(patchNote));
-        when(patchChangeRepository.findByPatchNoteAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchNote))
+        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote))
                 .thenReturn(List.of());
         when(patchChangeRepository.findFilteredChanges(
                 patchNote,
@@ -169,9 +169,9 @@ class PatchNoteServiceImplTest {
         PatchNote patchNote = patchNote("17.0", true);
         PatchChange buff = patchChange(patchNote, PatchChangeCategory.CHAMPION, PatchChangeType.BUFF, PatchChangeImpact.HIGH, "카이사", 1);
         PatchChange nerf = patchChange(patchNote, PatchChangeCategory.ITEM, PatchChangeType.NERF, PatchChangeImpact.LOW, "죽음검", 2);
-        when(patchNoteRepository.findByVersionAndActiveTrueAndDeletedAtIsNull("17.0"))
+        when(patchNoteRepository.findByVersionAndDeletedAtIsNull("17.0"))
                 .thenReturn(Optional.of(patchNote));
-        when(patchChangeRepository.findByPatchNoteAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchNote))
+        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote))
                 .thenReturn(List.of(buff, nerf));
         when(patchChangeRepository.findFilteredChanges(
                 patchNote,
@@ -206,7 +206,7 @@ class PatchNoteServiceImplTest {
     void 잘못된_page와_pageSize는_예외를_던진다() {
         // given
         PatchNote patchNote = patchNote("17.0", true);
-        when(patchNoteRepository.findByVersionAndActiveTrueAndDeletedAtIsNull("17.0"))
+        when(patchNoteRepository.findByVersionAndDeletedAtIsNull("17.0"))
                 .thenReturn(Optional.of(patchNote));
 
         // when, then
@@ -231,6 +231,52 @@ class PatchNoteServiceImplTest {
                 0
         )).isInstanceOfSatisfying(BusinessException.class, exception ->
                 assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
+
+        assertThatThrownBy(() -> patchNoteService.getPatchChanges(
+                "17.0",
+                null,
+                null,
+                null,
+                null,
+                1,
+                1001
+        )).isInstanceOfSatisfying(BusinessException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
+    }
+
+    @Test
+    void pageSize_1000은_한_패치_전체_조회용으로_허용한다() {
+        // given
+        PatchNote patchNote = patchNote("17.0", true);
+        PatchChange buff = patchChange(patchNote, PatchChangeCategory.CHAMPION, PatchChangeType.BUFF, PatchChangeImpact.HIGH, "카이사", 1);
+        PatchChange nerf = patchChange(patchNote, PatchChangeCategory.ITEM, PatchChangeType.NERF, PatchChangeImpact.LOW, "죽음검", 2);
+        when(patchNoteRepository.findByVersionAndDeletedAtIsNull("17.0"))
+                .thenReturn(Optional.of(patchNote));
+        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote))
+                .thenReturn(List.of(buff, nerf));
+        when(patchChangeRepository.findFilteredChanges(
+                patchNote,
+                null,
+                null,
+                null,
+                null
+        )).thenReturn(List.of(buff, nerf));
+
+        // when
+        PatchChangePageResponse response = patchNoteService.getPatchChanges(
+                "17.0",
+                null,
+                null,
+                null,
+                null,
+                1,
+                1000
+        );
+
+        // then
+        assertThat(response.getItems()).hasSize(2);
+        assertThat(response.getPageSize()).isEqualTo(1000);
+        assertThat(response.getTotalPages()).isEqualTo(1);
     }
 
     @Test
@@ -238,9 +284,9 @@ class PatchNoteServiceImplTest {
         // given
         PatchNote patchNote = patchNote("17.0", true);
         PatchChange buff = patchChange(patchNote, PatchChangeCategory.CHAMPION, PatchChangeType.BUFF, PatchChangeImpact.HIGH, "카이사", 1);
-        when(patchNoteRepository.findByVersionAndActiveTrueAndDeletedAtIsNull("17.0"))
+        when(patchNoteRepository.findByVersionAndDeletedAtIsNull("17.0"))
                 .thenReturn(Optional.of(patchNote));
-        when(patchChangeRepository.findByPatchNoteAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchNote))
+        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote))
                 .thenReturn(List.of(buff));
         when(patchChangeRepository.findFilteredChanges(
                 patchNote,
@@ -272,7 +318,7 @@ class PatchNoteServiceImplTest {
     void 잘못된_category는_예외를_던진다() {
         // given
         PatchNote patchNote = patchNote("17.0", true);
-        when(patchNoteRepository.findByVersionAndActiveTrueAndDeletedAtIsNull("17.0"))
+        when(patchNoteRepository.findByVersionAndDeletedAtIsNull("17.0"))
                 .thenReturn(Optional.of(patchNote));
 
         // when, then
@@ -299,7 +345,6 @@ class PatchNoteServiceImplTest {
                 .publishedAt(LocalDateTime.of(2026, 6, 1, 9, 0))
                 .current(current)
                 .highlightsJson("[\"챔피언 밸런스 조정\",\"시너지 조정\"]")
-                .active(true)
                 .build();
         ReflectionTestUtils.setField(patchNote, "id", 1L);
         return patchNote;
@@ -326,7 +371,6 @@ class PatchNoteServiceImplTest {
                 .imageUrl("https://example.com/" + targetName + ".png")
                 .tagsJson("[\"테스트\"]")
                 .sortOrder(sortOrder)
-                .active(true)
                 .build();
     }
 

@@ -19,11 +19,11 @@ function PatchStatusBanner({ isFallbackData, isFetching, onRetry }: PatchStatusB
         {isFetching ? <Loader2 size={16} /> : <AlertTriangle size={16} />}
       </span>
       <div>
-        <strong>{isFetching ? '패치노트 데이터를 불러오는 중입니다.' : '샘플 패치노트로 표시 중입니다.'}</strong>
+        <strong>{isFetching ? '패치노트 데이터를 불러오는 중입니다.' : '기본 패치노트로 표시 중입니다.'}</strong>
         <p>
           {isFetching
             ? '최신 패치노트 응답을 확인하는 동안 현재 데이터를 유지합니다.'
-            : '패치노트 API 응답을 가져오지 못해 준비된 샘플 데이터를 보여주고 있습니다.'}
+            : '패치노트 API 응답을 가져오지 못해 준비된 기본 데이터를 보여주고 있습니다.'}
         </p>
       </div>
       {!isFetching && (

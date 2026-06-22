@@ -40,7 +40,7 @@ const targetImageUrl: Record<string, string> = {
 }
 
 function getBaseTarget(target: string) {
-  return target.replace(/\s샘플\s\d+$/, '')
+  return target.trim()
 }
 
 export function getPatchChangeImageUrl(change: PatchChange) {

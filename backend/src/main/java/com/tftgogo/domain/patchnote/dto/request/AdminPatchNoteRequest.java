@@ -22,12 +22,11 @@ public class AdminPatchNoteRequest {
 
     @Schema(description = "패치노트 제목", example = "17.3 패치노트", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "패치노트 제목은 필수입니다.")
-    @Size(max = 150, message = "패치노트 제목은 150자 이하로 입력해주세요.")
+    @Size(max = 200, message = "패치노트 제목은 200자 이하로 입력해주세요.")
     private String title;
 
     @Schema(description = "패치노트 카드/목록에 노출할 짧은 요약", example = "캐리 챔피언과 핵심 시너지의 밸런스를 조정한 패치입니다.", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "패치노트 요약은 필수입니다.")
-    @Size(max = 500, message = "패치노트 요약은 500자 이하로 입력해주세요.")
     private String summary;
 
     @Schema(description = "패치노트 상세 설명", example = "이번 패치는 17.3 메타에서 과도하게 강했던 조합을 낮추고, 사용률이 낮은 챔피언의 안정성을 보강하는 방향입니다.")

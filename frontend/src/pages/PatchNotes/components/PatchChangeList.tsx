@@ -1,12 +1,19 @@
 import type { LucideIcon } from 'lucide-react'
-import { ChevronRight, Shield, Sparkles, Swords, Wand2, Zap } from 'lucide-react'
+import { Shield, Sparkles, Swords, Wand2, Zap } from 'lucide-react'
 import {
+  CHANGE_CATEGORIES,
   type ChangeCategory,
-  type ChangeType,
-  type ImpactLevel,
   type PatchChange,
 } from '../../../api/patchNotes'
-import { getPatchChangeImageUrl, PATCH_FALLBACK_IMAGE } from '../patchNotesImages'
+import {
+  getPatchChangeDetailLines,
+  getPatchChangeGroupKey,
+  getVisiblePatchChangeStatuses,
+  getVisibleNewChangeTypes,
+  groupPatchChangesByTitle,
+  shouldShowPatchChangeValueLine,
+  type PatchChangeStatusTone,
+} from '../utils/patchChangeDisplay'
 import styles from '../PatchNotes.module.css'
 
 const CATEGORY_ICON: Record<ChangeCategory, LucideIcon> = {
@@ -17,97 +24,123 @@ const CATEGORY_ICON: Record<ChangeCategory, LucideIcon> = {
   시스템: Zap,
 }
 
-const CHANGE_TYPE_CLASS: Record<ChangeType, string> = {
-  상향: styles.buff,
-  하향: styles.nerf,
-  조정: styles.adjust,
-  신규: styles.new,
-}
-
-const IMPACT_CLASS: Record<ImpactLevel, string> = {
-  높음: styles.highImpact,
-  중간: styles.midImpact,
-  낮음: styles.lowImpact,
+const STATUS_TONE_CLASS: Record<PatchChangeStatusTone, string> = {
+  added: styles.statusAdded,
+  disabled: styles.statusDisabled,
+  enabled: styles.statusEnabled,
+  removed: styles.statusRemoved,
 }
 
 interface PatchChangeListProps {
-  expandedChangeIds: number[]
   patchChanges: PatchChange[]
-  onToggleExpandedChange: (id: number) => void
 }
 
-function PatchChangeList({
-  expandedChangeIds,
-  onToggleExpandedChange,
-  patchChanges,
-}: PatchChangeListProps) {
+function groupChangesByCategory(patchChanges: PatchChange[]) {
+  return CHANGE_CATEGORIES
+    .map((category) => ({
+      category,
+      changes: patchChanges.filter((change) => change.category === category),
+    }))
+    .filter((section) => section.changes.length > 0)
+}
+
+function PatchChangeList({ patchChanges }: PatchChangeListProps) {
+  const sections = groupChangesByCategory(patchChanges).map((section) => ({
+    ...section,
+    groups: groupPatchChangesByTitle(section.changes),
+  }))
+
   return (
-    <div className={styles.changeList}>
-      {patchChanges.map((change) => {
-        const CategoryIcon = CATEGORY_ICON[change.category]
-        const isExpanded = expandedChangeIds.includes(change.id)
-        const imageUrl = getPatchChangeImageUrl(change)
+    <div className={styles.changeTimeline}>
+      {sections.map((section) => {
+        const CategoryIcon = CATEGORY_ICON[section.category]
 
         return (
-          <article key={change.id} className={styles.changeItem}>
-            <div className={styles.changeTop}>
-              <span className={styles.categoryBadge}>
-                <CategoryIcon size={15} />
-                {change.category}
+          <section key={section.category} className={styles.changeSection}>
+            <div className={styles.changeSectionHeader}>
+              <span>
+                <CategoryIcon size={16} />
+                {section.category}
               </span>
-              <span className={`${styles.changeType} ${CHANGE_TYPE_CLASS[change.type]}`}>{change.type}</span>
-              <span className={`${styles.impactBadge} ${IMPACT_CLASS[change.impact]}`}>영향 {change.impact}</span>
+              <strong>{section.changes.length}</strong>
             </div>
 
-            <div className={styles.changeBody}>
-              <span className={styles.changeThumb}>
-                <img
-                  src={imageUrl}
-                  alt=""
-                  onError={(event) => {
-                    event.currentTarget.onerror = null
-                    event.currentTarget.src = PATCH_FALLBACK_IMAGE
-                  }}
-                />
-              </span>
-              <div className={styles.changeText}>
-                <h3>{change.target}</h3>
-                <p>{change.summary}</p>
-              </div>
-              <button
-                type="button"
-                className={styles.detailButton}
-                onClick={() => onToggleExpandedChange(change.id)}
-                aria-expanded={isExpanded}
-              >
-                {isExpanded ? '접기' : '상세 보기'}
-                <ChevronRight size={16} className={isExpanded ? styles.expandedArrow : undefined} />
-              </button>
-            </div>
+            <ul className={styles.changeBulletList}>
+              {section.groups.map((group) => {
+                const changeStatuses = getVisiblePatchChangeStatuses(group.changes)
+                const changeTypes = getVisibleNewChangeTypes(group.changes)
+                const changeDetails = group.changes
+                  .map((change) => ({
+                    change,
+                    showValueChange: shouldShowPatchChangeValueLine(change),
+                    summaryLines: getPatchChangeDetailLines(change, group.title),
+                  }))
+                  .filter((changeDetail) => changeDetail.summaryLines.length > 0 || changeDetail.showValueChange)
 
-            {isExpanded && (
-              <div className={styles.compareGrid}>
-                <div>
-                  <span>이전</span>
-                  <p>{change.before}</p>
-                </div>
-                <div>
-                  <span>변경</span>
-                  <p>{change.after}</p>
-                </div>
-              </div>
-            )}
+                return (
+                  <li key={`${section.category}-${getPatchChangeGroupKey(group.title)}`} className={styles.changeTargetGroup}>
+                    <div className={styles.changeTargetHeader}>
+                      <div className={styles.changeTargetTitle}>
+                        <strong>{group.title}</strong>
+                        {group.changes.length > 1 && (
+                          <span className={styles.changeGroupCount}>{group.changes.length}개</span>
+                        )}
+                      </div>
+                      {(changeStatuses.length > 0 || changeTypes.length > 0) && (
+                        <div className={styles.changeMetaStack}>
+                          {changeStatuses.map((status) => (
+                            <span
+                              key={`${status.tone}-${status.label}`}
+                              className={`${styles.changeStatusBadge} ${STATUS_TONE_CLASS[status.tone]}`}
+                            >
+                              {status.label}
+                            </span>
+                          ))}
+                          {changeTypes.map((changeType) => (
+                            <span
+                              key={changeType}
+                              className={`${styles.changeType} ${styles.new}`}
+                            >
+                              {changeType}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
 
-            <div className={styles.tagRow}>
-              {change.tags.map((tag) => (
-                <span key={tag}>{tag}</span>
-              ))}
-            </div>
-          </article>
+                    {changeDetails.length > 0 && (
+                      <ul className={styles.changeDetailList}>
+                        {changeDetails.map(({ change, showValueChange, summaryLines }) => (
+                          <li key={change.id} className={styles.changeDetailItem}>
+                            {summaryLines.length > 0 && (
+                              <p className={styles.changeDetailSummary}>
+                                {summaryLines.map((line) => (
+                                  <span key={line} className={styles.changeDetailSummaryLine}>
+                                    {line}
+                                  </span>
+                                ))}
+                              </p>
+                            )}
+                            {showValueChange && (
+                              <p className={styles.changeValueLine}>
+                                <span>{change.before || '-'}</span>
+                                <strong>→</strong>
+                                <span>{change.after || '-'}</span>
+                              </p>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          </section>
         )
       })}
 
-      {patchChanges.length === 0 && (
+      {sections.length === 0 && (
         <div className={styles.emptyState}>
           검색 조건에 맞는 패치 변경사항이 없습니다.
         </div>

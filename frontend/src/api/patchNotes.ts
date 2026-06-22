@@ -4,7 +4,7 @@ import { readPatchChangeStatsPayload } from './patchNoteStatsPayload'
 
 export const CHANGE_CATEGORIES = ['챔피언', '시너지', '아이템', '증강체', '시스템'] as const
 export const PATCH_CATEGORIES = ['전체', ...CHANGE_CATEGORIES] as const
-export const CHANGE_TYPE_FILTERS = ['전체 변경', '상향', '하향', '조정', '신규'] as const
+export const CHANGE_TYPE_FILTERS = ['전체', '상향', '하향', '조정', '신규'] as const
 
 export type ChangeCategory = (typeof CHANGE_CATEGORIES)[number]
 export type PatchCategory = (typeof PATCH_CATEGORIES)[number]
@@ -31,7 +31,11 @@ export interface PatchNoteSummary {
   focus: string
   highlights: string[]
   imageUrl: string
+  importedAt?: string
+  importSource?: string
+  summary?: string
   status: '현재' | '이전'
+  sourceUrl?: string
   title: string
   version: string
 }
@@ -81,6 +85,7 @@ export interface PatchChangesQuery {
 }
 
 const PATCH_NOTE_DEFAULT_IMAGE = '/assets/emblems/patch-meta-emblem-pink.png'
+const GENERATED_CATEGORY_TAGS = new Set(['champion', 'trait', 'item', 'augment', 'system'])
 
 type BackendChangeCategory = 'CHAMPION' | 'TRAIT' | 'ITEM' | 'AUGMENT' | 'SYSTEM'
 type BackendChangeType = 'BUFF' | 'NERF' | 'ADJUST' | 'NEW'
@@ -117,11 +122,14 @@ interface PatchNoteResponse {
   highlights?: Array<string | PatchHighlightResponse> | null
   id?: number | null
   imageUrl?: string | null
+  importedAt?: string | null
+  importSource?: string | null
   isCurrent?: boolean | null
   patchNoteChanges?: PatchChangeResponse[] | null
   patchNoteHighlights?: PatchHighlightResponse[] | null
   publishedAt?: string | null
   representativeImageUrl?: string | null
+  sourceUrl?: string | null
   status?: 'CURRENT' | 'PREVIOUS' | '현재' | '이전' | null
   summary?: string | null
   title?: string | null
@@ -159,15 +167,21 @@ function readNonEmptyString(value: unknown): string | undefined {
 }
 
 function readTags(value: unknown) {
+  const normalizeTags = (tags: string[]) => tags
+    .map((tag) => tag.trim())
+    .filter((tag) => tag.length > 0 && !GENERATED_CATEGORY_TAGS.has(tag.toLowerCase()))
+
   if (Array.isArray(value)) {
-    return value.filter((item): item is string => typeof item === 'string')
+    return normalizeTags(value.filter((item): item is string => typeof item === 'string'))
   }
 
   if (typeof value !== 'string') return []
 
   try {
     const parsed: unknown = JSON.parse(value)
-    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : []
+    return Array.isArray(parsed)
+      ? normalizeTags(parsed.filter((item): item is string => typeof item === 'string'))
+      : []
   } catch {
     return []
   }
@@ -252,21 +266,45 @@ function getBackendChangeType(changeType: ChangeTypeFilter) {
     하향: 'NERF',
   }
 
-  return changeType === '전체 변경' ? undefined : changeTypeMap[changeType]
+  return changeType === '전체' ? undefined : changeTypeMap[changeType]
+}
+
+function normalizePatchHeadingLabel(value: string) {
+  const normalizedValue = value.replace(/\s+/g, ' ').trim()
+  if (!normalizedValue) return ''
+
+  const segments = normalizedValue
+    .split('>')
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+  const label = segments[segments.length - 1] ?? normalizedValue
+
+  return label
+    .replace(/^\d{1,2}월\s+\d{1,2}일\s*/u, '')
+    .replace(/^\d{1,2}(?:[.-]\d{1,2}[a-zA-Z]?)?\s*(?:추가\s*)?패치(?:\s*노트)?\s*/u, '')
+    .trim() || label
+}
+
+function uniqueNonEmpty(values: string[]) {
+  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)))
 }
 
 function normalizeHighlights(note: PatchNoteResponse) {
-  if (Array.isArray(note.highlights)) {
-    return note.highlights
-      .map((highlight) => (typeof highlight === 'string' ? highlight : readString(highlight.content)))
-      .filter(Boolean)
-  }
+  const rawHighlights = Array.isArray(note.highlights)
+    ? note.highlights.map((highlight) => (typeof highlight === 'string' ? highlight : readString(highlight.content)))
+    : Array.isArray(note.patchNoteHighlights)
+      ? note.patchNoteHighlights.map((highlight) => readString(highlight.content))
+      : []
 
-  if (Array.isArray(note.patchNoteHighlights)) {
-    return note.patchNoteHighlights.map((highlight) => readString(highlight.content)).filter(Boolean)
-  }
+  return uniqueNonEmpty(rawHighlights.map(normalizePatchHeadingLabel))
+}
 
-  return []
+function normalizePatchFocus(focus: unknown, summary: string, description: string) {
+  const focusText = readString(focus).trim()
+  if (!focusText) return summary || description
+  if (focusText.includes('>')) return summary || description || normalizePatchHeadingLabel(focusText)
+
+  return focusText
 }
 
 function normalizeChange(change: PatchChangeResponse, index: number): PatchChange {
@@ -288,6 +326,7 @@ function normalizePatchNote(note: PatchNoteResponse): PatchNoteDetail {
   const changes = note.changes ?? note.patchNoteChanges ?? []
   const publishedDate = readString(note.date ?? note.publishedAt)
   const summary = readString(note.summary)
+  const description = readString(note.description ?? note.content ?? summary)
   const imageUrl = readNonEmptyString(note.imageUrl)
     ?? readNonEmptyString(note.representativeImageUrl)
     ?? PATCH_NOTE_DEFAULT_IMAGE
@@ -295,11 +334,15 @@ function normalizePatchNote(note: PatchNoteResponse): PatchNoteDetail {
   return {
     changes: changes.map(normalizeChange),
     date: formatDateLabel(publishedDate),
-    description: readString(note.description ?? note.content ?? summary),
-    focus: readString(note.focus ?? summary),
+    description,
+    focus: normalizePatchFocus(note.focus, summary, description),
     highlights: normalizeHighlights(note),
     imageUrl,
+    importedAt: readNonEmptyString(note.importedAt),
+    importSource: readNonEmptyString(note.importSource),
+    summary,
     status: note.status === '현재' || note.status === 'CURRENT' || note.isCurrent ? '현재' : '이전',
+    sourceUrl: readNonEmptyString(note.sourceUrl),
     title: readString(note.title, `${readString(note.version)} 패치`),
     version: readString(note.version),
   }
@@ -482,7 +525,7 @@ export function getFallbackPatchChangePage(
   const stats = countPatchChangeStats(patchChanges)
   const filteredChanges = patchChanges.filter((change) => {
     const matchesCategory = params.category === '전체' || change.category === params.category
-    const matchesType = params.changeType === '전체 변경' || change.type === params.changeType
+    const matchesType = params.changeType === '전체' || change.type === params.changeType
     const matchesImpact = !params.highImpactOnly || change.impact === '높음'
     const searchableText = [change.target, change.summary, change.category, change.type, ...change.tags].join(' ').toLowerCase()
     const matchesQuery = !normalizedQuery || searchableText.includes(normalizedQuery)

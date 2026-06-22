@@ -30,6 +30,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -39,6 +40,41 @@ public class JsoupPatchNoteCrawlerParser implements PatchNoteCrawlerParser {
 
     private static final Pattern VERSION_PATTERN = Pattern.compile("(\\d{1,2})[.-](\\d{1,2}[a-zA-Z]?)");
     private static final Pattern SLUG_VERSION_PATTERN = Pattern.compile("patch-(\\d{1,2})-(\\d{1,2}[a-zA-Z]?)");
+    private static final Set<String> GENERIC_HEADING_TITLES = Set.of(
+            "augment",
+            "augments",
+            "balance changes",
+            "bug fix",
+            "bug fixes",
+            "champion",
+            "champions",
+            "item",
+            "items",
+            "large changes",
+            "small changes",
+            "system",
+            "systems",
+            "trait",
+            "traits",
+            "unit",
+            "units",
+            "대규모 변경",
+            "밸런스 변경",
+            "밸런스 변경 사항",
+            "버그 수정",
+            "버그 수정 사항",
+            "변경 사항",
+            "변경사항",
+            "소규모 변경",
+            "시너지",
+            "시스템",
+            "아이템",
+            "유닛",
+            "증강",
+            "증강체",
+            "챔피언",
+            "특성"
+    );
 
     private final ObjectMapper objectMapper;
     private final PatchNoteCrawlerProperties properties;
@@ -137,16 +173,23 @@ public class JsoupPatchNoteCrawlerParser implements PatchNoteCrawlerParser {
         List<PatchChangeCrawlRow> rows = new ArrayList<>();
         String currentSection = "";
         String currentGroup = "";
+        String currentSubGroup = "";
         Elements elements = container.select("h2, h3, h4, li");
         for (Element element : elements) {
             String tagName = element.tagName();
             if ("h2".equals(tagName)) {
                 currentSection = normalizeText(element.text());
                 currentGroup = "";
+                currentSubGroup = "";
                 continue;
             }
-            if ("h3".equals(tagName) || "h4".equals(tagName)) {
+            if ("h3".equals(tagName)) {
                 currentGroup = normalizeText(element.text());
+                currentSubGroup = "";
+                continue;
+            }
+            if ("h4".equals(tagName)) {
+                currentSubGroup = normalizeText(element.text());
                 continue;
             }
             if (!"li".equals(tagName)) {
@@ -156,27 +199,27 @@ public class JsoupPatchNoteCrawlerParser implements PatchNoteCrawlerParser {
                 parserWarnings.add("max detail rows reached");
                 break;
             }
+            if (hasNestedListItems(element)) {
+                continue;
+            }
 
-            String rowText = normalizeText(element.text());
+            RowContext rowContext = resolveRowContext(currentSection, currentGroup, currentSubGroup, element, container);
+            String rowText = rowContext.rowText();
             if (!hasText(rowText)) {
                 continue;
             }
 
             int sourceOrder = rows.size();
             List<String> rowWarnings = new ArrayList<>();
-            if (!hasText(currentSection) && !hasText(currentGroup)) {
+            if (!hasText(currentSection) && !hasText(rowContext.groupTitle())) {
                 rowWarnings.add("missing heading");
             }
-            if (!element.children().select("li").isEmpty()) {
-                rowWarnings.add("nested list");
-            }
 
-            String headingPath = joinHeadingPath(currentSection, currentGroup);
             BeforeAfterPair beforeAfterPair = extractBeforeAfter(element, rowWarnings);
             String sourceKeyCandidate = buildSourceKeyCandidate(
                     sourceUrl,
                     contentId,
-                    headingPath,
+                    rowContext.headingPath(),
                     sourceOrder,
                     rowText
             );
@@ -184,10 +227,10 @@ public class JsoupPatchNoteCrawlerParser implements PatchNoteCrawlerParser {
             rows.add(new PatchChangeCrawlRow(
                     sourceKeyCandidate,
                     sha256(sourceKeyCandidate),
-                    headingPath,
+                    rowContext.headingPath(),
                     sourceOrder,
                     currentSection,
-                    currentGroup,
+                    rowContext.groupTitle(),
                     rowText,
                     element.outerHtml(),
                     beforeAfterPair.beforeText(),
@@ -196,6 +239,44 @@ public class JsoupPatchNoteCrawlerParser implements PatchNoteCrawlerParser {
             ));
         }
         return rows;
+    }
+
+    private RowContext resolveRowContext(
+            String currentSection,
+            String currentGroup,
+            String currentSubGroup,
+            Element rowElement,
+            Element container) {
+        List<String> ancestorContexts = listItemAncestorTexts(rowElement, container);
+        List<String> detailPrefixes = new ArrayList<>();
+        String groupTitle = "";
+
+        if (hasText(currentGroup) && hasText(currentSubGroup)) {
+            if (isGenericHeadingTitle(currentGroup)) {
+                groupTitle = currentSubGroup;
+            } else {
+                groupTitle = currentGroup;
+                detailPrefixes.add(currentSubGroup);
+            }
+        } else if (hasText(currentSubGroup)) {
+            groupTitle = currentSubGroup;
+        } else if (hasText(currentGroup)) {
+            groupTitle = currentGroup;
+        }
+
+        if (!ancestorContexts.isEmpty()) {
+            if (!hasText(groupTitle) || isGenericHeadingTitle(groupTitle)) {
+                groupTitle = ancestorContexts.get(0);
+                detailPrefixes.addAll(ancestorContexts.subList(1, ancestorContexts.size()));
+            } else {
+                detailPrefixes.addAll(ancestorContexts);
+            }
+        }
+
+        String ownText = ownText(rowElement);
+        String rowText = prependDetailPrefixes(ownText, detailPrefixes);
+        String headingPath = joinHeadingPath(currentSection, currentGroup, currentSubGroup, ancestorContexts);
+        return new RowContext(headingPath, groupTitle, rowText);
     }
 
     private JsonNode readPage(String rawHtml) {
@@ -381,14 +462,83 @@ public class JsoupPatchNoteCrawlerParser implements PatchNoteCrawlerParser {
                 .trim();
     }
 
-    private String joinHeadingPath(String sectionTitle, String groupTitle) {
-        if (hasText(sectionTitle) && hasText(groupTitle)) {
-            return sectionTitle + " > " + groupTitle;
+    private boolean hasNestedListItems(Element element) {
+        return !element.select("> ul li, > ol li").isEmpty();
+    }
+
+    private List<String> listItemAncestorTexts(Element element, Element container) {
+        List<String> ancestorTexts = new ArrayList<>();
+        Element parent = element.parent();
+        while (parent != null && parent != container) {
+            if ("li".equals(parent.tagName())) {
+                String parentText = ownText(parent);
+                if (hasText(parentText)) {
+                    ancestorTexts.add(0, parentText);
+                }
+            }
+            parent = parent.parent();
         }
-        if (hasText(sectionTitle)) {
-            return sectionTitle;
+        return ancestorTexts;
+    }
+
+    private String ownText(Element element) {
+        Element clone = element.clone();
+        clone.select("ul, ol").remove();
+        return normalizeText(clone.text());
+    }
+
+    private String prependDetailPrefixes(String text, List<String> detailPrefixes) {
+        String normalizedText = normalizeText(text);
+        List<String> prefixes = detailPrefixes.stream()
+                .map(this::normalizeText)
+                .filter(this::hasText)
+                .distinct()
+                .toList();
+        if (prefixes.isEmpty()) {
+            return normalizedText;
         }
-        return defaultString(groupTitle);
+
+        String prefix = String.join(" - ", prefixes);
+        if (!hasText(normalizedText)) {
+            return prefix;
+        }
+
+        String lowerText = normalizedText.toLowerCase(Locale.ROOT);
+        String lowerPrefix = prefix.toLowerCase(Locale.ROOT);
+        if (lowerText.equals(lowerPrefix)
+                || lowerText.startsWith(lowerPrefix + ":")
+                || lowerText.startsWith(lowerPrefix + " ")) {
+            return normalizedText;
+        }
+        return prefix + ": " + normalizedText;
+    }
+
+    private String joinHeadingPath(
+            String sectionTitle,
+            String groupTitle,
+            String subGroupTitle,
+            List<String> ancestorTexts) {
+        List<String> parts = new ArrayList<>();
+        addHeadingPart(parts, sectionTitle);
+        addHeadingPart(parts, groupTitle);
+        addHeadingPart(parts, subGroupTitle);
+        ancestorTexts.forEach(ancestorText -> addHeadingPart(parts, ancestorText));
+        return String.join(" > ", parts);
+    }
+
+    private void addHeadingPart(List<String> parts, String value) {
+        String normalizedValue = normalizeText(value);
+        if (!hasText(normalizedValue)) {
+            return;
+        }
+        if (!parts.isEmpty() && parts.get(parts.size() - 1).equals(normalizedValue)) {
+            return;
+        }
+        parts.add(normalizedValue);
+    }
+
+    private boolean isGenericHeadingTitle(String value) {
+        return GENERIC_HEADING_TITLES.contains(normalizeText(value).toLowerCase(Locale.ROOT));
     }
 
     private boolean hasText(String value) {
@@ -400,5 +550,8 @@ public class JsoupPatchNoteCrawlerParser implements PatchNoteCrawlerParser {
     }
 
     private record BeforeAfterPair(String beforeText, String afterText) {
+    }
+
+    private record RowContext(String headingPath, String groupTitle, String rowText) {
     }
 }

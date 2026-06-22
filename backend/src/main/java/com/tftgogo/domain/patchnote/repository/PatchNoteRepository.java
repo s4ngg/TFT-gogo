@@ -12,21 +12,23 @@ import java.util.Optional;
 
 public interface PatchNoteRepository extends JpaRepository<PatchNote, Long> {
 
-    List<PatchNote> findByActiveTrueAndDeletedAtIsNullOrderByCurrentDescPublishedAtDescIdDesc();
-
     List<PatchNote> findByDeletedAtIsNullOrderByCurrentDescPublishedAtDescIdDesc();
 
-    Optional<PatchNote> findByVersionAndActiveTrueAndDeletedAtIsNull(String version);
+    Optional<PatchNote> findByVersionAndDeletedAtIsNull(String version);
 
     Optional<PatchNote> findByIdAndDeletedAtIsNull(Long id);
 
     Optional<PatchNote> findByVersion(String version);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000"))
-    List<PatchNote> findByCurrentTrueAndActiveTrueAndDeletedAtIsNull();
+    Optional<PatchNote> findBySourceKey(String sourceKey);
+
+    Optional<PatchNote> findBySourceUrl(String sourceUrl);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000"))
-    List<PatchNote> findByCurrentTrueAndActiveTrueAndDeletedAtIsNullAndIdNot(Long id);
+    List<PatchNote> findByCurrentTrueAndDeletedAtIsNull();
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000"))
+    List<PatchNote> findByCurrentTrueAndDeletedAtIsNullAndIdNot(Long id);
 }
