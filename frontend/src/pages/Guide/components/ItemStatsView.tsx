@@ -1,7 +1,4 @@
-import {
-  DEFAULT_GUIDE_PAGE_SIZE,
-  type GuideCatalog,
-} from '../../../api/guide'
+import type { GuideCatalog } from '../../../api/guide'
 import { useGuideTabItems } from '../../../hooks/useGuide'
 import {
   useGuidePageBounds,
@@ -18,6 +15,8 @@ interface ItemStatsViewProps {
   fallbackData: GuideCatalog
   query: string
 }
+
+const ITEM_GUIDE_PAGE_SIZE = 6
 
 function isHiddenRecipeNote(note: string) {
   const trimmedNote = note.trim()
@@ -36,7 +35,7 @@ function ItemStatsView({
     fallbackData,
     params: {
       page: currentPage,
-      pageSize: DEFAULT_GUIDE_PAGE_SIZE,
+      pageSize: ITEM_GUIDE_PAGE_SIZE,
       query,
       tab: 'items',
     },
