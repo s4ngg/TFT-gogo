@@ -49,10 +49,16 @@ class SecurityConfigOAuth2Test {
 
     @Test
     void OAuth2_인증시작_경로는_fallback_denyAll이_아니라_provider로_리다이렉트한다() throws Exception {
-        mockMvc.perform(get("/oauth2/authorization/google"))
+        // given
+        String authorizationPath = "/oauth2/authorization/google";
+        String expectedGoogleAuthUrl = "https://accounts.google.com/o/oauth2/v2/auth";
+        String expectedClientId = "client_id=test-client-id";
+
+        // when & then
+        mockMvc.perform(get(authorizationPath))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(header().string("Location", containsString("https://accounts.google.com/o/oauth2/v2/auth")))
-                .andExpect(header().string("Location", containsString("client_id=test-client-id")));
+                .andExpect(header().string("Location", containsString(expectedGoogleAuthUrl)))
+                .andExpect(header().string("Location", containsString(expectedClientId)));
     }
 
     @RestController
