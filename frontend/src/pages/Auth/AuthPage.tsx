@@ -25,11 +25,12 @@ interface SocialProviderConfig {
   id: SocialProvider
   label: string
   mark: string
+  markClassName: string
 }
 
 const socialProviders: SocialProviderConfig[] = [
-  { id: 'google', label: 'Google', mark: 'G' },
-  { id: 'naver', label: 'Naver', mark: 'N' },
+  { id: 'google', label: 'Google', mark: 'G', markClassName: styles.googleMark },
+  { id: 'naver', label: 'Naver', mark: 'N', markClassName: styles.naverMark },
 ]
 
 function AuthPage({ mode }: AuthPageProps) {
@@ -194,7 +195,7 @@ function AuthPage({ mode }: AuthPageProps) {
                     disabled={isAuthActionPending}
                     onClick={() => handleSocialLogin(provider.id)}
                 >
-                  <span>{provider.mark}</span>
+                  <span className={provider.markClassName}>{provider.mark}</span>
                   {provider.label}
                 </button>
             ))}

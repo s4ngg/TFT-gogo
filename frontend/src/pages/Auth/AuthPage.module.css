@@ -140,7 +140,12 @@
   font-weight: 800;
 }
 
-.socialButton[data-provider="naver"] span {
+.googleMark {
+  color: #071016;
+  background: #ffffff;
+}
+
+.naverMark {
   color: #ffffff;
   background: #03c75a;
 }

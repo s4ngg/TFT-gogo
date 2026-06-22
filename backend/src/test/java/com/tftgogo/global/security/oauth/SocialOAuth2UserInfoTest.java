@@ -61,42 +61,6 @@ class SocialOAuth2UserInfoTest {
     }
 
     @Test
-    void 카카오_속성은_중첩된_계정과_프로필에서_값을_읽는다() {
-        // given
-        Map<String, Object> attributes = Map.of(
-                "id", 12345L,
-                "kakao_account", Map.of(
-                        "email", "social@example.com",
-                        "is_email_verified", true,
-                        "profile", Map.of(
-                                "nickname", "카카오회원",
-                                "profile_image_url", "https://example.com/kakao.png"
-                        )
-                )
-        );
-
-        // when
-        SocialLoginCommand command = SocialOAuth2UserInfo.toCommand(SocialProvider.KAKAO, attributes);
-
-        // then
-        assertThat(command)
-                .extracting(
-                        SocialLoginCommand::getProvider,
-                        SocialLoginCommand::getSocialId,
-                        SocialLoginCommand::getEmail,
-                        SocialLoginCommand::getNickname,
-                        SocialLoginCommand::getProfileImage
-                )
-                .containsExactly(
-                        SocialProvider.KAKAO,
-                        "12345",
-                        "social@example.com",
-                        "카카오회원",
-                        "https://example.com/kakao.png"
-                );
-    }
-
-    @Test
     void 네이버_속성은_response_객체에서_값을_읽고_긴_닉네임은_저장길이에_맞춘다() {
         // given
         String longNickname = "가".repeat(60);

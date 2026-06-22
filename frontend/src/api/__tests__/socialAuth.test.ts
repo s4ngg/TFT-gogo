@@ -40,21 +40,22 @@ afterEach(() => {
 })
 
 describe('socialAuth', () => {
-  it('provider별 소셜 로그인 시작 URL을 인증 스펙 경로로 요청한다', async () => {
-    // given
-    axiosInstance.defaults.adapter = createSocialAuthAdapter(
-      'http://localhost:8080/oauth2/authorization/google',
-    )
-    const { getSocialLoginStart } = await import('../socialAuth')
+  for (const provider of ['google', 'naver'] as const) {
+    it(`${provider} 소셜 로그인 시작 URL을 인증 스펙 경로로 요청한다`, async () => {
+      // given
+      const authorizationUrl = `http://localhost:8080/oauth2/authorization/${provider}`
+      axiosInstance.defaults.adapter = createSocialAuthAdapter(authorizationUrl)
+      const { getSocialLoginStart } = await import('../socialAuth')
 
-    // when
-    const response = await getSocialLoginStart('google')
+      // when
+      const response = await getSocialLoginStart(provider)
 
-    // then
-    assert.equal(requestCalls[0]?.method, 'get')
-    assert.equal(requestCalls[0]?.url, '/v1/auth/social/google')
-    assert.equal(response.authorizationUrl, 'http://localhost:8080/oauth2/authorization/google')
-  })
+      // then
+      assert.equal(requestCalls[0]?.method, 'get')
+      assert.equal(requestCalls[0]?.url, `/v1/auth/social/${provider}`)
+      assert.equal(response.authorizationUrl, authorizationUrl)
+    })
+  }
 
   it('소셜 로그인 시작 응답의 URL 앞뒤 공백은 제거한 뒤 정규화한다', async () => {
     // given

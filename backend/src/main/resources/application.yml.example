@@ -57,7 +57,7 @@ riot:
 
 ai:
   server:
-    url: http://localhost:8000   # 운영: AI 서버 실제 주소
+    url: ${AI_SERVER_URL:http://localhost:8000}   # Docker/ECS 운영: 내부 AI 서버 주소
     timeout-seconds: 10
 
 admin:
@@ -65,8 +65,9 @@ admin:
 
 app:
   oauth2:
-    authorized-redirect-uri: http://localhost:5173/oauth/callback
-    login-failure-redirect-uri: http://localhost:5173/login
+    authorization-base-uri: ${APP_OAUTH2_AUTHORIZATION_BASE_URI:https://tftgogo.com}
+    authorized-redirect-uri: ${APP_OAUTH2_AUTHORIZED_REDIRECT_URI:https://tftgogo.com/oauth/callback}
+    login-failure-redirect-uri: ${APP_OAUTH2_LOGIN_FAILURE_REDIRECT_URI:https://tftgogo.com/login}
   meta-deck:
     startup-aggregate: false
   guide:
@@ -98,17 +99,19 @@ app:
       refresh-cron: "0 30 6 * * *"
       zone: Asia/Seoul
   # CORS 허용 origin 목록 — allowCredentials=true이므로 wildcard(*) 사용 불가
-  # 환경별로 실제 배포 도메인을 명시적으로 추가하세요
+  # 운영 환경변수 예: APP_CORS_ALLOWED_ORIGINS=https://tftgogo.com,https://www.tftgogo.com
   cors:
     allowed-origins:
       - http://localhost:3000       # 로컬 React (CRA)
       - http://localhost:5173       # 로컬 Vite dev server
       - http://127.0.0.1:5173
-      # - https://staging.example.com   # 스테이징 도메인
-      # - https://www.example.com       # 운영 도메인
+      - https://tftgogo.com
+      - https://www.tftgogo.com
 
 server:
   port: 8080
+  # ALB 뒤에서 원래 요청의 https host/protocol을 Spring이 인식하도록 설정
+  forward-headers-strategy: framework
 
 # ── 로컬 개발 시 SQL 로그 활성화 방법 ────────────────────────────
 # Hibernate SQL DEBUG 로그는 기본(운영) 설정에서는 꺼져 있습니다.

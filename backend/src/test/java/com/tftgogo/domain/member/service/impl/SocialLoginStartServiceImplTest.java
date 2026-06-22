@@ -1,6 +1,7 @@
 package com.tftgogo.domain.member.service.impl;
 
 import com.tftgogo.domain.member.dto.response.SocialLoginStartResponse;
+import com.tftgogo.global.config.OAuth2RedirectProperties;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,9 @@ class SocialLoginStartServiceImplTest {
 
     @Mock
     private ClientRegistrationRepository clientRegistrationRepository;
+
+    @Mock
+    private OAuth2RedirectProperties redirectProperties;
 
     @InjectMocks
     private SocialLoginStartServiceImpl service;
@@ -61,6 +65,22 @@ class SocialLoginStartServiceImplTest {
         // then
         assertThat(response.getAuthorizationUrl())
                 .isEqualTo("https://api.example.com/app/oauth2/authorization/google");
+    }
+
+    @Test
+    void 설정된_시작기준_URI가_있으면_request_base_URL보다_우선한다() {
+        // given
+        when(redirectProperties.getAuthorizationBaseUri()).thenReturn("https://tftgogo.com");
+        when(clientRegistrationRepositoryProvider.getIfAvailable()).thenReturn(clientRegistrationRepository);
+        when(clientRegistrationRepository.findByRegistrationId("naver"))
+                .thenReturn(mock(ClientRegistration.class));
+
+        // when
+        SocialLoginStartResponse response = service.getStartUrl("naver", "https://www.tftgogo.com");
+
+        // then
+        assertThat(response.getAuthorizationUrl())
+                .isEqualTo("https://tftgogo.com/oauth2/authorization/naver");
     }
 
     @ParameterizedTest
@@ -105,19 +125,11 @@ class SocialLoginStartServiceImplTest {
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.SOCIAL_PROVIDER_NOT_CONFIGURED));
     }
 
-    @Test
-    void 지원하지_않는_provider는_INVALID_INPUT을_던지고_registration을_조회하지_않는다() {
+    @ParameterizedTest
+    @ValueSource(strings = {"github", "kakao"})
+    void 지원하지_않는_provider는_INVALID_INPUT을_던지고_registration을_조회하지_않는다(String provider) {
         // when, then
-        assertThatThrownBy(() -> service.getStartUrl("github", "http://localhost:8080"))
-                .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
-        verify(clientRegistrationRepositoryProvider, never()).getIfAvailable();
-    }
-
-    @Test
-    void 카카오는_QA_지원_provider에서_제외되어_INVALID_INPUT을_던진다() {
-        // when, then
-        assertThatThrownBy(() -> service.getStartUrl("kakao", "http://localhost:8080"))
+        assertThatThrownBy(() -> service.getStartUrl(provider, "http://localhost:8080"))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
         verify(clientRegistrationRepositoryProvider, never()).getIfAvailable();
