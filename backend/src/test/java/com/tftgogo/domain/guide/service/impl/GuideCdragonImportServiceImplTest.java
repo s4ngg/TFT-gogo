@@ -184,8 +184,9 @@ class GuideCdragonImportServiceImplTest {
 
         assertThat(traitGuide.getTargetKey()).isEqualTo("TFT17_DRX");
         assertThat(traitGuide.getSummary())
-                .contains("아트록스: 아군이 입히는 피해가 적에게 30% 파쇄 및 파열 적용.")
+                .contains("아트록스: 아군이 입히는 피해가 적에게 30% 파쇄 및 파열 적용")
                 .contains("케이틀린: 아군 공격 속도 20% 증가");
+        assertThat(traitGuide.getSummary()).contains("\n");
         assertThat(traitGuide.getSummary()).doesNotContain("아트록스: 적 파쇄 및 파열 적용");
         assertThat(traitGuide.getSummary()).doesNotContain("케이틀린: 공격 속도 증가");
         assertThat(traitGuide.getDataJson()).contains("\"tierEffects\":[{\"level\":\"2+\",\"description\":\"전투 시작 6초 후 N.O.V.A. 유닛이 챔피언에 따라 아군에게 힘의 고조 부여\"}]");

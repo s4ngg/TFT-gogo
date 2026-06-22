@@ -9,6 +9,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -41,6 +42,19 @@ public class AugmentGuideReward {
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    @Builder
+    public AugmentGuideReward(String stage, String conditionText, String rewardText, String patchVersion) {
+        this.stage = stage;
+        this.conditionText = conditionText;
+        this.rewardText = rewardText;
+        this.patchVersion = patchVersion;
+    }
+
+    public void update(String conditionText, String rewardText) {
+        this.conditionText = conditionText;
+        this.rewardText = rewardText;
+    }
 
     @PrePersist
     protected void onCreate() {

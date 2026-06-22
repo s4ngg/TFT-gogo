@@ -4,28 +4,17 @@ import { AppLayout } from '../../components/layout'
 import ChampionCard from '../../components/common/ChampionCard'
 import TierBadge from '../../components/common/TierBadge'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
+import { TIER_META, TIER_ORDER } from '../../constants/tiers'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
 import type { MetaDeck, RankFilter } from '../Dashboard/dashboardData'
-import type { TierBadgeValue } from '../../types/badges'
+import type { RankedTierBadgeValue } from '../../types/badges'
 import styles from './MetaStats.module.css'
-
-/* ── 티어 순서 및 색상 ── */
-type RankedTierBadgeValue = Exclude<TierBadgeValue, 'UNKNOWN'>
-
-const TIER_ORDER: RankedTierBadgeValue[] = ['S', 'A', 'B', 'C', 'D']
 
 interface RankFilterOption {
   label: string
   value: RankFilter
 }
 
-const TIER_META: Record<RankedTierBadgeValue, { color: string; label: string }> = {
-  S:   { color: '#04f3e5', label: '최상위 픽 · 강력 추천' },
-  A:   { color: '#a78bfa', label: '중상위권 범용 덱' },
-  B:   { color: '#60a5fa', label: '중위권 상황 의존적' },
-  C:   { color: '#818cf8', label: '하위권 전문 운영 필요' },
-  D:   { color: '#6b7280', label: '비추천 · 낮은 안정성' },
-}
 
 /* ── 덱 카드 ── */
 function DeckCard({ deck }: { deck: MetaDeck }) {
