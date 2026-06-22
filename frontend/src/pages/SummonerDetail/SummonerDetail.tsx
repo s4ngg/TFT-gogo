@@ -32,22 +32,36 @@ const GAME_TYPE_FILTERS: GameTypeFilter[] = ['ALL', 'RANKED', 'NORMAL']
 const REFRESH_COOLDOWN = 60
 const REFRESH_LS_KEY = 'tft_last_refresh'
 
+function summonerKey(name: string, tag: string): string {
+  return `${name.toLowerCase()}#${tag.toLowerCase()}`
+}
+
 function getInitialCooldown(name: string, tag: string): number {
   try {
     const raw = localStorage.getItem(REFRESH_LS_KEY)
     if (!raw) return 0
     const parsed: unknown = JSON.parse(raw)
-    if (
-      typeof parsed !== 'object' || parsed === null ||
-      typeof (parsed as Record<string, unknown>).name !== 'string' ||
-      typeof (parsed as Record<string, unknown>).tag !== 'string' ||
-      typeof (parsed as Record<string, unknown>).at !== 'number'
-    ) return 0
-    const { name: n, tag: t, at } = parsed as { name: string; tag: string; at: number }
-    if (n !== name || t !== tag) return 0
+    if (typeof parsed !== 'object' || parsed === null) return 0
+    const map = parsed as Record<string, unknown>
+    const key = summonerKey(name, tag)
+    const at = map[key]
+    if (typeof at !== 'number') return 0
     const elapsed = Math.floor((Date.now() - at) / 1000)
     return elapsed < REFRESH_COOLDOWN ? REFRESH_COOLDOWN - elapsed : 0
   } catch { return 0 }
+}
+
+function saveCooldownTimestamp(name: string, tag: string): void {
+  try {
+    const raw = localStorage.getItem(REFRESH_LS_KEY)
+    const map: Record<string, number> = raw ? JSON.parse(raw) ?? {} : {}
+    if (typeof map !== 'object' || map === null) {
+      localStorage.setItem(REFRESH_LS_KEY, JSON.stringify({ [summonerKey(name, tag)]: Date.now() }))
+      return
+    }
+    map[summonerKey(name, tag)] = Date.now()
+    localStorage.setItem(REFRESH_LS_KEY, JSON.stringify(map))
+  } catch { /* best-effort */ }
 }
 
 /* ── 메인 ── */
@@ -171,8 +185,8 @@ function SummonerDetail() {
       await refreshSummoner(name, tag)
       await queryClient.invalidateQueries({ queryKey: ['summoner', 'profile', name, tag] })
       await queryClient.invalidateQueries({ queryKey: ['summoner', 'matches', profile?.puuid] })
-      localStorage.setItem(REFRESH_LS_KEY, JSON.stringify({ name, tag, at: Date.now() }))
       setCooldownSeconds(REFRESH_COOLDOWN)
+      saveCooldownTimestamp(name, tag)
     } catch (err: unknown) {
       const status = (err as HttpError)?.response?.status
       if (status === 429) {
