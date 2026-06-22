@@ -219,8 +219,8 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             }
         }
         champions.sort(Comparator
-                .comparingInt((JsonNode champion) -> champion.path("cost").asInt())
-                .thenComparing(champion -> champion.path("name").asText()));
+                .comparing((JsonNode champion) -> champion.path("name").asText())
+                .thenComparingInt(champion -> champion.path("cost").asInt()));
         return champions;
     }
 

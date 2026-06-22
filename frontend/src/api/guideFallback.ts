@@ -13,6 +13,11 @@ import {
   type TraitGuide,
 } from './guideTypes'
 
+const GUIDE_NAME_COLLATOR = new Intl.Collator('ko-KR', {
+  numeric: true,
+  sensitivity: 'base',
+})
+
 export function expandGuideSamples<T extends { name: string }>(
   samples: T[],
   pageSize: number,
@@ -121,7 +126,9 @@ function getFallbackGuideItems<T extends GuideTab>(
     items: fallbackData.items,
     traits: fallbackData.traits,
   }
-  let items = [...fallbackByTab[params.tab]] as GuideTabItems[T]
+  let items = [...fallbackByTab[params.tab]].sort((first, second) => (
+    GUIDE_NAME_COLLATOR.compare(first.name, second.name)
+  )) as GuideTabItems[T]
 
   if (params.query?.trim()) {
     items = items.filter((item) => matchesSearch(params.query ?? '', getGuideSearchFields(params.tab, item))) as GuideTabItems[T]

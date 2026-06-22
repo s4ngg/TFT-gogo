@@ -27,9 +27,11 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -49,6 +51,9 @@ public class GuideServiceImpl implements GuideService {
     private static final Pattern NUMBER_PATTERN = Pattern.compile("-?\\d+(?:\\.\\d+)?");
     private static final Pattern PATCH_VERSION_PATTERN = Pattern.compile("^(\\d+)\\.(\\d+)([A-Za-z]*)$");
     private static final String LIKE_ESCAPE = "\\";
+    private static final ThreadLocal<Collator> KOREAN_COLLATOR = ThreadLocal.withInitial(
+            () -> Collator.getInstance(Locale.KOREAN)
+    );
 
     private final GuideRepository guideRepository;
     private final GuideChampionRepository guideChampionRepository;
@@ -174,7 +179,7 @@ public class GuideServiceImpl implements GuideService {
     private List<GuideEntryResponse> findSplitTabEntries(GuideType guideType, String patchVersion) {
         return switch (guideType) {
             case CHAMPION -> toChampionResponses(
-                    guideChampionRepository.findByPatchVersionOrderByCostAscNameAscIdAsc(patchVersion)
+                    guideChampionRepository.findByPatchVersionOrderByNameAscIdAsc(patchVersion)
             );
             case TRAIT -> toTraitResponses(
                     guideTraitRepository.findByPatchVersionOrderByNameAscIdAsc(patchVersion)
@@ -501,8 +506,7 @@ public class GuideServiceImpl implements GuideService {
 
     private Comparator<LegacyGuideItem> buildComparator(String sortKey, String sortDir) {
         if (!hasText(sortKey)) {
-            return Comparator.comparingInt((LegacyGuideItem item) -> item.guide().getSortOrder())
-                    .thenComparing(item -> item.guide().getId());
+            return this::compareDefault;
         }
 
         boolean ascending = "asc".equals(sortDir);
@@ -530,8 +534,7 @@ public class GuideServiceImpl implements GuideService {
 
     private Comparator<GuideEntryResponse> buildResponseComparator(String sortKey, String sortDir) {
         if (!hasText(sortKey)) {
-            return Comparator.comparingInt(GuideEntryResponse::getSortOrder)
-                    .thenComparing(GuideEntryResponse::getId);
+            return this::compareDefault;
         }
 
         boolean ascending = "asc".equals(sortDir);
@@ -558,19 +561,48 @@ public class GuideServiceImpl implements GuideService {
     }
 
     private int compareDefault(LegacyGuideItem left, LegacyGuideItem right) {
+        int nameResult = compareKoreanText(left.guide().getName(), right.guide().getName());
+        if (nameResult != 0) {
+            return nameResult;
+        }
         int sortOrderResult = Integer.compare(left.guide().getSortOrder(), right.guide().getSortOrder());
         if (sortOrderResult != 0) {
             return sortOrderResult;
         }
-        return Long.compare(left.guide().getId(), right.guide().getId());
+        return compareNullableId(left.guide().getId(), right.guide().getId());
     }
 
     private int compareDefault(GuideEntryResponse left, GuideEntryResponse right) {
+        int nameResult = compareKoreanText(left.getName(), right.getName());
+        if (nameResult != 0) {
+            return nameResult;
+        }
         int sortOrderResult = Integer.compare(left.getSortOrder(), right.getSortOrder());
         if (sortOrderResult != 0) {
             return sortOrderResult;
         }
-        return Long.compare(left.getId(), right.getId());
+        return compareNullableId(left.getId(), right.getId());
+    }
+
+    private int compareKoreanText(String left, String right) {
+        return KOREAN_COLLATOR.get().compare(normalizeSortText(left), normalizeSortText(right));
+    }
+
+    private String normalizeSortText(String value) {
+        return value == null ? "" : value;
+    }
+
+    private int compareNullableId(Long left, Long right) {
+        if (left == null && right == null) {
+            return 0;
+        }
+        if (left == null) {
+            return -1;
+        }
+        if (right == null) {
+            return 1;
+        }
+        return Long.compare(left, right);
     }
 
     private Double readMetric(JsonNode dataJson, String sortKey) {

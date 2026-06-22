@@ -228,7 +228,7 @@ class GuideServiceImplTest {
         GuideChampion fakeUnit = splitChampionGuide("TFT17_DarkStar_FakeUnit", "Black Hole", "[]");
         GuideChampion shopChampion = splitChampionGuide("TFT17_Briar", "Briar", "[\"Animal Squad\"]");
         when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
-        when(guideChampionRepository.findByPatchVersionOrderByCostAscNameAscIdAsc("17.0"))
+        when(guideChampionRepository.findByPatchVersionOrderByNameAscIdAsc("17.0"))
                 .thenReturn(List.of(fakeUnit, shopChampion));
 
         // when
@@ -248,6 +248,34 @@ class GuideServiceImplTest {
                 .extracting(GuideEntryResponse::getTargetKey)
                 .containsExactly("TFT17_Briar");
         assertThat(response.getTotalItems()).isEqualTo(1);
+    }
+
+    @Test
+    void 분리_챔피언_응답은_이름순으로_정렬한다() {
+        // given
+        GuideChampion jinx = splitChampionGuide("TFT17_Jinx", "징크스", "[\"별돌보미\"]");
+        GuideChampion garen = splitChampionGuide("TFT17_Garen", "가렌", "[\"전략가\"]");
+        GuideChampion ahri = splitChampionGuide("TFT17_Ahri", "아리", "[\"마법사\"]");
+        when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
+        when(guideChampionRepository.findByPatchVersionOrderByNameAscIdAsc("17.0"))
+                .thenReturn(List.of(jinx, garen, ahri));
+
+        // when
+        GuidePageResponse<GuideEntryResponse> response = guideService.getGuideTabItems(
+                "champions",
+                null,
+                null,
+                1,
+                10,
+                null,
+                null,
+                null
+        );
+
+        // then
+        assertThat(response.getItems())
+                .extracting(GuideEntryResponse::getName)
+                .containsExactly("가렌", "아리", "징크스");
     }
 
     @Test

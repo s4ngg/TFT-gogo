@@ -21,6 +21,11 @@ import {
   type TraitTierEffect,
 } from './guideTypes'
 
+const GUIDE_ENTRY_NAME_COLLATOR = new Intl.Collator('ko-KR', {
+  numeric: true,
+  sensitivity: 'base',
+})
+
 function readString(record: Record<string, unknown>, key: string, fallback = '') {
   const value = record[key]
   return typeof value === 'string' ? value : fallback
@@ -307,7 +312,9 @@ function isGuideTabItems<T extends GuideTab>(tab: T, rawItems: unknown[]): rawIt
 
 function guideEntriesToCatalog(entries: GuideEntryResponse[], fallbackData: GuideCatalog): GuideCatalog {
   const sortedEntries = [...entries].sort((first, second) => (
-    (first.sortOrder ?? first.sort_order ?? 0) - (second.sortOrder ?? second.sort_order ?? 0)
+    GUIDE_ENTRY_NAME_COLLATOR.compare(first.name, second.name)
+      || (first.sortOrder ?? first.sort_order ?? 0) - (second.sortOrder ?? second.sort_order ?? 0)
+      || first.id - second.id
   ))
   const catalog: GuideCatalog = {
     augments: [],
