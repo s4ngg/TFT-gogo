@@ -298,7 +298,10 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         Set<String> importedItemNames = new HashSet<>();
         int sortOrder = 0;
         for (JsonNode item : completedItems) {
-            String itemName = item.path("name").asText();
+            String itemName = sanitizeDisplayName(item.path("name").asText());
+            if (!hasText(itemName)) {
+                continue;
+            }
             if (!importedItemNames.add(normalizeMetricKey(itemName))) {
                 logger.debug("Duplicate CDragon item skipped. apiName={}, name={}",
                         item.path("apiName").asText(),
@@ -437,7 +440,10 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         Set<String> importedAugmentNames = new HashSet<>();
         int sortOrder = 0;
         for (JsonNode augment : importableAugments) {
-            String augmentName = augment.path("name").asText();
+            String augmentName = sanitizeDisplayName(augment.path("name").asText());
+            if (!hasText(augmentName)) {
+                continue;
+            }
             if (!importedAugmentNames.add(normalizeMetricKey(augmentName))) {
                 logger.debug("Duplicate CDragon augment skipped. apiName={}, name={}",
                         augment.path("apiName").asText(),
@@ -469,10 +475,12 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
 
     private boolean isImportableAugment(JsonNode augment) {
         String apiName = augment.path("apiName").asText();
-        String name = augment.path("name").asText();
+        String rawName = augment.path("name").asText();
+        String name = sanitizeDisplayName(rawName);
         String description = sanitizeCdragonText(readText(augment, "desc", "description", "tooltip"), augment.path("effects"));
         if (!apiName.startsWith("TFT")
                 || !hasResolvedCdragonText(name)
+                || !hasText(name)
                 || !hasResolvedCdragonText(description)
                 || !hasText(augment.path("icon").asText())) {
             return false;
@@ -1136,10 +1144,11 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                 .replaceAll("\\s+([.,!?])", "$1")
                 .replaceAll("\\s+", " ")
                 .trim();
-        return normalizeUnresolvedPlaceholderText(cleaned)
+        String normalized = normalizeUnresolvedPlaceholderText(cleaned)
                 .replaceAll("\\s+([.,!?])", "$1")
                 .replaceAll("\\s+", " ")
                 .trim();
+        return normalizeGuideText(normalized);
     }
 
     private String normalizeUnresolvedPlaceholderText(String value) {
@@ -1228,7 +1237,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         }
         String summaryOnly = prepareTraitSummaryText(value);
         String interpolated = interpolatePlaceholders(summaryOnly, firstEffect(effects));
-        return normalizeRepeatedPeriods(sanitizeTextPreservingLineBreaks(interpolated));
+        return sanitizeTextPreservingLineBreaks(interpolated);
     }
 
     private String sanitizeTextPreservingLineBreaks(String value) {
@@ -1250,10 +1259,21 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         return BREAK_TAG_PATTERN.matcher(withoutInactiveBlocks).replaceAll("\n");
     }
 
-    private String normalizeRepeatedPeriods(String value) {
+    private String sanitizeDisplayName(String value) {
+        return sanitizeText(value);
+    }
+
+    private String normalizeGuideText(String value) {
+        if (!hasText(value)) {
+            return "";
+        }
         return value
+                .replaceAll("'\\s*\\.\\.\\.\\s*", "'")
+                .replaceAll("\\s*\\.\\.\\.\\s*'", "'")
                 .replaceAll("(?:\\s*\\.\\s*){2,}", ". ")
-                .replaceAll("^\\.+\\s*", "")
+                .replaceAll("^[\\s.,:;]+", "")
+                .replaceAll("\\s+([.,!?])", "$1")
+                .replaceAll("\\s+", " ")
                 .trim();
     }
 

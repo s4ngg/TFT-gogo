@@ -22,7 +22,7 @@ export const GUIDE_TABS: GuideTabMeta[] = [
   { key: 'traits', label: '시너지', meta: '설명 + 필요 챔피언' },
   { key: 'items', label: '아이템', meta: '효과 + 조합식' },
   { key: 'augments', label: '증강체', meta: '효과 + 보상' },
-  { key: 'champions', label: '챔피언', meta: '스탯 + 3신기' },
+  { key: 'champions', label: '챔피언', meta: '스탯 + 특성' },
 ]
 
 export interface ChampionRef {

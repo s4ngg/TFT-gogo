@@ -24,7 +24,6 @@ interface ChampionGuideViewProps {
   favoriteChampions: string[]
   onChampionOpen: (championName: string) => void
   onFavoriteToggle: (championName: string) => void
-  onItemSelect: (itemName: string) => void
   query: string
 }
 
@@ -33,7 +32,6 @@ function ChampionGuideView({
   favoriteChampions,
   onChampionOpen,
   onFavoriteToggle,
-  onItemSelect,
   query,
 }: ChampionGuideViewProps) {
   const [costFilter, setCostFilter] = useState<ChampionCostFilter>('all')
@@ -94,7 +92,6 @@ function ChampionGuideView({
             isFavorite={favoriteChampions.includes(championGuide.name)}
             key={championGuide.name}
             onFavoriteToggle={onFavoriteToggle}
-            onItemSelect={onItemSelect}
             onOpen={openChampionDetail}
           />
         ))}
@@ -106,10 +103,6 @@ function ChampionGuideView({
           isFavorite={favoriteChampions.includes(selectedChampion.name)}
           onClose={closeChampionDetail}
           onFavoriteToggle={onFavoriteToggle}
-          onItemSelect={(itemName) => {
-            closeChampionDetail()
-            onItemSelect(itemName)
-          }}
         />
       )}
     </>

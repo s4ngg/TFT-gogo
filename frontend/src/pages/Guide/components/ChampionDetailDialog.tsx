@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef } from 'react'
 import { Star, X } from 'lucide-react'
 import type { ChampionGuide } from '../../../api/guide'
-import { GuideChampionImage, ItemIconStrip } from './GuideShared'
+import { GuideChampionImage } from './GuideShared'
 import styles from '../Guide.module.css'
 
 const FOCUSABLE_DIALOG_SELECTOR = [
@@ -26,7 +26,6 @@ interface ChampionDetailDialogProps {
   isFavorite: boolean
   onClose: () => void
   onFavoriteToggle: (championName: string) => void
-  onItemSelect: (itemName: string) => void
 }
 
 function ChampionDetailDialog({
@@ -34,7 +33,6 @@ function ChampionDetailDialog({
   isFavorite,
   onClose,
   onFavoriteToggle,
-  onItemSelect,
 }: ChampionDetailDialogProps) {
   const dialogRef = useRef<HTMLElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
@@ -112,10 +110,6 @@ function ChampionDetailDialog({
             <span>{champion.role}</span>
             <p id={traitsId}>{champion.traits.join(' / ')}</p>
           </div>
-        </div>
-        <div className={styles.dialogItems}>
-          <b>3신기</b>
-          <ItemIconStrip items={champion.bestItems} onItemSelect={onItemSelect} />
         </div>
         <dl className={styles.dialogStats}>
           <div><dt>체력</dt><dd>{champion.stats.hp}</dd></div>
