@@ -36,7 +36,14 @@ function getInitialCooldown(name: string, tag: string): number {
   try {
     const raw = localStorage.getItem(REFRESH_LS_KEY)
     if (!raw) return 0
-    const { name: n, tag: t, at } = JSON.parse(raw)
+    const parsed: unknown = JSON.parse(raw)
+    if (
+      typeof parsed !== 'object' || parsed === null ||
+      typeof (parsed as Record<string, unknown>).name !== 'string' ||
+      typeof (parsed as Record<string, unknown>).tag !== 'string' ||
+      typeof (parsed as Record<string, unknown>).at !== 'number'
+    ) return 0
+    const { name: n, tag: t, at } = parsed as { name: string; tag: string; at: number }
     if (n !== name || t !== tag) return 0
     const elapsed = Math.floor((Date.now() - at) / 1000)
     return elapsed < REFRESH_COOLDOWN ? REFRESH_COOLDOWN - elapsed : 0
@@ -128,6 +135,10 @@ function SummonerDetail() {
   const filteredMatches = gameTypeFilter === 'ALL'
     ? matches
     : matches.filter((m) => m.gameType === gameTypeFilter)
+
+  useEffect(() => {
+    setCooldownSeconds(getInitialCooldown(name, tag))
+  }, [name, tag])
 
   useEffect(() => {
     if (refreshRateLimitSeconds <= 0 && cooldownSeconds <= 0) return
@@ -243,7 +254,7 @@ function SummonerDetail() {
                   disabled={isRefreshing || cooldownSeconds > 0}
                 >
                   <RefreshCcw size={16} className={isRefreshing ? styles.spin : ''} />
-                  {isRefreshing ? '갱신 중...' : cooldownSeconds > 0 ? `${cooldownSeconds}초 후 가능` : '갱신됨'}
+                  {isRefreshing ? '갱신 중...' : cooldownSeconds > 0 ? `${cooldownSeconds}초 후 가능` : '갱신가능'}
                 </button>
                 {refreshError && <p className={styles.refreshError}>{refreshError}</p>}
               </div>
