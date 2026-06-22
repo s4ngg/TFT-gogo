@@ -1,11 +1,16 @@
 package com.tftgogo.domain.guide.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tftgogo.domain.guide.dto.response.GuideCatalogResponse;
 import com.tftgogo.domain.guide.dto.response.GuideEntryResponse;
 import com.tftgogo.domain.guide.dto.response.GuidePageResponse;
+import com.tftgogo.domain.guide.entity.AugmentGuidePlan;
+import com.tftgogo.domain.guide.entity.AugmentGuideReward;
 import com.tftgogo.domain.guide.entity.Guide;
 import com.tftgogo.domain.guide.entity.GuideTrait;
 import com.tftgogo.domain.guide.entity.GuideType;
+import com.tftgogo.domain.guide.repository.AugmentGuidePlanRepository;
+import com.tftgogo.domain.guide.repository.AugmentGuideRewardRepository;
 import com.tftgogo.domain.guide.repository.GuideAugmentRepository;
 import com.tftgogo.domain.guide.repository.GuideChampionRepository;
 import com.tftgogo.domain.guide.repository.GuideItemRepository;
@@ -18,7 +23,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,6 +53,12 @@ class GuideServiceImplTest {
 
     @Mock
     private GuideAugmentRepository guideAugmentRepository;
+
+    @Mock
+    private AugmentGuidePlanRepository augmentGuidePlanRepository;
+
+    @Mock
+    private AugmentGuideRewardRepository augmentGuideRewardRepository;
 
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
@@ -114,13 +128,47 @@ class GuideServiceImplTest {
                 .thenReturn(List.of(latestChampion));
 
         // when
-        List<GuideEntryResponse> response = guideService.getGuideCatalog();
+        GuideCatalogResponse response = guideService.getGuideCatalog();
 
         // then
-        assertThat(response).hasSize(1);
-        assertThat(response.get(0).getPatchVersion()).isEqualTo("17.1");
+        assertThat(response.getEntries()).hasSize(1);
+        assertThat(response.getEntries().get(0).getPatchVersion()).isEqualTo("17.1");
         verify(guideRepository)
                 .findByPatchVersionAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc("17.1");
+    }
+
+    @Test
+    void 카탈로그는_증강체_운영_플랜과_보상표를_함께_반환한다() {
+        // given
+        when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.1"));
+        when(guideRepository.findByPatchVersionAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc("17.1"))
+                .thenReturn(List.of());
+        when(augmentGuidePlanRepository.findByPatchVersionOrderByPlanKeyAscIdAsc("17.1"))
+                .thenReturn(List.of(augmentPlan("fast8", "빠른 8레벨", "17.1")));
+        when(augmentGuideRewardRepository.findByPatchVersionOrderByStageAscIdAsc("17.1"))
+                .thenReturn(List.of(augmentReward("2-1", "실버", "초반 전투 보강", "17.1")));
+
+        // when
+        GuideCatalogResponse response = guideService.getGuideCatalog();
+
+        // then
+        assertThat(response.getPatchVersion()).isEqualTo("17.1");
+        assertThat(response.getAugmentPlans())
+                .hasSize(1)
+                .first()
+                .satisfies(plan -> {
+                    assertThat(plan.getKey()).isEqualTo("fast8");
+                    assertThat(plan.getLabel()).isEqualTo("빠른 8레벨");
+                    assertThat(plan.getStages()).hasSize(1);
+                });
+        assertThat(response.getRewards())
+                .hasSize(1)
+                .first()
+                .satisfies(reward -> {
+                    assertThat(reward.getStage()).isEqualTo("2-1");
+                    assertThat(reward.getCondition()).isEqualTo("실버");
+                    assertThat(reward.getReward()).isEqualTo("초반 전투 보강");
+                });
     }
 
     @Test
@@ -317,5 +365,47 @@ class GuideServiceImplTest {
                 .tipsJson("[]")
                 .patchVersion("17.0")
                 .build();
+    }
+
+    private AugmentGuidePlan augmentPlan(String planKey, String label, String patchVersion) {
+        AugmentGuidePlan plan = instantiate(AugmentGuidePlan.class);
+        ReflectionTestUtils.setField(plan, "id", 1L);
+        ReflectionTestUtils.setField(plan, "planKey", planKey);
+        ReflectionTestUtils.setField(plan, "label", label);
+        ReflectionTestUtils.setField(
+                plan,
+                "stagesJson",
+                "[{\"stage\":\"2-1\",\"choice\":\"전투 증강\",\"focus\":\"초반 전투력\"}]"
+        );
+        ReflectionTestUtils.setField(plan, "patchVersion", patchVersion);
+        return plan;
+    }
+
+    private AugmentGuideReward augmentReward(
+            String stage,
+            String conditionText,
+            String rewardText,
+            String patchVersion
+    ) {
+        AugmentGuideReward reward = instantiate(AugmentGuideReward.class);
+        ReflectionTestUtils.setField(reward, "id", 1L);
+        ReflectionTestUtils.setField(reward, "stage", stage);
+        ReflectionTestUtils.setField(reward, "conditionText", conditionText);
+        ReflectionTestUtils.setField(reward, "rewardText", rewardText);
+        ReflectionTestUtils.setField(reward, "patchVersion", patchVersion);
+        return reward;
+    }
+
+    private <T> T instantiate(Class<T> type) {
+        try {
+            Constructor<T> constructor = type.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            return constructor.newInstance();
+        } catch (NoSuchMethodException
+                 | InstantiationException
+                 | IllegalAccessException
+                 | InvocationTargetException e) {
+            throw new AssertionError("테스트 엔티티 생성 실패: " + type.getSimpleName(), e);
+        }
     }
 }

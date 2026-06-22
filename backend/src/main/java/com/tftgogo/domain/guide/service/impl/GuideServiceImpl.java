@@ -4,14 +4,20 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.tftgogo.domain.guide.dto.response.AugmentGuidePlanResponse;
+import com.tftgogo.domain.guide.dto.response.AugmentGuideRewardResponse;
+import com.tftgogo.domain.guide.dto.response.GuideCatalogResponse;
 import com.tftgogo.domain.guide.dto.response.GuideEntryResponse;
 import com.tftgogo.domain.guide.dto.response.GuidePageResponse;
+import com.tftgogo.domain.guide.entity.AugmentGuidePlan;
 import com.tftgogo.domain.guide.entity.GuideAugment;
 import com.tftgogo.domain.guide.entity.GuideChampion;
 import com.tftgogo.domain.guide.entity.Guide;
 import com.tftgogo.domain.guide.entity.GuideItem;
 import com.tftgogo.domain.guide.entity.GuideTrait;
 import com.tftgogo.domain.guide.entity.GuideType;
+import com.tftgogo.domain.guide.repository.AugmentGuidePlanRepository;
+import com.tftgogo.domain.guide.repository.AugmentGuideRewardRepository;
 import com.tftgogo.domain.guide.repository.GuideAugmentRepository;
 import com.tftgogo.domain.guide.repository.GuideChampionRepository;
 import com.tftgogo.domain.guide.repository.GuideItemRepository;
@@ -54,24 +60,23 @@ public class GuideServiceImpl implements GuideService {
     private final GuideTraitRepository guideTraitRepository;
     private final GuideItemRepository guideItemRepository;
     private final GuideAugmentRepository guideAugmentRepository;
+    private final AugmentGuidePlanRepository augmentGuidePlanRepository;
+    private final AugmentGuideRewardRepository augmentGuideRewardRepository;
     private final ObjectMapper objectMapper;
 
     @Override
-    public List<GuideEntryResponse> getGuideCatalog() {
+    public GuideCatalogResponse getGuideCatalog() {
         return resolvePatchVersion(null)
                 .map(patchVersion -> {
-                    List<GuideEntryResponse> splitEntries = findSplitCatalogEntries(patchVersion);
-                    if (!splitEntries.isEmpty()) {
-                        return splitEntries;
-                    }
-                    return guideRepository
-                            .findByPatchVersionAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchVersion)
-                            .stream()
-                            .map(this::toResponse)
-                            .filter(this::isDisplayableResponse)
-                            .toList();
+                    List<GuideEntryResponse> entries = findCatalogEntries(patchVersion);
+                    return GuideCatalogResponse.of(
+                            patchVersion,
+                            entries,
+                            findAugmentPlans(patchVersion),
+                            findAugmentRewards(patchVersion)
+                    );
                 })
-                .orElseGet(List::of);
+                .orElseGet(() -> GuideCatalogResponse.of("", List.of(), List.of(), List.of()));
     }
 
     @Override
@@ -160,6 +165,40 @@ public class GuideServiceImpl implements GuideService {
         entries.addAll(findSplitTabEntries(GuideType.AUGMENT, patchVersion));
         entries.addAll(findSplitTabEntries(GuideType.CHAMPION, patchVersion));
         return entries;
+    }
+
+    private List<GuideEntryResponse> findCatalogEntries(String patchVersion) {
+        List<GuideEntryResponse> splitEntries = findSplitCatalogEntries(patchVersion);
+        if (!splitEntries.isEmpty()) {
+            return splitEntries;
+        }
+        return guideRepository
+                .findByPatchVersionAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc(patchVersion)
+                .stream()
+                .map(this::toResponse)
+                .filter(this::isDisplayableResponse)
+                .toList();
+    }
+
+    private List<AugmentGuidePlanResponse> findAugmentPlans(String patchVersion) {
+        return augmentGuidePlanRepository.findByPatchVersionOrderByPlanKeyAscIdAsc(patchVersion)
+                .stream()
+                .map(this::toAugmentPlanResponse)
+                .toList();
+    }
+
+    private List<AugmentGuideRewardResponse> findAugmentRewards(String patchVersion) {
+        return augmentGuideRewardRepository.findByPatchVersionOrderByStageAscIdAsc(patchVersion)
+                .stream()
+                .map(AugmentGuideRewardResponse::from)
+                .toList();
+    }
+
+    private AugmentGuidePlanResponse toAugmentPlanResponse(AugmentGuidePlan plan) {
+        return AugmentGuidePlanResponse.from(
+                plan,
+                parseJson(plan.getStagesJson(), "augmentPlan.stages", plan.getId())
+        );
     }
 
     private List<GuideEntryResponse> findSplitTabEntries(GuideType guideType, String patchVersion) {
@@ -560,6 +599,8 @@ public class GuideServiceImpl implements GuideService {
         guideTraitRepository.findLatestPatchVersion().ifPresent(patchVersions::add);
         guideItemRepository.findLatestPatchVersion().ifPresent(patchVersions::add);
         guideAugmentRepository.findLatestPatchVersion().ifPresent(patchVersions::add);
+        augmentGuidePlanRepository.findLatestPatchVersion().ifPresent(patchVersions::add);
+        augmentGuideRewardRepository.findLatestPatchVersion().ifPresent(patchVersions::add);
 
         return patchVersions.stream().max(this::comparePatchVersion);
     }
