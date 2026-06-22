@@ -418,7 +418,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         ObjectNode combination = objectMapper.createObjectNode();
         combination.set("items", componentRefs);
         combination.put("label", "조합식");
-        combination.put("note", "CDragon 조합 기준");
+        combination.put("note", "재료 2개 조합");
         combinations.add(combination);
         return combinations;
     }
