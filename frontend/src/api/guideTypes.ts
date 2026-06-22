@@ -52,6 +52,7 @@ export interface TraitGuide {
   tips: string[]
   tone?: TraitHexBadgeTone
   type: string
+  variant?: string
 }
 
 export interface ItemStatGuide {

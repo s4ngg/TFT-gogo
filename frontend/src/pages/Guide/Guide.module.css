@@ -417,6 +417,20 @@
   font-weight: 600;
 }
 
+.traitVariant {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: var(--space-sm);
+  padding: 3px var(--space-sm);
+  border: 1px solid var(--cyan-border-subtle);
+  border-radius: var(--radius-xs);
+  color: var(--color-cyan);
+  background: var(--cyan-bg-faint);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
 .levelTrackWrap {
   display: grid;
   justify-items: end;

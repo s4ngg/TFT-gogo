@@ -95,6 +95,18 @@ function getTraitDisplay(traitGuide: TraitGuide) {
   return splitInlineTierEffects(traitGuide.summary)
 }
 
+function getTraitCardKey(traitGuide: TraitGuide) {
+  return [
+    traitGuide.name,
+    traitGuide.variant,
+    traitGuide.levels.join('/'),
+  ].filter(Boolean).join('-')
+}
+
+function getTraitSummaryLabel(traitGuide: TraitGuide) {
+  return traitGuide.variant ? `${traitGuide.variant} 별자리 효과` : '핵심 효과'
+}
+
 function TraitGuideView({
   fallbackData,
   onChampionSelect,
@@ -136,7 +148,7 @@ function TraitGuideView({
           const traitDisplay = getTraitDisplay(traitGuide)
 
           return (
-            <article className={styles.traitCard} key={traitGuide.name}>
+            <article className={styles.traitCard} key={getTraitCardKey(traitGuide)}>
               <div className={styles.traitTop}>
                 <TraitHexBadge
                   count={traitGuide.count}
@@ -148,6 +160,9 @@ function TraitGuideView({
                 <div className={styles.traitTitle}>
                   <h2>{traitGuide.name}</h2>
                   <span>{traitGuide.type}</span>
+                  {traitGuide.variant && (
+                    <strong className={styles.traitVariant}>{traitGuide.variant} 별자리</strong>
+                  )}
                 </div>
                 <div className={styles.levelTrackWrap}>
                   <span>효과 단계</span>
@@ -165,7 +180,7 @@ function TraitGuideView({
               </div>
               {traitDisplay.summary && (
                 <div className={styles.traitSummaryPanel}>
-                  <span>핵심 효과</span>
+                  <span>{getTraitSummaryLabel(traitGuide)}</span>
                   <p>{traitDisplay.summary}</p>
                 </div>
               )}

@@ -85,6 +85,42 @@ class GuideCdragonImportServiceImplTest {
     }
 
     @Test
+    void stargazer_variant_is_separated_from_summary_and_expand_rows_are_parsed() {
+        // given
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonStargazerJson());
+        when(guideRepository.findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(Optional.empty());
+        when(guideRepository.existsByGuideTypeAndTargetKeyAndPatchVersion(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(false);
+        when(guideRepository.saveAndFlush(any(Guide.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request(false, true));
+
+        // then
+        assertThat(response.getTraitCount()).isEqualTo(1);
+
+        ArgumentCaptor<Guide> guideCaptor = ArgumentCaptor.forClass(Guide.class);
+        verify(guideRepository).saveAndFlush(guideCaptor.capture());
+
+        Guide traitGuide = guideCaptor.getValue();
+        assertThat(traitGuide.getTargetKey()).isEqualTo("TFT17_Stargazer_Huntress");
+        assertThat(traitGuide.getName()).isEqualTo("별돌보미");
+        assertThat(traitGuide.getSummary()).contains("전투 시작");
+        assertThat(traitGuide.getSummary()).doesNotContain("이번 게임");
+        assertThat(traitGuide.getDataJson()).contains("\"variant\":\"여사냥꾼\"");
+        assertThat(traitGuide.getDataJson()).contains("\"tierEffects\":[{\"level\":\"3\"");
+        assertThat(traitGuide.getDataJson()).contains("15%");
+    }
+
+    @Test
     void CDragon_챔피언과_특성을_가이드로_생성한다() {
         // given
         when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
@@ -739,6 +775,81 @@ class GuideCdragonImportServiceImplTest {
                 .sortOrder(0)
                 .active(active)
                 .build();
+    }
+
+    private String cdragonStargazerJson() {
+        return """
+                {
+                  "setData": [
+                    {
+                      "number": 17,
+                      "mutator": "TFTSet17",
+                      "champions": [
+                        {
+                          "apiName": "TFT17_Lulu",
+                          "name": "룰루",
+                          "cost": 3,
+                          "role": "AP",
+                          "squareIcon": "ASSETS/Characters/TFT17_Lulu/Skins/Base/Images/TFT17_Lulu_splash_tile_0.TFT_Set17.tex",
+                          "traits": ["별돌보미"],
+                          "stats": {
+                            "armor": 25,
+                            "attackSpeed": 0.7,
+                            "damage": 40,
+                            "hp": 650,
+                            "initialMana": 0,
+                            "magicResist": 25,
+                            "mana": 60,
+                            "range": 4
+                          },
+                          "ability": {
+                            "name": "반짝임",
+                            "desc": "테스트 스킬",
+                            "effects": {},
+                            "icon": "ASSETS/Characters/TFT17_Lulu/HUD/TFT17_Lulu_Spell.tex"
+                          }
+                        }
+                      ],
+                      "traits": [
+                        {
+                          "apiName": "TFT17_Stargazer",
+                          "name": "별돌보미",
+                          "desc": "별돌보미는 게임마다 다른 별자리를 그립니다.<br><row>(@MinUnits@) 공통 효과</row>",
+                          "icon": "ASSETS/UX/TraitIcons/Trait_Icon_17_Stargazer.TFT_Set17.tex",
+                          "effects": [
+                            {
+                              "minUnits": 3,
+                              "maxUnits": 4,
+                              "style": 3,
+                              "variables": {}
+                            }
+                          ]
+                        },
+                        {
+                          "apiName": "TFT17_Stargazer_Huntress",
+                          "name": "별돌보미",
+                          "desc": "별돌보미는 게임마다 다른 별자리를 그립니다. 이번 게임: <TFTStargazer>여사냥꾼</TFTStargazer><br>전투 시작: 체력이 가장 높은 적에게 표식을 남깁니다.<br><expandRow>(@MinUnits@) @AttackSpeedPercent*100@% %i:scaleAS%, 표식 @Marks@개</expandRow>",
+                          "icon": "ASSETS/UX/TraitIcons/Trait_Icon_17_Stargazer.TFT_Set17.tex",
+                          "effects": [
+                            {
+                              "minUnits": 3,
+                              "maxUnits": 4,
+                              "style": 3,
+                              "variables": {
+                                "AttackSpeedPercent": 0.15,
+                                "Marks": 3
+                              }
+                            }
+                          ]
+                        }
+                      ],
+                      "augments": []
+                    }
+                  ],
+                  "sets": {},
+                  "items": []
+                }
+                """;
     }
 
     private String cdragonJson() {

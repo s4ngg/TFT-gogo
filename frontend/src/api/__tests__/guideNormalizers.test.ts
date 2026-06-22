@@ -50,6 +50,7 @@ test('normalizeGuideCatalog reads entries and augment support data from catalog 
           tierEffects: [],
           tips: [],
           tone: 'gold',
+          variant: 'Huntress',
           type: '시너지',
         },
         guideType: 'TRAIT',
@@ -67,6 +68,7 @@ test('normalizeGuideCatalog reads entries and augment support data from catalog 
 
   assert.equal(result.patchVersion, '17.1')
   assert.equal(result.traits.length, 1)
+  assert.equal(result.traits[0].variant, 'Huntress')
   assert.equal(result.traits[0].name, '동물특공대')
   assert.equal(result.augmentPlans.length, 1)
   assert.equal(result.augmentPlans[0].label, '빠른 8레벨')

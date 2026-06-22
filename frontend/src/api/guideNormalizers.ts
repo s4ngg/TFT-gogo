@@ -245,6 +245,7 @@ function isTraitGuide(payload: unknown): payload is TraitGuide {
     ))
     && isStringList(payload.tips)
     && typeof payload.type === 'string'
+    && (!('variant' in payload) || typeof payload.variant === 'string')
 }
 
 function isItemCombination(payload: unknown): payload is ItemStatGuide['combinations'][number] {
@@ -354,6 +355,7 @@ function guideEntriesToCatalog(entries: GuideEntryResponse[], fallbackData: Guid
         tips: readStringArray(data, 'tips'),
         tone: readTraitTone(data.tone),
         type: readString(data, 'type', '시너지'),
+        variant: readNullableString(data, 'variant'),
       })
     }
 

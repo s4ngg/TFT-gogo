@@ -51,7 +51,8 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
 
     private static final Logger logger = LogManager.getLogger(GuideCdragonImportServiceImpl.class);
     private static final Pattern BREAK_TAG_PATTERN = Pattern.compile("(?i)<br\\s*/?>|</p>|</li>|</div>");
-    private static final Pattern ROW_TAG_PATTERN = Pattern.compile("(?is)<row>(.*?)</row>");
+    private static final Pattern ROW_TAG_PATTERN = Pattern.compile("(?is)<(row|expandRow)>(.*?)</\\1>");
+    private static final Pattern STARGAZER_VARIANT_PATTERN = Pattern.compile("이번 게임:\\s*([^\\s(]+)");
     private static final Pattern SHOW_IF_NOT_BLOCK_PATTERN =
             Pattern.compile("(?is)<ShowIfNot\\.[^>]*>.*?</ShowIfNot\\.[^>]*>");
     private static final Pattern TAG_PATTERN = Pattern.compile("<[^>]+>");
@@ -252,17 +253,26 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
     private List<GuideCandidate> toTraitCandidates(JsonNode traits, List<JsonNode> champions, String patchVersion) {
         List<GuideCandidate> candidates = new ArrayList<>();
         int sortOrder = 0;
+        boolean hasStargazerVariants = hasStargazerVariantTraits(traits);
         for (JsonNode trait : traits) {
             String apiName = trait.path("apiName").asText();
             String name = trait.path("name").asText();
             if (!hasText(apiName) || !hasText(name)) {
                 continue;
             }
+            if (hasStargazerVariants && isBaseStargazerTrait(apiName)) {
+                continue;
+            }
 
             ObjectNode dataJson = objectMapper.createObjectNode();
             dataJson.put("count", maxTraitCount(trait.path("effects")));
             dataJson.put("type", "시너지");
+            String variant = stargazerVariant(apiName, trait.path("desc").asText(), trait.path("effects"));
             String summary = sanitizeTraitText(trait.path("desc").asText(), trait.path("effects"));
+            if (hasText(variant)) {
+                dataJson.put("variant", variant);
+                summary = removeStargazerVariantIntro(summary, variant);
+            }
             ArrayNode championRefs = traitChampionRefs(name, champions);
             if (championRefs.size() == 0) {
                 logger.debug(
@@ -642,7 +652,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                 continue;
             }
 
-            String description = traitTierEffectDescription(rowMatcher.group(1), effect);
+            String description = traitTierEffectDescription(rowMatcher.group(2), effect);
             if (!hasText(description)) {
                 continue;
             }
@@ -789,6 +799,50 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             return "";
         }
         return ROW_TAG_PATTERN.matcher(value).replaceAll(" ");
+    }
+
+    private boolean isBaseStargazerTrait(String apiName) {
+        return hasText(apiName) && apiName.matches("TFT\\d+_Stargazer");
+    }
+
+    private boolean hasStargazerVariantTraits(JsonNode traits) {
+        for (JsonNode trait : traits) {
+            if (isStargazerVariantTrait(trait.path("apiName").asText())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String stargazerVariant(String apiName, String value, JsonNode effects) {
+        if (!isStargazerVariantTrait(apiName) || !hasText(value)) {
+            return "";
+        }
+        String summaryOnly = prepareTraitSummaryText(value);
+        String interpolated = interpolatePlaceholders(summaryOnly, firstEffect(effects));
+        Matcher matcher = STARGAZER_VARIANT_PATTERN.matcher(sanitizeText(interpolated));
+        return matcher.find() ? matcher.group(1).replaceFirst("[.:。]+$", "").trim() : "";
+    }
+
+    private boolean isStargazerVariantTrait(String apiName) {
+        return hasText(apiName) && apiName.matches("TFT\\d+_Stargazer_.+");
+    }
+
+    private String removeStargazerVariantIntro(String summary, String variant) {
+        if (!hasText(summary) || !hasText(variant)) {
+            return summary;
+        }
+        String normalized = summary;
+        String commonIntro = "별돌보미는 게임마다 다른 별자리를 그립니다.";
+        if (normalized.startsWith(commonIntro)) {
+            normalized = normalized.substring(commonIntro.length()).trim();
+        }
+        String variantIntro = "이번 게임: " + variant;
+        if (normalized.startsWith(variantIntro)) {
+            normalized = normalized.substring(variantIntro.length()).trim();
+            normalized = normalized.replaceFirst("^\\([^)]*\\)\\s*", "").trim();
+        }
+        return normalized;
     }
 
     private int maxTraitCount(JsonNode effects) {
