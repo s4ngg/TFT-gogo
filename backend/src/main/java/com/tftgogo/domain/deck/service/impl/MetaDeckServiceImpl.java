@@ -2,6 +2,8 @@ package com.tftgogo.domain.deck.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tftgogo.global.exception.BusinessException;
+import com.tftgogo.global.exception.ErrorCode;
 import com.tftgogo.domain.deck.dto.response.MetaDeckListResponse;
 import com.tftgogo.domain.deck.dto.response.MetaDeckResponse;
 import com.tftgogo.domain.deck.entity.ArtifactStat;
@@ -212,11 +214,10 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                     aggregating.set(false);
                 }
             });
-        } catch (Exception e) {
-            // executor가 작업을 거부한 경우(AbortPolicy) 플래그 복원
+        } catch (java.util.concurrent.RejectedExecutionException e) { // AbortPolicy가 던지는 예외만 처리
             aggregating.set(false);
-            logger.error("집계 작업 등록 실패 - executor 거부 (date={})", dataDate, e);
-            throw e;
+            logger.error("집계 작업 등록 실패 - executor 큐 가득참 (date={})", dataDate, e);
+            throw new BusinessException(ErrorCode.AGGREGATION_QUEUE_FULL, e);
         }
     }
 
