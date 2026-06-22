@@ -9,7 +9,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Component
 @RequiredArgsConstructor
@@ -19,11 +22,47 @@ public class GuideCdragonImportScheduler {
 
     private final GuideCdragonImportService guideCdragonImportService;
     private final GuideCdragonImportProperties guideCdragonImportProperties;
+    private final AtomicBoolean running = new AtomicBoolean(false);
 
     @EventListener(ApplicationReadyEvent.class)
     public void importOnStartupIfEnabled() {
+        if (!guideCdragonImportProperties.isEnabled()) {
+            logger.info("Guide CDragon scheduler disabled (app.guide.cdragon.enabled=false)");
+            return;
+        }
         if (!guideCdragonImportProperties.isStartupImport()) {
             logger.info("Guide CDragon startup import disabled (app.guide.cdragon.startup-import=false)");
+            return;
+        }
+        runIfIdle("startup");
+    }
+
+    @Scheduled(
+            cron = "${app.guide.cdragon.sync-cron:0 10 * * * *}",
+            zone = "${app.guide.cdragon.zone:Asia/Seoul}"
+    )
+    public void syncLatestGuides() {
+        runIfEnabledAndIdle("sync");
+    }
+
+    @Scheduled(
+            cron = "${app.guide.cdragon.refresh-cron:0 40 6 * * *}",
+            zone = "${app.guide.cdragon.zone:Asia/Seoul}"
+    )
+    public void refreshLatestGuides() {
+        runIfEnabledAndIdle("daily-refresh");
+    }
+
+    private void runIfEnabledAndIdle(String trigger) {
+        if (!guideCdragonImportProperties.isEnabled()) {
+            return;
+        }
+        runIfIdle(trigger);
+    }
+
+    private void runIfIdle(String trigger) {
+        if (!running.compareAndSet(false, true)) {
+            logger.info("Guide CDragon import skipped because another import is running. trigger={}", trigger);
             return;
         }
 
@@ -40,8 +79,9 @@ public class GuideCdragonImportScheduler {
         try {
             GuideImportResponse response = guideCdragonImportService.importGuides(request);
             logger.info(
-                    "Guide CDragon startup import completed. patchVersion={}, created={}, updated={}, skipped={}, champions={}, traits={}, items={}, augments={}",
-                    request.getPatchVersion(),
+                    "Guide CDragon import completed. trigger={}, patchVersion={}, created={}, updated={}, skipped={}, champions={}, traits={}, items={}, augments={}",
+                    trigger,
+                    response.getPatchVersion(),
                     response.getCreatedCount(),
                     response.getUpdatedCount(),
                     response.getSkippedCount(),
@@ -52,10 +92,13 @@ public class GuideCdragonImportScheduler {
             );
         } catch (Exception e) {
             logger.warn(
-                    "Guide CDragon startup import failed. Server will continue. patchVersion={}",
+                    "Guide CDragon import failed. Server will continue. trigger={}, patchVersion={}",
+                    trigger,
                     guideCdragonImportProperties.getPatchVersion(),
                     e
             );
+        } finally {
+            running.set(false);
         }
     }
 }

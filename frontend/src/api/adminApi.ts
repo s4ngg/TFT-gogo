@@ -150,6 +150,7 @@ export interface GuideImportResponse {
   createdCount: number
   importedCount: number
   itemCount: number
+  patchVersion: string
   skippedCount: number
   traitCount: number
   updatedCount: number

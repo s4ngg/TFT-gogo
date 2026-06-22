@@ -7,6 +7,7 @@ import lombok.Getter;
 @Builder
 public class GuideImportResponse {
 
+    private String patchVersion;
     private int createdCount;
     private int updatedCount;
     private int skippedCount;

@@ -22,7 +22,7 @@ const DEFAULT_GUIDE_IMPORT_FORM: GuideImportFormState = {
   includeItems: true,
   includeTraits: true,
   mutator: 'TFTSet17',
-  patchVersion: '17.3',
+  patchVersion: 'latest',
   setNumber: '17',
 }
 
@@ -101,7 +101,7 @@ function AdminGuides() {
                 className={styles.guideImportInput}
                 value={form.patchVersion}
                 onChange={(e) => patch('patchVersion', e.target.value)}
-                placeholder="17.3"
+                placeholder="latest"
               />
             </label>
 
@@ -177,6 +177,10 @@ function AdminGuides() {
           <div className={styles.guideImportResult}>
             <span className={styles.guideImportStatus}>가져오기 완료</span>
             <div className={styles.guideImportResultGrid}>
+              <div className={styles.guideImportMetric}>
+                <span className={styles.guideImportMetricLabel}>저장 패치</span>
+                <strong className={styles.guideImportMetricValue}>{result.patchVersion}</strong>
+              </div>
               <div className={styles.guideImportMetric}>
                 <span className={styles.guideImportMetricLabel}>반영</span>
                 <strong className={styles.guideImportMetricValue}>{importedCount}</strong>

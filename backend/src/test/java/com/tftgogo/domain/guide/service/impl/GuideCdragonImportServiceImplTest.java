@@ -11,6 +11,8 @@ import com.tftgogo.domain.guide.repository.GuideAugmentRepository;
 import com.tftgogo.domain.guide.repository.GuideChampionRepository;
 import com.tftgogo.domain.guide.repository.GuideItemRepository;
 import com.tftgogo.domain.guide.repository.GuideTraitRepository;
+import com.tftgogo.domain.patchnote.entity.PatchNote;
+import com.tftgogo.domain.patchnote.repository.PatchNoteRepository;
 import com.tftgogo.global.cdragon.config.CommunityDragonProperties;
 import com.tftgogo.global.exception.BusinessException;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,6 +26,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,6 +51,9 @@ class GuideCdragonImportServiceImplTest {
 
     @Mock
     private GuideAugmentRepository guideAugmentRepository;
+
+    @Mock
+    private PatchNoteRepository patchNoteRepository;
 
     @Mock
     private RestTemplate restTemplate;
@@ -87,6 +93,7 @@ class GuideCdragonImportServiceImplTest {
         // then
         assertThat(response.getCreatedCount()).isEqualTo(2);
         assertThat(response.getUpdatedCount()).isZero();
+        assertThat(response.getPatchVersion()).isEqualTo("17.3");
         assertThat(response.getChampionCount()).isEqualTo(1);
         assertThat(response.getTraitCount()).isEqualTo(1);
 
@@ -116,6 +123,7 @@ class GuideCdragonImportServiceImplTest {
 
         // then
         assertThat(response.getCreatedCount()).isEqualTo(1);
+        assertThat(response.getPatchVersion()).isEqualTo("17.3");
         assertThat(response.getItemCount()).isEqualTo(1);
 
         ArgumentCaptor<GuideItem> itemCaptor = ArgumentCaptor.forClass(GuideItem.class);
@@ -138,6 +146,7 @@ class GuideCdragonImportServiceImplTest {
 
         // then
         assertThat(response.getCreatedCount()).isEqualTo(1);
+        assertThat(response.getPatchVersion()).isEqualTo("17.3");
         assertThat(response.getAugmentCount()).isEqualTo(1);
 
         ArgumentCaptor<GuideAugment> augmentCaptor = ArgumentCaptor.forClass(GuideAugment.class);
@@ -180,6 +189,26 @@ class GuideCdragonImportServiceImplTest {
     }
 
     @Test
+    void latest_patch_version_uses_current_patch_note_version() {
+        // given
+        GuideCdragonImportRequest request = request(true, false, false, false);
+        ReflectionTestUtils.setField(request, "patchVersion", "latest");
+        when(patchNoteRepository.findFirstByDeletedAtIsNullOrderByCurrentDescPublishedAtDescIdDesc())
+                .thenReturn(Optional.of(patchNote("17.5")));
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonJson());
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request);
+
+        // then
+        assertThat(response.getPatchVersion()).isEqualTo("17.5");
+        ArgumentCaptor<GuideChampion> championCaptor = ArgumentCaptor.forClass(GuideChampion.class);
+        verify(guideChampionRepository).save(championCaptor.capture());
+        assertThat(championCaptor.getValue().getPatchVersion()).isEqualTo("17.5");
+    }
+
+    @Test
     void request_without_include_targets_throws_exception() {
         // given, when, then
         assertThatThrownBy(() -> guideCdragonImportService.importGuides(request(false, false, false, false)))
@@ -201,6 +230,17 @@ class GuideCdragonImportServiceImplTest {
         ReflectionTestUtils.setField(request, "includeItems", includeItems);
         ReflectionTestUtils.setField(request, "includeAugments", includeAugments);
         return request;
+    }
+
+    private PatchNote patchNote(String version) {
+        return PatchNote.builder()
+                .version(version)
+                .title(version + " patch")
+                .summary("summary")
+                .description("description")
+                .publishedAt(LocalDateTime.of(2026, 6, 18, 9, 0))
+                .current(true)
+                .build();
     }
 
     private String cdragonJson() {

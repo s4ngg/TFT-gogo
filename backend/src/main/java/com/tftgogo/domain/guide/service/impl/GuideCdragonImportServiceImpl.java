@@ -17,6 +17,7 @@ import com.tftgogo.domain.guide.repository.GuideChampionRepository;
 import com.tftgogo.domain.guide.repository.GuideItemRepository;
 import com.tftgogo.domain.guide.repository.GuideTraitRepository;
 import com.tftgogo.domain.guide.service.GuideCdragonImportService;
+import com.tftgogo.domain.patchnote.repository.PatchNoteRepository;
 import com.tftgogo.global.cdragon.config.CommunityDragonProperties;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
@@ -63,6 +64,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
     private static final Pattern METRIC_ONLY_PATTERN = Pattern.compile("^[+\\-]?\\d[\\d,./%\\s+\\-]*$");
     private static final Pattern EMPTY_PARENS_PATTERN = Pattern.compile("\\(\\s*\\)");
     private static final int PATCH_VERSION_MAX_LENGTH = 20;
+    private static final String LATEST_PATCH_VERSION_TOKEN = "latest";
     private static final int AUGMENT_TAG_LIMIT = 4;
     private static final String[] AUGMENT_REROLL_KEYWORDS =
             {"새로고침", "상점", "주사위", "reroll", "refresh", "shop", "dice", "roll"};
@@ -117,6 +119,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
     private final GuideTraitRepository guideTraitRepository;
     private final GuideItemRepository guideItemRepository;
     private final GuideAugmentRepository guideAugmentRepository;
+    private final PatchNoteRepository patchNoteRepository;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final CommunityDragonProperties communityDragonProperties;
@@ -159,6 +162,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         }
 
         return GuideImportResponse.builder()
+                .patchVersion(patchVersion)
                 .createdCount(counter.createdCount)
                 .updatedCount(counter.updatedCount)
                 .skippedCount(counter.skippedCount)
@@ -1350,6 +1354,16 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
 
     private String normalizePatchVersion(String value) {
         String normalized = normalizeRequired(value);
+        if (LATEST_PATCH_VERSION_TOKEN.equalsIgnoreCase(normalized)) {
+            return patchNoteRepository.findFirstByDeletedAtIsNullOrderByCurrentDescPublishedAtDescIdDesc()
+                    .map(patchNote -> normalizeConcretePatchVersion(patchNote.getVersion()))
+                    .orElseThrow(() -> new BusinessException(ErrorCode.PATCH_NOTE_NOT_FOUND));
+        }
+        return normalizeConcretePatchVersion(normalized);
+    }
+
+    private String normalizeConcretePatchVersion(String value) {
+        String normalized = value.trim();
         if (normalized.length() > PATCH_VERSION_MAX_LENGTH) {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }

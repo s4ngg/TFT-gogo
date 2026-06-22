@@ -86,14 +86,21 @@ app:
     startup-aggregate: false
   guide:
     cdragon:
+      # Keep this disabled in local/dev personal environments. Enable only on shared dev/prod servers.
+      enabled: false
       startup-import: false
-      patch-version: "17.3"
+      # Use the latest current patch note version as the guide patch label.
+      patch-version: latest
       set-number: 17
       mutator: TFTSet17
       include-champions: true
       include-traits: true
       include-items: true
       include-augments: true
+      # Run after patch-note list checks so guide data follows newly imported patch notes.
+      sync-cron: "0 10 * * * *"
+      refresh-cron: "0 40 6 * * *"
+      zone: Asia/Seoul
   patch-note:
     scheduler:
       # Keep this disabled in local/dev personal environments. Enable only on shared dev/prod servers.
