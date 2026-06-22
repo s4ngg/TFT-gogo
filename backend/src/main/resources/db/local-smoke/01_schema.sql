@@ -351,19 +351,3 @@ CREATE TABLE IF NOT EXISTS chat_messages (
     CONSTRAINT fk_chat_messages_room
         FOREIGN KEY (chat_room_id) REFERENCES chat_rooms (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- ERD 최종본(0621) 추가: 채팅방 멤버 (🔵 구현 예정)
-CREATE TABLE IF NOT EXISTS chat_room_members (
-    id           BIGINT      NOT NULL AUTO_INCREMENT  COMMENT '채팅방 멤버 ID',
-    chat_room_id BIGINT      NOT NULL                 COMMENT '채팅방 ID',
-    user_id      BIGINT      NOT NULL                 COMMENT '회원 ID',
-    joined_at    DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)  COMMENT '입장 일시',
-    left_at      DATETIME(6) NULL                     COMMENT '퇴장 일시',
-    PRIMARY KEY (id),
-    KEY idx_chat_room_members_room (chat_room_id, joined_at),
-    KEY idx_chat_room_members_user (user_id),
-    CONSTRAINT fk_chat_room_members_room
-        FOREIGN KEY (chat_room_id) REFERENCES chat_rooms (id) ON DELETE CASCADE,
-    CONSTRAINT fk_chat_room_members_user
-        FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT '채팅방 멤버 (접속자 관리)';
