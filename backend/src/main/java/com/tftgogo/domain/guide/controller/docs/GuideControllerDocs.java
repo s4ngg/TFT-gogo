@@ -1,5 +1,6 @@
 package com.tftgogo.domain.guide.controller.docs;
 
+import com.tftgogo.domain.guide.dto.response.GuideCatalogResponse;
 import com.tftgogo.domain.guide.dto.response.GuideEntryResponse;
 import com.tftgogo.domain.guide.dto.response.GuidePageResponse;
 import com.tftgogo.global.response.ApiResponse;
@@ -11,16 +12,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.util.List;
-
 @Tag(name = "Guide", description = "게임가이드 API")
 public interface GuideControllerDocs {
 
-    @Operation(summary = "게임가이드 대표 목록 조회", description = "공개 중인 게임가이드 데이터를 정렬 순서 기준으로 반환합니다.")
+    @Operation(summary = "게임가이드 대표 목록 조회", description = "공개 중인 게임가이드 데이터와 증강체 보조 정보를 반환합니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공")
     })
-    ResponseEntity<ApiResponse<List<GuideEntryResponse>>> getGuideCatalog();
+    ResponseEntity<ApiResponse<GuideCatalogResponse>> getGuideCatalog();
 
     @Operation(summary = "게임가이드 탭별 조회", description = "시너지, 아이템, 증강체, 챔피언 탭별 게임가이드 데이터를 페이지 단위로 반환합니다.")
     @ApiResponses({
