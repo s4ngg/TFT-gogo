@@ -22,6 +22,7 @@ public class AiChatRequest {
     @Valid
     private List<MessageDto> messages;
 
+    @Valid
     private ContextDto context;
 
     @Getter
@@ -59,12 +60,12 @@ public class AiChatRequest {
         @JsonProperty("good_traits")
         @JsonAlias("goodTraits")
         @Size(max = 20)
-        private List<String> goodTraits;
+        private List<@Size(max = 100) String> goodTraits;
 
         @JsonProperty("bad_traits")
         @JsonAlias("badTraits")
         @Size(max = 20)
-        private List<String> badTraits;
+        private List<@Size(max = 100) String> badTraits;
 
         @JsonProperty("recent_matches")
         @JsonAlias("recentMatches")
@@ -74,6 +75,6 @@ public class AiChatRequest {
         @JsonProperty("top_champions")
         @JsonAlias("topChampions")
         @Size(max = 20)
-        private List<String> topChampions;
+        private List<@Size(max = 100) String> topChampions;
     }
 }

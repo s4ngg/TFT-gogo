@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Bot, Send, RotateCcw } from 'lucide-react'
 import type { AiChatContext } from '../../../api/aiChatApi'
 import { useAiChat } from '../hooks/useAiChat'
+import useAuthStore from '../../../store/useAuthStore'
 import styles from '../AiRecommend.module.css'
 
 interface Props {
@@ -9,6 +10,7 @@ interface Props {
 }
 
 function AiChat({ context }: Props) {
+  const token = useAuthStore((state) => state.token)
   const { messages, send, reset, isPending, isError } = useAiChat(context)
   const [input, setInput] = useState('')
   const messagesRef = useRef<HTMLDivElement>(null)
@@ -45,7 +47,13 @@ function AiChat({ context }: Props) {
       </div>
 
       <div ref={messagesRef} className={styles.chatMessages}>
-        {messages.length === 0 && (
+        {!token && (
+          <p className={styles.chatEmptyHint}>
+            로그인 후 AI 어시스턴트를 이용할 수 있습니다.
+          </p>
+        )}
+
+        {token && messages.length === 0 && (
           <p className={styles.chatEmptyHint}>
             유닛, 시너지, 증강체, 내 전적에 대해 뭐든 물어보세요.
           </p>
@@ -89,15 +97,15 @@ function AiChat({ context }: Props) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="질문을 입력하세요 (Enter로 전송, Shift+Enter로 줄바꿈)"
+          placeholder={token ? '질문을 입력하세요 (Enter로 전송, Shift+Enter로 줄바꿈)' : '로그인이 필요합니다'}
           rows={2}
-          disabled={isPending}
+          disabled={isPending || !token}
           maxLength={500}
         />
         <button
           type="submit"
           className={styles.chatSendBtn}
-          disabled={isPending || !input.trim()}
+          disabled={isPending || !input.trim() || !token}
           aria-label="전송"
         >
           <Send size={16} />
