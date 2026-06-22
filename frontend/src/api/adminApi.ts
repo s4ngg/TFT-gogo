@@ -131,6 +131,13 @@ export async function resetDeckCuration(deckId: number): Promise<void> {
   })
 }
 
+export async function triggerDeckAggregate(date?: string): Promise<void> {
+  const params = date ? `?date=${date}` : ''
+  await axiosInstance.post(`/admin/decks/meta/aggregate${params}`, null, {
+    headers: adminHeaders(),
+  })
+}
+
 // ── 게임가이드 import ─────────────────────────────────────────────────────
 
 export interface GuideCdragonImportRequest {
