@@ -55,9 +55,6 @@ public class GuideAugment {
     @Column(name = "tags_json", nullable = false, columnDefinition = "JSON")
     private String tagsJson;
 
-    @Column(name = "stats_json", nullable = false, columnDefinition = "JSON")
-    private String statsJson;
-
     @Column(name = "patch_version", nullable = false, length = 20)
     private String patchVersion;
 
@@ -77,7 +74,6 @@ public class GuideAugment {
             String reward,
             String iconUrl,
             String tagsJson,
-            String statsJson,
             String patchVersion
     ) {
         this.augmentKey = augmentKey;
@@ -88,7 +84,6 @@ public class GuideAugment {
         this.reward = reward;
         this.iconUrl = iconUrl;
         this.tagsJson = tagsJson;
-        this.statsJson = statsJson;
         this.patchVersion = patchVersion;
     }
 
@@ -99,8 +94,7 @@ public class GuideAugment {
             String description,
             String reward,
             String iconUrl,
-            String tagsJson,
-            String statsJson
+            String tagsJson
     ) {
         this.name = name;
         this.tier = tier;
@@ -109,7 +103,6 @@ public class GuideAugment {
         this.reward = reward;
         this.iconUrl = iconUrl;
         this.tagsJson = tagsJson;
-        this.statsJson = statsJson;
     }
 
     @PrePersist

@@ -55,7 +55,6 @@ export interface TraitGuide {
 }
 
 export interface ItemStatGuide {
-  avgPlace?: string
   bestUsers: ChampionRef[]
   category: string
   combinations: {
@@ -66,21 +65,15 @@ export interface ItemStatGuide {
   description?: string
   imageUrl: string
   name: string
-  pickRate?: string
-  top4?: string
-  winRate?: string
 }
 
 export interface AugmentGuide {
-  avgPlace?: string
   description: string
   name: string
-  pickRate?: string
   reward: string
   tags: string[]
   tier: TierBadgeValue
   type: string
-  winRate?: string
 }
 
 export interface RewardRow {

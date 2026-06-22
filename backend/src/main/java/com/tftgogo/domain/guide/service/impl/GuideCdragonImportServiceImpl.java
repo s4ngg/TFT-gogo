@@ -925,7 +925,6 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                                 readText(dataJson, "category"),
                                 candidate.imageUrl(),
                                 readText(dataJson, "description"),
-                                writeJson(objectMapper.createObjectNode()),
                                 writeJsonField(dataJson, "bestUsers", objectMapper.createArrayNode()),
                                 writeJsonField(dataJson, "combinations", objectMapper.createArrayNode())
                         ),
@@ -935,7 +934,6 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                                 .category(readText(dataJson, "category"))
                                 .imageUrl(candidate.imageUrl())
                                 .description(readText(dataJson, "description"))
-                                .statsJson(writeJson(objectMapper.createObjectNode()))
                                 .bestUsersJson(writeJsonField(dataJson, "bestUsers", objectMapper.createArrayNode()))
                                 .combinationsJson(writeJsonField(dataJson, "combinations", objectMapper.createArrayNode()))
                                 .patchVersion(candidate.patchVersion())
@@ -954,8 +952,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                                 readText(dataJson, "description"),
                                 readText(dataJson, "reward"),
                                 candidate.imageUrl(),
-                                writeJsonField(dataJson, "tags", objectMapper.createArrayNode()),
-                                writeJson(objectMapper.createObjectNode())
+                                writeJsonField(dataJson, "tags", objectMapper.createArrayNode())
                         ),
                         () -> guideAugmentRepository.save(GuideAugment.builder()
                                 .augmentKey(candidate.targetKey())
@@ -966,7 +963,6 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                                 .reward(readText(dataJson, "reward"))
                                 .iconUrl(candidate.imageUrl())
                                 .tagsJson(writeJsonField(dataJson, "tags", objectMapper.createArrayNode()))
-                                .statsJson(writeJson(objectMapper.createObjectNode()))
                                 .patchVersion(candidate.patchVersion())
                                 .build())
                 );

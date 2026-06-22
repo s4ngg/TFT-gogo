@@ -1,4 +1,4 @@
-﻿import {
+import {
   TFT_ASSET_CONFIG,
   tftChampSquareUrl,
   tftItemIconUrl,
@@ -263,7 +263,6 @@ const BASE_TRAIT_GUIDES: TraitGuide[] = [
 
 const BASE_ITEM_STATS: ItemStatGuide[] = [
   {
-    avgPlace: '3.52',
     bestUsers: [championRefs.jhin, championRefs.kaisa, championRefs.xayah],
     category: 'AD 치명타',
     combinations: [
@@ -275,12 +274,8 @@ const BASE_ITEM_STATS: ItemStatGuide[] = [
     ],
     imageUrl: itemUrls.infinityEdge,
     name: '무한의 대검',
-    pickRate: '18.3%',
-    top4: '71.2%',
-    winRate: '62.1%',
   },
   {
-    avgPlace: '3.38',
     bestUsers: [championRefs.ornn, championRefs.illaoi, championRefs.rammus],
     category: '탱커',
     combinations: [
@@ -292,12 +287,8 @@ const BASE_ITEM_STATS: ItemStatGuide[] = [
     ],
     imageUrl: itemUrls.warmogsArmor,
     name: '워모그의 갑옷',
-    pickRate: '22.5%',
-    top4: '74.3%',
-    winRate: '64.8%',
   },
   {
-    avgPlace: '3.29',
     bestUsers: [championRefs.aurelionSol, championRefs.vex, championRefs.viktor],
     category: 'AP 폭딜',
     combinations: [
@@ -309,12 +300,8 @@ const BASE_ITEM_STATS: ItemStatGuide[] = [
     ],
     imageUrl: itemUrls.rabadonsDeathcap,
     name: '라바돈의 죽음모자',
-    pickRate: '15.6%',
-    top4: '76.4%',
-    winRate: '66.2%',
   },
   {
-    avgPlace: '3.61',
     bestUsers: [championRefs.sona, championRefs.karma, championRefs.bard],
     category: '마나',
     combinations: [
@@ -326,12 +313,8 @@ const BASE_ITEM_STATS: ItemStatGuide[] = [
     ],
     imageUrl: itemUrls.spearOfShojin,
     name: '쇼진의 창',
-    pickRate: '16.2%',
-    top4: '68.5%',
-    winRate: '59.4%',
   },
   {
-    avgPlace: '3.46',
     bestUsers: [championRefs.masterYi, championRefs.zed, championRefs.akali],
     category: 'AD 지속딜',
     combinations: [
@@ -343,12 +326,8 @@ const BASE_ITEM_STATS: ItemStatGuide[] = [
     ],
     imageUrl: itemUrls.guinsoosRageblade,
     name: '구인수의 격노검',
-    pickRate: '14.4%',
-    top4: '70.1%',
-    winRate: '61.0%',
   },
   {
-    avgPlace: '3.58',
     bestUsers: [championRefs.vex, championRefs.sona, championRefs.karma],
     category: '마나 순환',
     combinations: [
@@ -360,12 +339,8 @@ const BASE_ITEM_STATS: ItemStatGuide[] = [
     ],
     imageUrl: itemUrls.blueBuff,
     name: '푸른 파수꾼',
-    pickRate: '13.8%',
-    top4: '69.7%',
-    winRate: '60.5%',
   },
   {
-    avgPlace: '3.73',
     bestUsers: [championRefs.masterYi, championRefs.akali, championRefs.belveth],
     category: '근접 흡혈',
     combinations: [
@@ -377,12 +352,8 @@ const BASE_ITEM_STATS: ItemStatGuide[] = [
     ],
     imageUrl: itemUrls.bloodthirster,
     name: '피바라기',
-    pickRate: '11.9%',
-    top4: '66.4%',
-    winRate: '57.9%',
   },
   {
-    avgPlace: '3.42',
     bestUsers: [championRefs.aurelionSol, championRefs.viktor, championRefs.aurora],
     category: 'AP 치명타',
     combinations: [
@@ -394,12 +365,8 @@ const BASE_ITEM_STATS: ItemStatGuide[] = [
     ],
     imageUrl: itemUrls.jeweledGauntlet,
     name: '보석 건틀릿',
-    pickRate: '12.7%',
-    top4: '72.8%',
-    winRate: '63.0%',
   },
   {
-    avgPlace: '3.50',
     bestUsers: [championRefs.ornn, championRefs.rammus, championRefs.blitzcrank],
     category: '방어 스택',
     combinations: [
@@ -411,12 +378,8 @@ const BASE_ITEM_STATS: ItemStatGuide[] = [
     ],
     imageUrl: itemUrls.gargoyleStoneplate,
     name: '가고일 돌갑옷',
-    pickRate: '15.2%',
-    top4: '70.9%',
-    winRate: '61.6%',
   },
   {
-    avgPlace: '3.67',
     bestUsers: [championRefs.masterYi, championRefs.illaoi, championRefs.zed],
     category: '누적 전투',
     combinations: [
@@ -428,122 +391,89 @@ const BASE_ITEM_STATS: ItemStatGuide[] = [
     ],
     imageUrl: itemUrls.titansResolve,
     name: '거인의 결의',
-    pickRate: '10.5%',
-    top4: '67.1%',
-    winRate: '58.2%',
   },
 ]
 
 const BASE_AUGMENT_GUIDES: AugmentGuide[] = [
   {
-    avgPlace: '3.21',
     description: '연패 후 경제력을 보존하면서 4-2 고밸류 전환을 노릴 수 있습니다.',
     name: '프리즘 티켓',
-    pickRate: '9.8%',
     reward: '무료 상점 새로고침',
     tags: ['리롤', '경제'],
     tier: 'S',
     type: '프리즘',
-    winRate: '67.4%',
   },
   {
-    avgPlace: '3.37',
     description: '아이템 완성 방향을 늦게 확정해도 캐리 3신기를 맞추기 쉽습니다.',
     name: '판도라의 아이템',
-    pickRate: '12.6%',
     reward: '라운드마다 대기석 아이템 변환',
     tags: ['아이템', '유연성'],
     tier: 'S',
     type: '골드',
-    winRate: '65.1%',
   },
   {
-    avgPlace: '3.64',
     description: '초반 전투력이 높고 연승 운영에서 골드 손실이 적습니다.',
     name: '사이버네틱 벌크',
-    pickRate: '8.2%',
     reward: '아이템 보유 챔피언 체력 증가',
     tags: ['연승', '전열'],
     tier: 'A',
     type: '골드',
-    winRate: '60.8%',
   },
   {
-    avgPlace: '3.82',
     description: '스킬 기반 덱의 첫 캐리 아이템 완성 전까지 안정적인 딜 보조가 가능합니다.',
     name: '마법 지팡이',
-    pickRate: '7.1%',
     reward: '주문력 + 조합 아이템',
     tags: ['AP', '템포'],
     tier: 'A',
     type: '실버',
-    winRate: '57.6%',
   },
   {
-    avgPlace: '4.09',
     description: '특정 리롤 각이 없으면 보상이 늦게 열려 평균 순위가 흔들립니다.',
     name: '긴급한 재고',
-    pickRate: '5.4%',
     reward: '상점 갱신 보상',
     tags: ['조건부', '리롤'],
     tier: 'B',
     type: '골드',
-    winRate: '51.2%',
   },
   {
-    avgPlace: '3.55',
     description: '초반 연승 중일 때 골드 손실 없이 전투력을 더 밀어붙일 수 있습니다.',
     name: '전투 훈련',
-    pickRate: '6.9%',
     reward: '처치 관여 시 공격력 누적',
     tags: ['AD', '연승'],
     tier: 'A',
     type: '골드',
-    winRate: '61.4%',
   },
   {
-    avgPlace: '3.76',
     description: '전열이 단단한 덱에서 후방 캐리가 스킬을 한 번 더 쓰게 만들어줍니다.',
     name: '명상',
-    pickRate: '5.8%',
     reward: '아이템이 적은 유닛 마나 회복',
     tags: ['마나', '운영'],
     tier: 'A',
     type: '실버',
-    winRate: '58.3%',
   },
   {
-    avgPlace: '3.88',
     description: '시너지 문장이 필요한 고점 덱에서 4-2 전환 각을 넓혀줍니다.',
     name: '고대 기록 보관소',
-    pickRate: '7.4%',
     reward: '문장 선택 보상',
     tags: ['문장', '전환'],
     tier: 'A',
     type: '골드',
-    winRate: '56.9%',
   },
   {
-    avgPlace: '4.18',
     description: '체력 손실이 큰 상황에서는 회복 타이밍이 늦어 하위권 위험이 있습니다.',
     name: '후반 전문가',
-    pickRate: '4.7%',
     reward: '9레벨 도달 보상',
     tags: ['후반', '고위험'],
     tier: 'B',
     type: '골드',
-    winRate: '50.4%',
   },
   {
-    avgPlace: '3.31',
     description: '아이템과 골드를 동시에 받아 초반 방향성을 빠르게 확정할 수 있습니다.',
     name: '찬란한 유물',
-    pickRate: '6.2%',
     reward: '찬란한 아이템 선택',
     tags: ['아이템', '고점'],
     tier: 'S',
     type: '프리즘',
-    winRate: '66.8%',
   },
 ]
 

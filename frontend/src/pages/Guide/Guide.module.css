@@ -694,26 +694,6 @@ button.championMini:hover {
   font-size: 11px;
 }
 
-.winRate {
-  color: #04ede0 !important;
-  font-weight: 800 !important;
-}
-
-.top4 {
-  color: #e8edf2 !important;
-  font-weight: 700 !important;
-}
-
-.avgPlace {
-  color: #f87171 !important;
-  font-weight: 800 !important;
-}
-
-.pickRate {
-  color: #f9c860 !important;
-  font-weight: 700 !important;
-}
-
 .avatarStack {
   display: flex;
   justify-content: center;

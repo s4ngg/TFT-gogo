@@ -38,7 +38,7 @@ public interface GuideControllerDocs {
             @RequestParam(name = "page", required = false) Integer page,
             @Parameter(description = "페이지 크기", example = "10")
             @RequestParam(name = "pageSize", required = false) Integer pageSize,
-            @Parameter(description = "정렬 기준(avgPlace, pickRate, top4, winRate)", example = "avgPlace")
+            @Parameter(description = "정렬 기준. 전용 테이블 응답에서는 현재 기본 정렬만 사용합니다.")
             @RequestParam(name = "sortKey", required = false) String sortKey,
             @Parameter(description = "정렬 방향(asc, desc)", example = "asc")
             @RequestParam(name = "sortDir", required = false) String sortDir,

@@ -37,7 +37,7 @@ public class AdminGuideRequest {
     @Size(max = 500, message = "이미지 URL은 500자 이하여야 합니다.")
     private String imageUrl;
 
-    @Schema(description = "탭별 상세 표시와 정렬에 사용할 JSON object. 문자열이 아니라 객체 형태로 입력해야 합니다.", example = "{\"cost\":4,\"traits\":[\"사수\",\"전략가\"],\"avgPlace\":\"4.12\",\"pickRate\":\"12.4%\",\"top4\":\"54.1%\",\"winRate\":\"13.2%\",\"tips\":[\"공속 아이템을 우선합니다\",\"후반 캐리 포지션을 보호합니다\"]}", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "탭별 상세 표시에 사용할 JSON object. 문자열이 아니라 객체 형태로 입력해야 합니다.", example = "{\"cost\":4,\"traits\":[\"사수\",\"전략가\"],\"bestItems\":[],\"tips\":[\"공속 아이템을 우선합니다\",\"후반 캐리 포지션을 보호합니다\"]}", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "dataJson은 필수입니다.")
     private JsonNode dataJson;
 

@@ -46,9 +46,6 @@ public class GuideItem {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "stats_json", nullable = false, columnDefinition = "JSON")
-    private String statsJson;
-
     @Column(name = "best_users_json", nullable = false, columnDefinition = "JSON")
     private String bestUsersJson;
 
@@ -71,7 +68,6 @@ public class GuideItem {
             String category,
             String imageUrl,
             String description,
-            String statsJson,
             String bestUsersJson,
             String combinationsJson,
             String patchVersion
@@ -81,7 +77,6 @@ public class GuideItem {
         this.category = category;
         this.imageUrl = imageUrl;
         this.description = description;
-        this.statsJson = statsJson;
         this.bestUsersJson = bestUsersJson;
         this.combinationsJson = combinationsJson;
         this.patchVersion = patchVersion;
@@ -92,7 +87,6 @@ public class GuideItem {
             String category,
             String imageUrl,
             String description,
-            String statsJson,
             String bestUsersJson,
             String combinationsJson
     ) {
@@ -100,7 +94,6 @@ public class GuideItem {
         this.category = category;
         this.imageUrl = imageUrl;
         this.description = description;
-        this.statsJson = statsJson;
         this.bestUsersJson = bestUsersJson;
         this.combinationsJson = combinationsJson;
     }
