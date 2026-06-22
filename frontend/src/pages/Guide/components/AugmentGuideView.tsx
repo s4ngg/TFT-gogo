@@ -10,7 +10,7 @@ import {
 } from './GuideShared'
 import AugmentGuideList from './AugmentGuideList'
 
-const AUGMENT_GUIDE_PAGE_SIZE = 4
+const AUGMENT_GUIDE_PAGE_SIZE = 6
 
 interface AugmentGuideViewProps {
   fallbackData: GuideCatalog
