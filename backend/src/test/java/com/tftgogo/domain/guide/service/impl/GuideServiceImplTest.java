@@ -208,6 +208,37 @@ class GuideServiceImplTest {
     }
 
     @Test
+    void stargazer_split_response_hides_base_trait_and_exposes_variant() {
+        // given
+        String championsJson = "[{\"cost\":3,\"name\":\"룰루\",\"imageUrl\":\"https://example.com/lulu.png\"}]";
+        GuideTrait baseTrait = traitGuide("TFT17_Stargazer", "별돌보미", championsJson);
+        GuideTrait variantTrait = traitGuide("TFT17_Stargazer_Huntress", "별돌보미", championsJson);
+        when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
+        when(guideTraitRepository.findByPatchVersionOrderByNameAscIdAsc("17.0"))
+                .thenReturn(List.of(baseTrait, variantTrait));
+
+        // when
+        GuidePageResponse<GuideEntryResponse> response = guideService.getGuideTabItems(
+                "traits",
+                null,
+                null,
+                1,
+                10,
+                null,
+                null,
+                null
+        );
+
+        // then
+        assertThat(response.getItems())
+                .extracting(GuideEntryResponse::getTargetKey)
+                .containsExactly("TFT17_Stargazer_Huntress");
+        assertThat(response.getItems().get(0).getDataJson().path("variant").asText())
+                .isEqualTo("여사냥꾼");
+        assertThat(response.getTotalItems()).isEqualTo(1);
+    }
+
+    @Test
     void 명시한_패치버전은_최신_패치_조회없이_사용한다() {
         // given
         Guide champion = championGuide("kaisa", "카이사", 4, 1);

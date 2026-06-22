@@ -237,7 +237,13 @@ public class GuideServiceImpl implements GuideService {
     private List<GuideEntryResponse> toTraitResponses(List<GuideTrait> traits) {
         List<GuideEntryResponse> responses = new ArrayList<>();
         int sortOrder = 0;
+        boolean hasStargazerVariants = traits.stream()
+                .anyMatch(trait -> hasText(stargazerVariantFromTraitKey(trait.getTraitKey())));
         for (GuideTrait trait : traits) {
+            if (hasStargazerVariants && isBaseStargazerTrait(trait.getTraitKey())) {
+                continue;
+            }
+
             JsonNode levels = parseJson(trait.getLevelsJson(), "trait.levels", trait.getId());
             JsonNode champions = parseJson(trait.getChampionsJson(), "trait.champions", trait.getId());
             if (!hasArrayItems(champions)) {
@@ -255,6 +261,10 @@ public class GuideServiceImpl implements GuideService {
             dataJson.put("type", trait.getType());
             dataJson.put("summary", trait.getSummary());
             dataJson.put("tone", trait.getTone());
+            String variant = stargazerVariantFromTraitKey(trait.getTraitKey());
+            if (hasText(variant)) {
+                dataJson.put("variant", variant);
+            }
             dataJson.set("levels", levels);
             dataJson.set("tierEffects", parseJson(trait.getTierEffectsJson(), "trait.tierEffects", trait.getId()));
             dataJson.set("champions", champions);
@@ -273,6 +283,26 @@ public class GuideServiceImpl implements GuideService {
             ));
         }
         return responses;
+    }
+
+    private boolean isBaseStargazerTrait(String traitKey) {
+        return hasText(traitKey) && traitKey.matches("TFT\\d+_Stargazer");
+    }
+
+    private String stargazerVariantFromTraitKey(String traitKey) {
+        if (!hasText(traitKey)) {
+            return "";
+        }
+        return switch (traitKey) {
+            case "TFT17_Stargazer_Wolf" -> "멧돼지";
+            case "TFT17_Stargazer_Medallion" -> "메달";
+            case "TFT17_Stargazer_Huntress" -> "여사냥꾼";
+            case "TFT17_Stargazer_Serpent" -> "뱀";
+            case "TFT17_Stargazer_Shield" -> "제단";
+            case "TFT17_Stargazer_Fountain" -> "우물";
+            case "TFT17_Stargazer_Mountain" -> "산";
+            default -> "";
+        };
     }
 
     private List<GuideEntryResponse> toItemResponses(List<GuideItem> items) {
