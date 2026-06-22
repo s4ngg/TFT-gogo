@@ -33,7 +33,7 @@ import {
 import { usePartyAuth } from './usePartyAuth'
 
 const PARTY_PAGE_SIZE = 3
-const NO_TIER_LIMIT = '제한 없음'
+const noTierLimit = '제한 없음'
 
 interface UsePartyPostsOptions {
   onPartyMessage: (post: PartyPost, message: string) => void
@@ -72,7 +72,7 @@ function toPartyPostsQueryParams(filter: PartyFilter): PartyPostsQueryParams {
 function mergeTierIntoTags(tags: string[], tier: string) {
   const normalizedTier = tier.trim()
 
-  if (!normalizedTier || normalizedTier === NO_TIER_LIMIT) {
+  if (!normalizedTier || normalizedTier === noTierLimit) {
     return tags
   }
 

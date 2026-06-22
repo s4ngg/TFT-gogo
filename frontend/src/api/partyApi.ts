@@ -12,8 +12,8 @@ export type PartyIcon = 'crown' | 'leaf' | 'spark' | 'swords'
 export type PartyTone = 'purple' | 'green' | 'cyan' | 'gold'
 export type PartyPostsSource = 'api' | 'unavailable'
 
-const DEFAULT_PARTY_TIER = '제한 없음'
-const PARTY_TIER_TAGS = new Set(['마스터+', '다이아+', '플래티넘+'])
+const defaultPartyTier = '제한 없음'
+const partyTierTags = new Set(['마스터+', '다이아+', '플래티넘+'])
 
 export interface PartyPost {
   capacity: string
@@ -200,7 +200,7 @@ function getPostStyle(mode: PartyMode, tier: string): Pick<PartyPost, 'icon' | '
 }
 
 function readPartyTier(tags: string[]) {
-  return tags.find((tag) => PARTY_TIER_TAGS.has(tag)) ?? DEFAULT_PARTY_TIER
+  return tags.find((tag) => partyTierTags.has(tag)) ?? defaultPartyTier
 }
 
 function formatCloseLabel(value: string | null | undefined) {

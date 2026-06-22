@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.ObjectProvider;
@@ -29,10 +30,12 @@ class SocialLoginStartServiceImplTest {
     @Mock
     private ClientRegistrationRepository clientRegistrationRepository;
 
+    @InjectMocks
+    private SocialLoginStartServiceImpl service;
+
     @Test
     void 설정된_provider는_절대_인증시작_URL을_반환한다() {
         // given
-        SocialLoginStartServiceImpl service = new SocialLoginStartServiceImpl(clientRegistrationRepositoryProvider);
         when(clientRegistrationRepositoryProvider.getIfAvailable()).thenReturn(clientRegistrationRepository);
         when(clientRegistrationRepository.findByRegistrationId("google"))
                 .thenReturn(mock(ClientRegistration.class));
@@ -48,7 +51,6 @@ class SocialLoginStartServiceImplTest {
     @Test
     void base_URL에_context_path가_있으면_보존한다() {
         // given
-        SocialLoginStartServiceImpl service = new SocialLoginStartServiceImpl(clientRegistrationRepositoryProvider);
         when(clientRegistrationRepositoryProvider.getIfAvailable()).thenReturn(clientRegistrationRepository);
         when(clientRegistrationRepository.findByRegistrationId("google"))
                 .thenReturn(mock(ClientRegistration.class));
@@ -70,7 +72,6 @@ class SocialLoginStartServiceImplTest {
     })
     void base_URL이_http_https_절대_URL이_아니면_INVALID_INPUT을_던진다(String invalidBaseUrl) {
         // given
-        SocialLoginStartServiceImpl service = new SocialLoginStartServiceImpl(clientRegistrationRepositoryProvider);
         when(clientRegistrationRepositoryProvider.getIfAvailable()).thenReturn(clientRegistrationRepository);
         when(clientRegistrationRepository.findByRegistrationId("google"))
                 .thenReturn(mock(ClientRegistration.class));
@@ -84,7 +85,6 @@ class SocialLoginStartServiceImplTest {
     @Test
     void OAuth2_client_repository가_없으면_503_예외를_던진다() {
         // given
-        SocialLoginStartServiceImpl service = new SocialLoginStartServiceImpl(clientRegistrationRepositoryProvider);
         when(clientRegistrationRepositoryProvider.getIfAvailable()).thenReturn(null);
 
         // when, then
@@ -96,7 +96,6 @@ class SocialLoginStartServiceImplTest {
     @Test
     void provider는_지원하지만_client_registration이_없으면_503_예외를_던진다() {
         // given
-        SocialLoginStartServiceImpl service = new SocialLoginStartServiceImpl(clientRegistrationRepositoryProvider);
         when(clientRegistrationRepositoryProvider.getIfAvailable()).thenReturn(clientRegistrationRepository);
         when(clientRegistrationRepository.findByRegistrationId("naver")).thenReturn(null);
 
@@ -108,9 +107,6 @@ class SocialLoginStartServiceImplTest {
 
     @Test
     void 지원하지_않는_provider는_INVALID_INPUT을_던지고_registration을_조회하지_않는다() {
-        // given
-        SocialLoginStartServiceImpl service = new SocialLoginStartServiceImpl(clientRegistrationRepositoryProvider);
-
         // when, then
         assertThatThrownBy(() -> service.getStartUrl("github", "http://localhost:8080"))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
@@ -120,9 +116,6 @@ class SocialLoginStartServiceImplTest {
 
     @Test
     void 카카오는_QA_지원_provider에서_제외되어_INVALID_INPUT을_던진다() {
-        // given
-        SocialLoginStartServiceImpl service = new SocialLoginStartServiceImpl(clientRegistrationRepositoryProvider);
-
         // when, then
         assertThatThrownBy(() -> service.getStartUrl("kakao", "http://localhost:8080"))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->

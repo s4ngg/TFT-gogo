@@ -126,6 +126,7 @@ class CommunityPartyServiceImplTest {
         assertThat(response.getId()).isEqualTo(10L);
         assertThat(response.getCapacity()).isEqualTo("1/2");
         assertThat(response.getChatRoomId()).isEqualTo("party-recruitment");
+        assertThat(response.getTags()).contains("마스터+");
         assertThat(response.isJoined()).isTrue();
         InOrder inOrder = inOrder(memberRepository, partyPostRepository, partyApplicationRepository);
         inOrder.verify(memberRepository).findByIdForUpdate(1L);
