@@ -27,7 +27,10 @@ public class DeckTrait {
     private int numUnits;
 
     // ERD 외 - 프론트 렌더링에 필요
+    @Column(length = 30)
     private String tone;
+
+    @Column(name = "icon_url", length = 500)
     private String iconUrl;
 
     @Builder

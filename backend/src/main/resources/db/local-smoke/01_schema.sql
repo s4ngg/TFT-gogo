@@ -111,8 +111,8 @@ CREATE TABLE IF NOT EXISTS deck_traits (
     trait_id VARCHAR(60) NOT NULL,
     trait_name VARCHAR(100) NOT NULL,
     num_units INT NOT NULL,
-    tone VARCHAR(255) NULL,
-    icon_url VARCHAR(255) NULL,
+    tone VARCHAR(30) NULL,
+    icon_url VARCHAR(500) NULL,
     PRIMARY KEY (id),
     KEY idx_deck_traits_meta_decks_id (meta_decks_id),
     CONSTRAINT fk_deck_traits_meta_deck
@@ -125,7 +125,7 @@ CREATE TABLE IF NOT EXISTS hero_augments (
     character_id VARCHAR(60) NOT NULL,
     augment_id VARCHAR(100) NOT NULL,
     augment_name VARCHAR(200) NOT NULL,
-    is_recommended TINYINT(1) NOT NULL DEFAULT 0,
+    is_recommended TINYINT(1) NOT NULL DEFAULT 1,
     win_rate DOUBLE NOT NULL DEFAULT 0,
     top4_rate DOUBLE NOT NULL DEFAULT 0,
     avg_placement DOUBLE NOT NULL DEFAULT 0,
@@ -351,3 +351,19 @@ CREATE TABLE IF NOT EXISTS chat_messages (
     CONSTRAINT fk_chat_messages_room
         FOREIGN KEY (chat_room_id) REFERENCES chat_rooms (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ERD 최종본(0621) 추가: 채팅방 멤버 (🔵 구현 예정)
+CREATE TABLE IF NOT EXISTS chat_room_members (
+    id           BIGINT      NOT NULL AUTO_INCREMENT  COMMENT '채팅방 멤버 ID',
+    chat_room_id BIGINT      NOT NULL                 COMMENT '채팅방 ID',
+    user_id      BIGINT      NOT NULL                 COMMENT '회원 ID',
+    joined_at    DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)  COMMENT '입장 일시',
+    left_at      DATETIME(6) NULL                     COMMENT '퇴장 일시',
+    PRIMARY KEY (id),
+    KEY idx_chat_room_members_room (chat_room_id, joined_at),
+    KEY idx_chat_room_members_user (user_id),
+    CONSTRAINT fk_chat_room_members_room
+        FOREIGN KEY (chat_room_id) REFERENCES chat_rooms (id) ON DELETE CASCADE,
+    CONSTRAINT fk_chat_room_members_user
+        FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT '채팅방 멤버 (접속자 관리)';
