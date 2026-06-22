@@ -33,7 +33,6 @@ import {
 import { usePartyAuth } from './usePartyAuth'
 
 const PARTY_PAGE_SIZE = 3
-const noTierLimit = '제한 없음'
 const partyTierTags = new Set(['마스터+', '다이아+', '플래티넘+'])
 
 interface UsePartyPostsOptions {
