@@ -78,10 +78,11 @@ class CommunityPartyServiceImplTest {
                         PartyPostResponse::getGameMode,
                         PartyPostResponse::getMode,
                         PartyPostResponse::getCapacity,
+                        PartyPostResponse::getTier,
                         PartyPostResponse::getChatRoomId,
                         PartyPostResponse::isJoined
                 )
-                .containsExactly("마스터 듀오 구합니다", "RANKED_TFT", "랭크", "1/2", "party-recruitment", true);
+                .containsExactly("마스터 듀오 구합니다", "RANKED_TFT", "랭크", "1/2", "마스터+", "party-recruitment", true);
         verify(partyPostRepository).search(PartyGameMode.RANKED_TFT, "마스터", pageRequest);
         verify(partyApplicationRepository).findPartyPostIdsByUserIdAndStatus(
                 2L,
@@ -125,6 +126,7 @@ class CommunityPartyServiceImplTest {
         // then
         assertThat(response.getId()).isEqualTo(10L);
         assertThat(response.getCapacity()).isEqualTo("1/2");
+        assertThat(response.getTier()).isEqualTo("마스터+");
         assertThat(response.getChatRoomId()).isEqualTo("party-recruitment");
         assertThat(response.isJoined()).isTrue();
         InOrder inOrder = inOrder(memberRepository, partyPostRepository, partyApplicationRepository);
@@ -138,6 +140,26 @@ class CommunityPartyServiceImplTest {
         inOrder.verify(partyPostRepository).save(any(PartyPost.class));
         verify(chatService).ensureRoom("party-recruitment");
         verify(partyApplicationRepository, never()).save(any(PartyApplication.class));
+    }
+
+    @Test
+    void 파티_모집글_작성은_티어가_비어있으면_제한없음으로_저장한다() {
+        // given
+        PartyPostCreateRequest request = partyPostCreateRequest("티어 제한 없이 같이 해요", PartyGameMode.NORMAL_TFT, 4);
+        ReflectionTestUtils.setField(request, "tier", "   ");
+        givenMemberLocked(1L);
+        givenNoActivePartyParticipation(1L);
+        when(partyPostRepository.save(any(PartyPost.class))).thenAnswer(invocation -> {
+            PartyPost partyPost = invocation.getArgument(0);
+            ReflectionTestUtils.setField(partyPost, "id", 11L);
+            return partyPost;
+        });
+
+        // when
+        PartyPostResponse response = communityPartyService.createPartyPost(1L, request);
+
+        // then
+        assertThat(response.getTier()).isEqualTo("제한 없음");
     }
 
     @Test
@@ -478,6 +500,7 @@ class CommunityPartyServiceImplTest {
         ReflectionTestUtils.setField(request, "content", "저녁 랭크 같이 하실 분 구합니다.");
         ReflectionTestUtils.setField(request, "gameMode", gameMode);
         ReflectionTestUtils.setField(request, "maxMembers", maxMembers);
+        ReflectionTestUtils.setField(request, "tier", "마스터+");
         ReflectionTestUtils.setField(request, "tags", List.of("음성 가능", "순방 목표"));
         return request;
     }

@@ -47,7 +47,7 @@ Page: Party (/party).
 
 <database>
 - party_posts follows the shared ERD snapshot:
-  user_id, title, content, max_members, current_members, deadline, is_closed, created_at, updated_at, game_mode, deleted_at.
+  user_id, title, content, max_members, current_members, tier(VARCHAR(30), NOT NULL, default 제한 없음), deadline, is_closed, created_at, updated_at, game_mode, deleted_at.
 - party_applications follows the shared ERD snapshot:
   party_post_id, user_id, status(PENDING/ACCEPTED/REJECTED), created_at, message, responded_at.
 - party_applications uses a unique key on (party_post_id, user_id) to prevent duplicate joins by the same user.
@@ -61,6 +61,7 @@ Page: Party (/party).
 - content: string, required. This maps to the current Party.tsx description text.
 - gameMode: RANKED_TFT | NORMAL_TFT | CUSTOM, required
 - maxMembers: number, required, 2-8
+- tier: string, optional, max 30 chars. Defaults to 제한 없음.
 - deadline: LocalDateTime, optional
 - tags: custom string array, optional, max 4 items, max 30 chars each
 </request>
@@ -72,6 +73,7 @@ Page: Party (/party).
 - gameMode: enum code for filtering, e.g. RANKED_TFT
 - mode: Korean display label, e.g. 랭크
 - currentMembers / maxMembers / capacity: member count display
+- tier: selected tier condition display, e.g. 마스터+ or 제한 없음
 - closed: boolean used for button disabled state
 - status: Korean display label only, 모집중 or 마감
 - tags: custom user tags

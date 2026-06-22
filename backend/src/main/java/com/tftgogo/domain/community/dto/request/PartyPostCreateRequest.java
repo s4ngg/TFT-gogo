@@ -31,6 +31,9 @@ public class PartyPostCreateRequest {
     @Max(8)
     private int maxMembers;
 
+    @Size(max = 30)
+    private String tier;
+
     @Future(message = "마감 시간은 현재 시간 이후여야 합니다.")
     private LocalDateTime deadline;
 

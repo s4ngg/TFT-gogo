@@ -1,9 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
-import { PARTY_RECRUITMENT_ROOM_ID } from '../../../constants/communityChatRooms'
+import { useQueries } from '@tanstack/react-query'
+import { getChatMessages } from '../../../api/chatApi'
+import { communityChatMessagesQueryKey } from '../../../api/chatQueryKeys'
+import {
+  COMMUNITY_CHAT_ROOM_IDS,
+  PARTY_RECRUITMENT_ROOM_ID,
+} from '../../../constants/communityChatRooms'
 import type { CommunityChatRoomId } from '../../../constants/communityChatRooms'
 import { initialChatRooms } from '../data/partyMockData'
 import type { PartyPost } from '../types'
-import { updateChatRoomPreview, updatePartyRecruitmentPreview } from '../utils/partyChatRooms'
+import {
+  applyRoomMessageSnapshot,
+  updateChatRoomPreview,
+} from '../utils/partyChatRooms'
 import { usePartyAuth } from './usePartyAuth'
 import { useRealtimeChat } from './useRealtimeChat'
 
@@ -17,6 +26,13 @@ export function usePartyChat({ activeRoomId, onActiveRoomChange }: UsePartyChatO
   const [rooms, setRooms] = useState(initialChatRooms)
   const [chatInput, setChatInput] = useState('')
   const [chatStatusMessage, setChatStatusMessage] = useState('')
+  const roomPreviewQueries = useQueries({
+    queries: COMMUNITY_CHAT_ROOM_IDS.map((roomId) => ({
+      queryFn: () => getChatMessages(roomId),
+      queryKey: communityChatMessagesQueryKey(roomId),
+      staleTime: 10_000,
+    })),
+  })
   const {
     connectionStatus,
     errorMessage: chatErrorMessage,
@@ -30,11 +46,35 @@ export function usePartyChat({ activeRoomId, onActiveRoomChange }: UsePartyChatO
     reconnectAttempt,
     sendMessage: sendRealtimeMessage,
   } = useRealtimeChat(activeRoomId)
+  const generalMessages = roomPreviewQueries[0]?.data
+  const deckGuideMessages = roomPreviewQueries[1]?.data
+  const partyRecruitmentMessages = roomPreviewQueries[2]?.data
+  const questionAnswerMessages = roomPreviewQueries[3]?.data
 
   const activeRoom = useMemo(
     () => rooms.find((room) => room.id === activeRoomId),
     [activeRoomId, rooms],
   )
+  const displayedRooms = useMemo(() => {
+    const roomSnapshots = [
+      { messages: generalMessages, roomId: COMMUNITY_CHAT_ROOM_IDS[0] },
+      { messages: deckGuideMessages, roomId: COMMUNITY_CHAT_ROOM_IDS[1] },
+      { messages: partyRecruitmentMessages, roomId: COMMUNITY_CHAT_ROOM_IDS[2] },
+      { messages: questionAnswerMessages, roomId: COMMUNITY_CHAT_ROOM_IDS[3] },
+    ]
+
+    return roomSnapshots.reduce(
+      (nextRooms, { messages, roomId }) =>
+        messages ? applyRoomMessageSnapshot(nextRooms, roomId, messages) : nextRooms,
+      rooms,
+    )
+  }, [
+    deckGuideMessages,
+    generalMessages,
+    partyRecruitmentMessages,
+    questionAnswerMessages,
+    rooms,
+  ])
   const activeRoomName = activeRoom?.name ?? '채팅'
   const canSendMessages = isAuthenticated
   const connectionLabel = connectionStatus === 'connected'
@@ -56,21 +96,14 @@ export function usePartyChat({ activeRoomId, onActiveRoomChange }: UsePartyChatO
   const isMessageDisabled = !canSendMessages || isSending || !activeRoom
 
   useEffect(() => {
-    const lastMessage = activeMessages[activeMessages.length - 1]
-
-    if (!lastMessage) {
-      return
-    }
-
-    setRooms((currentRooms) => updateChatRoomPreview(currentRooms, lastMessage.roomId, lastMessage.content))
-  }, [activeMessages])
+    setRooms((currentRooms) => applyRoomMessageSnapshot(currentRooms, activeRoomId, activeMessages))
+  }, [activeMessages, activeRoomId])
 
   const updateLastMessage = (roomId: string, message: string) => {
     setRooms((currentRooms) => updateChatRoomPreview(currentRooms, roomId, message))
   }
 
-  const openPartyRecruitmentRoom = (message: string) => {
-    setRooms((currentRooms) => updatePartyRecruitmentPreview(currentRooms, message))
+  const openPartyRecruitmentRoom = () => {
     onActiveRoomChange(PARTY_RECRUITMENT_ROOM_ID)
   }
 
@@ -93,12 +126,12 @@ export function usePartyChat({ activeRoomId, onActiveRoomChange }: UsePartyChatO
   const preparePartyRoom = (post: PartyPost, lastMessage?: string) => {
     const nextMessage = lastMessage ?? `${post.title} 모집글이 등록되었습니다.`
 
-    openPartyRecruitmentRoom(nextMessage)
+    openPartyRecruitmentRoom()
     sendPartyRecruitmentMessage(nextMessage, '모집글은 등록됐지만 채팅 알림 전송에 실패했습니다.')
   }
 
   const appendPartyMessage = (post: PartyPost, message: string) => {
-    openPartyRecruitmentRoom(message)
+    openPartyRecruitmentRoom()
     sendPartyRecruitmentMessage(message, '참여 상태는 반영됐지만 채팅 알림 전송에 실패했습니다.')
   }
 
@@ -137,7 +170,7 @@ export function usePartyChat({ activeRoomId, onActiveRoomChange }: UsePartyChatO
     isMessageDisabled,
     isSendBlockedByAuth: !canSendMessages,
     preparePartyRoom,
-    rooms,
+    rooms: displayedRooms,
     sendMessage,
     setActiveRoomId: onActiveRoomChange,
     setChatInput,
