@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useCDragonLocale } from '../../../hooks/useCDragonLocale'
 import type { RankFilter } from '../../Dashboard/dashboardData'
 import { useAdminDecks } from '../hooks/useAdminDecks'
-import { triggerDeckAggregate, isAdminAuthFailure } from '../../../api/adminApi'
+import { triggerDeckAggregate, isAdminAuthFailure, isNetworkOrTimeoutError, getServerErrorStatus } from '../../../api/adminApi'
 import styles from '../Admin.module.css'
 import DeckRow from './DeckRow'
 
@@ -12,11 +12,12 @@ const RANK_OPTIONS: { label: string; value: RankFilter }[] = [
   { label: '에메랄드+', value: 'EMERALD_PLUS' },
 ]
 
-const AGGREGATE_COOLDOWN_MS = 10_000
-
 function getAggregateErrorMessage(error: unknown): string {
   if (isAdminAuthFailure(error)) return '인증 실패: 관리자 토큰을 확인해 주세요.'
-  return '집계 요청에 실패했습니다. 서버 상태를 확인해 주세요.'
+  if (isNetworkOrTimeoutError(error)) return '네트워크 오류: 연결 상태를 확인 후 다시 시도해 주세요.'
+  const status = getServerErrorStatus(error)
+  if (status != null) return `서버 오류가 발생했습니다. (${status})`
+  return '집계 요청에 실패했습니다.'
 }
 
 export default function AdminPage() {
@@ -32,11 +33,10 @@ export default function AdminPage() {
     setAggregateMsg(null)
     try {
       await triggerDeckAggregate(aggregateDate || undefined)
-      setAggregateMsg({ ok: true, text: '집계가 시작되었습니다.' })
-      // 202 Accepted는 즉시 반환되므로 중복 요청 방지를 위해 쿨다운 적용
-      setTimeout(() => setAggregating(false), AGGREGATE_COOLDOWN_MS)
+      setAggregateMsg({ ok: true, text: '집계 요청이 전송됐습니다. 완료까지 수 분이 소요될 수 있습니다.' })
     } catch (error) {
       setAggregateMsg({ ok: false, text: getAggregateErrorMessage(error) })
+    } finally {
       setAggregating(false)
     }
   }

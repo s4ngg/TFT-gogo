@@ -34,6 +34,22 @@ export function isAdminAuthFailure(error: unknown): boolean {
   return status === 401 || status === 403
 }
 
+export function isNetworkOrTimeoutError(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false
+  if ('response' in error) return false  // 서버 응답이 있으면 네트워크 오류 아님
+  if ('code' in error) {
+    const code = (error as { code?: string }).code
+    return code === 'ECONNABORTED' || code === 'ERR_NETWORK' || code === 'ETIMEDOUT'
+  }
+  return true
+}
+
+export function getServerErrorStatus(error: unknown): number | undefined {
+  const status = getHttpStatus(error)
+  if (status != null && status >= 500) return status
+  return undefined
+}
+
 interface AdminRequestError extends Error {
   cause?: unknown
   response?: { status?: unknown }
