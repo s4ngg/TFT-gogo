@@ -6,7 +6,7 @@ export type SortDir = 'asc' | 'desc'
 
 export const DEFAULT_GUIDE_PAGE_SIZE = 5
 export const TRAIT_PAGE_SIZE = 6
-export const CHAMPION_PAGE_SIZE = 12
+export const CHAMPION_PAGE_SIZE = 15
 export const GUIDE_SAMPLE_PAGE_COUNT = 7
 export const PAGE_NUMBER_WINDOW = 5
 export const GUIDE_SAMPLE_VARIANTS = ['운영', '고점', '안정', '전환', '리롤', '연승', '후반']
