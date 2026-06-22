@@ -43,10 +43,9 @@ docker compose down -v
 
 2026-06-16 기준 MySQL 8.0.44 임시 DB에서 `01_schema.sql`, `02_seed.sql` 순차 적용을 확인했습니다.
 
-- 생성 테이블: 18개
+- 생성 테이블: 17개
 - `chat_rooms` seed: 4개
 - `guides` seed: 4개
-- `augment_guide_plans` seed: 3개
 - `patch_notes` seed: 1개
 - `patch_changes` seed: 2개
 - `backend` `compileJava`: Pass

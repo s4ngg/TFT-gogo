@@ -6,7 +6,6 @@
 } from '../api/communityDragonAssets'
 import {
   type AugmentGuide,
-  type AugmentPlan,
   type ChampionGuide,
   type ChampionRef,
   type GuideCatalog,
@@ -514,36 +513,6 @@ const BASE_AUGMENT_GUIDES: AugmentGuide[] = [
   },
 ]
 
-const AUGMENT_PLANS: AugmentPlan[] = [
-  {
-    key: 'fast8',
-    label: 'Fast 8',
-    stages: [
-      { choice: '사이버네틱 벌크', focus: '연승 체력 보존', stage: '2-1' },
-      { choice: '판도라의 아이템', focus: '캐리 아이템 확정', stage: '3-2' },
-      { choice: '레벨 업 보상', focus: '4코스트 캐리 전환', stage: '4-2' },
-    ],
-  },
-  {
-    key: 'reroll',
-    label: '리롤',
-    stages: [
-      { choice: '프리즘 티켓', focus: '상점 갱신 절약', stage: '2-1' },
-      { choice: '긴급한 재고', focus: '3성 각 확인', stage: '3-2' },
-      { choice: '전투 증강', focus: '캐리 완성 후 순방', stage: '4-2' },
-    ],
-  },
-  {
-    key: 'flex',
-    label: '유연 운영',
-    stages: [
-      { choice: '아이템 가방', focus: '조합 방향 보류', stage: '2-1' },
-      { choice: '판도라의 아이템', focus: 'AP/AD 선택', stage: '3-2' },
-      { choice: '시너지 문장', focus: '상위 덱 전환', stage: '4-2' },
-    ],
-  },
-]
-
 const BASE_CHAMPION_GUIDES: ChampionGuide[] = [
   {
     bestItems: [itemRefs.infinityEdge, itemRefs.lastWhisper, itemRefs.handOfJustice],
@@ -750,7 +719,6 @@ const BASE_CHAMPION_GUIDES: ChampionGuide[] = [
 export const guideFallbackData: GuideCatalog = {
   // API unavailable fallback sample; production guide rows should come from backend guide APIs.
   augments: BASE_AUGMENT_GUIDES,
-  augmentPlans: AUGMENT_PLANS,
   champions: BASE_CHAMPION_GUIDES,
   items: BASE_ITEM_STATS,
   patchVersion: '17.0',

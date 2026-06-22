@@ -374,7 +374,6 @@
 }
 
 .traitCard,
-.plannerPanel,
 .metricCards article {
   border: 1px solid rgba(112, 144, 152, 0.16);
   border-radius: 10px;
@@ -400,8 +399,7 @@
   min-width: 0;
 }
 
-.traitTitle h2,
-.plannerTop h2 {
+.traitTitle h2 {
   margin: 0;
   color: #ffffff;
   font-size: 19px;
@@ -1042,36 +1040,6 @@ button.championMini:hover {
   word-break: keep-all;
 }
 
-.plannerPanel {
-  margin-top: 14px;
-  padding: 17px;
-}
-
-.plannerTop {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 15px;
-}
-
-.sectionBadge {
-  display: inline-flex;
-  margin-bottom: 7px;
-  padding: 4px 9px;
-  border: 1px solid rgba(5, 243, 231, 0.32);
-  border-radius: 5px;
-  color: #05f3e7;
-  background: rgba(5, 115, 118, 0.2);
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.planTabs {
-  display: flex;
-  gap: 6px;
-}
-
-.planTabs button,
 .costFilter button {
   min-height: calc(var(--size-control-md) + var(--space-xs));
   padding: 0 12px;
@@ -1084,57 +1052,10 @@ button.championMini:hover {
   cursor: pointer;
 }
 
-.planActive,
 .costActive {
   color: #05f3e7 !important;
   border-color: rgba(5, 243, 231, 0.55) !important;
   background: rgba(5, 115, 118, 0.34) !important;
-}
-
-.plannerBody {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 14px;
-  align-items: stretch;
-}
-
-.stageCards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
-
-.stageCard {
-  min-height: 120px;
-  padding: 14px;
-  border: 1px solid rgba(112, 144, 152, 0.14);
-  border-radius: 8px;
-  background: rgba(7, 18, 25, 0.72);
-}
-
-.stageCard span {
-  display: inline-grid;
-  place-items: center;
-  min-width: 42px;
-  height: 24px;
-  border-radius: 5px;
-  color: #f9c860;
-  background: rgba(138, 91, 22, 0.25);
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.stageCard strong {
-  display: block;
-  margin-top: 12px;
-  color: #ffffff;
-  font-size: 14px;
-}
-
-.stageCard p {
-  margin: 8px 0 0;
-  color: #8e97a1;
-  font-size: 12px;
 }
 
 .costFilter {
@@ -1582,8 +1503,7 @@ button.championMini:hover {
 }
 
 @media (max-width: 1180px) {
-  .traitLayout,
-  .plannerBody {
+  .traitLayout {
     grid-template-columns: 1fr;
   }
 
@@ -1618,8 +1538,7 @@ button.championMini:hover {
   .traitGrid,
   .augmentCardGrid,
   .itemGuideList,
-  .metricCards,
-  .stageCards {
+  .metricCards {
     grid-template-columns: 1fr;
   }
 
@@ -1632,7 +1551,6 @@ button.championMini:hover {
   .statusBanner button,
   .quickGroup button,
   .costFilter button,
-  .planTabs button,
   .sortButton,
   .championMini,
   .pagination button {
@@ -1695,8 +1613,7 @@ button.championMini:hover {
     justify-self: start;
   }
 
-  .costFilter,
-  .planTabs {
+.costFilter {
     flex-wrap: wrap;
   }
 

@@ -1,9 +1,4 @@
-import { useState } from 'react'
-import {
-  type AugmentPlan,
-  type AugmentPlanKey,
-  type GuideCatalog,
-} from '../../../api/guide'
+import type { GuideCatalog } from '../../../api/guide'
 import { useGuideTabItems } from '../../../hooks/useGuide'
 import {
   useGuidePageBounds,
@@ -14,22 +9,18 @@ import {
   GuideStatusBanner,
 } from './GuideShared'
 import AugmentGuideList from './AugmentGuideList'
-import AugmentPlannerPanel from './AugmentPlannerPanel'
 
 const AUGMENT_GUIDE_PAGE_SIZE = 4
 
 interface AugmentGuideViewProps {
-  augmentPlans: AugmentPlan[]
   fallbackData: GuideCatalog
   query: string
 }
 
 function AugmentGuideView({
-  augmentPlans,
   fallbackData,
   query,
 }: AugmentGuideViewProps) {
-  const [planKey, setPlanKey] = useState<AugmentPlanKey>('fast8')
   const {
     currentPage,
     setCurrentPage,
@@ -64,12 +55,6 @@ function AugmentGuideView({
         augments={visibleAugments}
       />
       <GuidePagination currentPage={safePage} onPageChange={setCurrentPage} totalPages={pageData.totalPages} />
-
-      <AugmentPlannerPanel
-        augmentPlans={augmentPlans}
-        onPlanKeyChange={setPlanKey}
-        planKey={planKey}
-      />
     </>
   )
 }

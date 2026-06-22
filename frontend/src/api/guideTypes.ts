@@ -2,7 +2,6 @@ import type { TraitHexBadgeTone } from '../types/badges'
 
 export type GuideTab = 'traits' | 'items' | 'augments' | 'champions'
 export type ChampionCostFilter = 'all' | 1 | 2 | 3 | 4 | 5
-export type AugmentPlanKey = 'fast8' | 'reroll' | 'flex'
 export type SortDir = 'asc' | 'desc'
 
 export const DEFAULT_GUIDE_PAGE_SIZE = 5
@@ -21,7 +20,7 @@ export interface GuideTabMeta {
 export const GUIDE_TABS: GuideTabMeta[] = [
   { key: 'traits', label: '시너지', meta: '설명 + 필요 챔피언' },
   { key: 'items', label: '아이템', meta: '효과 + 조합식' },
-  { key: 'augments', label: '증강체', meta: '효과 + 보상' },
+  { key: 'augments', label: '증강체', meta: '효과 + 태그' },
   { key: 'champions', label: '챔피언', meta: '스탯 + 특성' },
 ]
 
@@ -82,16 +81,6 @@ export interface AugmentGuide {
   winRate?: string
 }
 
-export interface AugmentPlan {
-  key: AugmentPlanKey
-  label: string
-  stages: {
-    choice: string
-    focus: string
-    stage: string
-  }[]
-}
-
 export interface ChampionGuide {
   bestItems: ItemRef[]
   cost: 1 | 2 | 3 | 4 | 5
@@ -119,7 +108,6 @@ export interface RecentGuide {
 
 export interface GuideCatalog {
   augments: AugmentGuide[]
-  augmentPlans: AugmentPlan[]
   champions: ChampionGuide[]
   items: ItemStatGuide[]
   patchVersion: string

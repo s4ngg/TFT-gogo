@@ -268,19 +268,6 @@ CREATE TABLE IF NOT EXISTS tft_guide_augments (
     KEY idx_tft_guide_augments_patch_name (patch_version, name, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS augment_guide_plans (
-    id BIGINT NOT NULL AUTO_INCREMENT,
-    plan_key VARCHAR(50) NOT NULL,
-    label VARCHAR(100) NOT NULL,
-    stages_json JSON NOT NULL,
-    patch_version VARCHAR(20) NOT NULL,
-    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
-    PRIMARY KEY (id),
-    UNIQUE KEY uk_augment_guide_plans_key_patch (plan_key, patch_version),
-    KEY idx_augment_guide_plans_patch (patch_version, id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 CREATE TABLE IF NOT EXISTS patch_notes (
     id BIGINT NOT NULL AUTO_INCREMENT,
     version VARCHAR(20) NOT NULL,

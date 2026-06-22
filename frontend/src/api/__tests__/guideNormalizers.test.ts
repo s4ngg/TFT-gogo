@@ -6,34 +6,14 @@ import type { GuideCatalog } from '../guideTypes'
 
 const fallbackCatalog: GuideCatalog = {
   augments: [],
-  augmentPlans: [
-    {
-      key: 'reroll',
-      label: '기본 플랜',
-      stages: [],
-    },
-  ],
   champions: [],
   items: [],
   patchVersion: 'fallback',
   traits: [],
 }
 
-test('normalizeGuideCatalog reads entries and augment support data from catalog object payload', () => {
+test('normalizeGuideCatalog reads entries from catalog object payload', () => {
   const result = normalizeGuideCatalog({
-    augmentPlans: [
-      {
-        key: 'fast8',
-        label: '빠른 8레벨',
-        stages: [
-          {
-            choice: '전투 증강',
-            focus: '초반 전투력',
-            stage: '2-1',
-          },
-        ],
-      },
-    ],
     entries: [
       {
         dataJson: {
@@ -70,6 +50,4 @@ test('normalizeGuideCatalog reads entries and augment support data from catalog 
   assert.equal(result.traits.length, 1)
   assert.equal(result.traits[0].variant, 'Huntress')
   assert.equal(result.traits[0].name, '동물특공대')
-  assert.equal(result.augmentPlans.length, 1)
-  assert.equal(result.augmentPlans[0].label, '빠른 8레벨')
 })

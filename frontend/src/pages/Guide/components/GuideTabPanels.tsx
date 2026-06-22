@@ -54,7 +54,6 @@ function GuideTabPanels({
     return (
       <div id="guide-panel-augments" role="tabpanel" aria-labelledby="guide-tab-augments">
         <AugmentGuideView
-          augmentPlans={guideData.augmentPlans}
           fallbackData={guideData}
           query={query}
         />

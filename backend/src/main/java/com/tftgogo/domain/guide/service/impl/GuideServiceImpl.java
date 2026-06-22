@@ -4,18 +4,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.tftgogo.domain.guide.dto.response.AugmentGuidePlanResponse;
 import com.tftgogo.domain.guide.dto.response.GuideCatalogResponse;
 import com.tftgogo.domain.guide.dto.response.GuideEntryResponse;
 import com.tftgogo.domain.guide.dto.response.GuidePageResponse;
-import com.tftgogo.domain.guide.entity.AugmentGuidePlan;
 import com.tftgogo.domain.guide.entity.GuideAugment;
 import com.tftgogo.domain.guide.entity.GuideChampion;
 import com.tftgogo.domain.guide.entity.Guide;
 import com.tftgogo.domain.guide.entity.GuideItem;
 import com.tftgogo.domain.guide.entity.GuideTrait;
 import com.tftgogo.domain.guide.entity.GuideType;
-import com.tftgogo.domain.guide.repository.AugmentGuidePlanRepository;
 import com.tftgogo.domain.guide.repository.GuideAugmentRepository;
 import com.tftgogo.domain.guide.repository.GuideChampionRepository;
 import com.tftgogo.domain.guide.repository.GuideItemRepository;
@@ -58,7 +55,6 @@ public class GuideServiceImpl implements GuideService {
     private final GuideTraitRepository guideTraitRepository;
     private final GuideItemRepository guideItemRepository;
     private final GuideAugmentRepository guideAugmentRepository;
-    private final AugmentGuidePlanRepository augmentGuidePlanRepository;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -68,11 +64,10 @@ public class GuideServiceImpl implements GuideService {
                     List<GuideEntryResponse> entries = findCatalogEntries(patchVersion);
                     return GuideCatalogResponse.of(
                             patchVersion,
-                            entries,
-                            findAugmentPlans(patchVersion)
+                            entries
                     );
                 })
-                .orElseGet(() -> GuideCatalogResponse.of("", List.of(), List.of()));
+                .orElseGet(() -> GuideCatalogResponse.of("", List.of()));
     }
 
     @Override
@@ -174,20 +169,6 @@ public class GuideServiceImpl implements GuideService {
                 .map(this::toResponse)
                 .filter(this::isDisplayableResponse)
                 .toList();
-    }
-
-    private List<AugmentGuidePlanResponse> findAugmentPlans(String patchVersion) {
-        return augmentGuidePlanRepository.findByPatchVersionOrderByPlanKeyAscIdAsc(patchVersion)
-                .stream()
-                .map(this::toAugmentPlanResponse)
-                .toList();
-    }
-
-    private AugmentGuidePlanResponse toAugmentPlanResponse(AugmentGuidePlan plan) {
-        return AugmentGuidePlanResponse.from(
-                plan,
-                parseJson(plan.getStagesJson(), "augmentPlan.stages", plan.getId())
-        );
     }
 
     private List<GuideEntryResponse> findSplitTabEntries(GuideType guideType, String patchVersion) {

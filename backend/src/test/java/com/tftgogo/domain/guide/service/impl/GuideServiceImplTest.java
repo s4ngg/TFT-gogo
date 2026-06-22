@@ -4,13 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tftgogo.domain.guide.dto.response.GuideCatalogResponse;
 import com.tftgogo.domain.guide.dto.response.GuideEntryResponse;
 import com.tftgogo.domain.guide.dto.response.GuidePageResponse;
-import com.tftgogo.domain.guide.entity.AugmentGuidePlan;
 import com.tftgogo.domain.guide.entity.Guide;
 import com.tftgogo.domain.guide.entity.GuideAugment;
 import com.tftgogo.domain.guide.entity.GuideChampion;
 import com.tftgogo.domain.guide.entity.GuideTrait;
 import com.tftgogo.domain.guide.entity.GuideType;
-import com.tftgogo.domain.guide.repository.AugmentGuidePlanRepository;
 import com.tftgogo.domain.guide.repository.GuideAugmentRepository;
 import com.tftgogo.domain.guide.repository.GuideChampionRepository;
 import com.tftgogo.domain.guide.repository.GuideItemRepository;
@@ -53,9 +51,6 @@ class GuideServiceImplTest {
 
     @Mock
     private GuideAugmentRepository guideAugmentRepository;
-
-    @Mock
-    private AugmentGuidePlanRepository augmentGuidePlanRepository;
 
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
@@ -135,36 +130,25 @@ class GuideServiceImplTest {
     }
 
     @Test
-    void 카탈로그는_증강체_운영_플랜을_반환한다() {
+    void 카탈로그는_증강체_운영_플랜을_반환하지_않는다() {
         // given
         when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.1"));
         when(guideRepository.findByPatchVersionAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc("17.1"))
                 .thenReturn(List.of());
-        when(augmentGuidePlanRepository.findByPatchVersionOrderByPlanKeyAscIdAsc("17.1"))
-                .thenReturn(List.of(augmentPlan("fast8", "빠른 8레벨", "17.1")));
 
         // when
         GuideCatalogResponse response = guideService.getGuideCatalog();
 
         // then
         assertThat(response.getPatchVersion()).isEqualTo("17.1");
-        assertThat(response.getAugmentPlans())
-                .hasSize(1)
-                .first()
-                .satisfies(plan -> {
-                    assertThat(plan.getKey()).isEqualTo("fast8");
-                    assertThat(plan.getLabel()).isEqualTo("빠른 8레벨");
-                    assertThat(plan.getStages()).hasSize(1);
-                });
+        assertThat(response.getEntries()).isEmpty();
     }
 
     @Test
-    void 카탈로그_기본_패치는_증강체_운영_플랜만으로_선택하지_않는다() {
+    void 카탈로그_기본_패치는_가이드_데이터에서_선택한다() {
         // given
         when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.1"));
         when(guideRepository.findByPatchVersionAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc("17.1"))
-                .thenReturn(List.of());
-        when(augmentGuidePlanRepository.findByPatchVersionOrderByPlanKeyAscIdAsc("17.1"))
                 .thenReturn(List.of());
 
         // when
@@ -172,8 +156,7 @@ class GuideServiceImplTest {
 
         // then
         assertThat(response.getPatchVersion()).isEqualTo("17.1");
-        verify(augmentGuidePlanRepository, never()).findLatestPatchVersion();
-        verify(augmentGuidePlanRepository).findByPatchVersionOrderByPlanKeyAscIdAsc("17.1");
+        verify(guideRepository).findLatestPatchVersion();
     }
 
     @Test
@@ -482,20 +465,6 @@ class GuideServiceImplTest {
                 .tipsJson("[]")
                 .patchVersion("17.0")
                 .build();
-    }
-
-    private AugmentGuidePlan augmentPlan(String planKey, String label, String patchVersion) {
-        AugmentGuidePlan plan = instantiate(AugmentGuidePlan.class);
-        ReflectionTestUtils.setField(plan, "id", 1L);
-        ReflectionTestUtils.setField(plan, "planKey", planKey);
-        ReflectionTestUtils.setField(plan, "label", label);
-        ReflectionTestUtils.setField(
-                plan,
-                "stagesJson",
-                "[{\"stage\":\"2-1\",\"choice\":\"전투 증강\",\"focus\":\"초반 전투력\"}]"
-        );
-        ReflectionTestUtils.setField(plan, "patchVersion", patchVersion);
-        return plan;
     }
 
     private GuideAugment augmentGuide(
