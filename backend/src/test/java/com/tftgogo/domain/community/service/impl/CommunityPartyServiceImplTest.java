@@ -163,6 +163,22 @@ class CommunityPartyServiceImplTest {
     }
 
     @Test
+    void 파티_모집글_작성은_티어가_30자를_초과하면_거부한다() {
+        // given
+        PartyPostCreateRequest request = partyPostCreateRequest("티어 조건이 너무 길어요", PartyGameMode.RANKED_TFT, 2);
+        ReflectionTestUtils.setField(request, "tier", "1234567890123456789012345678901");
+
+        // when, then
+        assertThatThrownBy(() -> communityPartyService.createPartyPost(1L, request))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
+
+        verify(memberRepository, never()).findByIdForUpdate(any(Long.class));
+        verify(partyPostRepository, never()).save(any(PartyPost.class));
+        verify(chatService, never()).ensureRoom(any());
+    }
+
+    @Test
     void 파티_모집글_작성_사용자를_잠글_수_없으면_작성할_수_없다() {
         // given
         PartyPostCreateRequest request = partyPostCreateRequest("마스터 듀오 구합니다", PartyGameMode.RANKED_TFT, 2);

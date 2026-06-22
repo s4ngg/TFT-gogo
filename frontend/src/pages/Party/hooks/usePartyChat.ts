@@ -65,10 +65,13 @@ export function usePartyChat({ activeRoomId, onActiveRoomChange }: UsePartyChatO
 
     return roomSnapshots.reduce(
       (nextRooms, { messages, roomId }) =>
-        messages ? applyRoomMessageSnapshot(nextRooms, roomId, messages) : nextRooms,
+        roomId !== activeRoomId && messages
+          ? applyRoomMessageSnapshot(nextRooms, roomId, messages)
+          : nextRooms,
       rooms,
     )
   }, [
+    activeRoomId,
     deckGuideMessages,
     generalMessages,
     partyRecruitmentMessages,

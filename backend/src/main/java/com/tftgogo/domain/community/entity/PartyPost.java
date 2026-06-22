@@ -168,7 +168,12 @@ public class PartyPost {
             return "제한 없음";
         }
 
-        return tier.trim();
+        String normalized = tier.trim();
+        if (normalized.length() > 30) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+
+        return normalized;
     }
 
     @PrePersist
