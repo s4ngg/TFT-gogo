@@ -394,7 +394,7 @@ function SummonerDetail() {
                 )}
               </section>
               <div className={styles.rightCol}>
-                <AiChat context={chatContext} />
+                <AiChat key={`${name}#${tag}`} context={chatContext} />
                 <RecentSummary matches={filteredMatches} />
                 {matches.length > 0 && (
                   <>

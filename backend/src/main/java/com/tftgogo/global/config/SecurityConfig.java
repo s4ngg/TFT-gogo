@@ -53,6 +53,7 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/community/chat/rooms/*/messages").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/community/chat/rooms/*/stream").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/riot/status").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/ai/chat").permitAll()
                         .requestMatchers(
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/signup",
@@ -62,7 +63,6 @@ public class SecurityConfig {
                                 "/api/summoners/**",
                                 "/api/guide",
                                 "/api/guide/**",
-                                "/api/ai/chat",
                                 "/api/patch-notes",
                                 "/api/patch-notes/**"
                         ).permitAll()
