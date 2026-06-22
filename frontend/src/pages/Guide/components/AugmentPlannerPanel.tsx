@@ -28,13 +28,14 @@ function AugmentPlannerPanel({
           <span className={styles.sectionBadge}>선택 기준</span>
           <h2>증강 선택 기준</h2>
         </div>
-        <div className={styles.planTabs} aria-label="증강 운영 기준 선택">
+        <div className={styles.planTabs} aria-label="증강 운영 기준 선택" role="tablist">
           {augmentPlans.map((plan) => (
             <button
-              aria-pressed={plan.key === planKey}
+              aria-selected={plan.key === planKey}
               className={plan.key === planKey ? styles.planActive : ''}
               key={plan.key}
               onClick={() => onPlanKeyChange(plan.key)}
+              role="tab"
               type="button"
             >
               {plan.label}

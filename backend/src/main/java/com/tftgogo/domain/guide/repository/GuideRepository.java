@@ -25,6 +25,19 @@ public interface GuideRepository extends JpaRepository<Guide, Long> {
             """, nativeQuery = true)
     Optional<String> findLatestPatchVersion();
 
+    @Query(value = """
+            SELECT g.patch_version
+            FROM guides g
+            WHERE g.guide_type = :guideType
+              AND g.is_active = true
+              AND g.deleted_at IS NULL
+            ORDER BY CAST(SUBSTRING_INDEX(g.patch_version, '.', 1) AS UNSIGNED) DESC,
+                     CAST(SUBSTRING_INDEX(g.patch_version, '.', -1) AS UNSIGNED) DESC,
+                     g.patch_version DESC
+            LIMIT 1
+            """, nativeQuery = true)
+    Optional<String> findLatestPatchVersionByGuideType(@Param("guideType") String guideType);
+
     Optional<Guide> findByIdAndDeletedAtIsNull(Long id);
 
     Optional<Guide> findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
