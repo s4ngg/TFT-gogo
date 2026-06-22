@@ -89,7 +89,7 @@ export function mergeTierIntoTags(tags: string[], tier: string) {
   const normalizedTier = tier.trim()
   const customTags = removePartyTierTags(tags)
 
-  if (!partyTierTags.has(normalizedTier) || normalizedTier === noTierLimit) {
+  if (!partyTierTags.has(normalizedTier)) {
     return customTags
   }
 
@@ -246,7 +246,11 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
     const customTagLimit = getPartyCustomTagLimit(tierDraft)
 
     if (customTags.length > customTagLimit) {
-      setComposeError(`티어 조건을 선택하면 커스텀 태그는 최대 ${customTagLimit}개까지 입력할 수 있습니다.`)
+      const customTagLimitMessage = partyTierTags.has(tierDraft.trim())
+        ? `티어 조건을 선택하면 커스텀 태그는 최대 ${customTagLimit}개까지 입력할 수 있습니다.`
+        : `커스텀 태그는 최대 ${customTagLimit}개까지 입력할 수 있습니다.`
+
+      setComposeError(customTagLimitMessage)
       return
     }
 
