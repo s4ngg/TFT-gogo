@@ -57,6 +57,7 @@ public enum ErrorCode {
     RIOT_API_RATE_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "Riot API 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요."),
     RIOT_API_ERROR(HttpStatus.BAD_GATEWAY, "Riot API 호출 중 오류가 발생했습니다."),
     EXTERNAL_API_ERROR(HttpStatus.BAD_GATEWAY, "외부 데이터 호출 중 오류가 발생했습니다."),
+    AI_CHAT_RATE_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "AI 채팅 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요."),
     AI_SERVER_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "AI 서버 연결에 실패했습니다.");
 
     private final HttpStatus status;

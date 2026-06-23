@@ -8,6 +8,7 @@ import com.tftgogo.global.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,9 +23,10 @@ public class AiChatController implements AiChatControllerDocs {
 
     @PostMapping("/chat")
     public ResponseEntity<ApiResponse<AiChatResponse>> chat(
+            @AuthenticationPrincipal Long userId,
             @Valid @RequestBody AiChatRequest request
     ) {
-        AiChatResponse response = aiChatService.chat(request);
+        AiChatResponse response = aiChatService.chat(userId, request);
         return ResponseEntity.ok(ApiResponse.success("AI 채팅 응답 완료", response));
     }
 }

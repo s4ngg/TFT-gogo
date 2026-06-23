@@ -15,16 +15,18 @@ public class AiChatService {
     private static final Logger logger = LogManager.getLogger(AiChatService.class);
 
     private final AiServerClient aiServerClient;
+    private final AiChatRateLimiter rateLimiter;
 
-    public AiChatService(AiServerClient aiServerClient) {
+    public AiChatService(AiServerClient aiServerClient, AiChatRateLimiter rateLimiter) {
         this.aiServerClient = aiServerClient;
+        this.rateLimiter = rateLimiter;
     }
 
-    /**
-     * AI 서버에 채팅 요청을 전달하고 응답을 반환한다.
-     * AI 서버 오류 시 BusinessException(AI_SERVER_ERROR)을 던진다.
-     */
-    public AiChatResponse chat(AiChatRequest request) {
+    public AiChatResponse chat(Long userId, AiChatRequest request) {
+        if (!rateLimiter.tryAcquire(userId)) {
+            logger.warn("AI 채팅 rate limit 초과: userId={}", userId);
+            throw new BusinessException(ErrorCode.AI_CHAT_RATE_LIMIT);
+        }
         try {
             AiChatResponse response = aiServerClient.chat(request);
             if (response == null) {

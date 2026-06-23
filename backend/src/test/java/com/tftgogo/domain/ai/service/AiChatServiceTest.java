@@ -22,9 +22,12 @@ import static org.mockito.Mockito.when;
 class AiChatServiceTest {
 
     @Mock private AiServerClient aiServerClient;
+    @Mock private AiChatRateLimiter rateLimiter;
 
     @InjectMocks
     private AiChatService aiChatService;
+
+    private static final Long USER_ID = 1L;
 
     @Test
     void AI_서버_정상_응답시_그대로_반환한다() {
@@ -34,10 +37,11 @@ class AiChatServiceTest {
                 null
         );
         AiChatResponse expected = AiChatResponse.of("신궁 덱을 추천드립니다.");
+        when(rateLimiter.tryAcquire(USER_ID)).thenReturn(true);
         when(aiServerClient.chat(any())).thenReturn(expected);
 
         // when
-        AiChatResponse result = aiChatService.chat(request);
+        AiChatResponse result = aiChatService.chat(USER_ID, request);
 
         // then
         assertThat(result.getReply()).isEqualTo("신궁 덱을 추천드립니다.");
@@ -50,10 +54,11 @@ class AiChatServiceTest {
                 List.of(new AiChatRequest.MessageDto("user", "어떤 덱 추천해요?")),
                 null
         );
+        when(rateLimiter.tryAcquire(USER_ID)).thenReturn(true);
         when(aiServerClient.chat(any())).thenReturn(null);
 
         // when & then
-        assertThatThrownBy(() -> aiChatService.chat(request))
+        assertThatThrownBy(() -> aiChatService.chat(USER_ID, request))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.AI_SERVER_ERROR));
@@ -66,12 +71,29 @@ class AiChatServiceTest {
                 List.of(new AiChatRequest.MessageDto("user", "어떤 덱 추천해요?")),
                 null
         );
+        when(rateLimiter.tryAcquire(USER_ID)).thenReturn(true);
         when(aiServerClient.chat(any())).thenThrow(new RuntimeException("connection refused"));
 
         // when & then
-        assertThatThrownBy(() -> aiChatService.chat(request))
+        assertThatThrownBy(() -> aiChatService.chat(USER_ID, request))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.AI_SERVER_ERROR));
+    }
+
+    @Test
+    void 요청_한도_초과시_AI_CHAT_RATE_LIMIT_예외를_던진다() {
+        // given
+        AiChatRequest request = new AiChatRequest(
+                List.of(new AiChatRequest.MessageDto("user", "어떤 덱 추천해요?")),
+                null
+        );
+        when(rateLimiter.tryAcquire(USER_ID)).thenReturn(false);
+
+        // when & then
+        assertThatThrownBy(() -> aiChatService.chat(USER_ID, request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.AI_CHAT_RATE_LIMIT));
     }
 }
