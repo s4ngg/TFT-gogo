@@ -32,6 +32,7 @@ General signup/login APIs issue access tokens, and authenticated requests are re
 - 회원가입 성공 시 accessToken을 발급한다.
 - 로그인 성공 시 accessToken을 발급한다.
 - 소셜 로그인은 `/api/v1/auth/social/{provider}`로 시작 URL을 받은 뒤 브라우저를 `/oauth2/authorization/{provider}`로 이동시킨다.
+- 현재 QA/프론트 노출 provider는 Google, Naver이다. Kakao는 `account_email` 권한을 받을 때까지 지원 범위에서 제외한다.
 - 소셜 로그인 시작 URL과 OAuth2 성공/실패 리다이렉트 URI는 http/https 절대 URL이어야 하며, 상대 경로, protocol-relative URL, userinfo가 포함된 URL은 거부한다.
 - 실제 provider 인증 완료에는 각 provider client-id/client-secret, redirect-uri, 프론트 콜백 URI 설정이 필요하다.
 - 소셜 로그인 시작 API는 provider enum이 지원되더라도 OAuth2 client registration 설정이 없으면 503 ApiResponse 실패를 반환하고, 프론트는 이메일 로그인을 안내한다.
@@ -87,6 +88,7 @@ General signup/login APIs issue access tokens, and authenticated requests are re
 - Login API failure: wrong email or password -> common invalid credential error.
 - Login API failure: social-only member with null passwordHash -> common invalid credential error.
 - Social start API success: supported provider -> absolute authorizationUrl.
+- Social start API supported providers: google, naver.
 - Social start API failure: authorizationUrl baseUrl is not an http/https absolute URL -> 400 INVALID_INPUT.
 - Social start frontend failure: non-http(s), relative, protocol-relative, credentialed, or whitespace-containing authorizationUrl -> redirect is blocked before window.location.assign.
 - Social start API failure: unsupported provider -> 400 INVALID_INPUT.
@@ -94,7 +96,7 @@ General signup/login APIs issue access tokens, and authenticated requests are re
 - Social OAuth success: provider attributes -> existing or new social member -> frontend callback with accessToken fragment.
 - Social OAuth failure: provider error/email missing/email conflict -> frontend login redirect with whitelist oauthError code.
 - Social OAuth redirect config failure: authorizedRedirectUri/loginFailureRedirectUri is not an http/https absolute URL -> app startup validation fails, and runtime redirect builder throws INVALID_INPUT if reached.
-- Local social OAuth setup: copy the non-secret backend/src/main/resources/application-social-login.yml.example blocks into ignored application-local.yml, register provider console callbacks to backend /login/oauth2/code/{provider}, and never commit or share real client-secret values.
+- Local social OAuth setup: copy the non-secret backend/src/main/resources/application-social-login.yml.example blocks into ignored application-local.yml, register Google/Naver provider console callbacks to backend /login/oauth2/code/{provider}, and never commit or share real client-secret values.
 - Social OAuth callback frontend success: accessToken fragment -> token persisted -> GET /api/v1/members/me user restore.
 - Frontend auth restore failure: /api/v1/members/me 401 or 403 -> persisted accessToken is cleared so logged-in UI is not shown with an invalid token.
 - Auth request validation failure: invalid request body -> common validation error response.

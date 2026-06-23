@@ -56,9 +56,6 @@ public class PartyPost {
     @Column(name = "current_members", nullable = false)
     private int currentMembers;
 
-    @Column(nullable = false, length = 30)
-    private String tier;
-
     @Column
     private LocalDateTime deadline;
 
@@ -78,7 +75,7 @@ public class PartyPost {
     @BatchSize(size = 50)
     @CollectionTable(name = "party_post_tags", joinColumns = @JoinColumn(name = "party_post_id"))
     @OrderColumn(name = "tag_order")
-    @Column(name = "tag", length = 30)
+    @Column(name = "tag", length = 50)
     private List<String> tags = new ArrayList<>();
 
     public static PartyPost create(Long userId, PartyPostCreateRequest request) {
@@ -95,7 +92,6 @@ public class PartyPost {
         partyPost.gameMode = request.getGameMode();
         partyPost.maxMembers = request.getMaxMembers();
         partyPost.currentMembers = 1;
-        partyPost.tier = normalizeTier(request.getTier());
         partyPost.deadline = deadline;
         partyPost.closed = false;
         partyPost.createdAt = now;
@@ -161,19 +157,6 @@ public class PartyPost {
                 .distinct()
                 .limit(4)
                 .toList());
-    }
-
-    private static String normalizeTier(String tier) {
-        if (tier == null || tier.trim().isEmpty()) {
-            return "제한 없음";
-        }
-
-        String normalized = tier.trim();
-        if (normalized.length() > 30) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT);
-        }
-
-        return normalized;
     }
 
     @PrePersist

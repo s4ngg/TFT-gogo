@@ -12,6 +12,9 @@ export type PartyIcon = 'crown' | 'leaf' | 'spark' | 'swords'
 export type PartyTone = 'purple' | 'green' | 'cyan' | 'gold'
 export type PartyPostsSource = 'api' | 'unavailable'
 
+const defaultPartyTier = '제한 없음'
+const partyTierTags = new Set(['마스터+', '다이아+', '플래티넘+'])
+
 export interface PartyPost {
   capacity: string
   chatRoomId: CommunityChatRoomId
@@ -45,7 +48,6 @@ export interface CreatePartyPostRequest {
   description: string
   mode: PartyMode
   tags: string[]
-  tier: string
   title: string
 }
 
@@ -70,7 +72,6 @@ interface PartyPostResponse {
   partyPostId?: number | string | null
   status?: string | null
   tags?: string[] | string | null
-  tier?: string | null
   title?: string | null
   userId?: number | string | null
 }
@@ -198,6 +199,10 @@ function getPostStyle(mode: PartyMode, tier: string): Pick<PartyPost, 'icon' | '
   return { icon: 'crown', tone: 'purple' }
 }
 
+function readPartyTier(tags: string[]) {
+  return tags.find((tag) => partyTierTags.has(tag)) ?? defaultPartyTier
+}
+
 function formatCloseLabel(value: string | null | undefined) {
   if (!value) return '마감 시간 없음'
 
@@ -299,7 +304,8 @@ function normalizeRequiredPartyPost(payload: unknown, fallbackMessage: string): 
 
 function normalizePartyPost(response: PartyPostResponse, index: number): PartyPost {
   const mode = normalizeMode(response.gameMode ?? response.mode)
-  const tier = readString(response.tier, '제한 없음')
+  const tags = readTags(response.tags).slice(0, 4)
+  const tier = readPartyTier(tags)
   const capacity = normalizeCapacity(response)
   const style = getPostStyle(mode, tier)
   const id = readId(response.partyPostId ?? response.id, `party-api-${index}`)
@@ -317,7 +323,7 @@ function normalizePartyPost(response: PartyPostResponse, index: number): PartyPo
     close: formatCloseLabel(response.deadline ?? response.close),
     status: normalizeStatus(response.status, capacity, isClosed),
     description: readString(response.description ?? response.content, '상세 설명이 없습니다.'),
-    tags: readTags(response.tags).slice(0, 4),
+    tags,
     isJoined: readBoolean(response.isJoined ?? response.joined),
     userId: readOptionalId(response.userId),
     ...style,
@@ -360,7 +366,6 @@ export async function createPartyPost(request: CreatePartyPostRequest): Promise<
         deadline: request.deadline,
         gameMode: toGameMode(request.mode),
         maxMembers: readNumber(request.capacity.split('/')[1]) ?? 2,
-        tier: request.tier,
         tags: request.tags,
       },
     )

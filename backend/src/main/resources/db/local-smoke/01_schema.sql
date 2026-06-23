@@ -367,7 +367,6 @@ CREATE TABLE IF NOT EXISTS party_posts (
     game_mode VARCHAR(30) NULL,
     max_members INT NOT NULL,
     current_members INT NOT NULL,
-    tier VARCHAR(30) NOT NULL DEFAULT '제한 없음',
     deadline DATETIME(6) NULL,
     is_closed TINYINT(1) NOT NULL DEFAULT 0,
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -405,7 +404,7 @@ CREATE TABLE IF NOT EXISTS party_applications (
 CREATE TABLE IF NOT EXISTS party_post_tags (
     party_post_id BIGINT NOT NULL,
     tag_order INT NOT NULL,
-    tag VARCHAR(30) NOT NULL,
+    tag VARCHAR(50) NOT NULL,
     PRIMARY KEY (party_post_id, tag_order),
     CONSTRAINT fk_party_post_tags_post
         FOREIGN KEY (party_post_id) REFERENCES party_posts (id) ON DELETE CASCADE

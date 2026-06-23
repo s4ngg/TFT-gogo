@@ -2,7 +2,7 @@ import axiosInstance from './axiosInstance'
 import type { ApiResponse } from './apiResponse'
 import { unwrapApiResponse } from './apiResponse'
 
-export type SocialProvider = 'google' | 'kakao' | 'naver'
+export type SocialProvider = 'google' | 'naver'
 
 interface RawSocialLoginStartResponse {
   authorizationUrl?: string
