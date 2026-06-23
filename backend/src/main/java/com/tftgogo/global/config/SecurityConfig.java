@@ -5,7 +5,7 @@ import com.tftgogo.global.filter.JwtAuthenticationFilter;
 import com.tftgogo.global.security.oauth.SocialOAuth2FailureHandler;
 import com.tftgogo.global.security.oauth.SocialOAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -93,8 +93,10 @@ public class SecurityConfig {
 
     @Bean
     @Order(3)
-    @ConditionalOnBean(ClientRegistrationRepository.class)
-    public SecurityFilterChain oauth2FilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain oauth2FilterChain(
+            HttpSecurity http,
+            ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider
+    ) throws Exception {
         http
                 .securityMatcher(
                         "/oauth2/**",
@@ -104,11 +106,14 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
-                .oauth2Login(oauth2 -> oauth2
-                        .successHandler(socialOAuth2SuccessHandler)
-                        .failureHandler(socialOAuth2FailureHandler)
-                );
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+
+        if (clientRegistrationRepositoryProvider.getIfAvailable() != null) {
+            http.oauth2Login(oauth2 -> oauth2
+                    .successHandler(socialOAuth2SuccessHandler)
+                    .failureHandler(socialOAuth2FailureHandler)
+            );
+        }
 
         return http.build();
     }

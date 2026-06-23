@@ -33,6 +33,7 @@ import {
 import { usePartyAuth } from './usePartyAuth'
 
 const PARTY_PAGE_SIZE = 3
+const partyTierTags = new Set(['마스터+', '다이아+', '플래티넘+'])
 
 interface UsePartyPostsOptions {
   onPartyMessage: (post: PartyPost, message: string) => void
@@ -66,6 +67,32 @@ function readMutationErrorMessage(error: unknown, fallbackMessage: string) {
 
 function toPartyPostsQueryParams(filter: PartyFilter): PartyPostsQueryParams {
   return filter === '전체' ? {} : { mode: filter }
+}
+
+export function normalizePartyDraftTags(tagsDraft: string) {
+  return [...new Set(tagsDraft
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean))]
+}
+
+export function removePartyTierTags(tags: string[]) {
+  return tags.filter((tag) => !partyTierTags.has(tag))
+}
+
+export function getPartyCustomTagLimit(tier: string) {
+  return partyTierTags.has(tier.trim()) ? 3 : 4
+}
+
+export function mergeTierIntoTags(tags: string[], tier: string) {
+  const normalizedTier = tier.trim()
+  const customTags = removePartyTierTags(tags)
+
+  if (!partyTierTags.has(normalizedTier)) {
+    return customTags
+  }
+
+  return [normalizedTier, ...customTags]
 }
 
 export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPostsOptions) {
@@ -213,19 +240,27 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
       return
     }
 
-    const parsedTags = tagsDraft
-      .split(',')
-      .map((tag) => tag.trim())
-      .filter(Boolean)
-      .slice(0, 4)
+    const parsedTags = normalizePartyDraftTags(tagsDraft)
+    const customTags = removePartyTierTags(parsedTags)
+    const customTagLimit = getPartyCustomTagLimit(tierDraft)
+
+    if (customTags.length > customTagLimit) {
+      const customTagLimitMessage = partyTierTags.has(tierDraft.trim())
+        ? `티어 조건을 선택하면 커스텀 태그는 최대 ${customTagLimit}개까지 입력할 수 있습니다.`
+        : `커스텀 태그는 최대 ${customTagLimit}개까지 입력할 수 있습니다.`
+
+      setComposeError(customTagLimitMessage)
+      return
+    }
+
+    const requestTags = mergeTierIntoTags(parsedTags, tierDraft)
     const request: CreatePartyPostRequest = {
       title,
       mode: modeDraft,
-      tier: tierDraft,
       capacity: normalizeCapacity(capacityDraft),
       deadline,
       description,
-      tags: parsedTags,
+      tags: requestTags,
     }
 
     createMutation.mutate(request, {

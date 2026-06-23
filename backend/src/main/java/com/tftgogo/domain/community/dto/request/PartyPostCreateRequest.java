@@ -35,5 +35,5 @@ public class PartyPostCreateRequest {
     private LocalDateTime deadline;
 
     @Size(max = 4)
-    private List<@NotBlank @Size(max = 30) String> tags = List.of();
+    private List<@NotBlank @Size(max = 50) String> tags = List.of();
 }

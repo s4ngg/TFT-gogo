@@ -102,6 +102,55 @@ describe('partyApi', () => {
     assert.deepEqual(requestCalls[0]?.params, { mode: 'NORMAL_TFT' })
     assert.equal(response.source, 'api')
     assert.equal(response.data[0]?.mode, '일반')
+    assert.equal(response.data[0]?.close, '마감 시간 없음')
+  })
+
+  it('getPartyPosts는 마감 시간이 있으면 실제 마감 시각을 표시한다', async () => {
+    axiosInstance.defaults.adapter = createPartyAdapter({
+      data: [
+        {
+          chatRoomId: 'party-recruitment',
+          content: '마감 시간 표시 확인',
+          currentMembers: 1,
+          deadline: '2099-01-01T21:00:00',
+          gameMode: 'RANKED_TFT',
+          id: 10,
+          maxMembers: 2,
+          tags: [],
+          title: '랭크 같이 해요',
+        },
+      ],
+      success: true,
+    })
+
+    const response = await getPartyPosts()
+
+    assert.equal(response.source, 'api')
+    assert.equal(response.data[0]?.close, '1/1 21:00 마감')
+  })
+
+  it('getPartyPosts는 티어 조건을 태그에서 파생한다', async () => {
+    axiosInstance.defaults.adapter = createPartyAdapter({
+      data: [
+        {
+          chatRoomId: 'party-recruitment',
+          content: '마스터 이상만 구해요',
+          currentMembers: 1,
+          gameMode: 'RANKED_TFT',
+          id: 11,
+          maxMembers: 4,
+          tags: ['마스터+', '음성 가능'],
+          title: '랭크 파티',
+        },
+      ],
+      success: true,
+    })
+
+    const response = await getPartyPosts()
+
+    assert.equal(response.source, 'api')
+    assert.equal(response.data[0]?.tier, '마스터+')
+    assert.deepEqual(response.data[0]?.tags, ['마스터+', '음성 가능'])
   })
 
   it('getPartyPosts는 전체 조회일 때 모드 파라미터를 보내지 않는다', async () => {
@@ -201,7 +250,6 @@ describe('partyApi', () => {
         id: 7,
         maxMembers: 4,
         tags: ['초보 환영', '연습'],
-        tier: '제한 없음',
         title: '일반 같이 해요',
         userId: 3,
       },
@@ -214,7 +262,6 @@ describe('partyApi', () => {
       description: '편하게 연습하실 분',
       mode: '일반',
       tags: ['초보 환영', '연습'],
-      tier: '제한 없음',
       title: '일반 같이 해요',
     })
     const requestBody = readRequestData(requestCalls[0])
@@ -224,9 +271,11 @@ describe('partyApi', () => {
     assert.equal(requestBody.content, '편하게 연습하실 분')
     assert.equal(requestBody.gameMode, 'NORMAL_TFT')
     assert.equal(requestBody.maxMembers, 4)
+    assert.equal('tier' in requestBody, false)
     assert.equal(response.id, '7')
     assert.equal(response.mode, '일반')
     assert.equal(response.capacity, '1/4')
+    assert.equal(response.tier, '제한 없음')
   })
 
   it('파티 생성 응답 payload가 없으면 성공으로 처리하지 않는다', async () => {
@@ -242,8 +291,7 @@ describe('partyApi', () => {
           deadline: '2026-06-16T21:00:00',
           description: '랭크 듀오 구합니다',
           mode: '랭크',
-          tags: ['랭크'],
-          tier: '마스터+',
+          tags: ['마스터+', '랭크'],
           title: '마스터 듀오',
         }),
       /파티 모집글 등록 응답이 올바르지 않습니다/,
@@ -263,8 +311,7 @@ describe('partyApi', () => {
           deadline: '2026-06-16T21:00:00',
           description: '랭크 듀오 구합니다',
           mode: '랭크',
-          tags: ['랭크'],
-          tier: '마스터+',
+          tags: ['마스터+', '랭크'],
           title: '마스터 듀오',
         }),
       /파티 모집글 등록 응답이 올바르지 않습니다/,

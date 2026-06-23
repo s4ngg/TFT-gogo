@@ -1,7 +1,7 @@
 <spec domain="admin">
 
 <purpose>
-Admin pages manage TFTgogo curation data, imports, and protected operations.
+Admin pages manage TFTgogo curation data, imports, monitoring, and protected operations.
 All admin backend endpoints are protected by X-Admin-Token.
 </purpose>
 
@@ -10,6 +10,7 @@ All admin backend endpoints are protected by X-Admin-Token.
 - /admin/decks -> meta deck curation.
 - /admin/hero-augments -> hero augment deck curation.
 - /admin/guides -> game guide manual curation and CDragon import.
+- /admin/match-monitor -> match cache and Riot API rate-limit monitoring.
 - /admin/patch-notes -> patch-note manual curation and Riot official import.
 - /admin/members -> placeholder.
 - /admin/community -> placeholder.
@@ -22,10 +23,13 @@ All admin backend endpoints are protected by X-Admin-Token.
 - frontend/src/pages/Admin/AdminDecks.tsx
 - frontend/src/pages/Admin/AdminHeroAugments.tsx
 - frontend/src/pages/Admin/AdminGuides.tsx
+- frontend/src/pages/Admin/AdminMatchMonitor.tsx
+- frontend/src/pages/Admin/AdminMatchMonitor.module.css
 - frontend/src/pages/Admin/AdminPatchNotes.tsx
 - frontend/src/pages/Admin/AdminMembers.tsx
 - frontend/src/pages/Admin/AdminCommunity.tsx
 - frontend/src/pages/Admin/Admin.module.css
+- frontend/src/pages/Admin/components/RateLimitGauge.tsx
 - frontend/src/api/adminApi.ts
 </frontend-structure>
 
@@ -47,6 +51,9 @@ All admin backend endpoints are protected by X-Admin-Token.
 - PATCH /api/admin/guides/{guideId}
 - DELETE /api/admin/guides/{guideId}
 
+- GET /api/admin/match/cache-stats
+- GET /api/admin/match/rate-limit
+
 - GET /api/admin/patch-notes
 - POST /api/admin/patch-notes
 - POST /api/admin/patch-notes/import/riot
@@ -66,6 +73,24 @@ All admin backend endpoints are protected by X-Admin-Token.
 - Missing/invalid token should route the user back to /admin login.
 - Do not log admin tokens.
 </auth>
+
+<business-rules>
+- Admin APIs should follow the public API response and validation conventions.
+- Soft delete is preferred where deletedAt exists.
+- JSON fields such as dataJson, highlightsJson, tagsJson, and planJson must contain valid JSON before persistence.
+- Only one active, non-deleted patch note should be current.
+- Swagger annotations belong in XxxControllerDocs interfaces, not directly in controllers.
+- Placeholder member/community pages should show a ready-state screen and must not call unfinished APIs.
+- Rate-limit monitoring should read RiotRateLimiter state and refresh through TanStack Query.
+- Match cache stats are aggregated from CachedMatch rows and only manual refresh is supported.
+</business-rules>
+
+<deck-curation>
+- Supports custom deck names, exposure toggles, and sort priority.
+- Supports champion board positions, play guides, and hero augment edits.
+- Aggregation data is identified by deck signature from the top trait combination.
+- If no custom placement is configured, public detail pages use CDragon automatic placement data.
+</deck-curation>
 
 <guide-curation>
 - Manual guide CRUD still uses the legacy guides table.

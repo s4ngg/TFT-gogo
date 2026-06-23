@@ -2,6 +2,8 @@ package com.tftgogo.domain.deck.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tftgogo.global.exception.BusinessException;
+import com.tftgogo.global.exception.ErrorCode;
 import com.tftgogo.domain.deck.dto.response.MetaDeckListResponse;
 import com.tftgogo.domain.deck.dto.response.MetaDeckResponse;
 import com.tftgogo.domain.deck.entity.ArtifactStat;
@@ -196,21 +198,27 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     @Override
     public CompletableFuture<Void> aggregateAndSaveAsync(LocalDate dataDate) {
         if (!aggregating.compareAndSet(false, true)) {
-            logger.warn("집계 이미 실행 중 - 비동기 요청 skip (date={})", dataDate);
-            return CompletableFuture.completedFuture(null);
+            logger.warn("집계 이미 실행 중 - 중복 요청 거부 (date={})", dataDate);
+            throw new BusinessException(ErrorCode.AGGREGATION_ALREADY_RUNNING);
         }
-        return asyncAggregationRunner.run(() -> {
-            try {
-                logger.info("전체 랭크 구간 메타 덱 일일 집계 시작 - date={}", dataDate);
-                for (RankFilter rankFilter : RankFilter.values()) {
-                    logger.info("[{}] 집계 시작 - date={}", rankFilter, dataDate);
-                    aggregateForTier(rankFilter, dataDate);
+        try {
+            return asyncAggregationRunner.run(() -> {
+                try {
+                    logger.info("전체 랭크 구간 메타 덱 일일 집계 시작 - date={}", dataDate);
+                    for (RankFilter rankFilter : RankFilter.values()) {
+                        logger.info("[{}] 집계 시작 - date={}", rankFilter, dataDate);
+                        aggregateForTier(rankFilter, dataDate);
+                    }
+                    logger.info("전체 랭크 구간 메타 덱 일일 집계 완료 - date={}", dataDate);
+                } finally {
+                    aggregating.set(false);
                 }
-                logger.info("전체 랭크 구간 메타 덱 일일 집계 완료 - date={}", dataDate);
-            } finally {
-                aggregating.set(false);
-            }
-        });
+            });
+        } catch (java.util.concurrent.RejectedExecutionException e) { // AbortPolicy가 던지는 예외만 처리
+            aggregating.set(false);
+            logger.error("집계 작업 등록 실패 - executor 큐 가득참 (date={})", dataDate, e);
+            throw new BusinessException(ErrorCode.AGGREGATION_QUEUE_FULL, e);
+        }
     }
 
     private void aggregateForTier(RankFilter rankFilter, LocalDate dataDate) {

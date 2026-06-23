@@ -17,6 +17,12 @@
   GOOD: border: 1px solid var(--border-separator);
   Exception: box-shadow compound values (rgba whites/blacks for shadow depth) may remain hardcoded
   if no matching token exists and the value has no semantic reuse.
+- Hardcoding structural/layout dimension values (px sizes for max-width, column widths, named widths) is also FORBIDDEN when the value has semantic meaning.
+  BAD:  max-width: 1100px; (페이지 콘텐츠 너비)
+  GOOD: add --page-content-width: 1100px to variables.css first, then max-width: var(--page-content-width);
+  BAD:  grid-template-columns: 1fr 340px; (명명된 컬럼 너비)
+  GOOD: add --summoner-right-col-width: 340px to variables.css first, then grid-template-columns: 1fr var(--summoner-right-col-width);
+  Exception: small one-off values with no semantic reuse (e.g. gap: 4px, padding: 6px) may remain hardcoded.
 - CSS Modules class names must be camelCase. snake_case is forbidden.
   BAD:  styles[`tone_${t.tone}`]
   GOOD: const TONE_CLASS_MAP: Record&lt;string, string&gt; = { gold: styles.toneGold, ... }; TONE_CLASS_MAP[t.tone]

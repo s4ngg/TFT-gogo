@@ -126,6 +126,7 @@ class CommunityPartyServiceImplTest {
         assertThat(response.getId()).isEqualTo(10L);
         assertThat(response.getCapacity()).isEqualTo("1/2");
         assertThat(response.getChatRoomId()).isEqualTo("party-recruitment");
+        assertThat(response.getTags()).contains("마스터+");
         assertThat(response.isJoined()).isTrue();
         InOrder inOrder = inOrder(memberRepository, partyPostRepository, partyApplicationRepository);
         inOrder.verify(memberRepository).findByIdForUpdate(1L);
@@ -478,7 +479,7 @@ class CommunityPartyServiceImplTest {
         ReflectionTestUtils.setField(request, "content", "저녁 랭크 같이 하실 분 구합니다.");
         ReflectionTestUtils.setField(request, "gameMode", gameMode);
         ReflectionTestUtils.setField(request, "maxMembers", maxMembers);
-        ReflectionTestUtils.setField(request, "tags", List.of("음성 가능", "순방 목표"));
+        ReflectionTestUtils.setField(request, "tags", List.of("마스터+", "음성 가능", "순방 목표"));
         return request;
     }
 
