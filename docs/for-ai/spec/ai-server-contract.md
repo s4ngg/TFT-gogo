@@ -154,7 +154,52 @@ Spring 백엔드 ↔ AI 서버(FastAPI) 간 API 계약 명세.
 </spring-proxy-endpoint>
 
 <!-- ──────────────────────────────────────────────
-     5. 환경변수
+     5. AI 채팅 API 계약
+────────────────────────────────────────────── -->
+<chat-api>
+
+<endpoint>POST http://ai-server:8000/api/chat</endpoint>
+
+<request-body>
+{
+  "messages": [
+    { "role": "user" | "assistant", "content": "string (max 2000)" }
+  ],
+  "context": {
+    "summoner_name": "string | null",
+    "tag_line": "string | null",
+    "stats_summary": "string | null (max 512)",
+    "good_traits": ["string"] | null,
+    "bad_traits": ["string"] | null,
+    "recent_matches": "string | null (max 5000)",
+    "top_champions": ["string"] | null
+  } | null
+}
+</request-body>
+
+<response-body>
+{ "reply": "string" }
+</response-body>
+
+<notes>
+- messages는 최대 20개
+- context는 프론트에서 초기 20게임 기준으로 구성하여 Spring이 그대로 전달
+- context가 null이면 일반 TFT 지식 질문으로 처리
+- AI 서버 오류 시 fallback 문자열 반환 (HTTP 200)
+- OpenAI API 키 미설정 시에도 fallback 반환
+</notes>
+
+<spring-proxy>
+- Spring 엔드포인트: POST /api/ai/chat
+- Spring이 AiChatRequest를 그대로 AI 서버로 프록시
+- AI 서버 응답을 ApiResponse&lt;AiChatResponse&gt;로 래핑하여 반환
+- 타임아웃: 30초 (readTimeout)
+</spring-proxy>
+
+</chat-api>
+
+<!-- ──────────────────────────────────────────────
+     6. 환경변수
 ────────────────────────────────────────────── -->
 <env>
 Spring (application-docker.yml):
