@@ -23,9 +23,6 @@ public class SocialLoginStartServiceImpl implements SocialLoginStartService {
     @Override
     public SocialLoginStartResponse getStartUrl(String provider, String requestBaseUrl) {
         SocialProvider socialProvider = SocialProvider.fromRegistrationId(provider);
-        if (socialProvider == SocialProvider.KAKAO) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT);
-        }
 
         ClientRegistrationRepository repository = clientRegistrationRepositoryProvider.getIfAvailable();
 
