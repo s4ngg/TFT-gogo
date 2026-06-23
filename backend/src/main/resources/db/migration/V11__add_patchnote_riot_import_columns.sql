@@ -21,9 +21,6 @@ ALTER TABLE patch_notes
     DROP COLUMN is_active;
 
 ALTER TABLE patch_changes
-    RENAME TO patch_note_changes;
-
-ALTER TABLE patch_note_changes
     DROP FOREIGN KEY fk_patch_changes_patch_note,
     DROP INDEX uk_patch_changes_source_key,
     DROP INDEX idx_patch_changes_public,
@@ -44,7 +41,7 @@ ALTER TABLE patch_note_changes
     DROP COLUMN import_source,
     DROP COLUMN is_active,
     DROP COLUMN deleted_at,
-    ADD CONSTRAINT fk_patch_note_changes_patch_note
+    ADD CONSTRAINT fk_patch_changes_patch_note
         FOREIGN KEY (patch_note_id) REFERENCES patch_notes (id) ON DELETE RESTRICT;
 
 CREATE UNIQUE INDEX uk_patch_notes_source_key
@@ -53,8 +50,8 @@ CREATE UNIQUE INDEX uk_patch_notes_source_key
 CREATE UNIQUE INDEX uk_patch_notes_source_url
     ON patch_notes (source_url);
 
-CREATE UNIQUE INDEX uk_patch_note_changes_source_key
-    ON patch_note_changes (patch_note_id, source_key);
+CREATE UNIQUE INDEX uk_patch_changes_source_key
+    ON patch_changes (patch_note_id, source_key);
 
 CREATE UNIQUE INDEX uk_patch_notes_single_current
     ON patch_notes (
@@ -67,11 +64,11 @@ CREATE UNIQUE INDEX uk_patch_notes_single_current
 CREATE INDEX idx_patch_notes_public
     ON patch_notes (deleted_at, is_current, published_at, id);
 
-CREATE INDEX idx_patch_note_changes_source_order
-    ON patch_note_changes (patch_note_id, source_order);
+CREATE INDEX idx_patch_changes_source_order
+    ON patch_changes (patch_note_id, source_order);
 
-CREATE INDEX idx_patch_note_changes_public
-    ON patch_note_changes (patch_note_id, sort_order, id);
+CREATE INDEX idx_patch_changes_public
+    ON patch_changes (patch_note_id, sort_order, id);
 
-CREATE INDEX idx_patch_note_changes_filters
-    ON patch_note_changes (patch_note_id, category, change_type, impact);
+CREATE INDEX idx_patch_changes_filters
+    ON patch_changes (patch_note_id, category, change_type, impact);

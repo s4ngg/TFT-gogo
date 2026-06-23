@@ -283,7 +283,7 @@ CREATE UNIQUE INDEX uk_patch_notes_single_current
         END)
     );
 
-CREATE TABLE IF NOT EXISTS patch_note_changes (
+CREATE TABLE IF NOT EXISTS patch_changes (
     id BIGINT NOT NULL AUTO_INCREMENT,
     patch_note_id BIGINT NOT NULL,
     source_key VARCHAR(150) NULL,
@@ -305,11 +305,11 @@ CREATE TABLE IF NOT EXISTS patch_note_changes (
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     PRIMARY KEY (id),
-    UNIQUE KEY uk_patch_note_changes_source_key (patch_note_id, source_key),
-    KEY idx_patch_note_changes_source_order (patch_note_id, source_order),
-    KEY idx_patch_note_changes_public (patch_note_id, sort_order, id),
-    KEY idx_patch_note_changes_filters (patch_note_id, category, change_type, impact),
-    CONSTRAINT fk_patch_note_changes_patch_note
+    UNIQUE KEY uk_patch_changes_source_key (patch_note_id, source_key),
+    KEY idx_patch_changes_source_order (patch_note_id, source_order),
+    KEY idx_patch_changes_public (patch_note_id, sort_order, id),
+    KEY idx_patch_changes_filters (patch_note_id, category, change_type, impact),
+    CONSTRAINT fk_patch_changes_patch_note
         FOREIGN KEY (patch_note_id) REFERENCES patch_notes (id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
