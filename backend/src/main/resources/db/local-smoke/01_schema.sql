@@ -174,27 +174,6 @@ CREATE TABLE IF NOT EXISTS deck_curations (
     KEY idx_deck_curations_rank_filter (rank_filter)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS guides (
-    id BIGINT NOT NULL AUTO_INCREMENT,
-    guide_type VARCHAR(20) NOT NULL,
-    target_key VARCHAR(100) NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    summary TEXT NULL,
-    image_url VARCHAR(500) NULL,
-    data_json JSON NOT NULL,
-    patch_version VARCHAR(20) NOT NULL,
-    sort_order INT NOT NULL DEFAULT 0,
-    is_active TINYINT(1) NOT NULL DEFAULT 1,
-    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
-    deleted_at DATETIME(6) NULL,
-    PRIMARY KEY (id),
-    UNIQUE KEY uk_guides_type_target_patch (guide_type, target_key, patch_version),
-    KEY idx_guides_public_patch (patch_version, is_active, deleted_at, sort_order, id),
-    KEY idx_guides_public_type_patch (guide_type, patch_version, is_active, deleted_at, sort_order, id),
-    KEY idx_guides_admin (patch_version, guide_type, is_active, deleted_at, sort_order, id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 CREATE TABLE IF NOT EXISTS tft_guide_champions (
     id BIGINT NOT NULL AUTO_INCREMENT,
     champion_key VARCHAR(100) NOT NULL,

@@ -24,96 +24,128 @@ ON DUPLICATE KEY UPDATE
     type = VALUES(type),
     is_active = VALUES(is_active);
 
-INSERT INTO guides (
-    guide_type,
-    target_key,
+INSERT INTO tft_guide_traits (
+    trait_key,
     name,
+    type,
+    icon_url,
+    tone,
     summary,
-    image_url,
-    data_json,
-    patch_version,
-    sort_order,
-    is_active
-) VALUES
-(
-    'TRAIT',
+    levels_json,
+    tier_effects_json,
+    champions_json,
+    tips_json,
+    patch_version
+) VALUES (
     'local-smoke-trait',
     'Local Trait',
-    'Local smoke test trait guide.',
-    NULL,
-    JSON_OBJECT(
-        'count', 4,
-        'type', 'Flex',
-        'summary', 'Sample trait data for public guide smoke testing.',
-        'tone', 'gold',
-        'levels', JSON_ARRAY('2', '4', '6'),
-        'tips', JSON_ARRAY('Check tab rendering and search flow.'),
-        'champions', JSON_ARRAY(JSON_OBJECT('name', 'Local Champion', 'cost', 4, 'imageUrl', NULL))
-    ),
-    '17.3',
-    10,
-    1
-),
-(
-    'ITEM',
-    'local-smoke-item',
-    'Local Item',
-    'Local smoke test item guide.',
-    NULL,
-    JSON_OBJECT(
-        'category', 'attack',
-        'components', JSON_ARRAY('B.F. Sword', 'Recurve Bow'),
-        'recommendedFor', JSON_ARRAY('Attack carry'),
-        'stats', JSON_OBJECT('ad', '+10%', 'attackSpeed', '+10%'),
-        'tips', JSON_ARRAY('Check item tab rendering and search flow.')
-    ),
-    '17.3',
-    20,
-    1
-),
-(
-    'AUGMENT',
-    'local-smoke-augment',
-    'Local Augment',
-    'Local smoke test augment guide.',
-    NULL,
-    JSON_OBJECT(
-        'tier', 'gold',
-        'stage', '2-1',
-        'recommendedComps', JSON_ARRAY('Flex'),
-        'tips', JSON_ARRAY('Check augment tab rendering and search flow.')
-    ),
-    '17.3',
-    30,
-    1
-),
-(
-    'CHAMPION',
-    'local-smoke-champion',
-    'Local Champion',
-    'Local smoke test champion guide.',
-    NULL,
-    JSON_OBJECT(
-        'cost', 4,
-        'role', 'AP Carry',
-        'position', 'Backline',
-        'traits', JSON_ARRAY('Local Trait'),
-        'bestItems', JSON_ARRAY('Local Item'),
-        'stats', JSON_OBJECT('ad', 50, 'armor', 30, 'attackSpeed', 0.75, 'hp', 900, 'mana', 80, 'mr', 30, 'range', 4),
-        'ability', JSON_OBJECT('name', 'Local Skill', 'description', 'Smoke test ability description.', 'iconUrl', NULL)
-    ),
-    '17.3',
-    40,
-    1
+    'Flex',
+    'https://example.com/local-smoke-trait.png',
+    'gold',
+    'Sample trait data for public guide smoke testing.',
+    JSON_ARRAY('2', '4', '6'),
+    JSON_ARRAY(JSON_OBJECT('level', '2', 'description', 'Smoke trait effect.')),
+    JSON_ARRAY(JSON_OBJECT('name', 'Local Champion', 'cost', 4, 'imageUrl', 'https://example.com/local-smoke-champion.png')),
+    JSON_ARRAY('Check tab rendering and search flow.'),
+    '17.3'
 )
 ON DUPLICATE KEY UPDATE
     name = VALUES(name),
+    type = VALUES(type),
+    icon_url = VALUES(icon_url),
+    tone = VALUES(tone),
     summary = VALUES(summary),
+    levels_json = VALUES(levels_json),
+    tier_effects_json = VALUES(tier_effects_json),
+    champions_json = VALUES(champions_json),
+    tips_json = VALUES(tips_json);
+
+INSERT INTO tft_guide_items (
+    item_key,
+    name,
+    category,
+    image_url,
+    description,
+    stats_json,
+    best_users_json,
+    combinations_json,
+    patch_version
+) VALUES (
+    'local-smoke-item',
+    'Local Item',
+    'attack',
+    'https://example.com/local-smoke-item.png',
+    'Local smoke test item guide.',
+    JSON_OBJECT(),
+    JSON_ARRAY(),
+    JSON_ARRAY(JSON_OBJECT('label', 'Local combination', 'items', JSON_ARRAY('B.F. Sword', 'Recurve Bow'))),
+    '17.3'
+)
+ON DUPLICATE KEY UPDATE
+    name = VALUES(name),
+    category = VALUES(category),
     image_url = VALUES(image_url),
-    data_json = VALUES(data_json),
-    sort_order = VALUES(sort_order),
-    is_active = VALUES(is_active),
-    deleted_at = NULL;
+    description = VALUES(description),
+    stats_json = VALUES(stats_json),
+    best_users_json = VALUES(best_users_json),
+    combinations_json = VALUES(combinations_json);
+
+INSERT INTO tft_guide_augments (
+    augment_key,
+    name,
+    description,
+    icon_url,
+    tags_json,
+    stats_json,
+    patch_version
+) VALUES (
+    'local-smoke-augment',
+    'Local Augment',
+    'Local smoke test augment guide.',
+    'https://example.com/local-smoke-augment.png',
+    JSON_ARRAY('Flex'),
+    JSON_OBJECT(),
+    '17.3'
+)
+ON DUPLICATE KEY UPDATE
+    name = VALUES(name),
+    description = VALUES(description),
+    icon_url = VALUES(icon_url),
+    tags_json = VALUES(tags_json),
+    stats_json = VALUES(stats_json);
+
+INSERT INTO tft_guide_champions (
+    champion_key,
+    name,
+    cost,
+    role,
+    position,
+    image_url,
+    stats_json,
+    traits_json,
+    best_items_json,
+    patch_version
+) VALUES (
+    'local-smoke-champion',
+    'Local Champion',
+    4,
+    'AP Carry',
+    'Backline',
+    'https://example.com/local-smoke-champion.png',
+    JSON_OBJECT('ad', 50, 'armor', 30, 'attackSpeed', 0.75, 'hp', 900, 'mana', 80, 'mr', 30, 'range', 4),
+    JSON_ARRAY('Local Trait'),
+    JSON_ARRAY('Local Item'),
+    '17.3'
+)
+ON DUPLICATE KEY UPDATE
+    name = VALUES(name),
+    cost = VALUES(cost),
+    role = VALUES(role),
+    position = VALUES(position),
+    image_url = VALUES(image_url),
+    stats_json = VALUES(stats_json),
+    traits_json = VALUES(traits_json),
+    best_items_json = VALUES(best_items_json);
 
 START TRANSACTION;
 
