@@ -48,12 +48,12 @@ function ChampionCard({ label, imageUrl, items = [], stars = 2, hasItem = false,
       )}
       {equippedItems.length > 0 && (
         <span className={styles.itemTray}>
-          {equippedItems.map((item) => (
+          {equippedItems.map((item,index) => (
             <img
               className={styles.itemIcon}
               src={item.imageUrl}
               alt={item.name}
-              key={item.name}
+              key={`${item.name}_${index}`}
               onError={tftItemIconOnError}
             />
           ))}
