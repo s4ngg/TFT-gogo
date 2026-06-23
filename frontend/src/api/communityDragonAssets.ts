@@ -89,7 +89,7 @@ const TRAIT_ICON_PATHS: Readonly<Record<string, string>> = {
   tft17_bastion: traitIconPathWithoutSet(9, 'Bastion'),
 }
 
-const CHAMPION_IMAGE_PATHS: Readonly<Record<string, string>> = {
+const championImagePaths: Readonly<Record<string, string>> = {
   tft17_darkstar_fakeunit: 'ASSETS/Characters/TFT17_DarkStar_FakeUnit/HUD/TFT17_DarkStar_FakeUnit_SmallSplash.TFT_Set17.tex',
   tft17_rhaast: 'ASSETS/Characters/TFT17_Rhaast/HUD/TFT17_Kayn_Slay_Square.TFT_Set17.tex',
 }
@@ -105,7 +105,7 @@ export function tftTraitIconUrl(traitId: string): string {
 }
 
 export function tftChampSquareUrl(apiName: string): string {
-  const overridePath = CHAMPION_IMAGE_PATHS[apiName.trim().toLowerCase()]
+  const overridePath = championImagePaths[apiName.trim().toLowerCase()]
   if (overridePath) return communityDragonAssetUrl(overridePath)
 
   return communityDragonAssetUrl(`ASSETS/Characters/${apiName}/HUD/${apiName}_Square.${tftSetFileSuffixFromId(apiName)}.tex`)
