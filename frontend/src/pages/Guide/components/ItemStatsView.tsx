@@ -11,7 +11,6 @@ import {
   EmptyState,
   GuidePagination,
   GuideStatusBanner,
-  ItemIconStrip,
 } from './GuideShared'
 import styles from '../Guide.module.css'
 
@@ -59,8 +58,6 @@ function ItemStatsView({
           <thead>
             <tr>
               <th className={styles.nameCol}>아이템</th>
-              <th>분류</th>
-              <th className={styles.comboCol}>조합</th>
               <th className={styles.descriptionCol}>설명</th>
             </tr>
           </thead>
@@ -71,20 +68,7 @@ function ItemStatsView({
                   <img src={itemStat.imageUrl} alt={itemStat.name} />
                   <div>
                     <strong>{itemStat.name}</strong>
-                    <span>{itemStat.category}</span>
                   </div>
-                </td>
-                <td>{itemStat.category}</td>
-                <td>
-                  {itemStat.combinations.map((combination) => (
-                    <div className={styles.comboCell} key={combination.label}>
-                      <ItemIconStrip items={combination.items} />
-                      <div>
-                        <strong>{combination.label}</strong>
-                        <span>{combination.note}</span>
-                      </div>
-                    </div>
-                  ))}
                 </td>
                 <td className={styles.itemDescriptionCell}>
                   {itemStat.description || '-'}

@@ -87,7 +87,7 @@ app:
   guide:
     cdragon:
       startup-import: false
-      patch-version: "17.3"
+      patch-version: "latest"
       set-number: 17
       mutator: TFTSet17
       include-champions: true

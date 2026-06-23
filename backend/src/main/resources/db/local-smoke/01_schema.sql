@@ -225,6 +225,7 @@ CREATE TABLE IF NOT EXISTS tft_guide_traits (
     levels_json JSON NOT NULL,
     tier_effects_json JSON NOT NULL,
     champions_json JSON NOT NULL,
+    special_units_json JSON NOT NULL,
     tips_json JSON NOT NULL,
     patch_version VARCHAR(20) NOT NULL,
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),

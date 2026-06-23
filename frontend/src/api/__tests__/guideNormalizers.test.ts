@@ -47,6 +47,13 @@ test('normalizeGuideCatalog reads entries and augment support data from catalog 
           count: 2,
           levels: ['2'],
           summary: '아군이 공격력을 얻습니다.',
+          specialUnits: [
+            {
+              imageUrl: 'https://example.com/blackhole.png',
+              name: '소형 블랙홀',
+              note: '특성 효과로 생성',
+            },
+          ],
           tierEffects: [],
           tips: [],
           tone: 'gold',
@@ -67,6 +74,7 @@ test('normalizeGuideCatalog reads entries and augment support data from catalog 
 
   assert.equal(result.patchVersion, '17.1')
   assert.equal(result.traits.length, 1)
+  assert.equal(result.traits[0].specialUnits?.[0]?.name, '소형 블랙홀')
   assert.equal(result.traits[0].name, '동물특공대')
   assert.equal(result.augmentPlans.length, 1)
   assert.equal(result.augmentPlans[0].label, '빠른 8레벨')

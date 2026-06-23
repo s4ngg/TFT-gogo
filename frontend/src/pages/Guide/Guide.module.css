@@ -559,6 +559,57 @@ button.championMini:hover {
   border-color: rgba(5, 243, 231, 0.42);
 }
 
+.specialUnitLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
+.specialUnitLine > strong {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+}
+
+.specialUnitMini {
+  min-width: 0;
+  min-height: calc(var(--size-control-md) + var(--space-xs));
+  display: inline-grid;
+  grid-template-columns: var(--size-control-md) minmax(0, auto) auto;
+  align-items: center;
+  gap: var(--space-sm);
+  padding-right: var(--space-md);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  background: var(--bg-btn-dark-soft);
+}
+
+.specialUnitMini img {
+  width: var(--size-control-md);
+  height: var(--size-control-md);
+  border-radius: var(--radius-xs);
+  object-fit: cover;
+}
+
+.specialUnitMini span {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.specialUnitMini small {
+  color: var(--text-muted);
+  font-size: var(--font-size-2xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .tipLine {
   display: flex;
   gap: 6px;
@@ -628,10 +679,6 @@ button.championMini:hover {
   width: 150px;
 }
 
-.comboCol {
-  width: 265px;
-}
-
 .descriptionCol {
   width: 320px;
 }
@@ -657,13 +704,6 @@ button.championMini:hover {
   color: #ffffff;
   font-size: 13px;
   font-weight: 700;
-}
-
-.itemNameCell span {
-  display: block;
-  margin-top: 4px;
-  color: #6b7580;
-  font-size: 11px;
 }
 
 .winRate {
@@ -802,28 +842,6 @@ button.championMini:hover {
   width: 32px;
   height: 32px;
   object-fit: cover;
-}
-
-.comboCell {
-  display: grid;
-  grid-template-columns: 74px minmax(0, 1fr);
-  align-items: center;
-  gap: 9px;
-  text-align: left;
-}
-
-.comboCell strong {
-  display: block;
-  color: #e0e6ec;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.comboCell span {
-  display: block;
-  margin-top: 3px;
-  color: #6b7580;
-  font-size: 11px;
 }
 
 .itemDescriptionCell {

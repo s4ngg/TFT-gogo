@@ -436,6 +436,7 @@ class GuideServiceImplTest {
                 .levelsJson("[\"2\"]")
                 .tierEffectsJson("[{\"level\":\"2\",\"description\":\"효과\"}]")
                 .championsJson(championsJson)
+                .specialUnitsJson("[]")
                 .tipsJson("[]")
                 .patchVersion("17.0")
                 .build();

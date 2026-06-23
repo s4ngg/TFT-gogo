@@ -95,6 +95,7 @@ function TraitGuideView({
         {visibleTraits.length === 0 && <EmptyState />}
         {visibleTraits.map((traitGuide) => {
           const traitDisplay = getTraitDisplay(traitGuide)
+          const specialUnits = traitGuide.specialUnits ?? []
 
           return (
             <article className={styles.traitCard} key={traitGuide.name}>
@@ -140,6 +141,18 @@ function TraitGuideView({
                   <LinkedChampionMini champion={championRef} key={championRef.name} onSelect={onChampionSelect} />
                 ))}
               </div>
+              {specialUnits.length > 0 && (
+                <div className={styles.specialUnitLine} aria-label={`${traitGuide.name} 소환 유닛`}>
+                  <strong>소환 유닛</strong>
+                  {specialUnits.map((specialUnit) => (
+                    <span className={styles.specialUnitMini} key={specialUnit.name}>
+                      <img alt={specialUnit.name} src={specialUnit.imageUrl} />
+                      <span>{specialUnit.name}</span>
+                      {specialUnit.note && <small>{specialUnit.note}</small>}
+                    </span>
+                  ))}
+                </div>
+              )}
               <div className={styles.tipLine}>
                 {traitGuide.tips.map((tip) => (
                   <span key={tip}>{tip}</span>

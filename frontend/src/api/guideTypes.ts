@@ -31,6 +31,12 @@ export interface ChampionRef {
   name: string
 }
 
+export interface SpecialUnitRef {
+  imageUrl: string
+  name: string
+  note?: string
+}
+
 export interface ItemRef {
   imageUrl: string
   name: string
@@ -47,6 +53,7 @@ export interface TraitGuide {
   iconUrl: string
   levels: string[]
   name: string
+  specialUnits?: SpecialUnitRef[]
   summary: string
   tierEffects?: TraitTierEffect[]
   tips: string[]

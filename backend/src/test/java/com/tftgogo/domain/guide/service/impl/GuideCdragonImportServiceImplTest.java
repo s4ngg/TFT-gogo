@@ -5,12 +5,15 @@ import com.tftgogo.domain.guide.dto.request.GuideCdragonImportRequest;
 import com.tftgogo.domain.guide.dto.response.GuideImportResponse;
 import com.tftgogo.domain.guide.entity.Guide;
 import com.tftgogo.domain.guide.entity.GuideAugment;
+import com.tftgogo.domain.guide.entity.GuideTrait;
 import com.tftgogo.domain.guide.entity.GuideType;
 import com.tftgogo.domain.guide.repository.GuideAugmentRepository;
 import com.tftgogo.domain.guide.repository.GuideChampionRepository;
 import com.tftgogo.domain.guide.repository.GuideItemRepository;
 import com.tftgogo.domain.guide.repository.GuideRepository;
 import com.tftgogo.domain.guide.repository.GuideTraitRepository;
+import com.tftgogo.domain.patchnote.entity.PatchNote;
+import com.tftgogo.domain.patchnote.repository.PatchNoteRepository;
 import com.tftgogo.global.cdragon.config.CommunityDragonProperties;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
@@ -57,6 +60,9 @@ class GuideCdragonImportServiceImplTest {
 
     @Mock
     private GuideAugmentRepository guideAugmentRepository;
+
+    @Mock
+    private PatchNoteRepository patchNoteRepository;
 
     @Mock
     private RestTemplate restTemplate;
@@ -153,6 +159,40 @@ class GuideCdragonImportServiceImplTest {
         assertThat(traitGuide.getDataJson()).doesNotContain("%i:scaleAS%");
         assertThat(traitGuide.getDataJson()).doesNotContain("@TeamwideAD*100@");
         assertThat(traitGuide.getDataJson()).contains("\"champions\":[{\"cost\":1");
+    }
+
+    @Test
+    void patchVersion_latest는_현재_패치노트_버전으로_import한다() {
+        // given
+        when(patchNoteRepository.findFirstByCurrentTrueAndDeletedAtIsNullOrderByPublishedAtDescIdDesc())
+                .thenReturn(Optional.of(PatchNote.builder()
+                        .version("17.5")
+                        .build()));
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonJson());
+        when(guideRepository.findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(Optional.empty());
+        when(guideRepository.existsByGuideTypeAndTargetKeyAndPatchVersion(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(false);
+        when(guideRepository.saveAndFlush(any(Guide.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(requestWithPatchVersion("latest"));
+
+        // then
+        assertThat(response.getImportedCount()).isEqualTo(2);
+
+        ArgumentCaptor<Guide> guideCaptor = ArgumentCaptor.forClass(Guide.class);
+        verify(guideRepository, times(2)).saveAndFlush(guideCaptor.capture());
+        assertThat(guideCaptor.getAllValues())
+                .extracting(Guide::getPatchVersion)
+                .containsOnly("17.5");
     }
 
     @Test
@@ -692,6 +732,52 @@ class GuideCdragonImportServiceImplTest {
         assertThat(augmentGuide.getDataJson()).doesNotContain("\"winRate\"");
     }
 
+    @Test
+    void CDragon_소형_블랙홀은_챔피언에서_제외하고_암흑의별_특수유닛으로_저장한다() {
+        // given
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonSpecialUnitJson());
+        when(guideRepository.findByGuideTypeAndTargetKeyAndPatchVersionAndDeletedAtIsNull(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(Optional.empty());
+        when(guideRepository.existsByGuideTypeAndTargetKeyAndPatchVersion(
+                any(GuideType.class),
+                any(String.class),
+                any(String.class)
+        )).thenReturn(false);
+        when(guideRepository.saveAndFlush(any(Guide.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request(true, true));
+
+        // then
+        assertThat(response.getChampionCount()).isEqualTo(1);
+        assertThat(response.getTraitCount()).isEqualTo(1);
+        assertThat(response.getImportedCount()).isEqualTo(2);
+
+        ArgumentCaptor<Guide> guideCaptor = ArgumentCaptor.forClass(Guide.class);
+        verify(guideRepository, times(2)).saveAndFlush(guideCaptor.capture());
+        assertThat(guideCaptor.getAllValues())
+                .extracting(Guide::getTargetKey)
+                .contains("TFT17_Rhaast", "TFT17_DarkStar")
+                .doesNotContain("TFT17_DarkStar_FakeUnit");
+        Guide savedRhaast = guideCaptor.getAllValues().stream()
+                .filter(guide -> guide.getTargetKey().equals("TFT17_Rhaast"))
+                .findFirst()
+                .orElseThrow();
+        assertThat(savedRhaast.getImageUrl()).contains("tft17_kayn_slay_square.tft_set17.png");
+
+        ArgumentCaptor<GuideTrait> traitCaptor = ArgumentCaptor.forClass(GuideTrait.class);
+        verify(guideTraitRepository).save(traitCaptor.capture());
+        GuideTrait savedTrait = traitCaptor.getValue();
+        assertThat(savedTrait.getTraitKey()).isEqualTo("TFT17_DarkStar");
+        assertThat(savedTrait.getSpecialUnitsJson()).contains("소형 블랙홀");
+        assertThat(savedTrait.getSpecialUnitsJson()).contains("tft17_darkstar_fakeunit_smallsplash.tft_set17.png");
+        verify(guideChampionRepository, times(1)).save(any());
+    }
+
     private GuideCdragonImportRequest request(boolean includeChampions, boolean includeTraits) {
         return request(includeChampions, includeTraits, false);
     }
@@ -739,6 +825,87 @@ class GuideCdragonImportServiceImplTest {
                 .sortOrder(0)
                 .active(active)
                 .build();
+    }
+
+    private String cdragonSpecialUnitJson() {
+        return """
+                {
+                  "setData": [
+                    {
+                      "number": 17,
+                      "mutator": "TFTSet17",
+                      "champions": [
+                        {
+                          "apiName": "TFT17_Rhaast",
+                          "name": "라아스트",
+                          "cost": 3,
+                          "role": "APFighter",
+                          "squareIcon": "ASSETS/Characters/TFT17_Rhaast/HUD/TFT17_Rhaast_Square.TFT_Set17.tex",
+                          "traits": ["암흑의 별"],
+                          "stats": {
+                            "armor": 45,
+                            "attackSpeed": 0.75,
+                            "damage": 55,
+                            "hp": 850,
+                            "initialMana": 20,
+                            "magicResist": 45,
+                            "mana": 70,
+                            "range": 1
+                          },
+                          "ability": {
+                            "name": "그림자 습격",
+                            "desc": "라아스트가 @Damage@의 피해를 입힙니다.",
+                            "effects": {
+                              "Damage": 300
+                            },
+                            "icon": "ASSETS/Characters/TFT17_Rhaast/HUD/TFT17_Rhaast_Spell.tex"
+                          }
+                        },
+                        {
+                          "apiName": "TFT17_DarkStar_FakeUnit",
+                          "name": "소형 블랙홀",
+                          "cost": 1,
+                          "role": "APTank",
+                          "squareIcon": "",
+                          "traits": [],
+                          "stats": {
+                            "range": 1
+                          }
+                        }
+                      ],
+                      "traits": [
+                        {
+                          "apiName": "TFT17_DarkStar",
+                          "name": "암흑의 별",
+                          "desc": "암흑의 별은 전투 중 블랙홀을 생성합니다.<br><row>(@MinUnits@) 소형 블랙홀 @SmallBlackHoleCount@개 생성</row>",
+                          "icon": "ASSETS/UX/TraitIcons/Trait_Icon_17_DarkStar.TFT_Set17.tex",
+                          "effects": [
+                            {
+                              "minUnits": 3,
+                              "maxUnits": 5,
+                              "style": 1,
+                              "variables": {
+                                "SmallBlackHoleCount": 1
+                              }
+                            },
+                            {
+                              "minUnits": 7,
+                              "maxUnits": 25000,
+                              "style": 3,
+                              "variables": {
+                                "SmallBlackHoleCount": 2
+                              }
+                            }
+                          ]
+                        }
+                      ],
+                      "augments": []
+                    }
+                  ],
+                  "sets": {},
+                  "items": []
+                }
+                """;
     }
 
     private String cdragonJson() {
