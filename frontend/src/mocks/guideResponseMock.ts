@@ -6,7 +6,6 @@
 } from '../api/communityDragonAssets'
 import {
   type AugmentGuide,
-  type AugmentPlan,
   type ChampionGuide,
   type ChampionRef,
   type GuideCatalog,
@@ -169,14 +168,20 @@ const BASE_TRAIT_GUIDES: TraitGuide[] = [
     type: '운영',
   },
   {
-    champions: [championRefs.lulu, championRefs.nami, championRefs.xayah, championRefs.poppy],
-    count: 4,
+    champions: [championRefs.lulu, championRefs.nami, championRefs.xayah, championRefs.poppy, championRefs.sona],
+    count: 7,
     iconUrl: traitIconUrls.stargazer,
-    levels: ['2', '4', '6'],
+    levels: ['3', '5', '7'],
     name: '별돌보미',
-    summary: '후방 딜러 보호와 마나 보조에 집중된 시너지로, 3성 저코스트 캐리와 잘 맞습니다.',
-    tips: ['룰루 3성 각이 보이면 리롤 가치 상승', '후반에는 자야 또는 소나로 화력 보강'],
-    type: '보조',
+    summary: '전투 시작 시 체력이 가장 높은 적에게 표식을 남기고, 강화된 칸의 아군에게 공격 속도를 제공합니다.',
+    tierEffects: [
+      { description: '공격 속도 15%, 표식 3개', level: '3' },
+      { description: '공격 속도 45%, 표식 5개', level: '5' },
+      { description: '공격 속도 70%, 표식 9개', level: '7+' },
+    ],
+    tips: ['별자리 종류에 따라 핵심 효과가 달라집니다', '카드의 별자리 라벨을 먼저 확인'],
+    type: '시너지',
+    variant: '여사냥꾼',
   },
   {
     champions: [championRefs.masterYi, championRefs.pyke, championRefs.zed, championRefs.akali, championRefs.belveth],
@@ -508,36 +513,6 @@ const BASE_AUGMENT_GUIDES: AugmentGuide[] = [
   },
 ]
 
-const AUGMENT_PLANS: AugmentPlan[] = [
-  {
-    key: 'fast8',
-    label: 'Fast 8',
-    stages: [
-      { choice: '사이버네틱 벌크', focus: '연승 체력 보존', stage: '2-1' },
-      { choice: '판도라의 아이템', focus: '캐리 아이템 확정', stage: '3-2' },
-      { choice: '레벨 업 보상', focus: '4코스트 캐리 전환', stage: '4-2' },
-    ],
-  },
-  {
-    key: 'reroll',
-    label: '리롤',
-    stages: [
-      { choice: '프리즘 티켓', focus: '상점 갱신 절약', stage: '2-1' },
-      { choice: '긴급한 재고', focus: '3성 각 확인', stage: '3-2' },
-      { choice: '전투 증강', focus: '캐리 완성 후 순방', stage: '4-2' },
-    ],
-  },
-  {
-    key: 'flex',
-    label: '유연 운영',
-    stages: [
-      { choice: '아이템 가방', focus: '조합 방향 보류', stage: '2-1' },
-      { choice: '판도라의 아이템', focus: 'AP/AD 선택', stage: '3-2' },
-      { choice: '시너지 문장', focus: '상위 덱 전환', stage: '4-2' },
-    ],
-  },
-]
-
 const BASE_CHAMPION_GUIDES: ChampionGuide[] = [
   {
     bestItems: [itemRefs.infinityEdge, itemRefs.lastWhisper, itemRefs.handOfJustice],
@@ -744,7 +719,6 @@ const BASE_CHAMPION_GUIDES: ChampionGuide[] = [
 export const guideFallbackData: GuideCatalog = {
   // API unavailable fallback sample; production guide rows should come from backend guide APIs.
   augments: BASE_AUGMENT_GUIDES,
-  augmentPlans: AUGMENT_PLANS,
   champions: BASE_CHAMPION_GUIDES,
   items: BASE_ITEM_STATS,
   patchVersion: '17.0',

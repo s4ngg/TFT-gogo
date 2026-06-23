@@ -7,7 +7,6 @@ import { getTotalPages } from './guideFallback'
 import {
   DEFAULT_GUIDE_PAGE_SIZE,
   type AugmentGuide,
-  type AugmentPlan,
   type ChampionGuide,
   type ChampionRef,
   type GuideCatalog,
@@ -22,6 +21,11 @@ import {
   type TraitGuide,
   type TraitTierEffect,
 } from './guideTypes'
+
+const GUIDE_ENTRY_NAME_COLLATOR = new Intl.Collator('ko-KR', {
+  numeric: true,
+  sensitivity: 'base',
+})
 
 function readString(record: Record<string, unknown>, key: string, fallback = '') {
   const value = record[key]
@@ -266,6 +270,7 @@ function isTraitGuide(payload: unknown): payload is TraitGuide {
     ))
     && isStringList(payload.tips)
     && typeof payload.type === 'string'
+    && (!('variant' in payload) || typeof payload.variant === 'string')
 }
 
 function isItemCombination(payload: unknown): payload is ItemStatGuide['combinations'][number] {
@@ -293,25 +298,6 @@ function isAugmentGuide(payload: unknown): payload is AugmentGuide {
     && typeof payload.imageUrl === 'string'
     && typeof payload.name === 'string'
     && isStringList(payload.tags)
-}
-
-function isAugmentPlanStage(payload: unknown): payload is AugmentPlan['stages'][number] {
-  return isRecord(payload)
-    && typeof payload.choice === 'string'
-    && typeof payload.focus === 'string'
-    && typeof payload.stage === 'string'
-}
-
-function isAugmentPlanKey(payload: unknown): payload is AugmentPlan['key'] {
-  return payload === 'fast8' || payload === 'reroll' || payload === 'flex'
-}
-
-function isAugmentPlan(payload: unknown): payload is AugmentPlan {
-  return isRecord(payload)
-    && isAugmentPlanKey(payload.key)
-    && typeof payload.label === 'string'
-    && Array.isArray(payload.stages)
-    && payload.stages.every(isAugmentPlanStage)
 }
 
 function isChampionStats(payload: unknown): payload is ChampionGuide['stats'] {
@@ -347,11 +333,12 @@ function isGuideTabItems<T extends GuideTab>(tab: T, rawItems: unknown[]): rawIt
 
 function guideEntriesToCatalog(entries: GuideEntryResponse[], fallbackData: GuideCatalog): GuideCatalog {
   const sortedEntries = [...entries].sort((first, second) => (
-    (first.sortOrder ?? first.sort_order ?? 0) - (second.sortOrder ?? second.sort_order ?? 0)
+    GUIDE_ENTRY_NAME_COLLATOR.compare(first.name, second.name)
+      || (first.sortOrder ?? first.sort_order ?? 0) - (second.sortOrder ?? second.sort_order ?? 0)
+      || first.id - second.id
   ))
   const catalog: GuideCatalog = {
     augments: [],
-    augmentPlans: fallbackData.augmentPlans,
     champions: [],
     items: [],
     patchVersion: entries.map(readPatchVersion).find(Boolean) ?? fallbackData.patchVersion,
@@ -376,6 +363,7 @@ function guideEntriesToCatalog(entries: GuideEntryResponse[], fallbackData: Guid
         tips: readStringArray(data, 'tips'),
         tone: readTraitTone(data.tone),
         type: readString(data, 'type', '시너지'),
+        variant: readNullableString(data, 'variant'),
       })
     }
 
@@ -445,9 +433,6 @@ export function normalizeGuideCatalog(payload: unknown, fallbackData: GuideCatal
     const catalog = guideEntriesToCatalog(entries, fallbackData)
     return {
       ...catalog,
-      augmentPlans: Array.isArray(payload.augmentPlans) && payload.augmentPlans.every(isAugmentPlan)
-        ? payload.augmentPlans
-        : fallbackData.augmentPlans,
       patchVersion: typeof payload.patchVersion === 'string' && payload.patchVersion
         ? payload.patchVersion
         : catalog.patchVersion,
@@ -460,9 +445,6 @@ export function normalizeGuideCatalog(payload: unknown, fallbackData: GuideCatal
     augments: Array.isArray(payload.augments) && payload.augments.every(isAugmentGuide)
       ? payload.augments
       : fallbackData.augments,
-    augmentPlans: Array.isArray(payload.augmentPlans) && payload.augmentPlans.every(isAugmentPlan)
-      ? payload.augmentPlans
-      : fallbackData.augmentPlans,
     champions: Array.isArray(payload.champions) && payload.champions.every(isChampionGuide)
       ? payload.champions
       : fallbackData.champions,

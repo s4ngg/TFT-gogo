@@ -11,7 +11,7 @@ public interface GuideChampionRepository extends JpaRepository<GuideChampion, Lo
 
     Optional<GuideChampion> findByChampionKeyAndPatchVersion(String championKey, String patchVersion);
 
-    List<GuideChampion> findByPatchVersionOrderByCostAscNameAscIdAsc(String patchVersion);
+    List<GuideChampion> findByPatchVersionOrderByNameAscIdAsc(String patchVersion);
 
     @Query(value = """
             SELECT patch_version

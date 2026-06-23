@@ -14,6 +14,8 @@ public interface PatchNoteRepository extends JpaRepository<PatchNote, Long> {
 
     List<PatchNote> findByDeletedAtIsNullOrderByCurrentDescPublishedAtDescIdDesc();
 
+    Optional<PatchNote> findFirstByDeletedAtIsNullOrderByCurrentDescPublishedAtDescIdDesc();
+
     Optional<PatchNote> findByVersionAndDeletedAtIsNull(String version);
 
     Optional<PatchNote> findByIdAndDeletedAtIsNull(Long id);

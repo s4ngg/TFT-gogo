@@ -178,6 +178,10 @@ function AdminGuides() {
             <span className={styles.guideImportStatus}>가져오기 완료</span>
             <div className={styles.guideImportResultGrid}>
               <div className={styles.guideImportMetric}>
+                <span className={styles.guideImportMetricLabel}>저장 패치</span>
+                <strong className={styles.guideImportMetricValue}>{result.patchVersion}</strong>
+              </div>
+              <div className={styles.guideImportMetric}>
                 <span className={styles.guideImportMetricLabel}>반영</span>
                 <strong className={styles.guideImportMetricValue}>{importedCount}</strong>
               </div>

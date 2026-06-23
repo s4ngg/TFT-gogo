@@ -1,7 +1,4 @@
-import {
-  DEFAULT_GUIDE_PAGE_SIZE,
-  type GuideCatalog,
-} from '../../../api/guide'
+import type { GuideCatalog } from '../../../api/guide'
 import { useGuideTabItems } from '../../../hooks/useGuide'
 import {
   useGuidePageBounds,
@@ -19,6 +16,8 @@ interface ItemStatsViewProps {
   query: string
 }
 
+const ITEM_GUIDE_PAGE_SIZE = 6
+
 function ItemStatsView({
   fallbackData,
   query,
@@ -31,7 +30,7 @@ function ItemStatsView({
     fallbackData,
     params: {
       page: currentPage,
-      pageSize: DEFAULT_GUIDE_PAGE_SIZE,
+      pageSize: ITEM_GUIDE_PAGE_SIZE,
       query,
       tab: 'items',
     },
@@ -53,32 +52,39 @@ function ItemStatsView({
           void itemsQuery.refetch()
         }}
       />
-      <div className={styles.tableWrap}>
-        <table className={styles.itemTable}>
-          <thead>
-            <tr>
-              <th className={styles.nameCol}>아이템</th>
-              <th className={styles.descriptionCol}>설명</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibleItems.map((itemStat) => (
-              <tr key={itemStat.name}>
-                <td className={styles.itemNameCell}>
-                  <img src={itemStat.imageUrl} alt={itemStat.name} />
-                  <div>
-                    <strong>{itemStat.name}</strong>
-                  </div>
-                </td>
-                <td className={styles.itemDescriptionCell}>
-                  {itemStat.description || '-'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <section className={styles.itemGuideList} aria-label="아이템 목록">
+        {visibleItems.map((itemStat) => (
+          <article className={styles.itemGuideCard} key={itemStat.name}>
+            <div className={styles.itemGuideTop}>
+              <div className={styles.itemGuideIdentity}>
+                <img src={itemStat.imageUrl} alt={itemStat.name} />
+                <div>
+                  <h3>{itemStat.name}</h3>
+                </div>
+              </div>
+            </div>
+
+            <p className={styles.itemGuideDescription}>
+              {itemStat.description || '아이템 효과 정보가 아직 준비되지 않았습니다.'}
+            </p>
+
+            {itemStat.bestUsers.length > 0 && (
+              <div className={styles.itemBestUsers}>
+                <strong>추천 챔피언</strong>
+                <div>
+                  {itemStat.bestUsers.map((championRef) => (
+                    <span key={championRef.name}>
+                      <img src={championRef.imageUrl} alt="" />
+                      {championRef.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </article>
+        ))}
         {visibleItems.length === 0 && <EmptyState />}
-      </div>
+      </section>
       <GuidePagination currentPage={safePage} onPageChange={setCurrentPage} totalPages={pageData.totalPages} />
     </>
   )

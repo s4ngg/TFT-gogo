@@ -1,270 +1,191 @@
 <spec domain="guide">
 
 <purpose>
-Game Guide provides public TFT reference data for traits, items, augments, and champions.
-Page: /guide.
+Game guide page providing trait, item, augment, and champion reference data.
+Page: Guide (/guide).
 </purpose>
 
 <routes>
-- /guide -> single public guide page. The active tab is local UI state, not a route param.
+- /guide      -> guide landing (default tab)
+- /guide/:tab -> specific tab (traits / items / augments / champions)
 </routes>
 
 <api>
 <backend>
-- GET /api/guide
-  -> fetch public guide catalog for the resolved latest patch.
-- GET /api/guide/{tab}?patchVersion=&query=&page=&pageSize=&sortKey=&sortDir=&cost=
-  -> fetch one public guide tab page.
-- GET /api/admin/guides?guideType=&patchVersion=&active=
-  -> legacy/manual guide curation list from guides.
-- POST /api/admin/guides
-  -> create one legacy/manual guide row.
-- PATCH /api/admin/guides/{guideId}
-  -> update one legacy/manual guide row.
-- DELETE /api/admin/guides/{guideId}
-  -> soft-delete one legacy/manual guide row.
-- POST /api/admin/guides/import/cdragon
-  -> import split guide tables from Community Dragon.
+- GET  /api/guide       -> fetch public guide catalog
+- GET  /api/guide/{tab} -> fetch public guide data for one tab
+- GET  /api/guide/{tab}?patchVersion=&query=&page=&pageSize=&sortKey=&sortDir=&cost=
+- POST /api/admin/guides/import/cdragon -> import champion/trait/item/augment guide rows from Community Dragon
 </backend>
 <frontend>
-- frontend/src/api/guide.ts -> public exports.
-- frontend/src/api/guideClient.ts -> guide HTTP client functions.
-- frontend/src/api/guideTypes.ts -> guide types, tab metadata, and page-size constants.
-- frontend/src/api/guideNormalizers.ts -> raw API normalization.
-- frontend/src/api/guideFallback.ts -> fallback data when backend is unavailable.
-- frontend/src/hooks/useGuide.ts -> TanStack Query hooks.
-- frontend/src/pages/Guide/hooks/ -> guide UI state and pagination.
-- frontend/src/pages/Guide/components/ -> guide tab panels, cards, controls, and dialogs.
+- frontend/src/api/guide.ts            -> main guide API calls
+- frontend/src/api/guideClient.ts      -> HTTP client wrapper for guide
+- frontend/src/api/guideFallback.ts    -> fallback data when API is unavailable
+- frontend/src/api/guideNormalizers.ts -> normalize raw guide data before use
+- frontend/src/api/guideTypes.ts       -> TypeScript types for guide domain
+- frontend/src/hooks/useGuide.ts       -> TanStack Query hooks for guide catalog and tab pages
+- frontend/src/pages/Guide/hooks/      -> page UI state, tab pagination, metric sorting, and dialog state
+- frontend/src/pages/Guide/components/ -> page-specific guide panels/cards/controls
 </frontend>
 </api>
 
-<current-data-model>
-- Current public guide data is split by domain tables:
-  - tft_guide_champions
-  - tft_guide_traits
-  - tft_guide_items
-  - tft_guide_augments
-  - augment_guide_plans
-- guides still exists for legacy/manual admin curation and as a fallback source when split-table data is absent.
-- Public read flow prefers split tables. It falls back to guides only when the resolved tab has no split-table rows.
-- CDragon import writes to split tables, not to guides.
-- Manual admin CRUD still writes to guides.
-- Do not remove guides until admin/manual curation is migrated or explicitly deprecated.
-</current-data-model>
-
-<erd-contract>
-<tft_guide_champions>
-- id: BIGINT AUTO_INCREMENT PRIMARY KEY
-- champion_key: VARCHAR(100) NOT NULL
-- name: VARCHAR(100) NOT NULL
-- cost: TINYINT NOT NULL
-- role: VARCHAR(50) NOT NULL
-- position: VARCHAR(50) NOT NULL
-- image_url: VARCHAR(500) NOT NULL
-- stats_json: JSON NOT NULL
-- traits_json: JSON NOT NULL
-- best_items_json: JSON NOT NULL
-- patch_version: VARCHAR(20) NOT NULL
-- created_at: DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
-- updated_at: DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)
-- UNIQUE (champion_key, patch_version)
-- INDEX (patch_version, cost, id)
-</tft_guide_champions>
-
-<tft_guide_traits>
-- id: BIGINT AUTO_INCREMENT PRIMARY KEY
-- trait_key: VARCHAR(100) NOT NULL
-- name: VARCHAR(100) NOT NULL
-- type: VARCHAR(50) NOT NULL
-- icon_url: VARCHAR(500) NOT NULL
-- tone: VARCHAR(30) NOT NULL
-- summary: TEXT NOT NULL
-- levels_json: JSON NOT NULL
-- tier_effects_json: JSON NOT NULL
-- champions_json: JSON NOT NULL
-- special_units_json: JSON NOT NULL
-- tips_json: JSON NOT NULL
-- patch_version: VARCHAR(20) NOT NULL
-- created_at: DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
-- updated_at: DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)
-- UNIQUE (trait_key, patch_version)
-- INDEX (patch_version, id)
-</tft_guide_traits>
-
-<tft_guide_items>
-- id: BIGINT AUTO_INCREMENT PRIMARY KEY
-- item_key: VARCHAR(100) NOT NULL
-- name: VARCHAR(100) NOT NULL
-- category: VARCHAR(50) NOT NULL
-- image_url: VARCHAR(500) NOT NULL
-- description: TEXT NULL
-- stats_json: JSON NOT NULL
-- best_users_json: JSON NOT NULL
-- combinations_json: JSON NOT NULL
-- patch_version: VARCHAR(20) NOT NULL
-- created_at: DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
-- updated_at: DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)
-- UNIQUE (item_key, patch_version)
-- INDEX (patch_version, id)
-</tft_guide_items>
-
-<tft_guide_augments>
-- id: BIGINT AUTO_INCREMENT PRIMARY KEY
-- augment_key: VARCHAR(100) NOT NULL
-- name: VARCHAR(100) NOT NULL
-- description: TEXT NOT NULL
-- icon_url: VARCHAR(500) NULL
-- tags_json: JSON NOT NULL
-- stats_json: JSON NOT NULL
-- patch_version: VARCHAR(20) NOT NULL
-- created_at: DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
-- updated_at: DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)
-- UNIQUE (augment_key, patch_version)
-- INDEX (patch_version, name, id)
-</tft_guide_augments>
-
-<augment_guide_plans>
-- id: BIGINT AUTO_INCREMENT PRIMARY KEY
-- plan_key: VARCHAR(50) NOT NULL
-- label: VARCHAR(100) NOT NULL
-- stages_json: JSON NOT NULL
-- patch_version: VARCHAR(20) NOT NULL
-- created_at: DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
-- updated_at: DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)
-- UNIQUE (plan_key, patch_version)
-- INDEX (patch_version, id)
-</augment_guide_plans>
-
-<removed-or-deprecated>
-- augment_guide_rewards is removed.
-- tft_guide_augments.tier is removed.
-- tft_guide_augments.type is removed.
-- tft_guide_augments.reward is removed.
-</removed-or-deprecated>
-</erd-contract>
-
-<public-behavior>
-- Public tabs are traits, items, augments, and champions. Invalid tabs throw GUIDE_INVALID_TAB.
-- GET /api/guide returns ApiResponse<GuideCatalogResponse>.
-- GuideCatalogResponse contains patchVersion, entries, and augmentPlans.
-- GET /api/guide/{tab} returns ApiResponse<GuidePageResponse<GuideEntryResponse>>.
-- GuideEntryResponse contains id, guideType, targetKey, name, summary, imageUrl, patchVersion, sortOrder, and dataJson.
+<business-rules>
+- Guide covers TRAIT, ITEM, AUGMENT, and CHAMPION data.
+- Public tab path values are traits, items, augments, champions. Invalid tabs throw GUIDE_INVALID_TAB.
+- Public responses use ApiResponse&lt;GuideCatalogResponse&gt; for /api/guide and ApiResponse&lt;GuidePageResponse&lt;GuideEntryResponse&gt;&gt; for /api/guide/{tab}.
+- GuideEntryResponse includes id, guideType, targetKey, name, summary, imageUrl, patchVersion, sortOrder, dataJson.
 - dataJson must serialize as a JSON object, not a raw JSON string.
-- If patchVersion is omitted, public APIs resolve the latest patch across split tables and legacy guides.
-- Latest patch selection sorts patchVersion numerically by major/minor, suffix, then lexicographically.
-- A public response must not mix multiple patch versions.
-- Empty data returns an empty catalog or an empty page with totalPages=1.
-- page defaults to 1 and must be 1..10000.
-- Backend pageSize defaults to 10 and must be 1..100.
-- Frontend current display defaults:
-  - traits: 6 per page.
-  - items: 6 per page.
-  - augments: 6 per page.
-  - champions: 15 per page.
-- cost filter is valid only for champions and must be 1..5.
-- query searches name, summary, and targetKey for the resolved tab.
-- Split-table tab data sorts by:
-  - champions: cost ASC, name ASC, id ASC.
-  - traits: name ASC, id ASC.
-  - items: name ASC, id ASC.
-  - augments: name ASC, id ASC.
-- sortKey support remains for legacy metric fields avgPlace, pickRate, top4, and winRate. Current public UI no longer depends on those metrics for item/augment display.
-</public-behavior>
+- The legacy unified `guides` table is not part of the current contract and must not be reintroduced for admin CRUD or public fallback.
+- Admin manual guide CRUD is removed from the backend contract. Admin guide writes currently happen only through /api/admin/guides/import/cdragon.
+- Admin endpoints are protected by X-Admin-Token through /api/admin/**.
+- CDragon import is upsert-based per split table. Same domain key + patchVersion updates the existing row; missing rows are created.
+- Split guide tables do not use soft delete. If deletion/restoration policy is needed later, design it explicitly per table.
+- If patchVersion is omitted on the public catalog, the latest patch is resolved from split guide tables.
+- If patchVersion is omitted on a tab endpoint, the latest patch is resolved from that tab's table.
+- Latest patch selection sorts patchVersion numerically by major/minor parts, then lexicographically as a final tie-breaker.
+- Public page defaults are page=1 and pageSize=10. page must be 1..10000 and pageSize must be 1..100.
+- Public sortKey is optional and limited to avgPlace, pickRate, top4, winRate. Current static CDragon rows do not provide production metrics; missing metrics sort last and default ordering is used.
+- Public default ordering is Korean name collation, then sortOrder, then id.
+- cost filter is valid only as 1..5 and applies only to champion data.
+- query searches name, summary, and targetKey in memory after loading the resolved split-table patch.
+- If no patch exists, /api/guide returns an empty catalog and /api/guide/{tab} returns an empty page with totalPages=1.
+- Invalid persisted JSON fields are treated as GUIDE_INVALID_DATA and should be fixed in import/storage logic, not hidden by public API fallback.
+- CDragon import request fields: patchVersion (required, max 20), setNumber (default 17), mutator (default TFTSet{setNumber}), includeChampions, includeTraits, includeItems, includeAugments.
+- CDragon import rejects requests where includeChampions, includeTraits, includeItems, and includeAugments all resolve to false.
+- CDragon import response fields: createdCount, updatedCount, skippedCount, championCount, traitCount, itemCount, augmentCount, importedCount (= createdCount + updatedCount).
+- CDragon item import includes only completed craftable TFT_Item_* rows with exactly two composition components and no associatedTraits.
+- CDragon item import excludes component-only rows, emblem/trait-associated rows, radiant/artifact/support/non-craftable rows that do not match the completed-item policy.
+- CDragon augment import reads only the requested set/mutator augments and requires apiName, name, description, and icon.
+- CDragon augment import excludes debug/dummy/test/placeholder/inactive/disabled entries by apiName/name/description keywords.
+- CDragon static import does not fetch Riot matches and does not compute production guide metrics.
+- #393 owns the separate guide metric strategy. CDragon provides static names/descriptions/images/tags/combinations; Riot match detail stored in cached_match can later provide avgPlace, pickRate, TOP4 rate, winRate, and sampleCount through a dedicated refresh path.
+- Metric refresh must keep "-" and [] fallbacks when an item or augment is below the minimum sample size; do not invent numbers from insufficient samples.
+- Data originates from CDragon where possible; use communityDragonAssets.ts helpers for frontend images.
+- guideFallback.ts provides static fallback when the backend is unreachable.
+- guideNormalizers.ts must be applied before passing data to components; do not use raw API responses directly.
+- Public guide UI should request tab data through useGuideTabItems; components must not fetch guide data directly.
+</business-rules>
 
-<data-json-contract>
-<champion-data-json>
-- cost: number
-- role: string
-- position: string
-- stats: object
-- traits: array
-- bestItems: array
-</champion-data-json>
+<database-contract>
+<tft-guide-champions>
+- Table: tft_guide_champions
+- Columns: id, champion_key, name, cost, role, position, image_url, stats_json, traits_json, best_items_json, patch_version, created_at, updated_at
+- Unique: champion_key + patch_version
+- Index: patch_version + cost + id
+</tft-guide-champions>
 
-<trait-data-json>
-- count: max display level derived from levels_json.
-- type: string.
-- summary: string.
-- tone: bronze | silver | gold | prismatic or imported tone.
-- levels: string[].
-- tierEffects: [{ level, description }].
-- champions: [{ cost, imageUrl, name }].
-- specialUnits: [{ imageUrl, name, note }].
-- tips: string[].
+<tft-guide-traits>
+- Table: tft_guide_traits
+- Columns: id, trait_key, name, type, icon_url, tone, summary, levels_json, tier_effects_json, champions_json, special_units_json, tips_json, patch_version, created_at, updated_at
+- Unique: trait_key + patch_version
+- Index: patch_version + id
+</tft-guide-traits>
+
+<tft-guide-items>
+- Table: tft_guide_items
+- Columns: id, item_key, name, category, image_url, description, stats_json, best_users_json, combinations_json, patch_version, created_at, updated_at
+- Unique: item_key + patch_version
+- Index: patch_version + id
+</tft-guide-items>
+
+<tft-guide-augments>
+- Table: tft_guide_augments
+- Columns: id, augment_key, name, description, icon_url, tags_json, stats_json, patch_version, created_at, updated_at
+- Unique: augment_key + patch_version
+- Index: patch_version + name + id
+</tft-guide-augments>
+
+<removed-legacy>
+- Do not use: guides
+- Do not use: augment_guide_rewards
+- Do not use: augment_guide_plans
+</removed-legacy>
+</database-contract>
+
+<data-contracts>
+<guide-entry>
+- guideType: TRAIT | ITEM | AUGMENT | CHAMPION
+- targetKey: stable domain key such as CDragon apiName
+- name: display name
+- summary: short display text
+- imageUrl: optional public image URL
+- dataJson: tab-specific JSON object built from split table columns
+- patchVersion: patch scope such as 17.3
+- sortOrder: derived display order for API response
+</guide-entry>
+
+<cdragon-champion-data-json>
+- cost: 1..5
+- role: CDragon role text or fallback text
+- position: imported position label
+- traits: string[]
+- bestItems: [] at current import stage
+- stats: { ad, armor, attackSpeed, hp, mana, mr, range }
+</cdragon-champion-data-json>
+
+<cdragon-trait-data-json>
+- count: max minUnits from CDragon effects
+- type: synergy label
+- summary: sanitized CDragon desc
+- tone: bronze | silver | gold | prismatic, derived from max effect style
+- levels: effect minUnits list, using "N+" when maxUnits is open-ended
+- tierEffects: [{ level, description }]
+- champions: [{ cost, imageUrl, name }]
+- specialUnits: [{ imageUrl, name, note }]
+- tips: [] at current import stage
 - specialUnits is required for summon/generated trait units such as Dark Star's small black hole. Such units must not appear as normal champions.
-</trait-data-json>
+</cdragon-trait-data-json>
 
-<item-data-json>
-- category: string, retained for data completeness.
-- description: string.
-- bestUsers: array, retained for source data compatibility.
-- combinations: array, retained for source data compatibility.
-- Public UI currently shows item image, name, and description only. It intentionally hides category and combinations.
-</item-data-json>
+<cdragon-item-data-json>
+- category: completed item category label
+- description: sanitized CDragon desc
+- bestUsers: [] at current import stage
+- combinations: [{ label, note, items: [{ imageUrl, name }] }]
+</cdragon-item-data-json>
 
-<augment-data-json>
-- description: string.
-- tags: string[].
-- Public UI currently shows simplified augment cards and no longer shows tier, type, reward table, win rate, TOP4, avg place, or pick rate.
-</augment-data-json>
-</data-json-contract>
+<cdragon-augment-data-json>
+- description: sanitized CDragon desc/description/tooltip
+- tags: displayable CDragon tags plus description-derived tags, or ["공용"]
+</cdragon-augment-data-json>
+</data-contracts>
 
-<import-rules>
-- Admin CDragon import request fields:
-  - patchVersion: required, max 20. The special value "latest" resolves to the current patch note version, then falls back to the latest non-deleted patch note.
-  - setNumber: optional, default 17.
-  - mutator: optional, default TFTSet{setNumber}.
-  - includeChampions: optional, default true.
-  - includeTraits: optional, default true.
-  - includeItems: optional, request default false; app.guide.cdragon startup config default true.
-  - includeAugments: optional, request default false; app.guide.cdragon startup config default true.
-- Import rejects requests where all include flags resolve to false.
-- Import response fields are createdCount, updatedCount, skippedCount, championCount, traitCount, itemCount, augmentCount, and importedCount.
-- importedCount equals createdCount + updatedCount.
-- Import is upsert-based by each split table's unique key.
-- Import resolves CDragon set data by setNumber + mutator first, then falls back to root.sets[setNumber] when needed.
-- Imported champion rows include shop champions only. Generated/summon units must be excluded from tft_guide_champions and attached to trait special_units_json when explicitly mapped.
+<backend-implementation>
+- GuideController owns public read endpoints under /api/guide.
+- GuideServiceImpl resolves patch versions from split repositories, validates query params, parses split JSON columns, sorts responses, and builds GuidePageResponse.
+- AdminGuideController owns only /api/admin/guides/import/cdragon for guide writes.
+- GuideCdragonImportServiceImpl fetches CommunityDragonProperties.tftKoKrUrl using RestTemplate and builds split-table guide candidates.
+- CDragon set data resolution first searches root.setData by setNumber + mutator, then falls back to root.sets[setNumber] if champions and traits exist.
+- Champion import includes only shop champions whose apiName starts with TFT{setNumber}_, cost is 1..5, has at least one trait, and has a display name.
+- Trait import skips traits with no matching shop champion references.
+- Generated/summon units are excluded from champion rows and attached to trait special_units_json when explicitly mapped.
 - Current special unit mapping includes TFT17_DarkStar_FakeUnit as a special unit under TFT17_DarkStar.
-- Asset URLs must be generated through backend TftAssetUrlBuilder/TftAssetConfig or frontend communityDragonAssets helpers. Do not hardcode CDragon URLs inside components.
-- Verified asset overrides are allowed for known CDragon exceptions such as Rhaast and TFT17_DarkStar_FakeUnit.
-- Import sanitization removes HTML tags, removes @placeholder@ tokens, collapses whitespace, and trims text.
-</import-rules>
-
-<scheduler>
-- GuideCdragonImportScheduler exists for automatic guide import.
-- Scheduler runs only on ApplicationReadyEvent and is controlled by app.guide.cdragon.startup-import.
-- Startup import defaults are startup-import=false, patch-version=latest, set-number=17, mutator=TFTSet17, include-champions=true, include-traits=true, include-items=true, and include-augments=true.
-- Scheduler code must remain config controlled so local/dev environments do not unintentionally crawl unless explicitly enabled.
-- Manual admin import must remain available for local QA because automatic import can be disabled locally.
-</scheduler>
+- Import asset URLs use CommunityDragonProperties.assetBaseUrl plus a lowercased asset path with .tex replaced by .png.
+- Import sanitization removes HTML tags, resolves known @placeholder@ values, collapses whitespace, and trims text.
+</backend-implementation>
 
 <backend-structure>
-- Public controller: backend/src/main/java/com/tftgogo/domain/guide/controller/GuideController.java
-- Admin controller: backend/src/main/java/com/tftgogo/domain/guide/controller/AdminGuideController.java
-- Services: backend/src/main/java/com/tftgogo/domain/guide/service/
-- Implementations: backend/src/main/java/com/tftgogo/domain/guide/service/impl/
-- Scheduler: backend/src/main/java/com/tftgogo/domain/guide/scheduler/GuideCdragonImportScheduler.java
-- Split entities: GuideChampion, GuideTrait, GuideItem, GuideAugment, AugmentGuidePlan
-- Legacy/manual entity: Guide
-- Split repositories: GuideChampionRepository, GuideTraitRepository, GuideItemRepository, GuideAugmentRepository, AugmentGuidePlanRepository
-- Legacy/manual repository: GuideRepository
+- Controller: backend/src/main/java/com/tftgogo/domain/guide/controller/
+- Swagger docs: backend/src/main/java/com/tftgogo/domain/guide/controller/docs/
+- Request DTOs: backend/src/main/java/com/tftgogo/domain/guide/dto/request/
+- Response DTOs: backend/src/main/java/com/tftgogo/domain/guide/dto/response/
+- Services: backend/src/main/java/com/tftgogo/domain/guide/service/ and service/impl/
+- Repositories: backend/src/main/java/com/tftgogo/domain/guide/repository/
+- Entities: backend/src/main/java/com/tftgogo/domain/guide/entity/
+- CDragon config: backend/src/main/java/com/tftgogo/global/cdragon/config/CommunityDragonProperties.java
 </backend-structure>
 
-<frontend-rules>
-- Public Guide page must call API functions through frontend/src/api/guideClient.ts and hooks in frontend/src/hooks/useGuide.ts.
-- Components must not import axios or fetch directly.
-- guideNormalizers.ts must normalize raw API payloads before component use.
-- Page-level state such as active tab, search, favorites, recent guides, and pagination belongs in Guide hooks.
-- Item tab should not show "classification", "completed item", or "combination" UI labels.
-- Augment tab should show 6 items per page and should not show tier/type/reward-table UI.
-- Trait tab should show specialUnits separately from normal champions.
-</frontend-rules>
-
 <validation>
-- Backend service tests should cover latest patch resolution, split-table priority over guides, empty data behavior, tab validation, pagination bounds, cost filtering, search, and invalid JSON handling.
-- Import tests should cover create/update counts, importedCount semantics, item/augment include flags, generated/special unit exclusion from champions, trait special_units_json output, and asset overrides.
-- Frontend tests should cover guide normalization, page-size expectations, item/augment simplified display, and trait special unit display.
-- Browser QA should verify /guide on desktop and mobile has no page-level horizontal overflow and starts on the latest patch.
+- Service-layer unit tests are the primary backend verification target.
+- Public guide tests should cover tab parsing, page/pageSize bounds, sortKey/sortDir validation, cost filtering, JSON object response, latest patch fallback, empty latest patch behavior, split champion/trait filtering, and CDragon import split-table upsert.
+- Import tests should assert importedCount semantics through createdCount + updatedCount, not championCount + traitCount.
+- #393 metric refresh tests should be added with the dedicated refresh implementation: cached match fixture aggregation, queue/patch filtering, duplicate match handling, minimum sample fallback, sampleCount, and idempotent guide metric updates.
 </validation>
+
+<data-ingestion>
+- Current stage: CDragon champion/trait/item/augment static guide import into split guide tables.
+- Current import does not curate bestItems/tips and should not be treated as final editorial guide quality.
+- Next #393 stage is to decide and implement the metric data source/collection policy, then compute guide metrics in a separate refresh path from CDragon static import.
+- AI server/FastAPI is not required for guide CRUD. Add it only when AI/RAG/recommendation behavior needs guide data.
+</data-ingestion>
 
 </spec>

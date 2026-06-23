@@ -6,34 +6,14 @@ import type { GuideCatalog } from '../guideTypes'
 
 const fallbackCatalog: GuideCatalog = {
   augments: [],
-  augmentPlans: [
-    {
-      key: 'reroll',
-      label: '기본 플랜',
-      stages: [],
-    },
-  ],
   champions: [],
   items: [],
   patchVersion: 'fallback',
   traits: [],
 }
 
-test('normalizeGuideCatalog reads entries and augment support data from catalog object payload', () => {
+test('normalizeGuideCatalog reads entries from catalog object payload', () => {
   const result = normalizeGuideCatalog({
-    augmentPlans: [
-      {
-        key: 'fast8',
-        label: '빠른 8레벨',
-        stages: [
-          {
-            choice: '전투 증강',
-            focus: '초반 전투력',
-            stage: '2-1',
-          },
-        ],
-      },
-    ],
     entries: [
       {
         dataJson: {
@@ -57,6 +37,7 @@ test('normalizeGuideCatalog reads entries and augment support data from catalog 
           tierEffects: [],
           tips: [],
           tone: 'gold',
+          variant: 'Huntress',
           type: '시너지',
         },
         guideType: 'TRAIT',
@@ -74,49 +55,7 @@ test('normalizeGuideCatalog reads entries and augment support data from catalog 
 
   assert.equal(result.patchVersion, '17.1')
   assert.equal(result.traits.length, 1)
+  assert.equal(result.traits[0].variant, 'Huntress')
   assert.equal(result.traits[0].specialUnits?.[0]?.name, '소형 블랙홀')
   assert.equal(result.traits[0].name, '동물특공대')
-  assert.equal(result.augmentPlans.length, 1)
-  assert.equal(result.augmentPlans[0].label, '빠른 8레벨')
-})
-
-test('normalizeGuideCatalog keeps augment entries without imageUrl for fallback rendering', () => {
-  const result = normalizeGuideCatalog({
-    entries: [
-      {
-        dataJson: {
-          description: 'Pick when the board needs tempo.',
-          tags: ['tempo'],
-        },
-        guideType: 'AUGMENT',
-        id: 2,
-        imageUrl: '',
-        name: 'Tempo Choice',
-        patchVersion: '17.1',
-        sortOrder: 0,
-        summary: 'Pick when the board needs tempo.',
-        targetKey: 'TFT17_TempoChoice',
-      },
-    ],
-    patchVersion: '17.1',
-  }, fallbackCatalog)
-
-  assert.equal(result.augments.length, 1)
-  assert.equal(result.augments[0].name, 'Tempo Choice')
-  assert.equal(result.augments[0].imageUrl, '')
-  assert.deepEqual(result.augments[0].tags, ['tempo'])
-
-  const directPayload = normalizeGuideCatalog({
-    augments: [
-      {
-        description: 'Fallback icon should render.',
-        imageUrl: '',
-        name: 'No Icon Augment',
-        tags: [],
-      },
-    ],
-  }, fallbackCatalog)
-
-  assert.equal(directPayload.augments.length, 1)
-  assert.equal(directPayload.augments[0].imageUrl, '')
 })

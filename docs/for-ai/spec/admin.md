@@ -45,11 +45,7 @@ All admin backend endpoints are protected by X-Admin-Token.
 - PUT /api/admin/hero-augment-decks/{id}
 - DELETE /api/admin/hero-augment-decks/{id}
 
-- GET /api/admin/guides?guideType=&patchVersion=&active=
-- POST /api/admin/guides
 - POST /api/admin/guides/import/cdragon
-- PATCH /api/admin/guides/{guideId}
-- DELETE /api/admin/guides/{guideId}
 
 - GET /api/admin/match/cache-stats
 - GET /api/admin/match/rate-limit
@@ -93,19 +89,17 @@ All admin backend endpoints are protected by X-Admin-Token.
 </deck-curation>
 
 <guide-curation>
-- Manual guide CRUD still uses the legacy guides table.
-- guides is identified by guideType + targetKey + patchVersion.
-- Manual guide delete is soft delete through active=false and deletedAt.
-- Manual guide dataJson must be a valid JSON object.
-- CDragon import is separate from manual guide CRUD and writes to split tables:
+- Admin game guide manual CRUD is not part of the current backend contract.
+- Admin guide writes currently use only POST /api/admin/guides/import/cdragon.
+- CDragon import writes champion/trait/item/augment guide data into split guide tables:
   - tft_guide_champions
   - tft_guide_traits
   - tft_guide_items
   - tft_guide_augments
-  - augment_guide_plans
-- CDragon import endpoint is POST /api/admin/guides/import/cdragon.
-- CDragon import request requires patchVersion and can include setNumber, mutator, includeChampions, includeTraits, includeItems, and includeAugments.
-- Public guide reads prefer split tables and use guides only as fallback when split rows are absent.
+- Each split guide table identifies one row by domain key + patchVersion.
+- Existing key + patchVersion rows are updated; missing rows are inserted.
+- Split guide tables do not use soft delete.
+- Do not use or reintroduce legacy guides, augment_guide_rewards, or augment_guide_plans tables.
 </guide-curation>
 
 <patch-note-curation>

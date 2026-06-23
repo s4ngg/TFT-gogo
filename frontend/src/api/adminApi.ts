@@ -68,7 +68,7 @@ function createAdminRequestError(error: unknown, message: string): AdminRequestE
 }
 
 export async function validateAdminToken(): Promise<void> {
-  await axiosInstance.get('/admin/guides', {
+  await axiosInstance.get('/admin/patch-notes', {
     headers: adminHeaders(),
   })
 }
@@ -173,6 +173,7 @@ export interface GuideImportResponse {
   createdCount: number
   importedCount: number
   itemCount: number
+  patchVersion: string
   skippedCount: number
   traitCount: number
   updatedCount: number
