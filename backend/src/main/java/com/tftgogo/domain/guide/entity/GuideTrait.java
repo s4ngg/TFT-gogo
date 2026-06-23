@@ -58,6 +58,9 @@ public class GuideTrait {
     @Column(name = "champions_json", nullable = false, columnDefinition = "JSON")
     private String championsJson;
 
+    @Column(name = "special_units_json", nullable = false, columnDefinition = "JSON")
+    private String specialUnitsJson;
+
     @Column(name = "tips_json", nullable = false, columnDefinition = "JSON")
     private String tipsJson;
 
@@ -81,6 +84,7 @@ public class GuideTrait {
             String levelsJson,
             String tierEffectsJson,
             String championsJson,
+            String specialUnitsJson,
             String tipsJson,
             String patchVersion
     ) {
@@ -93,6 +97,7 @@ public class GuideTrait {
         this.levelsJson = levelsJson;
         this.tierEffectsJson = tierEffectsJson;
         this.championsJson = championsJson;
+        this.specialUnitsJson = specialUnitsJson;
         this.tipsJson = tipsJson;
         this.patchVersion = patchVersion;
     }
@@ -106,6 +111,7 @@ public class GuideTrait {
             String levelsJson,
             String tierEffectsJson,
             String championsJson,
+            String specialUnitsJson,
             String tipsJson
     ) {
         this.name = name;
@@ -116,6 +122,7 @@ public class GuideTrait {
         this.levelsJson = levelsJson;
         this.tierEffectsJson = tierEffectsJson;
         this.championsJson = championsJson;
+        this.specialUnitsJson = specialUnitsJson;
         this.tipsJson = tipsJson;
     }
 

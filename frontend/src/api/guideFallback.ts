@@ -98,7 +98,7 @@ function getGuideSearchFields(tab: GuideTab, item: GuideTabItems[GuideTab][numbe
 
   if (tab === 'augments') {
     const augment = item as AugmentGuide
-    return [augment.name, augment.description, augment.reward, augment.type, ...augment.tags]
+    return [augment.name, augment.description, ...augment.tags]
   }
 
   const championGuide = item as ChampionGuide

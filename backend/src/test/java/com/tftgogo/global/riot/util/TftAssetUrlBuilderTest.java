@@ -49,6 +49,19 @@ class TftAssetUrlBuilderTest {
     }
 
     @Test
+    void rhaast_championId는_CDragon_카드용_square_override를_사용한다() {
+        String url = TftAssetUrlBuilder.buildChampionImageUrl("TFT17_Rhaast");
+        assertThat(url).isEqualTo(CDN_BASE + "/characters/tft17_rhaast/hud/tft17_kayn_slay_square.tft_set17.png");
+    }
+
+    @Test
+    void darkstar_fakeunit_championId는_소형_블랙홀_small_splash_override를_사용한다() {
+        String url = TftAssetUrlBuilder.buildChampionImageUrl("TFT17_DarkStar_FakeUnit");
+        assertThat(url).isEqualTo(CDN_BASE
+                + "/characters/tft17_darkstar_fakeunit/hud/tft17_darkstar_fakeunit_smallsplash.tft_set17.png");
+    }
+
+    @Test
     void championId의_set번호가_없으면_현재_시즌_setTag를_fallback으로_사용한다() {
         String url = TftAssetUrlBuilder.buildChampionImageUrl("TFT_ItemDummy");
         assertThat(url).isEqualTo(CDN_BASE + "/characters/tft_itemdummy/hud/tft_itemdummy_square."

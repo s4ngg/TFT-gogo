@@ -1,32 +1,36 @@
 package com.tftgogo.domain.guide.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tftgogo.domain.guide.dto.response.GuideCatalogResponse;
 import com.tftgogo.domain.guide.dto.response.GuideEntryResponse;
 import com.tftgogo.domain.guide.dto.response.GuidePageResponse;
+import com.tftgogo.domain.guide.entity.AugmentGuidePlan;
 import com.tftgogo.domain.guide.entity.Guide;
-import com.tftgogo.domain.guide.entity.GuideChampion;
+import com.tftgogo.domain.guide.entity.GuideAugment;
+import com.tftgogo.domain.guide.entity.GuideTrait;
 import com.tftgogo.domain.guide.entity.GuideType;
+import com.tftgogo.domain.guide.repository.AugmentGuidePlanRepository;
 import com.tftgogo.domain.guide.repository.GuideAugmentRepository;
 import com.tftgogo.domain.guide.repository.GuideChampionRepository;
 import com.tftgogo.domain.guide.repository.GuideItemRepository;
 import com.tftgogo.domain.guide.repository.GuideRepository;
 import com.tftgogo.domain.guide.repository.GuideTraitRepository;
 import com.tftgogo.global.exception.BusinessException;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -49,33 +53,21 @@ class GuideServiceImplTest {
     @Mock
     private GuideAugmentRepository guideAugmentRepository;
 
+    @Mock
+    private AugmentGuidePlanRepository augmentGuidePlanRepository;
+
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
 
     @InjectMocks
     private GuideServiceImpl guideService;
 
-    @BeforeEach
-    void setUp() {
-        lenient().when(guideChampionRepository.findLatestPatchVersion()).thenReturn(Optional.empty());
-        lenient().when(guideTraitRepository.findLatestPatchVersion()).thenReturn(Optional.empty());
-        lenient().when(guideItemRepository.findLatestPatchVersion()).thenReturn(Optional.empty());
-        lenient().when(guideAugmentRepository.findLatestPatchVersion()).thenReturn(Optional.empty());
-        lenient().when(guideChampionRepository.findByPatchVersionOrderByCostAscNameAscIdAsc(anyString()))
-                .thenReturn(List.of());
-        lenient().when(guideTraitRepository.findByPatchVersionOrderByNameAscIdAsc(anyString()))
-                .thenReturn(List.of());
-        lenient().when(guideItemRepository.findByPatchVersionOrderByNameAscIdAsc(anyString()))
-                .thenReturn(List.of());
-        lenient().when(guideAugmentRepository.findByPatchVersionOrderByTierAscNameAscIdAsc(anyString()))
-                .thenReturn(List.of());
-    }
-
     @Test
     void 챔피언_탭은_cost_필터를_적용한다() {
         // given
         Guide fourCostChampion = championGuide("kaisa", "카이사", 4, 1);
-        when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
+        when(guideRepository.findLatestPatchVersionByGuideType(GuideType.CHAMPION.name()))
+                .thenReturn(Optional.of("17.0"));
         when(guideRepository.findFilteredGuides(GuideType.CHAMPION.name(), "17.0", null, 4))
                 .thenReturn(List.of(fourCostChampion));
 
@@ -100,7 +92,8 @@ class GuideServiceImplTest {
     void dataJson은_JSON_object로_응답한다() {
         // given
         Guide champion = championGuide("kaisa", "카이사", 4, 1);
-        when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
+        when(guideRepository.findLatestPatchVersionByGuideType(GuideType.CHAMPION.name()))
+                .thenReturn(Optional.of("17.0"));
         when(guideRepository.findFilteredGuides(GuideType.CHAMPION.name(), "17.0", null, null))
                 .thenReturn(List.of(champion));
 
@@ -133,13 +126,114 @@ class GuideServiceImplTest {
                 .thenReturn(List.of(latestChampion));
 
         // when
-        List<GuideEntryResponse> response = guideService.getGuideCatalog();
+        GuideCatalogResponse response = guideService.getGuideCatalog();
 
         // then
-        assertThat(response).hasSize(1);
-        assertThat(response.get(0).getPatchVersion()).isEqualTo("17.1");
+        assertThat(response.getEntries()).hasSize(1);
+        assertThat(response.getEntries().get(0).getPatchVersion()).isEqualTo("17.1");
         verify(guideRepository)
                 .findByPatchVersionAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc("17.1");
+    }
+
+    @Test
+    void 카탈로그는_증강체_운영_플랜을_반환한다() {
+        // given
+        when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.1"));
+        when(guideRepository.findByPatchVersionAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc("17.1"))
+                .thenReturn(List.of());
+        when(augmentGuidePlanRepository.findByPatchVersionOrderByPlanKeyAscIdAsc("17.1"))
+                .thenReturn(List.of(augmentPlan("fast8", "빠른 8레벨", "17.1")));
+
+        // when
+        GuideCatalogResponse response = guideService.getGuideCatalog();
+
+        // then
+        assertThat(response.getPatchVersion()).isEqualTo("17.1");
+        assertThat(response.getAugmentPlans())
+                .hasSize(1)
+                .first()
+                .satisfies(plan -> {
+                    assertThat(plan.getKey()).isEqualTo("fast8");
+                    assertThat(plan.getLabel()).isEqualTo("빠른 8레벨");
+                    assertThat(plan.getStages()).hasSize(1);
+                });
+    }
+
+    @Test
+    void 카탈로그_기본_패치는_증강체_운영_플랜만으로_선택하지_않는다() {
+        // given
+        when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.1"));
+        when(guideRepository.findByPatchVersionAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAscIdAsc("17.1"))
+                .thenReturn(List.of());
+        when(augmentGuidePlanRepository.findByPatchVersionOrderByPlanKeyAscIdAsc("17.1"))
+                .thenReturn(List.of());
+
+        // when
+        GuideCatalogResponse response = guideService.getGuideCatalog();
+
+        // then
+        assertThat(response.getPatchVersion()).isEqualTo("17.1");
+        verify(augmentGuidePlanRepository, never()).findLatestPatchVersion();
+        verify(augmentGuidePlanRepository).findByPatchVersionOrderByPlanKeyAscIdAsc("17.1");
+    }
+
+    @Test
+    void 분리_시너지_응답은_연결_챔피언이_없는_항목을_제외한다() {
+        // given
+        GuideTrait displayableTrait = traitGuide(
+                "TFT17_AnimalSquad",
+                "동물특공대",
+                "[{\"cost\":1,\"name\":\"브라이어\",\"imageUrl\":\"https://example.com/briar.png\"}]"
+        );
+        GuideTrait hiddenTrait = traitGuide("TFT17_DivineBlessing", "신의 축복", "[]");
+        when(guideTraitRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
+        when(guideTraitRepository.findByPatchVersionOrderByNameAscIdAsc("17.0"))
+                .thenReturn(List.of(displayableTrait, hiddenTrait));
+
+        // when
+        GuidePageResponse<GuideEntryResponse> response = guideService.getGuideTabItems(
+                "traits",
+                null,
+                null,
+                1,
+                10,
+                null,
+                null,
+                null
+        );
+
+        // then
+        assertThat(response.getItems())
+                .extracting(GuideEntryResponse::getName)
+                .containsExactly("동물특공대");
+        assertThat(response.getTotalItems()).isEqualTo(1);
+    }
+
+    @Test
+    void 탭_기본_패치는_해당_탭의_최신_패치만_사용한다() {
+        // given
+        Guide champion = championGuide("kaisa", "카이사", 4, 1, "17.0");
+        when(guideRepository.findLatestPatchVersionByGuideType(GuideType.CHAMPION.name()))
+                .thenReturn(Optional.of("17.0"));
+        when(guideRepository.findFilteredGuides(GuideType.CHAMPION.name(), "17.0", null, null))
+                .thenReturn(List.of(champion));
+
+        // when
+        GuidePageResponse<?> response = guideService.getGuideTabItems(
+                "champions",
+                null,
+                null,
+                1,
+                10,
+                null,
+                null,
+                null
+        );
+
+        // then
+        assertThat(response.getItems()).hasSize(1);
+        verify(guideRepository, never()).findLatestPatchVersion();
+        verify(guideRepository).findFilteredGuides(GuideType.CHAMPION.name(), "17.0", null, null);
     }
 
     @Test
@@ -164,14 +258,54 @@ class GuideServiceImplTest {
         // then
         assertThat(response.getItems()).hasSize(1);
         verify(guideRepository, never()).findLatestPatchVersion();
+        verify(guideRepository, never()).findLatestPatchVersionByGuideType(GuideType.CHAMPION.name());
         verify(guideRepository).findFilteredGuides(GuideType.CHAMPION.name(), "17.0", null, null);
+    }
+
+    @Test
+    void 분리_증강체_응답은_표시용_설명과_태그만_포함한다() {
+        // given
+        GuideAugment augment = augmentGuide(
+                "TFT17_Augment_BattleReady",
+                "전투 준비",
+                "아군이 공격 속도를 얻습니다.",
+                "[\"전투\"]",
+                "{\"tier\":\"A\",\"type\":\"Combat\",\"reward\":\"전투 능력치\",\"winRate\":\"61.4%\"}",
+                "17.0"
+        );
+        when(guideAugmentRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
+        when(guideAugmentRepository.findByPatchVersionOrderByNameAscIdAsc("17.0"))
+                .thenReturn(List.of(augment));
+
+        // when
+        GuidePageResponse<GuideEntryResponse> response = guideService.getGuideTabItems(
+                "augments",
+                null,
+                null,
+                1,
+                10,
+                null,
+                null,
+                null
+        );
+
+        // then
+        GuideEntryResponse firstItem = response.getItems().get(0);
+        assertThat(firstItem.getImageUrl()).isEqualTo("https://example.com/TFT17_Augment_BattleReady.png");
+        assertThat(firstItem.getDataJson().path("description").asText()).isEqualTo("아군이 공격 속도를 얻습니다.");
+        assertThat(firstItem.getDataJson().path("tags").get(0).asText()).isEqualTo("전투");
+        assertThat(firstItem.getDataJson().has("tier")).isFalse();
+        assertThat(firstItem.getDataJson().has("type")).isFalse();
+        assertThat(firstItem.getDataJson().has("reward")).isFalse();
+        assertThat(firstItem.getDataJson().has("winRate")).isFalse();
     }
 
     @Test
     void 검색어는_LIKE_와일드카드를_escape한다() {
         // given
         Guide champion = championGuide("kaisa", "카이사", 4, 1);
-        when(guideRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
+        when(guideRepository.findLatestPatchVersionByGuideType(GuideType.CHAMPION.name()))
+                .thenReturn(Optional.of("17.0"));
         when(guideRepository.findFilteredGuides(
                 GuideType.CHAMPION.name(),
                 "17.0",
@@ -199,61 +333,6 @@ class GuideServiceImplTest {
                 "카이사\\_\\%\\\\",
                 null
         );
-    }
-
-    @Test
-    void split_테이블_챔피언_탭은_cost_필터와_페이지네이션을_적용한다() {
-        // given
-        GuideChampion kaisa = splitChampionGuide("kaisa", "카이사", 4, "17.0");
-        GuideChampion jinx = splitChampionGuide("jinx", "징크스", 4, "17.0");
-        GuideChampion briar = splitChampionGuide("briar", "브라이어", 5, "17.0");
-        when(guideChampionRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
-        when(guideChampionRepository.findByPatchVersionOrderByCostAscNameAscIdAsc("17.0"))
-                .thenReturn(List.of(kaisa, jinx, briar));
-
-        // when
-        GuidePageResponse<?> response = guideService.getGuideTabItems(
-                "champions",
-                null,
-                null,
-                2,
-                1,
-                null,
-                null,
-                4
-        );
-
-        // then
-        assertThat(response.getTotalItems()).isEqualTo(2);
-        assertThat(response.getTotalPages()).isEqualTo(2);
-        assertThat(response.getItems()).hasSize(1);
-        assertThat(response.getItems().get(0)).hasFieldOrPropertyWithValue("name", "징크스");
-    }
-
-    @Test
-    void 탭_조회는_해당_split_테이블의_최신_패치버전을_우선한다() {
-        // given
-        GuideChampion champion = splitChampionGuide("kaisa", "카이사", 4, "17.0");
-        when(guideChampionRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
-        when(guideChampionRepository.findByPatchVersionOrderByCostAscNameAscIdAsc("17.0"))
-                .thenReturn(List.of(champion));
-
-        // when
-        GuidePageResponse<?> response = guideService.getGuideTabItems(
-                "champions",
-                null,
-                null,
-                1,
-                10,
-                null,
-                null,
-                null
-        );
-
-        // then
-        assertThat(response.getItems()).hasSize(1);
-        assertThat(response.getItems().get(0)).hasFieldOrPropertyWithValue("patchVersion", "17.0");
-        verify(guideRepository, never()).findLatestPatchVersion();
     }
 
     @Test
@@ -287,9 +366,17 @@ class GuideServiceImplTest {
     }
 
     @Test
-    void 통계_sortKey는_허용하지_않는다() {
-        // given, when, then
-        assertThatThrownBy(() -> guideService.getGuideTabItems(
+    void 퍼센트_문자열_정렬은_공백과_기호를_허용한다() {
+        // given
+        Guide lowTop4Champion = championGuideWithTop4("kaisa", "카이사", "% 15 . 5", 1);
+        Guide highTop4Champion = championGuideWithTop4("jinx", "징크스", "20.5%", 2);
+        when(guideRepository.findLatestPatchVersionByGuideType(GuideType.CHAMPION.name()))
+                .thenReturn(Optional.of("17.0"));
+        when(guideRepository.findFilteredGuides(GuideType.CHAMPION.name(), "17.0", null, null))
+                .thenReturn(List.of(lowTop4Champion, highTop4Champion));
+
+        // when
+        GuidePageResponse<?> response = guideService.getGuideTabItems(
                 "champions",
                 null,
                 null,
@@ -298,7 +385,11 @@ class GuideServiceImplTest {
                 "top4",
                 "desc",
                 null
-        )).isInstanceOf(BusinessException.class);
+        );
+
+        // then
+        assertThat(response.getItems().get(0))
+                .hasFieldOrPropertyWithValue("name", "징크스");
     }
 
     private Guide championGuide(String targetKey, String name, int cost, int sortOrder) {
@@ -319,18 +410,83 @@ class GuideServiceImplTest {
                 .build();
     }
 
-    private GuideChampion splitChampionGuide(String championKey, String name, int cost, String patchVersion) {
-        return GuideChampion.builder()
-                .championKey(championKey)
+    private Guide championGuideWithTop4(String targetKey, String name, String top4, int sortOrder) {
+        return Guide.builder()
+                .guideType(GuideType.CHAMPION)
+                .targetKey(targetKey)
                 .name(name)
-                .cost(cost)
-                .role("캐리")
-                .position("중앙")
-                .imageUrl("https://example.com/" + championKey + ".png")
-                .statsJson("{}")
-                .traitsJson("[\"도전자\"]")
-                .bestItemsJson("[]")
+                .summary(name + " 요약")
+                .imageUrl("https://example.com/" + targetKey + ".png")
+                .dataJson("{\"cost\":4,\"top4\":\"" + top4 + "\",\"role\":\"캐리\",\"traits\":[\"도전자\"],"
+                        + "\"bestItems\":[],\"stats\":{}}")
+                .patchVersion("17.0")
+                .sortOrder(sortOrder)
+                .active(true)
+                .build();
+    }
+
+    private GuideTrait traitGuide(String traitKey, String name, String championsJson) {
+        return GuideTrait.builder()
+                .traitKey(traitKey)
+                .name(name)
+                .type("시너지")
+                .iconUrl("https://example.com/" + traitKey + ".png")
+                .tone("gold")
+                .summary(name + " 요약")
+                .levelsJson("[\"2\"]")
+                .tierEffectsJson("[{\"level\":\"2\",\"description\":\"효과\"}]")
+                .championsJson(championsJson)
+                .specialUnitsJson("[]")
+                .tipsJson("[]")
+                .patchVersion("17.0")
+                .build();
+    }
+
+    private AugmentGuidePlan augmentPlan(String planKey, String label, String patchVersion) {
+        AugmentGuidePlan plan = instantiate(AugmentGuidePlan.class);
+        ReflectionTestUtils.setField(plan, "id", 1L);
+        ReflectionTestUtils.setField(plan, "planKey", planKey);
+        ReflectionTestUtils.setField(plan, "label", label);
+        ReflectionTestUtils.setField(
+                plan,
+                "stagesJson",
+                "[{\"stage\":\"2-1\",\"choice\":\"전투 증강\",\"focus\":\"초반 전투력\"}]"
+        );
+        ReflectionTestUtils.setField(plan, "patchVersion", patchVersion);
+        return plan;
+    }
+
+    private GuideAugment augmentGuide(
+            String augmentKey,
+            String name,
+            String description,
+            String tagsJson,
+            String statsJson,
+            String patchVersion
+    ) {
+        GuideAugment augment = GuideAugment.builder()
+                .augmentKey(augmentKey)
+                .name(name)
+                .description(description)
+                .iconUrl("https://example.com/" + augmentKey + ".png")
+                .tagsJson(tagsJson)
+                .statsJson(statsJson)
                 .patchVersion(patchVersion)
                 .build();
+        ReflectionTestUtils.setField(augment, "id", 1L);
+        return augment;
+    }
+
+    private <T> T instantiate(Class<T> type) {
+        try {
+            Constructor<T> constructor = type.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            return constructor.newInstance();
+        } catch (NoSuchMethodException
+                 | InstantiationException
+                 | IllegalAccessException
+                 | InvocationTargetException e) {
+            throw new AssertionError("테스트 엔티티 생성 실패: " + type.getSimpleName(), e);
+        }
     }
 }

@@ -24,6 +24,10 @@ public interface PatchNoteRepository extends JpaRepository<PatchNote, Long> {
 
     Optional<PatchNote> findBySourceUrl(String sourceUrl);
 
+    Optional<PatchNote> findFirstByCurrentTrueAndDeletedAtIsNullOrderByPublishedAtDescIdDesc();
+
+    Optional<PatchNote> findFirstByDeletedAtIsNullOrderByPublishedAtDescIdDesc();
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000"))
     List<PatchNote> findByCurrentTrueAndDeletedAtIsNull();

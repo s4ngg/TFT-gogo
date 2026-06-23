@@ -1,11 +1,11 @@
-import type { TierBadgeValue, TraitHexBadgeTone } from '../types/badges'
+import type { TraitHexBadgeTone } from '../types/badges'
 
 export type GuideTab = 'traits' | 'items' | 'augments' | 'champions'
 export type ChampionCostFilter = 'all' | 1 | 2 | 3 | 4 | 5
 export type AugmentPlanKey = 'fast8' | 'reroll' | 'flex'
 export type SortDir = 'asc' | 'desc'
 
-export const DEFAULT_GUIDE_PAGE_SIZE = 5
+export const DEFAULT_GUIDE_PAGE_SIZE = 6
 export const TRAIT_PAGE_SIZE = 6
 export const CHAMPION_PAGE_SIZE = 10
 export const GUIDE_SAMPLE_PAGE_COUNT = 7
@@ -20,8 +20,8 @@ export interface GuideTabMeta {
 
 export const GUIDE_TABS: GuideTabMeta[] = [
   { key: 'traits', label: '시너지', meta: '설명 + 필요 챔피언' },
-  { key: 'items', label: '아이템', meta: '효과 + 조합식' },
-  { key: 'augments', label: '증강체', meta: '효과 + 보상' },
+  { key: 'items', label: '아이템', meta: '효과' },
+  { key: 'augments', label: '증강체', meta: '효과' },
   { key: 'champions', label: '챔피언', meta: '스탯 + 특성' },
 ]
 
@@ -29,6 +29,12 @@ export interface ChampionRef {
   cost: number
   imageUrl: string
   name: string
+}
+
+export interface SpecialUnitRef {
+  imageUrl: string
+  name: string
+  note?: string
 }
 
 export interface ItemRef {
@@ -47,6 +53,7 @@ export interface TraitGuide {
   iconUrl: string
   levels: string[]
   name: string
+  specialUnits?: SpecialUnitRef[]
   summary: string
   tierEffects?: TraitTierEffect[]
   tips: string[]
@@ -74,19 +81,11 @@ export interface ItemStatGuide {
 export interface AugmentGuide {
   avgPlace?: string
   description: string
+  imageUrl: string
   name: string
   pickRate?: string
-  reward: string
   tags: string[]
-  tier: TierBadgeValue
-  type: string
   winRate?: string
-}
-
-export interface RewardRow {
-  condition: string
-  reward: string
-  stage: string
 }
 
 export interface AugmentPlan {
@@ -130,7 +129,6 @@ export interface GuideCatalog {
   champions: ChampionGuide[]
   items: ItemStatGuide[]
   patchVersion: string
-  rewards: RewardRow[]
   traits: TraitGuide[]
 }
 

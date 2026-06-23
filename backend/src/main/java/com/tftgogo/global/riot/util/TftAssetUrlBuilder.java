@@ -51,8 +51,10 @@ public final class TftAssetUrlBuilder {
 
     private static String championImageOverride(String id) {
         return switch (id) {
-            case "tft17_rhaast" -> TftAssetConfig.ddragonTftChampionImageUrl(
-                    "TFT17_KaynSplash_Uncentered." + TftAssetConfig.setFileSuffix(17) + ".png");
+            case "tft17_darkstar_fakeunit" -> TftAssetConfig.CDRAGON_ASSET_BASE_URL
+                    + "/characters/tft17_darkstar_fakeunit/hud/tft17_darkstar_fakeunit_smallsplash.tft_set17.png";
+            case "tft17_rhaast" -> TftAssetConfig.CDRAGON_ASSET_BASE_URL
+                    + "/characters/tft17_rhaast/hud/tft17_kayn_slay_square.tft_set17.png";
             default -> null;
         };
     }

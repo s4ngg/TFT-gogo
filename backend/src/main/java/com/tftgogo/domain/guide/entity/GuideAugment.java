@@ -37,17 +37,8 @@ public class GuideAugment {
     @Column(nullable = false, length = 100)
     private String name;
 
-    @Column(nullable = false, length = 20)
-    private String tier;
-
-    @Column(nullable = false, length = 50)
-    private String type;
-
     @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
-
-    @Column(length = 200)
-    private String reward;
 
     @Column(name = "icon_url", length = 500)
     private String iconUrl;
@@ -71,10 +62,7 @@ public class GuideAugment {
     public GuideAugment(
             String augmentKey,
             String name,
-            String tier,
-            String type,
             String description,
-            String reward,
             String iconUrl,
             String tagsJson,
             String statsJson,
@@ -82,10 +70,7 @@ public class GuideAugment {
     ) {
         this.augmentKey = augmentKey;
         this.name = name;
-        this.tier = tier;
-        this.type = type;
         this.description = description;
-        this.reward = reward;
         this.iconUrl = iconUrl;
         this.tagsJson = tagsJson;
         this.statsJson = statsJson;
@@ -94,19 +79,13 @@ public class GuideAugment {
 
     public void update(
             String name,
-            String tier,
-            String type,
             String description,
-            String reward,
             String iconUrl,
             String tagsJson,
             String statsJson
     ) {
         this.name = name;
-        this.tier = tier;
-        this.type = type;
         this.description = description;
-        this.reward = reward;
         this.iconUrl = iconUrl;
         this.tagsJson = tagsJson;
         this.statsJson = statsJson;

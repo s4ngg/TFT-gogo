@@ -1,10 +1,8 @@
 import { useState } from 'react'
 import {
-  DEFAULT_GUIDE_PAGE_SIZE,
   type AugmentPlan,
   type AugmentPlanKey,
   type GuideCatalog,
-  type RewardRow,
 } from '../../../api/guide'
 import { useGuideTabItems } from '../../../hooks/useGuide'
 import {
@@ -15,23 +13,21 @@ import {
   GuidePagination,
   GuideStatusBanner,
 } from './GuideShared'
+import AugmentGuideList from './AugmentGuideList'
 import AugmentPlannerPanel from './AugmentPlannerPanel'
-import AugmentRewardPanel from './AugmentRewardPanel'
-import AugmentStatsTable from './AugmentStatsTable'
-import styles from '../Guide.module.css'
 
 interface AugmentGuideViewProps {
   augmentPlans: AugmentPlan[]
   fallbackData: GuideCatalog
   query: string
-  rewardRows: RewardRow[]
 }
+
+const AUGMENT_PAGE_SIZE = 6
 
 function AugmentGuideView({
   augmentPlans,
   fallbackData,
   query,
-  rewardRows,
 }: AugmentGuideViewProps) {
   const [planKey, setPlanKey] = useState<AugmentPlanKey>('fast8')
   const {
@@ -42,7 +38,7 @@ function AugmentGuideView({
     fallbackData,
     params: {
       page: currentPage,
-      pageSize: DEFAULT_GUIDE_PAGE_SIZE,
+      pageSize: AUGMENT_PAGE_SIZE,
       query,
       tab: 'augments',
     },
@@ -64,12 +60,9 @@ function AugmentGuideView({
           void augmentsQuery.refetch()
         }}
       />
-      <div className={styles.augmentLayout}>
-        <AugmentStatsTable
-          augments={visibleAugments}
-        />
-        <AugmentRewardPanel rewardRows={rewardRows} />
-      </div>
+      <AugmentGuideList
+        augments={visibleAugments}
+      />
       <GuidePagination currentPage={safePage} onPageChange={setCurrentPage} totalPages={pageData.totalPages} />
 
       <AugmentPlannerPanel

@@ -10,7 +10,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class GuideCdragonImportProperties {
 
     private boolean startupImport = false;
-    private String patchVersion = "17.3";
+    private String patchVersion = "latest";
     private Integer setNumber = 17;
     private String mutator = "TFTSet17";
     private boolean includeChampions = true;
