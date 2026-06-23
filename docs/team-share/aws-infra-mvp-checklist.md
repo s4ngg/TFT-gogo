@@ -1,6 +1,6 @@
 # TFT-gogo AWS MVP 구축 체크리스트
 
-목표: 2026-06-17까지 서울 리전 `ap-northeast-2`에 백엔드 배포가 가능한 MVP 인프라를 만든다.
+목표: 서울 리전 `ap-northeast-2`에 백엔드 배포가 가능한 MVP 인프라를 만든다.
 
 이 파일은 체크박스 진행용 요약이다. 콘솔 앞에서 빠르게 볼 순서는 `docs/team-share/aws-infra-console-quickstart.md`, 상세 설명은 `docs/team-share/aws-infra-mvp-runbook.md`를 기준으로 한다.
 
@@ -39,7 +39,7 @@
 | `tftgogo-subnet-private-apne2a` | `10.0.10.0/24` | RDS, Redis |
 | `tftgogo-subnet-private-apne2c` | `10.0.11.0/24` | RDS, Redis |
 
-주의: NAT Gateway와 VPC endpoint가 없으므로 ECS Fargate를 private subnet에 넣으면 ECR pull과 CloudWatch Logs 전송이 막힐 수 있다. 내일 MVP는 ECS를 public subnet + public IP로 배치하고, inbound는 ALB SG에서만 받는다.
+주의: NAT Gateway와 VPC endpoint가 없으므로 ECS Fargate를 private subnet에 넣으면 ECR pull, CloudWatch Logs 전송, SSM Parameter Store secret 조회가 막힐 수 있다. 내일 MVP는 ECS를 public subnet + public IP로 배치하고, inbound는 ALB SG에서만 받는다.
 
 ## 2. 보안그룹
 

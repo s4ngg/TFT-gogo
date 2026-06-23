@@ -7,7 +7,7 @@
 ## 내일 작업 요약
 
 1. VPC `tftgogo`를 `10.0.0.0/16`, public 2개, private 2개, NAT Gateway 없음, VPC endpoint 없음으로 만든다.
-2. Security Group 6개를 먼저 만든다.
+2. 필요한 Security Group을 먼저 만든다.
 3. MySQL RDS, Redis를 private subnet에 만든다. PostgreSQL은 ai-server가 내일 범위가 아니면 보류할 수 있다.
 4. ECR `tftgogo-backend`에 backend 이미지를 push한다.
 5. SSM Parameter Store에 DB 비밀번호, JWT secret, Riot key, admin token을 `SecureString`으로 저장한다.

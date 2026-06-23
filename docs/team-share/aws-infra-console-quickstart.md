@@ -1,6 +1,6 @@
 # TFT-gogo AWS 콘솔 빠른 시작
 
-목표: 2026-06-17까지 도메인 없이 서울 리전 `ap-northeast-2`에 백엔드 1개를 ALB 뒤에 띄운다.
+목표: 도메인 없이 서울 리전 `ap-northeast-2`에 백엔드 1개를 ALB 뒤에 띄운다.
 
 상세 설명은 `aws-infra-mvp-runbook.md`, 체크박스 진행은 `aws-infra-mvp-checklist.md`를 따른다. 이 문서는 콘솔 앞에서 순서와 포트, 역할만 빠르게 확인하는 용도다.
 
@@ -118,9 +118,9 @@ $env:ECR_BACKEND_REPO = "$env:AWS_ACCOUNT_ID.dkr.ecr.$env:AWS_REGION.amazonaws.c
 aws ecr get-login-password --region $env:AWS_REGION |
   docker login --username AWS --password-stdin "$env:AWS_ACCOUNT_ID.dkr.ecr.$env:AWS_REGION.amazonaws.com"
 
-docker build -t tftgogo-backend:manual-20260617 ./backend
-docker tag tftgogo-backend:manual-20260617 "$env:ECR_BACKEND_REPO:manual-20260617"
-docker push "$env:ECR_BACKEND_REPO:manual-20260617"
+docker build -t tftgogo-backend:manual-YYYYMMDD ./backend
+docker tag tftgogo-backend:manual-YYYYMMDD "$env:ECR_BACKEND_REPO:manual-YYYYMMDD"
+docker push "$env:ECR_BACKEND_REPO:manual-YYYYMMDD"
 ```
 
 ## 6. Secrets
@@ -168,7 +168,7 @@ OAuth를 HTTPS 도메인 없이 내일 검증하지 않으면 Google/Kakao/Naver
 | Task execution role | `tftgogo-ecs-task-execution-role` |
 | Task role | `tftgogo-backend-task-role` |
 | Container name | `backend` |
-| Image | ECR `tftgogo-backend:manual-20260617` |
+| Image | ECR `tftgogo-backend:manual-YYYYMMDD` |
 | Container port | 8080 |
 | Log group | `/ecs/tftgogo-backend` |
 
