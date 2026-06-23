@@ -17,6 +17,20 @@ describe('communityDragonAssets', () => {
     )
   })
 
+  it('라아스트는 카드용 CDragon square 이미지 override를 사용한다', () => {
+    assert.equal(
+      tftChampSquareUrl('TFT17_Rhaast'),
+      'https://raw.communitydragon.org/latest/game/assets/characters/tft17_rhaast/hud/tft17_kayn_slay_square.tft_set17.png',
+    )
+  })
+
+  it('소형 블랙홀은 small splash 이미지 override를 사용한다', () => {
+    assert.equal(
+      tftChampSquareUrl('TFT17_DarkStar_FakeUnit'),
+      'https://raw.communitydragon.org/latest/game/assets/characters/tft17_darkstar_fakeunit/hud/tft17_darkstar_fakeunit_smallsplash.tft_set17.png',
+    )
+  })
+
   it('traitId의 set 번호로 fallback trait icon 경로를 만든다', () => {
     assert.equal(
       tftTraitIconUrl('TFT18_Bruiser'),

@@ -193,7 +193,7 @@ class GuideCdragonImportServiceImplTest {
         // given
         GuideCdragonImportRequest request = request(true, false, false, false);
         ReflectionTestUtils.setField(request, "patchVersion", "latest");
-        when(patchNoteRepository.findFirstByDeletedAtIsNullOrderByCurrentDescPublishedAtDescIdDesc())
+        when(patchNoteRepository.findFirstByCurrentTrueAndDeletedAtIsNullOrderByPublishedAtDescIdDesc())
                 .thenReturn(Optional.of(patchNote("17.5")));
         when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
                 .thenReturn(cdragonJson());
@@ -206,6 +206,32 @@ class GuideCdragonImportServiceImplTest {
         ArgumentCaptor<GuideChampion> championCaptor = ArgumentCaptor.forClass(GuideChampion.class);
         verify(guideChampionRepository).save(championCaptor.capture());
         assertThat(championCaptor.getValue().getPatchVersion()).isEqualTo("17.5");
+    }
+
+    @Test
+    void cdragon_import_saves_special_units_on_trait_without_champion_row() {
+        // given
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonSpecialUnitJson());
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request(true, true, false, false));
+
+        // then
+        assertThat(response.getCreatedCount()).isEqualTo(2);
+        assertThat(response.getChampionCount()).isEqualTo(1);
+        assertThat(response.getTraitCount()).isEqualTo(1);
+
+        ArgumentCaptor<GuideChampion> championCaptor = ArgumentCaptor.forClass(GuideChampion.class);
+        verify(guideChampionRepository).save(championCaptor.capture());
+        assertThat(championCaptor.getValue().getChampionKey()).isEqualTo("TFT17_Rhaast");
+
+        ArgumentCaptor<GuideTrait> traitCaptor = ArgumentCaptor.forClass(GuideTrait.class);
+        verify(guideTraitRepository).save(traitCaptor.capture());
+        GuideTrait savedTrait = traitCaptor.getValue();
+        assertThat(savedTrait.getTraitKey()).isEqualTo("TFT17_DarkStar");
+        assertThat(savedTrait.getSpecialUnitsJson()).contains("Small Black Hole");
+        assertThat(savedTrait.getSpecialUnitsJson()).contains("tft17_darkstar_fakeunit_smallsplash.tft_set17.png");
     }
 
     @Test
@@ -241,6 +267,79 @@ class GuideCdragonImportServiceImplTest {
                 .publishedAt(LocalDateTime.of(2026, 6, 18, 9, 0))
                 .current(true)
                 .build();
+    }
+
+    private String cdragonSpecialUnitJson() {
+        return """
+                {
+                  "setData": [
+                    {
+                      "number": 17,
+                      "mutator": "TFTSet17",
+                      "champions": [
+                        {
+                          "apiName": "TFT17_Rhaast",
+                          "name": "Rhaast",
+                          "cost": 3,
+                          "role": "APFighter",
+                          "squareIcon": "ASSETS/Characters/TFT17_Rhaast/HUD/TFT17_Rhaast_Square.TFT_Set17.tex",
+                          "traits": ["Dark Star"],
+                          "stats": {
+                            "armor": 45,
+                            "attackSpeed": 0.75,
+                            "damage": 55,
+                            "hp": 850,
+                            "initialMana": 20,
+                            "magicResist": 45,
+                            "mana": 70,
+                            "range": 1
+                          },
+                          "ability": {
+                            "name": "Shadow Assault",
+                            "desc": "Deal @Damage@ damage.",
+                            "effects": {
+                              "Damage": 300
+                            },
+                            "icon": "ASSETS/Characters/TFT17_Rhaast/HUD/TFT17_Rhaast_Spell.tex"
+                          }
+                        },
+                        {
+                          "apiName": "TFT17_DarkStar_FakeUnit",
+                          "name": "Small Black Hole",
+                          "cost": 1,
+                          "role": "APTank",
+                          "squareIcon": "",
+                          "traits": [],
+                          "stats": {
+                            "range": 1
+                          }
+                        }
+                      ],
+                      "traits": [
+                        {
+                          "apiName": "TFT17_DarkStar",
+                          "name": "Dark Star",
+                          "desc": "Dark Star creates a black hole in combat.<br><row>(@MinUnits@) Create @SmallBlackHoleCount@ small black hole</row>",
+                          "icon": "ASSETS/UX/TraitIcons/Trait_Icon_17_DarkStar.TFT_Set17.tex",
+                          "effects": [
+                            {
+                              "minUnits": 3,
+                              "maxUnits": 5,
+                              "style": 1,
+                              "variables": {
+                                "SmallBlackHoleCount": 1
+                              }
+                            }
+                          ]
+                        }
+                      ],
+                      "augments": []
+                    }
+                  ],
+                  "sets": {},
+                  "items": []
+                }
+                """;
     }
 
     private String cdragonJson() {

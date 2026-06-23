@@ -75,7 +75,7 @@ public class PartyPost {
     @BatchSize(size = 50)
     @CollectionTable(name = "party_post_tags", joinColumns = @JoinColumn(name = "party_post_id"))
     @OrderColumn(name = "tag_order")
-    @Column(name = "tag", length = 30)
+    @Column(name = "tag", length = 50)
     private List<String> tags = new ArrayList<>();
 
     public static PartyPost create(Long userId, PartyPostCreateRequest request) {

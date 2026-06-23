@@ -4,7 +4,7 @@ export type GuideTab = 'traits' | 'items' | 'augments' | 'champions'
 export type ChampionCostFilter = 'all' | 1 | 2 | 3 | 4 | 5
 export type SortDir = 'asc' | 'desc'
 
-export const DEFAULT_GUIDE_PAGE_SIZE = 5
+export const DEFAULT_GUIDE_PAGE_SIZE = 6
 export const TRAIT_PAGE_SIZE = 6
 export const CHAMPION_PAGE_SIZE = 15
 export const GUIDE_SAMPLE_PAGE_COUNT = 7
@@ -19,8 +19,8 @@ export interface GuideTabMeta {
 
 export const GUIDE_TABS: GuideTabMeta[] = [
   { key: 'traits', label: '시너지', meta: '설명 + 필요 챔피언' },
-  { key: 'items', label: '아이템', meta: '효과 + 조합식' },
-  { key: 'augments', label: '증강체', meta: '효과 + 태그' },
+  { key: 'items', label: '아이템', meta: '효과' },
+  { key: 'augments', label: '증강체', meta: '효과' },
   { key: 'champions', label: '챔피언', meta: '스탯 + 특성' },
 ]
 
@@ -35,6 +35,12 @@ export interface ItemRef {
   name: string
 }
 
+export interface SpecialUnitRef {
+  imageUrl: string
+  name: string
+  note?: string
+}
+
 export interface TraitTierEffect {
   description: string
   level: string
@@ -46,6 +52,7 @@ export interface TraitGuide {
   iconUrl: string
   levels: string[]
   name: string
+  specialUnits?: SpecialUnitRef[]
   summary: string
   tierEffects?: TraitTierEffect[]
   tips: string[]

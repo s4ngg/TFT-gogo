@@ -17,6 +17,7 @@ import {
   type GuideTabItems,
   type ItemRef,
   type ItemStatGuide,
+  type SpecialUnitRef,
   type TraitGuide,
   type TraitTierEffect,
 } from './guideTypes'
@@ -105,6 +106,16 @@ function readItemRefs(value: unknown): ItemRef[] {
   return value.filter(isRecord).map((itemRef) => ({
     imageUrl: readString(itemRef, 'imageUrl', readString(itemRef, 'image_url')),
     name: readString(itemRef, 'name'),
+  }))
+}
+
+function readSpecialUnitRefs(value: unknown): SpecialUnitRef[] {
+  if (!Array.isArray(value)) return []
+
+  return value.filter(isRecord).map((specialUnitRef) => ({
+    imageUrl: readString(specialUnitRef, 'imageUrl', readString(specialUnitRef, 'image_url')),
+    name: readString(specialUnitRef, 'name'),
+    note: readNullableString(specialUnitRef, 'note'),
   }))
 }
 
@@ -235,6 +246,13 @@ function isChampionRef(payload: unknown): payload is ChampionRef {
     && typeof payload.name === 'string'
 }
 
+function isSpecialUnitRef(payload: unknown): payload is SpecialUnitRef {
+  return isRecord(payload)
+    && typeof payload.imageUrl === 'string'
+    && typeof payload.name === 'string'
+    && (!('note' in payload) || typeof payload.note === 'string')
+}
+
 function isTraitGuide(payload: unknown): payload is TraitGuide {
   return isRecord(payload)
     && Array.isArray(payload.champions)
@@ -243,6 +261,9 @@ function isTraitGuide(payload: unknown): payload is TraitGuide {
     && typeof payload.iconUrl === 'string'
     && isStringList(payload.levels)
     && typeof payload.name === 'string'
+    && (!('specialUnits' in payload) || (
+      Array.isArray(payload.specialUnits) && payload.specialUnits.every(isSpecialUnitRef)
+    ))
     && typeof payload.summary === 'string'
     && (!('tierEffects' in payload) || (
       Array.isArray(payload.tierEffects) && payload.tierEffects.every(isTraitTierEffect)
@@ -275,7 +296,6 @@ function isAugmentGuide(payload: unknown): payload is AugmentGuide {
   return isRecord(payload)
     && typeof payload.description === 'string'
     && typeof payload.imageUrl === 'string'
-    && payload.imageUrl.trim().length > 0
     && typeof payload.name === 'string'
     && isStringList(payload.tags)
 }
@@ -337,6 +357,7 @@ function guideEntriesToCatalog(entries: GuideEntryResponse[], fallbackData: Guid
         iconUrl: imageUrl,
         levels: readStringArray(data, 'levels'),
         name: entry.name,
+        specialUnits: readSpecialUnitRefs(data.specialUnits ?? data.special_units),
         summary,
         tierEffects: readTraitTierEffects(data.tierEffects),
         tips: readStringArray(data, 'tips'),
@@ -358,7 +379,6 @@ function guideEntriesToCatalog(entries: GuideEntryResponse[], fallbackData: Guid
     }
 
     if (normalizeGuideType(entry) === 'augments') {
-      if (imageUrl.trim().length === 0) return
       catalog.augments.push({
         description: sanitizeGuideText(readString(data, 'description', summary)),
         imageUrl,

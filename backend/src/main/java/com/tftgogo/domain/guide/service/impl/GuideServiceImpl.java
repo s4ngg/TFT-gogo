@@ -225,6 +225,7 @@ public class GuideServiceImpl implements GuideService {
             dataJson.set("levels", levels);
             dataJson.set("tierEffects", parseJson(trait.getTierEffectsJson(), "trait.tierEffects", trait.getId()));
             dataJson.set("champions", champions);
+            dataJson.set("specialUnits", parseJson(trait.getSpecialUnitsJson(), "trait.specialUnits", trait.getId()));
             dataJson.set("tips", parseJson(trait.getTipsJson(), "trait.tips", trait.getId()));
 
             responses.add(buildResponse(

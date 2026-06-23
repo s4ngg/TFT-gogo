@@ -146,6 +146,7 @@ function TraitGuideView({
         {visibleTraits.length === 0 && <EmptyState />}
         {visibleTraits.map((traitGuide) => {
           const traitDisplay = getTraitDisplay(traitGuide)
+          const specialUnits = traitGuide.specialUnits ?? []
 
           return (
             <article className={styles.traitCard} key={getTraitCardKey(traitGuide)}>
@@ -216,6 +217,23 @@ function TraitGuideView({
                   }
                 </div>
               </div>
+              {specialUnits.length > 0 && (
+                <div className={styles.traitSection}>
+                  <div className={styles.traitSectionHeader}>
+                    <strong>소환 유닛</strong>
+                    <span>{specialUnits.length}개</span>
+                  </div>
+                  <div className={styles.specialUnitLine} aria-label={`${traitGuide.name} 소환 유닛`}>
+                    {specialUnits.map((specialUnit) => (
+                      <span className={styles.specialUnitMini} key={specialUnit.name}>
+                        <img alt={specialUnit.name} src={specialUnit.imageUrl} />
+                        <span>{specialUnit.name}</span>
+                        {specialUnit.note && <small>{specialUnit.note}</small>}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
               {traitGuide.tips.length > 0 && (
                 <div className={styles.traitSection}>
                   <div className={styles.traitSectionHeader}>

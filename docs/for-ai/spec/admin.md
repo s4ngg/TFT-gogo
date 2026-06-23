@@ -1,94 +1,101 @@
 <spec domain="admin">
 
 <purpose>
-Admin pages and APIs for TFT-gogo content management.
-Page scope: /admin/* with AdminLayout.
+Admin pages manage TFTgogo curation data, imports, monitoring, and protected operations.
+All admin backend endpoints are protected by X-Admin-Token.
 </purpose>
 
 <routes>
-- /admin                -> admin login
-- /admin/decks          -> meta deck curation
-- /admin/hero-augments  -> hero augment deck curation
-- /admin/guides         -> game guide import/management surface
-- /admin/patch-notes    -> patch note curation
-- /admin/members        -> prepared screen
-- /admin/community      -> prepared screen
+- /admin -> admin login.
+- /admin/decks -> meta deck curation.
+- /admin/hero-augments -> hero augment deck curation.
+- /admin/guides -> game guide manual curation and CDragon import.
+- /admin/match-monitor -> match cache and Riot API rate-limit monitoring.
+- /admin/patch-notes -> patch-note manual curation and Riot official import.
+- /admin/members -> placeholder.
+- /admin/community -> placeholder.
 </routes>
 
-<layout>
-- /admin/* uses AdminLayout instead of the public layout.
-- AdminLayout = AdminSidebar + content area.
-- AdminSidebar menu: decks, hero augments, game guides, patch notes, members, community, logout.
-- Prepared menus should show a prepared-state screen and must not call unfinished APIs.
-</layout>
-
 <frontend-structure>
-frontend/src/
-- layouts/AdminLayout.tsx
-- components/admin/AdminSidebar.tsx
-- pages/Admin/AdminLogin.tsx
-- pages/Admin/AdminDecks.tsx
-- pages/Admin/AdminHeroAugments.tsx
-- pages/Admin/AdminGuides.tsx
-- pages/Admin/AdminPatchNotes.tsx
-- pages/Admin/AdminMembers.tsx
-- pages/Admin/AdminCommunity.tsx
-- pages/Admin/Admin.module.css
+- frontend/src/layouts/AdminLayout.tsx
+- frontend/src/components/admin/AdminSidebar.tsx
+- frontend/src/pages/Admin/AdminLogin.tsx
+- frontend/src/pages/Admin/AdminDecks.tsx
+- frontend/src/pages/Admin/AdminHeroAugments.tsx
+- frontend/src/pages/Admin/AdminGuides.tsx
+- frontend/src/pages/Admin/AdminMatchMonitor.tsx
+- frontend/src/pages/Admin/AdminMatchMonitor.module.css
+- frontend/src/pages/Admin/AdminPatchNotes.tsx
+- frontend/src/pages/Admin/AdminMembers.tsx
+- frontend/src/pages/Admin/AdminCommunity.tsx
+- frontend/src/pages/Admin/Admin.module.css
+- frontend/src/pages/Admin/components/RateLimitGauge.tsx
+- frontend/src/api/adminApi.ts
 </frontend-structure>
 
 <api>
 <backend>
-- GET    /api/admin/decks                         -> deck list
-- PATCH  /api/admin/decks/{deckId}                -> save deck curation
-- DELETE /api/admin/decks/{deckId}/curation       -> reset deck curation
+- GET /api/admin/decks
+- POST /api/admin/decks/meta/aggregate
+- PATCH /api/admin/decks/{deckId}
+- DELETE /api/admin/decks/{deckId}/curation
 
-- GET    /api/admin/hero-augment-decks            -> hero augment deck list
-- POST   /api/admin/hero-augment-decks            -> create hero augment deck
-- PUT    /api/admin/hero-augment-decks/{id}       -> update hero augment deck
-- DELETE /api/admin/hero-augment-decks/{id}       -> delete hero augment deck
+- GET /api/admin/hero-augment-decks
+- POST /api/admin/hero-augment-decks
+- PUT /api/admin/hero-augment-decks/{id}
+- DELETE /api/admin/hero-augment-decks/{id}
 
-- POST   /api/admin/guides/import/cdragon         -> import CDragon champion/trait/item/augment guide rows
+- POST /api/admin/guides/import/cdragon
 
-- GET    /api/admin/patch-notes                   -> patch note list
-- POST   /api/admin/patch-notes                   -> create patch note
-- PATCH  /api/admin/patch-notes/{patchNoteId}     -> update patch note
-- DELETE /api/admin/patch-notes/{patchNoteId}     -> soft delete patch note
-- GET    /api/admin/patch-notes/{patchNoteId}/changes -> patch change list
-- POST   /api/admin/patch-note-changes            -> create patch change
-- PATCH  /api/admin/patch-note-changes/{changeId} -> update patch change
-- DELETE /api/admin/patch-note-changes/{changeId} -> soft delete patch change
+- GET /api/admin/match/cache-stats
+- GET /api/admin/match/rate-limit
+
+- GET /api/admin/patch-notes
+- POST /api/admin/patch-notes
+- POST /api/admin/patch-notes/import/riot
+- PATCH /api/admin/patch-notes/{patchNoteId}
+- DELETE /api/admin/patch-notes/{patchNoteId}
+- GET /api/admin/patch-notes/{patchNoteId}/changes
+- POST /api/admin/patch-note-changes
+- PATCH /api/admin/patch-note-changes/{changeId}
+- DELETE /api/admin/patch-note-changes/{changeId}
 </backend>
-<frontend>
-- frontend/src/api/adminApi.ts
-</frontend>
 </api>
 
 <auth>
-- Admin APIs require the X-Admin-Token request header.
-- Frontend stores the token in localStorage key tftgogo_admin_token.
-- Missing or invalid token responses redirect the admin UI to /admin login.
 - AdminTokenFilter protects /api/admin/**.
-- Never log the admin token.
+- Frontend stores the admin token in localStorage key tftgogo_admin_token.
+- Admin API functions must include X-Admin-Token.
+- Missing/invalid token should route the user back to /admin login.
+- Do not log admin tokens.
 </auth>
 
 <business-rules>
+- Admin APIs should follow the public API response and validation conventions.
+- Soft delete is preferred where deletedAt exists.
+- JSON fields such as dataJson, highlightsJson, tagsJson, and planJson must contain valid JSON before persistence.
+- Only one active, non-deleted patch note should be current.
 - Swagger annotations belong in XxxControllerDocs interfaces, not directly in controllers.
-- Admin APIs should follow the public domain validation rules for curated data.
-- JSON string fields such as highlightsJson or tagsJson must contain valid JSON.
-- Prepared features should not call backend APIs until the feature is implemented.
+- Placeholder member/community pages should show a ready-state screen and must not call unfinished APIs.
+- Rate-limit monitoring should read RiotRateLimiter state and refresh through TanStack Query.
+- Match cache stats are aggregated from CachedMatch rows and only manual refresh is supported.
 </business-rules>
 
 <deck-curation>
-- Deck curation can edit display name, hidden state, sort priority, curator note, boardPositions, playGuide, and heroAugments.
-- Curation data is identified by deck signature and rankFilter.
-- Public deck APIs should only expose non-hidden curation.
+- Supports custom deck names, exposure toggles, and sort priority.
+- Supports champion board positions, play guides, and hero augment edits.
+- Aggregation data is identified by deck signature from the top trait combination.
+- If no custom placement is configured, public detail pages use CDragon automatic placement data.
 </deck-curation>
 
 <guide-curation>
 - Admin game guide manual CRUD is not part of the current backend contract.
 - Admin guide writes currently use only POST /api/admin/guides/import/cdragon.
 - CDragon import writes champion/trait/item/augment guide data into split guide tables:
-  tft_guide_champions, tft_guide_traits, tft_guide_items, tft_guide_augments.
+  - tft_guide_champions
+  - tft_guide_traits
+  - tft_guide_items
+  - tft_guide_augments
 - Each split guide table identifies one row by domain key + patchVersion.
 - Existing key + patchVersion rows are updated; missing rows are inserted.
 - Split guide tables do not use soft delete.
@@ -96,17 +103,28 @@ frontend/src/
 </guide-curation>
 
 <patch-note-curation>
-- Only one patch note should be current at a time.
-- Patch changes belong to a patch note.
-- Patch note official crawling/import is separate from manual CRUD and should be implemented behind X-Admin-Token.
-- Re-imported crawler data should not overwrite administrator edits unless force overwrite behavior is explicitly requested.
+- Manual patch-note CRUD uses patch_notes and patch_changes.
+- Patch note version identifies one patch note.
+- isCurrent must be unique among active, non-deleted patch notes.
+- Creating/updating current=true must unset other active current patch notes.
+- highlightsJson and tagsJson are JSON string arrays.
+- Patch changes belong to one patch note.
+- Admin delete is soft delete.
+- Manual updates to imported patch notes or changes mark manuallyEdited=true.
+- Riot official import endpoint is POST /api/admin/patch-notes/import/riot.
+- Import request fields are sourceUrl, locale, version, and current.
+- If sourceUrl is omitted, backend discovers the latest official TFT patch note from the configured Riot tag page.
+- Import preserves manuallyEdited rows on later imports.
+- Patch-note scheduler exists but must stay disabled in local/dev unless explicitly enabled.
 </patch-note-curation>
 
-<hero-augment-deck>
-- Hero augment deck data is separate from MetaDeck.
-- grade values: S / A / B / C / D.
-- recommended=true rows are exposed by public APIs.
-- champions and heroAugments fields are stored as JSON strings.
-</hero-augment-deck>
+<safety-rules>
+- Admin pages should not call APIs for placeholder member/community pages.
+- JSON fields must be validated before persistence.
+- Soft-delete is preferred for curation data where deletedAt exists.
+- Swagger annotations belong in XxxControllerDocs interfaces, not directly in controllers.
+- Import controls must clearly separate manual curation from crawler/import behavior.
+- Forceful destructive cleanup of imported data should not be added to admin UI without a separate explicit spec.
+</safety-rules>
 
 </spec>

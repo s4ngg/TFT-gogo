@@ -18,11 +18,6 @@ interface ItemStatsViewProps {
 
 const ITEM_GUIDE_PAGE_SIZE = 6
 
-function isHiddenRecipeNote(note: string) {
-  const trimmedNote = note.trim()
-  return trimmedNote === '' || trimmedNote.includes('CDragon') || trimmedNote === '재료 2개 조합'
-}
-
 function ItemStatsView({
   fallbackData,
   query,
@@ -65,7 +60,6 @@ function ItemStatsView({
                 <img src={itemStat.imageUrl} alt={itemStat.name} />
                 <div>
                   <h3>{itemStat.name}</h3>
-                  <span>{itemStat.category}</span>
                 </div>
               </div>
             </div>
@@ -73,30 +67,6 @@ function ItemStatsView({
             <p className={styles.itemGuideDescription}>
               {itemStat.description || '아이템 효과 정보가 아직 준비되지 않았습니다.'}
             </p>
-
-            <div className={styles.itemRecipePanel}>
-              <strong>조합식</strong>
-              {itemStat.combinations.length > 0 ? (
-                itemStat.combinations.map((combination) => (
-                  <div className={styles.itemRecipeRow} key={combination.label}>
-                    <div className={styles.itemRecipeIcons}>
-                      {combination.items.map((recipeItem, index) => (
-                        <span className={styles.itemRecipePart} key={`${recipeItem.name}-${index}`}>
-                          {index > 0 && <b aria-hidden="true">+</b>}
-                          <img src={recipeItem.imageUrl} alt={recipeItem.name} title={recipeItem.name} />
-                        </span>
-                      ))}
-                    </div>
-                    <div className={styles.itemRecipeText}>
-                      <span>{combination.items.map((recipeItem) => recipeItem.name).join(' + ')}</span>
-                      {!isHiddenRecipeNote(combination.note) && <small>{combination.note}</small>}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <span className={styles.itemRecipeEmpty}>조합 정보 없음</span>
-              )}
-            </div>
 
             {itemStat.bestUsers.length > 0 && (
               <div className={styles.itemBestUsers}>

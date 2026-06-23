@@ -111,8 +111,8 @@ CREATE TABLE IF NOT EXISTS deck_traits (
     trait_id VARCHAR(60) NOT NULL,
     trait_name VARCHAR(100) NOT NULL,
     num_units INT NOT NULL,
-    tone VARCHAR(255) NULL,
-    icon_url VARCHAR(255) NULL,
+    tone VARCHAR(30) NULL,
+    icon_url VARCHAR(500) NULL,
     PRIMARY KEY (id),
     KEY idx_deck_traits_meta_decks_id (meta_decks_id),
     CONSTRAINT fk_deck_traits_meta_deck
@@ -125,7 +125,7 @@ CREATE TABLE IF NOT EXISTS hero_augments (
     character_id VARCHAR(60) NOT NULL,
     augment_id VARCHAR(100) NOT NULL,
     augment_name VARCHAR(200) NOT NULL,
-    is_recommended TINYINT(1) NOT NULL DEFAULT 0,
+    is_recommended TINYINT(1) NOT NULL DEFAULT 1,
     win_rate DOUBLE NOT NULL DEFAULT 0,
     top4_rate DOUBLE NOT NULL DEFAULT 0,
     avg_placement DOUBLE NOT NULL DEFAULT 0,
@@ -204,6 +204,7 @@ CREATE TABLE IF NOT EXISTS tft_guide_traits (
     levels_json JSON NOT NULL,
     tier_effects_json JSON NOT NULL,
     champions_json JSON NOT NULL,
+    special_units_json JSON NOT NULL,
     tips_json JSON NOT NULL,
     patch_version VARCHAR(20) NOT NULL,
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -360,7 +361,7 @@ CREATE TABLE IF NOT EXISTS party_applications (
 CREATE TABLE IF NOT EXISTS party_post_tags (
     party_post_id BIGINT NOT NULL,
     tag_order INT NOT NULL,
-    tag VARCHAR(30) NOT NULL,
+    tag VARCHAR(50) NOT NULL,
     PRIMARY KEY (party_post_id, tag_order),
     CONSTRAINT fk_party_post_tags_post
         FOREIGN KEY (party_post_id) REFERENCES party_posts (id) ON DELETE CASCADE

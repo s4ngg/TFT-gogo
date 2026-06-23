@@ -21,7 +21,7 @@ function adminHeaders() {
   return { 'X-Admin-Token': getAdminToken() }
 }
 
-function getHttpStatus(error: unknown): number | undefined {
+export function getHttpStatus(error: unknown): number | undefined {
   if (typeof error !== 'object' || error === null || !('response' in error)) {
     return undefined
   }
@@ -33,6 +33,22 @@ function getHttpStatus(error: unknown): number | undefined {
 export function isAdminAuthFailure(error: unknown): boolean {
   const status = getHttpStatus(error)
   return status === 401 || status === 403
+}
+
+export function isNetworkOrTimeoutError(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false
+  if ('response' in error) return false  // 서버 응답이 있으면 네트워크 오류 아님
+  if ('code' in error) {
+    const code = (error as { code?: string }).code
+    return code === 'ECONNABORTED' || code === 'ERR_NETWORK' || code === 'ETIMEDOUT'
+  }
+  return true
+}
+
+export function getServerErrorStatus(error: unknown): number | undefined {
+  const status = getHttpStatus(error)
+  if (status != null && status >= 500) return status
+  return undefined
 }
 
 interface AdminRequestError extends Error {
@@ -128,6 +144,13 @@ export async function updateDeckCuration(deckId: number, req: DeckCurationReques
 
 export async function resetDeckCuration(deckId: number): Promise<void> {
   await axiosInstance.delete(`/admin/decks/${deckId}/curation`, {
+    headers: adminHeaders(),
+  })
+}
+
+export async function triggerDeckAggregate(date?: string): Promise<void> {
+  const params = date ? `?date=${date}` : ''
+  await axiosInstance.post(`/admin/decks/meta/aggregate${params}`, null, {
     headers: adminHeaders(),
   })
 }

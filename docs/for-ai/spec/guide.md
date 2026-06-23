@@ -76,7 +76,7 @@ Page: Guide (/guide).
 
 <tft-guide-traits>
 - Table: tft_guide_traits
-- Columns: id, trait_key, name, type, icon_url, tone, summary, levels_json, tier_effects_json, champions_json, tips_json, patch_version, created_at, updated_at
+- Columns: id, trait_key, name, type, icon_url, tone, summary, levels_json, tier_effects_json, champions_json, special_units_json, tips_json, patch_version, created_at, updated_at
 - Unique: trait_key + patch_version
 - Index: patch_version + id
 </tft-guide-traits>
@@ -131,7 +131,9 @@ Page: Guide (/guide).
 - levels: effect minUnits list, using "N+" when maxUnits is open-ended
 - tierEffects: [{ level, description }]
 - champions: [{ cost, imageUrl, name }]
+- specialUnits: [{ imageUrl, name, note }]
 - tips: [] at current import stage
+- specialUnits is required for summon/generated trait units such as Dark Star's small black hole. Such units must not appear as normal champions.
 </cdragon-trait-data-json>
 
 <cdragon-item-data-json>
@@ -155,6 +157,8 @@ Page: Guide (/guide).
 - CDragon set data resolution first searches root.setData by setNumber + mutator, then falls back to root.sets[setNumber] if champions and traits exist.
 - Champion import includes only shop champions whose apiName starts with TFT{setNumber}_, cost is 1..5, has at least one trait, and has a display name.
 - Trait import skips traits with no matching shop champion references.
+- Generated/summon units are excluded from champion rows and attached to trait special_units_json when explicitly mapped.
+- Current special unit mapping includes TFT17_DarkStar_FakeUnit as a special unit under TFT17_DarkStar.
 - Import asset URLs use CommunityDragonProperties.assetBaseUrl plus a lowercased asset path with .tex replaced by .png.
 - Import sanitization removes HTML tags, resolves known @placeholder@ values, collapses whitespace, and trims text.
 </backend-implementation>

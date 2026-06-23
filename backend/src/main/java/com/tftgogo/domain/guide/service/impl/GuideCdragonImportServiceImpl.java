@@ -17,6 +17,7 @@ import com.tftgogo.domain.guide.repository.GuideChampionRepository;
 import com.tftgogo.domain.guide.repository.GuideItemRepository;
 import com.tftgogo.domain.guide.repository.GuideTraitRepository;
 import com.tftgogo.domain.guide.service.GuideCdragonImportService;
+import com.tftgogo.domain.patchnote.entity.PatchNote;
 import com.tftgogo.domain.patchnote.repository.PatchNoteRepository;
 import com.tftgogo.global.cdragon.config.CommunityDragonProperties;
 import com.tftgogo.global.exception.BusinessException;
@@ -64,7 +65,13 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
     private static final Pattern METRIC_ONLY_PATTERN = Pattern.compile("^[+\\-]?\\d[\\d,./%\\s+\\-]*$");
     private static final Pattern EMPTY_PARENS_PATTERN = Pattern.compile("\\(\\s*\\)");
     private static final int PATCH_VERSION_MAX_LENGTH = 20;
-    private static final String LATEST_PATCH_VERSION_TOKEN = "latest";
+    private static final String LATEST_PATCH_VERSION_ALIAS = "latest";
+    private static final Set<String> SPECIAL_UNIT_KEYS = Set.of(
+            "TFT17_DarkStar_FakeUnit"
+    );
+    private static final Map<String, Set<String>> TRAIT_SPECIAL_UNIT_KEYS = Map.of(
+            "TFT17_DarkStar", Set.of("TFT17_DarkStar_FakeUnit")
+    );
     private static final int AUGMENT_TAG_LIMIT = 4;
     private static final String[] AUGMENT_REROLL_KEYWORDS =
             {"새로고침", "상점", "주사위", "reroll", "refresh", "shop", "dice", "roll"};
@@ -141,13 +148,14 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         JsonNode cdragonData = fetchCdragonData();
         JsonNode setData = findSetData(cdragonData, request.resolveSetNumber(), request.resolveMutator());
         JsonNode items = cdragonData.path("items");
-        List<JsonNode> champions = readShopChampions(setData, request.resolveSetNumber());
+        List<JsonNode> allChampions = readSetChampions(setData);
+        List<JsonNode> champions = readShopChampions(allChampions, request.resolveSetNumber());
         List<GuideCandidate> candidates = new ArrayList<>();
         if (request.shouldIncludeChampions()) {
             candidates.addAll(toChampionCandidates(champions, patchVersion));
         }
         if (request.shouldIncludeTraits()) {
-            candidates.addAll(toTraitCandidates(setData.path("traits"), champions, patchVersion));
+            candidates.addAll(toTraitCandidates(setData.path("traits"), champions, allChampions, patchVersion));
         }
         if (request.shouldIncludeItems()) {
             candidates.addAll(toItemCandidates(items, patchVersion));
@@ -202,13 +210,22 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         throw new BusinessException(ErrorCode.INVALID_INPUT);
     }
 
-    private List<JsonNode> readShopChampions(JsonNode setData, int setNumber) {
-        String championPrefix = "TFT" + setNumber + "_";
+    private List<JsonNode> readSetChampions(JsonNode setData) {
         List<JsonNode> champions = new ArrayList<>();
         for (JsonNode champion : setData.path("champions")) {
+            champions.add(champion);
+        }
+        return champions;
+    }
+
+    private List<JsonNode> readShopChampions(List<JsonNode> setChampions, int setNumber) {
+        String championPrefix = "TFT" + setNumber + "_";
+        List<JsonNode> champions = new ArrayList<>();
+        for (JsonNode champion : setChampions) {
             String apiName = champion.path("apiName").asText();
             int cost = champion.path("cost").asInt(0);
             if (apiName.startsWith(championPrefix)
+                    && !isSpecialUnit(apiName)
                     && cost >= 1
                     && cost <= 5
                     && champion.path("traits").isArray()
@@ -242,7 +259,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                     champion.path("apiName").asText(),
                     champion.path("name").asText(),
                     summary,
-                    assetUrl(champion.path("squareIcon").asText(champion.path("icon").asText())),
+                    championImageUrl(champion.path("apiName").asText(), champion),
                     dataJson,
                     patchVersion,
                     sortOrder++
@@ -251,7 +268,12 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         return candidates;
     }
 
-    private List<GuideCandidate> toTraitCandidates(JsonNode traits, List<JsonNode> champions, String patchVersion) {
+    private List<GuideCandidate> toTraitCandidates(
+            JsonNode traits,
+            List<JsonNode> champions,
+            List<JsonNode> allChampions,
+            String patchVersion
+    ) {
         List<GuideCandidate> candidates = new ArrayList<>();
         int sortOrder = 0;
         boolean hasStargazerVariants = hasStargazerVariantTraits(traits);
@@ -290,6 +312,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             dataJson.set("tierEffects", traitTierEffects(trait.path("desc").asText(), trait.path("effects")));
             dataJson.set("tips", objectMapper.createArrayNode());
             dataJson.set("champions", championRefs);
+            dataJson.set("specialUnits", traitSpecialUnitRefs(apiName, allChampions));
 
             candidates.add(new GuideCandidate(
                     GuideType.TRAIT,
@@ -616,8 +639,30 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             }
             ObjectNode ref = objectMapper.createObjectNode();
             ref.put("cost", champion.path("cost").asInt());
-            ref.put("imageUrl", assetUrl(champion.path("squareIcon").asText(champion.path("icon").asText())));
+            ref.put("imageUrl", championImageUrl(champion.path("apiName").asText(), champion));
             ref.put("name", champion.path("name").asText());
+            refs.add(ref);
+        }
+        return refs;
+    }
+
+    private ArrayNode traitSpecialUnitRefs(String traitApiName, List<JsonNode> champions) {
+        ArrayNode refs = objectMapper.createArrayNode();
+        Set<String> specialUnitKeys = TRAIT_SPECIAL_UNIT_KEYS.getOrDefault(traitApiName, Set.of());
+        if (specialUnitKeys.isEmpty()) {
+            return refs;
+        }
+
+        for (JsonNode champion : champions) {
+            String apiName = champion.path("apiName").asText();
+            if (!specialUnitKeys.contains(apiName)) {
+                continue;
+            }
+
+            ObjectNode ref = objectMapper.createObjectNode();
+            ref.put("imageUrl", championImageUrl(apiName, champion));
+            ref.put("name", champion.path("name").asText());
+            ref.put("note", "특성 효과로 생성");
             refs.add(ref);
         }
         return refs;
@@ -944,6 +989,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                             writeJsonField(dataJson, "levels", objectMapper.createArrayNode()),
                             writeJsonField(dataJson, "tierEffects", objectMapper.createArrayNode()),
                             writeJsonField(dataJson, "champions", objectMapper.createArrayNode()),
+                            writeJsonField(dataJson, "specialUnits", objectMapper.createArrayNode()),
                             writeJsonField(dataJson, "tips", objectMapper.createArrayNode())
                     );
                     return ImportResult.UPDATED;
@@ -959,6 +1005,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                             .levelsJson(writeJsonField(dataJson, "levels", objectMapper.createArrayNode()))
                             .tierEffectsJson(writeJsonField(dataJson, "tierEffects", objectMapper.createArrayNode()))
                             .championsJson(writeJsonField(dataJson, "champions", objectMapper.createArrayNode()))
+                            .specialUnitsJson(writeJsonField(dataJson, "specialUnits", objectMapper.createArrayNode()))
                             .tipsJson(writeJsonField(dataJson, "tips", objectMapper.createArrayNode()))
                             .patchVersion(candidate.patchVersion())
                             .build());
@@ -1055,6 +1102,27 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         return communityDragonProperties.getAssetBaseUrl()
                 + "/"
                 + assetPath.toLowerCase(Locale.ROOT).replace(".tex", ".png");
+    }
+
+    private boolean isSpecialUnit(String apiName) {
+        return SPECIAL_UNIT_KEYS.contains(apiName);
+    }
+
+    private String championImageUrl(String apiName, JsonNode champion) {
+        String overridePath = championImageAssetPathOverride(apiName);
+        if (overridePath != null) {
+            return assetUrl(overridePath);
+        }
+        return assetUrl(champion.path("squareIcon").asText(champion.path("icon").asText()));
+    }
+
+    private String championImageAssetPathOverride(String apiName) {
+        return switch (apiName) {
+            case "TFT17_Rhaast" -> "ASSETS/Characters/TFT17_Rhaast/HUD/TFT17_Kayn_Slay_Square.TFT_Set17.tex";
+            case "TFT17_DarkStar_FakeUnit" ->
+                    "ASSETS/Characters/TFT17_DarkStar_FakeUnit/HUD/TFT17_DarkStar_FakeUnit_SmallSplash.TFT_Set17.tex";
+            default -> null;
+        };
     }
 
     private String assetUrlOrEmpty(String assetPath) {
@@ -1354,20 +1422,21 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
 
     private String normalizePatchVersion(String value) {
         String normalized = normalizeRequired(value);
-        if (LATEST_PATCH_VERSION_TOKEN.equalsIgnoreCase(normalized)) {
-            return patchNoteRepository.findFirstByDeletedAtIsNullOrderByCurrentDescPublishedAtDescIdDesc()
-                    .map(patchNote -> normalizeConcretePatchVersion(patchNote.getVersion()))
-                    .orElseThrow(() -> new BusinessException(ErrorCode.PATCH_NOTE_NOT_FOUND));
+        if (LATEST_PATCH_VERSION_ALIAS.equalsIgnoreCase(normalized)) {
+            normalized = resolveCurrentPatchVersion();
         }
-        return normalizeConcretePatchVersion(normalized);
-    }
-
-    private String normalizeConcretePatchVersion(String value) {
-        String normalized = value.trim();
         if (normalized.length() > PATCH_VERSION_MAX_LENGTH) {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
         return normalized;
+    }
+
+    private String resolveCurrentPatchVersion() {
+        return patchNoteRepository.findFirstByCurrentTrueAndDeletedAtIsNullOrderByPublishedAtDescIdDesc()
+                .or(() -> patchNoteRepository.findFirstByDeletedAtIsNullOrderByPublishedAtDescIdDesc())
+                .map(PatchNote::getVersion)
+                .filter(this::hasText)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_INPUT));
     }
 
     private boolean hasText(String value) {

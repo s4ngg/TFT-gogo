@@ -12,6 +12,9 @@ export type PartyIcon = 'crown' | 'leaf' | 'spark' | 'swords'
 export type PartyTone = 'purple' | 'green' | 'cyan' | 'gold'
 export type PartyPostsSource = 'api' | 'unavailable'
 
+const defaultPartyTier = '제한 없음'
+const partyTierTags = new Set(['마스터+', '다이아+', '플래티넘+'])
+
 export interface PartyPost {
   capacity: string
   chatRoomId: CommunityChatRoomId
@@ -45,7 +48,6 @@ export interface CreatePartyPostRequest {
   description: string
   mode: PartyMode
   tags: string[]
-  tier: string
   title: string
 }
 
@@ -70,7 +72,6 @@ interface PartyPostResponse {
   partyPostId?: number | string | null
   status?: string | null
   tags?: string[] | string | null
-  tier?: string | null
   title?: string | null
   userId?: number | string | null
 }
@@ -198,13 +199,32 @@ function getPostStyle(mode: PartyMode, tier: string): Pick<PartyPost, 'icon' | '
   return { icon: 'crown', tone: 'purple' }
 }
 
+function readPartyTier(tags: string[]) {
+  return tags.find((tag) => partyTierTags.has(tag)) ?? defaultPartyTier
+}
+
 function formatCloseLabel(value: string | null | undefined) {
-  if (!value) return '방금 등록'
+  if (!value) return '마감 시간 없음'
 
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
 
-  return date.getTime() > Date.now() ? '마감 예정' : '방금 등록'
+  if (date.getTime() <= Date.now()) {
+    return '마감됨'
+  }
+
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const today = new Date()
+  const isToday = date.getFullYear() === today.getFullYear()
+    && date.getMonth() === today.getMonth()
+    && date.getDate() === today.getDate()
+
+  if (isToday) {
+    return `오늘 ${hours}:${minutes} 마감`
+  }
+
+  return `${date.getMonth() + 1}/${date.getDate()} ${hours}:${minutes} 마감`
 }
 
 function toGameMode(mode: PartyMode) {
@@ -284,7 +304,8 @@ function normalizeRequiredPartyPost(payload: unknown, fallbackMessage: string): 
 
 function normalizePartyPost(response: PartyPostResponse, index: number): PartyPost {
   const mode = normalizeMode(response.gameMode ?? response.mode)
-  const tier = readString(response.tier, '제한 없음')
+  const tags = readTags(response.tags).slice(0, 4)
+  const tier = readPartyTier(tags)
   const capacity = normalizeCapacity(response)
   const style = getPostStyle(mode, tier)
   const id = readId(response.partyPostId ?? response.id, `party-api-${index}`)
@@ -299,10 +320,10 @@ function normalizePartyPost(response: PartyPostResponse, index: number): PartyPo
     mode,
     tier,
     capacity,
-    close: formatCloseLabel(response.deadline ?? response.close ?? response.createdAt),
+    close: formatCloseLabel(response.deadline ?? response.close),
     status: normalizeStatus(response.status, capacity, isClosed),
     description: readString(response.description ?? response.content, '상세 설명이 없습니다.'),
-    tags: readTags(response.tags).slice(0, 4),
+    tags,
     isJoined: readBoolean(response.isJoined ?? response.joined),
     userId: readOptionalId(response.userId),
     ...style,
