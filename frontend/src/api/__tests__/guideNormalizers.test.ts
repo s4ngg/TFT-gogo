@@ -71,3 +71,44 @@ test('normalizeGuideCatalog reads entries and augment support data from catalog 
   assert.equal(result.augmentPlans.length, 1)
   assert.equal(result.augmentPlans[0].label, '빠른 8레벨')
 })
+
+test('normalizeGuideCatalog keeps augment entries without imageUrl for fallback rendering', () => {
+  const result = normalizeGuideCatalog({
+    entries: [
+      {
+        dataJson: {
+          description: 'Pick when the board needs tempo.',
+          tags: ['tempo'],
+        },
+        guideType: 'AUGMENT',
+        id: 2,
+        imageUrl: '',
+        name: 'Tempo Choice',
+        patchVersion: '17.1',
+        sortOrder: 0,
+        summary: 'Pick when the board needs tempo.',
+        targetKey: 'TFT17_TempoChoice',
+      },
+    ],
+    patchVersion: '17.1',
+  }, fallbackCatalog)
+
+  assert.equal(result.augments.length, 1)
+  assert.equal(result.augments[0].name, 'Tempo Choice')
+  assert.equal(result.augments[0].imageUrl, '')
+  assert.deepEqual(result.augments[0].tags, ['tempo'])
+
+  const directPayload = normalizeGuideCatalog({
+    augments: [
+      {
+        description: 'Fallback icon should render.',
+        imageUrl: '',
+        name: 'No Icon Augment',
+        tags: [],
+      },
+    ],
+  }, fallbackCatalog)
+
+  assert.equal(directPayload.augments.length, 1)
+  assert.equal(directPayload.augments[0].imageUrl, '')
+})
