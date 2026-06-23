@@ -220,3 +220,10 @@
   --badge-normal-bg: rgba(140, 150, 160, 0.1);
   --badge-normal-border: rgba(140, 150, 160, 0.22);
 }
+
+
+/* Page layout tokens */
+:root {
+  --page-content-width: 1100px;
+  --summoner-right-col-width: 340px;
+}
