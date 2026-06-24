@@ -32,7 +32,7 @@ class MatchRecord(BaseModel):
     players_eliminated: int = Field(ge=0)
     total_damage_to_players: int = Field(ge=0)
     traits: list[TraitInfo] = Field(default_factory=list, max_length=50)
-    units: list[UnitInfo] = Field(default_factory=list, max_length=12)
+    units: list[UnitInfo] = Field(default_factory=list, max_length=30)
 
 
 class AnalyzeRequest(BaseModel):
