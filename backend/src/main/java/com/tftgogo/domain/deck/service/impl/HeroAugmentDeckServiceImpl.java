@@ -1,5 +1,8 @@
 package com.tftgogo.domain.deck.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tftgogo.domain.deck.dto.request.HeroAugmentDeckRequest;
 import com.tftgogo.domain.deck.dto.response.HeroAugmentDeckResponse;
 import com.tftgogo.domain.deck.entity.HeroAugmentDeck;
@@ -12,24 +15,54 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class HeroAugmentDeckServiceImpl implements HeroAugmentDeckService {
 
     private final HeroAugmentDeckRepository repository;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional(readOnly = true)
     public List<HeroAugmentDeckResponse> findAll() {
-        return repository.findAll().stream()
+        return repository.findAllByOrderBySortOrderAscIdAsc().stream()
                 .map(HeroAugmentDeckResponse::from)
                 .toList();
+    }
+
+    private void validateJsonFields(HeroAugmentDeckRequest request) {
+        validateJsonArray(request.getHeroAugments(), "heroAugments");
+        validateJsonArray(request.getChampions(), "champions");
+        validateJsonArray(request.getTraits(), "traits");
+        validateJsonObject(request.getBoardPositions(), "boardPositions");
+    }
+
+    private void validateJsonArray(String value, String fieldName) {
+        if (value == null) return;
+        try {
+            objectMapper.readValue(value, new TypeReference<List<Object>>() {});
+        } catch (JsonProcessingException e) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT,
+                    fieldName + " 필드가 유효한 JSON 배열이 아닙니다.");
+        }
+    }
+
+    private void validateJsonObject(String value, String fieldName) {
+        if (value == null) return;
+        try {
+            objectMapper.readValue(value, new TypeReference<Map<String, Object>>() {});
+        } catch (JsonProcessingException e) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT,
+                    fieldName + " 필드가 유효한 JSON 객체가 아닙니다.");
+        }
     }
 
     @Override
     @Transactional
     public HeroAugmentDeckResponse create(HeroAugmentDeckRequest request) {
+        validateJsonFields(request);
         HeroAugmentDeck deck = HeroAugmentDeck.builder()
                 .name(request.getName())
                 .description(request.getDescription())
@@ -47,6 +80,7 @@ public class HeroAugmentDeckServiceImpl implements HeroAugmentDeckService {
     @Override
     @Transactional
     public HeroAugmentDeckResponse update(Long id, HeroAugmentDeckRequest request) {
+        validateJsonFields(request);
         HeroAugmentDeck deck = repository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.HERO_AUGMENT_DECK_NOT_FOUND));
         deck.update(request.getName(), request.getDescription(), request.getChampions(),
