@@ -102,9 +102,13 @@ export default function AdminPage() {
               </tr>
             </thead>
             <tbody>
-              {decks.map((deck) => (
-                <DeckRow key={deck.id} deck={deck} onSaved={updateDeck} locale={locale} />
-              ))}
+              {decks.length === 0 ? (
+                <tr><td colSpan={8} className={styles.emptyText}>집계된 덱이 없습니다. 집계를 실행해 주세요.</td></tr>
+              ) : (
+                decks.map((deck) => (
+                  <DeckRow key={deck.id} deck={deck} onSaved={updateDeck} locale={locale} />
+                ))
+              )}
             </tbody>
           </table>
         </>
