@@ -48,17 +48,29 @@ export default function HaFormModal({ initial, onClose, onSaved }: HaFormModalPr
     setPayload((prev) => ({ ...prev, [key]: value }))
   }
 
-  function validateJsonField(value: string | null, label: string): boolean {
+  function validateJsonField(
+    value: string | null,
+    label: string,
+    expectedType?: 'array' | 'object',
+  ): boolean {
     if (!value) return true
-    try { JSON.parse(value); return true } catch { setError(`${label} 필드가 유효한 JSON이 아닙니다.`); return false }
+    let parsed: unknown
+    try { parsed = JSON.parse(value) } catch { setError(`${label} 필드가 유효한 JSON이 아닙니다.`); return false }
+    if (expectedType === 'array' && !Array.isArray(parsed)) {
+      setError(`${label} 필드는 배열([...]) 형식이어야 합니다.`); return false
+    }
+    if (expectedType === 'object' && (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed))) {
+      setError(`${label} 필드는 객체({...}) 형식이어야 합니다.`); return false
+    }
+    return true
   }
 
   async function handleSave() {
     if (!payload.name.trim()) { setError('덱 이름은 필수입니다.'); return }
-    if (!validateJsonField(payload.heroAugments, '영웅증강 JSON')) return
-    if (!validateJsonField(payload.champions, '챔피언 JSON')) return
-    if (!validateJsonField(payload.traits, '특성 JSON')) return
-    if (!validateJsonField(payload.boardPositions, '배치 JSON')) return
+    if (!validateJsonField(payload.heroAugments, '영웅증강 JSON', 'array')) return
+    if (!validateJsonField(payload.champions, '챔피언 JSON', 'array')) return
+    if (!validateJsonField(payload.traits, '특성 JSON', 'array')) return
+    if (!validateJsonField(payload.boardPositions, '배치 JSON', 'object')) return
     setSaving(true); setError('')
     try {
       const result = initial
@@ -130,6 +142,24 @@ export default function HaFormModal({ initial, onClose, onSaved }: HaFormModalPr
           value={payload.champions ?? ''}
           onChange={(e) => patch('champions', e.target.value || null)}
           placeholder={'[{"characterId":"tft17_nasus","imageUrl":"...","stars":2}]'}
+          rows={3}
+        />
+
+        <label className={styles.fieldLabel}>특성 JSON</label>
+        <textarea
+          className={styles.textarea}
+          value={payload.traits ?? ''}
+          onChange={(e) => patch('traits', e.target.value || null)}
+          placeholder={'[{"name":"신성","count":3}]'}
+          rows={3}
+        />
+
+        <label className={styles.fieldLabel}>배치 JSON</label>
+        <textarea
+          className={styles.textarea}
+          value={payload.boardPositions ?? ''}
+          onChange={(e) => patch('boardPositions', e.target.value || null)}
+          placeholder={'{"row0col0":"tft17_nasus"}'}
           rows={3}
         />
 
