@@ -66,22 +66,22 @@ Page: /patch-notes.
 <data-model>
 <patch_notes>
 - version identifies one patch note.
-- title, summary, content/description, focus, representative image, highlights, publishedAt, isCurrent, createdAt, updatedAt, and deletedAt are public/curation fields.
+- title, summary, content, focus, representative image, highlights, publishedAt, isCurrent, createdAt, updatedAt, and deletedAt are public/curation fields.
 - source_key, source_url, source_locale, import_source, imported_at, and manually_edited are crawler/import metadata.
 - isCurrent must be unique among active, non-deleted patch notes.
 - Creating or updating a current patch note must unset other active current patch notes in the same transaction.
 </patch_notes>
 
-<patch_changes>
+<patch_note_changes>
 - patch_note_id links each row to patch_notes.
 - category enum values: CHAMPION, TRAIT, ITEM, AUGMENT, SYSTEM.
 - change type enum values: BUFF, NERF, ADJUST, NEW.
 - impact enum values: HIGH, MEDIUM, LOW.
-- targetKey, targetName, summary, beforeValue, afterValue, imageUrl, tagsJson, sortOrder, createdAt, updatedAt, and deletedAt are public/curation fields.
-- source_key, source_url, source_heading_path, source_order, source_locale, imported_at, import_source, and manually_edited are crawler/import metadata.
+- targetKey, targetName, summary, beforeValue, afterValue, imageUrl, tagsJson, sortOrder, createdAt, and updatedAt are public/curation fields.
+- source_key, source_heading_path, source_order, imported_at, and manually_edited are crawler/import metadata.
 - Imported row duplicate detection uses patchNote + sourceKey.
 - Manual rows may have null sourceKey.
-</patch_changes>
+</patch_note_changes>
 </data-model>
 
 <admin-rules>

@@ -103,7 +103,7 @@ All admin backend endpoints are protected by X-Admin-Token.
 </guide-curation>
 
 <patch-note-curation>
-- Manual patch-note CRUD uses patch_notes and patch_changes.
+- Manual patch-note CRUD uses patch_notes and patch_note_changes.
 - Patch note version identifies one patch note.
 - isCurrent must be unique among active, non-deleted patch notes.
 - Creating/updating current=true must unset other active current patch notes.
