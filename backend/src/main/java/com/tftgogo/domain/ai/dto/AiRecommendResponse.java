@@ -1,9 +1,10 @@
 package com.tftgogo.domain.ai.dto;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
+import lombok.AccessLevel;
 
 import java.util.List;
 
@@ -72,12 +73,15 @@ public class AiRecommendResponse {
         @JsonAlias("deck_rank")
         private int deckRank;
 
-        // Lombok boolean getter isPatchTrend()는 Jackson이 patchTrend로 직렬화하므로
-        // @JsonProperty로 출력 키를 isPatchTrend로 고정한다.
-        @JsonProperty("isPatchTrend")
+        // Lombok이 생성하는 isPatchTrend() getter는 Jackson이 patchTrend로 인식하므로 억제.
+        // @JsonGetter로 출력 키를 isPatchTrend로 고정한다.
         @JsonAlias("is_patch_trend")
+        @Getter(AccessLevel.NONE)
         private boolean isPatchTrend;
 
         private String reason;
+
+        @JsonGetter("isPatchTrend")
+        public boolean isPatchTrend() { return isPatchTrend; }
     }
 }
