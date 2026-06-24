@@ -784,6 +784,11 @@ function AdminPatchNotesManager() {
 
           {patchNotesQuery.isLoading ? (
             <p className={styles.emptyText}>불러오는 중입니다.</p>
+          ) : patchNotesQuery.isError ? (
+            <div>
+              <p className={styles.errorBanner} role="alert">패치노트 목록을 불러오지 못했습니다.</p>
+              <button className={styles.secondaryButton} onClick={() => void refreshPatchNotes()}>다시 불러오기</button>
+            </div>
           ) : patchNotes.length === 0 ? (
             <p className={styles.emptyText}>등록된 패치노트가 없습니다.</p>
           ) : (
@@ -1185,6 +1190,11 @@ function AdminPatchNotesManager() {
           <div className={styles.changeList}>
             {patchChangesQuery.isFetching ? (
               <p className={styles.emptyText}>변경사항을 불러오는 중입니다.</p>
+            ) : patchChangesQuery.isError ? (
+              <div>
+                <p className={styles.errorBanner} role="alert">변경사항을 불러오지 못했습니다.</p>
+                <button className={styles.secondaryButton} onClick={() => void refreshPatchChanges()}>다시 불러오기</button>
+              </div>
             ) : patchChanges.length === 0 ? (
               <p className={styles.emptyText}>등록된 변경사항이 없습니다.</p>
             ) : (
