@@ -7,17 +7,29 @@
 # Do not paste real client-secret values into Discord, GitHub, PRs, frontend/.env,
 # root .env, or any committed file.
 #
-# Provider console redirect URIs must point to the backend callback:
+# Local provider console redirect URIs must point to the backend callback:
 #   http://localhost:8080/login/oauth2/code/google
 #   http://localhost:8080/login/oauth2/code/naver
 #
 # Kakao login is not part of the current QA scope because account_email permission
 # is unavailable until provider-side review/approval.
 #
+# Production provider console redirect URIs:
+#   https://tftgogo.com/login/oauth2/code/google
+#   https://tftgogo.com/login/oauth2/code/naver
+#
+# Production backend env:
+#   APP_OAUTH2_AUTHORIZATION_BASE_URI=https://tftgogo.com
+#   APP_OAUTH2_AUTHORIZED_REDIRECT_URI=https://tftgogo.com/oauth/callback
+#   APP_OAUTH2_LOGIN_FAILURE_REDIRECT_URI=https://tftgogo.com/login
+#
+# ALB must route /oauth2/* and /login/oauth2/* to the backend target group.
+#
 # The frontend callback below is used only after the backend finishes OAuth login.
 
 app:
   oauth2:
+    authorization-base-uri: http://localhost:8080
     authorized-redirect-uri: http://localhost:5173/oauth/callback
     login-failure-redirect-uri: http://localhost:5173/login
 

@@ -20,7 +20,6 @@ public final class SocialOAuth2UserInfo {
     public static SocialLoginCommand toCommand(SocialProvider provider, Map<String, Object> attributes) {
         return switch (provider) {
             case GOOGLE -> fromGoogle(provider, attributes);
-            case KAKAO -> fromKakao(provider, attributes);
             case NAVER -> fromNaver(provider, attributes);
         };
     }
@@ -38,28 +37,6 @@ public final class SocialOAuth2UserInfo {
                 email,
                 normalizeNickname(optionalString(attributes, "name"), email),
                 normalizeProfileImage(optionalString(attributes, "picture"))
-        );
-    }
-
-    private static SocialLoginCommand fromKakao(SocialProvider provider, Map<String, Object> attributes) {
-        Map<String, Object> kakaoAccount = nestedMap(attributes, "kakao_account");
-        Object verified = kakaoAccount.get("is_email_verified");
-        if (verified != null && !isTrue(verified)) {
-            throw new BusinessException(ErrorCode.SOCIAL_LOGIN_FAILED);
-        }
-
-        Map<String, Object> profile = nestedMap(kakaoAccount, "profile");
-        String email = requiredEmail(kakaoAccount, "email");
-
-        return SocialLoginCommand.of(
-                provider,
-                normalizeId(requiredString(attributes, "id")),
-                email,
-                normalizeNickname(optionalString(profile, "nickname"), email),
-                normalizeProfileImage(firstPresent(
-                        optionalString(profile, "profile_image_url"),
-                        optionalString(profile, "thumbnail_image_url")
-                ))
         );
     }
 
@@ -174,7 +151,4 @@ public final class SocialOAuth2UserInfo {
         return Boolean.TRUE.equals(value) || "true".equalsIgnoreCase(String.valueOf(value));
     }
 
-    private static String firstPresent(String first, String second) {
-        return first == null || first.isBlank() ? second : first;
-    }
 }

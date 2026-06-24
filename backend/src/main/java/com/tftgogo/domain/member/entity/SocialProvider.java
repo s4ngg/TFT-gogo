@@ -8,7 +8,6 @@ import java.util.Locale;
 public enum SocialProvider {
 
     GOOGLE,
-    KAKAO,
     NAVER;
 
     public String registrationId() {

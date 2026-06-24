@@ -13,6 +13,11 @@ General signup/login APIs issue access tokens, and authenticated requests are re
 - GET  /login/oauth2/code/{provider} -> Spring Security OAuth2 콜백
 </routes>
 
+<providers>
+- 지원 provider: google, naver
+- 카카오는 이메일 권한 승인 전까지 프론트 버튼, Swagger 설명, provider enum에서 제외한다.
+</providers>
+
 <api>
 <backend>
 - POST /api/v1/auth/signup -> SignupRequest, AuthResponse
@@ -33,6 +38,9 @@ General signup/login APIs issue access tokens, and authenticated requests are re
 - 로그인 성공 시 accessToken을 발급한다.
 - 소셜 로그인은 `/api/v1/auth/social/{provider}`로 시작 URL을 받은 뒤 브라우저를 `/oauth2/authorization/{provider}`로 이동시킨다.
 - 현재 QA/프론트 노출 provider는 Google, Naver이다. Kakao는 `account_email` 권한을 받을 때까지 지원 범위에서 제외한다.
+- 운영 도메인은 `https://tftgogo.com`이며, 프론트 성공 콜백은 `https://tftgogo.com/oauth/callback`을 사용한다.
+- 단일 ALB path 기반 배포에서는 `/oauth2/*`, `/login/oauth2/*`가 백엔드 target group으로 라우팅되어야 한다.
+- 운영 소셜 로그인 시작 URL은 `APP_OAUTH2_AUTHORIZATION_BASE_URI=https://tftgogo.com` 기준으로 만든다.
 - 소셜 로그인 시작 URL과 OAuth2 성공/실패 리다이렉트 URI는 http/https 절대 URL이어야 하며, 상대 경로, protocol-relative URL, userinfo가 포함된 URL은 거부한다.
 - 실제 provider 인증 완료에는 각 provider client-id/client-secret, redirect-uri, 프론트 콜백 URI 설정이 필요하다.
 - 소셜 로그인 시작 API는 provider enum이 지원되더라도 OAuth2 client registration 설정이 없으면 503 ApiResponse 실패를 반환하고, 프론트는 이메일 로그인을 안내한다.
@@ -60,7 +68,7 @@ General signup/login APIs issue access tokens, and authenticated requests are re
 - JWT subject에는 numeric userId 문자열을 넣는다.
 - JWT subject가 숫자가 아니면 인증 실패로 처리한다.
 - JWT 설정값은 앱 기동 시 검증한다.
-- OAuth2 URL host allowlist는 실제 배포 도메인이 확정된 뒤 추가한다.
+- 운영 CORS 허용 origin에는 `https://tftgogo.com`, `https://www.tftgogo.com`을 포함한다.
 - Swagger annotations belong in AuthControllerDocs, not directly in AuthController.
 - Controller response type must be ResponseEntity&lt;ApiResponse&lt;T&gt;&gt;.
 </business-rules>
@@ -97,6 +105,7 @@ General signup/login APIs issue access tokens, and authenticated requests are re
 - Social OAuth failure: provider error/email missing/email conflict -> frontend login redirect with whitelist oauthError code.
 - Social OAuth redirect config failure: authorizedRedirectUri/loginFailureRedirectUri is not an http/https absolute URL -> app startup validation fails, and runtime redirect builder throws INVALID_INPUT if reached.
 - Local social OAuth setup: copy the non-secret backend/src/main/resources/application-social-login.yml.example blocks into ignored application-local.yml, register Google/Naver provider console callbacks to backend /login/oauth2/code/{provider}, and never commit or share real client-secret values.
+- Production social OAuth setup: register `https://tftgogo.com/login/oauth2/code/google`, `https://tftgogo.com/login/oauth2/code/naver`, and frontend callback `https://tftgogo.com/oauth/callback`.
 - Social OAuth callback frontend success: accessToken fragment -> token persisted -> GET /api/v1/members/me user restore.
 - Frontend auth restore failure: /api/v1/members/me 401 or 403 -> persisted accessToken is cleared so logged-in UI is not shown with an invalid token.
 - Auth request validation failure: invalid request body -> common validation error response.

@@ -3,6 +3,7 @@ package com.tftgogo.domain.member.service.impl;
 import com.tftgogo.domain.member.dto.response.SocialLoginStartResponse;
 import com.tftgogo.domain.member.entity.SocialProvider;
 import com.tftgogo.domain.member.service.SocialLoginStartService;
+import com.tftgogo.global.config.OAuth2RedirectProperties;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import com.tftgogo.global.security.oauth.OAuth2UrlValidator;
@@ -17,13 +18,11 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class SocialLoginStartServiceImpl implements SocialLoginStartService {
 
     private final ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider;
+    private final OAuth2RedirectProperties redirectProperties;
 
     @Override
-    public SocialLoginStartResponse getStartUrl(String provider, String baseUrl) {
+    public SocialLoginStartResponse getStartUrl(String provider, String requestBaseUrl) {
         SocialProvider socialProvider = SocialProvider.fromRegistrationId(provider);
-        if (socialProvider == SocialProvider.KAKAO) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT);
-        }
 
         ClientRegistrationRepository repository = clientRegistrationRepositoryProvider.getIfAvailable();
 
@@ -32,12 +31,20 @@ public class SocialLoginStartServiceImpl implements SocialLoginStartService {
         }
 
         String authorizationUrl = UriComponentsBuilder
-                .fromUriString(normalizeBaseUrl(baseUrl))
+                .fromUriString(normalizeBaseUrl(resolveAuthorizationBaseUrl(requestBaseUrl)))
                 .path("/oauth2/authorization/{provider}")
                 .buildAndExpand(socialProvider.registrationId())
                 .toUriString();
 
         return SocialLoginStartResponse.of(authorizationUrl);
+    }
+
+    private String resolveAuthorizationBaseUrl(String requestBaseUrl) {
+        String authorizationBaseUri = redirectProperties.getAuthorizationBaseUri();
+
+        return authorizationBaseUri == null || authorizationBaseUri.isBlank()
+                ? requestBaseUrl
+                : authorizationBaseUri;
     }
 
     private String normalizeBaseUrl(String baseUrl) {
