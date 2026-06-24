@@ -2,6 +2,7 @@ package com.tftgogo.domain.ai.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty.Access;
 import lombok.Getter;
 
 import java.util.List;
@@ -16,33 +17,33 @@ public class AiRecommendResponse {
 
     private RecentStats stats;
 
-    @JsonProperty("good_traits")
+    @JsonProperty(value = "good_traits", access = Access.WRITE_ONLY)
     private List<TraitStat> goodTraits;
 
-    @JsonProperty("bad_traits")
+    @JsonProperty(value = "bad_traits", access = Access.WRITE_ONLY)
     private List<TraitStat> badTraits;
 
     private List<Object> augments;
 
-    @JsonProperty("deck_reasons")
+    @JsonProperty(value = "deck_reasons", access = Access.WRITE_ONLY)
     private List<DeckReason> deckReasons;
 
     @Getter
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class RecentStats {
-        @JsonProperty("recent_games")
+        @JsonProperty(value = "recent_games", access = Access.WRITE_ONLY)
         private int recentGames;
 
-        @JsonProperty("avg_place")
+        @JsonProperty(value = "avg_place", access = Access.WRITE_ONLY)
         private String avgPlace;
 
-        @JsonProperty("top4_rate")
+        @JsonProperty(value = "top4_rate", access = Access.WRITE_ONLY)
         private String top4Rate;
 
-        @JsonProperty("win_rate")
+        @JsonProperty(value = "win_rate", access = Access.WRITE_ONLY)
         private String winRate;
 
-        @JsonProperty("recent_placements")
+        @JsonProperty(value = "recent_placements", access = Access.WRITE_ONLY)
         private List<Integer> recentPlacements;
     }
 
@@ -51,27 +52,27 @@ public class AiRecommendResponse {
     public static class TraitStat {
         private String name;
 
-        @JsonProperty("icon_url")
+        @JsonProperty(value = "icon_url", access = Access.WRITE_ONLY)
         private String iconUrl;
 
         private String tone;
         private int count;
         private int games;
 
-        @JsonProperty("avg_place")
+        @JsonProperty(value = "avg_place", access = Access.WRITE_ONLY)
         private String avgPlace;
 
-        @JsonProperty("top4_rate")
+        @JsonProperty(value = "top4_rate", access = Access.WRITE_ONLY)
         private String top4Rate;
     }
 
     @Getter
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class DeckReason {
-        @JsonProperty("deck_rank")
+        @JsonProperty(value = "deck_rank", access = Access.WRITE_ONLY)
         private int deckRank;
 
-        @JsonProperty("is_patch_trend")
+        @JsonProperty(value = "is_patch_trend", access = Access.WRITE_ONLY)
         private boolean isPatchTrend;
 
         private String reason;
