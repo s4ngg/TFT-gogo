@@ -26,7 +26,7 @@ function DeckListView({ decks, locale, rankFilter }: DeckListViewProps) {
   }
 
   const safeDecks = Array.isArray(decks) ? decks : []
-  const lowerSearch = search.toLowerCase()
+  const lowerSearch = search.trim().toLowerCase()
   const filtered = sortDecks(
     safeDecks.filter((d) =>
       !lowerSearch || deckDisplayName(d, locale).toLowerCase().includes(lowerSearch),
