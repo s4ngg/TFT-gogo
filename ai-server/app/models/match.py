@@ -23,7 +23,7 @@ class MatchRecord(BaseModel):
     match_id: str = Field(max_length=64)
     game_datetime: int      # epoch ms
     game_length: float
-    game_version: str = Field(max_length=32)
+    game_version: str = Field(max_length=128)
     queue_type: str = Field(max_length=16)  # "RANKED" | "NORMAL"
     placement: int = Field(ge=1, le=8)      # 최종 순위 1~8
     level: int = Field(ge=1, le=10)
@@ -32,7 +32,7 @@ class MatchRecord(BaseModel):
     players_eliminated: int = Field(ge=0)
     total_damage_to_players: int = Field(ge=0)
     traits: list[TraitInfo] = Field(default_factory=list, max_length=50)
-    units: list[UnitInfo] = Field(default_factory=list, max_length=12)
+    units: list[UnitInfo] = Field(default_factory=list, max_length=30)
 
 
 class AnalyzeRequest(BaseModel):
