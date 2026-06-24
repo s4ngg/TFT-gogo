@@ -48,8 +48,17 @@ export default function HaFormModal({ initial, onClose, onSaved }: HaFormModalPr
     setPayload((prev) => ({ ...prev, [key]: value }))
   }
 
+  function validateJsonField(value: string | null, label: string): boolean {
+    if (!value) return true
+    try { JSON.parse(value); return true } catch { setError(`${label} 필드가 유효한 JSON이 아닙니다.`); return false }
+  }
+
   async function handleSave() {
     if (!payload.name.trim()) { setError('덱 이름은 필수입니다.'); return }
+    if (!validateJsonField(payload.heroAugments, '영웅증강 JSON')) return
+    if (!validateJsonField(payload.champions, '챔피언 JSON')) return
+    if (!validateJsonField(payload.traits, '특성 JSON')) return
+    if (!validateJsonField(payload.boardPositions, '배치 JSON')) return
     setSaving(true); setError('')
     try {
       const result = initial
