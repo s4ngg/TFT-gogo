@@ -39,7 +39,7 @@ function MetaStatsView({ decks, locale, rankFilter }: MetaStatsViewProps) {
             return (
               <Fragment key={tier}>
                 <tr className={styles.tierHeaderRow}>
-                  <td colSpan={7}>
+                  <td colSpan={5}>
                     <span className={styles.tierHeaderInner} style={{ borderLeftColor: color }}>
                       <TierBadge value={tier} />
                       <span className={styles.tierName} style={{ color }}>{tier} 티어</span>
