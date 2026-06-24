@@ -57,6 +57,7 @@ class MemberServiceImplTest {
         ReflectionTestUtils.setField(savedMember, "userId", 1L);
 
         when(memberRepository.existsByEmail("sojung@example.com")).thenReturn(false);
+        when(memberRepository.existsByNickname("소정")).thenReturn(false);
         when(passwordEncoder.encode("password123")).thenReturn("encoded-password");
         when(memberRepository.saveAndFlush(any(Member.class))).thenReturn(savedMember);
         when(jwtTokenProvider.createAccessToken(1L)).thenReturn("access-token");
@@ -93,11 +94,29 @@ class MemberServiceImplTest {
     }
 
     @Test
+    void 이미_사용중인_닉네임이면_비밀번호_암호화나_저장을_하지_않는다() {
+        // given
+        SignupRequest request = signupRequest("sojung@example.com", "password123", "소정");
+
+        when(memberRepository.existsByEmail("sojung@example.com")).thenReturn(false);
+        when(memberRepository.existsByNickname("소정")).thenReturn(true);
+
+        // when, then
+        assertThatThrownBy(() -> memberService.signup(request))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.NICKNAME_ALREADY_EXISTS));
+
+        verify(passwordEncoder, never()).encode(anyString());
+        verify(memberRepository, never()).saveAndFlush(any(Member.class));
+    }
+
+    @Test
     void 저장_중_중복_이메일_제약조건이_터져도_회원가입_중복_예외로_변환한다() {
         // given
         SignupRequest request = signupRequest("sojung@example.com", "password123", "소정");
 
         when(memberRepository.existsByEmail("sojung@example.com")).thenReturn(false);
+        when(memberRepository.existsByNickname("소정")).thenReturn(false);
         when(passwordEncoder.encode("password123")).thenReturn("encoded-password");
         when(memberRepository.saveAndFlush(any(Member.class)))
                 .thenThrow(new DataIntegrityViolationException("duplicate email"));

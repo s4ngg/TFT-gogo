@@ -35,6 +35,10 @@ public class MemberServiceImpl implements MemberService {
             throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
+        if (memberRepository.existsByNickname(request.getNickname())) {
+            throw new BusinessException(ErrorCode.NICKNAME_ALREADY_EXISTS);
+        }
+
         String encodedPassword = passwordEncoder.encode(request.getPassword());
         Member member;
 

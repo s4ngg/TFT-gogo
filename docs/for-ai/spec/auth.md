@@ -55,6 +55,7 @@ General signup/login APIs issue access tokens, and authenticated requests are re
 
 <business-rules>
 - 이메일은 중복될 수 없다.
+- 일반 회원가입 닉네임은 중복될 수 없다. DB unique 제약은 별도 ERD 승인 후 추가한다.
 - 비밀번호는 BCrypt로 암호화해서 저장한다.
 - 로그인 실패 응답은 이메일 존재 여부를 노출하지 않도록 공통 인증 실패로 처리한다.
 - 소셜 회원은 passwordHash가 null일 수 있으며 일반 이메일 로그인으로는 인증되지 않는다.
@@ -92,6 +93,7 @@ General signup/login APIs issue access tokens, and authenticated requests are re
 <validation>
 - Signup API success: valid SignupRequest -> AuthResponse with accessToken.
 - Signup API failure: duplicate email -> EMAIL_ALREADY_EXISTS.
+- Signup API failure: duplicate nickname -> NICKNAME_ALREADY_EXISTS.
 - Login API success: valid LoginRequest -> AuthResponse with accessToken.
 - Login API failure: wrong email or password -> common invalid credential error.
 - Login API failure: social-only member with null passwordHash -> common invalid credential error.

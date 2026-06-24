@@ -5,6 +5,8 @@ import type { CommunityChatRoomId } from '../../../constants/communityChatRooms'
 import type { ChatRoom } from '../types'
 import styles from '../Party.module.css'
 
+const MAX_CHAT_MESSAGE_LENGTH = 500
+
 interface PartyChatPanelProps {
   activeMessages: ChatMessage[]
   activeRoomId: CommunityChatRoomId
@@ -12,7 +14,7 @@ interface PartyChatPanelProps {
   chatInput: string
   chatNotice: string
   connectionLabel: string
-  currentUserName: string
+  currentUserId: string | null
   isAuthenticated: boolean
   isLoading: boolean
   isMessageDisabled: boolean
@@ -37,6 +39,10 @@ function formatMessageTime(createdAt: string) {
   }).format(createdDate)
 }
 
+function isCurrentUserMessage(chat: ChatMessage, currentUserId: string | null) {
+  return currentUserId !== null && chat.senderId != null && String(chat.senderId) === currentUserId
+}
+
 function PartyChatPanel({
   activeMessages,
   activeRoomId,
@@ -44,7 +50,7 @@ function PartyChatPanel({
   chatInput,
   chatNotice,
   connectionLabel,
-  currentUserName,
+  currentUserId,
   isAuthenticated,
   isLoading,
   isMessageDisabled,
@@ -82,7 +88,7 @@ function PartyChatPanel({
               <strong># {room.name}</strong>
               <span>
                 <Users size={14} />
-                {room.users}
+                대화 참여자 {room.users}
               </span>
               <small>{room.lastMessage}</small>
             </button>
@@ -109,7 +115,7 @@ function PartyChatPanel({
             {activeMessages.length > 0 ? (
               activeMessages.map((chat) => (
                 <article
-                  className={isAuthenticated && chat.senderName === currentUserName ? styles.myMessage : undefined}
+                  className={isAuthenticated && isCurrentUserMessage(chat, currentUserId) ? styles.myMessage : undefined}
                   key={chat.id}
                 >
                   <div>
@@ -129,6 +135,7 @@ function PartyChatPanel({
             <input
               aria-label="채팅 메시지 입력"
               disabled={isMessageDisabled}
+              maxLength={MAX_CHAT_MESSAGE_LENGTH}
               onChange={(event) => onChatInputChange(event.target.value)}
               placeholder={isSendBlockedByAuth ? '로그인 후 메시지 전송 가능' : '메시지를 입력하세요'}
               value={chatInput}

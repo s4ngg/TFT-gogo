@@ -4,7 +4,11 @@ import type { AxiosAdapter, AxiosResponse, InternalAxiosRequestConfig } from 'ax
 
 import axiosInstance from '../axiosInstance'
 import { cancelPartyJoin, createPartyPost, getPartyPosts, joinPartyPost } from '../partyApi'
-import { COMMUNITY_PARTY_POSTS_QUERY_KEY, communityPartyPostsQueryKey } from '../partyQueryKeys'
+import {
+  COMMUNITY_PARTY_POSTS_QUERY_KEY,
+  communityPartyPostsQueryKey,
+  communityPartyPostsScopedQueryKey,
+} from '../partyQueryKeys'
 
 interface RequestCall {
   data?: unknown
@@ -75,6 +79,14 @@ describe('partyApi', () => {
     assert.deepEqual(
       communityPartyPostsQueryKey({ mode: '랭크' }),
       ['community', 'parties', { mode: '랭크' }],
+    )
+    assert.deepEqual(
+      communityPartyPostsScopedQueryKey({ mode: '랭크' }, '7'),
+      ['community', 'parties', { mode: '랭크' }, { authScope: '7' }],
+    )
+    assert.deepEqual(
+      communityPartyPostsScopedQueryKey({}, null),
+      ['community', 'parties', { authScope: 'anonymous' }],
     )
   })
 

@@ -11,7 +11,7 @@ import {
 } from '../../../api/partyApi'
 import {
   COMMUNITY_PARTY_POSTS_QUERY_KEY,
-  communityPartyPostsQueryKey,
+  communityPartyPostsScopedQueryKey,
 } from '../../../api/partyQueryKeys'
 import type { PartyFilter } from '../partyFilters'
 import type { PartyMode, PartyPost } from '../types'
@@ -113,6 +113,7 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
   const [tagsDraft, setTagsDraft] = useState('')
   const [descriptionDraft, setDescriptionDraft] = useState('')
   const [composeError, setComposeError] = useState('')
+  const [isComposeOpen, setIsComposeOpen] = useState(false)
   const [partyStatusMessage, setPartyStatusMessage] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const minDeadline = useMemo(getDefaultDeadlineInput, [])
@@ -122,9 +123,10 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
     () => toPartyPostsQueryParams(selectedFilter),
     [selectedFilter],
   )
+  const authScope = authUserId ?? 'anonymous'
   const partyQueryKey = useMemo(
-    () => communityPartyPostsQueryKey(partyQueryParams),
-    [partyQueryParams],
+    () => communityPartyPostsScopedQueryKey(partyQueryParams, authUserId),
+    [authUserId, partyQueryParams],
   )
 
   const partyQuery = useQuery({
@@ -142,15 +144,19 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
   const isPartyListUnavailable = partyQuery.isError || partyQuery.data?.source === 'unavailable'
 
   useEffect(() => {
-    if (isAuthenticated) {
-      return
-    }
-
     setLocalPosts([])
     setPostOverrides({})
     setJoinedPostId(undefined)
+    setComposeError('')
+    setIsComposeOpen(false)
     setPartyStatusMessage('')
-  }, [isAuthenticated])
+  }, [authScope])
+
+  useEffect(() => {
+    if (isComposeOpen) {
+      titleInputRef.current?.focus()
+    }
+  }, [isComposeOpen])
 
   const posts = useMemo(() => {
     const shouldIgnoreLocalState = isPartyListUnavailable || !isAuthenticated
@@ -211,10 +217,17 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
     setCurrentPage(1)
   }
 
-  const focusCompose = () => {
-    titleInputRef.current?.focus()
+  const toggleCompose = () => {
     setComposeError('')
     setPartyStatusMessage('')
+
+    if (!isAuthenticated) {
+      setComposeError('로그인 후 파티 모집글을 등록할 수 있습니다.')
+      setIsComposeOpen(true)
+      return
+    }
+
+    setIsComposeOpen((currentValue) => !currentValue)
   }
 
   const submitPartyPost = () => {
@@ -282,6 +295,7 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
         setTagsDraft('')
         setDescriptionDraft('')
         setComposeError('')
+        setIsComposeOpen(false)
         setPartyStatusMessage('모집글을 등록했습니다.')
         setCurrentPage(1)
         onPartyPostCreated(serverPost)
@@ -396,9 +410,9 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
     deadlineDraft,
     descriptionDraft,
     filteredCount: filteredPartyPosts.length,
-    focusCompose,
     isCreating: createMutation.isPending,
     isAuthenticated,
+    isComposeOpen,
     isLoading: partyQuery.isPending,
     isUnavailable: isPartyListUnavailable,
     joinedPostId: activeJoinedPostId,
@@ -424,6 +438,7 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
     tierDraft,
     titleDraft,
     titleInputRef,
+    toggleCompose,
     toggleJoin,
     totalPages,
     updateSearchDraft,
