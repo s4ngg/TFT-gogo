@@ -128,6 +128,23 @@ class MemberServiceImplTest {
     }
 
     @Test
+    void 저장_중_중복_닉네임_제약조건이_터지면_닉네임_중복_예외로_변환한다() {
+        // given
+        SignupRequest request = signupRequest("sojung@example.com", "password123", "소정");
+
+        when(memberRepository.existsByEmail("sojung@example.com")).thenReturn(false);
+        when(memberRepository.existsByNickname("소정")).thenReturn(false);
+        when(passwordEncoder.encode("password123")).thenReturn("encoded-password");
+        when(memberRepository.saveAndFlush(any(Member.class)))
+                .thenThrow(new DataIntegrityViolationException("Duplicate entry for key 'uk_users_nickname'"));
+
+        // when, then
+        assertThatThrownBy(() -> memberService.signup(request))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.NICKNAME_ALREADY_EXISTS));
+    }
+
+    @Test
     void 로그인은_이메일_존재여부와_비밀번호_오류를_같은_예외로_처리한다() {
         // given
         LoginRequest wrongEmailRequest = loginRequest("none@example.com", "password123");

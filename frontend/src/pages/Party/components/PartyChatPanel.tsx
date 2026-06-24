@@ -5,8 +5,6 @@ import type { CommunityChatRoomId } from '../../../constants/communityChatRooms'
 import type { ChatRoom } from '../types'
 import styles from '../Party.module.css'
 
-const MAX_CHAT_MESSAGE_LENGTH = 500
-
 interface PartyChatPanelProps {
   activeMessages: ChatMessage[]
   activeRoomId: CommunityChatRoomId
@@ -135,7 +133,6 @@ function PartyChatPanel({
             <input
               aria-label="채팅 메시지 입력"
               disabled={isMessageDisabled}
-              maxLength={MAX_CHAT_MESSAGE_LENGTH}
               onChange={(event) => onChatInputChange(event.target.value)}
               placeholder={isSendBlockedByAuth ? '로그인 후 메시지 전송 가능' : '메시지를 입력하세요'}
               value={chatInput}

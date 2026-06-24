@@ -18,6 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Locale;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -45,7 +47,7 @@ public class MemberServiceImpl implements MemberService {
         try {
             member = memberRepository.saveAndFlush(request.toEntity(encodedPassword));
         } catch (DataIntegrityViolationException e) {
-            throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
+            throw mapSignupConstraintViolation(e);
         }
 
         String accessToken = jwtTokenProvider.createAccessToken(member.getUserId());
@@ -114,5 +116,14 @@ public class MemberServiceImpl implements MemberService {
         String accessToken = jwtTokenProvider.createAccessToken(member.getUserId());
 
         return AuthResponse.of(accessToken, MemberResponse.from(member));
+    }
+
+    private BusinessException mapSignupConstraintViolation(DataIntegrityViolationException exception) {
+        String message = exception.getMostSpecificCause().getMessage();
+        if (message != null && message.toLowerCase(Locale.ROOT).contains("nickname")) {
+            return new BusinessException(ErrorCode.NICKNAME_ALREADY_EXISTS);
+        }
+
+        return new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
     }
 }
