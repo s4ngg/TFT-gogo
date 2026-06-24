@@ -103,7 +103,9 @@ export default function AdminPage() {
             </thead>
             <tbody>
               {decks.length === 0 ? (
-                <tr><td colSpan={8} className={styles.emptyText}>집계된 덱이 없습니다. 집계를 실행해 주세요.</td></tr>
+                <tr><td colSpan={8} className={styles.emptyText}>
+                  {`현재 선택한 랭크 조건(${RANK_OPTIONS.find((o) => o.value === rankFilter)?.label ?? rankFilter})에 해당하는 메타덱이 없습니다. 필요한 경우 집계를 실행해 주세요.`}
+                </td></tr>
               ) : (
                 decks.map((deck) => (
                   <DeckRow key={deck.id} deck={deck} onSaved={updateDeck} locale={locale} />
