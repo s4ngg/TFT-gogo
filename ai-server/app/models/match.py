@@ -23,7 +23,7 @@ class MatchRecord(BaseModel):
     match_id: str = Field(max_length=64)
     game_datetime: int      # epoch ms
     game_length: float
-    game_version: str = Field(max_length=32)
+    game_version: str = Field(max_length=128)
     queue_type: str = Field(max_length=16)  # "RANKED" | "NORMAL"
     placement: int = Field(ge=1, le=8)      # 최종 순위 1~8
     level: int = Field(ge=1, le=10)
