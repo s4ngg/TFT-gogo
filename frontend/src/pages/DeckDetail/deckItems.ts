@@ -40,9 +40,6 @@ const I: Record<string, ItemRec> = {
   ionic:       { name: '이온 충격기',        imageUrl: communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_IonicSpark.TFT_Set17.tex') },
   crownguard:  { name: '크라운가드',         imageUrl: communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_Crownguard.TFT_Set17.tex') },
   adaptive:    { name: '적응형 투구',        imageUrl: communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_AdaptiveHelm.TFT_Set17.tex') },
-  krakensRage: { name: '크라켄의 분노',      imageUrl: communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_RunaansHurricane.TFT_Set17.tex') },
-  spiritShape: { name: '정령의 형상',        imageUrl: communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_Redemption.TFT_Set17.tex') },
-  voidStaff:   { name: '공허의 지팡이',      imageUrl: communityDragonAssetUrl('ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_StatikkShiv.TFT_Set17.tex') },
 }
 
 export const DECK_ITEMS: Record<number, ChampionItemRec[]> = {
