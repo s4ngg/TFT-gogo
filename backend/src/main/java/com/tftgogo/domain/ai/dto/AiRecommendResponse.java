@@ -1,15 +1,15 @@
 package com.tftgogo.domain.ai.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonProperty.Access;
 import lombok.Getter;
 
 import java.util.List;
 
 /**
- * AI 서버(FastAPI) 응답을 그대로 매핑하는 DTO.
- * 필드명은 AI 서버의 snake_case를 @JsonProperty로 매핑.
+ * AI 서버(FastAPI) 응답을 매핑하는 DTO.
+ * @JsonAlias로 snake_case 역직렬화를 허용하고, Java 필드명(camelCase)으로 직렬화된다.
  */
 @Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -17,33 +17,33 @@ public class AiRecommendResponse {
 
     private RecentStats stats;
 
-    @JsonProperty(value = "good_traits", access = Access.WRITE_ONLY)
+    @JsonAlias("good_traits")
     private List<TraitStat> goodTraits;
 
-    @JsonProperty(value = "bad_traits", access = Access.WRITE_ONLY)
+    @JsonAlias("bad_traits")
     private List<TraitStat> badTraits;
 
     private List<Object> augments;
 
-    @JsonProperty(value = "deck_reasons", access = Access.WRITE_ONLY)
+    @JsonAlias("deck_reasons")
     private List<DeckReason> deckReasons;
 
     @Getter
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class RecentStats {
-        @JsonProperty(value = "recent_games", access = Access.WRITE_ONLY)
+        @JsonAlias("recent_games")
         private int recentGames;
 
-        @JsonProperty(value = "avg_place", access = Access.WRITE_ONLY)
+        @JsonAlias("avg_place")
         private String avgPlace;
 
-        @JsonProperty(value = "top4_rate", access = Access.WRITE_ONLY)
+        @JsonAlias("top4_rate")
         private String top4Rate;
 
-        @JsonProperty(value = "win_rate", access = Access.WRITE_ONLY)
+        @JsonAlias("win_rate")
         private String winRate;
 
-        @JsonProperty(value = "recent_placements", access = Access.WRITE_ONLY)
+        @JsonAlias("recent_placements")
         private List<Integer> recentPlacements;
     }
 
@@ -52,27 +52,30 @@ public class AiRecommendResponse {
     public static class TraitStat {
         private String name;
 
-        @JsonProperty(value = "icon_url", access = Access.WRITE_ONLY)
+        @JsonAlias("icon_url")
         private String iconUrl;
 
         private String tone;
         private int count;
         private int games;
 
-        @JsonProperty(value = "avg_place", access = Access.WRITE_ONLY)
+        @JsonAlias("avg_place")
         private String avgPlace;
 
-        @JsonProperty(value = "top4_rate", access = Access.WRITE_ONLY)
+        @JsonAlias("top4_rate")
         private String top4Rate;
     }
 
     @Getter
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class DeckReason {
-        @JsonProperty(value = "deck_rank", access = Access.WRITE_ONLY)
+        @JsonAlias("deck_rank")
         private int deckRank;
 
-        @JsonProperty(value = "is_patch_trend", access = Access.WRITE_ONLY)
+        // Lombok boolean getter isPatchTrend()는 Jackson이 patchTrend로 직렬화하므로
+        // @JsonProperty로 출력 키를 isPatchTrend로 고정한다.
+        @JsonProperty("isPatchTrend")
+        @JsonAlias("is_patch_trend")
         private boolean isPatchTrend;
 
         private String reason;
