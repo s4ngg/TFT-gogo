@@ -1,8 +1,19 @@
 import { useState } from 'react'
 import {
   deleteHeroAugmentDeck,
+  isAdminAuthFailure,
+  isNetworkOrTimeoutError,
+  getServerErrorStatus,
   type HeroAugmentDeckItem,
 } from '../../../api/adminApi'
+
+function getLoadErrorMessage(error: unknown): string {
+  if (isAdminAuthFailure(error)) return '인증 실패: 관리자 토큰을 확인해 주세요.'
+  if (isNetworkOrTimeoutError(error)) return '네트워크 오류: 연결 상태를 확인 후 다시 시도해 주세요.'
+  const status = getServerErrorStatus(error)
+  if (status != null) return `서버 오류가 발생했습니다. (${status})`
+  return '영웅증강 덱 목록을 불러오지 못했습니다.'
+}
 import { useAdminHeroAugmentDecks } from '../hooks/useAdminHeroAugmentDecks'
 import styles from '../Admin.module.css'
 import HaFormModal from './HaFormModal'
@@ -44,7 +55,7 @@ export default function HeroAugmentDeckManager() {
       ) : isError ? (
         <div>
           <p className={styles.saveError} role="alert" aria-live="polite">
-            {error instanceof Error ? error.message : '영웅증강 덱 목록을 불러오지 못했습니다.'}
+            {getLoadErrorMessage(error)}
           </p>
           <button className={styles.boardBtn} onClick={() => refetch()}>다시 불러오기</button>
         </div>
