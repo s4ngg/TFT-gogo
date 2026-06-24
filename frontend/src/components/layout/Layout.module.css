@@ -1,0 +1,729 @@
+﻿.appShell {
+  --snapshot-height: 722px;
+  --sidebar-current-width: var(--sidebar-width);
+
+  width: 100%;
+  min-width: 0;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: var(--sidebar-current-width) minmax(0, 1fr);
+  overflow: visible;
+  color: #f6f8fb;
+  background:
+    radial-gradient(circle at 52% 42%, rgba(12, 119, 125, 0.14), transparent 36%),
+    linear-gradient(135deg, var(--bg-main) 0%, #061016 48%, #02070b 100%);
+}
+
+.sidebarCollapsed {
+  --sidebar-current-width: var(--sidebar-collapsed-width);
+}
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  min-height: 100vh;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  padding: 18px 14px 24px;
+  border-right: 1px solid rgba(185, 118, 48, 0.64);
+  background:
+    radial-gradient(circle at 30% 22%, rgba(0, 238, 224, 0.1), transparent 24%),
+    linear-gradient(180deg, rgba(2, 10, 15, 0.99), rgba(1, 7, 11, 0.97));
+}
+
+.sidebarHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 36px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 45px;
+  padding: 0 4px;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.brand strong {
+  flex: 0 0 auto;
+  min-width: max-content;
+  overflow: visible;
+  color: #ffffff;
+  font-size: var(--font-size-xl);
+  font-weight: 800;
+  letter-spacing: 0;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.brandLogo {
+  width: 37px;
+  height: 37px;
+  flex: 0 0 auto;
+  background: url("/assets/brand/tftgogo-mark.png") center / contain no-repeat;
+}
+
+.sidebarToggle {
+  width: calc(var(--size-control-md) + var(--space-xs));
+  height: calc(var(--size-control-md) + var(--space-xs));
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border-btn-muted);
+  border-radius: var(--radius-button);
+  color: var(--text-ui);
+  background: var(--bg-btn-dark);
+  cursor: pointer;
+}
+
+.sidebarToggle:hover {
+  border-color: var(--cyan-border-light);
+  color: var(--text-main);
+}
+
+.navList {
+  display: grid;
+  gap: 12px;
+}
+
+.navItem {
+  position: relative;
+  width: 100%;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  gap: 17px;
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-button);
+  color: #c9cdd2;
+  background: transparent;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  text-decoration: none;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.activeNav {
+  color: #ffffff;
+  border-color: rgba(0, 224, 210, 0.92);
+  background:
+    linear-gradient(90deg, rgba(0, 116, 108, 0.58), rgba(5, 48, 56, 0.7)),
+    linear-gradient(180deg, rgba(0, 226, 211, 0.08), transparent);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 242, 229, 0.08),
+    inset 18px 0 30px rgba(0, 232, 217, 0.1);
+}
+
+.activeNav span {
+  font-weight: 600;
+}
+
+.activeNav svg {
+  color: #05f3e7;
+}
+
+.sidebarFill {
+  flex: 0 1 270px;
+  min-height: 18px;
+  max-height: 270px;
+}
+
+.sidebarCollapsed .sidebar {
+  padding-right: 10px;
+  padding-left: 10px;
+}
+
+.sidebarCollapsed .sidebarHeader {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+}
+
+.sidebarCollapsed .brand {
+  justify-content: center;
+  width: 100%;
+  padding: 0;
+}
+
+.sidebarCollapsed .brand strong,
+.sidebarCollapsed .navItem span {
+  min-width: 0;
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.sidebarCollapsed .sidebarToggle {
+  width: 100%;
+}
+
+.sidebarCollapsed .navItem {
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+}
+
+.rankCard {
+  flex: 0 0 auto;
+  min-height: 256px;
+  overflow: hidden;
+  padding: 18px 16px 15px;
+  border: 1px solid rgba(191, 134, 58, 0.55);
+  border-radius: var(--radius-card);
+  background: linear-gradient(180deg, rgba(9, 28, 36, 0.86), rgba(7, 18, 25, 0.82));
+}
+
+.rankEmblem {
+  width: 112px;
+  height: 92px;
+  margin: -7px auto -3px;
+  background: url("/assets/ranks/platinum-emblem.png") center / contain no-repeat;
+}
+
+.rankName {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-bottom: 14px;
+  white-space: nowrap;
+}
+
+.rankName strong {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.rankPoint {
+  color: #9ba5ad;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.rankRecord {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  color: #d7dce1;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.rankRecord span {
+  white-space: nowrap;
+}
+
+.rankProgress {
+  height: 4px;
+  overflow: hidden;
+  margin: 12px 2px 14px;
+  border-radius: 999px;
+  background: #10222b;
+}
+
+.rankProgress span {
+  display: block;
+  width: 56%;
+  height: 100%;
+  background: linear-gradient(90deg, #05f3df, #07a590);
+}
+
+.secondaryButton,
+.feedbackButton {
+  width: 100%;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 1px solid rgba(118, 151, 160, 0.36);
+  border-radius: var(--radius-button);
+  color: #d9dde3;
+  background: rgba(14, 27, 34, 0.74);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.feedbackButton {
+  flex: 0 0 auto;
+  margin-top: 24px;
+}
+
+.main {
+  width: 100%;
+  min-width: 0;
+  min-height: 100vh;
+  box-sizing: border-box;
+  overflow: visible;
+  padding: 17px 15px 0 19px;
+}
+
+.topBar {
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.topStatusGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.patchBrief {
+  width: 520px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 0 9px;
+  overflow: hidden;
+  border: 1px solid rgba(116, 148, 156, 0.08);
+  border-radius: var(--radius-button);
+  color: #8f9aa3;
+  background: rgba(7, 18, 25, 0.18);
+  box-shadow: none;
+  opacity: 0.76;
+  white-space: nowrap;
+}
+
+.patchBrief span {
+  flex: 0 0 auto;
+  color: #8f9aa3;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.patchBrief strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #a8b0b8;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+}
+
+.riotStatus {
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 0 10px;
+  border: 1px solid var(--border-btn-muted);
+  border-radius: var(--radius-button);
+  color: var(--text-soft);
+  background: var(--bg-btn-dark-soft);
+  font-size: var(--font-size-xs);
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.riotStatus strong {
+  color: var(--text-main);
+  font-size: var(--font-size-xs);
+}
+
+.riotStatus span {
+  color: var(--text-muted);
+}
+
+.riotStatusAvailable {
+  border-color: var(--cyan-border-light);
+}
+
+.riotStatusAvailable svg,
+.riotStatusAvailable strong {
+  color: var(--color-cyan);
+}
+
+.riotStatusQueue {
+  border-color: var(--tone-gold-border);
+}
+
+.riotStatusQueue svg,
+.riotStatusQueue strong {
+  color: var(--color-gold);
+}
+
+.riotStatusLimited,
+.riotStatusDegraded {
+  border-color: var(--status-fallback-border);
+}
+
+.riotStatusLimited svg,
+.riotStatusLimited strong,
+.riotStatusDegraded svg,
+.riotStatusDegraded strong {
+  color: var(--danger);
+}
+
+.topActions {
+  display: flex;
+  align-items: center;
+  gap: 19px;
+}
+
+.iconButton,
+.notificationButton,
+.profileButton,
+.loginButton {
+  border: 0;
+  color: #cfd3da;
+  background: transparent;
+  cursor: pointer;
+}
+
+.iconButton,
+.notificationButton {
+  position: relative;
+  width: calc(var(--size-control-md) + var(--space-xs));
+  height: calc(var(--size-control-md) + var(--space-xs));
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.notificationButton span {
+  position: absolute;
+  top: -1px;
+  right: -5px;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #ef423d;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.profileButton {
+  max-width: 210px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 0 2px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.profileName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profileMenuShell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.profileButton:hover,
+.profileButton[aria-expanded='true'] {
+  color: var(--text-main);
+}
+
+.profileButton[aria-expanded='true'] .profileChevron {
+  transform: rotate(180deg);
+}
+
+.profileChevron {
+  flex: 0 0 auto;
+  transition: transform 0.16s ease;
+}
+
+.profileMenu {
+  position: absolute;
+  top: calc(100% + var(--space-sm));
+  right: 0;
+  z-index: 30;
+  width: 178px;
+  padding: var(--space-sm);
+  border: 1px solid var(--border-tooltip);
+  border-radius: var(--radius-button);
+  background: var(--bg-tooltip);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.34);
+}
+
+.profileMenuName {
+  overflow: hidden;
+  margin: 0 2px var(--space-sm);
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profileMenuDangerButton {
+  width: 100%;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-button);
+  color: var(--danger);
+  background: transparent;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.profileMenuDangerButton:hover,
+.profileMenuDangerButton:focus-visible {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+}
+
+.loginButton {
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 13px;
+  border: 1px solid rgba(0, 224, 210, 0.58);
+  border-radius: var(--radius-button);
+  color: #ffffff;
+  background: rgba(0, 109, 112, 0.28);
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -0.012em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.profileAvatar {
+  width: 37px;
+  height: 37px;
+  flex: 0 0 auto;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  border: 1px solid #e646ff;
+  border-radius: 999px;
+  color: #b9fff4;
+  background:
+    radial-gradient(circle at 65% 36%, #ff79d7 0 8%, transparent 9%),
+    radial-gradient(circle at 35% 43%, #36eff7 0 7%, transparent 8%),
+    linear-gradient(135deg, #251166, #174a81 45%, #8c286d);
+  box-shadow: 0 0 12px rgba(231, 66, 255, 0.45);
+}
+
+.profileAvatar img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+@media (max-height: 900px) {
+  .sidebar {
+    padding-top: 14px;
+    padding-bottom: 16px;
+  }
+
+  .sidebarHeader {
+    margin-bottom: 12px;
+  }
+
+  .navList {
+    gap: 9px;
+  }
+
+  .navItem {
+    height: 46px;
+  }
+
+  .sidebarFill {
+    min-height: 12px;
+    max-height: 170px;
+  }
+
+  .rankCard {
+    min-height: 232px;
+    padding: 14px 15px;
+  }
+
+  .rankEmblem {
+    width: 98px;
+    height: 78px;
+    margin: -8px auto -4px;
+  }
+
+  .rankName {
+    margin-bottom: 14px;
+  }
+
+  .rankProgress {
+    margin: 10px 2px 12px;
+  }
+
+  .feedbackButton {
+    margin-top: 16px;
+  }
+}
+
+@media (max-height: 980px) {
+  .appShell {
+    --snapshot-height: 722px;
+  }
+
+  .main {
+    padding-top: 12px;
+  }
+
+  .topBar {
+    height: 38px;
+    margin-bottom: 12px;
+  }
+
+  .patchBrief {
+    width: 448px;
+  }
+
+  .riotStatus {
+    max-width: 300px;
+  }
+}
+
+@media (max-width: 860px) {
+  .appShell {
+    display: block;
+    overflow-x: hidden;
+  }
+
+  .sidebar {
+    position: static;
+    min-height: 0;
+    padding: var(--space-xl);
+    border-right: 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .sidebarHeader {
+    grid-template-columns: minmax(0, 1fr);
+    margin-bottom: var(--space-xl);
+  }
+
+  .sidebarToggle {
+    display: none;
+  }
+
+  .brand {
+    min-height: calc(var(--size-control-md) + var(--space-md));
+    padding: 0;
+  }
+
+  .brand strong {
+    font-size: var(--font-size-lg);
+  }
+
+  .brandLogo {
+    width: var(--size-control-sm);
+    height: var(--size-control-sm);
+  }
+
+  .navList {
+    display: flex;
+    gap: var(--space-sm);
+    margin: 0 calc(var(--space-xl) * -1);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding: 0 var(--space-xl) var(--space-xs);
+    scroll-padding-inline: var(--space-xl);
+  }
+
+  .navItem {
+    flex: 0 0 auto;
+    width: auto;
+    min-height: calc(var(--size-control-md) + var(--space-md));
+    gap: var(--space-sm);
+    padding: 0 var(--space-xl);
+    font-size: var(--font-size-sm);
+  }
+
+  .navItem svg {
+    width: var(--space-4xl);
+    height: var(--space-4xl);
+  }
+
+  .sidebarFill {
+    display: none;
+  }
+
+  .main {
+    width: 100%;
+    min-width: 0;
+    padding: var(--space-xl);
+  }
+
+  .topBar {
+    height: auto;
+    align-items: stretch;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .topStatusGroup {
+    width: 100%;
+  }
+
+  .patchBrief {
+    width: 100%;
+  }
+
+  .riotStatus {
+    max-width: none;
+  }
+
+  .topActions {
+    gap: var(--space-md);
+    justify-content: flex-end;
+  }
+
+  .iconButton,
+  .notificationButton,
+  .loginButton,
+  .profileButton {
+    min-height: calc(var(--size-control-md) + var(--space-md));
+  }
+
+  .iconButton,
+  .notificationButton {
+    width: calc(var(--size-control-md) + var(--space-md));
+  }
+
+  .loginButton {
+    padding: 0 var(--space-2xl);
+  }
+}

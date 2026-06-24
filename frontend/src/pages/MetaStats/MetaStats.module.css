@@ -1,0 +1,200 @@
+.page {
+  width: 1270px;
+  padding: 28px 0 48px;
+}
+
+/* ── 헤더 ── */
+.pageHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+
+.pageHeader h1 {
+  margin: 0 0 5px;
+  color: #fff;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.pageHeader p {
+  margin: 0;
+  color: #8e97a1;
+  font-size: 13px;
+}
+
+.headerRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+/* ── 랭크 구간 필터 ── */
+.rankFilterBar {
+  display: flex;
+  gap: 6px;
+}
+
+.rankFilterBtn,
+.rankFilterActive {
+  height: var(--rank-filter-height);
+  padding: 0 var(--rank-filter-padding-x);
+  border: 1px solid var(--rank-filter-border);
+  border-radius: var(--rank-filter-radius);
+  background: transparent;
+  color: var(--rank-filter-text);
+  font-size: var(--rank-filter-font-size);
+  font-weight: var(--rank-filter-font-weight);
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.rankFilterBtn:hover {
+  color: var(--rank-filter-text-hover);
+  border-color: var(--rank-filter-border-hover);
+}
+
+.rankFilterActive {
+  border-color: var(--rank-filter-active);
+  color: var(--rank-filter-active);
+  background: var(--rank-filter-active-bg);
+}
+
+.updateBadge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #6b757e;
+  font-size: 12px;
+}
+
+/* ── 티어 섹션 ── */
+.tierSection {
+  margin-bottom: 32px;
+}
+
+.tierHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tierLabel {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.tierDesc {
+  color: #6b757e;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.tierCount {
+  margin-left: auto;
+  color: #5a6470;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* ── 카드 그리드 ── */
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(390px, 1fr));
+  gap: 12px;
+}
+
+/* ── 덱 카드 ── */
+.deckCard {
+  padding: 16px 18px;
+  border: 1px solid rgba(112, 144, 152, 0.16);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(10, 24, 33, 0.96), rgba(6, 16, 22, 0.96));
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.deckCard:hover {
+  border-color: rgba(4, 243, 229, 0.2);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(4, 243, 229, 0.08);
+}
+
+/* ── 카드 상단 ── */
+.cardTop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.cardName {
+  flex: 1;
+  overflow: hidden;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cardRank {
+  color: #4a5560;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* ── 시너지 ── */
+.cardTraits {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+/* ── 챔피언 ── */
+.cardChamps {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  margin-bottom: 14px;
+}
+
+/* ── 스탯 ── */
+.cardStats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(112, 144, 152, 0.12);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.stat small {
+  color: #5a6470;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.stat strong {
+  color: #e0e6ec;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.winRate  { color: #04ede0 !important; }
+.avgPlace { color: #a78bfa !important; }
+.pickRate { color: #f9c860 !important; }

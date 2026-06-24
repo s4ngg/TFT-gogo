@@ -1,0 +1,105 @@
+.section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.sectionTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.autoTag {
+  font-size: 0.75rem;
+  color: var(--accent);
+  background: var(--cyan-bg-subtle);
+  border: 1px solid var(--cyan-border-subtle);
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+.gaugeList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Cache Stats Grid ── */
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.statCard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-faint);
+  border-radius: 8px;
+}
+
+.statLabel {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.statValue {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.statValueSm {
+  font-size: 1rem;
+}
+
+.statUnit {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.iconInline {
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.empty {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  padding: 12px 0;
+}
+
+.error {
+  color: var(--danger);
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 700px) {
+  .statGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .statGrid {
+    grid-template-columns: 1fr;
+  }
+}

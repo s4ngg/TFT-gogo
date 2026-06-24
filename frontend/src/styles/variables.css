@@ -1,0 +1,229 @@
+/* Base theme tokens */
+:root {
+  --bg-main: #02070d;
+  --bg-sidebar: #050a10;
+  --bg-card: #0e1926;
+  --bg-card-soft: #142235;
+
+  --border: #1f2a37;
+  --border-subtle: rgba(114, 145, 153, 0.18);
+  --border-faint:  rgba(114, 145, 153, 0.08);
+  --border-active: #00d4b4;
+  --accent: #00d4b4;
+  --accent-bright: #1fe5c8;
+
+  --color-cyan: #04f3e5;
+  --color-gold: #f7d26d;
+  --color-red: #ff4945;
+  --color-success: #4ade80;
+  --color-win: #76ef33;
+  --color-purple: #a78bfa;
+  --color-star: #f9c860;
+  --color-silver: #b8c1cc;
+  --color-bronze: #cd7f32;
+
+  --gold: #d7a93a;
+  --danger: #ff5b57;
+  --danger-bg: rgba(255, 91, 87, 0.12);
+  --danger-border: rgba(255, 91, 87, 0.30);
+  --success: #4ade80;
+
+  /* 영웅 증강 뱃지 */
+  --color-purple-light: #c4b5fd;
+  --hero-aug-badge-border: rgba(167, 139, 250, 0.45);
+  --hero-aug-badge-bg: rgba(167, 139, 250, 0.10);
+
+  --text-main: #ffffff;
+  --text-ui: #d9dde3;
+  --text-soft: #c6ccd8;
+  --text-secondary: #b5bdc5;
+  --text-muted: #8b92a8;
+
+  --space-2xs: 3px;
+  --space-xs: 4px;
+  --space-sm: 6px;
+  --space-md: 8px;
+  --space-lg: 10px;
+  --space-xl: 12px;
+  --space-2xl: 16px;
+  --space-3xl: 18px;
+  --space-4xl: 20px;
+  --space-5xl: 24px;
+  --space-6xl: 32px;
+
+  --size-control-sm: 32px;
+  --size-control-action: 34px;
+  --size-control-md: 36px;
+  --size-status-banner: 50px;
+  --size-status-icon: 30px;
+  --size-admin-content-max-width: 1280px;
+  --size-admin-note-panel-min-width: 280px;
+  --size-admin-note-form-min-width: 420px;
+  --size-admin-note-version-width: 64px;
+  --size-admin-change-form-min-width: 420px;
+  --size-admin-change-list-min-width: 320px;
+  --size-admin-change-list-max-height: 680px;
+  --size-admin-textarea-min-height: 78px;
+
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-md: 17px;
+  --font-size-lg: 18px;
+  --font-size-xl: 24px;
+  --font-size-icon-fallback: 8px;
+  --font-main: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+
+  --sidebar-width: 222px;
+  --sidebar-collapsed-width: 78px;
+  --radius-card: 12px;
+  --radius-button: 8px;
+  --chevron-col-width: 28px;
+}
+
+/* Champion cost tokens */
+:root {
+  --cost1-border: #8b9198;
+  --cost1-bg-start: #3a3d42;
+  --cost1-bg-mid: #5a5e65;
+  --cost1-bg-end: #2a2c30;
+
+  --cost2-border: #0bb453;
+  --cost2-bg-start: #0a3d20;
+  --cost2-bg-mid: #0f6b30;
+  --cost2-bg-end: #072a16;
+
+  --cost3-border: #2e93f0;
+  --cost3-bg-start: #0a2a5e;
+  --cost3-bg-mid: #1255a0;
+  --cost3-bg-end: #071830;
+
+  --cost4-border: #c542f5;
+  --cost4-bg-start: #3a1060;
+  --cost4-bg-mid: #7a20b0;
+  --cost4-bg-end: #250a40;
+
+  --cost5-border: #f0c030;
+  --cost5-bg-start: #4a3000;
+  --cost5-bg-mid: #8a6000;
+  --cost5-bg-end: #2a1a00;
+  --cost5-glow: rgba(240, 192, 48, 0.35);
+}
+
+/* Game type filter tokens */
+:root {
+  --rank-filter-height: 28px;
+  --rank-filter-padding-x: 14px;
+  --rank-filter-radius: 14px;
+  --rank-filter-font-size: 12px;
+  --rank-filter-font-weight: 500;
+  --rank-filter-border: rgba(110, 142, 150, 0.3);
+  --rank-filter-border-hover: rgba(110, 142, 150, 0.6);
+  --rank-filter-text: #6b757e;
+  --rank-filter-text-hover: #c0c8d0;
+  --rank-filter-active: var(--color-cyan);
+  --rank-filter-active-bg: rgba(4, 243, 229, 0.08);
+  --transition-fast: 0.15s;
+}
+
+/* Trait tone tokens */
+:root {
+  --tone-gold-color: var(--color-star);
+  --tone-gold-border: rgba(249, 200, 96, 0.25);
+  --tone-gold-bg: rgba(249, 200, 96, 0.08);
+
+  --tone-silver-color: #a0aec0;
+  --tone-silver-border: rgba(160, 174, 192, 0.2);
+  --tone-silver-bg: rgba(160, 174, 192, 0.06);
+
+  --tone-bronze-color: #c6a96a;
+  --tone-bronze-border: rgba(198, 169, 106, 0.2);
+  --tone-bronze-bg: rgba(198, 169, 106, 0.06);
+
+  --tone-prismatic-color: #c084fc;
+  --tone-prismatic-border: rgba(192, 132, 252, 0.25);
+  --tone-prismatic-bg: rgba(192, 132, 252, 0.08);
+
+  /* Trait breakpoint pip */
+  --bp-bronze: var(--tone-bronze-color);
+  --bp-silver: var(--tone-silver-color);
+  --bp-gold: var(--tone-gold-color);
+  --bp-prismatic: var(--tone-prismatic-color);
+}
+
+/* Trait tag layout tokens */
+:root {
+  --font-size-2xs: 11px;
+  --space-3xs: 2px;
+  --radius-xs: 4px;
+  --bg-faint: rgba(255, 255, 255, 0.06);
+}
+
+/* Status banner tokens */
+:root {
+  --status-action-border: rgba(110, 142, 150, 0.28);
+  --status-action-bg: rgba(8, 20, 28, 0.82);
+  --status-loading-border: rgba(4, 243, 229, 0.28);
+  --status-loading-icon-bg: rgba(4, 243, 229, 0.12);
+  --status-fallback-border: rgba(255, 91, 87, 0.28);
+  --status-fallback-icon-bg: rgba(255, 91, 87, 0.12);
+}
+
+/* Panel / card background tokens */
+:root {
+  --bg-card-gradient: linear-gradient(180deg, rgba(8, 21, 29, 0.96), rgba(5, 15, 21, 0.96));
+  --bg-input-dark: rgba(3, 15, 20, 0.94);
+  --bg-btn-dark: rgba(14, 27, 34, 0.74);
+  --bg-btn-dark-soft: rgba(14, 27, 34, 0.6);
+  --bg-profile-level: rgba(0, 212, 180, 0.12);
+  --bg-match-panel: rgba(3, 10, 16, 0.97);
+  --bg-donut-inner: rgba(5, 15, 21, 0.97);
+  --bg-tooltip: rgba(5, 12, 18, 0.96);
+  --bg-row-hover: rgba(255, 255, 255, 0.025);
+}
+
+/* Search / CTA button tokens */
+:root {
+  --search-btn-bg: linear-gradient(135deg, #075c62, #0b9898);
+  --search-btn-border: rgba(0, 244, 235, 0.55);
+}
+
+/* Muted border tokens */
+:root {
+  --border-btn-muted: rgba(118, 151, 160, 0.36);
+  --border-load-more: rgba(118, 151, 160, 0.28);
+  --border-separator: rgba(112, 144, 152, 0.14);
+  --border-row-divider: rgba(112, 144, 152, 0.06);
+  --border-tooltip: rgba(112, 144, 152, 0.3);
+}
+
+/* Cyan opacity variant tokens */
+:root {
+  --cyan-bg-faint: rgba(4, 243, 229, 0.07);
+  --cyan-bg-subtle: rgba(4, 243, 229, 0.1);
+  --cyan-border-subtle: rgba(4, 243, 229, 0.28);
+  --cyan-border-light: rgba(4, 243, 229, 0.3);
+  --donut-track-bg: rgba(255, 255, 255, 0.07);
+}
+
+/* Match row background tokens */
+:root {
+  --match-row-base-end: rgba(6, 17, 24, 0.82);
+  --match-row-gold-start: rgba(108, 74, 25, 0.24);
+  --match-row-top4-start: rgba(0, 80, 80, 0.22);
+  --match-row-bot4-start: rgba(100, 20, 20, 0.22);
+  --match-my-row-bg: rgba(4, 243, 229, 0.055);
+  --match-my-row-hover: rgba(4, 243, 229, 0.08);
+}
+
+/* Game type badge tokens */
+:root {
+  --badge-normal-bg: rgba(140, 150, 160, 0.1);
+  --badge-normal-border: rgba(140, 150, 160, 0.22);
+}
+
+
+/* Page layout tokens */
+:root {
+  --page-content-width: 1100px;
+  --summoner-right-col-width: 340px;
+}

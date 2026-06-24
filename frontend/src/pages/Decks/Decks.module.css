@@ -1,0 +1,407 @@
+.page {
+  width: 1270px;
+  padding: 28px 0 60px;
+}
+
+/* ── 헤더 + 탭 ── */
+.pageHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 0;
+}
+
+.titleBlock h1 {
+  margin: 0 0 5px;
+  color: #fff;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.titleBlock p {
+  margin: 0;
+  color: #8e97a1;
+  font-size: 13px;
+}
+
+/* ── 우측 컨트롤 래퍼 ── */
+.rightControls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+/* ── 랭크 구간 필터 ── */
+.rankFilterBar {
+  display: flex;
+  gap: 6px;
+}
+
+.rankFilterBtn,
+.rankFilterActive {
+  height: var(--rank-filter-height);
+  padding: 0 var(--rank-filter-padding-x);
+  border: 1px solid var(--rank-filter-border);
+  border-radius: var(--rank-filter-radius);
+  background: transparent;
+  color: var(--rank-filter-text);
+  font-size: var(--rank-filter-font-size);
+  font-weight: var(--rank-filter-font-weight);
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.rankFilterBtn:hover {
+  color: var(--rank-filter-text-hover);
+  border-color: var(--rank-filter-border-hover);
+}
+
+.rankFilterActive {
+  border-color: var(--rank-filter-active);
+  color: var(--rank-filter-active);
+  background: var(--rank-filter-active-bg);
+}
+
+.tabBar {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid rgba(112, 144, 152, 0.16);
+}
+
+.tabBar button {
+  position: relative;
+  height: 44px;
+  padding: 0 28px;
+  border: none;
+  color: #6b7580;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.tabBar button:hover { color: #c0c8d0; }
+
+.activeTab { color: #04f3e5 !important; }
+.activeTab::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: #04f3e5;
+}
+
+/* ── 툴바 ── */
+.toolBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 14px 0;
+}
+
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(110, 142, 150, 0.3);
+  border-radius: 7px;
+  color: #8e97a1;
+  background: rgba(5, 14, 20, 0.9);
+}
+
+.searchBox input {
+  width: 200px;
+  border: none;
+  outline: none;
+  color: #fff;
+  background: transparent;
+  font-size: 13px;
+}
+
+.searchBox input::placeholder { color: #5a6470; }
+
+.countLabel {
+  color: #4a5560;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ── 테이블 래퍼 ── */
+.tableWrap {
+  margin-top: 14px;
+  border: 1px solid rgba(112, 144, 152, 0.16);
+  border-radius: 10px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(8, 21, 29, 0.96), rgba(5, 15, 21, 0.96));
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.18);
+}
+
+/* ── 테이블 ── */
+.table { width: 100%; border-collapse: collapse; }
+
+.table thead tr { border-bottom: 1px solid rgba(112, 144, 152, 0.2); }
+
+.table th {
+  padding: 10px 12px;
+  color: #6b7580;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.nameCol { text-align: left !important; padding-left: 10px !important; min-width: 190px; }
+.champCol {
+  text-align: left !important;
+  padding-bottom: 20px !important;
+}
+
+.sortTh { cursor: pointer; user-select: none; }
+.sortTh:hover { color: #c0c8d0; }
+
+.sortIcon { display: inline-block; vertical-align: middle; margin-left: 3px; color: #4a5560; }
+.sortActive { color: #04f3e5 !important; }
+
+/* ── 티어 헤더 행 (메타통계) ── */
+.tierHeaderRow td { padding: 0; }
+
+.tierHeaderInner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-left: 3px solid transparent;
+  background: rgba(255, 255, 255, 0.028);
+}
+
+.tierName  { font-size: 17px; font-weight: 800; letter-spacing: -0.02em; }
+.tierDesc  { color: #5a6470; font-size: 12px; }
+.tierCount { margin-left: auto; color: #4a5560; font-size: 12px; }
+
+/* ── 덱 행 ── */
+.deckRow {
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 0.12s;
+  cursor: pointer;
+}
+
+.deckRow:nth-child(even) { background: rgba(255, 255, 255, 0.012); }
+.deckRow:hover { background: var(--bg-card-soft); }
+
+.deckRow td {
+  padding: var(--space-lg) var(--space-xl);
+  vertical-align: middle;
+  text-align: center;
+}
+
+.deckRow td + td {
+  border-left: 1px solid var(--border-faint);
+}
+
+/* ── 순위 ── */
+.rank {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  color: #6b757e;
+  background: rgba(30, 45, 55, 0.7);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.rank[data-top="1"] { color: #f7d26d; background: linear-gradient(135deg, rgba(108,74,25,.86), rgba(35,37,36,.94)); }
+.rank[data-top="2"] { color: #e0e8ef; background: linear-gradient(135deg, rgba(80,100,115,.82), rgba(30,40,48,.9)); }
+.rank[data-top="3"] { color: #ed8d48; background: linear-gradient(135deg, rgba(100,58,20,.82), rgba(35,37,36,.9)); }
+
+/* ── 덱 이름 + 시너지 ── */
+.deckName {
+  display: block;
+  margin-bottom: 7px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+}
+
+.traits    { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+
+.traitTag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: var(--space-3xs) 7px;
+  border-radius: var(--radius-xs);
+  font-size: var(--font-size-2xs);
+  font-weight: 600;
+  background: var(--bg-faint);
+  color: var(--text-muted);
+  border: 1px solid var(--border-faint);
+  white-space: nowrap;
+}
+
+.toneGold   { color: var(--tone-gold-color); border-color: var(--tone-gold-border); background: var(--tone-gold-bg); }
+.toneSilver { color: var(--tone-silver-color); border-color: var(--tone-silver-border); background: var(--tone-silver-bg); }
+.toneBronze { color: var(--tone-bronze-color); border-color: var(--tone-bronze-border); background: var(--tone-bronze-bg); }
+.champions {
+  display: flex;
+  align-items: flex-end;
+  gap: 7px;
+  padding-left: 12px;
+  border-left: 1px solid rgba(4, 243, 229, 0.16);
+}
+
+/* ── 수치 컬럼 ── */
+.winRate  { color: #04ede0; font-size: 14px; font-weight: 700; }
+.top4     { color: #e8edf2; font-size: 14px; font-weight: 600; }
+.avgPlace { color: #f87171; font-size: 14px; font-weight: 700; }
+.avgHash  { color: #ef4444; font-size: 12px; font-weight: 500; margin-right: 1px; }
+.pickRate { color: #f9c860; font-size: 14px; font-weight: 600; }
+
+/* ── 빈 결과 ── */
+.empty { padding: 52px; color: #5a6470; font-size: 14px; text-align: center; }
+
+/* ════════════════════════════
+   특수 섹션 공통
+════════════════════════════ */
+.specialSection { margin-top: 36px; }
+
+.specialHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(112, 144, 152, 0.14);
+}
+
+/* 제목 블록 (h2 + p 묶음) */
+.specialHeaderText { flex: 1; }
+
+.specialHeader h2 {
+  margin: 0 0 2px;
+  color: #fff;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.specialHeader p {
+  margin: 0;
+  color: #6b757e;
+  font-size: 13px;
+}
+
+.specialBadge {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  border: 1px solid rgba(4, 243, 229, 0.35);
+  border-radius: 5px;
+  color: #04f3e5;
+  background: rgba(4, 243, 229, 0.1);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.heroAugBadge {
+  border-color: rgba(167, 139, 250, 0.4);
+  color: #c4b5fd;
+  background: rgba(167, 139, 250, 0.12);
+}
+
+/* ════════════════════════════
+   영웅증강 덱 그리드
+════════════════════════════ */
+.haDeckGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+}
+
+.haDeckCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  border: 1px solid rgba(167, 139, 250, 0.18);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(8, 21, 29, 0.96), rgba(5, 15, 21, 0.96));
+  transition: border-color 0.15s;
+}
+
+.haDeckCard:hover {
+  border-color: rgba(167, 139, 250, 0.36);
+}
+
+.haDeckCardHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.haDeckName {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.haDeckChamps {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding-bottom: 4px;
+}
+
+.haDeckAugments {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.haDeckAugRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.haDeckAugIcon {
+  flex-shrink: 0;
+  color: #c4b5fd;
+}
+
+.haDeckAugChamp {
+  color: #dde3e9;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.haDeckAugName {
+  color: #c4b5fd;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.haDeckDesc {
+  margin: 0;
+  color: #6b757e;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.errorMessage { padding: 2rem; color: var(--danger); text-align: center; }

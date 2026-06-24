@@ -1,0 +1,778 @@
+.page {
+  width: 1100px;
+  padding: 28px 0 48px;
+}
+
+/* ── 헤더 ── */
+.pageHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.pageHeader h1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 5px;
+  color: #fff;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.pageHeader p {
+  margin: 0;
+  color: #8e97a1;
+  font-size: 13px;
+}
+
+.summonerBadge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid rgba(4, 243, 229, 0.28);
+  border-radius: 8px;
+  background: rgba(4, 80, 86, 0.3);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.summonerDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #04f3e5;
+  box-shadow: 0 0 8px #04f3e5;
+}
+
+.summonerTag {
+  color: #6b757e;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.summonerDivider {
+  width: 1px;
+  height: 14px;
+  background: rgba(112, 144, 152, 0.3);
+  margin: 0 2px;
+}
+
+.summonerTier {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(4, 100, 106, 0.4);
+  color: #04ede0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ── 공통 패널 ── */
+.panel {
+  padding: 20px 22px;
+  border: 1px solid rgba(112, 144, 152, 0.16);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(9, 22, 31, 0.97), rgba(5, 14, 21, 0.97));
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
+}
+
+.panelHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: #04ede0;
+}
+
+.panelHead h2 {
+  margin: 0;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.panelSub {
+  color: #5a6470;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* ── 레이아웃 ── */
+.content { display: flex; flex-direction: column; gap: 14px; }
+
+.twoCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+/* ── 미연동 프롬프트 ── */
+.promptWrap {
+  display: flex;
+  justify-content: center;
+  padding: 48px 0;
+}
+
+.promptCard {
+  width: 520px;
+  padding: 40px;
+  border: 1px solid rgba(4, 243, 229, 0.18);
+  border-radius: 14px;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(5, 60, 65, 0.28), rgba(5, 14, 21, 0.97));
+}
+
+.promptIcon {
+  width: 68px;
+  height: 68px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 20px;
+  border: 1px solid rgba(4, 243, 229, 0.3);
+  border-radius: 18px;
+  color: #04f3e5;
+  background: rgba(4, 90, 96, 0.36);
+  box-shadow: 0 0 24px rgba(4, 243, 229, 0.12);
+}
+
+.promptCard h2 {
+  margin: 0 0 12px;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+}
+
+.promptCard p {
+  margin: 0 0 22px;
+  color: #8e97a1;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.promptFeatures {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+.promptFeatures span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #6b757e;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.connectBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 22px;
+  border: 1px solid #04f3e5;
+  border-radius: 8px;
+  color: #fff;
+  background: linear-gradient(180deg, rgba(4, 160, 155, 0.9), rgba(3, 80, 86, 0.95));
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.14s;
+}
+
+.connectBtn:hover { filter: brightness(1.1); }
+
+/* ── 상태 메시지 ── */
+.statusMessage {
+  padding: 48px 0;
+  text-align: center;
+  font-size: 14px;
+}
+
+.statusMessage.error { color: var(--danger); }
+.statusMessage.loading { color: var(--text-muted); }
+.statusMessage.empty { color: var(--text-muted); }
+
+/* ── 최근 전적 요약 ── */
+.summaryPanel { }
+
+.summaryStats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.statCard {
+  padding: 14px;
+  border: 1px solid rgba(112, 144, 152, 0.14);
+  border-radius: 8px;
+  text-align: center;
+  background: rgba(6, 17, 24, 0.7);
+}
+
+.statCard small {
+  display: block;
+  margin-bottom: 6px;
+  color: #5a6470;
+  font-size: 12px;
+}
+
+.statCard strong {
+  color: #e0e6ec;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.statCard[data-tone="purple"] strong { color: #a78bfa; }
+.statCard[data-tone="green"] strong { color: #04ede0; }
+.statCard[data-tone="gold"] strong { color: #f9c860; }
+
+/* ── 최근 등수 ── */
+.placementsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(112, 144, 152, 0.1);
+}
+
+.placementsLabel {
+  color: #5a6470;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.placementsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.placementBadges {
+  display: flex;
+  gap: 5px;
+}
+
+.placementBadge {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 5px;
+  border: 1px solid rgba(112, 144, 152, 0.2);
+  background: rgba(8, 20, 28, 0.7);
+  color: #5a6470;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.placementBadge[data-top4="true"] {
+  border-color: rgba(4, 243, 229, 0.3);
+  color: #04ede0;
+}
+
+.tierInfo {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.tierEmblem {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 12px rgba(249, 200, 96, 0.5));
+}
+
+.tierText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.tierName {
+  color: #f9c860;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.tierLp {
+  color: #6b757e;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.placementBadge[data-first="true"] {
+  border-color: rgba(249, 200, 96, 0.4);
+  background: rgba(249, 200, 96, 0.08);
+  color: #f9c860;
+}
+
+/* ── 자주 쓴 덱 / 시너지 ── */
+.myDeckList { display: flex; flex-direction: column; gap: 8px; }
+
+.myDeckRow {
+  display: grid;
+  grid-template-columns: 22px 34px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(112, 144, 152, 0.1);
+  border-radius: 8px;
+  background: rgba(8, 20, 28, 0.6);
+}
+
+.traitRow {
+  display: grid;
+  grid-template-columns: 22px 40px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(112, 144, 152, 0.1);
+  border-radius: 8px;
+  background: rgba(8, 20, 28, 0.6);
+}
+
+.myDeckNum {
+  color: #4a5560;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.myDeckName {
+  overflow: hidden;
+  color: #dde3e9;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.myDeckStats {
+  display: flex;
+  gap: 12px;
+  color: #6b757e;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.myAvg  { color: #a78bfa; }
+.myTop4 { color: #04ede0; }
+
+/* ── 증강 분석 ── */
+.augmentList { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+
+.augRow {
+  display: grid;
+  grid-template-columns: 20px 26px 1fr 100px 46px 44px;
+  align-items: center;
+  gap: 8px;
+}
+
+.augRank { color: #4a5560; font-size: 12px; font-weight: 600; text-align: center; }
+.augIcon { font-size: 18px; text-align: center; }
+.augName { color: #dde3e9; font-size: 13px; font-weight: 500; }
+
+.augProgress {
+  width: 100px;
+  height: 6px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  color: #a78bfa;
+}
+
+.augProgress::-webkit-progress-bar {
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+}
+
+.augProgress::-webkit-progress-value {
+  border-radius: 999px;
+  background: #a78bfa;
+}
+
+.augProgress::-moz-progress-bar {
+  border-radius: 999px;
+  background: #a78bfa;
+}
+
+.augProgress[data-tone="best"] { color: #04ede0; }
+.augProgress[data-tone="worst"] { color: #f87171; }
+.augProgress[data-tone="best"]::-webkit-progress-value { background: #04ede0; }
+.augProgress[data-tone="worst"]::-webkit-progress-value { background: #f87171; }
+.augProgress[data-tone="best"]::-moz-progress-bar { background: #04ede0; }
+.augProgress[data-tone="worst"]::-moz-progress-bar { background: #f87171; }
+
+.augPlace { font-size: 13px; font-weight: 700; text-align: right; }
+.augPlace[data-tone="default"] { color: #c0c8d0; }
+.augPlace[data-tone="best"] { color: #04ede0; }
+.augPlace[data-tone="worst"] { color: #f87171; }
+.augGames { color: #4a5560; font-size: 12px; text-align: right; }
+
+.augTip {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 7px;
+  color: #8e97a1;
+  background: rgba(4, 243, 229, 0.06);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.augTip b { color: #04f3e5; }
+
+/* ── AI 추천 덱 ── */
+.aiDeckList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.aiDeckCard {
+  padding: 16px 18px;
+  border: 1px solid rgba(4, 243, 229, 0.14);
+  border-radius: 9px;
+  background: rgba(4, 60, 66, 0.18);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.aiDeckCard:hover {
+  border-color: rgba(4, 243, 229, 0.35);
+  background: rgba(4, 60, 66, 0.28);
+}
+
+.aiDeckTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.aiDeckBadge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: #04f3e5;
+  background: rgba(4, 100, 106, 0.38);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.aiDeckName {
+  overflow: hidden;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.aiDeckArrow {
+  margin-left: auto;
+  color: #3a4550;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+.aiDeckCard:hover .aiDeckArrow { color: #04ede0; }
+
+.aiDeckTraits {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.aiDeckChampions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.aiDeckStats {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 10px;
+  color: #6b757e;
+  font-size: 12px;
+}
+
+.aiDeckStats b { font-weight: 700; }
+.green  { color: #04ede0; }
+.purple { color: #a78bfa; }
+.gold   { color: #f9c860; }
+
+.aiReason {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 5px;
+  color: #8e97a1;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 12px;
+}
+
+.aiDisclaimer {
+  margin: 0;
+  color: #4a5560;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* ── 덱별 승률 성적 ── */
+.deckPerfSplit {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
+}
+
+.deckPerfCol { }
+
+.deckPerfColHead {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.deckPerfGood { color: #04ede0; }
+.deckPerfBad  { color: #f87171; }
+
+.deckPerfDivider {
+  width: 1px;
+  background: rgba(112, 144, 152, 0.14);
+  align-self: stretch;
+  margin: 0 18px;
+}
+
+.myBadTop4 { color: #f87171; }
+
+.traitEmpty {
+  margin: 0;
+  padding: 16px 0;
+  color: #4a5560;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* ── AI 채팅 패널 ── */
+.chatAiPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.chatMessages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  min-height: 200px;
+  max-height: 400px;
+  padding: 4px 0 12px;
+  margin-bottom: 14px;
+}
+
+.chatEmptyHint {
+  margin: auto;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  padding: 24px 0;
+}
+
+.chatBubbleUser {
+  align-self: flex-end;
+  max-width: 80%;
+  padding: 10px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px 12px 2px 12px;
+  background: var(--bg-card-soft);
+}
+
+.chatBubbleAssistant {
+  align-self: flex-start;
+  max-width: 85%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.chatAssistantLabel {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--color-cyan);
+  letter-spacing: 0.04em;
+}
+
+.chatBubbleText {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--cyan-border-subtle);
+  border-radius: 2px 12px 12px 12px;
+  background: var(--cyan-bg-faint);
+  color: var(--text-ui);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.chatBubbleUser .chatBubbleText {
+  border-color: var(--border-subtle);
+  background: var(--bg-card-soft);
+  border-radius: 12px 12px 2px 12px;
+  color: var(--text-soft);
+}
+
+/* 타이핑 인디케이터 */
+.chatTyping {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 20px;
+}
+
+.chatTyping span {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-cyan);
+  animation: chat-bounce 1.2s infinite ease-in-out;
+}
+
+.chatTyping span:nth-child(2) { animation-delay: 0.2s; }
+.chatTyping span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes chat-bounce {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1); }
+}
+
+.chatErrorMsg {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 7px;
+  color: var(--danger);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  font-size: var(--font-size-xs);
+}
+
+.chatForm {
+  display: flex;
+  gap: var(--space-xl);
+  align-items: flex-end;
+}
+
+.chatInput {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-button);
+  background: var(--bg-input-dark);
+  color: var(--text-ui);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  resize: none;
+  font-family: var(--font-main);
+  transition: border-color var(--transition-fast);
+}
+
+.chatInput::placeholder { color: var(--text-muted); }
+
+.chatInput:focus {
+  outline: none;
+  border-color: var(--cyan-border-subtle);
+}
+
+.chatInput:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.chatSendBtn {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border-active);
+  border-radius: var(--radius-button);
+  background: var(--search-btn-bg);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: filter var(--transition-fast);
+}
+
+.chatSendBtn:hover:not(:disabled) { filter: brightness(1.15); }
+.chatSendBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.chatResetBtn {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid var(--border-btn-muted);
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.chatResetBtn:hover { color: var(--text-soft); border-color: var(--border-subtle); }
+
+/* ── 패치 상승 배지 ── */
+.patchBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid rgba(249, 200, 96, 0.35);
+  border-radius: 4px;
+  color: #f9c860;
+  background: rgba(249, 200, 96, 0.1);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.aiDeckCardPatch {
+  border-color: rgba(249, 200, 96, 0.22);
+  background: rgba(38, 28, 4, 0.4);
+}
+
+.aiReasonPatch {
+  color: #f9c860;
+  background: rgba(249, 200, 96, 0.07);
+}
+
+.errorMessage, .loadingMessage, .emptyMessage { padding: 2rem; color: var(--color-text-secondary); text-align: center; }
+.errorMessage { color: var(--danger); }

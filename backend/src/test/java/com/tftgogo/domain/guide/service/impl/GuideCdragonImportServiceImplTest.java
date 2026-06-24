@@ -1,0 +1,441 @@
+package com.tftgogo.domain.guide.service.impl;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tftgogo.domain.guide.dto.request.GuideCdragonImportRequest;
+import com.tftgogo.domain.guide.dto.response.GuideImportResponse;
+import com.tftgogo.domain.guide.entity.GuideAugment;
+import com.tftgogo.domain.guide.entity.GuideChampion;
+import com.tftgogo.domain.guide.entity.GuideItem;
+import com.tftgogo.domain.guide.entity.GuideTrait;
+import com.tftgogo.domain.guide.repository.GuideAugmentRepository;
+import com.tftgogo.domain.guide.repository.GuideChampionRepository;
+import com.tftgogo.domain.guide.repository.GuideItemRepository;
+import com.tftgogo.domain.guide.repository.GuideTraitRepository;
+import com.tftgogo.domain.patchnote.entity.PatchNote;
+import com.tftgogo.domain.patchnote.repository.PatchNoteRepository;
+import com.tftgogo.global.cdragon.config.CommunityDragonProperties;
+import com.tftgogo.global.exception.BusinessException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.client.RestTemplate;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class GuideCdragonImportServiceImplTest {
+
+    @Mock
+    private GuideChampionRepository guideChampionRepository;
+
+    @Mock
+    private GuideTraitRepository guideTraitRepository;
+
+    @Mock
+    private GuideItemRepository guideItemRepository;
+
+    @Mock
+    private GuideAugmentRepository guideAugmentRepository;
+
+    @Mock
+    private PatchNoteRepository patchNoteRepository;
+
+    @Mock
+    private RestTemplate restTemplate;
+
+    @Spy
+    private ObjectMapper objectMapper = new ObjectMapper();
+
+    @Spy
+    private CommunityDragonProperties communityDragonProperties = new CommunityDragonProperties();
+
+    @InjectMocks
+    private GuideCdragonImportServiceImpl guideCdragonImportService;
+
+    @BeforeEach
+    void setUp() {
+        communityDragonProperties.setTftKoKrUrl("https://example.com/cdragon/tft/ko_kr.json");
+        communityDragonProperties.setAssetBaseUrl("https://raw.communitydragon.org/latest/game");
+        lenient().when(guideChampionRepository.findByChampionKeyAndPatchVersion(any(), any()))
+                .thenReturn(Optional.empty());
+        lenient().when(guideTraitRepository.findByTraitKeyAndPatchVersion(any(), any()))
+                .thenReturn(Optional.empty());
+        lenient().when(guideItemRepository.findByItemKeyAndPatchVersion(any(), any()))
+                .thenReturn(Optional.empty());
+        lenient().when(guideAugmentRepository.findByAugmentKeyAndPatchVersion(any(), any()))
+                .thenReturn(Optional.empty());
+    }
+
+    @Test
+    void cdragon_import_saves_champion_and_trait_to_split_tables() {
+        // given
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonJson());
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request(true, true, false, false));
+
+        // then
+        assertThat(response.getCreatedCount()).isEqualTo(2);
+        assertThat(response.getUpdatedCount()).isZero();
+        assertThat(response.getPatchVersion()).isEqualTo("17.3");
+        assertThat(response.getChampionCount()).isEqualTo(1);
+        assertThat(response.getTraitCount()).isEqualTo(1);
+
+        ArgumentCaptor<GuideChampion> championCaptor = ArgumentCaptor.forClass(GuideChampion.class);
+        verify(guideChampionRepository).save(championCaptor.capture());
+        GuideChampion champion = championCaptor.getValue();
+        assertThat(champion.getChampionKey()).isEqualTo("TFT17_Briar");
+        assertThat(champion.getPatchVersion()).isEqualTo("17.3");
+        assertThat(champion.getTraitsJson()).contains("Animal Squad");
+
+        ArgumentCaptor<GuideTrait> traitCaptor = ArgumentCaptor.forClass(GuideTrait.class);
+        verify(guideTraitRepository).save(traitCaptor.capture());
+        GuideTrait trait = traitCaptor.getValue();
+        assertThat(trait.getTraitKey()).isEqualTo("TFT17_AnimalSquad");
+        assertThat(trait.getPatchVersion()).isEqualTo("17.3");
+        assertThat(trait.getChampionsJson()).contains("Briar");
+    }
+
+    @Test
+    void cdragon_import_saves_item_without_stats_aggregation_values() {
+        // given
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonJson());
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request(false, false, true, false));
+
+        // then
+        assertThat(response.getCreatedCount()).isEqualTo(1);
+        assertThat(response.getPatchVersion()).isEqualTo("17.3");
+        assertThat(response.getItemCount()).isEqualTo(1);
+
+        ArgumentCaptor<GuideItem> itemCaptor = ArgumentCaptor.forClass(GuideItem.class);
+        verify(guideItemRepository).save(itemCaptor.capture());
+        GuideItem item = itemCaptor.getValue();
+        assertThat(item.getItemKey()).isEqualTo("TFT_Item_GuinsoosRageblade");
+        assertThat(item.getStatsJson()).isEqualTo("{}");
+        assertThat(item.getBestUsersJson()).isEqualTo("[]");
+        assertThat(item.getCombinationsJson()).contains("Recurve Bow");
+    }
+
+    @Test
+    void cdragon_import_saves_augment_without_stats_aggregation_values() {
+        // given
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonJson());
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request(false, false, false, true));
+
+        // then
+        assertThat(response.getCreatedCount()).isEqualTo(1);
+        assertThat(response.getPatchVersion()).isEqualTo("17.3");
+        assertThat(response.getAugmentCount()).isEqualTo(1);
+
+        ArgumentCaptor<GuideAugment> augmentCaptor = ArgumentCaptor.forClass(GuideAugment.class);
+        verify(guideAugmentRepository).save(augmentCaptor.capture());
+        GuideAugment augment = augmentCaptor.getValue();
+        assertThat(augment.getAugmentKey()).isEqualTo("TFT17_Augment_BattleReady");
+        assertThat(augment.getStatsJson()).isEqualTo("{}");
+        assertThat(augment.getTagsJson()).contains("Combat");
+    }
+
+    @Test
+    void cdragon_import_updates_existing_split_row() {
+        // given
+        GuideChampion existingChampion = GuideChampion.builder()
+                .championKey("TFT17_Briar")
+                .name("Old Briar")
+                .cost(1)
+                .role("Old")
+                .position("Old")
+                .imageUrl("https://example.com/old.png")
+                .statsJson("{}")
+                .traitsJson("[]")
+                .bestItemsJson("[]")
+                .patchVersion("17.3")
+                .build();
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonJson());
+        when(guideChampionRepository.findByChampionKeyAndPatchVersion("TFT17_Briar", "17.3"))
+                .thenReturn(Optional.of(existingChampion));
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request(true, false, false, false));
+
+        // then
+        assertThat(response.getCreatedCount()).isZero();
+        assertThat(response.getUpdatedCount()).isEqualTo(1);
+        assertThat(existingChampion.getName()).isEqualTo("Briar");
+        assertThat(existingChampion.getTraitsJson()).contains("Animal Squad");
+        verify(guideChampionRepository, never()).save(any(GuideChampion.class));
+    }
+
+    @Test
+    void latest_patch_version_uses_current_patch_note_version() {
+        // given
+        GuideCdragonImportRequest request = request(true, false, false, false);
+        ReflectionTestUtils.setField(request, "patchVersion", "latest");
+        when(patchNoteRepository.findFirstByCurrentTrueAndDeletedAtIsNullOrderByPublishedAtDescIdDesc())
+                .thenReturn(Optional.of(patchNote("17.5")));
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonJson());
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request);
+
+        // then
+        assertThat(response.getPatchVersion()).isEqualTo("17.5");
+        ArgumentCaptor<GuideChampion> championCaptor = ArgumentCaptor.forClass(GuideChampion.class);
+        verify(guideChampionRepository).save(championCaptor.capture());
+        assertThat(championCaptor.getValue().getPatchVersion()).isEqualTo("17.5");
+    }
+
+    @Test
+    void cdragon_import_saves_special_units_on_trait_without_champion_row() {
+        // given
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonSpecialUnitJson());
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request(true, true, false, false));
+
+        // then
+        assertThat(response.getCreatedCount()).isEqualTo(2);
+        assertThat(response.getChampionCount()).isEqualTo(1);
+        assertThat(response.getTraitCount()).isEqualTo(1);
+
+        ArgumentCaptor<GuideChampion> championCaptor = ArgumentCaptor.forClass(GuideChampion.class);
+        verify(guideChampionRepository).save(championCaptor.capture());
+        assertThat(championCaptor.getValue().getChampionKey()).isEqualTo("TFT17_Rhaast");
+
+        ArgumentCaptor<GuideTrait> traitCaptor = ArgumentCaptor.forClass(GuideTrait.class);
+        verify(guideTraitRepository).save(traitCaptor.capture());
+        GuideTrait savedTrait = traitCaptor.getValue();
+        assertThat(savedTrait.getTraitKey()).isEqualTo("TFT17_DarkStar");
+        assertThat(savedTrait.getSpecialUnitsJson()).contains("Small Black Hole");
+        assertThat(savedTrait.getSpecialUnitsJson()).contains("tft17_darkstar_fakeunit_smallsplash.tft_set17.png");
+    }
+
+    @Test
+    void request_without_include_targets_throws_exception() {
+        // given, when, then
+        assertThatThrownBy(() -> guideCdragonImportService.importGuides(request(false, false, false, false)))
+                .isInstanceOf(BusinessException.class);
+    }
+
+    private GuideCdragonImportRequest request(
+            boolean includeChampions,
+            boolean includeTraits,
+            boolean includeItems,
+            boolean includeAugments
+    ) {
+        GuideCdragonImportRequest request = new GuideCdragonImportRequest();
+        ReflectionTestUtils.setField(request, "patchVersion", "17.3");
+        ReflectionTestUtils.setField(request, "setNumber", 17);
+        ReflectionTestUtils.setField(request, "mutator", "TFTSet17");
+        ReflectionTestUtils.setField(request, "includeChampions", includeChampions);
+        ReflectionTestUtils.setField(request, "includeTraits", includeTraits);
+        ReflectionTestUtils.setField(request, "includeItems", includeItems);
+        ReflectionTestUtils.setField(request, "includeAugments", includeAugments);
+        return request;
+    }
+
+    private PatchNote patchNote(String version) {
+        return PatchNote.builder()
+                .version(version)
+                .title(version + " patch")
+                .summary("summary")
+                .description("description")
+                .publishedAt(LocalDateTime.of(2026, 6, 18, 9, 0))
+                .current(true)
+                .build();
+    }
+
+    private String cdragonSpecialUnitJson() {
+        return """
+                {
+                  "setData": [
+                    {
+                      "number": 17,
+                      "mutator": "TFTSet17",
+                      "champions": [
+                        {
+                          "apiName": "TFT17_Rhaast",
+                          "name": "Rhaast",
+                          "cost": 3,
+                          "role": "APFighter",
+                          "squareIcon": "ASSETS/Characters/TFT17_Rhaast/HUD/TFT17_Rhaast_Square.TFT_Set17.tex",
+                          "traits": ["Dark Star"],
+                          "stats": {
+                            "armor": 45,
+                            "attackSpeed": 0.75,
+                            "damage": 55,
+                            "hp": 850,
+                            "initialMana": 20,
+                            "magicResist": 45,
+                            "mana": 70,
+                            "range": 1
+                          },
+                          "ability": {
+                            "name": "Shadow Assault",
+                            "desc": "Deal @Damage@ damage.",
+                            "effects": {
+                              "Damage": 300
+                            },
+                            "icon": "ASSETS/Characters/TFT17_Rhaast/HUD/TFT17_Rhaast_Spell.tex"
+                          }
+                        },
+                        {
+                          "apiName": "TFT17_DarkStar_FakeUnit",
+                          "name": "Small Black Hole",
+                          "cost": 1,
+                          "role": "APTank",
+                          "squareIcon": "",
+                          "traits": [],
+                          "stats": {
+                            "range": 1
+                          }
+                        }
+                      ],
+                      "traits": [
+                        {
+                          "apiName": "TFT17_DarkStar",
+                          "name": "Dark Star",
+                          "desc": "Dark Star creates a black hole in combat.<br><row>(@MinUnits@) Create @SmallBlackHoleCount@ small black hole</row>",
+                          "icon": "ASSETS/UX/TraitIcons/Trait_Icon_17_DarkStar.TFT_Set17.tex",
+                          "effects": [
+                            {
+                              "minUnits": 3,
+                              "maxUnits": 5,
+                              "style": 1,
+                              "variables": {
+                                "SmallBlackHoleCount": 1
+                              }
+                            }
+                          ]
+                        }
+                      ],
+                      "augments": []
+                    }
+                  ],
+                  "sets": {},
+                  "items": []
+                }
+                """;
+    }
+
+    private String cdragonJson() {
+        return """
+                {
+                  "setData": [
+                    {
+                      "number": 17,
+                      "mutator": "TFTSet17",
+                      "champions": [
+                        {
+                          "apiName": "TFT17_Briar",
+                          "name": "Briar",
+                          "cost": 1,
+                          "role": "ADCarry",
+                          "squareIcon": "ASSETS/Characters/TFT17_Briar/Skins/Base/Images/TFT17_Briar_splash_tile_10.TFT_Set17.tex",
+                          "traits": ["Animal Squad"],
+                          "stats": {
+                            "armor": 35,
+                            "attackSpeed": 0.75,
+                            "damage": 35,
+                            "hp": 650,
+                            "initialMana": 0,
+                            "magicResist": 35,
+                            "mana": 40,
+                            "range": 1
+                          },
+                          "ability": {
+                            "name": "Bite",
+                            "desc": "Deal @Damage@ damage.",
+                            "effects": {
+                              "Damage": 120
+                            },
+                            "icon": "ASSETS/Characters/TFT17_Briar/HUD/TFT17_Briar_Spell.tex"
+                          }
+                        }
+                      ],
+                      "traits": [
+                        {
+                          "apiName": "TFT17_AnimalSquad",
+                          "name": "Animal Squad",
+                          "desc": "Your team gains @TeamwideAD*100@% Attack Damage.<br><row>(@MinUnits@) @AttackSpeedPercent*100@% %i:scaleAS%</row>",
+                          "icon": "ASSETS/UX/TraitIcons/Trait_Icon_17_AnimalSquad.TFT_Set17.tex",
+                          "effects": [
+                            {
+                              "minUnits": 2,
+                              "maxUnits": 3,
+                              "style": 1,
+                              "variables": {
+                                "TeamwideAD": 0.1,
+                                "AttackSpeedPercent": 0.15
+                              }
+                            }
+                          ]
+                        }
+                      ],
+                      "augments": [
+                        "TFT17_Augment_BattleReady"
+                      ]
+                    }
+                  ],
+                  "sets": {},
+                  "items": [
+                    {
+                      "apiName": "TFT17_Augment_BattleReady",
+                      "name": "Battle Ready",
+                      "desc": "Your team gains @AttackSpeed@ attack speed.",
+                      "effects": {
+                        "AttackSpeed": 25
+                      },
+                      "icon": "ASSETS/UX/Augments/Battle_Ready.tex",
+                      "tags": ["Combat"]
+                    },
+                    {
+                      "apiName": "TFT_Item_RecurveBow",
+                      "name": "Recurve Bow",
+                      "icon": "ASSETS/Maps/Particles/TFT/Item_Icons/Standard/RecurveBow.png"
+                    },
+                    {
+                      "apiName": "TFT_Item_NeedlesslyLargeRod",
+                      "name": "Needlessly Large Rod",
+                      "icon": "ASSETS/Maps/Particles/TFT/Item_Icons/Standard/NeedlesslyLargeRod.png"
+                    },
+                    {
+                      "apiName": "TFT_Item_GuinsoosRageblade",
+                      "name": "Guinsoo's Rageblade",
+                      "desc": "Gain @AttackSpeed@ attack speed.",
+                      "effects": {
+                        "AttackSpeed": 10
+                      },
+                      "icon": "ASSETS/Maps/Particles/TFT/Item_Icons/Standard/GuinsoosRageblade.png",
+                      "composition": ["TFT_Item_RecurveBow", "TFT_Item_NeedlesslyLargeRod"],
+                      "associatedTraits": []
+                    }
+                  ]
+                }
+                """;
+    }
+}

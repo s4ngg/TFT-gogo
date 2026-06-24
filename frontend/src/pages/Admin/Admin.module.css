@@ -1,0 +1,1064 @@
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+
+.title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 24px;
+}
+
+/* 토큰 입력 */
+.tokenForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 400px;
+  margin: 80px auto;
+  padding: 32px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+}
+
+.tokenLabel {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.tokenInput {
+  padding: 10px 14px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.tokenInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.tokenBtn {
+  padding: 10px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tokenError {
+  color: #f87171;
+  font-size: 0.85rem;
+}
+
+/* 필터 */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.rankSelect {
+  padding: 8px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.logoutBtn {
+  margin-left: auto;
+  padding: 6px 14px;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.logoutBtn:hover { color: var(--text-primary); }
+
+/* 테이블 */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.table th {
+  padding: 10px 12px;
+  text-align: left;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-faint);
+  vertical-align: middle;
+}
+
+.table tr:hover td { background: var(--bg-card-soft); }
+
+.hiddenRow td { opacity: 0.4; }
+
+.mutedText {
+  color: var(--text-muted);
+}
+
+.emptyText {
+  margin-top: 24px;
+  color: var(--text-muted);
+}
+
+.tableId {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.strongText {
+  font-weight: 600;
+}
+
+.tableActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+/* 이름 셀 */
+.nameCell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.autoName {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.nameInput {
+  padding: 5px 8px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  width: 220px;
+}
+
+.nameInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* 토글 */
+.toggle {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  cursor: pointer;
+}
+
+.toggle input { display: none; }
+
+.toggleTrack {
+  position: absolute;
+  inset: 0;
+  background: var(--border);
+  border-radius: 11px;
+  transition: background 0.2s;
+}
+
+.toggle input:checked + .toggleTrack { background: var(--accent); }
+
+.toggleThumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.toggle input:checked ~ .toggleThumb { transform: translateX(18px); }
+
+/* 액션 버튼 */
+.saveBtn {
+  padding: 5px 12px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.saveBtn:disabled { opacity: 0.5; cursor: default; }
+
+.resetBtn {
+  padding: 5px 10px;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.resetBtn:hover { color: #f87171; border-color: #f87171; }
+
+.grade {
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.gradeDefault {
+  color: var(--text-main);
+}
+
+.gradeS {
+  color: var(--color-cyan);
+}
+
+.gradeA {
+  color: var(--color-purple);
+}
+
+.gradeB {
+  color: var(--cost3-border);
+}
+
+.gradeC {
+  color: var(--tone-prismatic-color);
+}
+
+.gradeD {
+  color: var(--text-muted);
+}
+
+.sortInput {
+  width: 60px;
+}
+
+.stat { color: var(--text-muted); }
+
+.modified { color: var(--accent); font-size: 0.75rem; }
+
+/* 배치판 버튼 */
+.boardBtn {
+  padding: 5px 10px;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.boardBtn:hover { color: var(--text-primary); border-color: var(--text-muted); }
+
+.boardBtnActive {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* 모달 오버레이 */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modalBox {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  width: min(900px, 95vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.modalBoxWide {
+  width: min(1100px, 96vw);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.modalTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.modalClose {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.modalClose:hover { color: var(--text-primary); }
+
+.boardEditorBody {
+  display: flex;
+  gap: 24px;
+  padding: 20px 24px;
+  flex-wrap: wrap;
+}
+
+/* 레벨 탭 */
+.levelTabs {
+  display: flex;
+  gap: 6px;
+  padding: 12px 24px 0;
+}
+
+.levelTab {
+  padding: 5px 14px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.levelTabActive {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.levelTabHasData {
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+/* 챔피언 팔레트 */
+.champPalette {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 220px;
+  max-height: 460px;
+  overflow-y: auto;
+}
+
+.paletteLabel {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.costGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.costLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.costTone1 {
+  color: var(--cost1-border);
+}
+
+.costTone2 {
+  color: var(--color-success);
+}
+
+.costTone3 {
+  color: var(--cost3-border);
+}
+
+.costTone4 {
+  color: var(--tone-prismatic-color);
+}
+
+.costTone5 {
+  color: var(--color-star);
+}
+
+.champGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+.champChip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 4px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-faint);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.champChip:hover { border-color: var(--text-muted); }
+
+.champChipSelected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.champChipPlaced { opacity: 0.45; }
+
+.champChipImg {
+  width: 42px;
+  height: 42px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.champChipName {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* 헥스 그리드 편집기 */
+.editorBoard {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.editorRow {
+  display: flex;
+  gap: 2px;
+}
+
+.editorRowOffset {
+  margin-left: 28px;
+}
+
+.editorCell {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 2px solid rgba(140, 160, 170, 0.45);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 35, 48, 0.9);
+  padding: 0;
+  overflow: hidden;
+  transition: border-color 0.15s, background 0.15s;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.editorCellEmpty:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, rgba(20, 35, 48, 0.9));
+}
+
+.editorCellFilled {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px rgba(4, 243, 229, 0.2);
+}
+
+.editorCellFilled:hover {
+  border-color: #f87171;
+  box-shadow: inset 0 0 0 1px rgba(248, 113, 113, 0.2);
+}
+
+.editorCellImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.editorCellEditing {
+  border-color: var(--color-star) !important;
+  box-shadow: 0 0 0 2px var(--tone-gold-border) !important;
+}
+
+.editorCellWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.editorCellItems {
+  display: flex;
+  gap: 1px;
+}
+
+.editorCellItemIcon {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  object-fit: cover;
+}
+
+.editorBoardSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+/* 아이템 피커 */
+.itemPicker {
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-main);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 280px;
+}
+
+.itemPickerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-star);
+}
+
+.itemPickerSelected {
+  display: flex;
+  gap: 6px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border-faint);
+}
+
+.itemPickerSearch {
+  padding: 6px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.itemPickerSearch:focus { outline: none; border-color: var(--accent); }
+
+.itemPickerGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  overflow-y: auto;
+}
+
+.itemPickerChip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-faint);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.itemPickerChip:hover:not(:disabled) { border-color: var(--accent); }
+.itemPickerChip:disabled { opacity: 0.35; cursor: default; }
+
+.itemPickerChipSelected {
+  border-color: var(--color-star);
+  background: var(--tone-gold-bg);
+}
+
+.itemPickerIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.itemPickerName {
+  font-size: 0.55rem;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.2;
+  max-width: 40px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 운영방법 편집 */
+.guideEditorBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px;
+}
+
+.guidePhase {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.guideLabel {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.guideTextarea {
+  padding: 10px 12px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  resize: vertical;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.guideTextarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* 모달 푸터 */
+.modalFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.saveErrorMsg {
+  margin-right: auto;
+  color: var(--danger);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+/* ── 영웅 증강 편집 ── */
+.heroAugEditorBody {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.heroAugEmpty {
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+  padding: 20px 0;
+}
+
+.heroAugEditorRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.heroAugSelect {
+  flex: 0 0 120px;
+  height: 36px;
+  padding: 0 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text-ui);
+  font-size: 13px;
+}
+
+.heroAugInput {
+  flex: 1;
+  height: 36px;
+  padding: 0 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text-ui);
+  font-size: 13px;
+}
+
+.heroAugInput:focus,
+.heroAugSelect:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.heroAugRemoveBtn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  border-radius: 5px;
+  color: var(--danger);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+
+/* ── 영웅증강 덱 관리 추가 스타일 ── */
+.adminTabBar {
+  display: flex;
+  gap: 4px;
+}
+
+.adminTab {
+  height: 34px;
+  padding: 0 16px;
+  border: 1px solid rgba(112, 144, 152, 0.22);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.14s, color 0.14s;
+}
+
+.adminTab:hover {
+  border-color: rgba(4, 243, 229, 0.35);
+  color: var(--text-ui);
+}
+
+.adminTabActive {
+  height: 34px;
+  padding: 0 16px;
+  border: 1px solid rgba(4, 243, 229, 0.55);
+  border-radius: 6px;
+  background: rgba(4, 243, 229, 0.08);
+  color: #04f3e5;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.fieldLabel {
+  display: block;
+  margin: 12px 0 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.textInput {
+  width: 100%;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--bg-card);
+  color: var(--text-ui);
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.textInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--bg-card);
+  color: var(--text-ui);
+  font-size: 12px;
+  font-family: monospace;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.haCheckRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  color: var(--text-ui);
+  font-size: 13px;
+}
+
+.cancelBtn {
+  height: 36px;
+  padding: 0 20px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancelBtn:hover {
+  border-color: var(--accent);
+  color: var(--text-ui);
+}
+
+.modalBtns {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.saveError {
+  margin-top: 8px;
+  color: var(--danger);
+  font-size: 12px;
+}
+
+/* ── 덱 집계 패널 ── */
+.aggregatePanel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+
+.aggregatePanelLabel {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.aggregateDateInput {
+  width: 160px;
+  height: 36px;
+  padding: 0 10px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.aggregateDateInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.aggregateHint {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.aggregateMsgOk {
+  font-size: 13px;
+  color: var(--accent);
+}
+
+.aggregateMsgError {
+  font-size: 13px;
+  color: var(--danger);
+}
+
+/* ── 게임가이드 Import ── */
+.guideImportPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.guideImportForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+
+.guideImportGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.guideImportField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.guideImportLabel {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.guideImportInput {
+  height: 36px;
+  padding: 0 10px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.guideImportInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.guideImportChecks {
+  display: flex;
+  gap: 14px;
+}
+
+.guideImportCheck {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-ui);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.guideImportActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.guideImportError {
+  margin-right: auto;
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.guideImportResult {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+
+.guideImportStatus {
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.guideImportResultGrid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.guideImportMetric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-faint);
+  border-radius: 6px;
+}
+
+.guideImportMetricLabel {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.guideImportMetricValue {
+  color: var(--text-primary);
+  font-size: 20px;
+  line-height: 1;
+}
+
+@media (max-width: 900px) {
+  .guideImportGrid,
+  .guideImportResultGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .guideImportGrid,
+  .guideImportResultGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .guideImportActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .guideImportError {
+    margin-right: 0;
+  }
+}
