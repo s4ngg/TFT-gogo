@@ -191,12 +191,12 @@ ON DUPLICATE KEY UPDATE
     deleted_at = NULL;
 
 DELETE pc
-FROM patch_changes pc
+FROM patch_note_changes pc
 JOIN patch_notes pn ON pn.id = pc.patch_note_id
 WHERE pn.version = '17.3'
   AND pc.target_key LIKE 'local-smoke-%';
 
-INSERT INTO patch_changes (
+INSERT INTO patch_note_changes (
     patch_note_id,
     category,
     change_type,

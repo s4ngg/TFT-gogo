@@ -21,7 +21,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "patch_changes")
+@Table(name = "patch_note_changes")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PatchChange {
