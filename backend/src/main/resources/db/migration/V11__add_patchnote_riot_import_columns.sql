@@ -18,8 +18,14 @@ ALTER TABLE patch_notes
     MODIFY COLUMN source_locale VARCHAR(20) NULL AFTER import_source,
     MODIFY COLUMN manually_edited TINYINT(1) NOT NULL DEFAULT 0 AFTER source_locale,
     MODIFY COLUMN imported_at DATETIME(6) NULL AFTER manually_edited,
+    MODIFY COLUMN published_at DATETIME(6) NOT NULL AFTER imported_at,
+    MODIFY COLUMN created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) AFTER highlights_json,
+    MODIFY COLUMN updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) AFTER created_at,
+    MODIFY COLUMN deleted_at DATETIME(6) NULL AFTER updated_at,
     DROP COLUMN is_active;
 
+-- Existing databases created before this migration use patch_changes.
+-- Final ERD/runtime table name is patch_note_changes.
 ALTER TABLE patch_changes
     RENAME TO patch_note_changes;
 
@@ -34,11 +40,15 @@ ALTER TABLE patch_note_changes
     MODIFY COLUMN source_order INT NULL AFTER source_heading_path,
     MODIFY COLUMN imported_at DATETIME(6) NULL AFTER source_order,
     MODIFY COLUMN manually_edited TINYINT(1) NOT NULL DEFAULT 0 AFTER imported_at,
-    MODIFY COLUMN impact VARCHAR(20) NOT NULL DEFAULT 'MEDIUM',
+    MODIFY COLUMN category ENUM('CHAMPION','TRAIT','ITEM','AUGMENT','SYSTEM') NOT NULL,
+    MODIFY COLUMN change_type ENUM('BUFF','NERF','ADJUST','NEW') NOT NULL,
+    MODIFY COLUMN impact ENUM('HIGH','MEDIUM','LOW') NOT NULL DEFAULT 'MEDIUM',
     MODIFY COLUMN target_key VARCHAR(100) NULL,
     MODIFY COLUMN summary TEXT NOT NULL,
     MODIFY COLUMN before_value TEXT NULL,
     MODIFY COLUMN after_value TEXT NULL,
+    MODIFY COLUMN created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    MODIFY COLUMN updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     DROP COLUMN source_url,
     DROP COLUMN source_locale,
     DROP COLUMN import_source,

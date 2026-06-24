@@ -34,6 +34,7 @@ INSERT INTO tft_guide_traits (
     levels_json,
     tier_effects_json,
     champions_json,
+    special_units_json,
     tips_json,
     patch_version
 ) VALUES (
@@ -46,6 +47,7 @@ INSERT INTO tft_guide_traits (
     JSON_ARRAY('2', '4', '6'),
     JSON_ARRAY(JSON_OBJECT('level', '2', 'description', 'Smoke trait effect.')),
     JSON_ARRAY(JSON_OBJECT('name', 'Local Champion', 'cost', 4, 'imageUrl', 'https://example.com/local-smoke-champion.png')),
+    JSON_ARRAY(),
     JSON_ARRAY('Check tab rendering and search flow.'),
     '17.3'
 )
@@ -58,6 +60,7 @@ ON DUPLICATE KEY UPDATE
     levels_json = VALUES(levels_json),
     tier_effects_json = VALUES(tier_effects_json),
     champions_json = VALUES(champions_json),
+    special_units_json = VALUES(special_units_json),
     tips_json = VALUES(tips_json);
 
 INSERT INTO tft_guide_items (
@@ -152,7 +155,6 @@ START TRANSACTION;
 UPDATE patch_notes
 SET is_current = 0
 WHERE is_current = 1
-  AND is_active = 1
   AND deleted_at IS NULL
   AND version <> '17.3';
 
@@ -160,13 +162,12 @@ INSERT INTO patch_notes (
     version,
     title,
     summary,
-    description,
+    content,
     focus,
-    image_url,
+    representative_image_url,
     published_at,
     is_current,
-    highlights_json,
-    is_active
+    highlights_json
 ) VALUES (
     '17.3',
     '17.3 Local Patch',
@@ -176,28 +177,26 @@ INSERT INTO patch_notes (
     NULL,
     '2026-06-09 00:00:00',
     1,
-    JSON_ARRAY('Guide and PatchNotes smoke data added', 'Public APIs work without Riot API key'),
-    1
+    JSON_ARRAY('Guide and PatchNotes smoke data added', 'Public APIs work without Riot API key')
 )
 ON DUPLICATE KEY UPDATE
     title = VALUES(title),
     summary = VALUES(summary),
-    description = VALUES(description),
+    content = VALUES(content),
     focus = VALUES(focus),
-    image_url = VALUES(image_url),
+    representative_image_url = VALUES(representative_image_url),
     published_at = VALUES(published_at),
     is_current = VALUES(is_current),
     highlights_json = VALUES(highlights_json),
-    is_active = VALUES(is_active),
     deleted_at = NULL;
 
 DELETE pc
-FROM patch_changes pc
+FROM patch_note_changes pc
 JOIN patch_notes pn ON pn.id = pc.patch_note_id
 WHERE pn.version = '17.3'
   AND pc.target_key LIKE 'local-smoke-%';
 
-INSERT INTO patch_changes (
+INSERT INTO patch_note_changes (
     patch_note_id,
     category,
     change_type,
@@ -209,8 +208,7 @@ INSERT INTO patch_changes (
     after_value,
     image_url,
     tags_json,
-    sort_order,
-    is_active
+    sort_order
 ) VALUES
 (
     (SELECT id FROM patch_notes WHERE version = '17.3'),
@@ -224,8 +222,7 @@ INSERT INTO patch_changes (
     'Damage 120',
     NULL,
     JSON_ARRAY('champion', 'buff'),
-    10,
-    1
+    10
 ),
 (
     (SELECT id FROM patch_notes WHERE version = '17.3'),
@@ -239,8 +236,7 @@ INSERT INTO patch_changes (
     '2/4/6',
     NULL,
     JSON_ARRAY('trait', 'adjust'),
-    20,
-    1
+    20
 );
 
 COMMIT;
