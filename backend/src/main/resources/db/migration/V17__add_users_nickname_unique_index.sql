@@ -14,5 +14,19 @@ SET duplicate_user.nickname = CONCAT(
     duplicate_user.user_id
 );
 
+-- Abort before adding the unique constraint if deterministic renaming still left duplicates.
+CREATE TEMPORARY TABLE nickname_unique_guard (
+    duplicate_marker INT NOT NULL
+);
+
+INSERT INTO nickname_unique_guard (duplicate_marker)
+SELECT NULL
+FROM users
+GROUP BY nickname
+HAVING COUNT(*) > 1
+LIMIT 1;
+
+DROP TEMPORARY TABLE nickname_unique_guard;
+
 ALTER TABLE users
     ADD CONSTRAINT uk_users_nickname UNIQUE (nickname);
