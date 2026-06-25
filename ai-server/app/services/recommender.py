@@ -157,13 +157,11 @@ async def generate_reasons(
         log.stop_timer()
         if response.usage:
             log.output_tokens = response.usage.completion_tokens
-        openai_breaker.record_success()
-        log.emit()
 
         content = response.choices[0].message.content or ""
         content = re.sub(r"```json\s*|\s*```", "", content).strip()
         raw = json.loads(content)
-        return [
+        result = [
             DeckReason(
                 deck_rank=item["deck_rank"],
                 is_patch_trend=_is_patch_trend(item["deck_rank"], target_decks),
@@ -171,7 +169,13 @@ async def generate_reasons(
             )
             for item in raw
         ]
+        openai_breaker.record_success()
+        log.emit()
+        return result
     except json.JSONDecodeError as e:
+        log.is_fallback = True
+        openai_breaker.record_failure()
+        log.emit()
         logger.warning("OpenAI 응답 JSON 파싱 실패, fallback 사용: %s", e)
         return _fallback_reasons(recommended_decks)
     except (APITimeoutError, APIConnectionError, APIStatusError) as e:

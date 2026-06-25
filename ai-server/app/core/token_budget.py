@@ -9,15 +9,20 @@ import logging
 import tiktoken
 from fastapi import HTTPException
 
+from app.core.config import settings
+
 logger = logging.getLogger(__name__)
 
 _encoding: tiktoken.Encoding | None = None
+_encoding_model: str | None = None
 
 
 def _get_encoding() -> tiktoken.Encoding:
-    global _encoding
-    if _encoding is None:
-        _encoding = tiktoken.encoding_for_model("gpt-4o-mini")
+    global _encoding, _encoding_model
+    model = settings.openai_model
+    if _encoding is None or _encoding_model != model:
+        _encoding = tiktoken.encoding_for_model(model)
+        _encoding_model = model
     return _encoding
 
 

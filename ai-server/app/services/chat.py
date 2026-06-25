@@ -164,9 +164,15 @@ async def chat(request: ChatRequest) -> str:
         log.stop_timer()
         if response.usage:
             log.output_tokens = response.usage.completion_tokens
+
+        reply = response.choices[0].message.content or ""
+        if not reply.strip():
+            log.is_fallback = True
+            reply = _FALLBACK_REPLY
+
         openai_breaker.record_success()
         log.emit()
-        return response.choices[0].message.content or _FALLBACK_REPLY
+        return reply
     except (APITimeoutError, APIConnectionError, APIStatusError) as e:
         log.stop_timer()
         log.is_fallback = True
