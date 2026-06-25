@@ -1,10 +1,10 @@
--- V1: Consolidated initial schema.
--- All tables use CREATE TABLE IF NOT EXISTS for idempotent application
--- against databases that were initialized by Docker init scripts.
+-- V1: Consolidated initial schema (fresh databases only).
+-- Existing databases must be explicitly baselined (flyway baseline -baselineVersion=16)
+-- before enabling Flyway; this script is never executed against them.
 
 SET NAMES utf8mb4;
 
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE users (
     user_id BIGINT NOT NULL AUTO_INCREMENT,
     email VARCHAR(255) NOT NULL,
     password_hash VARCHAR(255) NULL,
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS users (
         )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS cached_summoner (
+CREATE TABLE cached_summoner (
     puuid VARCHAR(100) NOT NULL,
     game_name VARCHAR(100) NOT NULL,
     tag_line VARCHAR(50) NOT NULL,
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS cached_summoner (
     KEY idx_cached_summoner_name_tag (game_name, tag_line)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS cached_rank (
+CREATE TABLE cached_rank (
     puuid VARCHAR(100) NOT NULL,
     tier VARCHAR(20) NULL,
     rank_value VARCHAR(10) NULL,
@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS cached_rank (
     PRIMARY KEY (puuid)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS cached_match (
+CREATE TABLE cached_match (
     match_id VARCHAR(50) NOT NULL,
     queue_id INT NOT NULL,
     game_datetime BIGINT NOT NULL,
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS cached_match (
     KEY idx_cached_match_queue_datetime_match (queue_id, game_datetime DESC, match_id DESC)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS cached_match_participant (
+CREATE TABLE cached_match_participant (
     match_id VARCHAR(50) NOT NULL,
     puuid VARCHAR(100) NOT NULL,
     PRIMARY KEY (match_id, puuid),
@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS cached_match_participant (
         FOREIGN KEY (match_id) REFERENCES cached_match (match_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS meta_decks (
+CREATE TABLE meta_decks (
     id BIGINT NOT NULL AUTO_INCREMENT,
     signature VARCHAR(255) NOT NULL,
     rank_filter VARCHAR(20) NOT NULL,
@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS meta_decks (
     KEY idx_meta_decks_rank_data_start (rank_filter, data_start_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS deck_units (
+CREATE TABLE deck_units (
     id BIGINT NOT NULL AUTO_INCREMENT,
     meta_decks_id BIGINT NOT NULL,
     character_id VARCHAR(60) NOT NULL,
@@ -104,7 +104,7 @@ CREATE TABLE IF NOT EXISTS deck_units (
         FOREIGN KEY (meta_decks_id) REFERENCES meta_decks (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS deck_traits (
+CREATE TABLE deck_traits (
     id BIGINT NOT NULL AUTO_INCREMENT,
     meta_decks_id BIGINT NOT NULL,
     trait_id VARCHAR(60) NOT NULL,
@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS deck_traits (
         FOREIGN KEY (meta_decks_id) REFERENCES meta_decks (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS hero_augments (
+CREATE TABLE hero_augments (
     id BIGINT NOT NULL AUTO_INCREMENT,
     meta_decks_id BIGINT NOT NULL,
     character_id VARCHAR(60) NOT NULL,
@@ -135,7 +135,7 @@ CREATE TABLE IF NOT EXISTS hero_augments (
         FOREIGN KEY (meta_decks_id) REFERENCES meta_decks (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS artifact_stats (
+CREATE TABLE artifact_stats (
     id BIGINT NOT NULL AUTO_INCREMENT,
     meta_decks_id BIGINT NOT NULL,
     patch_version VARCHAR(20) NOT NULL,
@@ -156,7 +156,7 @@ CREATE TABLE IF NOT EXISTS artifact_stats (
         FOREIGN KEY (meta_decks_id) REFERENCES meta_decks (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS deck_curations (
+CREATE TABLE deck_curations (
     id BIGINT NOT NULL AUTO_INCREMENT,
     signature VARCHAR(255) NOT NULL,
     rank_filter VARCHAR(20) NOT NULL,
@@ -173,7 +173,7 @@ CREATE TABLE IF NOT EXISTS deck_curations (
     KEY idx_deck_curations_rank_filter (rank_filter)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS tft_guide_champions (
+CREATE TABLE tft_guide_champions (
     id BIGINT NOT NULL AUTO_INCREMENT,
     champion_key VARCHAR(100) NOT NULL,
     name VARCHAR(100) NOT NULL,
@@ -192,7 +192,7 @@ CREATE TABLE IF NOT EXISTS tft_guide_champions (
     KEY idx_tft_guide_champions_patch_cost (patch_version, cost, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS tft_guide_traits (
+CREATE TABLE tft_guide_traits (
     id BIGINT NOT NULL AUTO_INCREMENT,
     trait_key VARCHAR(100) NOT NULL,
     name VARCHAR(100) NOT NULL,
@@ -213,7 +213,7 @@ CREATE TABLE IF NOT EXISTS tft_guide_traits (
     KEY idx_tft_guide_traits_patch (patch_version, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS tft_guide_items (
+CREATE TABLE tft_guide_items (
     id BIGINT NOT NULL AUTO_INCREMENT,
     item_key VARCHAR(100) NOT NULL,
     name VARCHAR(100) NOT NULL,
@@ -231,7 +231,7 @@ CREATE TABLE IF NOT EXISTS tft_guide_items (
     KEY idx_tft_guide_items_patch (patch_version, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS tft_guide_augments (
+CREATE TABLE tft_guide_augments (
     id BIGINT NOT NULL AUTO_INCREMENT,
     augment_key VARCHAR(100) NOT NULL,
     name VARCHAR(100) NOT NULL,
@@ -247,7 +247,7 @@ CREATE TABLE IF NOT EXISTS tft_guide_augments (
     KEY idx_tft_guide_augments_patch_name (patch_version, name, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS patch_notes (
+CREATE TABLE patch_notes (
     id BIGINT NOT NULL AUTO_INCREMENT,
     version VARCHAR(20) NOT NULL,
     title VARCHAR(200) NOT NULL,
@@ -292,7 +292,7 @@ PREPARE stmt FROM @create_single_current_idx;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
-CREATE TABLE IF NOT EXISTS patch_note_changes (
+CREATE TABLE patch_note_changes (
     id BIGINT NOT NULL AUTO_INCREMENT,
     patch_note_id BIGINT NOT NULL,
     source_key VARCHAR(150) NULL,
@@ -322,7 +322,7 @@ CREATE TABLE IF NOT EXISTS patch_note_changes (
         FOREIGN KEY (patch_note_id) REFERENCES patch_notes (id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS party_posts (
+CREATE TABLE party_posts (
     id BIGINT NOT NULL AUTO_INCREMENT,
     user_id BIGINT NOT NULL,
     title VARCHAR(200) NOT NULL,
@@ -346,7 +346,7 @@ CREATE TABLE IF NOT EXISTS party_posts (
         FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS party_applications (
+CREATE TABLE party_applications (
     id BIGINT NOT NULL AUTO_INCREMENT,
     party_post_id BIGINT NOT NULL,
     user_id BIGINT NOT NULL,
@@ -364,7 +364,7 @@ CREATE TABLE IF NOT EXISTS party_applications (
         FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS party_post_tags (
+CREATE TABLE party_post_tags (
     party_post_id BIGINT NOT NULL,
     tag_order INT NOT NULL,
     tag VARCHAR(50) NOT NULL,
@@ -373,7 +373,7 @@ CREATE TABLE IF NOT EXISTS party_post_tags (
         FOREIGN KEY (party_post_id) REFERENCES party_posts (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS chat_rooms (
+CREATE TABLE chat_rooms (
     id BIGINT NOT NULL AUTO_INCREMENT,
     room_key VARCHAR(80) NOT NULL,
     creator_id BIGINT NULL,
@@ -392,7 +392,7 @@ CREATE TABLE IF NOT EXISTS chat_rooms (
         FOREIGN KEY (party_post_id) REFERENCES party_posts (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS chat_messages (
+CREATE TABLE chat_messages (
     id BIGINT NOT NULL AUTO_INCREMENT,
     user_id BIGINT NOT NULL,
     chat_room_id BIGINT NOT NULL,
@@ -408,7 +408,7 @@ CREATE TABLE IF NOT EXISTS chat_messages (
         FOREIGN KEY (chat_room_id) REFERENCES chat_rooms (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS hero_augment_decks (
+CREATE TABLE hero_augment_decks (
     id              BIGINT NOT NULL AUTO_INCREMENT,
     name            VARCHAR(200) NOT NULL,
     description     TEXT,

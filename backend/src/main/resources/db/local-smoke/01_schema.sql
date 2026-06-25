@@ -1,7 +1,5 @@
--- Local smoke / Docker init schema snapshot.
--- Schema is managed by Flyway (see db/migration/V1__init_schema.sql).
--- This file is mounted by docker-compose as a MySQL init script and serves
--- as a human-readable reference of the current schema state.
+-- Human-readable reference of the current schema state.
+-- NOT mounted by docker-compose; schema is created by Flyway V1__init_schema.sql.
 -- Keep column names aligned with the current JPA physical naming strategy.
 
 SET NAMES utf8mb4;

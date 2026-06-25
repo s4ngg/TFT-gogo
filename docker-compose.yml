@@ -11,8 +11,6 @@ services:
       - "${MYSQL_HOST_PORT:-3307}:3306"
     volumes:
       - mysql-data:/var/lib/mysql
-      - ./backend/src/main/resources/db/local-smoke/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
-      - ./backend/src/main/resources/db/local-smoke/02_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
       interval: 10s
@@ -67,8 +65,8 @@ services:
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-tftuser}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-tftpass}
       SPRING_FLYWAY_ENABLED: "true"
-      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
-      SPRING_FLYWAY_BASELINE_VERSION: "0"
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "false"
+      SPRING_FLYWAY_LOCATIONS: "classpath:db/migration,classpath:db/local-smoke"
       SPRING_JPA_HIBERNATE_DDL_AUTO: validate
       SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQL8Dialect
       SPRING_DATA_REDIS_HOST: redis
