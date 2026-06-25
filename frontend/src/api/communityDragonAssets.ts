@@ -39,9 +39,6 @@ function traitIconPath(iconSetNumber: number, traitName: string): string {
   return `ASSETS/UX/TraitIcons/Trait_Icon_${iconSetNumber}_${traitName}.${tftSetFileSuffix(iconSetNumber)}.tex`
 }
 
-function traitIconPathWithoutSet(iconSetNumber: number, traitName: string): string {
-  return `ASSETS/UX/TraitIcons/Trait_Icon_${iconSetNumber}_${traitName}.tex`
-}
 
 export function communityDragonAssetUrl(assetPath: string) {
   return `${TFT_ASSET_CONFIG.communityDragonGameBaseUrl}/${assetPath.toLowerCase().replace('.tex', '.png')}`
