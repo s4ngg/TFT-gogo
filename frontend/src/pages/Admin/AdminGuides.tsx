@@ -1,9 +1,13 @@
-import { useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
+  fetchAdminPatchNotes,
   importGuideCdragonData,
+  type AdminPatchNote,
   type GuideCdragonImportRequest,
   type GuideImportResponse,
 } from '../../api/adminApi'
+import { resolveGuideImportPatchVersion } from './utils/guideImportVersion'
 import styles from './Admin.module.css'
 
 interface GuideImportFormState {
@@ -26,18 +30,34 @@ const DEFAULT_GUIDE_IMPORT_FORM: GuideImportFormState = {
   setNumber: '17',
 }
 
+const ADMIN_PATCH_NOTES_QUERY_KEY = ['admin', 'patch-notes'] as const
+const EMPTY_PATCH_NOTES: AdminPatchNote[] = []
+
 function AdminGuides() {
   const [form, setForm] = useState<GuideImportFormState>(DEFAULT_GUIDE_IMPORT_FORM)
   const [result, setResult] = useState<GuideImportResponse | null>(null)
   const [error, setError] = useState('')
   const [importing, setImporting] = useState(false)
 
+  const patchNotesQuery = useQuery({
+    queryFn: fetchAdminPatchNotes,
+    queryKey: ADMIN_PATCH_NOTES_QUERY_KEY,
+  })
+
+  const patchNotes = patchNotesQuery.data ?? EMPTY_PATCH_NOTES
+  const currentPatchVersion = useMemo(
+    () => patchNotes.find((note) => note.isCurrent)?.version ?? patchNotes[0]?.version ?? null,
+    [patchNotes],
+  )
+  const resolvedPatchVersion = resolveGuideImportPatchVersion(form.patchVersion, currentPatchVersion)
+  const isResolvingPatchVersion = form.patchVersion.trim().toLowerCase() === 'latest' && patchNotesQuery.isFetching
+
   function patch<K extends keyof GuideImportFormState>(key: K, value: GuideImportFormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
   }
 
   function buildPayload(): GuideCdragonImportRequest | null {
-    const patchVersion = form.patchVersion.trim()
+    const patchVersion = resolvedPatchVersion
     const setNumber = Number(form.setNumber)
 
     if (!patchVersion) {
@@ -99,10 +119,17 @@ function AdminGuides() {
               <span className={styles.guideImportLabel}>패치 버전</span>
               <input
                 className={styles.guideImportInput}
-                value={form.patchVersion}
+                value={resolvedPatchVersion}
                 onChange={(e) => patch('patchVersion', e.target.value)}
-                placeholder="latest"
+                placeholder={currentPatchVersion ?? 'latest'}
               />
+              <span className={styles.guideImportHint}>
+                {currentPatchVersion
+                  ? `현재 패치노트 기준 ${currentPatchVersion}이 자동 적용됩니다.`
+                  : patchNotesQuery.isFetching
+                    ? '현재 패치 버전을 확인하는 중입니다.'
+                  : '현재 패치노트가 없으면 latest 그대로 요청됩니다.'}
+              </span>
             </label>
 
             <label className={styles.guideImportField}>
@@ -167,8 +194,8 @@ function AdminGuides() {
 
           <div className={styles.guideImportActions}>
             {error && <span className={styles.guideImportError}>{error}</span>}
-            <button className={styles.saveBtn} type="submit" disabled={importing}>
-              {importing ? '가져오는 중...' : 'CDragon 가져오기'}
+            <button className={styles.saveBtn} type="submit" disabled={importing || isResolvingPatchVersion}>
+              {importing ? '가져오는 중...' : isResolvingPatchVersion ? '패치 확인 중...' : 'CDragon 가져오기'}
             </button>
           </div>
         </form>
