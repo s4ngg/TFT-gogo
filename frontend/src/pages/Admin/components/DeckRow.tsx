@@ -200,7 +200,8 @@ export default function DeckRow({ deck, onSaved, locale }: { deck: AdminDeck; on
           >
             영웅증강{deck.heroAugments ? ' ✓' : ''}
           </button>
-          {(deck.customName != null || deck.hidden || deck.sortPriority != null) && (
+          {(deck.customName != null || deck.hidden || deck.sortPriority != null ||
+            deck.boardPositions != null || deck.playGuide != null || deck.heroAugments != null) && (
             <button className={styles.resetBtn} onClick={handleReset}>초기화</button>
           )}
           {state.saveError && (
