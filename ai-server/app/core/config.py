@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
 
+    internal_secret: str = "dev-internal-secret"
+
     riot_api_key: str = ""
     cors_allowed_origins: str = (
         "http://localhost:8080,"

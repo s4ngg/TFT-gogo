@@ -20,4 +20,6 @@ public class AiServerProperties {
 
     @Positive(message = "ai.server.timeout-seconds는 0보다 커야 합니다.")
     private int timeoutSeconds = 10;
+
+    private String internalSecret = "dev-internal-secret";
 }
