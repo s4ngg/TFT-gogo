@@ -25,9 +25,9 @@ function createQueryClient(options: { rejectCancel?: boolean } = {}) {
           throw new Error('cancel failed')
         }
       },
-      removeQueries: (filters: { queryKey: unknown[]; exact?: boolean }) => {
+      removeQueries: (filters: { queryKey: readonly string[]; exact?: boolean }) => {
         calls.push('remove')
-        removeFilters.push(filters as QueryCall)
+        removeFilters.push(filters as unknown as QueryCall)
       },
     },
     cancelFilters,

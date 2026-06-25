@@ -1,10 +1,8 @@
 import { AUTH_ME_QUERY_KEY } from '../../hooks/useAuthSession'
 
-const AI_RECOMMEND_QUERY_KEY = ['aiRecommendation'] as const
-
 interface TopBarAuthQueryClient {
   cancelQueries: (filters: { queryKey: typeof AUTH_ME_QUERY_KEY; exact: true }) => Promise<unknown>
-  removeQueries: (filters: { queryKey: string[]; exact?: boolean }) => void
+  removeQueries: (filters: { queryKey: readonly string[]; exact?: boolean }) => void
 }
 
 export async function clearTopBarAuthSession(
@@ -20,5 +18,5 @@ export async function clearTopBarAuthSession(
   }
 
   queryClient.removeQueries({ queryKey: AUTH_ME_QUERY_KEY, exact: true })
-  queryClient.removeQueries({ queryKey: [...AI_RECOMMEND_QUERY_KEY] })
+  queryClient.removeQueries({ queryKey: ['aiRecommendation'] })
 }
