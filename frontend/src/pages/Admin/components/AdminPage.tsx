@@ -102,9 +102,15 @@ export default function AdminPage() {
               </tr>
             </thead>
             <tbody>
-              {decks.map((deck) => (
-                <DeckRow key={deck.id} deck={deck} onSaved={updateDeck} locale={locale} />
-              ))}
+              {decks.length === 0 ? (
+                <tr><td colSpan={8} className={styles.emptyText}>
+                  {`현재 선택한 랭크 조건(${RANK_OPTIONS.find((o) => o.value === rankFilter)?.label ?? rankFilter})에 해당하는 메타덱이 없습니다. 필요한 경우 집계를 실행해 주세요.`}
+                </td></tr>
+              ) : (
+                decks.map((deck) => (
+                  <DeckRow key={deck.id} deck={deck} onSaved={updateDeck} locale={locale} />
+                ))
+              )}
             </tbody>
           </table>
         </>
