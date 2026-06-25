@@ -76,6 +76,23 @@ export default function DeckRow({ deck, onSaved, locale }: { deck: AdminDeck; on
     }
   }
 
+  // 모달 저장: 행의 미저장 필드(customName/hidden/sortPriority)는 서버 값을 그대로 사용
+  function buildModalRequest(
+    boardPositions?: string | null,
+    playGuide?: string | null,
+    heroAugments?: string | null,
+  ): DeckCurationRequest {
+    return {
+      customName: deck.customName,
+      hidden: deck.hidden,
+      sortPriority: deck.sortPriority,
+      curatorNote: null,
+      boardPositions: boardPositions !== undefined ? boardPositions : deck.boardPositions,
+      playGuide: playGuide !== undefined ? playGuide : deck.playGuide,
+      heroAugments: heroAugments !== undefined ? heroAugments : deck.heroAugments,
+    }
+  }
+
   async function saveCuration(
     boardPositions?: string | null,
     playGuide?: string | null,
@@ -83,7 +100,7 @@ export default function DeckRow({ deck, onSaved, locale }: { deck: AdminDeck; on
   ) {
     setState((s) => ({ ...s, saveError: '' }))
     try {
-      const updated = await updateDeckCuration(deck.id, buildRequest(boardPositions, playGuide, heroAugments))
+      const updated = await updateDeckCuration(deck.id, buildModalRequest(boardPositions, playGuide, heroAugments))
       onSaved(updated)
     } catch {
       const message = '덱 큐레이션 저장에 실패했습니다. 다시 시도해 주세요.'
