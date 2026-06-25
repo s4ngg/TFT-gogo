@@ -1,10 +1,10 @@
 import { Navigate, Outlet } from 'react-router-dom'
 import AdminSidebar from '../components/admin/AdminSidebar'
-import { getAdminToken } from '../api/adminApi'
+import { getAccessToken } from '../api/adminApi'
 import styles from './AdminLayout.module.css'
 
 function AdminLayout() {
-  if (!getAdminToken()) {
+  if (!getAccessToken()) {
     return <Navigate to="/admin" replace />
   }
 

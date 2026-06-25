@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { LayoutGrid, Sword, BookOpen, FileText, Users, MessageSquare, Activity, LogOut } from 'lucide-react'
-import { clearAdminToken } from '../../api/adminApi'
+import { clearAccessToken, adminLogout } from '../../api/adminApi'
+import { useAdminSession } from '../../hooks/useAdminSession'
 import styles from './AdminSidebar.module.css'
 
 const NAV_ITEMS = [
@@ -15,9 +16,16 @@ const NAV_ITEMS = [
 
 function AdminSidebar() {
   const navigate = useNavigate()
+  const { session, setSession } = useAdminSession()
 
-  function handleLogout() {
-    clearAdminToken()
+  async function handleLogout() {
+    try {
+      await adminLogout()
+    } catch {
+      // best-effort: clear local state regardless
+    }
+    clearAccessToken()
+    setSession(null)
     navigate('/admin')
   }
 
@@ -26,6 +34,9 @@ function AdminSidebar() {
       <div className={styles.brand}>
         <div className={styles.brandLogo} />
         <strong>관리자</strong>
+        {session && (
+          <span className={styles.brandUser}>{session.username}</span>
+        )}
       </div>
 
       <nav className={styles.navList}>
