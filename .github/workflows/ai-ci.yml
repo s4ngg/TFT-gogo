@@ -38,6 +38,8 @@ jobs:
           ruff check .
 
       - name: Run tests
+        env:
+          INTERNAL_SECRET: ci-test-secret
         run: |
           cd ai-server
           pytest
