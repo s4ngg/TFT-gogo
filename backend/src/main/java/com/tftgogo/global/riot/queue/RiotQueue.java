@@ -62,18 +62,17 @@ public class RiotQueue implements DisposableBean {
 
     @SuppressWarnings("unchecked")
     public <T> CompletableFuture<T> submitForeground(String dedupKey, Supplier<T> task) {
-        if (dedupKey != null) {
-            CompletableFuture<?> existing = deduplicationMap.get(dedupKey);
+        if (dedupKey == null) {
+            return enqueue(foregroundQueue, task, foregroundTaskTtlMs);
+        }
+        return (CompletableFuture<T>) deduplicationMap.compute(dedupKey, (k, existing) -> {
             if (existing != null && !existing.isDone()) {
-                return (CompletableFuture<T>) existing;
+                return existing;
             }
-        }
-        CompletableFuture<T> future = enqueue(foregroundQueue, task, foregroundTaskTtlMs);
-        if (dedupKey != null) {
-            deduplicationMap.put(dedupKey, future);
-            future.whenComplete((r, ex) -> deduplicationMap.remove(dedupKey, future));
-        }
-        return future;
+            CompletableFuture<T> future = enqueue(foregroundQueue, task, foregroundTaskTtlMs);
+            future.whenComplete((r, ex) -> deduplicationMap.remove(k, future));
+            return future;
+        });
     }
 
     public <T> CompletableFuture<T> submit(Supplier<T> task) {
@@ -82,18 +81,17 @@ public class RiotQueue implements DisposableBean {
 
     @SuppressWarnings("unchecked")
     public <T> CompletableFuture<T> submit(String dedupKey, Supplier<T> task) {
-        if (dedupKey != null) {
-            CompletableFuture<?> existing = deduplicationMap.get(dedupKey);
+        if (dedupKey == null) {
+            return enqueue(backgroundQueue, task, backgroundTaskTtlMs);
+        }
+        return (CompletableFuture<T>) deduplicationMap.compute(dedupKey, (k, existing) -> {
             if (existing != null && !existing.isDone()) {
-                return (CompletableFuture<T>) existing;
+                return existing;
             }
-        }
-        CompletableFuture<T> future = enqueue(backgroundQueue, task, backgroundTaskTtlMs);
-        if (dedupKey != null) {
-            deduplicationMap.put(dedupKey, future);
-            future.whenComplete((r, ex) -> deduplicationMap.remove(dedupKey, future));
-        }
-        return future;
+            CompletableFuture<T> future = enqueue(backgroundQueue, task, backgroundTaskTtlMs);
+            future.whenComplete((r, ex) -> deduplicationMap.remove(k, future));
+            return future;
+        });
     }
 
     public int getForegroundQueueSize() {
@@ -140,9 +138,8 @@ public class RiotQueue implements DisposableBean {
         int foregroundStreak = 0;
 
         while (!Thread.currentThread().isInterrupted()) {
+            RiotTask<?> task = null;
             try {
-                RiotTask<?> task = null;
-
                 if (foregroundStreak >= maxForegroundStreak && !backgroundQueue.isEmpty()) {
                     task = backgroundQueue.poll();
                     foregroundStreak = 0;
@@ -165,25 +162,38 @@ public class RiotQueue implements DisposableBean {
                 if (task != null) {
                     semaphore.acquire();
                     dispatch(task);
+                    task = null;
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+                if (task != null) {
+                    task.future().completeExceptionally(new BusinessException(ErrorCode.RIOT_QUEUE_FULL));
+                }
             } catch (Exception e) {
                 logger.error("RiotQueue 스케줄러 예외", e);
+                if (task != null) {
+                    task.future().completeExceptionally(new BusinessException(ErrorCode.RIOT_QUEUE_FULL));
+                }
             }
         }
     }
 
     private void dispatch(RiotTask<?> task) {
         inflightCount.incrementAndGet();
-        riotQueueExecutor.execute(() -> {
-            try {
-                task.execute();
-            } finally {
-                inflightCount.decrementAndGet();
-                semaphore.release();
-            }
-        });
+        try {
+            riotQueueExecutor.execute(() -> {
+                try {
+                    task.execute();
+                } finally {
+                    inflightCount.decrementAndGet();
+                    semaphore.release();
+                }
+            });
+        } catch (RejectedExecutionException e) {
+            inflightCount.decrementAndGet();
+            semaphore.release();
+            task.future().completeExceptionally(new BusinessException(ErrorCode.RIOT_QUEUE_FULL));
+        }
     }
 
     private record RiotTask<T>(Supplier<T> supplier, CompletableFuture<T> future,
