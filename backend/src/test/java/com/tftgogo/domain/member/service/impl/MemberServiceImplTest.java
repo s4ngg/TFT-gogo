@@ -26,6 +26,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -233,7 +234,7 @@ class MemberServiceImplTest {
         when(memberRepository.findBySocialProviderAndSocialId("google", "google-1"))
                 .thenReturn(Optional.empty());
         when(memberRepository.existsByEmail("social@example.com")).thenReturn(false);
-        when(socialMemberCreationService.create(command)).thenReturn(savedMember);
+        when(socialMemberCreationService.create(command, 0)).thenReturn(savedMember);
         when(jwtTokenProvider.createAccessToken(1L)).thenReturn("access-token");
 
         // when
@@ -241,7 +242,7 @@ class MemberServiceImplTest {
 
         // then
         assertThat(response.getAccessToken()).isEqualTo("access-token");
-        verify(socialMemberCreationService).create(command);
+        verify(socialMemberCreationService).create(command, 0);
     }
 
     @Test
@@ -258,7 +259,7 @@ class MemberServiceImplTest {
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.EMAIL_ALREADY_EXISTS));
 
-        verify(socialMemberCreationService, never()).create(any(SocialLoginCommand.class));
+        verify(socialMemberCreationService, never()).create(any(SocialLoginCommand.class), anyInt());
     }
 
     @Test
@@ -271,7 +272,7 @@ class MemberServiceImplTest {
         when(memberRepository.findBySocialProviderAndSocialId("google", "google-1"))
                 .thenReturn(Optional.empty(), Optional.of(existingMember));
         when(memberRepository.existsByEmail("social@example.com")).thenReturn(false);
-        when(socialMemberCreationService.create(command))
+        when(socialMemberCreationService.create(command, 0))
                 .thenThrow(new DataIntegrityViolationException("duplicate social provider"));
         when(jwtTokenProvider.createAccessToken(1L)).thenReturn("access-token");
 
@@ -293,13 +294,40 @@ class MemberServiceImplTest {
         when(memberRepository.findBySocialProviderAndSocialId("google", "google-1"))
                 .thenReturn(Optional.empty());
         when(memberRepository.existsByEmail("social@example.com")).thenReturn(false);
-        when(socialMemberCreationService.create(command))
+        when(socialMemberCreationService.create(command, 0))
                 .thenThrow(new DataIntegrityViolationException("duplicate social provider"));
 
         // when, then
         assertThatThrownBy(() -> memberService.socialLogin(command))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.SOCIAL_LOGIN_FAILED));
+    }
+
+    @Test
+    void 소셜로그인_닉네임_충돌이면_새_닉네임_후보로_재시도한다() {
+        // given
+        SocialLoginCommand command = socialLoginCommand("social@example.com", "소셜회원");
+        Member savedMember = socialMember("social@example.com", "소셜회원-1-abcd", "google", "google-1");
+        ReflectionTestUtils.setField(savedMember, "userId", 1L);
+
+        when(memberRepository.findBySocialProviderAndSocialId("google", "google-1"))
+                .thenReturn(Optional.empty(), Optional.empty());
+        when(memberRepository.existsByEmail("social@example.com")).thenReturn(false);
+        when(socialMemberCreationService.create(command, 0))
+                .thenThrow(new DataIntegrityViolationException("Duplicate entry for key 'uk_users_nickname'"));
+        when(socialMemberCreationService.create(command, 1)).thenReturn(savedMember);
+        when(jwtTokenProvider.createAccessToken(1L)).thenReturn("access-token");
+
+        // when
+        AuthResponse response = memberService.socialLogin(command);
+
+        // then
+        assertThat(response.getAccessToken()).isEqualTo("access-token");
+        assertThat(response.getUser())
+                .extracting(MemberResponse::getNickname)
+                .isEqualTo("소셜회원-1-abcd");
+        verify(socialMemberCreationService).create(command, 0);
+        verify(socialMemberCreationService).create(command, 1);
     }
 
     @Test

@@ -106,4 +106,37 @@ class SocialMemberCreationServiceTest {
                 .startsWith("소셜회원-")
                 .hasSizeLessThanOrEqualTo(50);
     }
+
+    @Test
+    void 소셜회원_닉네임_재시도는_시도_번호가_포함된_다른_후보로_저장한다() {
+        // given
+        SocialLoginCommand command = SocialLoginCommand.of(
+                SocialProvider.GOOGLE,
+                "google-2",
+                "social2@example.com",
+                "소셜회원",
+                "https://example.com/profile.png"
+        );
+        Member savedMember = Member.builder()
+                .email("social2@example.com")
+                .passwordHash(null)
+                .nickname("소셜회원-retry")
+                .profileImage("https://example.com/profile.png")
+                .socialProvider("google")
+                .socialId("google-2")
+                .build();
+
+        when(memberRepository.saveAndFlush(any(Member.class))).thenReturn(savedMember);
+
+        // when
+        Member member = socialMemberCreationService.create(command, 1);
+
+        // then
+        assertThat(member).isSameAs(savedMember);
+        ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
+        verify(memberRepository).saveAndFlush(memberCaptor.capture());
+        assertThat(memberCaptor.getValue().getNickname())
+                .startsWith("소셜회원-1-")
+                .hasSizeLessThanOrEqualTo(50);
+    }
 }
