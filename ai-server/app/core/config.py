@@ -1,4 +1,4 @@
-from pydantic import validator
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -20,7 +20,8 @@ class Settings(BaseSettings):
         "http://localhost:5173"
     )
 
-    @validator("internal_secret")
+    @field_validator("internal_secret")
+    @classmethod
     def internal_secret_must_be_set(cls, v: str) -> str:
         if not v:
             raise ValueError("INTERNAL_SECRET 환경변수가 설정되지 않았습니다.")
