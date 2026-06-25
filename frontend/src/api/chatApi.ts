@@ -8,6 +8,7 @@ export interface ChatMessage {
   createdAt: string
   id: string
   roomId: string
+  senderId: number | string | null
   senderName: string
   tier?: string | null
 }
@@ -255,6 +256,8 @@ function isChatMessage(value: unknown): value is ChatMessage {
     isRecord(value)
     && typeof value.id === 'string'
     && typeof value.roomId === 'string'
+    && 'senderId' in value
+    && (typeof value.senderId === 'number' || typeof value.senderId === 'string' || value.senderId === null)
     && typeof value.senderName === 'string'
     && (typeof value.tier === 'string' || value.tier == null)
     && typeof value.content === 'string'

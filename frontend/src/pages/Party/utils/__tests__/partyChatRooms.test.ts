@@ -46,6 +46,7 @@ describe('partyChatRooms', () => {
       {
         id: 'message-1',
         roomId: 'general',
+        senderId: 1,
         senderName: '소정',
         tier: 'Unranked',
         content: '첫 메시지',
@@ -54,6 +55,7 @@ describe('partyChatRooms', () => {
       {
         id: 'message-2',
         roomId: 'general',
+        senderId: 2,
         senderName: '상우',
         tier: 'Unranked',
         content: '마지막 메시지',
@@ -62,6 +64,7 @@ describe('partyChatRooms', () => {
       {
         id: 'message-3',
         roomId: 'general',
+        senderId: 1,
         senderName: '소정',
         tier: 'Unranked',
         content: '다시 참여',
@@ -88,6 +91,7 @@ describe('partyChatRooms', () => {
       {
         id: 'message-1',
         roomId: unsupportedRoomId,
+        senderId: 1,
         senderName: '소정',
         tier: 'Unranked',
         content: '파티별 방이 열렸습니다.',
