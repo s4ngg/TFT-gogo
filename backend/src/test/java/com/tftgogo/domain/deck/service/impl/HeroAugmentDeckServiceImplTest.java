@@ -99,6 +99,26 @@ class HeroAugmentDeckServiceImplTest {
                         .isEqualTo(ErrorCode.INVALID_INPUT));
     }
 
+    @Test
+    void heroAugments가_null_리터럴이면_400_예외를_던진다() throws Exception {
+        HeroAugmentDeckRequest request = buildRequest("덱1", null, null, null, "null");
+
+        assertThatThrownBy(() -> service.create(request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(ex -> assertThat(((BusinessException) ex).getErrorCode())
+                        .isEqualTo(ErrorCode.INVALID_INPUT));
+    }
+
+    @Test
+    void boardPositions가_null_리터럴이면_400_예외를_던진다() throws Exception {
+        HeroAugmentDeckRequest request = buildRequest("덱1", null, null, "null", null);
+
+        assertThatThrownBy(() -> service.create(request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(ex -> assertThat(((BusinessException) ex).getErrorCode())
+                        .isEqualTo(ErrorCode.INVALID_INPUT));
+    }
+
     // ── update ───────────────────────────────────────────────────────────
 
     @Test

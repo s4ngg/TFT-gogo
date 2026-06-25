@@ -1,7 +1,7 @@
 package com.tftgogo.domain.deck.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tftgogo.domain.deck.dto.request.HeroAugmentDeckRequest;
 import com.tftgogo.domain.deck.dto.response.HeroAugmentDeckResponse;
@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -42,7 +41,11 @@ public class HeroAugmentDeckServiceImpl implements HeroAugmentDeckService {
     private void validateJsonArray(String value, String fieldName) {
         if (value == null) return;
         try {
-            objectMapper.readValue(value, new TypeReference<List<Object>>() {});
+            JsonNode node = objectMapper.readTree(value);
+            if (!node.isArray()) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT,
+                        fieldName + " 필드가 유효한 JSON 배열이 아닙니다.");
+            }
         } catch (JsonProcessingException e) {
             throw new BusinessException(ErrorCode.INVALID_INPUT,
                     fieldName + " 필드가 유효한 JSON 배열이 아닙니다.");
@@ -52,7 +55,11 @@ public class HeroAugmentDeckServiceImpl implements HeroAugmentDeckService {
     private void validateJsonObject(String value, String fieldName) {
         if (value == null) return;
         try {
-            objectMapper.readValue(value, new TypeReference<Map<String, Object>>() {});
+            JsonNode node = objectMapper.readTree(value);
+            if (!node.isObject()) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT,
+                        fieldName + " 필드가 유효한 JSON 객체가 아닙니다.");
+            }
         } catch (JsonProcessingException e) {
             throw new BusinessException(ErrorCode.INVALID_INPUT,
                     fieldName + " 필드가 유효한 JSON 객체가 아닙니다.");
