@@ -1,5 +1,6 @@
 package com.tftgogo.global.filter;
 
+import com.tftgogo.domain.member.service.impl.AuthTokenService;
 import com.tftgogo.global.security.JwtTokenProvider;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -22,6 +23,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final AuthTokenService authTokenService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -30,7 +32,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = resolveToken(request);
 
         if (token != null
-                && jwtTokenProvider.validateToken(token)
+                && authTokenService.isAccessTokenUsable(token)
                 && SecurityContextHolder.getContext().getAuthentication() == null) {
             Long userId = jwtTokenProvider.getUserId(token);
             UsernamePasswordAuthenticationToken authentication =

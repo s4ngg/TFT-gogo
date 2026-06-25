@@ -10,7 +10,6 @@ import com.tftgogo.domain.member.entity.SocialProvider;
 import com.tftgogo.domain.member.repository.MemberRepository;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
-import com.tftgogo.global.security.JwtTokenProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -41,7 +40,7 @@ class MemberServiceImplTest {
     private PasswordEncoder passwordEncoder;
 
     @Mock
-    private JwtTokenProvider jwtTokenProvider;
+    private AuthTokenService authTokenService;
 
     @Mock
     private SocialMemberCreationService socialMemberCreationService;
@@ -59,7 +58,7 @@ class MemberServiceImplTest {
         when(memberRepository.existsByEmail("sojung@example.com")).thenReturn(false);
         when(passwordEncoder.encode("password123")).thenReturn("encoded-password");
         when(memberRepository.saveAndFlush(any(Member.class))).thenReturn(savedMember);
-        when(jwtTokenProvider.createAccessToken(1L)).thenReturn("access-token");
+        when(authTokenService.issue(savedMember)).thenReturn(authResponse(savedMember));
 
         // when
         AuthResponse response = memberService.signup(request);
@@ -74,7 +73,7 @@ class MemberServiceImplTest {
         assertThat(memberCaptor.getValue().getPasswordHash())
                 .isEqualTo("encoded-password")
                 .isNotEqualTo("password123");
-        verify(jwtTokenProvider).createAccessToken(1L);
+        verify(authTokenService).issue(savedMember);
     }
 
     @Test
@@ -137,7 +136,7 @@ class MemberServiceImplTest {
 
         when(memberRepository.findByEmail("sojung@example.com")).thenReturn(Optional.of(member));
         when(passwordEncoder.matches("password123", "encoded-password")).thenReturn(true);
-        when(jwtTokenProvider.createAccessToken(1L)).thenReturn("access-token");
+        when(authTokenService.issue(member)).thenReturn(authResponse(member));
 
         // when
         AuthResponse response = memberService.login(request);
@@ -174,7 +173,7 @@ class MemberServiceImplTest {
 
         when(memberRepository.findBySocialProviderAndSocialId("google", "google-1"))
                 .thenReturn(Optional.of(member));
-        when(jwtTokenProvider.createAccessToken(1L)).thenReturn("access-token");
+        when(authTokenService.issue(member)).thenReturn(authResponse(member));
 
         // when
         AuthResponse response = memberService.socialLogin(command);
@@ -198,7 +197,7 @@ class MemberServiceImplTest {
                 .thenReturn(Optional.empty());
         when(memberRepository.existsByEmail("social@example.com")).thenReturn(false);
         when(socialMemberCreationService.create(command)).thenReturn(savedMember);
-        when(jwtTokenProvider.createAccessToken(1L)).thenReturn("access-token");
+        when(authTokenService.issue(savedMember)).thenReturn(authResponse(savedMember));
 
         // when
         AuthResponse response = memberService.socialLogin(command);
@@ -237,7 +236,7 @@ class MemberServiceImplTest {
         when(memberRepository.existsByEmail("social@example.com")).thenReturn(false);
         when(socialMemberCreationService.create(command))
                 .thenThrow(new DataIntegrityViolationException("duplicate social provider"));
-        when(jwtTokenProvider.createAccessToken(1L)).thenReturn("access-token");
+        when(authTokenService.issue(existingMember)).thenReturn(authResponse(existingMember));
 
         // when
         AuthResponse response = memberService.socialLogin(command);
@@ -325,6 +324,10 @@ class MemberServiceImplTest {
                 .passwordHash(passwordHash)
                 .nickname(nickname)
                 .build();
+    }
+
+    private AuthResponse authResponse(Member member) {
+        return AuthResponse.of("access-token", MemberResponse.from(member), "refresh-token");
     }
 
     private SocialLoginCommand socialLoginCommand(String email, String nickname) {

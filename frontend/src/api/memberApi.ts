@@ -57,6 +57,36 @@ export async function signup(request: SignupRequest): Promise<AuthResponse> {
   }
 }
 
+export async function refreshSession(): Promise<AuthResponse> {
+  try {
+    const response = await axiosInstance.post<RawAuthResponse | ApiResponse<RawAuthResponse>>(
+      '/v1/auth/refresh',
+    )
+    const payload = unwrapApiResponse(response.data)
+    const auth = normalizeAuthResponse(payload, payload.user?.email ?? payload.member?.email ?? '')
+
+    useAuthStore.getState().setAuth({ token: auth.token })
+    return auth
+  } catch (error) {
+    if (isAuthRestoreFailure(error)) {
+      useAuthStore.getState().clearAuth()
+    }
+
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(`Refresh session failed: ${message}`)
+  }
+}
+
+export async function logout(): Promise<void> {
+  try {
+    await axiosInstance.post('/v1/auth/logout')
+  } catch (error) {
+    if (!isAuthRestoreFailure(error)) {
+      throw error
+    }
+  }
+}
+
 export async function getMe(): Promise<MemberProfile> {
   try {
     const response = await axiosInstance.get<RawMemberResponse | ApiResponse<RawMemberResponse>>(

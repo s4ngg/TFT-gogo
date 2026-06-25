@@ -45,11 +45,17 @@ public class Member {
     @Column(name = "notification_enabled", nullable = false)
     private boolean notificationEnabled;
 
+    @Column(name = "auth_token_version", nullable = false)
+    private long authTokenVersion;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     @Builder
     public Member(
@@ -67,7 +73,12 @@ public class Member {
         this.socialProvider = socialProvider;
         this.socialId = socialId;
         this.notificationEnabled = true;
+        this.authTokenVersion = 0L;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+    }
+
+    public boolean isActive() {
+        return deletedAt == null;
     }
 }

@@ -1,7 +1,15 @@
-import axios from 'axios'
+import axios, { type InternalAxiosRequestConfig } from 'axios'
 import useAuthStore from '../store/useAuthStore'
+import type { ApiResponse } from './apiResponse'
+import { unwrapApiResponse } from './apiResponse'
+import { normalizeAuthResponse, type RawAuthResponse } from './memberApiPayload'
 
 const DEFAULT_API_BASE_URL = '/api'
+const AUTH_REFRESH_PATH = '/v1/auth/refresh'
+
+interface RetriableRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean
+}
 
 interface ResolveApiBaseUrlOptions {
   apiUrl?: string
@@ -67,6 +75,7 @@ export function resolveApiBaseUrl({
 const axiosInstance = axios.create({
   baseURL: resolveApiBaseUrl(),
   timeout: 10000,
+  withCredentials: true,
 })
 
 axiosInstance.interceptors.request.use((config) => {
@@ -81,13 +90,52 @@ axiosInstance.interceptors.request.use((config) => {
 
 axiosInstance.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
+  async (error) => {
+    const config = error.config as RetriableRequestConfig | undefined
+
+    if (error.response?.status === 401 && config && !config._retry && !isAuthEndpoint(config.url)) {
+      config._retry = true
+
+      try {
+        const token = await refreshAccessToken()
+        config.headers.Authorization = `Bearer ${token}`
+
+        return axiosInstance(config)
+      } catch {
+        useAuthStore.getState().clearAuth()
+      }
+    } else if (error.response?.status === 401) {
       useAuthStore.getState().clearAuth()
     }
 
     return Promise.reject(error)
   },
 )
+
+function isAuthEndpoint(url: string | undefined): boolean {
+  return Boolean(url?.startsWith('/v1/auth/'))
+}
+
+async function refreshAccessToken(): Promise<string> {
+  try {
+    const apiBaseUrl = resolveApiBaseUrl().replace(/\/$/, '')
+    const response = await axios.post<RawAuthResponse | ApiResponse<RawAuthResponse>>(
+      `${apiBaseUrl}${AUTH_REFRESH_PATH}`,
+      undefined,
+      {
+        timeout: 10000,
+        withCredentials: true,
+      },
+    )
+    const payload = unwrapApiResponse(response.data)
+    const auth = normalizeAuthResponse(payload, payload.user?.email ?? payload.member?.email ?? '')
+
+    useAuthStore.getState().setAuth({ token: auth.token })
+    return auth.token
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(`Refresh access token failed: ${message}`)
+  }
+}
 
 export default axiosInstance

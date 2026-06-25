@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { afterEach, describe, it } from 'node:test'
-import { AxiosError, type AxiosAdapter, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
+import axios, { AxiosError, type AxiosAdapter, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
 
 import axiosInstance from '../axiosInstance'
 import useAuthStore from '../../store/useAuthStore'
@@ -12,6 +12,7 @@ interface RequestCall {
 }
 
 const originalAdapter = axiosInstance.defaults.adapter
+const originalAxiosAdapter = axios.defaults.adapter
 const requestCalls: RequestCall[] = []
 
 function readRequestData(call: RequestCall | undefined): Record<string, unknown> {
@@ -110,6 +111,7 @@ function createErrorAdapter(status: number): AxiosAdapter {
 
 afterEach(() => {
   axiosInstance.defaults.adapter = originalAdapter
+  axios.defaults.adapter = originalAxiosAdapter
   requestCalls.length = 0
   useAuthStore.getState().clearAuth()
 })
@@ -176,6 +178,7 @@ describe('memberApi', () => {
   it('getMe가 401이면 저장된 인증 토큰을 정리한다', async () => {
     // given
     axiosInstance.defaults.adapter = createErrorAdapter(401)
+    axios.defaults.adapter = createErrorAdapter(401)
     useAuthStore.getState().setAuth({ token: 'expired-token' })
     const { getMe } = await import('../memberApi')
 

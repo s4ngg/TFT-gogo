@@ -23,4 +23,7 @@ public class JwtProperties {
 
     @Positive(message = "jwt.access-token-expiration-millis는 0보다 커야 합니다.")
     private long accessTokenExpirationMillis = 3_600_000L;
+
+    @Positive(message = "jwt.refresh-token-expiration-millis는 0보다 커야 합니다.")
+    private long refreshTokenExpirationMillis = 1_209_600_000L;
 }

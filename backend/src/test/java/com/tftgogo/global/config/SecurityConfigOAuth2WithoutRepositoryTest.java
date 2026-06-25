@@ -6,6 +6,7 @@ import com.tftgogo.global.security.oauth.SocialOAuth2FailureHandler;
 import com.tftgogo.global.security.oauth.SocialOAuth2SuccessHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -22,7 +23,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = SecurityConfigOAuth2WithoutRepositoryTest.DummyController.class)
+@WebMvcTest(
+        controllers = SecurityConfigOAuth2WithoutRepositoryTest.DummyController.class,
+        excludeAutoConfiguration = OAuth2ClientAutoConfiguration.class
+)
 @Import({SecurityConfig.class, SecurityConfigOAuth2WithoutRepositoryTest.TestConfig.class})
 class SecurityConfigOAuth2WithoutRepositoryTest {
 
@@ -42,7 +46,7 @@ class SecurityConfigOAuth2WithoutRepositoryTest {
     private SocialOAuth2FailureHandler socialOAuth2FailureHandler;
 
     @Test
-    void ClientRegistrationRepository가_없으면_OAuth2_시작경로는_fallback_denyAll로_떨어지지_않는다() throws Exception {
+    void ClientRegistrationRepository가_없으면_OAuth2_시작경로는_redirect하지_않는다() throws Exception {
         // given
         String authorizationPath = "/oauth2/authorization/google";
 

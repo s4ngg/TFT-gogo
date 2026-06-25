@@ -55,6 +55,8 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/riot/status").permitAll()
                         .requestMatchers(
                                 "/api/v1/auth/login",
+                                "/api/v1/auth/logout",
+                                "/api/v1/auth/refresh",
                                 "/api/v1/auth/signup",
                                 "/api/v1/auth/social/**",
                                 "/api/admin/**",        // AdminTokenFilter가 직접 검증
