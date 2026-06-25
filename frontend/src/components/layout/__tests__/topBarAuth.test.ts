@@ -25,9 +25,9 @@ function createQueryClient(options: { rejectCancel?: boolean } = {}) {
           throw new Error('cancel failed')
         }
       },
-      removeQueries: (filters: QueryCall) => {
+      removeQueries: (filters: { queryKey: unknown[]; exact?: boolean }) => {
         calls.push('remove')
-        removeFilters.push(filters)
+        removeFilters.push(filters as QueryCall)
       },
     },
     cancelFilters,
@@ -45,7 +45,7 @@ describe('clearTopBarAuthSession', () => {
       queryClient.calls.push('clearAuth')
     })
 
-    assert.deepEqual(queryClient.calls, ['clearAuth', 'cancel', 'remove'])
+    assert.deepEqual(queryClient.calls, ['clearAuth', 'cancel', 'remove', 'remove'])
     assert.deepEqual(queryClient.cancelFilters[0], {
       exact: true,
       queryKey: AUTH_ME_QUERY_KEY,
@@ -53,6 +53,9 @@ describe('clearTopBarAuthSession', () => {
     assert.deepEqual(queryClient.removeFilters[0], {
       exact: true,
       queryKey: AUTH_ME_QUERY_KEY,
+    })
+    assert.deepEqual(queryClient.removeFilters[1], {
+      queryKey: ['aiRecommendation'],
     })
     assert.deepEqual(calls, ['clearAuth'])
   })
@@ -67,7 +70,7 @@ describe('clearTopBarAuthSession', () => {
     })
 
     assert.equal(clearAuthCount, 1)
-    assert.deepEqual(queryClient.calls, ['clearAuth', 'cancel', 'remove'])
+    assert.deepEqual(queryClient.calls, ['clearAuth', 'cancel', 'remove', 'remove'])
     assert.deepEqual(queryClient.removeFilters[0], {
       exact: true,
       queryKey: AUTH_ME_QUERY_KEY,
