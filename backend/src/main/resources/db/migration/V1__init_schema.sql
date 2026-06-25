@@ -1,8 +1,6 @@
--- Local smoke / Docker init schema snapshot.
--- Schema is managed by Flyway (see db/migration/V1__init_schema.sql).
--- This file is mounted by docker-compose as a MySQL init script and serves
--- as a human-readable reference of the current schema state.
--- Keep column names aligned with the current JPA physical naming strategy.
+-- V1: Consolidated initial schema.
+-- All tables use CREATE TABLE IF NOT EXISTS for idempotent application
+-- against databases that were initialized by Docker init scripts.
 
 SET NAMES utf8mb4;
 
@@ -276,13 +274,23 @@ CREATE TABLE IF NOT EXISTS patch_notes (
     KEY idx_patch_notes_public (deleted_at, is_current, published_at, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE UNIQUE INDEX uk_patch_notes_single_current
-    ON patch_notes (
-        (CASE
-            WHEN is_current = 1 AND deleted_at IS NULL THEN 1
-            ELSE NULL
-        END)
-    );
+-- Expression-based unique index: only one non-deleted current patch note allowed.
+-- Created conditionally for idempotent application.
+SET @schema_name = DATABASE();
+SET @create_single_current_idx = (
+    SELECT IF(
+        COUNT(*) = 0,
+        'CREATE UNIQUE INDEX uk_patch_notes_single_current ON patch_notes ((CASE WHEN is_current = 1 AND deleted_at IS NULL THEN 1 ELSE NULL END))',
+        'SELECT 1'
+    )
+    FROM information_schema.statistics
+    WHERE table_schema = @schema_name
+      AND table_name = 'patch_notes'
+      AND index_name = 'uk_patch_notes_single_current'
+);
+PREPARE stmt FROM @create_single_current_idx;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 CREATE TABLE IF NOT EXISTS patch_note_changes (
     id BIGINT NOT NULL AUTO_INCREMENT,
@@ -365,8 +373,6 @@ CREATE TABLE IF NOT EXISTS party_post_tags (
         FOREIGN KEY (party_post_id) REFERENCES party_posts (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ELD reserved tables. Current MVP chat runtime uses CommunityChatRoomIds and
--- InMemoryChatServiceImpl, so these tables are not read or written by the app yet.
 CREATE TABLE IF NOT EXISTS chat_rooms (
     id BIGINT NOT NULL AUTO_INCREMENT,
     room_key VARCHAR(80) NOT NULL,
@@ -386,7 +392,6 @@ CREATE TABLE IF NOT EXISTS chat_rooms (
         FOREIGN KEY (party_post_id) REFERENCES party_posts (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ELD reserved table. Current MVP chat messages are in-memory only.
 CREATE TABLE IF NOT EXISTS chat_messages (
     id BIGINT NOT NULL AUTO_INCREMENT,
     user_id BIGINT NOT NULL,
