@@ -1,5 +1,6 @@
 package com.tftgogo.domain.deck.controller;
 
+import com.tftgogo.domain.deck.controller.docs.AdminHeroAugmentDeckControllerDocs;
 import com.tftgogo.domain.deck.dto.request.HeroAugmentDeckRequest;
 import com.tftgogo.domain.deck.dto.response.HeroAugmentDeckResponse;
 import com.tftgogo.domain.deck.service.HeroAugmentDeckService;
@@ -15,7 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/hero-augment-decks")
 @RequiredArgsConstructor
-public class AdminHeroAugmentDeckController {
+public class AdminHeroAugmentDeckController implements AdminHeroAugmentDeckControllerDocs {
 
     private final HeroAugmentDeckService heroAugmentDeckService;
 
