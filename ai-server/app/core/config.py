@@ -10,6 +10,17 @@ class Settings(BaseSettings):
 
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
+    openai_timeout: int = 30
+
+    chat_max_input_tokens: int = 4000
+    recommend_max_input_tokens: int = 6000
+
+    rate_limit_requests: int = 30
+    rate_limit_window: int = 60
+
+    circuit_breaker_threshold: int = 5
+    circuit_breaker_window: int = 60
+    circuit_breaker_cooldown: int = 30
 
     riot_api_key: str = ""
     cors_allowed_origins: str = (

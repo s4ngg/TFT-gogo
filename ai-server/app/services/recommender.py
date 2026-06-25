@@ -10,7 +10,10 @@ import re
 
 from openai import AsyncOpenAI, APIStatusError, APITimeoutError, APIConnectionError
 
+from app.core.ai_logger import AiRequestLog
+from app.core.circuit_breaker import openai_breaker
 from app.core.config import settings
+from app.core.token_budget import check_budget
 from app.models.match import DeckReason, MetaDeck, TraitStat
 
 logger = logging.getLogger(__name__)
@@ -28,7 +31,10 @@ _PATCH_TREND_GRADES = {"S", "A"}
 def _get_client() -> AsyncOpenAI:
     global _client
     if _client is None:
-        _client = AsyncOpenAI(api_key=settings.openai_api_key)
+        _client = AsyncOpenAI(
+            api_key=settings.openai_api_key,
+            timeout=settings.openai_timeout,
+        )
     return _client
 
 
@@ -120,20 +126,40 @@ async def generate_reasons(
         f"추천 덱 목록:\n{json.dumps(deck_info, ensure_ascii=False)}"
     )
 
+    messages = [
+        {"role": "system", "content": system_message},
+        {"role": "user", "content": user_message},
+    ]
+
+    log = AiRequestLog(feature="recommend", model=settings.openai_model)
+
+    estimated = check_budget(messages, settings.recommend_max_input_tokens, "recommend")
+    log.input_tokens_estimated = estimated
+
+    if openai_breaker.is_open():
+        logger.warning("[recommend] Circuit breaker OPEN — fallback 반환")
+        log.is_fallback = True
+        log.emit()
+        return _fallback_reasons(recommended_decks)
+
     # 추천 덱 수에 비례해 max_tokens 동적 계산
     max_tokens = _TOKENS_BASE + len(target_decks) * _TOKENS_PER_DECK
 
+    log.start_timer()
     try:
         client = _get_client()
         response = await client.chat.completions.create(
             model=settings.openai_model,
-            messages=[
-                {"role": "system", "content": system_message},
-                {"role": "user", "content": user_message},
-            ],
+            messages=messages,
             temperature=0.3,
             max_tokens=max_tokens,
         )
+        log.stop_timer()
+        if response.usage:
+            log.output_tokens = response.usage.completion_tokens
+        openai_breaker.record_success()
+        log.emit()
+
         content = response.choices[0].message.content or ""
         content = re.sub(r"```json\s*|\s*```", "", content).strip()
         raw = json.loads(content)
@@ -148,16 +174,18 @@ async def generate_reasons(
     except json.JSONDecodeError as e:
         logger.warning("OpenAI 응답 JSON 파싱 실패, fallback 사용: %s", e)
         return _fallback_reasons(recommended_decks)
-    except APITimeoutError as e:
-        logger.warning("OpenAI API 타임아웃, fallback 사용: %s", e)
-        return _fallback_reasons(recommended_decks)
-    except APIConnectionError as e:
-        logger.warning("OpenAI API 연결 실패, fallback 사용: %s", e)
-        return _fallback_reasons(recommended_decks)
-    except APIStatusError as e:
-        logger.warning("OpenAI API 오류 status=%s, fallback 사용: %s", e.status_code, e)
+    except (APITimeoutError, APIConnectionError, APIStatusError) as e:
+        log.stop_timer()
+        log.is_fallback = True
+        openai_breaker.record_failure()
+        log.emit()
+        logger.warning("OpenAI 추천 API 오류, fallback 사용: %s", e)
         return _fallback_reasons(recommended_decks)
     except Exception as e:
+        log.stop_timer()
+        log.is_fallback = True
+        openai_breaker.record_failure()
+        log.emit()
         logger.warning("OpenAI 추천 이유 생성 실패 (예상치 못한 오류), fallback 사용: %s", e)
         return _fallback_reasons(recommended_decks)
 

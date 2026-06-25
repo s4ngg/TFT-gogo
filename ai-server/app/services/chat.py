@@ -9,7 +9,10 @@ import re
 
 from openai import AsyncOpenAI, APIStatusError, APITimeoutError, APIConnectionError
 
+from app.core.ai_logger import AiRequestLog
+from app.core.circuit_breaker import openai_breaker
 from app.core.config import settings
+from app.core.token_budget import check_budget
 from app.models.chat import ChatContext, ChatRequest
 
 logger = logging.getLogger(__name__)
@@ -72,7 +75,10 @@ _MAX_TOKENS = 600
 def _get_client() -> AsyncOpenAI:
     global _client
     if _client is None:
-        _client = AsyncOpenAI(api_key=settings.openai_api_key)
+        _client = AsyncOpenAI(
+            api_key=settings.openai_api_key,
+            timeout=settings.openai_timeout,
+        )
     return _client
 
 
@@ -127,12 +133,26 @@ def _build_messages(request: ChatRequest) -> list[dict]:
 
 async def chat(request: ChatRequest) -> str:
     """사용자 메시지에 대한 AI 응답을 생성한다. 오류 시 fallback 문자열 반환."""
+    log = AiRequestLog(feature="chat", model=settings.openai_model)
+
     if not settings.openai_api_key:
         logger.warning("OpenAI API 키 미설정 — fallback 응답 반환")
+        log.is_fallback = True
+        log.emit()
         return _FALLBACK_REPLY
 
     messages = _build_messages(request)
 
+    estimated = check_budget(messages, settings.chat_max_input_tokens, "chat")
+    log.input_tokens_estimated = estimated
+
+    if openai_breaker.is_open():
+        logger.warning("[chat] Circuit breaker OPEN — fallback 반환")
+        log.is_fallback = True
+        log.emit()
+        return _FALLBACK_REPLY
+
+    log.start_timer()
     try:
         client = _get_client()
         response = await client.chat.completions.create(
@@ -141,16 +161,23 @@ async def chat(request: ChatRequest) -> str:
             temperature=0.4,
             max_tokens=_MAX_TOKENS,
         )
+        log.stop_timer()
+        if response.usage:
+            log.output_tokens = response.usage.completion_tokens
+        openai_breaker.record_success()
+        log.emit()
         return response.choices[0].message.content or _FALLBACK_REPLY
-    except APITimeoutError as e:
-        logger.warning("OpenAI 채팅 타임아웃, fallback 사용: %s", e)
-        return _FALLBACK_REPLY
-    except APIConnectionError as e:
-        logger.warning("OpenAI 채팅 연결 실패, fallback 사용: %s", e)
-        return _FALLBACK_REPLY
-    except APIStatusError as e:
-        logger.warning("OpenAI 채팅 API 오류 status=%s, fallback 사용: %s", e.status_code, e)
+    except (APITimeoutError, APIConnectionError, APIStatusError) as e:
+        log.stop_timer()
+        log.is_fallback = True
+        openai_breaker.record_failure()
+        log.emit()
+        logger.warning("OpenAI 채팅 오류, fallback 사용: %s", e)
         return _FALLBACK_REPLY
     except Exception as e:
+        log.stop_timer()
+        log.is_fallback = True
+        openai_breaker.record_failure()
+        log.emit()
         logger.warning("OpenAI 채팅 예상치 못한 오류, fallback 사용: %s", e)
         return _FALLBACK_REPLY
