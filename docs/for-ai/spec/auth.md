@@ -55,7 +55,7 @@ General signup/login APIs issue access tokens, and authenticated requests are re
 
 <business-rules>
 - 이메일은 중복될 수 없다.
-- 닉네임은 중복될 수 없다. `users.nickname` DB unique 제약과 서비스 중복 검증으로 보장한다.
+- 닉네임은 회원가입과 소셜 회원 생성 시 서비스 중복 검증으로 중복 사용을 막는다.
 - 비밀번호는 BCrypt로 암호화해서 저장한다.
 - 로그인 실패 응답은 이메일 존재 여부를 노출하지 않도록 공통 인증 실패로 처리한다.
 - 소셜 회원은 passwordHash가 null일 수 있으며 일반 이메일 로그인으로는 인증되지 않는다.

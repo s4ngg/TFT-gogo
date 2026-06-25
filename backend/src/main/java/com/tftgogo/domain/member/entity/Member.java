@@ -30,7 +30,7 @@ public class Member {
     @Column(name = "password_hash", length = 255)
     private String passwordHash;
 
-    @Column(nullable = false, length = 50, unique = true)
+    @Column(nullable = false, length = 50)
     private String nickname;
 
     @Column(name = "profile_image", length = 500)

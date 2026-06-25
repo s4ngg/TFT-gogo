@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
 export interface SummonerRank {
   name: string
@@ -16,10 +17,19 @@ interface SummonerState {
   clearSummoner: () => void
 }
 
-const useSummonerStore = create<SummonerState>((set) => ({
-  summoner: null,
-  setSummoner: (summoner) => set({ summoner }),
-  clearSummoner: () => set({ summoner: null }),
-}))
+const useSummonerStore = create<SummonerState>()(
+  persist(
+    (set) => ({
+      summoner: null,
+      setSummoner: (summoner) => set({ summoner }),
+      clearSummoner: () => set({ summoner: null }),
+    }),
+    {
+      name: 'tftgogo-summoner',
+      version: 1,
+      partialize: (state) => ({ summoner: state.summoner }),
+    },
+  ),
+)
 
 export default useSummonerStore

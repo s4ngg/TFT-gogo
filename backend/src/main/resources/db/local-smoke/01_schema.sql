@@ -19,7 +19,6 @@ CREATE TABLE IF NOT EXISTS users (
     deleted_at DATETIME(6) NULL,
     PRIMARY KEY (user_id),
     UNIQUE KEY uk_users_email (email),
-    UNIQUE KEY uk_users_nickname (nickname),
     UNIQUE KEY ux_users_social_provider_social_id (social_provider, social_id),
     CONSTRAINT chk_users_social_fields_together
         CHECK (
@@ -401,4 +400,21 @@ CREATE TABLE IF NOT EXISTS chat_messages (
         FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE RESTRICT,
     CONSTRAINT fk_chat_messages_room
         FOREIGN KEY (chat_room_id) REFERENCES chat_rooms (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS hero_augment_decks (
+    id              BIGINT NOT NULL AUTO_INCREMENT,
+    name            VARCHAR(200) NOT NULL,
+    description     TEXT,
+    champions       TEXT,
+    traits          TEXT,
+    board_positions TEXT,
+    hero_augments   TEXT,
+    recommended     TINYINT(1) NOT NULL DEFAULT 1,
+    sort_order      INT NOT NULL DEFAULT 0,
+    grade           VARCHAR(10),
+    created_at      DATETIME(6) NOT NULL,
+    updated_at      DATETIME(6) NOT NULL,
+    PRIMARY KEY (id),
+    KEY idx_hero_augment_decks_sort (sort_order, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

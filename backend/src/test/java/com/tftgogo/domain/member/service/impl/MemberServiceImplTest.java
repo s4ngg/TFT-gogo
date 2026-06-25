@@ -137,7 +137,7 @@ class MemberServiceImplTest {
         when(memberRepository.existsByNickname("소정")).thenReturn(false);
         when(passwordEncoder.encode("password123")).thenReturn("encoded-password");
         when(memberRepository.saveAndFlush(any(Member.class)))
-                .thenThrow(new DataIntegrityViolationException("Duplicate entry for key 'uk_users_nickname'"));
+                .thenThrow(new DataIntegrityViolationException("Duplicate entry for key 'nickname'"));
 
         // when, then
         assertThatThrownBy(() -> memberService.signup(request))
@@ -314,7 +314,7 @@ class MemberServiceImplTest {
                 .thenReturn(Optional.empty(), Optional.empty());
         when(memberRepository.existsByEmail("social@example.com")).thenReturn(false);
         when(socialMemberCreationService.create(command, 0))
-                .thenThrow(new DataIntegrityViolationException("Duplicate entry for key 'uk_users_nickname'"));
+                .thenThrow(new DataIntegrityViolationException("Duplicate entry for key 'nickname'"));
         when(socialMemberCreationService.create(command, 1)).thenReturn(savedMember);
         when(jwtTokenProvider.createAccessToken(1L)).thenReturn("access-token");
 
@@ -328,6 +328,33 @@ class MemberServiceImplTest {
                 .isEqualTo("소셜회원-1-abcd");
         verify(socialMemberCreationService).create(command, 0);
         verify(socialMemberCreationService).create(command, 1);
+    }
+
+    @Test
+    void 소셜로그인_닉네임_충돌이_최대_재시도까지_반복되면_소셜로그인_실패로_처리한다() {
+        // given
+        SocialLoginCommand command = socialLoginCommand("social@example.com", "소셜회원");
+        DataIntegrityViolationException nicknameViolation =
+                new DataIntegrityViolationException("Duplicate entry for key 'nickname'");
+
+        when(memberRepository.findBySocialProviderAndSocialId("google", "google-1"))
+                .thenReturn(Optional.empty());
+        when(memberRepository.existsByEmail("social@example.com")).thenReturn(false);
+        when(socialMemberCreationService.create(command, 0)).thenThrow(nicknameViolation);
+        when(socialMemberCreationService.create(command, 1)).thenThrow(nicknameViolation);
+        when(socialMemberCreationService.create(command, 2)).thenThrow(nicknameViolation);
+        when(socialMemberCreationService.create(command, 3)).thenThrow(nicknameViolation);
+
+        // when, then
+        assertThatThrownBy(() -> memberService.socialLogin(command))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.SOCIAL_LOGIN_FAILED));
+
+        verify(socialMemberCreationService).create(command, 0);
+        verify(socialMemberCreationService).create(command, 1);
+        verify(socialMemberCreationService).create(command, 2);
+        verify(socialMemberCreationService).create(command, 3);
+        verify(socialMemberCreationService, never()).create(command, 4);
     }
 
     @Test

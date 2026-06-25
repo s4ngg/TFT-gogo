@@ -1,7 +1,10 @@
-import axiosInstance from './axiosInstance'
+import axios from 'axios'
 import { isRecord } from './apiResponse'
 
 const CDRAGON_TFT_KO_URL = 'https://raw.communitydragon.org/latest/cdragon/tft/ko_kr.json'
+
+// CDragon은 외부 URL이므로 auth 인터셉터가 없는 순수 axios 인스턴스 사용
+const cdragonAxios = axios.create({ timeout: 15000 })
 
 export type BreakpointTier = 'bronze' | 'silver' | 'gold' | 'prismatic'
 
@@ -103,7 +106,7 @@ function readCDragonEntries(value: unknown): CDragonEntry[] {
 
 export async function fetchTFTLocale(): Promise<TFTLocale> {
   try {
-    const { data } = await axiosInstance.get<Record<string, unknown>>(CDRAGON_TFT_KO_URL)
+    const { data } = await cdragonAxios.get<Record<string, unknown>>(CDRAGON_TFT_KO_URL)
 
     const champByApiName = new Map<string, string>()
     const champDetailByApiName = new Map<string, ChampionDetail>()

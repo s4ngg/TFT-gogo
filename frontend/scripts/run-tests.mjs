@@ -1,20 +1,19 @@
-import { readdirSync, statSync } from 'node:fs';
+import { readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const testFiles = [];
 
 function collectTestFiles(directory) {
-  for (const entry of readdirSync(directory)) {
-    const fullPath = join(directory, entry);
-    const stats = statSync(fullPath);
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const fullPath = join(directory, entry.name);
 
-    if (stats.isDirectory()) {
+    if (entry.isDirectory()) {
       collectTestFiles(fullPath);
       continue;
     }
 
-    if (/\.test\.tsx?$/.test(entry)) {
+    if (/\.test\.tsx?$/.test(entry.name)) {
       testFiles.push(relative(process.cwd(), fullPath));
     }
   }
