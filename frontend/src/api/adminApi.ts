@@ -110,7 +110,9 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const config = error.config as AxiosRequestConfig & { _adminRetried?: boolean }
     const isAdminPath =
-      typeof config?.url === 'string' && config.url.startsWith('/admin/')
+      typeof config?.url === 'string' &&
+      config.url.startsWith('/admin/') &&
+      !config.url.startsWith('/admin/auth/')
     const is401 = error.response?.status === 401
 
     if (!isAdminPath || !is401 || config._adminRetried) {

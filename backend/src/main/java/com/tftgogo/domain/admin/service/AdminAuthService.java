@@ -15,6 +15,8 @@ import com.tftgogo.global.exception.ErrorCode;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Base64;
@@ -60,6 +63,7 @@ public class AdminAuthService {
         setRefreshCookie(httpResponse, rawRefreshToken);
 
         saveAuditLog(admin, httpRequest, "LOGIN", null);
+
 
         return new AdminLoginResponse(accessToken, admin.getUsername(), admin.getRole());
     }
@@ -134,21 +138,25 @@ public class AdminAuthService {
     }
 
     private void setRefreshCookie(HttpServletResponse response, String rawToken) {
-        Cookie cookie = new Cookie(REFRESH_TOKEN_COOKIE, rawToken);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true);
-        cookie.setPath("/api/admin/auth");
-        cookie.setMaxAge((int) (REFRESH_TOKEN_EXPIRY_DAYS * 24 * 3600));
-        response.addCookie(cookie);
+        ResponseCookie cookie = ResponseCookie.from(REFRESH_TOKEN_COOKIE, rawToken)
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Strict")
+                .path("/api/admin/auth")
+                .maxAge(Duration.ofDays(REFRESH_TOKEN_EXPIRY_DAYS))
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
     private void clearRefreshCookie(HttpServletResponse response) {
-        Cookie cookie = new Cookie(REFRESH_TOKEN_COOKIE, "");
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true);
-        cookie.setPath("/api/admin/auth");
-        cookie.setMaxAge(0);
-        response.addCookie(cookie);
+        ResponseCookie cookie = ResponseCookie.from(REFRESH_TOKEN_COOKIE, "")
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Strict")
+                .path("/api/admin/auth")
+                .maxAge(Duration.ZERO)
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
     private String extractRefreshCookieValue(HttpServletRequest request) {

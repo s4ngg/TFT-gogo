@@ -3,12 +3,13 @@ package com.tftgogo.domain.admin.service;
 import com.tftgogo.domain.admin.entity.AdminAuditLog;
 import com.tftgogo.domain.admin.repository.AdminAuditLogRepository;
 import com.tftgogo.domain.admin.security.AdminPrincipal;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -18,10 +19,8 @@ public class AdminAuditService {
 
     @Async
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void log(AdminPrincipal principal, HttpServletRequest request,
-                    String action, String target) {
-        String ip = resolveClientIp(request);
-        String userAgent = request.getHeader("User-Agent");
+    public CompletableFuture<Void> log(AdminPrincipal principal, String ip, String userAgent,
+                                       String action, String target) {
         adminAuditLogRepository.save(AdminAuditLog.builder()
                 .adminId(principal.getAdminId())
                 .username(principal.getUsername())
@@ -31,13 +30,6 @@ public class AdminAuditService {
                 .action(action)
                 .target(target)
                 .build());
-    }
-
-    private String resolveClientIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
+        return CompletableFuture.completedFuture(null);
     }
 }

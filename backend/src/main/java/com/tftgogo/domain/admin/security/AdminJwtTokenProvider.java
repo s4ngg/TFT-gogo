@@ -41,9 +41,13 @@ public class AdminJwtTokenProvider {
     public boolean validateToken(String token) {
         try {
             Claims claims = parseClaims(token);
-            return TOKEN_TYPE.equals(claims.get(CLAIM_TYP, String.class))
-                    && claims.getSubject() != null
-                    && claims.get(CLAIM_ROLE, String.class) != null;
+            if (!TOKEN_TYPE.equals(claims.get(CLAIM_TYP, String.class))) return false;
+            String subject = claims.getSubject();
+            String role = claims.get(CLAIM_ROLE, String.class);
+            if (subject == null || role == null) return false;
+            Long.valueOf(subject);
+            AdminRole.valueOf(role);
+            return true;
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }

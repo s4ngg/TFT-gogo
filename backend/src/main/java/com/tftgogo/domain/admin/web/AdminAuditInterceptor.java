@@ -17,21 +17,34 @@ public class AdminAuditInterceptor implements HandlerInterceptor {
     private final AdminAuditService adminAuditService;
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response,
-                             Object handler) {
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response,
+                                Object handler, Exception ex) {
+        // 실패한 요청(4xx/5xx)은 감사 로그 기록 안 함
+        if (response.getStatus() >= 400) return;
+
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !(auth.getPrincipal() instanceof AdminPrincipal principal)) {
-            return true;
+            return;
         }
 
         String method = request.getMethod();
-        // GET/HEAD/OPTIONS은 감사 로그 생략 (조회 전용)
         if ("GET".equals(method) || "HEAD".equals(method) || "OPTIONS".equals(method)) {
-            return true;
+            return;
         }
 
+        // 요청 수명이 끝나기 전에 값을 스냅샷해서 비동기 스레드에 전달
+        String ip = resolveClientIp(request);
+        String userAgent = request.getHeader("User-Agent");
         String action = method + " " + request.getRequestURI();
-        adminAuditService.log(principal, request, action, null);
-        return true;
+
+        adminAuditService.log(principal, ip, userAgent, action, null);
+    }
+
+    private String resolveClientIp(HttpServletRequest request) {
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 }
