@@ -14,11 +14,17 @@ const AUGMENT_GUIDE_PAGE_SIZE = 6
 
 interface AugmentGuideViewProps {
   fallbackData: GuideCatalog
+  isGuideFallbackData: boolean
+  isGuideFetching: boolean
+  onGuideRetry: () => void
   query: string
 }
 
 function AugmentGuideView({
   fallbackData,
+  isGuideFallbackData,
+  isGuideFetching,
+  onGuideRetry,
   query,
 }: AugmentGuideViewProps) {
   const {
@@ -45,9 +51,10 @@ function AugmentGuideView({
   return (
     <>
       <GuideStatusBanner
-        isFallbackData={augmentsQuery.data.source === 'fallback' && !augmentsQuery.isFetching}
-        isFetching={augmentsQuery.isFetching}
+        isFallbackData={isGuideFallbackData || (augmentsQuery.data.source === 'fallback' && !augmentsQuery.isFetching)}
+        isFetching={isGuideFetching || augmentsQuery.isFetching}
         onRetry={() => {
+          onGuideRetry()
           void augmentsQuery.refetch()
         }}
       />

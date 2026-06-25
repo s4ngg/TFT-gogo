@@ -20,7 +20,10 @@ import styles from '../Guide.module.css'
 
 interface TraitGuideViewProps {
   fallbackData: GuideCatalog
+  isGuideFallbackData: boolean
+  isGuideFetching: boolean
   onChampionSelect: (championName: string) => void
+  onGuideRetry: () => void
   query: string
 }
 
@@ -109,7 +112,10 @@ function getTraitSummaryLabel(traitGuide: TraitGuide) {
 
 function TraitGuideView({
   fallbackData,
+  isGuideFallbackData,
+  isGuideFetching,
   onChampionSelect,
+  onGuideRetry,
   query,
 }: TraitGuideViewProps) {
   const {
@@ -136,9 +142,10 @@ function TraitGuideView({
   return (
     <>
       <GuideStatusBanner
-        isFallbackData={traitsQuery.data.source === 'fallback' && !traitsQuery.isFetching}
-        isFetching={traitsQuery.isFetching}
+        isFallbackData={isGuideFallbackData || (traitsQuery.data.source === 'fallback' && !traitsQuery.isFetching)}
+        isFetching={isGuideFetching || traitsQuery.isFetching}
         onRetry={() => {
+          onGuideRetry()
           void traitsQuery.refetch()
         }}
       />
