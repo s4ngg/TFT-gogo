@@ -251,69 +251,66 @@ CREATE TABLE IF NOT EXISTS tft_guide_augments (
 CREATE TABLE IF NOT EXISTS patch_notes (
     id BIGINT NOT NULL AUTO_INCREMENT,
     version VARCHAR(20) NOT NULL,
-    title VARCHAR(150) NOT NULL,
-    summary VARCHAR(500) NOT NULL,
-    description TEXT NULL,
+    title VARCHAR(200) NOT NULL,
+    summary TEXT NULL,
+    content MEDIUMTEXT NOT NULL,
     focus VARCHAR(200) NULL,
-    image_url VARCHAR(500) NULL,
+    representative_image_url VARCHAR(500) NULL,
+    source_key VARCHAR(150) NULL,
     source_url VARCHAR(500) NULL,
-    source_locale VARCHAR(20) NULL,
     import_source VARCHAR(30) NULL,
-    imported_at DATETIME(6) NULL,
+    source_locale VARCHAR(20) NULL,
     manually_edited TINYINT(1) NOT NULL DEFAULT 0,
+    imported_at DATETIME(6) NULL,
     published_at DATETIME(6) NOT NULL,
     is_current TINYINT(1) NOT NULL DEFAULT 0,
     highlights_json JSON NULL,
-    is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     deleted_at DATETIME(6) NULL,
-    current_active_key TINYINT GENERATED ALWAYS AS (
-        CASE
-            WHEN is_current = 1 AND is_active = 1 AND deleted_at IS NULL THEN 1
-            ELSE NULL
-        END
-    ) STORED,
     PRIMARY KEY (id),
     UNIQUE KEY uk_patch_notes_version (version),
-    UNIQUE KEY uk_patch_notes_single_current_active (current_active_key),
-    KEY idx_patch_notes_public (is_active, deleted_at, is_current, published_at, id),
-    KEY idx_patch_notes_import_source (import_source, source_locale, imported_at)
+    UNIQUE KEY uk_patch_notes_source_key (source_key),
+    UNIQUE KEY uk_patch_notes_source_url (source_url),
+    KEY idx_patch_notes_public (deleted_at, is_current, published_at, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS patch_changes (
+CREATE UNIQUE INDEX uk_patch_notes_single_current
+    ON patch_notes (
+        (CASE
+            WHEN is_current = 1 AND deleted_at IS NULL THEN 1
+            ELSE NULL
+        END)
+    );
+
+CREATE TABLE IF NOT EXISTS patch_note_changes (
     id BIGINT NOT NULL AUTO_INCREMENT,
     patch_note_id BIGINT NOT NULL,
-    source_key VARCHAR(64) NULL,
-    source_url VARCHAR(500) NULL,
+    source_key VARCHAR(150) NULL,
     source_heading_path VARCHAR(500) NULL,
     source_order INT NULL,
-    source_locale VARCHAR(20) NULL,
-    import_source VARCHAR(30) NULL,
     imported_at DATETIME(6) NULL,
     manually_edited TINYINT(1) NOT NULL DEFAULT 0,
-    category VARCHAR(20) NOT NULL,
-    change_type VARCHAR(20) NOT NULL,
-    impact VARCHAR(20) NOT NULL,
-    target_key VARCHAR(100) NOT NULL,
+    category ENUM('CHAMPION','TRAIT','ITEM','AUGMENT','SYSTEM') NOT NULL,
+    change_type ENUM('BUFF','NERF','ADJUST','NEW') NOT NULL,
+    impact ENUM('HIGH','MEDIUM','LOW') NOT NULL DEFAULT 'MEDIUM',
+    target_key VARCHAR(100) NULL,
     target_name VARCHAR(100) NOT NULL,
-    summary VARCHAR(500) NOT NULL,
-    before_value VARCHAR(300) NULL,
-    after_value VARCHAR(300) NULL,
+    summary TEXT NOT NULL,
+    before_value TEXT NULL,
+    after_value TEXT NULL,
     image_url VARCHAR(500) NULL,
     tags_json JSON NULL,
     sort_order INT NOT NULL DEFAULT 0,
-    is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
-    deleted_at DATETIME(6) NULL,
     PRIMARY KEY (id),
-    UNIQUE KEY uk_patch_changes_source_key (patch_note_id, source_key),
-    KEY idx_patch_changes_public (patch_note_id, is_active, deleted_at, sort_order, id),
-    KEY idx_patch_changes_filters (patch_note_id, category, change_type, impact, is_active, deleted_at),
-    KEY idx_patch_changes_import_source (import_source, source_locale, imported_at),
-    CONSTRAINT fk_patch_changes_patch_note
-        FOREIGN KEY (patch_note_id) REFERENCES patch_notes (id) ON DELETE CASCADE
+    UNIQUE KEY uk_patch_note_changes_source_key (patch_note_id, source_key),
+    KEY idx_patch_note_changes_source_order (patch_note_id, source_order),
+    KEY idx_patch_note_changes_public (patch_note_id, sort_order, id),
+    KEY idx_patch_note_changes_filters (patch_note_id, category, change_type, impact),
+    CONSTRAINT fk_patch_note_changes_patch_note
+        FOREIGN KEY (patch_note_id) REFERENCES patch_notes (id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS party_posts (
@@ -403,4 +400,21 @@ CREATE TABLE IF NOT EXISTS chat_messages (
         FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE RESTRICT,
     CONSTRAINT fk_chat_messages_room
         FOREIGN KEY (chat_room_id) REFERENCES chat_rooms (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS hero_augment_decks (
+    id              BIGINT NOT NULL AUTO_INCREMENT,
+    name            VARCHAR(200) NOT NULL,
+    description     TEXT,
+    champions       TEXT,
+    traits          TEXT,
+    board_positions TEXT,
+    hero_augments   TEXT,
+    recommended     TINYINT(1) NOT NULL DEFAULT 1,
+    sort_order      INT NOT NULL DEFAULT 0,
+    grade           VARCHAR(10),
+    created_at      DATETIME(6) NOT NULL,
+    updated_at      DATETIME(6) NOT NULL,
+    PRIMARY KEY (id),
+    KEY idx_hero_augment_decks_sort (sort_order, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

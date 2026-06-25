@@ -73,9 +73,12 @@ services:
       RIOT_API_KEY: ${RIOT_API_KEY:-local-smoke-disabled}
       ADMIN_SECRET_TOKEN: ${ADMIN_SECRET_TOKEN:-local-admin-token}
       APP_META_DECK_STARTUP_AGGREGATE: "false"
+      APP_OAUTH2_AUTHORIZATION_BASE_URI: ${APP_OAUTH2_AUTHORIZATION_BASE_URI:-http://localhost:8081}
       APP_OAUTH2_AUTHORIZED_REDIRECT_URI: ${APP_OAUTH2_AUTHORIZED_REDIRECT_URI:-http://localhost:3000/oauth/callback}
       APP_OAUTH2_LOGIN_FAILURE_REDIRECT_URI: ${APP_OAUTH2_LOGIN_FAILURE_REDIRECT_URI:-http://localhost:3000/login}
-      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173}
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173,https://tftgogo.com,https://www.tftgogo.com}
+      AI_SERVER_URL: ${AI_SERVER_URL:-http://ai-server:8000}
+      SERVER_FORWARD_HEADERS_STRATEGY: ${SERVER_FORWARD_HEADERS_STRATEGY:-framework}
       JWT_SECRET: ${JWT_SECRET:-local-jwt-secret-key-for-tft-gogo-dev-123456}
       JWT_ACCESS_TOKEN_EXPIRATION_MILLIS: ${JWT_ACCESS_TOKEN_EXPIRATION_MILLIS:-3600000}
 

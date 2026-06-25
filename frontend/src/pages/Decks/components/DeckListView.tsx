@@ -2,7 +2,7 @@ import { Search } from 'lucide-react'
 import { useState } from 'react'
 import type { TFTLocale } from '../../../api/cdragonLocale'
 import type { MetaDeck, RankFilter } from '../../Dashboard/dashboardData'
-import { sortDecks } from '../utils/deckListUtils'
+import { sortDecks, deckDisplayName } from '../utils/deckListUtils'
 import type { SortKey, SortDir } from '../utils/deckListUtils'
 import DeckRow from './DeckRow'
 import TableHead from './TableHead'
@@ -26,7 +26,14 @@ function DeckListView({ decks, locale, rankFilter }: DeckListViewProps) {
   }
 
   const safeDecks = Array.isArray(decks) ? decks : []
-  const filtered = sortDecks(safeDecks.filter((d) => d.name.includes(search)), sortKey, sortDir)
+  const lowerSearch = search.trim().toLowerCase()
+  const filtered = sortDecks(
+    safeDecks.filter((d) =>
+      !lowerSearch || deckDisplayName(d, locale).toLowerCase().includes(lowerSearch),
+    ),
+    sortKey,
+    sortDir,
+  )
 
   return (
     <>

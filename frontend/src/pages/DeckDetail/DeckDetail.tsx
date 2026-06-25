@@ -54,6 +54,10 @@ function DeckDetail() {
   const [level, setLevel] = useState<number>(9)
 
   useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [deckId])
+
+  useEffect(() => {
     setLevel(maxLevel)
   }, [deck?.rank, maxLevel])
 

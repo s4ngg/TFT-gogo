@@ -65,11 +65,23 @@ export function tftItemIconUrl(itemId: string, setTag: string = TFT_ASSET_CONFIG
 
 export function tftItemIconOnError(e: React.SyntheticEvent<HTMLImageElement>): void {
   const img = e.currentTarget
-  const currentSetTag = img.src.match(TFT_SET_TAG_PATTERN)?.[0]
+  const currentSrc = img.src
+  const currentSetTag = currentSrc.match(TFT_SET_TAG_PATTERN)?.[0]
   const fallbackSetTag = `.${TFT_ASSET_CONFIG.fallbackItemSetTag}.`
 
+  // 1차 fallback: Set17 → Set13
   if (currentSetTag && currentSetTag.toLowerCase() !== fallbackSetTag) {
-    img.src = img.src.replace(currentSetTag, fallbackSetTag)
+    img.src = currentSrc.replace(currentSetTag, fallbackSetTag)
+    return
+  }
+
+  // 2차 fallback: hexcore 경로가 Set13에도 없으면 /standard/ 경로 시도
+  // (Set17 신규 아이템은 hexcore에 없고 standard 경로에만 존재하는 경우가 있음)
+  const hexcorePattern = /\/assets\/maps\/tft\/icons\/items\/hexcore\/([^/]+)\.tft_set\d+\.png/i
+  const match = currentSrc.match(hexcorePattern)
+  if (match) {
+    const itemId = match[1]
+    img.src = `${TFT_ASSET_CONFIG.communityDragonGameBaseUrl}/assets/maps/particles/tft/item_icons/standard/${itemId}.png`
     return
   }
 

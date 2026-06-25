@@ -30,7 +30,7 @@ function MetaStatsView({ decks, locale, rankFilter }: MetaStatsViewProps) {
   return (
     <div className={styles.tableWrap}>
       <table className={styles.table}>
-        <TableHead sortKey={sortKey} sortDir={sortDir} onSort={handleSort} showTier showRank={false} />
+        <TableHead sortKey={sortKey} sortDir={sortDir} onSort={handleSort} showTier={false} showRank={false} />
         <tbody>
           {TIER_ORDER.map((tier) => {
             const tierDecks = sortDecks(safeDecks.filter((d) => d.grade === tier), sortKey, sortDir)
@@ -39,7 +39,7 @@ function MetaStatsView({ decks, locale, rankFilter }: MetaStatsViewProps) {
             return (
               <Fragment key={tier}>
                 <tr className={styles.tierHeaderRow}>
-                  <td colSpan={7}>
+                  <td colSpan={5}>
                     <span className={styles.tierHeaderInner} style={{ borderLeftColor: color }}>
                       <TierBadge value={tier} />
                       <span className={styles.tierName} style={{ color }}>{tier} 티어</span>
@@ -49,7 +49,7 @@ function MetaStatsView({ decks, locale, rankFilter }: MetaStatsViewProps) {
                   </td>
                 </tr>
                 {tierDecks.map((d) => (
-                  <DeckRow key={d.rank} deck={d} showTier showRank={false} locale={locale} rankFilter={rankFilter} />
+                  <DeckRow key={d.rank} deck={d} showTier={false} showRank={false} locale={locale} rankFilter={rankFilter} />
                 ))}
               </Fragment>
             )

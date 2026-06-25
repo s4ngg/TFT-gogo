@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.security.SecuritySchemes;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.servers.Server;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -36,6 +37,9 @@ public class SwaggerConfig {
                         .title("TFT-gogo API")
                         .version("v1")
                         .description("TFT-gogo 백엔드 API 명세"))
+                .addServersItem(new Server()
+                        .url("/")
+                        .description("Current host"))
                 .addSecurityItem(new SecurityRequirement().addList("X-Admin-Token"));
     }
 }

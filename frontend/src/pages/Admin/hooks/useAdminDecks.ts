@@ -27,6 +27,9 @@ export function useAdminDecks(rankFilter: RankFilter) {
   return {
     decks: decksQuery.data ?? [],
     isLoading: decksQuery.isLoading,
+    isError: decksQuery.isError,
+    error: decksQuery.error,
+    refetch: decksQuery.refetch,
     updateDeck,
   }
 }
