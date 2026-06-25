@@ -109,7 +109,7 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
             throw new BusinessException(ErrorCode.RIOT_API_ERROR);
         } catch (TimeoutException e) {
             logger.error("matchId 목록 조회 타임아웃: puuid={}", puuid, e);
-            throw new BusinessException(ErrorCode.RIOT_API_ERROR);
+            throw new BusinessException(ErrorCode.RIOT_API_TIMEOUT);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new BusinessException(ErrorCode.RIOT_API_ERROR);

@@ -27,4 +27,9 @@ public class RiotProperties {
     private long shortRateLimitWindowMs = 1_000L;
     private int longRateLimitMax = 100;
     private long longRateLimitWindowMs = 120_000L;
+
+    private int queueWorkerConcurrency = 3;
+    private int maxForegroundStreak = 5;
+    private long foregroundTaskTtlMs = 60_000L;
+    private long backgroundTaskTtlMs = 300_000L;
 }

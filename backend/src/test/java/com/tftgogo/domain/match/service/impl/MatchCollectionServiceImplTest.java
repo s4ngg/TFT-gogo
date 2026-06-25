@@ -152,13 +152,46 @@ class MatchCollectionServiceImplTest {
         doReturn(detailFailed).when(riotQueue).submit(any());
 
         // when — 매치 상세 실패해도 예외 없이 반환
-        // 실패한 future는 thenApplyAsync(..., executor)를 건너뛰므로 executor stub 불필요
         List<SummonerMatchItemDto> result = matchCollectionService.fetchAndCache(puuid, 0, 2,
                 Function.identity(), Function.identity(), s -> null);
 
         // then
         assertThat(result).isEmpty();
         verify(cachedMatchRepository, never()).save(any());
+    }
+
+    @Test
+    void 타임아웃시_RIOT_API_TIMEOUT_예외가_발생한다() {
+        // given
+        String puuid = "test-puuid";
+        when(cachedMatchRepository.findByParticipantPuuid(eq(puuid), any(Pageable.class)))
+                .thenReturn(List.of());
+        CompletableFuture<List<String>> timeoutFuture = new CompletableFuture<>();
+        timeoutFuture.completeExceptionally(new BusinessException(ErrorCode.RIOT_API_TIMEOUT));
+        doReturn(timeoutFuture).when(riotQueue).submitForeground(any());
+
+        // when / then
+        assertThatThrownBy(() -> matchCollectionService.fetchAndCache(puuid, 0, 2,
+                Function.identity(), Function.identity(), s -> null))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.RIOT_API_TIMEOUT);
+    }
+
+    @Test
+    void 큐_포화시_RIOT_QUEUE_FULL_예외가_전파된다() {
+        // given
+        String puuid = "test-puuid";
+        when(cachedMatchRepository.findByParticipantPuuid(eq(puuid), any(Pageable.class)))
+                .thenReturn(List.of());
+        CompletableFuture<List<String>> queueFullFuture = new CompletableFuture<>();
+        queueFullFuture.completeExceptionally(new BusinessException(ErrorCode.RIOT_QUEUE_FULL));
+        doReturn(queueFullFuture).when(riotQueue).submitForeground(any());
+
+        // when / then
+        assertThatThrownBy(() -> matchCollectionService.fetchAndCache(puuid, 0, 2,
+                Function.identity(), Function.identity(), s -> null))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.RIOT_QUEUE_FULL);
     }
 
     private CachedMatch cachedMatch(String matchId, String puuid) {

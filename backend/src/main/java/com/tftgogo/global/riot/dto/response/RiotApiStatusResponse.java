@@ -15,19 +15,26 @@ public class RiotApiStatusResponse {
     private String checkedAt;
     private String message;
     private int queueSize;
+    private int foregroundQueueSize;
+    private int backgroundQueueSize;
+    private int inflightCount;
     private RiotApiStatusKind status;
 
-    public static RiotApiStatusResponse from(int queueSize) {
-        RiotApiStatusKind status = queueSize > 0 ? RiotApiStatusKind.QUEUE : RiotApiStatusKind.AVAILABLE;
-        String message = queueSize > 0
+    public static RiotApiStatusResponse from(int foreground, int background, int inflight) {
+        int totalQueue = foreground + background;
+        RiotApiStatusKind status = totalQueue > 0 ? RiotApiStatusKind.QUEUE : RiotApiStatusKind.AVAILABLE;
+        String message = totalQueue > 0
                 ? "Riot API 요청 대기열을 처리 중입니다."
                 : "Riot API 요청 대기열이 비어 있습니다.";
 
         return RiotApiStatusResponse.builder()
-                .activeConnections(0) // TODO: Riot API 활성 연결 수 지표가 생기면 실제 값으로 교체
+                .activeConnections(inflight)
                 .checkedAt(OffsetDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
                 .message(message)
-                .queueSize(queueSize)
+                .queueSize(totalQueue)
+                .foregroundQueueSize(foreground)
+                .backgroundQueueSize(background)
+                .inflightCount(inflight)
                 .status(status)
                 .build();
     }

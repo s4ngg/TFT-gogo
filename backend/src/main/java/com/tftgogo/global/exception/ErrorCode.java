@@ -56,6 +56,8 @@ public enum ErrorCode {
 
     // ── 외부 API ─────────────────────────────────────────
     RIOT_API_RATE_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "Riot API 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요."),
+    RIOT_QUEUE_FULL(HttpStatus.TOO_MANY_REQUESTS, "Riot API 요청 대기열이 가득 찼습니다. 잠시 후 다시 시도해주세요."),
+    RIOT_API_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "Riot API 응답 시간이 초과되었습니다."),
     RIOT_API_ERROR(HttpStatus.BAD_GATEWAY, "Riot API 호출 중 오류가 발생했습니다."),
     EXTERNAL_API_ERROR(HttpStatus.BAD_GATEWAY, "외부 데이터 호출 중 오류가 발생했습니다."),
     AI_CHAT_RATE_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "AI 채팅 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요."),
