@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
 
-    internal_secret: str = ""
+    internal_secret: str
 
     riot_api_key: str = ""
     cors_allowed_origins: str = (
