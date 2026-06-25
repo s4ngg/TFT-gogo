@@ -304,6 +304,23 @@ class MemberServiceImplTest {
     }
 
     @Test
+    void 소셜로그인_신규저장중_이메일_제약조건이_깨지면_이메일_중복으로_처리한다() {
+        // given
+        SocialLoginCommand command = socialLoginCommand("social@example.com", "소셜회원");
+
+        when(memberRepository.findBySocialProviderAndSocialId("google", "google-1"))
+                .thenReturn(Optional.empty());
+        when(memberRepository.existsByEmail("social@example.com")).thenReturn(false);
+        when(socialMemberCreationService.create(command, 0))
+                .thenThrow(new DataIntegrityViolationException("Duplicate entry for key 'email'"));
+
+        // when, then
+        assertThatThrownBy(() -> memberService.socialLogin(command))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.EMAIL_ALREADY_EXISTS));
+    }
+
+    @Test
     void 소셜로그인_닉네임_충돌이면_새_닉네임_후보로_재시도한다() {
         // given
         SocialLoginCommand command = socialLoginCommand("social@example.com", "소셜회원");

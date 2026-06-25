@@ -39,15 +39,16 @@ public class SocialMemberCreationService {
     }
 
     private String resolveNickname(SocialLoginCommand command, int attempt) {
-        String nickname = command.getNickname();
-        if (attempt == 0 && !memberRepository.existsByNickname(nickname)) {
-            return nickname;
+        String baseNickname = command.getNickname()
+                .substring(0, Math.min(command.getNickname().length(), MAX_NICKNAME_LENGTH));
+        if (attempt == 0 && !memberRepository.existsByNickname(baseNickname)) {
+            return baseNickname;
         }
 
         String suffix = buildNicknameSuffix(command, attempt);
         int prefixLength = MAX_NICKNAME_LENGTH - suffix.length();
 
-        return nickname.substring(0, Math.min(nickname.length(), prefixLength)) + suffix;
+        return baseNickname.substring(0, Math.min(baseNickname.length(), prefixLength)) + suffix;
     }
 
     private String buildNicknameSuffix(SocialLoginCommand command, int attempt) {

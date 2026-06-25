@@ -118,9 +118,18 @@ public class MemberServiceImpl implements MemberService {
                     return issueAuthResponse(existingMember.get());
                 }
 
-                if (!isNicknameConstraintViolation(e) || attempt == SOCIAL_MEMBER_CREATE_MAX_ATTEMPTS - 1) {
-                    throw new BusinessException(ErrorCode.SOCIAL_LOGIN_FAILED);
+                if (isNicknameConstraintViolation(e)) {
+                    if (attempt == SOCIAL_MEMBER_CREATE_MAX_ATTEMPTS - 1) {
+                        throw new BusinessException(ErrorCode.SOCIAL_LOGIN_FAILED);
+                    }
+                    continue;
                 }
+
+                if (isEmailConstraintViolation(e)) {
+                    throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
+                }
+
+                throw new BusinessException(ErrorCode.SOCIAL_LOGIN_FAILED);
             }
         }
 
@@ -142,7 +151,15 @@ public class MemberServiceImpl implements MemberService {
     }
 
     private boolean isNicknameConstraintViolation(DataIntegrityViolationException exception) {
+        return containsConstraintToken(exception, "nickname");
+    }
+
+    private boolean isEmailConstraintViolation(DataIntegrityViolationException exception) {
+        return containsConstraintToken(exception, "email");
+    }
+
+    private boolean containsConstraintToken(DataIntegrityViolationException exception, String token) {
         String message = exception.getMostSpecificCause().getMessage();
-        return message != null && message.toLowerCase(Locale.ROOT).contains("nickname");
+        return message != null && message.toLowerCase(Locale.ROOT).contains(token);
     }
 }

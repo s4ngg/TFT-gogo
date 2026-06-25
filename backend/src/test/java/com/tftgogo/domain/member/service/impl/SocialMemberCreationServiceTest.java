@@ -139,4 +139,40 @@ class SocialMemberCreationServiceTest {
                 .startsWith("소셜회원-1-")
                 .hasSizeLessThanOrEqualTo(50);
     }
+
+    @Test
+    void 소셜회원_첫_닉네임_후보도_오십자로_제한한다() {
+        // given
+        String longNickname = "가".repeat(60);
+        String truncatedNickname = "가".repeat(50);
+        SocialLoginCommand command = SocialLoginCommand.of(
+                SocialProvider.GOOGLE,
+                "google-3",
+                "social3@example.com",
+                longNickname,
+                "https://example.com/profile.png"
+        );
+        Member savedMember = Member.builder()
+                .email("social3@example.com")
+                .passwordHash(null)
+                .nickname(truncatedNickname)
+                .profileImage("https://example.com/profile.png")
+                .socialProvider("google")
+                .socialId("google-3")
+                .build();
+
+        when(memberRepository.existsByNickname(truncatedNickname)).thenReturn(false);
+        when(memberRepository.saveAndFlush(any(Member.class))).thenReturn(savedMember);
+
+        // when
+        Member member = socialMemberCreationService.create(command);
+
+        // then
+        assertThat(member).isSameAs(savedMember);
+        ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
+        verify(memberRepository).saveAndFlush(memberCaptor.capture());
+        assertThat(memberCaptor.getValue().getNickname())
+                .isEqualTo(truncatedNickname)
+                .hasSize(50);
+    }
 }

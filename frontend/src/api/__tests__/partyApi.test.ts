@@ -85,7 +85,7 @@ describe('partyApi', () => {
       ['community', 'parties', { mode: '랭크' }, { authScope: '7' }],
     )
     assert.deepEqual(
-      communityPartyPostsScopedQueryKey({}, null),
+      communityPartyPostsScopedQueryKey({}, 'anonymous'),
       ['community', 'parties', { authScope: 'anonymous' }],
     )
   })

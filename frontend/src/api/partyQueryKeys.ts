@@ -10,10 +10,10 @@ export function communityPartyPostsQueryKey(params: PartyPostsQueryParams = {}) 
 
 export function communityPartyPostsScopedQueryKey(
   params: PartyPostsQueryParams = {},
-  authUserId: string | null,
+  authScope: string,
 ) {
   return [
     ...communityPartyPostsQueryKey(params),
-    { authScope: authUserId ?? 'anonymous' },
+    { authScope },
   ] as const
 }

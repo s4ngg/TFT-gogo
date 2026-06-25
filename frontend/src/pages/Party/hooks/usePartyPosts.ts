@@ -123,10 +123,13 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
     () => toPartyPostsQueryParams(selectedFilter),
     [selectedFilter],
   )
-  const authScope = authUserId ?? 'anonymous'
+  const authScope = isAuthenticated
+    ? authUserId ?? 'authenticated-pending'
+    : 'anonymous'
+  const authScopeRef = useRef(authScope)
   const partyQueryKey = useMemo(
-    () => communityPartyPostsScopedQueryKey(partyQueryParams, authUserId),
-    [authUserId, partyQueryParams],
+    () => communityPartyPostsScopedQueryKey(partyQueryParams, authScope),
+    [authScope, partyQueryParams],
   )
 
   const partyQuery = useQuery({
@@ -142,6 +145,10 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
       isJoining ? joinPartyPost(postId) : cancelPartyJoin(postId),
   })
   const isPartyListUnavailable = partyQuery.isError || partyQuery.data?.source === 'unavailable'
+
+  useEffect(() => {
+    authScopeRef.current = authScope
+  }, [authScope])
 
   useEffect(() => {
     setLocalPosts([])
@@ -275,9 +282,14 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
       description,
       tags: requestTags,
     }
+    const mutationScope = authScope
 
     createMutation.mutate(request, {
       onSuccess: (createdPost) => {
+        if (authScopeRef.current !== mutationScope) {
+          return
+        }
+
         const serverPost = withAuthDisplayState(createdPost, authUserId, isAuthenticated)
 
         setLocalPosts((currentPosts) => [
@@ -303,6 +315,10 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
         void queryClient.invalidateQueries({ queryKey: COMMUNITY_PARTY_POSTS_QUERY_KEY })
       },
       onError: (error) => {
+        if (authScopeRef.current !== mutationScope) {
+          return
+        }
+
         setPartyStatusMessage(readMutationErrorMessage(error, '파티 모집글 등록에 실패했습니다.'))
       },
     })
@@ -360,11 +376,16 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
     setJoinedPostId(alreadyJoined ? null : postId)
     setPartyStatusMessage(nextMessage)
     joinRequestPostIdRef.current = postId
+    const mutationScope = authScope
 
     joinMutation.mutate(
       { postId, isJoining: !alreadyJoined },
       {
         onSuccess: async (serverPost) => {
+          if (authScopeRef.current !== mutationScope) {
+            return
+          }
+
           const confirmedPost = withAuthDisplayState(serverPost, authUserId, isAuthenticated)
 
           setLocalPosts((currentPosts) => replacePost(currentPosts, confirmedPost))
@@ -382,6 +403,10 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
           }
         },
         onError: (error) => {
+          if (authScopeRef.current !== mutationScope) {
+            return
+          }
+
           setLocalPosts((currentPosts) => replacePost(currentPosts, targetPost))
           setPostOverrides((currentOverrides) =>
             restorePostOverride(currentOverrides, postId, previousOverride),
@@ -393,6 +418,10 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
         },
         onSettled: (_data, error) => {
           joinRequestPostIdRef.current = null
+
+          if (authScopeRef.current !== mutationScope) {
+            return
+          }
 
           if (error) {
             void queryClient.invalidateQueries({ queryKey: COMMUNITY_PARTY_POSTS_QUERY_KEY })
