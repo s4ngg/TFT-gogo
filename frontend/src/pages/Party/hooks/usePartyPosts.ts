@@ -84,6 +84,13 @@ export function getPartyCustomTagLimit(tier: string) {
   return partyTierTags.has(tier.trim()) ? 3 : 4
 }
 
+export function getPartyAuthQueryState(isAuthenticated: boolean, authUserId: string | null) {
+  return {
+    isAuthIdentityReady: !isAuthenticated || authUserId !== null,
+    authScope: isAuthenticated && authUserId !== null ? authUserId : 'anonymous',
+  }
+}
+
 export function mergeTierIntoTags(tags: string[], tier: string) {
   const normalizedTier = tier.trim()
   const customTags = removePartyTierTags(tags)
@@ -123,9 +130,7 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
     () => toPartyPostsQueryParams(selectedFilter),
     [selectedFilter],
   )
-  const authScope = isAuthenticated
-    ? authUserId ?? 'authenticated-pending'
-    : 'anonymous'
+  const { authScope, isAuthIdentityReady } = getPartyAuthQueryState(isAuthenticated, authUserId)
   const authScopeRef = useRef(authScope)
   const partyQueryKey = useMemo(
     () => communityPartyPostsScopedQueryKey(partyQueryParams, authScope),
@@ -135,6 +140,7 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
   const partyQuery = useQuery({
     queryKey: partyQueryKey,
     queryFn: () => getPartyPosts(partyQueryParams),
+    enabled: isAuthIdentityReady,
     staleTime: 1000 * 60,
   })
   const createMutation = useMutation({
@@ -229,8 +235,10 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
     setPartyStatusMessage('')
 
     if (!isAuthenticated) {
-      setComposeError('로그인 후 파티 모집글을 등록할 수 있습니다.')
-      setIsComposeOpen(true)
+      if (!isComposeOpen) {
+        setComposeError('로그인 후 파티 모집글을 등록할 수 있습니다.')
+      }
+      setIsComposeOpen((currentValue) => !currentValue)
       return
     }
 
