@@ -334,6 +334,7 @@ function AdminPatchNotesManager() {
   const [showAdvancedPatchChangeForm, setShowAdvancedPatchChangeForm] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [parserWarnings, setParserWarnings] = useState<string[]>([])
 
   const patchNotesQuery = useQuery({
     queryFn: fetchAdminPatchNotes,
@@ -440,6 +441,7 @@ function AdminPatchNotesManager() {
       setShowPatchNoteForm(false)
       setShowAdvancedPatchChangeForm(false)
       setPatchNoteImportForm((prev) => ({ ...prev, sourceUrl: '', version: '' }))
+      setParserWarnings(result.parserWarnings)
       setMessage(
         `Riot ${result.version} 가져오기 완료: 패치노트 ${patchNoteStatus}, 변경사항 생성 ${result.createdChanges}개, 수정 ${result.updatedChanges}개, 스킵 ${result.skippedChanges}개${warningText}.`,
       )
@@ -515,6 +517,7 @@ function AdminPatchNotesManager() {
   function clearNotice() {
     setError('')
     setMessage('')
+    setParserWarnings([])
   }
 
   function clearPatchChangeEdit() {
@@ -779,7 +782,19 @@ function AdminPatchNotesManager() {
 
       {(message || error) && (
         <div className={error ? styles.errorBanner : styles.successBanner} role="status">
-          {error || message}
+          <p className={styles.noticeText}>{error || message}</p>
+          {!error && parserWarnings.length > 0 && (
+            <details className={styles.parserWarningDetails}>
+              <summary>파서 경고 상세 {parserWarnings.length}건</summary>
+              <ul className={styles.parserWarningList}>
+                {parserWarnings.map((warning, index) => (
+                  <li key={`${warning}-${index}`} className={styles.parserWarningItem}>
+                    {warning}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
         </div>
       )}
 
