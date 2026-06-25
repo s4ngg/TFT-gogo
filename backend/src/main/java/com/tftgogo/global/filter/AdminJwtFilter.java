@@ -25,6 +25,7 @@ public class AdminJwtFilter extends OncePerRequestFilter {
     private static final String ADMIN_PATH_PREFIX = "/api/admin";
     private static final String LOGIN_PATH = "/api/admin/auth/login";
     private static final String REFRESH_PATH = "/api/admin/auth/refresh";
+    private static final String LOGOUT_PATH = "/api/admin/auth/logout";
 
     private final AdminJwtTokenProvider adminJwtTokenProvider;
     private final ObjectMapper objectMapper;
@@ -40,8 +41,8 @@ public class AdminJwtFilter extends OncePerRequestFilter {
             return;
         }
 
-        // login/refresh don't require auth
-        if (path.equals(LOGIN_PATH) || path.equals(REFRESH_PATH)) {
+        // login/refresh/logout don't require a valid access token
+        if (path.equals(LOGIN_PATH) || path.equals(REFRESH_PATH) || path.equals(LOGOUT_PATH)) {
             filterChain.doFilter(request, response);
             return;
         }

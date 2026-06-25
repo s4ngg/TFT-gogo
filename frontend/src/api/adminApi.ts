@@ -1,4 +1,5 @@
 import axiosInstance from './axiosInstance'
+import type { AxiosRequestConfig } from 'axios'
 import type { RankFilter } from '../pages/Dashboard/dashboardData'
 import type { AdminRole } from '../types/admin'
 
@@ -8,6 +9,7 @@ const PATCH_NOTE_RIOT_IMPORT_TIMEOUT_MS = 120_000
 // ── In-memory access token (XSS로부터 보호) ────────────────────────────────
 // Refresh Token은 HttpOnly 쿠키로 서버가 관리한다.
 let _accessToken: string | null = null
+let _refreshPromise: Promise<string> | null = null
 
 export function setAccessToken(token: string): void {
   _accessToken = token
@@ -101,6 +103,42 @@ export async function adminRefresh(): Promise<string> {
   )
   return data.data.accessToken
 }
+
+// 관리자 API 401 → single-flight refresh → 재시도
+axiosInstance.interceptors.response.use(
+  (res) => res,
+  async (error) => {
+    const config = error.config as AxiosRequestConfig & { _adminRetried?: boolean }
+    const isAdminPath =
+      typeof config?.url === 'string' && config.url.startsWith('/admin/')
+    const is401 = error.response?.status === 401
+
+    if (!isAdminPath || !is401 || config._adminRetried) {
+      return Promise.reject(error)
+    }
+
+    config._adminRetried = true
+
+    // single-flight: 동시에 여러 401이 와도 refresh는 한 번만
+    if (!_refreshPromise) {
+      _refreshPromise = adminRefresh().finally(() => {
+        _refreshPromise = null
+      })
+    }
+
+    try {
+      const newToken = await _refreshPromise
+      setAccessToken(newToken)
+      if (config.headers) {
+        (config.headers as Record<string, string>)['Authorization'] = `Bearer ${newToken}`
+      }
+      return axiosInstance(config)
+    } catch {
+      clearAccessToken()
+      return Promise.reject(error)
+    }
+  },
+)
 
 export async function adminLogout(): Promise<void> {
   await axiosInstance.post('/admin/auth/logout', null, { withCredentials: true })

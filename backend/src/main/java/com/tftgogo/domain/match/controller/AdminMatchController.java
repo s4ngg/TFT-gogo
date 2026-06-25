@@ -8,6 +8,7 @@ import com.tftgogo.global.response.ApiResponse;
 import com.tftgogo.global.riot.RiotRateLimiter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,6 +19,7 @@ import java.time.format.DateTimeFormatter;
 @RestController
 @RequestMapping("/api/admin/match")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('ADMIN_MASTER', 'ADMIN_EDITOR', 'ADMIN_VIEWER')")
 public class AdminMatchController implements AdminMatchControllerDocs {
 
     private static final int RANKED_QUEUE_ID = 1100;

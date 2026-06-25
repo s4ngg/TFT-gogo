@@ -17,6 +17,8 @@ import java.util.Date;
 @RequiredArgsConstructor
 public class AdminJwtTokenProvider {
 
+    public static final String TOKEN_TYPE = "admin";
+    private static final String CLAIM_TYP = "typ";
     private static final String CLAIM_ROLE = "role";
     private static final String CLAIM_USERNAME = "username";
     private static final long ACCESS_TOKEN_EXPIRATION_MS = 30 * 60 * 1000L;   // 30분
@@ -27,6 +29,7 @@ public class AdminJwtTokenProvider {
         Date now = new Date();
         return Jwts.builder()
                 .subject(String.valueOf(adminId))
+                .claim(CLAIM_TYP, TOKEN_TYPE)
                 .claim(CLAIM_USERNAME, username)
                 .claim(CLAIM_ROLE, role.name())
                 .issuedAt(now)
@@ -38,8 +41,17 @@ public class AdminJwtTokenProvider {
     public boolean validateToken(String token) {
         try {
             Claims claims = parseClaims(token);
-            return claims.getSubject() != null
+            return TOKEN_TYPE.equals(claims.get(CLAIM_TYP, String.class))
+                    && claims.getSubject() != null
                     && claims.get(CLAIM_ROLE, String.class) != null;
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    public boolean isAdminToken(String token) {
+        try {
+            return TOKEN_TYPE.equals(parseClaims(token).get(CLAIM_TYP, String.class));
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }

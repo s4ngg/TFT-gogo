@@ -73,7 +73,8 @@ public class AdminAuthService {
         }
 
         String hash = hashToken(raw);
-        AdminRefreshToken stored = adminRefreshTokenRepository.findByTokenHash(hash)
+        // 비관적 락으로 동시 rotation 분기 방지
+        AdminRefreshToken stored = adminRefreshTokenRepository.findByTokenHashForUpdate(hash)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ADMIN_REFRESH_TOKEN_INVALID));
 
         if (stored.isExpired()) {
@@ -102,7 +103,7 @@ public class AdminAuthService {
         String raw = extractRefreshCookieValue(httpRequest);
         if (raw != null) {
             String hash = hashToken(raw);
-            adminRefreshTokenRepository.findByTokenHash(hash)
+            adminRefreshTokenRepository.findByTokenHashForUpdate(hash)
                     .ifPresent(adminRefreshTokenRepository::delete);
         }
         clearRefreshCookie(httpResponse);

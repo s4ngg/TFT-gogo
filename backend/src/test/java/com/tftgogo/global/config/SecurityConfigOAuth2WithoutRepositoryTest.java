@@ -1,5 +1,6 @@
 package com.tftgogo.global.config;
 
+import com.tftgogo.domain.admin.service.AdminAuditService;
 import com.tftgogo.global.filter.AdminJwtFilter;
 import com.tftgogo.global.filter.JwtAuthenticationFilter;
 import com.tftgogo.global.security.oauth.SocialOAuth2FailureHandler;
@@ -35,6 +36,9 @@ class SecurityConfigOAuth2WithoutRepositoryTest {
 
     @MockBean
     private AdminJwtFilter adminJwtFilter;
+
+    @MockBean
+    private AdminAuditService adminAuditService;
 
     @MockBean
     private JwtAuthenticationFilter jwtAuthenticationFilter;
