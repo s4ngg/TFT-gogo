@@ -529,14 +529,23 @@
 
 .changeStatusBadge {
   display: inline-flex;
+  gap: var(--space-xs);
   align-items: center;
-  height: 27px;
-  padding: 0 var(--space-lg);
+  min-height: 22px;
+  padding: 2px var(--space-sm);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-button);
+  border-radius: var(--radius-xs);
   font-size: var(--font-size-xs);
   font-weight: 900;
+  line-height: 1.2;
   white-space: nowrap;
+}
+
+.changeStatusBadge::before {
+  content: '상태';
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 800;
 }
 
 .statusEnabled {
@@ -711,16 +720,39 @@
 }
 
 .insightPanel li {
+  display: block;
+}
+
+.insightButton {
+  width: 100%;
   display: grid;
   grid-template-columns: 18px 1fr;
   gap: 8px;
+  padding: var(--space-xs) 0;
+  border: 0;
+  border-radius: var(--radius-xs);
   color: #c6ccd8;
+  background: transparent;
   font-size: 13px;
+  font-family: inherit;
   line-height: 1.55;
+  text-align: left;
   word-break: keep-all;
+  cursor: pointer;
 }
 
-.insightPanel li svg {
+.insightButton:hover,
+.insightButton:focus-visible {
+  color: var(--text-main);
+  background: var(--cyan-bg-faint);
+}
+
+.insightButton:focus-visible {
+  outline: 2px solid var(--cyan-border-light);
+  outline-offset: 2px;
+}
+
+.insightButton svg {
   color: var(--color-success);
 }
 
