@@ -89,16 +89,13 @@ export function tftItemIconOnError(e: React.SyntheticEvent<HTMLImageElement>): v
 }
 
 const TRAIT_ICON_PATHS: Readonly<Record<string, string>> = {
-  tft17_vanguard: traitIconPath(12, 'Vanguard'),
   tft17_darkstar: traitIconPath(17, 'DarkStar'),
   tft17_astronaut: traitIconPath(17, 'Astronaut'),
   tft17_rogue: traitIconPath(17, 'Rogue'),
   tft17_stargazer: traitIconPath(17, 'Stargazer'),
   tft17_shepherd: traitIconPath(17, 'Shepherd'),
-  tft17_sniper: traitIconPathWithoutSet(6, 'Sniper'),
   tft17_replicator: traitIconPath(17, 'Replicator'),
   tft17_psyops: traitIconPath(17, 'PsyOps'),
-  tft17_bastion: traitIconPathWithoutSet(9, 'Bastion'),
 }
 
 const championImagePaths: Readonly<Record<string, string>> = {
