@@ -777,11 +777,6 @@
   background: var(--cyan-bg-faint);
 }
 
-.quickCategoryButton strong {
-  color: var(--accent-bright);
-  font-size: var(--font-size-xs);
-}
-
 .activeQuickCategoryButton {
   border-color: var(--color-cyan);
   color: var(--color-cyan);
