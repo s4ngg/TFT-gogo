@@ -12,8 +12,11 @@ interface GuideTabPanelsProps {
   activeTab: GuideTab
   favoriteChampions: string[]
   guideData: GuideCatalog
+  isGuideFallbackData: boolean
+  isGuideFetching: boolean
   onFavoriteToggle: (championName: string) => void
   onGuideJump: (tab: GuideTab, query: string, label?: string) => void
+  onGuideRetry: () => void
   onRecentGuideAdd: (guide: RecentGuide) => void
   query: string
 }
@@ -22,8 +25,11 @@ function GuideTabPanels({
   activeTab,
   favoriteChampions,
   guideData,
+  isGuideFallbackData,
+  isGuideFetching,
   onFavoriteToggle,
   onGuideJump,
+  onGuideRetry,
   onRecentGuideAdd,
   query,
 }: GuideTabPanelsProps) {
@@ -32,7 +38,10 @@ function GuideTabPanels({
       <div id="guide-panel-traits" role="tabpanel" aria-labelledby="guide-tab-traits">
         <TraitGuideView
           fallbackData={guideData}
+          isGuideFallbackData={isGuideFallbackData}
+          isGuideFetching={isGuideFetching}
           onChampionSelect={(championName) => onGuideJump('champions', championName, championName)}
+          onGuideRetry={onGuideRetry}
           patchVersion={guideData.patchVersion}
           query={query}
         />
@@ -45,6 +54,9 @@ function GuideTabPanels({
       <div id="guide-panel-items" role="tabpanel" aria-labelledby="guide-tab-items">
         <ItemStatsView
           fallbackData={guideData}
+          isGuideFallbackData={isGuideFallbackData}
+          isGuideFetching={isGuideFetching}
+          onGuideRetry={onGuideRetry}
           patchVersion={guideData.patchVersion}
           query={query}
         />
@@ -57,6 +69,9 @@ function GuideTabPanels({
       <div id="guide-panel-augments" role="tabpanel" aria-labelledby="guide-tab-augments">
         <AugmentGuideView
           fallbackData={guideData}
+          isGuideFallbackData={isGuideFallbackData}
+          isGuideFetching={isGuideFetching}
+          onGuideRetry={onGuideRetry}
           patchVersion={guideData.patchVersion}
           query={query}
         />
@@ -69,12 +84,15 @@ function GuideTabPanels({
       <ChampionGuideView
         fallbackData={guideData}
         favoriteChampions={favoriteChampions}
+        isGuideFallbackData={isGuideFallbackData}
+        isGuideFetching={isGuideFetching}
         onChampionOpen={(championName) => onRecentGuideAdd({
           label: championName,
           query: championName,
           tab: 'champions',
         })}
         onFavoriteToggle={onFavoriteToggle}
+        onGuideRetry={onGuideRetry}
         patchVersion={guideData.patchVersion}
         query={query}
       />

@@ -10,7 +10,12 @@ import { useGuidePageState } from './hooks/useGuidePageState'
 import styles from './Guide.module.css'
 
 function Guide() {
-  const { guideData } = useGuideCatalog({ fallbackData: guideFallbackData })
+  const {
+    guideData,
+    isFallbackData: isGuideFallbackData,
+    isFetching: isGuideFetching,
+    refetchGuideData,
+  } = useGuideCatalog({ fallbackData: guideFallbackData })
   const {
     activeTab,
     activeTabInfo,
@@ -60,8 +65,13 @@ function Guide() {
           activeTab={activeTab}
           favoriteChampions={favoriteChampions}
           guideData={guideData}
+          isGuideFallbackData={isGuideFallbackData}
+          isGuideFetching={isGuideFetching}
           onFavoriteToggle={handleFavoriteToggle}
           onGuideJump={jumpToGuide}
+          onGuideRetry={() => {
+            void refetchGuideData()
+          }}
           onRecentGuideAdd={addRecentGuide}
           query={debouncedSearch}
         />
