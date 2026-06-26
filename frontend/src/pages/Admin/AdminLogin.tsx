@@ -37,8 +37,9 @@ function AdminLogin() {
     <div className={pageStyles.loginPage}>
       <form className={styles.tokenForm} onSubmit={handleSubmit}>
         <h2 className={styles.title}>관리자 로그인</h2>
-        <label className={styles.tokenLabel}>아이디</label>
+        <label className={styles.tokenLabel} htmlFor="admin-username">아이디</label>
         <input
+          id="admin-username"
           type="text"
           className={styles.tokenInput}
           value={username}
@@ -46,20 +47,27 @@ function AdminLogin() {
           placeholder="관리자 아이디"
           autoFocus
           autoComplete="username"
+          required
           disabled={loading}
         />
-        <label className={styles.tokenLabel}>비밀번호</label>
+        <label className={styles.tokenLabel} htmlFor="admin-password">비밀번호</label>
         <input
+          id="admin-password"
           type="password"
           className={styles.tokenInput}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="비밀번호"
           autoComplete="current-password"
+          required
           disabled={loading}
         />
         {error && <span className={styles.tokenError}>{error}</span>}
-        <button type="submit" className={styles.tokenBtn} disabled={loading}>
+        <button
+          type="submit"
+          className={styles.tokenBtn}
+          disabled={loading || !username.trim() || !password}
+        >
           {loading ? '로그인 중...' : '로그인'}
         </button>
       </form>

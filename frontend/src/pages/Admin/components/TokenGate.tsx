@@ -34,8 +34,9 @@ export default function TokenGate({ onSuccess }: { onSuccess: () => void }) {
     <div className={styles.page}>
       <form className={styles.tokenForm} onSubmit={handleSubmit}>
         <h2 className={styles.title}>관리자 로그인</h2>
-        <label className={styles.tokenLabel}>아이디</label>
+        <label className={styles.tokenLabel} htmlFor="tg-username">아이디</label>
         <input
+          id="tg-username"
           type="text"
           className={styles.tokenInput}
           value={username}
@@ -43,20 +44,27 @@ export default function TokenGate({ onSuccess }: { onSuccess: () => void }) {
           placeholder="관리자 아이디"
           autoFocus
           autoComplete="username"
+          required
           disabled={loading}
         />
-        <label className={styles.tokenLabel}>비밀번호</label>
+        <label className={styles.tokenLabel} htmlFor="tg-password">비밀번호</label>
         <input
+          id="tg-password"
           type="password"
           className={styles.tokenInput}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="비밀번호"
           autoComplete="current-password"
+          required
           disabled={loading}
         />
         {error && <span className={styles.tokenError}>{error}</span>}
-        <button type="submit" className={styles.tokenBtn} disabled={loading}>
+        <button
+          type="submit"
+          className={styles.tokenBtn}
+          disabled={loading || !username.trim() || !password}
+        >
           {loading ? '로그인 중...' : '로그인'}
         </button>
       </form>

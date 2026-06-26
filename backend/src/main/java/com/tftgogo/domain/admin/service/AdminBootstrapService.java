@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,12 +39,17 @@ public class AdminBootstrapService {
             return;
         }
 
-        AdminAccount master = AdminAccount.builder()
-                .username(BOOTSTRAP_USERNAME)
-                .password(passwordEncoder.encode(bootstrapPassword))
-                .role(AdminRole.MASTER)
-                .build();
-        adminAccountRepository.save(master);
-        log.info("[AdminBootstrap] MASTER 계정 '{}' 생성 완료.", BOOTSTRAP_USERNAME);
+        try {
+            AdminAccount master = AdminAccount.builder()
+                    .username(BOOTSTRAP_USERNAME)
+                    .password(passwordEncoder.encode(bootstrapPassword))
+                    .role(AdminRole.MASTER)
+                    .build();
+            adminAccountRepository.save(master);
+            log.info("[AdminBootstrap] MASTER 계정 '{}' 생성 완료.", BOOTSTRAP_USERNAME);
+        } catch (DataIntegrityViolationException e) {
+            // 동시 인스턴스가 먼저 생성 완료한 경우 — 정상
+            log.info("[AdminBootstrap] '{}' 계정이 다른 인스턴스에 의해 이미 생성되었습니다.", BOOTSTRAP_USERNAME);
+        }
     }
 }

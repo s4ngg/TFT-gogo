@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
 import type { AdminSession } from '../types/admin'
 
 // 모듈 수준의 in-memory 세션 (페이지 새로고침 시 초기화 → refresh cookie로 복구)
@@ -13,23 +13,26 @@ export function getAdminSessionSnapshot(): AdminSession | null {
   return _session
 }
 
+function subscribeAdminSession(fn: () => void): () => void {
+  _listeners.add(fn)
+  return () => _listeners.delete(fn)
+}
+
 export function useAdminSession() {
-  const [, rerender] = useState(0)
+  const session = useSyncExternalStore(
+    subscribeAdminSession,
+    getAdminSessionSnapshot,
+    getAdminSessionSnapshot,
+  )
 
-  const subscribe = useCallback((fn: () => void) => {
-    _listeners.add(fn)
-    return () => _listeners.delete(fn)
-  }, [])
-
-  const setSession = useCallback((session: AdminSession | null) => {
-    _session = session
+  const setSession = useCallback((newSession: AdminSession | null) => {
+    _session = newSession
     notifyListeners()
-    rerender((n) => n + 1)
   }, [])
 
   return {
-    session: _session,
+    session,
     setSession,
-    subscribe,
+    subscribe: subscribeAdminSession,
   }
 }
