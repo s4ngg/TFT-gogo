@@ -3,14 +3,20 @@ package com.tftgogo.global.cdragon.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tftgogo.global.cdragon.config.CommunityDragonProperties;
+import com.tftgogo.global.exception.BusinessException;
+import com.tftgogo.global.exception.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -23,19 +29,19 @@ class TftAssetCacheServiceTest {
     @Mock
     private RestTemplate restTemplate;
 
-    private CommunityDragonProperties communityDragonProperties;
+    @Spy
+    private CommunityDragonProperties communityDragonProperties = new CommunityDragonProperties();
+
+    @Spy
+    private ObjectMapper objectMapper = new ObjectMapper();
+
+    @InjectMocks
     private TftAssetCacheService tftAssetCacheService;
 
     @BeforeEach
     void setUp() {
-        communityDragonProperties = new CommunityDragonProperties();
         communityDragonProperties.setTftKoKrUrl(CDRAGON_URL);
         communityDragonProperties.setAssetBaseUrl("https://raw.communitydragon.org/latest/game");
-        tftAssetCacheService = new TftAssetCacheService(
-                restTemplate,
-                communityDragonProperties,
-                new ObjectMapper()
-        );
     }
 
     @Test
@@ -70,6 +76,43 @@ class TftAssetCacheServiceTest {
         assertThat(tftAssetCacheService.getItemIconUrl("TFT_Item_Test"))
                 .isEqualTo("https://raw.communitydragon.org/latest/game/assets/maps/particles/tft/item_test.png");
         verify(restTemplate, times(1)).getForObject(CDRAGON_URL, String.class);
+    }
+
+    @Test
+    void cdragon_locale_empty_response_throws_external_api_error() {
+        // given
+        when(restTemplate.getForObject(CDRAGON_URL, String.class)).thenReturn("");
+
+        // when & then
+        assertThatThrownBy(() -> tftAssetCacheService.getTftKoKrLocale())
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.EXTERNAL_API_ERROR);
+    }
+
+    @Test
+    void cdragon_locale_rest_failure_throws_external_api_error() {
+        // given
+        when(restTemplate.getForObject(CDRAGON_URL, String.class))
+                .thenThrow(new RestClientException("Connection timeout"));
+
+        // when & then
+        assertThatThrownBy(() -> tftAssetCacheService.getTftKoKrLocale())
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.EXTERNAL_API_ERROR);
+    }
+
+    @Test
+    void cdragon_locale_parse_failure_throws_external_api_error() {
+        // given
+        when(restTemplate.getForObject(CDRAGON_URL, String.class)).thenReturn("invalid-json-{{{");
+
+        // when & then
+        assertThatThrownBy(() -> tftAssetCacheService.getTftKoKrLocale())
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.EXTERNAL_API_ERROR);
     }
 
     private String cdragonJson() {

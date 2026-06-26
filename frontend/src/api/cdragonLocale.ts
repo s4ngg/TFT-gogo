@@ -228,6 +228,7 @@ export function getTraitName(name: string, locale: TFTLocale | undefined): strin
   return locale.traitBySuffix.get(name.toLowerCase()) ?? name
 }
 
+// item apiName -> localized name. apiFallback is the original item name from the API.
 export function getItemName(itemId: string, locale: TFTLocale | undefined, apiFallback?: string): string {
   const fallback = apiFallback ?? itemId.split('_').pop() ?? itemId
   if (!locale) return fallback
