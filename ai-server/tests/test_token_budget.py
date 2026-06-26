@@ -61,15 +61,23 @@ def test_예산_초과_시_413_HTTPException():
 
 
 def test_설정_모델_변경_시_인코딩_갱신():
+    import app.core.token_budget as tb_module
+
     messages = [{"role": "user", "content": "test"}]
     with patch("app.core.token_budget.settings") as mock_settings:
         mock_settings.openai_model = "gpt-4o-mini"
+        tb_module._encoding = None
+        tb_module._encoding_model = None
         result1 = estimate_tokens(messages)
+        enc_model_1 = tb_module._encoding_model
 
     with patch("app.core.token_budget.settings") as mock_settings:
         mock_settings.openai_model = "gpt-4o"
         result2 = estimate_tokens(messages)
+        enc_model_2 = tb_module._encoding_model
 
-    # 두 모델 모두 유효한 토큰 수를 반환
     assert result1 > 0
     assert result2 > 0
+    assert enc_model_1 == "gpt-4o-mini"
+    assert enc_model_2 == "gpt-4o"
+    assert enc_model_1 != enc_model_2

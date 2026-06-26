@@ -4,8 +4,7 @@ rate_limiter.py 단위 테스트
 given / when / then 패턴으로 작성.
 전역 토큰 버킷의 허용/차단과 미들웨어의 429 응답을 검증한다.
 """
-import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import patch
 
 from starlette.testclient import TestClient
 from fastapi import FastAPI
@@ -13,8 +12,6 @@ from fastapi import FastAPI
 from app.core.rate_limiter import (
     RateLimitMiddleware,
     _check_rate_limit,
-    _TokenBucket,
-    _global_bucket,
 )
 import app.core.rate_limiter as rl_module
 

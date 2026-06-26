@@ -10,11 +10,6 @@ from unittest.mock import patch
 from app.core.circuit_breaker import CircuitBreaker
 
 
-def _make_breaker(threshold: int = 3, window: int = 60, cooldown: int = 5) -> CircuitBreaker:
-    breaker = CircuitBreaker()
-    return breaker
-
-
 def _settings(threshold: int = 3, window: int = 60, cooldown: int = 5):
     mock = type("S", (), {
         "circuit_breaker_threshold": threshold,
