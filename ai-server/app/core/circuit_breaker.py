@@ -3,6 +3,10 @@ OpenAI 호출용 Circuit Breaker.
 
 슬라이딩 윈도우 내 연속 실패 횟수가 임계치를 넘으면
 일정 시간 동안 OpenAI 호출을 차단하고 fallback만 반환한다.
+
+NOTE: 인메모리 상태이므로 다중 워커(uvicorn --workers N) 환경에서는
+워커별로 독립 상태를 가진다. 실효 임계치가 threshold × 워커 수로
+늘어날 수 있으며, 현재는 단일 워커 배포를 전제한다.
 """
 import logging
 import time

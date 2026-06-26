@@ -64,6 +64,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             if not _check_rate_limit():
                 return JSONResponse(
                     status_code=429,
-                    content={"detail": "AI 서버 요청 한도를 초과했습니다. 잠시 후 다시 시도해 주세요."},
+                    content={
+                        "success": False,
+                        "code": "RATE_LIMIT_EXCEEDED",
+                        "message": "AI 서버 요청 한도를 초과했습니다. 잠시 후 다시 시도해 주세요.",
+                        "data": None,
+                    },
                 )
         return await call_next(request)
