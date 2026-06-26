@@ -74,6 +74,7 @@ function AdminGuides() {
 
     setImporting(true)
     setError('')
+    setResult(null)
     try {
       const response = await importGuideCdragonData(payload)
       setResult(response)
