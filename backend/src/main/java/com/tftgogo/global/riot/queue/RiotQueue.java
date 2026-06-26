@@ -74,7 +74,11 @@ public class RiotQueue implements DisposableBean {
             return enqueue(foregroundQueue, task, foregroundTaskTtlMs);
         });
         if (created[0]) {
-            future.whenComplete((r, ex) -> deduplicationMap.remove(dedupKey, future));
+            if (future.isDone()) {
+                deduplicationMap.remove(dedupKey, future);
+            } else {
+                future.whenComplete((r, ex) -> deduplicationMap.remove(dedupKey, future));
+            }
         }
         return future;
     }
@@ -97,7 +101,11 @@ public class RiotQueue implements DisposableBean {
             return enqueue(backgroundQueue, task, backgroundTaskTtlMs);
         });
         if (created[0]) {
-            future.whenComplete((r, ex) -> deduplicationMap.remove(dedupKey, future));
+            if (future.isDone()) {
+                deduplicationMap.remove(dedupKey, future);
+            } else {
+                future.whenComplete((r, ex) -> deduplicationMap.remove(dedupKey, future));
+            }
         }
         return future;
     }
