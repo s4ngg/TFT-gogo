@@ -37,9 +37,9 @@ public interface GuideControllerDocs {
             @RequestParam(name = "page", required = false) Integer page,
             @Parameter(description = "페이지 크기", example = "10")
             @RequestParam(name = "pageSize", required = false) Integer pageSize,
-            @Parameter(description = "정렬 기준(avgPlace, pickRate, top4, winRate)", example = "avgPlace")
+            @Parameter(description = "현재 split guide 조회에서는 지원하지 않는 정렬 기준입니다. 전달 시 400을 반환합니다.")
             @RequestParam(name = "sortKey", required = false) String sortKey,
-            @Parameter(description = "정렬 방향(asc, desc)", example = "asc")
+            @Parameter(description = "현재 split guide 조회에서는 지원하지 않는 정렬 방향입니다. 전달 시 400을 반환합니다.")
             @RequestParam(name = "sortDir", required = false) String sortDir,
             @Parameter(description = "챔피언 코스트 필터", example = "4")
             @RequestParam(name = "cost", required = false) Integer cost

@@ -86,6 +86,7 @@ Page: Party (/party).
 </request>
 <response name="ChatMessageResponse">
 - id / roomId / content / createdAt: message metadata and body
+- senderId: authenticated sender user id. Frontend uses this to distinguish the current user's messages from others.
 - senderName: server-derived member nickname
 - tier: server-controlled display tier. MVP default is Unranked.
 </response>

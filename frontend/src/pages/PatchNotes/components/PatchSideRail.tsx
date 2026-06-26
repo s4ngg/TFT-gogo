@@ -15,7 +15,13 @@ interface PatchSideRailProps {
   selectedPatch: PatchNoteDetail
   selectedPatchVersion: string
   onCategorySelect: (category: PatchCategory) => void
+  onInsightSelect: (category: PatchCategory) => void
   onPatchSelect: (version: string) => void
+}
+
+interface InsightItem {
+  category: PatchCategory
+  label: string
 }
 
 function getPatchSeason(version: string) {
@@ -78,17 +84,40 @@ function getInsightLabel(highlight: string) {
   if (trimmedHighlight.includes('버그 수정')) return '버그 수정'
   if (trimmedHighlight.includes('밸런스 변경')) return '밸런스 변경'
 
-  return trimmedHighlight
+  return trimmedHighlight.replace(/\s*[:：]\s*$/u, '')
 }
 
-function buildInsightItems(highlights: string[]) {
-  return Array.from(new Set(highlights.map(getInsightLabel).filter(Boolean))).slice(0, 4)
+function getInsightCategory(highlight: string): PatchCategory {
+  if (/챔피언|유닛/u.test(highlight)) return '챔피언'
+  if (/시너지|특성/u.test(highlight)) return '시너지'
+  if (/아이템|장비/u.test(highlight)) return '아이템'
+  if (/증강/u.test(highlight)) return '증강체'
+  if (/시스템|버그|조우자|오류|수정/u.test(highlight)) return '시스템'
+
+  return '전체'
+}
+
+function buildInsightItems(highlights: string[]): InsightItem[] {
+  const insightMap = new Map<string, InsightItem>()
+
+  highlights.forEach((highlight) => {
+    const label = getInsightLabel(highlight)
+    if (!label || insightMap.has(label)) return
+
+    insightMap.set(label, {
+      category: getInsightCategory(`${highlight} ${label}`),
+      label,
+    })
+  })
+
+  return Array.from(insightMap.values()).slice(0, 4)
 }
 
 function PatchSideRail({
   activeCategory,
   categoryCounts,
   onCategorySelect,
+  onInsightSelect,
   onPatchSelect,
   patchHistory,
   selectedPatch,
@@ -199,9 +228,15 @@ function PatchSideRail({
             <span className={styles.insightSectionTitle}>주요 변경</span>
             <ul>
               {insightItems.map((highlight) => (
-                <li key={highlight}>
-                  <CheckCircle2 size={16} />
-                  <span>{highlight}</span>
+                <li key={highlight.label}>
+                  <button
+                    type="button"
+                    className={styles.insightButton}
+                    onClick={() => onInsightSelect(highlight.category)}
+                  >
+                    <CheckCircle2 size={16} />
+                    <span>{highlight.label}</span>
+                  </button>
                 </li>
               ))}
             </ul>
@@ -215,7 +250,7 @@ function PatchSideRail({
               빠른 보기
             </span>
             <div className={styles.quickCategoryGrid}>
-              {quickCategories.map(({ category, count }) => (
+              {quickCategories.map(({ category }) => (
                 <button
                   key={category}
                   type="button"
@@ -224,7 +259,6 @@ function PatchSideRail({
                   aria-pressed={activeCategory === category}
                 >
                   <span>{category}</span>
-                  <strong>{count}</strong>
                 </button>
               ))}
             </div>

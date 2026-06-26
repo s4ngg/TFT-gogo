@@ -8,10 +8,12 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
   flyway:
     enabled: true
-    baseline-on-migrate: true
-    baseline-version: 0
     locations: classpath:db/migration
     validate-on-migrate: true
+    # New DB: Flyway applies V1__init_schema.sql onwards automatically.
+    # Existing DB: run `flyway baseline -baselineVersion=16` once
+    #   (16 = last migration version consolidated into V1).
+    baseline-on-migrate: false
   jpa:
     hibernate:
       ddl-auto: validate

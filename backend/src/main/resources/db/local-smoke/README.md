@@ -1,20 +1,36 @@
 # v0.4 로컬 스모크 DB 기준
 
-이 폴더는 QA 전에 새 MySQL DB에서 주요 백엔드 기능이 최소 동작하도록 수동 DDL과 스모크 데이터를 정의합니다.
+이 폴더는 QA 전에 새 MySQL DB에서 주요 백엔드 기능이 최소 동작하도록 Flyway callback seed 데이터를 정의합니다.
 
 ## 운영 원칙
 
-- 현재 스키마 관리는 수동 SQL로 진행합니다.
-- `spring.jpa.hibernate.ddl-auto`는 `none`입니다.
-- `backend/build.gradle`에는 Flyway/Liquibase가 설정되어 있지 않습니다.
+- 스키마 관리는 Flyway 버전 마이그레이션(`db/migration/V*.sql`)으로 진행합니다.
+- `spring.jpa.hibernate.ddl-auto`는 `validate`입니다 — 엔티티와 스키마가 불일치하면 앱 시작 시 실패합니다.
+- `backend/build.gradle`에 `flyway-core`, `flyway-mysql` 의존성이 포함되어 있습니다.
 - DB 스키마 변경 PR은 `docs/qa/db-schema-change-rules.md`를 따릅니다.
-- `01_schema.sql`은 현재 JPA Entity 기준 테이블과 예약 채팅 테이블을 생성하는 QA 신규 DB 부트스트랩 기준 DDL입니다.
+- `01_schema.sql`은 참조용 전체 DDL 스냅샷이며, 실제 스키마 생성은 Flyway `db/migration/V1__init_schema.sql`이 수행합니다.
+- `afterMigrate__seed.sql`은 Flyway `afterMigrate` callback으로, 마이그레이션 완료 후 자동 실행되어 스모크 시드 데이터를 삽입합니다.
 - ERD Cloud export SQL은 #419 해결 전까지 실행 DDL의 정본으로 보지 않습니다.
-- `02_seed.sql`은 split Guide/PatchNotes 공개 API 확인용 데이터와 고정 채팅 room id 데이터를 넣습니다.
 - 공개 Guide/PatchNotes API와 Auth/Party 기본 흐름은 `RIOT_API_KEY` 없이 확인할 수 있습니다.
 - 소셜 OAuth E2E는 DB만으로 완료되지 않으며 provider `client-id`/`client-secret`과 callback URL 설정이 필요합니다.
-- 이 스모크 경로에서는 `ai-server/.env`가 선택 사항이며, MySQL, Redis, backend만 필요합니다.
+- 이 스모크 경로에서는 `ai-server/.env`가 선택 사항이며, MySQL, backend만 필요합니다.
 - 자세한 DDL/ERD 기준과 QA 범위는 `docs/qa/v0.4-db-ddl-eld.md`를 확인합니다.
+
+## Flyway 마이그레이션 계약
+
+### 신규 DB (fresh)
+
+`V1__init_schema.sql`부터 순차 적용됩니다. `baseline-on-migrate=false`이므로 별도 baseline 없이 Flyway가 V1부터 실행합니다.
+
+### 기존 DB (V16까지 수동 적용된 상태)
+
+기존 DB에는 Flyway history가 없으므로 먼저 수동으로 baseline을 설정해야 합니다.
+
+```bash
+flyway baseline -baselineVersion=16
+```
+
+이후 앱을 시작하면 V17부터 자동 적용됩니다. `baseline-on-migrate=false`이므로 이 단계를 건너뛰면 앱 시작이 실패합니다.
 
 ## 로컬 전용 기본값
 
@@ -30,8 +46,14 @@ docker compose up -d mysql redis
 
 ## 스키마와 시드 적용
 
-Docker Compose의 MySQL 서비스는 빈 `mysql-data` volume이 처음 만들어질 때 `01_schema.sql`, `02_seed.sql`을 자동 실행합니다.
-이미 생성된 volume에는 init SQL이 다시 실행되지 않으므로, 기존 DB를 초기화하려면 먼저 아래 명령을 실행합니다.
+스키마와 시드는 backend 시작 시 Flyway가 자동으로 적용합니다.
+
+- **스키마**: `classpath:db/migration`의 `V*.sql` 파일을 순차 실행
+- **시드**: `classpath:db/local-smoke`의 `afterMigrate__seed.sql` callback을 마이그레이션 완료 후 실행
+
+Docker Compose backend 서비스는 `SPRING_FLYWAY_LOCATIONS`를 `classpath:db/migration,classpath:db/local-smoke`로 설정하여 시드 callback이 포함됩니다.
+
+기존 DB를 완전히 초기화하려면 먼저 아래 명령을 실행합니다.
 
 주의: `docker compose down -v`는 Compose named volume을 삭제하므로 로컬 QA DB 데이터가 사라집니다.
 
@@ -41,7 +63,7 @@ docker compose down -v
 
 ## 적용 검증
 
-2026-06-16 기준 MySQL 8.0.44 임시 DB에서 `01_schema.sql`, `02_seed.sql` 순차 적용을 확인했습니다.
+2026-06-16 기준 MySQL 8.0.44 임시 DB에서 Flyway 마이그레이션 적용을 확인했습니다.
 
 - 생성 테이블: 22개
 - `chat_rooms` seed: 4개
@@ -49,25 +71,6 @@ docker compose down -v
 - `patch_notes` seed: 1개
 - `patch_note_changes` seed: 2개
 - `backend` `compileJava`: Pass
-
-host MySQL client를 사용할 때:
-
-```powershell
-mysql --default-character-set=utf8mb4 -h 127.0.0.1 -P 3307 -u tftuser -ptftpass tftgogo < backend/src/main/resources/db/local-smoke/01_schema.sql
-mysql --default-character-set=utf8mb4 -h 127.0.0.1 -P 3307 -u tftuser -ptftpass tftgogo < backend/src/main/resources/db/local-smoke/02_seed.sql
-```
-
-터미널 히스토리에 비밀번호를 남기고 싶지 않다면 `-ptftpass` 대신 `-p`만 입력하고 프롬프트에서 비밀번호를 입력합니다.
-
-MySQL container를 통해 실행할 때:
-
-```powershell
-Get-Content -Encoding UTF8 backend/src/main/resources/db/local-smoke/01_schema.sql | docker exec -i tftgogo-mysql mysql --default-character-set=utf8mb4 -utftuser -ptftpass tftgogo
-docker cp backend/src/main/resources/db/local-smoke/02_seed.sql tftgogo-mysql:/tmp/02_seed.sql
-docker exec tftgogo-mysql sh -c "mysql --default-character-set=utf8mb4 -utftuser -ptftpass tftgogo < /tmp/02_seed.sql"
-```
-
-`02_seed.sql`에는 한글 QA 데이터가 포함되어 있어 Windows PowerShell 파이프를 사용하면 인코딩이 깨질 수 있습니다. seed 파일은 위처럼 컨테이너에 복사한 뒤 컨테이너 내부에서 실행합니다.
 
 ## 백엔드 실행
 

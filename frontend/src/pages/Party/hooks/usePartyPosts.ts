@@ -11,7 +11,7 @@ import {
 } from '../../../api/partyApi'
 import {
   COMMUNITY_PARTY_POSTS_QUERY_KEY,
-  communityPartyPostsQueryKey,
+  communityPartyPostsScopedQueryKey,
 } from '../../../api/partyQueryKeys'
 import type { PartyFilter } from '../partyFilters'
 import type { PartyMode, PartyPost } from '../types'
@@ -84,6 +84,13 @@ export function getPartyCustomTagLimit(tier: string) {
   return partyTierTags.has(tier.trim()) ? 3 : 4
 }
 
+export function getPartyAuthQueryState(isAuthenticated: boolean, authUserId: string | null) {
+  return {
+    isAuthIdentityReady: !isAuthenticated || authUserId !== null,
+    authScope: isAuthenticated && authUserId !== null ? authUserId : 'anonymous',
+  }
+}
+
 export function mergeTierIntoTags(tags: string[], tier: string) {
   const normalizedTier = tier.trim()
   const customTags = removePartyTierTags(tags)
@@ -113,6 +120,7 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
   const [tagsDraft, setTagsDraft] = useState('')
   const [descriptionDraft, setDescriptionDraft] = useState('')
   const [composeError, setComposeError] = useState('')
+  const [isComposeOpen, setIsComposeOpen] = useState(false)
   const [partyStatusMessage, setPartyStatusMessage] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const minDeadline = useMemo(getDefaultDeadlineInput, [])
@@ -122,14 +130,17 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
     () => toPartyPostsQueryParams(selectedFilter),
     [selectedFilter],
   )
+  const { authScope, isAuthIdentityReady } = getPartyAuthQueryState(isAuthenticated, authUserId)
+  const authScopeRef = useRef(authScope)
   const partyQueryKey = useMemo(
-    () => communityPartyPostsQueryKey(partyQueryParams),
-    [partyQueryParams],
+    () => communityPartyPostsScopedQueryKey(partyQueryParams, authScope),
+    [authScope, partyQueryParams],
   )
 
   const partyQuery = useQuery({
     queryKey: partyQueryKey,
     queryFn: () => getPartyPosts(partyQueryParams),
+    enabled: isAuthIdentityReady,
     staleTime: 1000 * 60,
   })
   const createMutation = useMutation({
@@ -142,15 +153,23 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
   const isPartyListUnavailable = partyQuery.isError || partyQuery.data?.source === 'unavailable'
 
   useEffect(() => {
-    if (isAuthenticated) {
-      return
-    }
+    authScopeRef.current = authScope
+  }, [authScope])
 
+  useEffect(() => {
     setLocalPosts([])
     setPostOverrides({})
     setJoinedPostId(undefined)
+    setComposeError('')
+    setIsComposeOpen(false)
     setPartyStatusMessage('')
-  }, [isAuthenticated])
+  }, [authScope])
+
+  useEffect(() => {
+    if (isComposeOpen) {
+      titleInputRef.current?.focus()
+    }
+  }, [isComposeOpen])
 
   const posts = useMemo(() => {
     const shouldIgnoreLocalState = isPartyListUnavailable || !isAuthenticated
@@ -211,10 +230,19 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
     setCurrentPage(1)
   }
 
-  const focusCompose = () => {
-    titleInputRef.current?.focus()
+  const toggleCompose = () => {
     setComposeError('')
     setPartyStatusMessage('')
+
+    if (!isAuthenticated) {
+      if (!isComposeOpen) {
+        setComposeError('로그인 후 파티 모집글을 등록할 수 있습니다.')
+      }
+      setIsComposeOpen((currentValue) => !currentValue)
+      return
+    }
+
+    setIsComposeOpen((currentValue) => !currentValue)
   }
 
   const submitPartyPost = () => {
@@ -262,9 +290,14 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
       description,
       tags: requestTags,
     }
+    const mutationScope = authScope
 
     createMutation.mutate(request, {
       onSuccess: (createdPost) => {
+        if (authScopeRef.current !== mutationScope) {
+          return
+        }
+
         const serverPost = withAuthDisplayState(createdPost, authUserId, isAuthenticated)
 
         setLocalPosts((currentPosts) => [
@@ -282,6 +315,7 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
         setTagsDraft('')
         setDescriptionDraft('')
         setComposeError('')
+        setIsComposeOpen(false)
         setPartyStatusMessage('모집글을 등록했습니다.')
         setCurrentPage(1)
         onPartyPostCreated(serverPost)
@@ -289,6 +323,10 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
         void queryClient.invalidateQueries({ queryKey: COMMUNITY_PARTY_POSTS_QUERY_KEY })
       },
       onError: (error) => {
+        if (authScopeRef.current !== mutationScope) {
+          return
+        }
+
         setPartyStatusMessage(readMutationErrorMessage(error, '파티 모집글 등록에 실패했습니다.'))
       },
     })
@@ -346,11 +384,16 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
     setJoinedPostId(alreadyJoined ? null : postId)
     setPartyStatusMessage(nextMessage)
     joinRequestPostIdRef.current = postId
+    const mutationScope = authScope
 
     joinMutation.mutate(
       { postId, isJoining: !alreadyJoined },
       {
         onSuccess: async (serverPost) => {
+          if (authScopeRef.current !== mutationScope) {
+            return
+          }
+
           const confirmedPost = withAuthDisplayState(serverPost, authUserId, isAuthenticated)
 
           setLocalPosts((currentPosts) => replacePost(currentPosts, confirmedPost))
@@ -368,6 +411,10 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
           }
         },
         onError: (error) => {
+          if (authScopeRef.current !== mutationScope) {
+            return
+          }
+
           setLocalPosts((currentPosts) => replacePost(currentPosts, targetPost))
           setPostOverrides((currentOverrides) =>
             restorePostOverride(currentOverrides, postId, previousOverride),
@@ -379,6 +426,10 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
         },
         onSettled: (_data, error) => {
           joinRequestPostIdRef.current = null
+
+          if (authScopeRef.current !== mutationScope) {
+            return
+          }
 
           if (error) {
             void queryClient.invalidateQueries({ queryKey: COMMUNITY_PARTY_POSTS_QUERY_KEY })
@@ -396,9 +447,9 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
     deadlineDraft,
     descriptionDraft,
     filteredCount: filteredPartyPosts.length,
-    focusCompose,
     isCreating: createMutation.isPending,
     isAuthenticated,
+    isComposeOpen,
     isLoading: partyQuery.isPending,
     isUnavailable: isPartyListUnavailable,
     joinedPostId: activeJoinedPostId,
@@ -424,6 +475,7 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
     tierDraft,
     titleDraft,
     titleInputRef,
+    toggleCompose,
     toggleJoin,
     totalPages,
     updateSearchDraft,

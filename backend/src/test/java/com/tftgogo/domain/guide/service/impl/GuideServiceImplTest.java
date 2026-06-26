@@ -5,6 +5,7 @@ import com.tftgogo.domain.guide.dto.response.GuideCatalogResponse;
 import com.tftgogo.domain.guide.dto.response.GuideEntryResponse;
 import com.tftgogo.domain.guide.dto.response.GuidePageResponse;
 import com.tftgogo.domain.guide.entity.GuideChampion;
+import com.tftgogo.domain.guide.entity.GuideItem;
 import com.tftgogo.domain.guide.entity.GuideTrait;
 import com.tftgogo.domain.guide.repository.GuideAugmentRepository;
 import com.tftgogo.domain.guide.repository.GuideChampionRepository;
@@ -13,16 +14,23 @@ import com.tftgogo.domain.guide.repository.GuideTraitRepository;
 import com.tftgogo.global.exception.BusinessException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -49,13 +57,14 @@ class GuideServiceImplTest {
     private GuideServiceImpl guideService;
 
     @Test
-    void champion_tab_uses_split_table_and_applies_cost_filter() {
+    void champion_tab_uses_split_table_page_and_applies_cost_filter() {
         // given
         when(guideChampionRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
-        when(guideChampionRepository.findByPatchVersionOrderByNameAscIdAsc("17.0"))
-                .thenReturn(List.of(
-                        champion("TFT17_Briar", "Briar", 1, "[\"Animal Squad\"]"),
-                        champion("TFT17_Kaisa", "Kaisa", 4, "[\"Star Guardian\"]")
+        when(guideChampionRepository.searchPage(eq("17.0"), isNull(), eq(4), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(
+                        List.of(champion("TFT17_Kaisa", "Kaisa", 4, "[\"Star Guardian\"]")),
+                        PageRequest.of(0, 10),
+                        1
                 ));
 
         // when
@@ -75,13 +84,19 @@ class GuideServiceImplTest {
                 .extracting(GuideEntryResponse::getTargetKey)
                 .containsExactly("TFT17_Kaisa");
         assertThat(response.getTotalItems()).isEqualTo(1);
+        verify(guideChampionRepository)
+                .searchPage(eq("17.0"), isNull(), eq(4), any(Pageable.class));
     }
 
     @Test
     void explicit_patch_does_not_query_latest_patch() {
         // given
-        when(guideChampionRepository.findByPatchVersionOrderByNameAscIdAsc("17.0"))
-                .thenReturn(List.of(champion("TFT17_Kaisa", "Kaisa", 4, "[\"Star Guardian\"]")));
+        when(guideChampionRepository.searchPage(eq("17.0"), isNull(), isNull(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(
+                        List.of(champion("TFT17_Kaisa", "Kaisa", 4, "[\"Star Guardian\"]")),
+                        PageRequest.of(0, 10),
+                        1
+                ));
 
         // when
         GuidePageResponse<GuideEntryResponse> response = guideService.getGuideTabItems(
@@ -98,6 +113,40 @@ class GuideServiceImplTest {
         // then
         assertThat(response.getItems()).hasSize(1);
         verify(guideChampionRepository, never()).findLatestPatchVersion();
+    }
+
+    @Test
+    void tab_items_return_page_metadata_from_repository_page() {
+        // given
+        when(guideItemRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
+        when(guideItemRepository.searchPage(eq("17.0"), eq("sword"), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(
+                        List.of(item("TFT_Item_Sword", "B.F. Sword")),
+                        PageRequest.of(1, 6),
+                        13
+                ));
+
+        // when
+        GuidePageResponse<GuideEntryResponse> response = guideService.getGuideTabItems(
+                "items",
+                null,
+                " Sword ",
+                2,
+                6,
+                null,
+                null,
+                null
+        );
+
+        // then
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(guideItemRepository).searchPage(eq("17.0"), eq("sword"), pageableCaptor.capture());
+        assertThat(pageableCaptor.getValue().getPageNumber()).isEqualTo(1);
+        assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(6);
+        assertThat(response.getPage()).isEqualTo(2);
+        assertThat(response.getPageSize()).isEqualTo(6);
+        assertThat(response.getTotalItems()).isEqualTo(13);
+        assertThat(response.getTotalPages()).isEqualTo(3);
     }
 
     @Test
@@ -127,10 +176,15 @@ class GuideServiceImplTest {
     void split_trait_response_skips_entries_without_champions() {
         // given
         when(guideTraitRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
-        when(guideTraitRepository.findByPatchVersionOrderByNameAscIdAsc("17.0"))
-                .thenReturn(List.of(
+        when(guideTraitRepository.existsStargazerVariantByPatchVersion("17.0")).thenReturn(false);
+        when(guideTraitRepository.searchPage(eq("17.0"), isNull(), eq(false), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(
+                        List.of(
                         trait("TFT17_AnimalSquad", "Animal Squad", "[{\"name\":\"Briar\"}]"),
                         trait("TFT17_DivineBlessing", "Divine Blessing", "[]")
+                        ),
+                        PageRequest.of(0, 10),
+                        2
                 ));
 
         // when
@@ -149,17 +203,20 @@ class GuideServiceImplTest {
         assertThat(response.getItems())
                 .extracting(GuideEntryResponse::getTargetKey)
                 .containsExactly("TFT17_AnimalSquad");
-        assertThat(response.getTotalItems()).isEqualTo(1);
     }
 
     @Test
     void split_champion_response_skips_entries_without_traits() {
         // given
         when(guideChampionRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
-        when(guideChampionRepository.findByPatchVersionOrderByNameAscIdAsc("17.0"))
-                .thenReturn(List.of(
+        when(guideChampionRepository.searchPage(eq("17.0"), isNull(), isNull(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(
+                        List.of(
                         champion("TFT17_DarkStar_FakeUnit", "Black Hole", 1, "[]"),
                         champion("TFT17_Briar", "Briar", 1, "[\"Animal Squad\"]")
+                        ),
+                        PageRequest.of(0, 10),
+                        2
                 ));
 
         // when
@@ -178,7 +235,21 @@ class GuideServiceImplTest {
         assertThat(response.getItems())
                 .extracting(GuideEntryResponse::getTargetKey)
                 .containsExactly("TFT17_Briar");
-        assertThat(response.getTotalItems()).isEqualTo(1);
+    }
+
+    @Test
+    void sort_parameter_throws_exception_until_metric_sort_is_supported() {
+        // given, when, then
+        assertThatThrownBy(() -> guideService.getGuideTabItems(
+                "champions",
+                "17.0",
+                null,
+                1,
+                10,
+                "avgPlace",
+                "desc",
+                null
+        )).isInstanceOf(BusinessException.class);
     }
 
     @Test
@@ -224,6 +295,20 @@ class GuideServiceImplTest {
                 .championsJson(championsJson)
                 .specialUnitsJson("[]")
                 .tipsJson("[]")
+                .patchVersion("17.0")
+                .build();
+    }
+
+    private GuideItem item(String itemKey, String name) {
+        return GuideItem.builder()
+                .itemKey(itemKey)
+                .name(name)
+                .category("completed")
+                .imageUrl("https://example.com/" + itemKey + ".png")
+                .description(name + " description")
+                .statsJson("{}")
+                .bestUsersJson("[]")
+                .combinationsJson("[]")
                 .patchVersion("17.0")
                 .build();
     }

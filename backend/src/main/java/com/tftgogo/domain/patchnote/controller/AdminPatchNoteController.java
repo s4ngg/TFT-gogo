@@ -12,6 +12,7 @@ import com.tftgogo.global.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -26,6 +27,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('ADMIN_MASTER', 'ADMIN_EDITOR', 'ADMIN_VIEWER')")
 public class AdminPatchNoteController implements AdminPatchNoteControllerDocs {
 
     private final AdminPatchNoteService adminPatchNoteService;
@@ -38,6 +40,7 @@ public class AdminPatchNoteController implements AdminPatchNoteControllerDocs {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN_MASTER', 'ADMIN_EDITOR')")
     @PostMapping("/patch-notes")
     public ResponseEntity<ApiResponse<PatchNoteResponse>> createPatchNote(
             @Valid @RequestBody AdminPatchNoteRequest request) {
@@ -46,6 +49,7 @@ public class AdminPatchNoteController implements AdminPatchNoteControllerDocs {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN_MASTER', 'ADMIN_EDITOR')")
     @PostMapping("/patch-notes/import/riot")
     public ResponseEntity<ApiResponse<AdminPatchNoteImportResponse>> importRiotPatchNote(
             @Valid @RequestBody(required = false) AdminPatchNoteImportRequest request) {
@@ -54,6 +58,7 @@ public class AdminPatchNoteController implements AdminPatchNoteControllerDocs {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN_MASTER', 'ADMIN_EDITOR')")
     @PatchMapping("/patch-notes/{patchNoteId}")
     public ResponseEntity<ApiResponse<PatchNoteResponse>> updatePatchNote(
             @PathVariable("patchNoteId") Long patchNoteId,
@@ -63,6 +68,7 @@ public class AdminPatchNoteController implements AdminPatchNoteControllerDocs {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN_MASTER', 'ADMIN_EDITOR')")
     @DeleteMapping("/patch-notes/{patchNoteId}")
     public ResponseEntity<ApiResponse<Void>> deletePatchNote(@PathVariable("patchNoteId") Long patchNoteId) {
         adminPatchNoteService.deletePatchNote(patchNoteId);
@@ -78,6 +84,7 @@ public class AdminPatchNoteController implements AdminPatchNoteControllerDocs {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN_MASTER', 'ADMIN_EDITOR')")
     @PostMapping("/patch-note-changes")
     public ResponseEntity<ApiResponse<PatchChangeResponse>> createPatchChange(
             @Valid @RequestBody AdminPatchChangeRequest request) {
@@ -86,6 +93,7 @@ public class AdminPatchNoteController implements AdminPatchNoteControllerDocs {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN_MASTER', 'ADMIN_EDITOR')")
     @PatchMapping("/patch-note-changes/{changeId}")
     public ResponseEntity<ApiResponse<PatchChangeResponse>> updatePatchChange(
             @PathVariable("changeId") Long changeId,
@@ -95,6 +103,7 @@ public class AdminPatchNoteController implements AdminPatchNoteControllerDocs {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN_MASTER', 'ADMIN_EDITOR')")
     @DeleteMapping("/patch-note-changes/{changeId}")
     public ResponseEntity<ApiResponse<Void>> deletePatchChange(@PathVariable("changeId") Long changeId) {
         adminPatchNoteService.deletePatchChange(changeId);

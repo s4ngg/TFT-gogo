@@ -6,6 +6,7 @@ import {
 } from '../hooks/useGuideTabPagination'
 import {
   EmptyState,
+  GuideAssetImage,
   GuidePagination,
   GuideStatusBanner,
 } from './GuideShared'
@@ -13,6 +14,10 @@ import styles from '../Guide.module.css'
 
 interface ItemStatsViewProps {
   fallbackData: GuideCatalog
+  isGuideFallbackData: boolean
+  isGuideFetching: boolean
+  onGuideRetry: () => void
+  patchVersion: string
   query: string
 }
 
@@ -20,6 +25,10 @@ const ITEM_GUIDE_PAGE_SIZE = 6
 
 function ItemStatsView({
   fallbackData,
+  isGuideFallbackData,
+  isGuideFetching,
+  onGuideRetry,
+  patchVersion,
   query,
 }: ItemStatsViewProps) {
   const {
@@ -31,6 +40,7 @@ function ItemStatsView({
     params: {
       page: currentPage,
       pageSize: ITEM_GUIDE_PAGE_SIZE,
+      patchVersion,
       query,
       tab: 'items',
     },
@@ -46,9 +56,10 @@ function ItemStatsView({
   return (
     <>
       <GuideStatusBanner
-        isFallbackData={itemsQuery.data.source === 'fallback' && !itemsQuery.isFetching}
-        isFetching={itemsQuery.isFetching}
+        isFallbackData={isGuideFallbackData || (itemsQuery.data.source === 'fallback' && !itemsQuery.isFetching)}
+        isFetching={isGuideFetching || itemsQuery.isFetching}
         onRetry={() => {
+          onGuideRetry()
           void itemsQuery.refetch()
         }}
       />
@@ -57,7 +68,11 @@ function ItemStatsView({
           <article className={styles.itemGuideCard} key={itemStat.name}>
             <div className={styles.itemGuideTop}>
               <div className={styles.itemGuideIdentity}>
-                <img src={itemStat.imageUrl} alt={itemStat.name} />
+                <GuideAssetImage
+                  alt={itemStat.name}
+                  fallbackLabel={itemStat.name}
+                  imageUrl={itemStat.imageUrl}
+                />
                 <div>
                   <h3>{itemStat.name}</h3>
                 </div>
@@ -74,7 +89,12 @@ function ItemStatsView({
                 <div>
                   {itemStat.bestUsers.map((championRef) => (
                     <span key={championRef.name}>
-                      <img src={championRef.imageUrl} alt="" />
+                      <GuideAssetImage
+                        decorative
+                        fallbackLabel={championRef.name}
+                        imageUrl={championRef.imageUrl}
+                        title={championRef.name}
+                      />
                       {championRef.name}
                     </span>
                   ))}

@@ -5,6 +5,8 @@ import com.tftgogo.domain.patchnote.entity.PatchChange;
 import com.tftgogo.domain.patchnote.entity.PatchChangeType;
 import com.tftgogo.domain.patchnote.entity.PatchChangeImpact;
 import com.tftgogo.domain.patchnote.entity.PatchNote;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -20,6 +22,18 @@ public interface PatchChangeRepository extends JpaRepository<PatchChange, Long> 
         Long getChangeCount();
     }
 
+    interface CategoryChangeCount {
+        PatchChangeCategory getCategory();
+
+        Long getChangeCount();
+    }
+
+    interface TypeChangeCount {
+        PatchChangeType getChangeType();
+
+        Long getChangeCount();
+    }
+
     @Query("""
             SELECT c.patchNote.id AS patchNoteId, COUNT(c) AS changeCount
             FROM PatchChange c
@@ -30,11 +44,30 @@ public interface PatchChangeRepository extends JpaRepository<PatchChange, Long> 
 
     long countByPatchNote(PatchNote patchNote);
 
+    long countByPatchNoteAndImpact(PatchNote patchNote, PatchChangeImpact impact);
+
     List<PatchChange> findByPatchNoteOrderBySortOrderAscIdAsc(PatchNote patchNote);
 
     Optional<PatchChange> findByPatchNoteAndSourceKey(PatchNote patchNote, String sourceKey);
 
     @Query("""
+            SELECT c.category AS category, COUNT(c) AS changeCount
+            FROM PatchChange c
+            WHERE c.patchNote = :patchNote
+            GROUP BY c.category
+            """)
+    List<CategoryChangeCount> countByPatchNoteGroupByCategory(@Param("patchNote") PatchNote patchNote);
+
+    @Query("""
+            SELECT c.changeType AS changeType, COUNT(c) AS changeCount
+            FROM PatchChange c
+            WHERE c.patchNote = :patchNote
+            GROUP BY c.changeType
+            """)
+    List<TypeChangeCount> countByPatchNoteGroupByChangeType(@Param("patchNote") PatchNote patchNote);
+
+    @Query(
+            value = """
             SELECT c
             FROM PatchChange c
             WHERE c.patchNote = :patchNote
@@ -48,12 +81,28 @@ public interface PatchChangeRepository extends JpaRepository<PatchChange, Long> 
                     OR LOWER(c.summary) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
               )
             ORDER BY c.sortOrder ASC, c.id ASC
-            """)
-    List<PatchChange> findFilteredChanges(
+            """,
+            countQuery = """
+            SELECT COUNT(c)
+            FROM PatchChange c
+            WHERE c.patchNote = :patchNote
+              AND (:category IS NULL OR c.category = :category)
+              AND (:changeType IS NULL OR c.changeType = :changeType)
+              AND (:impact IS NULL OR c.impact = :impact)
+              AND (
+                    :query IS NULL
+                    OR LOWER(c.targetKey) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+                    OR LOWER(c.targetName) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+                    OR LOWER(c.summary) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+              )
+            """
+    )
+    Page<PatchChange> findFilteredChanges(
             @Param("patchNote") PatchNote patchNote,
             @Param("category") PatchChangeCategory category,
             @Param("changeType") PatchChangeType changeType,
             @Param("impact") PatchChangeImpact impact,
-            @Param("query") String query
+            @Param("query") String query,
+            Pageable pageable
     );
 }
