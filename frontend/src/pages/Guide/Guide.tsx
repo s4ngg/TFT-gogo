@@ -15,6 +15,7 @@ function Guide() {
     activeTab,
     activeTabInfo,
     addRecentGuide,
+    debouncedSearch,
     favoriteChampions,
     handleFavoriteToggle,
     jumpToGuide,
@@ -62,7 +63,7 @@ function Guide() {
           onFavoriteToggle={handleFavoriteToggle}
           onGuideJump={jumpToGuide}
           onRecentGuideAdd={addRecentGuide}
-          query={search}
+          query={debouncedSearch}
         />
       </div>
     </AppLayout>
