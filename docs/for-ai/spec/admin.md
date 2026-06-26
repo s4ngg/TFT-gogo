@@ -9,7 +9,7 @@ All admin backend endpoints are protected by X-Admin-Token.
 - /admin -> admin login.
 - /admin/decks -> meta deck curation.
 - /admin/hero-augments -> hero augment deck curation.
-- /admin/guides -> game guide manual curation and CDragon import.
+- /admin/guides -> game guide CDragon import.
 - /admin/match-monitor -> match cache and Riot API rate-limit monitoring.
 - /admin/patch-notes -> patch-note manual curation and Riot official import.
 - /admin/members -> placeholder.
@@ -100,6 +100,9 @@ All admin backend endpoints are protected by X-Admin-Token.
 <guide-curation>
 - Admin game guide manual CRUD is not part of the current backend contract.
 - Admin guide writes currently use only POST /api/admin/guides/import/cdragon.
+- Admin guide import form defaults patchVersion to `latest`. The backend resolves `latest` from the current patch note first, then the latest non-deleted patch note.
+- If no patch note exists, `latest` guide import fails. Local QA should import patch notes first or pass an explicit patchVersion.
+- Admin guide import should clearly show an importing/loading state. If an estimated progress UI is used, label it as estimated because the current import API is synchronous and does not expose real server-side progress.
 - CDragon import writes champion/trait/item/augment guide data into split guide tables:
   - tft_guide_champions
   - tft_guide_traits
@@ -113,9 +116,11 @@ All admin backend endpoints are protected by X-Admin-Token.
 
 <patch-note-curation>
 - Manual patch-note CRUD uses patch_notes and patch_note_changes.
+- `patch_note_changes` is the final admin/runtime table. `patch_changes` is legacy migration terminology only and must not be used in current admin/API docs.
 - Patch note version identifies one patch note.
 - isCurrent must be unique among active, non-deleted patch notes.
 - Creating/updating current=true must unset other active current patch notes.
+- When the database has a single-current unique index, current patch updates should persist the old rows as not-current before saving the new current row.
 - highlightsJson and tagsJson are JSON string arrays.
 - Patch changes belong to one patch note.
 - Admin delete is soft delete.
@@ -124,6 +129,7 @@ All admin backend endpoints are protected by X-Admin-Token.
 - Import request fields are sourceUrl, locale, version, and current.
 - If sourceUrl is omitted, backend discovers the latest official TFT patch note from the configured Riot tag page.
 - Import preserves manuallyEdited rows on later imports.
+- Imported highlights should be normalized so Riot source numbering such as `(6)` and redundant date/patch prefixes do not appear in public summary cards.
 - Patch-note scheduler exists but must stay disabled in local/dev unless explicitly enabled.
 </patch-note-curation>
 

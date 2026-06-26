@@ -1,10 +1,8 @@
-import axios from 'axios'
+import axiosInstance from './axiosInstance'
 import { isRecord } from './apiResponse'
 
-const CDRAGON_TFT_KO_URL = 'https://raw.communitydragon.org/latest/cdragon/tft/ko_kr.json'
-
-// CDragon은 외부 URL이므로 auth 인터셉터가 없는 순수 axios 인스턴스 사용
-const cdragonAxios = axios.create({ timeout: 15000 })
+const CDRAGON_TFT_KO_URL = '/cdragon/tft/ko-kr'
+const CDRAGON_TFT_KO_TIMEOUT_MS = 60_000
 
 export type BreakpointTier = 'bronze' | 'silver' | 'gold' | 'prismatic'
 
@@ -106,7 +104,10 @@ function readCDragonEntries(value: unknown): CDragonEntry[] {
 
 export async function fetchTFTLocale(): Promise<TFTLocale> {
   try {
-    const { data } = await cdragonAxios.get<Record<string, unknown>>(CDRAGON_TFT_KO_URL)
+    const { data: response } = await axiosInstance.get<{ data: Record<string, unknown> }>(CDRAGON_TFT_KO_URL, {
+      timeout: CDRAGON_TFT_KO_TIMEOUT_MS,
+    })
+    const { data } = response
 
     const champByApiName = new Map<string, string>()
     const champDetailByApiName = new Map<string, ChampionDetail>()
@@ -124,7 +125,7 @@ export async function fetchTFTLocale(): Promise<TFTLocale> {
     readCDragonEntries(currentSet?.champions).forEach((c) => {
       if (c.apiName && c.name) {
         const key = c.apiName.toLowerCase()
-        // traits: full ID → lowercase suffix (e.g. "TFT17_Brawler" → "brawler")
+        // traits: full ID -> lowercase suffix (e.g. "TFT17_Brawler" -> "brawler")
         const traits = (c.traits ?? [])
           .map((t) => t.split('_').pop()?.toLowerCase() ?? '')
           .filter(Boolean)
@@ -179,19 +180,15 @@ export async function fetchTFTLocale(): Promise<TFTLocale> {
   }
 }
 
-// apiName(소문자) → 한국 커뮤니티 축약명
-// 한글 음절 5글자 이상인 긴 이름만 등록 — 4글자 이하는 축약해도 어색함
-// (예: 탐 켄치=3글자·마스터 이=4글자 → 제외 / 블리츠크랭크=6글자 → 등록)
+// apiName(소문자) -> 한국 커뮤니티 축약명
+// 한글 음절 5글자 이상인 긴 이름만 등록. 4글자 이하는 축약해도 어색함.
+// 예: 탐 켄치, 마스터 이는 제외 / 블리츠크랭크는 등록
 const CHAMP_SHORT: Record<string, string> = {
-  tft17_aurelionsol: '아우솔',   // 아우렐리온 솔 (6글자)
-  tft17_twistedfate: '트페',     // 트위스티드 페이트 (8글자)
-  tft17_blitzcrank:  '블리츠',  // 블리츠크랭크 (6글자)
+  tft17_aurelionsol: '아우솔',
+  tft17_twistedfate: '트페',
+  tft17_blitzcrank: '블리츠',
 }
 
-/**
- * 덱 이름 표시용 — CHAMP_SHORT에 축약명이 있으면 반환, 없으면 getChampionName() 위임
- * 5글자 이상인 긴 이름만 등록됨 (예: 아우렐리온 솔 → 아우솔 / 블리츠크랭크 → 블리츠)
- */
 export function getChampionShortName(
   imageUrl: string,
   locale: TFTLocale | undefined,
@@ -205,7 +202,6 @@ export function getChampionShortName(
   return getChampionName(imageUrl, locale, fallback)
 }
 
-/** 챔피언 이미지 URL에서 apiName 추출 후 한글 이름 반환 */
 export function getChampionName(imageUrl: string, locale: TFTLocale | undefined, fallback: string): string {
   if (!locale) return fallback
   const apiName = getChampionApiName(imageUrl)
@@ -227,20 +223,17 @@ export function getChampionDetail(
   return apiName ? locale.champDetailByApiName.get(apiName) : undefined
 }
 
-/** 트레이트 이름(suffix) → 한글 */
 export function getTraitName(name: string, locale: TFTLocale | undefined): string {
   if (!locale) return name
   return locale.traitBySuffix.get(name.toLowerCase()) ?? name
 }
 
-/** 아이템 전체 ID → 한글 (apiFallback: API가 제공한 원본 itemName) */
 export function getItemName(itemId: string, locale: TFTLocale | undefined, apiFallback?: string): string {
   const fallback = apiFallback ?? itemId.split('_').pop() ?? itemId
   if (!locale) return fallback
   return locale.itemByApiName.get(itemId.toLowerCase()) ?? fallback
 }
 
-/** 증강 전체 ID → 한글 */
 export function getAugmentName(augmentId: string, locale: TFTLocale | undefined): string {
   const fallback = augmentId.split('_').pop() ?? augmentId
   if (!locale) return fallback

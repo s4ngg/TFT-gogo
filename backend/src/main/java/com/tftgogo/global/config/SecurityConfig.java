@@ -62,6 +62,7 @@ public class SecurityConfig {
                                 "/api/admin/auth/logout",
                                 "/api/match/**",
                                 "/api/summoners/**",
+                                "/api/cdragon/**",
                                 "/api/guide",
                                 "/api/guide/**",
                                 "/api/patch-notes",
