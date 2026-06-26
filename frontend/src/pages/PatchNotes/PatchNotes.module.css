@@ -357,6 +357,7 @@
 
 .categoryTabs button {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: 7px;
   height: 34px;
@@ -367,6 +368,7 @@
   background: transparent;
   font-size: 13px;
   font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -965,6 +967,12 @@
 
   .categoryTabs {
     overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .categoryTabs::-webkit-scrollbar {
+    display: none;
   }
 
   .changeMetaStack,
