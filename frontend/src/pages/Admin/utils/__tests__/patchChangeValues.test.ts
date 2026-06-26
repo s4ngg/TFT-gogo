@@ -37,6 +37,17 @@ describe('shouldShowPatchChangeValues', () => {
     )
   })
 
+  it('shows the value line when a value only appears as an unrelated substring', () => {
+    assert.equal(
+      shouldShowPatchChangeValues({
+        afterValue: '10',
+        beforeValue: '0',
+        summary: '체력 10 증가',
+      }),
+      true,
+    )
+  })
+
   it('hides the value line when both values are empty', () => {
     assert.equal(
       shouldShowPatchChangeValues({
