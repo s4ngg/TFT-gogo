@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { adminRefresh, setAccessToken, getAccessToken } from '../api/adminApi'
+import { adminRefresh, setAccessToken, clearAccessToken, getAccessToken } from '../api/adminApi'
 import { useAdminSession } from './useAdminSession'
 
 type Status = 'loading' | 'authenticated' | 'unauthenticated'
@@ -35,10 +35,23 @@ export function useAdminAuth(): Status {
         setAccessToken(newToken)
         // JWT payload에서 username/role 파싱 (서명 검증 불필요 — 서버가 이미 검증)
         try {
-          const payload = JSON.parse(atob(newToken.split('.')[1]))
-          setSession({ username: payload.username as string, role: payload.role as string as import('../types/admin').AdminRole })
+          const raw = JSON.parse(atob(newToken.split('.')[1])) as unknown
+          if (
+            typeof raw !== 'object' ||
+            raw === null ||
+            typeof (raw as Record<string, unknown>).username !== 'string' ||
+            typeof (raw as Record<string, unknown>).role !== 'string'
+          ) {
+            clearAccessToken()
+            if (!cancelled) setStatus('unauthenticated')
+            return
+          }
+          const { username, role } = raw as { username: string; role: string }
+          setSession({ username, role: role as import('../types/admin').AdminRole })
         } catch {
-          // payload 파싱 실패해도 토큰은 유효
+          clearAccessToken()
+          if (!cancelled) setStatus('unauthenticated')
+          return
         }
         setStatus('authenticated')
       })
