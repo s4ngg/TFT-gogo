@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -18,6 +19,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/decks")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('ADMIN_MASTER', 'ADMIN_EDITOR', 'ADMIN_VIEWER')")
 public class AdminDeckController {
 
     private final AdminDeckService adminDeckService;
@@ -33,6 +35,7 @@ public class AdminDeckController {
     }
 
     /** 수동 집계 트리거 — #129: admin 경로, #130: 비동기 202 Accepted */
+    @PreAuthorize("hasAnyRole('ADMIN_MASTER', 'ADMIN_EDITOR')")
     @PostMapping("/meta/aggregate")
     public ResponseEntity<ApiResponse<Void>> triggerAggregate(
             @RequestParam(required = false)
@@ -46,6 +49,7 @@ public class AdminDeckController {
     }
 
     /** 특정 덱 큐레이션 저장/수정 — #135: BusinessException, #136: JSON 검증 */
+    @PreAuthorize("hasAnyRole('ADMIN_MASTER', 'ADMIN_EDITOR')")
     @PatchMapping("/{deckId}")
     public ResponseEntity<ApiResponse<AdminDeckResponse>> updateCuration(
             @PathVariable Long deckId,
@@ -56,6 +60,7 @@ public class AdminDeckController {
     }
 
     /** 큐레이션 초기화 — #135: BusinessException */
+    @PreAuthorize("hasAnyRole('ADMIN_MASTER', 'ADMIN_EDITOR')")
     @DeleteMapping("/{deckId}/curation")
     public ResponseEntity<ApiResponse<Void>> resetCuration(@PathVariable Long deckId) {
         adminDeckService.resetCuration(deckId);

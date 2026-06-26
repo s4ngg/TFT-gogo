@@ -31,9 +31,9 @@ function buildStatusLabel(status: RiotApiStatus) {
   const metricLabel =
     status.source === 'fallback'
       ? '운영 수치 확인 불가'
-      : `현재 접속자 ${numberFormatter.format(status.activeConnections)}명, 대기열 ${numberFormatter.format(
+      : `처리 중 요청 ${numberFormatter.format(status.activeConnections)}건, 대기 요청 ${numberFormatter.format(
           status.queueSize,
-        )}명`
+        )}건`
 
   return `Riot API 상태: ${statusLabelMap[status.status]}, ${metricLabel}, ${sourceLabel}`
 }
@@ -60,7 +60,7 @@ function RiotApiStatusBadge() {
         <span>수치 확인 불가</span>
       ) : (
         <>
-          <span>접속 {numberFormatter.format(status.activeConnections)}</span>
+          <span>요청 {numberFormatter.format(status.activeConnections)}</span>
           <span>대기 {numberFormatter.format(status.queueSize)}</span>
         </>
       )}

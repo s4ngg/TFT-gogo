@@ -1,14 +1,16 @@
 package com.tftgogo.domain.ai.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
+import lombok.AccessLevel;
 
 import java.util.List;
 
 /**
- * AI 서버(FastAPI) 응답을 그대로 매핑하는 DTO.
- * 필드명은 AI 서버의 snake_case를 @JsonProperty로 매핑.
+ * AI 서버(FastAPI) 응답을 매핑하는 DTO.
+ * @JsonAlias로 snake_case 역직렬화를 허용하고, Java 필드명(camelCase)으로 직렬화된다.
  */
 @Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -16,33 +18,33 @@ public class AiRecommendResponse {
 
     private RecentStats stats;
 
-    @JsonProperty("good_traits")
+    @JsonAlias("good_traits")
     private List<TraitStat> goodTraits;
 
-    @JsonProperty("bad_traits")
+    @JsonAlias("bad_traits")
     private List<TraitStat> badTraits;
 
     private List<Object> augments;
 
-    @JsonProperty("deck_reasons")
+    @JsonAlias("deck_reasons")
     private List<DeckReason> deckReasons;
 
     @Getter
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class RecentStats {
-        @JsonProperty("recent_games")
+        @JsonAlias("recent_games")
         private int recentGames;
 
-        @JsonProperty("avg_place")
+        @JsonAlias("avg_place")
         private String avgPlace;
 
-        @JsonProperty("top4_rate")
+        @JsonAlias("top4_rate")
         private String top4Rate;
 
-        @JsonProperty("win_rate")
+        @JsonAlias("win_rate")
         private String winRate;
 
-        @JsonProperty("recent_placements")
+        @JsonAlias("recent_placements")
         private List<Integer> recentPlacements;
     }
 
@@ -51,29 +53,35 @@ public class AiRecommendResponse {
     public static class TraitStat {
         private String name;
 
-        @JsonProperty("icon_url")
+        @JsonAlias("icon_url")
         private String iconUrl;
 
         private String tone;
         private int count;
         private int games;
 
-        @JsonProperty("avg_place")
+        @JsonAlias("avg_place")
         private String avgPlace;
 
-        @JsonProperty("top4_rate")
+        @JsonAlias("top4_rate")
         private String top4Rate;
     }
 
     @Getter
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class DeckReason {
-        @JsonProperty("deck_rank")
+        @JsonAlias("deck_rank")
         private int deckRank;
 
-        @JsonProperty("is_patch_trend")
+        // Lombok이 생성하는 isPatchTrend() getter는 Jackson이 patchTrend로 인식하므로 억제.
+        // @JsonGetter로 출력 키를 isPatchTrend로 고정한다.
+        @JsonAlias("is_patch_trend")
+        @Getter(AccessLevel.NONE)
         private boolean isPatchTrend;
 
         private String reason;
+
+        @JsonGetter("isPatchTrend")
+        public boolean isPatchTrend() { return isPatchTrend; }
     }
 }

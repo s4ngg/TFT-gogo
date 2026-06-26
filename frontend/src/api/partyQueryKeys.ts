@@ -7,3 +7,13 @@ export function communityPartyPostsQueryKey(params: PartyPostsQueryParams = {}) 
     ? [...COMMUNITY_PARTY_POSTS_QUERY_KEY, { mode: params.mode }] as const
     : COMMUNITY_PARTY_POSTS_QUERY_KEY
 }
+
+export function communityPartyPostsScopedQueryKey(
+  params: PartyPostsQueryParams = {},
+  authScope: string,
+) {
+  return [
+    ...communityPartyPostsQueryKey(params),
+    { authScope },
+  ] as const
+}

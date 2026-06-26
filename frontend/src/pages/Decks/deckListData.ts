@@ -1,4 +1,4 @@
-import { communityDragonAssetUrl } from '../../api/communityDragonAssets'
+import { communityDragonAssetUrl, tftChampSquareUrl } from '../../api/communityDragonAssets'
 import type { ChampionSummary, TraitSummary } from '../Dashboard/dashboardData'
 
 export interface HeroAugmentDeck {
@@ -45,22 +45,22 @@ const itemIconUrls = {
 }
 
 const champUrls = {
-  jhin: communityDragonAssetUrl('ASSETS/Characters/TFT17_Jhin/Skins/Base/Images/TFT17_Jhin_splash_tile_37.TFT_Set17.tex'),
-  kaisa: communityDragonAssetUrl('ASSETS/Characters/TFT17_Kaisa/Skins/Base/Images/TFT17_Kaisa_splash_tile_69.TFT_Set17.tex'),
-  xayah: communityDragonAssetUrl('ASSETS/Characters/TFT17_Xayah/Skins/Base/Images/TFT17_Xayah_splash_tile_1.TFT_Set17.tex'),
-  ornn: communityDragonAssetUrl('ASSETS/Characters/TFT17_Ornn/Skins/Base/Images/TFT17_Ornn_splash_tile_11.TFT_Set17.tex'),
-  illaoi: communityDragonAssetUrl('ASSETS/Characters/TFT17_Illaoi/Skins/Base/Images/TFT17_Illaoi_splash_tile_27.TFT_Set17.tex'),
-  rammus: communityDragonAssetUrl('ASSETS/Characters/TFT17_Rammus/Skins/Base/Images/TFT17_Rammus_splash_tile_17.TFT_Set17.tex'),
-  aurelionSol: communityDragonAssetUrl('ASSETS/Characters/TFT17_AurelionSol/Skins/Base/Images/TFT17_AurelionSol_splash_tile_2.TFT_Set17.tex'),
-  vex: communityDragonAssetUrl('ASSETS/Characters/TFT17_Vex/Skins/Base/Images/TFT17_vex_splash_tile_10.TFT_Set17.tex'),
-  viktor: communityDragonAssetUrl('ASSETS/Characters/TFT17_Viktor/Skins/Base/Images/TFT17_Viktor_splash_tile_5.TFT_Set17.tex'),
-  sona: communityDragonAssetUrl('ASSETS/Characters/TFT17_Sona/Skins/Base/Images/TFT17_Sona_splash_tile_17.TFT_Set17.tex'),
-  karma: communityDragonAssetUrl('ASSETS/Characters/TFT17_Karma/Skins/Base/Images/TFT17_Karma_splash_tile_8.TFT_Set17.tex'),
-  masterYi: communityDragonAssetUrl('ASSETS/Characters/TFT17_MasterYi/Skins/Base/Images/TFT17_MasterYi_splash_tile_33.TFT_Set17.tex'),
-  azir: communityDragonAssetUrl('ASSETS/Characters/TFT17_Azir/Skins/Base/Images/TFT17_Azir_splash_tile_1.TFT_Set17.tex'),
-  sejuani: communityDragonAssetUrl('ASSETS/Characters/TFT17_Sejuani/Skins/Base/Images/TFT17_Sejuani_splash_tile_1.TFT_Set17.tex'),
-  yasuo: communityDragonAssetUrl('ASSETS/Characters/TFT17_Yasuo/Skins/Base/Images/TFT17_Yasuo_splash_tile_1.TFT_Set17.tex'),
-  lux: communityDragonAssetUrl('ASSETS/Characters/TFT17_Lux/Skins/Base/Images/TFT17_Lux_splash_tile_1.TFT_Set17.tex'),
+  jhin: tftChampSquareUrl('TFT17_Jhin'),
+  kaisa: tftChampSquareUrl('TFT17_Kaisa'),
+  xayah: tftChampSquareUrl('TFT17_Xayah'),
+  ornn: tftChampSquareUrl('TFT17_Ornn'),
+  illaoi: tftChampSquareUrl('TFT17_Illaoi'),
+  rammus: tftChampSquareUrl('TFT17_Rammus'),
+  aurelionSol: tftChampSquareUrl('TFT17_AurelionSol'),
+  vex: tftChampSquareUrl('TFT17_Vex'),
+  viktor: tftChampSquareUrl('TFT17_Viktor'),
+  sona: tftChampSquareUrl('TFT17_Sona'),
+  karma: tftChampSquareUrl('TFT17_Karma'),
+  masterYi: tftChampSquareUrl('TFT17_MasterYi'),
+  azir: tftChampSquareUrl('TFT17_Azir'),
+  sejuani: tftChampSquareUrl('TFT17_Sejuani'),
+  yasuo: tftChampSquareUrl('TFT17_Yasuo'),
+  lux: tftChampSquareUrl('TFT17_Lux'),
 }
 
 export const HERO_AUGMENT_DECKS: HeroAugmentDeck[] = [

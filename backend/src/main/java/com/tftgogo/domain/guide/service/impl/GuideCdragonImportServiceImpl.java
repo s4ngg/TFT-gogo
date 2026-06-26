@@ -59,7 +59,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
     private static final Pattern MULTIPLY_EXPRESSION_PATTERN =
             Pattern.compile("^([A-Za-z0-9_]+)\\s*\\*\\s*([0-9]+(?:\\.[0-9]+)?)$");
     private static final Pattern CDRAGON_TOKEN_PATTERN = Pattern.compile("%[A-Za-z_:][A-Za-z0-9_:.-]*%");
-    private static final Pattern DOUBLE_BRACE_TOKEN_PATTERN = Pattern.compile("\\{\\{[^}]+}}");
+    private static final Pattern DOUBLE_BRACE_TOKEN_PATTERN = Pattern.compile("\\{\\{([^}]+)}}");
     private static final Pattern HASH_TAG_PATTERN = Pattern.compile("^\\{[0-9a-fA-F]{6,}\\}$");
     private static final Pattern STANDALONE_PERCENT_PATTERN = Pattern.compile("(^|[^0-9])%");
     private static final Pattern METRIC_ONLY_PATTERN = Pattern.compile("^[+\\-]?\\d[\\d,./%\\s+\\-]*$");
@@ -121,6 +121,9 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             Map.entry("scalecritchance", "치명타 확률"),
             Map.entry("gold", "골드"),
             Map.entry("range", "사거리")
+    );
+    private static final Map<String, String> CDRAGON_TEMPLATE_TOKEN_LABELS = Map.ofEntries(
+            Map.entry("TFT_Keyword_Precision", "정밀: 스킬과 아이템 피해가 치명타로 적용될 수 있습니다.")
     );
     private final GuideChampionRepository guideChampionRepository;
     private final GuideTraitRepository guideTraitRepository;
@@ -1164,7 +1167,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         String withoutBreakTags = BREAK_TAG_PATTERN.matcher(value).replaceAll(" ");
         String withoutTags = TAG_PATTERN.matcher(withoutBreakTags).replaceAll("");
         String withoutPlaceholders = PLACEHOLDER_PATTERN.matcher(withoutTags).replaceAll("");
-        String withoutTemplateTokens = DOUBLE_BRACE_TOKEN_PATTERN.matcher(withoutPlaceholders).replaceAll("");
+        String withoutTemplateTokens = replaceDoubleBraceTokens(withoutPlaceholders);
         String withoutCdragonTokens = CDRAGON_TOKEN_PATTERN.matcher(withoutTemplateTokens).replaceAll("");
         String normalizedPercent = withoutCdragonTokens.replaceAll("(\\d)\\s+%", "$1%");
         String withoutEmptyParens = EMPTY_PARENS_PATTERN.matcher(normalizedPercent).replaceAll("");
@@ -1252,6 +1255,18 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                 .replaceAll("수치의\\s+고정 피해", "고정 피해")
                 .replaceAll("수치의\\s+피해", "피해")
                 .replaceAll("\\s+수치$", "");
+    }
+
+    private String replaceDoubleBraceTokens(String value) {
+        Matcher tokenMatcher = DOUBLE_BRACE_TOKEN_PATTERN.matcher(value);
+        StringBuffer replaced = new StringBuffer();
+        while (tokenMatcher.find()) {
+            String tokenName = tokenMatcher.group(1).trim();
+            String replacement = CDRAGON_TEMPLATE_TOKEN_LABELS.getOrDefault(tokenName, "");
+            tokenMatcher.appendReplacement(replaced, Matcher.quoteReplacement(replacement));
+        }
+        tokenMatcher.appendTail(replaced);
+        return replaced.toString();
     }
 
     private String sanitizeCdragonText(String value, JsonNode effects) {

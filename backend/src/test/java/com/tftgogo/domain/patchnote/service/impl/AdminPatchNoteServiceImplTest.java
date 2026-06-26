@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -41,6 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -93,7 +95,9 @@ class AdminPatchNoteServiceImplTest {
         assertThat(response.getHighlights()).containsExactly("current patch");
 
         ArgumentCaptor<PatchNote> captor = ArgumentCaptor.forClass(PatchNote.class);
-        verify(patchNoteRepository).save(captor.capture());
+        InOrder inOrder = inOrder(patchNoteRepository);
+        inOrder.verify(patchNoteRepository).flush();
+        inOrder.verify(patchNoteRepository).save(captor.capture());
         assertThat(captor.getValue().getHighlightsJson()).isEqualTo("[\"current patch\"]");
     }
 
@@ -155,7 +159,7 @@ class AdminPatchNoteServiceImplTest {
                 LocalDateTime.of(2026, 6, 15, 9, 0),
                 "https://example.com/patch.png",
                 List.of("Riot"),
-                List.of("Champions > Jinx"),
+                List.of("Champions > Jinx", "Traits > (6) Animal Squad"),
                 List.of(row),
                 List.of("parser warning")
         );
@@ -192,11 +196,13 @@ class AdminPatchNoteServiceImplTest {
         assertThat(response.getParserWarnings()).containsExactly("parser warning");
 
         ArgumentCaptor<PatchNote> patchNoteCaptor = ArgumentCaptor.forClass(PatchNote.class);
-        verify(patchNoteRepository).save(patchNoteCaptor.capture());
+        InOrder inOrder = inOrder(patchNoteRepository);
+        inOrder.verify(patchNoteRepository).flush();
+        inOrder.verify(patchNoteRepository).save(patchNoteCaptor.capture());
         assertThat(patchNoteCaptor.getValue().getSourceKey()).isEqualTo("riot-content-17-4");
         assertThat(patchNoteCaptor.getValue().getImportSource()).isEqualTo(PatchNoteImportSource.RIOT_OFFICIAL);
         assertThat(patchNoteCaptor.getValue().getFocus()).isEqualTo("Riot summary");
-        assertThat(patchNoteCaptor.getValue().getHighlightsJson()).isEqualTo("[\"Jinx\"]");
+        assertThat(patchNoteCaptor.getValue().getHighlightsJson()).isEqualTo("[\"Jinx\",\"Animal Squad\"]");
         assertThat(patchNoteCaptor.getValue().isCurrent()).isTrue();
 
         ArgumentCaptor<PatchChange> patchChangeCaptor = ArgumentCaptor.forClass(PatchChange.class);

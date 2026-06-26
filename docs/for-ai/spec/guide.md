@@ -8,6 +8,7 @@ Page: Guide (/guide).
 <routes>
 - /guide      -> guide landing (default tab)
 - /guide/:tab -> specific tab (traits / items / augments / champions)
+- /admin/guides -> admin CDragon guide import page
 </routes>
 
 <api>
@@ -16,6 +17,7 @@ Page: Guide (/guide).
 - GET  /api/guide/{tab} -> fetch public guide data for one tab
 - GET  /api/guide/{tab}?patchVersion=&query=&page=&pageSize=&sortKey=&sortDir=&cost=
 - POST /api/admin/guides/import/cdragon -> import champion/trait/item/augment guide rows from Community Dragon
+- GET  /api/cdragon/tft/ko-kr -> backend-proxied CDragon TFT locale JSON for frontend name/trait/item resolution
 </backend>
 <frontend>
 - frontend/src/api/guide.ts            -> main guide API calls
@@ -42,6 +44,8 @@ Page: Guide (/guide).
 - Split guide tables do not use soft delete. If deletion/restoration policy is needed later, design it explicitly per table.
 - If patchVersion is omitted on the public catalog, the latest patch is resolved from split guide tables.
 - If patchVersion is omitted on a tab endpoint, the latest patch is resolved from that tab's table.
+- CDragon import accepts patchVersion=`latest`. The backend resolves it from the current patch note first, then from the latest non-deleted patch note. If no patch note exists, import fails with INVALID_INPUT; local QA should import patch notes first or pass an explicit guide patchVersion.
+- Admin guide import UI defaults patchVersion to `latest` so guide data aligns with the current patch-note version when patch notes are available.
 - Latest patch selection sorts patchVersion numerically by major/minor parts, then lexicographically as a final tie-breaker.
 - Public page defaults are page=1 and pageSize=10. page must be 1..10000 and pageSize must be 1..100.
 - Public sortKey is optional and limited to avgPlace, pickRate, top4, winRate. Current static CDragon rows do not provide production metrics; missing metrics sort last and default ordering is used.
@@ -50,7 +54,8 @@ Page: Guide (/guide).
 - query searches name, summary, and targetKey in memory after loading the resolved split-table patch.
 - If no patch exists, /api/guide returns an empty catalog and /api/guide/{tab} returns an empty page with totalPages=1.
 - Invalid persisted JSON fields are treated as GUIDE_INVALID_DATA and should be fixed in import/storage logic, not hidden by public API fallback.
-- CDragon import request fields: patchVersion (required, max 20), setNumber (default 17), mutator (default TFTSet{setNumber}), includeChampions, includeTraits, includeItems, includeAugments.
+- CDragon import request fields: patchVersion (required, max 20, supports `latest`), setNumber (default 17), mutator (default TFTSet{setNumber}), includeChampions, includeTraits, includeItems, includeAugments.
+- CDragon import request flag behavior: omitted includeChampions/includeTraits default to true; omitted includeItems/includeAugments default to false at request DTO level, so admin UI and scheduler must send explicit true when items/augments should be imported.
 - CDragon import rejects requests where includeChampions, includeTraits, includeItems, and includeAugments all resolve to false.
 - CDragon import response fields: createdCount, updatedCount, skippedCount, championCount, traitCount, itemCount, augmentCount, importedCount (= createdCount + updatedCount).
 - CDragon item import includes only completed craftable TFT_Item_* rows with exactly two composition components and no associatedTraits.
@@ -58,6 +63,7 @@ Page: Guide (/guide).
 - CDragon augment import reads only the requested set/mutator augments and requires apiName, name, description, and icon.
 - CDragon augment import excludes debug/dummy/test/placeholder/inactive/disabled entries by apiName/name/description keywords.
 - CDragon static import does not fetch Riot matches and does not compute production guide metrics.
+- CDragon text sanitization removes unresolved placeholders/tokens. Template tokens such as `{{...}}` must not leak to public UI. If a token mapping is explicitly implemented later, expand that token to user-facing text with import tests.
 - #393 owns the separate guide metric strategy. CDragon provides static names/descriptions/images/tags/combinations; Riot match detail stored in cached_match can later provide avgPlace, pickRate, TOP4 rate, winRate, and sampleCount through a dedicated refresh path.
 - Metric refresh must keep "-" and [] fallbacks when an item or augment is below the minimum sample size; do not invent numbers from insufficient samples.
 - Data originates from CDragon where possible; use communityDragonAssets.ts helpers for frontend images.
@@ -163,6 +169,29 @@ Page: Guide (/guide).
 - Import sanitization removes HTML tags, resolves known @placeholder@ values, collapses whitespace, and trims text.
 </backend-implementation>
 
+<scheduler>
+- GuideCdragonImportScheduler is implemented.
+- Scheduler properties use prefix app.guide.cdragon.
+- Defaults:
+  - enabled=false
+  - startup-import=false
+  - patch-version=latest
+  - set-number=17
+  - mutator=TFTSet17
+  - include-champions=true
+  - include-traits=true
+  - include-items=true
+  - include-augments=true
+  - sync-cron=0 10 * * * *
+  - refresh-cron=0 40 6 * * *
+  - zone=Asia/Seoul
+- Startup import runs on ApplicationReadyEvent only when enabled=true and startup-import=true.
+- Sync import runs hourly by default and refresh import runs daily at 06:40 KST by default.
+- Scheduler uses an in-process AtomicBoolean lock to avoid overlapping guide imports in a single server instance.
+- Multi-server deployments require a future shared DB/Redis lock before enabling the scheduler on multiple instances.
+- Local/dev should keep the scheduler disabled by default. Use the admin import button for local QA.
+</scheduler>
+
 <backend-structure>
 - Controller: backend/src/main/java/com/tftgogo/domain/guide/controller/
 - Swagger docs: backend/src/main/java/com/tftgogo/domain/guide/controller/docs/
@@ -172,6 +201,9 @@ Page: Guide (/guide).
 - Repositories: backend/src/main/java/com/tftgogo/domain/guide/repository/
 - Entities: backend/src/main/java/com/tftgogo/domain/guide/entity/
 - CDragon config: backend/src/main/java/com/tftgogo/global/cdragon/config/CommunityDragonProperties.java
+- CDragon locale proxy/cache: backend/src/main/java/com/tftgogo/global/cdragon/controller/CDragonController.java and backend/src/main/java/com/tftgogo/global/cdragon/service/TftAssetCacheService.java
+- Scheduler: backend/src/main/java/com/tftgogo/domain/guide/scheduler/GuideCdragonImportScheduler.java
+- Scheduler properties: backend/src/main/java/com/tftgogo/global/config/GuideCdragonImportProperties.java
 </backend-structure>
 
 <validation>
@@ -183,6 +215,7 @@ Page: Guide (/guide).
 
 <data-ingestion>
 - Current stage: CDragon champion/trait/item/augment static guide import into split guide tables.
+- Recommended local QA order: apply schema, import patch notes/current patch, then run admin guide CDragon import with patchVersion=`latest`.
 - Current import does not curate bestItems/tips and should not be treated as final editorial guide quality.
 - Next #393 stage is to decide and implement the metric data source/collection policy, then compute guide metrics in a separate refresh path from CDragon static import.
 - AI server/FastAPI is not required for guide CRUD. Add it only when AI/RAG/recommendation behavior needs guide data.

@@ -18,6 +18,9 @@ from app.services.recommender import (
     rank_meta_decks,
 )
 
+_BUDGET_PATH = "app.services.recommender.check_budget"
+_BREAKER_PATH = "app.services.recommender.openai_breaker"
+
 
 # ── 픽스처 ──────────────────────────────────────────────────────────────
 
@@ -139,9 +142,13 @@ def _mock_openai_response(content: str):
 async def test_generate_reasons_json_파싱_실패시_fallback():
     decks = [_deck(1, "A", ["mage"])]
     with patch("app.services.recommender.settings") as mock_settings, \
-         patch("app.services.recommender._get_client") as mock_get_client:
+         patch("app.services.recommender._get_client") as mock_get_client, \
+         patch(_BUDGET_PATH, return_value=100), \
+         patch(_BREAKER_PATH) as mock_breaker:
         mock_settings.openai_api_key = "fake-key"
         mock_settings.openai_model = "gpt-4o-mini"
+        mock_settings.recommend_max_input_tokens = 6000
+        mock_breaker.is_open.return_value = False
         client = AsyncMock()
         client.chat.completions.create = AsyncMock(
             return_value=_mock_openai_response("not valid json {{{{")
@@ -158,9 +165,13 @@ async def test_generate_reasons_json_파싱_실패시_fallback():
 async def test_generate_reasons_timeout_시_fallback():
     decks = [_deck(1, "S", [])]
     with patch("app.services.recommender.settings") as mock_settings, \
-         patch("app.services.recommender._get_client") as mock_get_client:
+         patch("app.services.recommender._get_client") as mock_get_client, \
+         patch(_BUDGET_PATH, return_value=100), \
+         patch(_BREAKER_PATH) as mock_breaker:
         mock_settings.openai_api_key = "fake-key"
         mock_settings.openai_model = "gpt-4o-mini"
+        mock_settings.recommend_max_input_tokens = 6000
+        mock_breaker.is_open.return_value = False
         client = AsyncMock()
         client.chat.completions.create = AsyncMock(
             side_effect=APITimeoutError(request=MagicMock())
@@ -176,9 +187,13 @@ async def test_generate_reasons_timeout_시_fallback():
 async def test_generate_reasons_connection_error_시_fallback():
     decks = [_deck(1, "A", [])]
     with patch("app.services.recommender.settings") as mock_settings, \
-         patch("app.services.recommender._get_client") as mock_get_client:
+         patch("app.services.recommender._get_client") as mock_get_client, \
+         patch(_BUDGET_PATH, return_value=100), \
+         patch(_BREAKER_PATH) as mock_breaker:
         mock_settings.openai_api_key = "fake-key"
         mock_settings.openai_model = "gpt-4o-mini"
+        mock_settings.recommend_max_input_tokens = 6000
+        mock_breaker.is_open.return_value = False
         client = AsyncMock()
         client.chat.completions.create = AsyncMock(
             side_effect=APIConnectionError(request=MagicMock())
@@ -194,9 +209,13 @@ async def test_generate_reasons_connection_error_시_fallback():
 async def test_generate_reasons_status_error_시_fallback():
     decks = [_deck(1, "B", [])]
     with patch("app.services.recommender.settings") as mock_settings, \
-         patch("app.services.recommender._get_client") as mock_get_client:
+         patch("app.services.recommender._get_client") as mock_get_client, \
+         patch(_BUDGET_PATH, return_value=100), \
+         patch(_BREAKER_PATH) as mock_breaker:
         mock_settings.openai_api_key = "fake-key"
         mock_settings.openai_model = "gpt-4o-mini"
+        mock_settings.recommend_max_input_tokens = 6000
+        mock_breaker.is_open.return_value = False
         client = AsyncMock()
         client.chat.completions.create = AsyncMock(
             side_effect=APIStatusError(
@@ -218,9 +237,13 @@ async def test_generate_reasons_정상_응답_파싱():
         {"deck_rank": 2, "reason": "테스트 추천 이유 2"},
     ])
     with patch("app.services.recommender.settings") as mock_settings, \
-         patch("app.services.recommender._get_client") as mock_get_client:
+         patch("app.services.recommender._get_client") as mock_get_client, \
+         patch(_BUDGET_PATH, return_value=100), \
+         patch(_BREAKER_PATH) as mock_breaker:
         mock_settings.openai_api_key = "fake-key"
         mock_settings.openai_model = "gpt-4o-mini"
+        mock_settings.recommend_max_input_tokens = 6000
+        mock_breaker.is_open.return_value = False
         client = AsyncMock()
         client.chat.completions.create = AsyncMock(
             return_value=_mock_openai_response(raw)

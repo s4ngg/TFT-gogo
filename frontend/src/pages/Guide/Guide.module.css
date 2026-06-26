@@ -610,7 +610,8 @@
   background: rgba(8, 20, 28, 0.72);
 }
 
-.specialUnitMini img {
+.specialUnitMini img,
+.specialUnitMini .guideAssetFallback {
   width: var(--size-control-md);
   height: var(--size-control-md);
   border-radius: 7px;
@@ -728,7 +729,8 @@ button.championMini:hover {
   gap: var(--space-xl);
 }
 
-.itemGuideIdentity img {
+.itemGuideIdentity img,
+.itemGuideIdentity .guideAssetFallback {
   width: 52px;
   height: 52px;
   border: 1px solid var(--border-subtle);
@@ -866,7 +868,8 @@ button.championMini:hover {
   font-weight: 700;
 }
 
-.itemBestUsers img {
+.itemBestUsers img,
+.itemBestUsers .guideAssetFallback {
   width: 20px;
   height: 20px;
   border-radius: var(--radius-xs);
@@ -905,7 +908,7 @@ button.championMini:hover {
 }
 
 .augmentCardTop img,
-.augmentIconFallback {
+.augmentCardTop .guideAssetFallback {
   width: 44px;
   height: 44px;
   border: 1px solid var(--border-subtle);
@@ -915,14 +918,6 @@ button.championMini:hover {
 
 .augmentCardTop img {
   object-fit: cover;
-}
-
-.augmentIconFallback {
-  display: grid;
-  place-items: center;
-  color: var(--accent-bright);
-  font-size: var(--font-size-sm);
-  font-weight: 800;
 }
 
 .augmentCard h3 {
@@ -1028,7 +1023,8 @@ button.championMini:hover {
   gap: 3px;
 }
 
-.itemIconStrip img {
+.itemIconStrip img,
+.itemIconStrip .guideAssetFallback {
   width: 25px;
   height: 25px;
   border: 1px solid rgba(249, 200, 96, 0.35);
@@ -1048,7 +1044,8 @@ button.championMini:hover {
   cursor: pointer;
 }
 
-.itemIconButton:hover img {
+.itemIconButton:hover img,
+.itemIconButton:hover .guideAssetFallback {
   border-color: rgba(5, 243, 231, 0.7);
 }
 
@@ -1388,6 +1385,16 @@ button.championMini:hover {
   line-height: 1;
 }
 
+.guideAssetFallback {
+  display: inline-grid;
+  place-items: center;
+  color: var(--gold);
+  background: var(--bg-card-soft);
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1;
+}
+
 .championMini .championImageFallback {
   width: 29px;
   height: 29px;
@@ -1615,7 +1622,8 @@ button.championMini:hover {
     height: calc(var(--size-control-md) + var(--space-md));
   }
 
-  .itemIconButton img {
+  .itemIconButton img,
+  .itemIconButton .guideAssetFallback {
     width: calc(var(--size-control-sm) - var(--space-xs));
     height: calc(var(--size-control-sm) - var(--space-xs));
   }
@@ -1661,6 +1669,23 @@ button.championMini:hover {
 
   .championGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .traitTop {
+    grid-template-columns: 42px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .levelTrackWrap {
+    width: 100%;
+    min-width: 0;
+    grid-column: 1 / -1;
+    justify-items: start;
+  }
+
+  .levelTrack {
+    max-width: 100%;
+    flex-wrap: wrap;
   }
 
   .championDialog {

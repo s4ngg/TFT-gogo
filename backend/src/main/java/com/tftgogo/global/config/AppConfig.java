@@ -52,6 +52,18 @@ public class AppConfig {
         return executor;
     }
 
+    @Bean(name = "riotQueueExecutor")
+    public Executor riotQueueExecutor(RiotProperties riotProperties) {
+        int concurrency = riotProperties.getQueueWorkerConcurrency();
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(concurrency);
+        executor.setMaxPoolSize(concurrency);
+        executor.setQueueCapacity(50);
+        executor.setThreadNamePrefix("riot-queue-");
+        executor.initialize();
+        return executor;
+    }
+
     @Bean(name = "matchCollectionExecutor")
     public Executor matchCollectionExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();

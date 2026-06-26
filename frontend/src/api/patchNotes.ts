@@ -166,6 +166,10 @@ function readNonEmptyString(value: unknown): string | undefined {
   return trimmed.length > 0 ? trimmed : undefined
 }
 
+export function sanitizePatchHighlight(value: string) {
+  return value.replace(/^\s*\(\s*\d+\s*\)\s*/u, '').trim()
+}
+
 function readTags(value: unknown) {
   const normalizeTags = (tags: string[]) => tags
     .map((tag) => tag.trim())
@@ -279,10 +283,12 @@ function normalizePatchHeadingLabel(value: string) {
     .filter(Boolean)
   const label = segments[segments.length - 1] ?? normalizedValue
 
-  return label
+  const normalizedLabel = label
     .replace(/^\d{1,2}월\s+\d{1,2}일\s*/u, '')
     .replace(/^\d{1,2}(?:[.-]\d{1,2}[a-zA-Z]?)?\s*(?:추가\s*)?패치(?:\s*노트)?\s*/u, '')
-    .trim() || label
+    .trim()
+
+  return sanitizePatchHighlight(normalizedLabel || label)
 }
 
 function uniqueNonEmpty(values: string[]) {

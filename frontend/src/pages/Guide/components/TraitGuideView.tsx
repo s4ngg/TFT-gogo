@@ -12,6 +12,7 @@ import {
 } from '../hooks/useGuideTabPagination'
 import {
   EmptyState,
+  GuideAssetImage,
   GuidePagination,
   GuideStatusBanner,
   LinkedChampionMini,
@@ -20,7 +21,11 @@ import styles from '../Guide.module.css'
 
 interface TraitGuideViewProps {
   fallbackData: GuideCatalog
+  isGuideFallbackData: boolean
+  isGuideFetching: boolean
   onChampionSelect: (championName: string) => void
+  onGuideRetry: () => void
+  patchVersion: string
   query: string
 }
 
@@ -109,7 +114,11 @@ function getTraitSummaryLabel(traitGuide: TraitGuide) {
 
 function TraitGuideView({
   fallbackData,
+  isGuideFallbackData,
+  isGuideFetching,
   onChampionSelect,
+  onGuideRetry,
+  patchVersion,
   query,
 }: TraitGuideViewProps) {
   const {
@@ -121,6 +130,7 @@ function TraitGuideView({
     params: {
       page: currentPage,
       pageSize: TRAIT_PAGE_SIZE,
+      patchVersion,
       query,
       tab: 'traits',
     },
@@ -136,9 +146,10 @@ function TraitGuideView({
   return (
     <>
       <GuideStatusBanner
-        isFallbackData={traitsQuery.data.source === 'fallback' && !traitsQuery.isFetching}
-        isFetching={traitsQuery.isFetching}
+        isFallbackData={isGuideFallbackData || (traitsQuery.data.source === 'fallback' && !traitsQuery.isFetching)}
+        isFetching={isGuideFetching || traitsQuery.isFetching}
         onRetry={() => {
+          onGuideRetry()
           void traitsQuery.refetch()
         }}
       />
@@ -226,7 +237,11 @@ function TraitGuideView({
                   <div className={styles.specialUnitLine} aria-label={`${traitGuide.name} 소환 유닛`}>
                     {specialUnits.map((specialUnit) => (
                       <span className={styles.specialUnitMini} key={specialUnit.name}>
-                        <img alt={specialUnit.name} src={specialUnit.imageUrl} />
+                        <GuideAssetImage
+                          alt={specialUnit.name}
+                          fallbackLabel={specialUnit.name}
+                          imageUrl={specialUnit.imageUrl}
+                        />
                         <span>{specialUnit.name}</span>
                         {specialUnit.note && <small>{specialUnit.note}</small>}
                       </span>

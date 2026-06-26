@@ -968,6 +968,12 @@
   border-color: var(--accent);
 }
 
+.guideImportHint {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 .guideImportChecks {
   display: flex;
   gap: 14px;
@@ -989,11 +995,74 @@
   gap: 10px;
 }
 
+.guideImportActions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
 .guideImportError {
   margin-right: auto;
   color: var(--danger);
   font-size: 12px;
   font-weight: 600;
+}
+
+.guideImportProgress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-faint);
+  border-radius: 8px;
+}
+
+.guideImportProgressHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text-ui);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.guideImportProgressHeader strong {
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.guideImportProgressBar {
+  width: 100%;
+  height: 8px;
+  overflow: hidden;
+  appearance: none;
+  border: none;
+  border-radius: 8px;
+}
+
+.guideImportProgressBar::-webkit-progress-bar {
+  background: var(--bg-card);
+  border-radius: 8px;
+}
+
+.guideImportProgressBar::-webkit-progress-value {
+  background: var(--accent);
+  border-radius: 8px;
+  transition: width 0.3s ease;
+}
+
+.guideImportProgressBar::-moz-progress-bar {
+  background: var(--accent);
+  border-radius: 8px;
+}
+
+.guideImportProgressHint {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.4;
 }
 
 .guideImportResult {

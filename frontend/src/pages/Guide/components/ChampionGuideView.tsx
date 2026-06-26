@@ -22,16 +22,24 @@ import styles from '../Guide.module.css'
 interface ChampionGuideViewProps {
   fallbackData: GuideCatalog
   favoriteChampions: string[]
+  isGuideFallbackData: boolean
+  isGuideFetching: boolean
   onChampionOpen: (championName: string) => void
   onFavoriteToggle: (championName: string) => void
+  onGuideRetry: () => void
+  patchVersion: string
   query: string
 }
 
 function ChampionGuideView({
   fallbackData,
   favoriteChampions,
+  isGuideFallbackData,
+  isGuideFetching,
   onChampionOpen,
   onFavoriteToggle,
+  onGuideRetry,
+  patchVersion,
   query,
 }: ChampionGuideViewProps) {
   const [costFilter, setCostFilter] = useState<ChampionCostFilter>('all')
@@ -50,6 +58,7 @@ function ChampionGuideView({
       cost: costFilter,
       page: currentPage,
       pageSize: CHAMPION_PAGE_SIZE,
+      patchVersion,
       query,
       tab: 'champions',
     },
@@ -65,9 +74,10 @@ function ChampionGuideView({
   return (
     <>
       <GuideStatusBanner
-        isFallbackData={championsQuery.data.source === 'fallback' && !championsQuery.isFetching}
-        isFetching={championsQuery.isFetching}
+        isFallbackData={isGuideFallbackData || (championsQuery.data.source === 'fallback' && !championsQuery.isFetching)}
+        isFetching={isGuideFetching || championsQuery.isFetching}
         onRetry={() => {
+          onGuideRetry()
           void championsQuery.refetch()
         }}
       />

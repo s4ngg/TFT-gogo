@@ -7,6 +7,7 @@ interface PartyCreateFormProps {
   composeError: string
   deadlineDraft: string
   descriptionDraft: string
+  formId: string
   isAuthenticated: boolean
   isSubmitting: boolean
   minDeadline: string
@@ -30,6 +31,7 @@ function PartyCreateForm({
   composeError,
   deadlineDraft,
   descriptionDraft,
+  formId,
   isAuthenticated,
   isSubmitting,
   minDeadline,
@@ -53,7 +55,7 @@ function PartyCreateForm({
   }
 
   return (
-    <form className={styles.composeBox} onSubmit={handleSubmit}>
+    <form className={styles.composeBox} id={formId} onSubmit={handleSubmit}>
       <input
         aria-label="모집글 제목"
         onChange={(event) => onTitleChange(event.target.value)}
