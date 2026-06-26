@@ -95,50 +95,52 @@ class RiotQueueTest {
 
     @Test
     void 큐_포화시_RIOT_QUEUE_FULL_예외가_발생한다() {
-        CountDownLatch blockLatch = new CountDownLatch(1);
+        RiotQueue saturatedQueue = createRiotQueue(1);
+        CountDownLatch blockLatch = null;
 
-        for (int i = 0; i < 200; i++) {
-            riotQueue.submitForeground(() -> {
-                try { blockLatch.await(10, TimeUnit.SECONDS); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
-                return "blocked";
-            });
+        try {
+            blockLatch = saturateForegroundQueue(saturatedQueue);
+
+            CompletableFuture<String> overflowFuture = saturatedQueue.submitForeground(() -> "overflow");
+
+            assertThat(overflowFuture).isCompletedExceptionally();
+            assertThatThrownBy(() -> overflowFuture.get())
+                    .hasCauseInstanceOf(BusinessException.class)
+                    .satisfies(e -> {
+                        BusinessException be = (BusinessException) e.getCause();
+                        assertThat(be.getErrorCode()).isEqualTo(ErrorCode.RIOT_QUEUE_FULL);
+                    });
+        } finally {
+            if (blockLatch != null) {
+                blockLatch.countDown();
+            }
+            saturatedQueue.destroy();
         }
-
-        CompletableFuture<String> overflowFuture = riotQueue.submitForeground(() -> "overflow");
-
-        assertThat(overflowFuture).isCompletedExceptionally();
-        assertThatThrownBy(() -> overflowFuture.get())
-                .hasCauseInstanceOf(BusinessException.class)
-                .satisfies(e -> {
-                    BusinessException be = (BusinessException) e.getCause();
-                    assertThat(be.getErrorCode()).isEqualTo(ErrorCode.RIOT_QUEUE_FULL);
-                });
-
-        blockLatch.countDown();
     }
 
     @Test
     void 큐_포화시_dedupKey_제출해도_IllegalStateException이_발생하지_않는다() {
-        CountDownLatch blockLatch = new CountDownLatch(1);
+        RiotQueue saturatedQueue = createRiotQueue(1);
+        CountDownLatch blockLatch = null;
 
-        for (int i = 0; i < 200; i++) {
-            riotQueue.submitForeground(() -> {
-                try { blockLatch.await(10, TimeUnit.SECONDS); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
-                return "blocked";
-            });
+        try {
+            blockLatch = saturateForegroundQueue(saturatedQueue);
+
+            CompletableFuture<String> dedupFuture = saturatedQueue.submitForeground("saturated-key", () -> "overflow");
+
+            assertThat(dedupFuture).isCompletedExceptionally();
+            assertThatThrownBy(() -> dedupFuture.get())
+                    .hasCauseInstanceOf(BusinessException.class)
+                    .satisfies(e -> {
+                        BusinessException be = (BusinessException) e.getCause();
+                        assertThat(be.getErrorCode()).isEqualTo(ErrorCode.RIOT_QUEUE_FULL);
+                    });
+        } finally {
+            if (blockLatch != null) {
+                blockLatch.countDown();
+            }
+            saturatedQueue.destroy();
         }
-
-        CompletableFuture<String> dedupFuture = riotQueue.submitForeground("saturated-key", () -> "overflow");
-
-        assertThat(dedupFuture).isCompletedExceptionally();
-        assertThatThrownBy(() -> dedupFuture.get())
-                .hasCauseInstanceOf(BusinessException.class)
-                .satisfies(e -> {
-                    BusinessException be = (BusinessException) e.getCause();
-                    assertThat(be.getErrorCode()).isEqualTo(ErrorCode.RIOT_QUEUE_FULL);
-                });
-
-        blockLatch.countDown();
     }
 
     @Test
@@ -223,5 +225,46 @@ class RiotQueueTest {
         public void execute(Runnable command) {
             delegate.execute(command);
         }
+    }
+
+    private RiotQueue createRiotQueue(int concurrency) {
+        RiotProperties props = new RiotProperties();
+        props.setApiKey("test-key");
+        props.setQueueWorkerConcurrency(concurrency);
+        props.setMaxForegroundStreak(5);
+        props.setForegroundTaskTtlMs(5_000L);
+        props.setBackgroundTaskTtlMs(10_000L);
+        return new RiotQueue(props, new ThreadPoolTaskExecutorAdapter(concurrency), new SimpleMeterRegistry());
+    }
+
+    private CountDownLatch saturateForegroundQueue(RiotQueue targetQueue) {
+        CountDownLatch blockLatch = new CountDownLatch(1);
+        CountDownLatch blockerStarted = new CountDownLatch(1);
+
+        targetQueue.submitForeground(() -> {
+            blockerStarted.countDown();
+            try { blockLatch.await(10, TimeUnit.SECONDS); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+            return "blocked";
+        });
+
+        try {
+            assertThat(blockerStarted.await(3, TimeUnit.SECONDS)).isTrue();
+
+            targetQueue.submitForeground(() -> "sentinel");
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(3);
+            while (targetQueue.getForegroundQueueSize() != 0 && System.nanoTime() < deadline) {
+                Thread.sleep(10);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError(e);
+        }
+        assertThat(targetQueue.getForegroundQueueSize()).isZero();
+
+        for (int i = 0; i < 200; i++) {
+            targetQueue.submitForeground(() -> "queued");
+        }
+
+        return blockLatch;
     }
 }
