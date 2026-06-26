@@ -1,5 +1,8 @@
 import type { AugmentGuide } from '../../../api/guide'
-import { EmptyState } from './GuideShared'
+import {
+  EmptyState,
+  GuideAssetImage,
+} from './GuideShared'
 import styles from '../Guide.module.css'
 
 interface AugmentGuideListProps {
@@ -16,11 +19,11 @@ function AugmentGuideList({
           {augments.map((augment) => (
             <article className={styles.augmentCard} key={augment.name}>
               <div className={styles.augmentCardTop}>
-                {augment.imageUrl ? (
-                  <img alt={`${augment.name} 아이콘`} src={augment.imageUrl} />
-                ) : (
-                  <span className={styles.augmentIconFallback} aria-hidden="true">증</span>
-                )}
+                <GuideAssetImage
+                  alt={`${augment.name} 아이콘`}
+                  fallbackLabel={augment.name}
+                  imageUrl={augment.imageUrl}
+                />
                 <h3>{augment.name}</h3>
               </div>
               <p>{augment.description}</p>

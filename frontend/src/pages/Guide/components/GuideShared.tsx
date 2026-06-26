@@ -55,6 +55,14 @@ interface GuideChampionImageProps {
   name: string
 }
 
+interface GuideAssetImageProps {
+  alt?: string
+  decorative?: boolean
+  fallbackLabel: string
+  imageUrl?: string | null
+  title?: string
+}
+
 export function GuideChampionImage({
   decorative = false,
   imageUrl,
@@ -81,6 +89,41 @@ export function GuideChampionImage({
     <img
       alt={decorative ? '' : name}
       src={imageUrl}
+      onError={() => setImageFailed(true)}
+    />
+  )
+}
+
+export function GuideAssetImage({
+  alt,
+  decorative = false,
+  fallbackLabel,
+  imageUrl,
+  title,
+}: GuideAssetImageProps) {
+  const [imageFailed, setImageFailed] = useState(false)
+
+  useEffect(() => {
+    setImageFailed(false)
+  }, [imageUrl])
+
+  if (!imageUrl || imageFailed) {
+    return (
+      <i
+        aria-hidden={decorative || undefined}
+        className={styles.guideAssetFallback}
+        title={title ?? fallbackLabel}
+      >
+        {fallbackLabel.trim().charAt(0) || '?'}
+      </i>
+    )
+  }
+
+  return (
+    <img
+      alt={decorative ? '' : (alt ?? fallbackLabel)}
+      src={imageUrl}
+      title={title}
       onError={() => setImageFailed(true)}
     />
   )
@@ -238,10 +281,20 @@ export function ItemIconStrip({
             title={`${itemRef.name} 아이템 보기`}
             type="button"
           >
-            <img src={itemRef.imageUrl} alt={itemRef.name} />
+            <GuideAssetImage
+              alt={itemRef.name}
+              fallbackLabel={itemRef.name}
+              imageUrl={itemRef.imageUrl}
+            />
           </button>
         ) : (
-          <img src={itemRef.imageUrl} alt={itemRef.name} title={itemRef.name} key={itemRef.name} />
+          <GuideAssetImage
+            alt={itemRef.name}
+            fallbackLabel={itemRef.name}
+            imageUrl={itemRef.imageUrl}
+            key={itemRef.name}
+            title={itemRef.name}
+          />
         )
       ))}
     </span>
