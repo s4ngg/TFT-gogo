@@ -38,7 +38,8 @@ All admin backend endpoints are protected by X-Admin-Token.
 - Match admin Swagger docs: backend/src/main/java/com/tftgogo/domain/match/controller/docs/AdminMatchControllerDocs.java
 - Match admin service: backend/src/main/java/com/tftgogo/domain/match/service/AdminMatchService.java
 - Match admin implementation: backend/src/main/java/com/tftgogo/domain/match/service/impl/AdminMatchServiceImpl.java
-- Match admin response DTOs: CacheStatsResponse, RateLimitStatsResponse
+- CacheStatsResponse: backend/src/main/java/com/tftgogo/domain/match/dto/response/CacheStatsResponse.java
+- RateLimitStatsResponse: backend/src/main/java/com/tftgogo/domain/match/dto/response/RateLimitStatsResponse.java
 </backend-structure>
 
 <api>
