@@ -12,6 +12,9 @@ from openai import APIStatusError, APITimeoutError
 from app.models.chat import ChatContext, ChatMessage, ChatRequest
 from app.services.chat import chat, _build_context_block, _FALLBACK_REPLY
 
+_BUDGET_PATH = "app.services.chat.check_budget"
+_BREAKER_PATH = "app.services.chat.openai_breaker"
+
 
 # ── 픽스처 ──────────────────────────────────────────────────────────────
 
@@ -71,9 +74,13 @@ async def test_OpenAI_정상_응답_시_reply_반환():
 
     # when
     with patch("app.services.chat.settings") as mock_settings, \
-         patch("app.services.chat._get_client", return_value=mock_client):
+         patch("app.services.chat._get_client", return_value=mock_client), \
+         patch(_BUDGET_PATH, return_value=100), \
+         patch(_BREAKER_PATH) as mock_breaker:
         mock_settings.openai_api_key = "sk-test"
         mock_settings.openai_model = "gpt-4o-mini"
+        mock_settings.chat_max_input_tokens = 4000
+        mock_breaker.is_open.return_value = False
         result = await chat(request)
 
     # then
@@ -89,9 +96,13 @@ async def test_OpenAI_타임아웃_시_fallback_응답_반환():
 
     # when
     with patch("app.services.chat.settings") as mock_settings, \
-         patch("app.services.chat._get_client", return_value=mock_client):
+         patch("app.services.chat._get_client", return_value=mock_client), \
+         patch(_BUDGET_PATH, return_value=100), \
+         patch(_BREAKER_PATH) as mock_breaker:
         mock_settings.openai_api_key = "sk-test"
         mock_settings.openai_model = "gpt-4o-mini"
+        mock_settings.chat_max_input_tokens = 4000
+        mock_breaker.is_open.return_value = False
         result = await chat(request)
 
     # then
@@ -111,9 +122,13 @@ async def test_OpenAI_API오류_시_fallback_응답_반환():
 
     # when
     with patch("app.services.chat.settings") as mock_settings, \
-         patch("app.services.chat._get_client", return_value=mock_client):
+         patch("app.services.chat._get_client", return_value=mock_client), \
+         patch(_BUDGET_PATH, return_value=100), \
+         patch(_BREAKER_PATH) as mock_breaker:
         mock_settings.openai_api_key = "sk-test"
         mock_settings.openai_model = "gpt-4o-mini"
+        mock_settings.chat_max_input_tokens = 4000
+        mock_breaker.is_open.return_value = False
         result = await chat(request)
 
     # then
