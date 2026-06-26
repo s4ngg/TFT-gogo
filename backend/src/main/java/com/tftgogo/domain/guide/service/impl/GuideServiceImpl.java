@@ -30,7 +30,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -44,7 +43,6 @@ public class GuideServiceImpl implements GuideService {
     private static final int MAX_PAGE = 10_000;
     private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int MAX_PAGE_SIZE = 100;
-    private static final Set<String> SORT_KEYS = Set.of("avgPlace", "pickRate", "top4", "winRate");
     private static final Pattern PATCH_VERSION_PATTERN = Pattern.compile("^(\\d+)\\.(\\d+)([A-Za-z]*)$");
 
     private final GuideChampionRepository guideChampionRepository;
@@ -438,11 +436,8 @@ public class GuideServiceImpl implements GuideService {
     }
 
     private void validateSort(String sortKey, String sortDir) {
-        if (hasText(sortKey) && !SORT_KEYS.contains(sortKey)) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT);
-        }
-
-        if (hasText(sortDir) && !sortDir.equals("asc") && !sortDir.equals("desc")) {
+        // Split guide tables do not persist metric columns yet, so sort requests must fail explicitly.
+        if (hasText(sortKey) || hasText(sortDir)) {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
     }
