@@ -37,10 +37,7 @@ public class TftAssetCacheService {
     public void init() {
         try {
             JsonNode root = fetchTftKoKrLocaleFromSource();
-            tftKoKrLocaleCache = root;
-            traitIconCache = buildTraitIconCache(root);
-            traitNameCache = buildTraitNameCache(root);
-            itemIconCache = buildItemIconCache(root);
+            cacheTftKoKrLocale(root);
             logger.info(
                     "TFT asset cache loaded: traits={}, items={}",
                     traitIconCache.size(),
@@ -85,7 +82,7 @@ public class TftAssetCacheService {
 
             try {
                 JsonNode locale = fetchTftKoKrLocaleFromSource();
-                tftKoKrLocaleCache = locale;
+                cacheTftKoKrLocale(locale);
                 return locale;
             } catch (BusinessException e) {
                 throw e;
@@ -102,6 +99,13 @@ public class TftAssetCacheService {
             throw new BusinessException(ErrorCode.EXTERNAL_API_ERROR);
         }
         return objectMapper.readTree(response);
+    }
+
+    private void cacheTftKoKrLocale(JsonNode root) {
+        traitIconCache = buildTraitIconCache(root);
+        traitNameCache = buildTraitNameCache(root);
+        itemIconCache = buildItemIconCache(root);
+        tftKoKrLocaleCache = root;
     }
 
     private Map<String, String> buildTraitIconCache(JsonNode root) {

@@ -66,6 +66,9 @@ class TftAssetCacheServiceTest {
         // then
         assertThat(first.path("setData").get(0).path("traits").get(0).path("name").asText()).isEqualTo("Test Trait");
         assertThat(second).isSameAs(first);
+        assertThat(tftAssetCacheService.getTraitName("TFT17_TestTrait")).isEqualTo("Test Trait");
+        assertThat(tftAssetCacheService.getItemIconUrl("TFT_Item_Test"))
+                .isEqualTo("https://raw.communitydragon.org/latest/game/assets/maps/particles/tft/item_test.png");
         verify(restTemplate, times(1)).getForObject(CDRAGON_URL, String.class);
     }
 
