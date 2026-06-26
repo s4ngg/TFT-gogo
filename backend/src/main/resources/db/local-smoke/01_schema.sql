@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
     deleted_at DATETIME(6) NULL,
     PRIMARY KEY (user_id),
     UNIQUE KEY uk_users_email (email),
+    UNIQUE KEY uk_users_nickname (nickname),
     UNIQUE KEY ux_users_social_provider_social_id (social_provider, social_id),
     CONSTRAINT chk_users_social_fields_together
         CHECK (
@@ -416,4 +417,42 @@ CREATE TABLE IF NOT EXISTS hero_augment_decks (
     updated_at      DATETIME(6) NOT NULL,
     PRIMARY KEY (id),
     KEY idx_hero_augment_decks_sort (sort_order, id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS admin_accounts (
+    id         BIGINT NOT NULL AUTO_INCREMENT,
+    username   VARCHAR(50)  NOT NULL,
+    password   VARCHAR(255) NOT NULL,
+    role       VARCHAR(20)  NOT NULL DEFAULT 'VIEWER',
+    enabled    TINYINT(1)   NOT NULL DEFAULT 1,
+    created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_admin_accounts_username (username)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS admin_refresh_tokens (
+    id               BIGINT NOT NULL AUTO_INCREMENT,
+    admin_account_id BIGINT       NOT NULL,
+    token_hash       VARCHAR(255) NOT NULL,
+    expires_at       DATETIME     NOT NULL,
+    created_at       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_admin_refresh_tokens_hash (token_hash),
+    KEY idx_admin_refresh_tokens_expires (expires_at),
+    CONSTRAINT fk_art_admin FOREIGN KEY (admin_account_id) REFERENCES admin_accounts (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS admin_audit_logs (
+    id         BIGINT NOT NULL AUTO_INCREMENT,
+    admin_id   BIGINT       NOT NULL,
+    username   VARCHAR(50)  NOT NULL,
+    ip         VARCHAR(45)  NOT NULL,
+    user_agent VARCHAR(500),
+    action     VARCHAR(100) NOT NULL,
+    target     VARCHAR(255),
+    created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_admin_audit_logs_admin_id (admin_id),
+    KEY idx_admin_audit_logs_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

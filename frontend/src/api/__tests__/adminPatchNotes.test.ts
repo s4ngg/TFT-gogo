@@ -9,7 +9,8 @@ import {
   fetchAdminPatchNotes,
   importAdminPatchNoteFromRiot,
   isAdminAuthFailure,
-  setAdminToken,
+  setAccessToken,
+  clearAccessToken,
   updateAdminPatchChange,
   type AdminPatchChangePayload,
   type AdminPatchNoteImportRequest,
@@ -28,27 +29,16 @@ interface RequestCall {
 
 const originalAdapter = axiosInstance.defaults.adapter
 const requestCalls: RequestCall[] = []
-const storage = new Map<string, string>()
-
-Object.defineProperty(globalThis, 'localStorage', {
-  configurable: true,
-  value: {
-    clear: () => storage.clear(),
-    getItem: (key: string) => storage.get(key) ?? null,
-    removeItem: (key: string) => storage.delete(key),
-    setItem: (key: string, value: string) => storage.set(key, value),
-  },
-})
 
 function parseRequestData(data: unknown): unknown {
   if (typeof data !== 'string') return data
   return JSON.parse(data) as unknown
 }
 
-function readAdminToken(config: InternalAxiosRequestConfig): unknown {
+function readAuthToken(config: InternalAxiosRequestConfig): unknown {
   const headers = config.headers
-  if (typeof headers?.get === 'function') return headers.get('X-Admin-Token')
-  return (headers as Record<string, unknown> | undefined)?.['X-Admin-Token']
+  if (typeof headers?.get === 'function') return headers.get('Authorization')
+  return (headers as Record<string, unknown> | undefined)?.['Authorization']
 }
 
 function createAdapter(responseData: unknown): AxiosAdapter {
@@ -58,7 +48,7 @@ function createAdapter(responseData: unknown): AxiosAdapter {
       method: config.method,
       params: config.params,
       timeout: config.timeout,
-      token: readAdminToken(config),
+      token: readAuthToken(config),
       url: config.url,
     })
 
@@ -87,7 +77,7 @@ function createErrorAdapter(status: number): AxiosAdapter {
 afterEach(() => {
   axiosInstance.defaults.adapter = originalAdapter
   requestCalls.length = 0
-  storage.clear()
+  clearAccessToken()
 })
 
 describe('admin patch note api', () => {
@@ -107,13 +97,13 @@ describe('admin patch note api', () => {
         version: '17.3',
       },
     ])
-    setAdminToken('admin-token')
+    setAccessToken('test-access-token')
 
     const response = await fetchAdminPatchNotes()
 
     assert.equal(requestCalls[0]?.method, 'get')
     assert.equal(requestCalls[0]?.url, '/admin/patch-notes')
-    assert.equal(requestCalls[0]?.token, 'admin-token')
+    assert.equal(requestCalls[0]?.token, 'Bearer test-access-token')
     assert.equal(response[0]?.version, '17.3')
   })
 
@@ -134,7 +124,7 @@ describe('admin patch note api', () => {
 
   it('패치노트 생성 요청을 백엔드 관리자 계약에 맞춰 보낸다', async () => {
     axiosInstance.defaults.adapter = createAdapter({ id: 1, version: '17.3' })
-    setAdminToken('admin-token')
+    setAccessToken('test-access-token')
     const payload: AdminPatchNotePayload = {
       current: true,
       description: null,
@@ -167,7 +157,7 @@ describe('admin patch note api', () => {
       updatedChanges: 0,
       version: '17.5',
     })
-    setAdminToken('admin-token')
+    setAccessToken('test-access-token')
     const payload: AdminPatchNoteImportRequest = {
       current: true,
       locale: 'ko-kr',
@@ -179,7 +169,7 @@ describe('admin patch note api', () => {
 
     assert.equal(requestCalls[0]?.method, 'post')
     assert.equal(requestCalls[0]?.url, '/admin/patch-notes/import/riot')
-    assert.equal(requestCalls[0]?.token, 'admin-token')
+    assert.equal(requestCalls[0]?.token, 'Bearer test-access-token')
     assert.equal(requestCalls[0]?.timeout, 120_000)
     assert.deepEqual(requestCalls[0]?.data, payload)
     assert.equal(response.patchNoteId, 7)
@@ -187,18 +177,18 @@ describe('admin patch note api', () => {
 
   it('선택 패치의 변경사항은 관리자 변경사항 조회 API를 사용한다', async () => {
     axiosInstance.defaults.adapter = createAdapter([])
-    setAdminToken('admin-token')
+    setAccessToken('test-access-token')
 
     await fetchAdminPatchChanges(1)
 
     assert.equal(requestCalls[0]?.method, 'get')
     assert.equal(requestCalls[0]?.url, '/admin/patch-notes/1/changes')
-    assert.equal(requestCalls[0]?.token, 'admin-token')
+    assert.equal(requestCalls[0]?.token, 'Bearer test-access-token')
   })
 
   it('패치 변경사항 수정 요청을 patch-note-changes 엔드포인트로 보낸다', async () => {
     axiosInstance.defaults.adapter = createAdapter({ id: 10, targetName: '징크스' })
-    setAdminToken('admin-token')
+    setAccessToken('test-access-token')
     const payload: AdminPatchChangePayload = {
       afterValue: '240',
       beforeValue: '220',
@@ -219,12 +209,12 @@ describe('admin patch note api', () => {
     assert.equal(requestCalls[0]?.method, 'patch')
     assert.equal(requestCalls[0]?.url, '/admin/patch-note-changes/10')
     assert.deepEqual(requestCalls[0]?.data, payload)
-    assert.equal(requestCalls[0]?.token, 'admin-token')
+    assert.equal(requestCalls[0]?.token, 'Bearer test-access-token')
   })
 
   it('패치 변경사항 생성 요청을 patch-note-changes 엔드포인트로 보낸다', async () => {
     axiosInstance.defaults.adapter = createAdapter({ id: 11, targetName: '무한의 대검' })
-    setAdminToken('admin-token')
+    setAccessToken('test-access-token')
     const payload: AdminPatchChangePayload = {
       afterValue: null,
       beforeValue: null,
@@ -245,6 +235,6 @@ describe('admin patch note api', () => {
     assert.equal(requestCalls[0]?.method, 'post')
     assert.equal(requestCalls[0]?.url, '/admin/patch-note-changes')
     assert.deepEqual(requestCalls[0]?.data, payload)
-    assert.equal(requestCalls[0]?.token, 'admin-token')
+    assert.equal(requestCalls[0]?.token, 'Bearer test-access-token')
   })
 })

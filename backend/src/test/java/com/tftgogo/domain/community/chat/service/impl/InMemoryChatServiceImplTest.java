@@ -76,11 +76,12 @@ class InMemoryChatServiceImplTest {
                 .extracting(
                         ChatMessageResponse::getId,
                         ChatMessageResponse::getRoomId,
+                        ChatMessageResponse::getSenderId,
                         ChatMessageResponse::getSenderName,
                         ChatMessageResponse::getTier,
                         ChatMessageResponse::getContent
                 )
-                .containsExactly(sentMessage.getId(), "party-recruitment", "소정", "Unranked", "안녕하세요");
+                .containsExactly(sentMessage.getId(), "party-recruitment", USER_ID, "소정", "Unranked", "안녕하세요");
     }
 
     @Test
@@ -93,6 +94,7 @@ class InMemoryChatServiceImplTest {
         ChatMessageResponse response = chatService.sendMessage(USER_ID, request);
 
         // then
+        assertThat(response.getSenderId()).isEqualTo(USER_ID);
         assertThat(response.getSenderName()).isEqualTo("서버닉네임");
         assertThat(response.getTier()).isEqualTo("Unranked");
     }

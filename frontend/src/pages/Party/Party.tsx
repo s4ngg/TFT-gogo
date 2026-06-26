@@ -15,6 +15,8 @@ import { usePartyChat } from './hooks/usePartyChat'
 import { usePartyPosts } from './hooks/usePartyPosts'
 import styles from './Party.module.css'
 
+const PARTY_CREATE_FORM_ID = 'party-create-form'
+
 function Party() {
   const [searchParams, setSearchParams] = useSearchParams()
   const activeRoomId = useMemo(
@@ -65,10 +67,46 @@ function Party() {
               <h2>파티원 찾기</h2>
               <p>티어와 플레이 스타일에 맞는 TFT 듀오를 찾아보세요.</p>
             </div>
-            <button type="button" className={styles.primaryButton} onClick={party.focusCompose}>
-              {party.isAuthenticated ? '모집글 작성' : '로그인 후 작성'}
+            <button
+              type="button"
+              aria-controls={PARTY_CREATE_FORM_ID}
+              aria-expanded={party.isComposeOpen}
+              className={styles.primaryButton}
+              onClick={party.toggleCompose}
+            >
+              {party.isAuthenticated && party.isComposeOpen
+                ? '작성 닫기'
+                : party.isAuthenticated
+                  ? '모집글 작성'
+                  : '로그인 후 작성'}
             </button>
           </div>
+
+          {party.isComposeOpen && (
+            <PartyCreateForm
+              capacityDraft={party.capacityDraft}
+              composeError={party.composeError}
+              deadlineDraft={party.deadlineDraft}
+              descriptionDraft={party.descriptionDraft}
+              formId={PARTY_CREATE_FORM_ID}
+              isAuthenticated={party.isAuthenticated}
+              isSubmitting={party.isCreating}
+              minDeadline={party.minDeadline}
+              modeDraft={party.modeDraft}
+              onCapacityChange={party.setCapacityDraft}
+              onDeadlineChange={party.setDeadlineDraft}
+              onDescriptionChange={party.setDescriptionDraft}
+              onModeChange={party.setModeDraft}
+              onSubmit={party.submitPartyPost}
+              onTagsChange={party.setTagsDraft}
+              onTierChange={party.setTierDraft}
+              onTitleChange={party.setTitleDraft}
+              tagsDraft={party.tagsDraft}
+              tierDraft={party.tierDraft}
+              titleDraft={party.titleDraft}
+              titleInputRef={party.titleInputRef}
+            />
+          )}
 
           <PartyFilterBar
             onFilterChange={party.changeFilter}
@@ -76,29 +114,6 @@ function Party() {
             onSearchSubmit={party.submitSearch}
             searchDraft={party.searchDraft}
             selectedFilter={party.selectedFilter}
-          />
-
-          <PartyCreateForm
-            capacityDraft={party.capacityDraft}
-            composeError={party.composeError}
-            deadlineDraft={party.deadlineDraft}
-            descriptionDraft={party.descriptionDraft}
-            isAuthenticated={party.isAuthenticated}
-            isSubmitting={party.isCreating}
-            minDeadline={party.minDeadline}
-            modeDraft={party.modeDraft}
-            onCapacityChange={party.setCapacityDraft}
-            onDeadlineChange={party.setDeadlineDraft}
-            onDescriptionChange={party.setDescriptionDraft}
-            onModeChange={party.setModeDraft}
-            onSubmit={party.submitPartyPost}
-            onTagsChange={party.setTagsDraft}
-            onTierChange={party.setTierDraft}
-            onTitleChange={party.setTitleDraft}
-            tagsDraft={party.tagsDraft}
-            tierDraft={party.tierDraft}
-            titleDraft={party.titleDraft}
-            titleInputRef={party.titleInputRef}
           />
 
           {party.statusMessage && (
@@ -129,7 +144,7 @@ function Party() {
           chatInput={chat.chatInput}
           chatNotice={chat.chatNotice}
           connectionLabel={chat.connectionLabel}
-          currentUserName={chat.currentUserName}
+          currentUserId={chat.currentUserId}
           isAuthenticated={chat.isAuthenticated}
           isLoading={chat.isLoading}
           isMessageDisabled={chat.isMessageDisabled}

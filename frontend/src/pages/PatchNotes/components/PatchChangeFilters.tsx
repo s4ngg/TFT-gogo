@@ -50,6 +50,7 @@ function PatchChangeFilters({
             type="button"
             className={activeCategory === category ? styles.activeTab : undefined}
             onClick={() => onCategoryChange(category)}
+            aria-pressed={activeCategory === category}
           >
             {category}
             <span>{getCategoryCount(category, stats)}</span>

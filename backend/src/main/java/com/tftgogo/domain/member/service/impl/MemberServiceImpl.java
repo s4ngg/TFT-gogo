@@ -18,10 +18,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Locale;
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class MemberServiceImpl implements MemberService {
+
+    private static final int SOCIAL_MEMBER_CREATE_MAX_ATTEMPTS = 4;
 
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
@@ -35,13 +40,17 @@ public class MemberServiceImpl implements MemberService {
             throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
+        if (memberRepository.existsByNickname(request.getNickname())) {
+            throw new BusinessException(ErrorCode.NICKNAME_ALREADY_EXISTS);
+        }
+
         String encodedPassword = passwordEncoder.encode(request.getPassword());
         Member member;
 
         try {
             member = memberRepository.saveAndFlush(request.toEntity(encodedPassword));
         } catch (DataIntegrityViolationException e) {
-            throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
+            throw mapSignupConstraintViolation(e);
         }
 
         String accessToken = jwtTokenProvider.createAccessToken(member.getUserId());
@@ -97,18 +106,60 @@ public class MemberServiceImpl implements MemberService {
             throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
-        try {
-            return issueAuthResponse(socialMemberCreationService.create(command));
-        } catch (DataIntegrityViolationException e) {
-            return memberRepository.findBySocialProviderAndSocialId(provider, command.getSocialId())
-                    .map(this::issueAuthResponse)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.SOCIAL_LOGIN_FAILED));
+        for (int attempt = 0; attempt < SOCIAL_MEMBER_CREATE_MAX_ATTEMPTS; attempt++) {
+            try {
+                return issueAuthResponse(socialMemberCreationService.create(command, attempt));
+            } catch (DataIntegrityViolationException e) {
+                Optional<Member> existingMember = memberRepository.findBySocialProviderAndSocialId(
+                        provider,
+                        command.getSocialId()
+                );
+                if (existingMember.isPresent()) {
+                    return issueAuthResponse(existingMember.get());
+                }
+
+                if (isNicknameConstraintViolation(e)) {
+                    if (attempt == SOCIAL_MEMBER_CREATE_MAX_ATTEMPTS - 1) {
+                        throw new BusinessException(ErrorCode.SOCIAL_LOGIN_FAILED);
+                    }
+                    continue;
+                }
+
+                if (isEmailConstraintViolation(e)) {
+                    throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
+                }
+
+                throw new BusinessException(ErrorCode.SOCIAL_LOGIN_FAILED);
+            }
         }
+
+        throw new BusinessException(ErrorCode.SOCIAL_LOGIN_FAILED);
     }
 
     private AuthResponse issueAuthResponse(Member member) {
         String accessToken = jwtTokenProvider.createAccessToken(member.getUserId());
 
         return AuthResponse.of(accessToken, MemberResponse.from(member));
+    }
+
+    private BusinessException mapSignupConstraintViolation(DataIntegrityViolationException exception) {
+        if (isNicknameConstraintViolation(exception)) {
+            return new BusinessException(ErrorCode.NICKNAME_ALREADY_EXISTS);
+        }
+
+        return new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
+    }
+
+    private boolean isNicknameConstraintViolation(DataIntegrityViolationException exception) {
+        return containsConstraintToken(exception, "nickname");
+    }
+
+    private boolean isEmailConstraintViolation(DataIntegrityViolationException exception) {
+        return containsConstraintToken(exception, "email");
+    }
+
+    private boolean containsConstraintToken(DataIntegrityViolationException exception, String token) {
+        String message = exception.getMostSpecificCause().getMessage();
+        return message != null && message.toLowerCase(Locale.ROOT).contains(token);
     }
 }

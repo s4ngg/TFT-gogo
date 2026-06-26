@@ -39,6 +39,7 @@ function traitIconPath(iconSetNumber: number, traitName: string): string {
   return `ASSETS/UX/TraitIcons/Trait_Icon_${iconSetNumber}_${traitName}.${tftSetFileSuffix(iconSetNumber)}.tex`
 }
 
+// Set 태그 없이 고정 경로를 사용하는 트레이트 아이콘 (CDragon에서 Set 태그 없는 경로에만 존재)
 function traitIconPathWithoutSet(iconSetNumber: number, traitName: string): string {
   return `ASSETS/UX/TraitIcons/Trait_Icon_${iconSetNumber}_${traitName}.tex`
 }
@@ -89,16 +90,16 @@ export function tftItemIconOnError(e: React.SyntheticEvent<HTMLImageElement>): v
 }
 
 const TRAIT_ICON_PATHS: Readonly<Record<string, string>> = {
-  tft17_vanguard: traitIconPath(12, 'Vanguard'),
-  tft17_darkstar: traitIconPath(17, 'DarkStar'),
-  tft17_astronaut: traitIconPath(17, 'Astronaut'),
-  tft17_rogue: traitIconPath(17, 'Rogue'),
-  tft17_stargazer: traitIconPath(17, 'Stargazer'),
-  tft17_shepherd: traitIconPath(17, 'Shepherd'),
-  tft17_sniper: traitIconPathWithoutSet(6, 'Sniper'),
+  tft17_vanguard:   traitIconPath(12, 'Vanguard'),           // Set17에 없고 Set12 경로가 CDragon 200
+  tft17_darkstar:   traitIconPath(17, 'DarkStar'),
+  tft17_astronaut:  traitIconPath(17, 'Astronaut'),
+  tft17_rogue:      traitIconPath(17, 'Rogue'),
+  tft17_stargazer:  traitIconPath(17, 'Stargazer'),
+  tft17_shepherd:   traitIconPath(17, 'Shepherd'),
+  tft17_sniper:     traitIconPathWithoutSet(6, 'Sniper'),    // Set 태그 없는 경로에만 존재
   tft17_replicator: traitIconPath(17, 'Replicator'),
-  tft17_psyops: traitIconPath(17, 'PsyOps'),
-  tft17_bastion: traitIconPathWithoutSet(9, 'Bastion'),
+  tft17_psyops:     traitIconPath(17, 'PsyOps'),
+  tft17_bastion:    traitIconPathWithoutSet(9, 'Bastion'),   // Set 태그 없는 경로에만 존재
 }
 
 const championImagePaths: Readonly<Record<string, string>> = {

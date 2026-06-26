@@ -968,6 +968,12 @@
   border-color: var(--accent);
 }
 
+.guideImportHint {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 .guideImportChecks {
   display: flex;
   gap: 14px;

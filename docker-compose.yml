@@ -72,27 +72,30 @@ services:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       RIOT_API_KEY: ${RIOT_API_KEY:-local-smoke-disabled}
-      ADMIN_SECRET_TOKEN: ${ADMIN_SECRET_TOKEN:-local-admin-token}
       APP_META_DECK_STARTUP_AGGREGATE: "false"
       APP_OAUTH2_AUTHORIZATION_BASE_URI: ${APP_OAUTH2_AUTHORIZATION_BASE_URI:-http://localhost:8081}
       APP_OAUTH2_AUTHORIZED_REDIRECT_URI: ${APP_OAUTH2_AUTHORIZED_REDIRECT_URI:-http://localhost:3000/oauth/callback}
       APP_OAUTH2_LOGIN_FAILURE_REDIRECT_URI: ${APP_OAUTH2_LOGIN_FAILURE_REDIRECT_URI:-http://localhost:3000/login}
       APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173,https://tftgogo.com,https://www.tftgogo.com}
       AI_SERVER_URL: ${AI_SERVER_URL:-http://ai-server:8000}
+      AI_SERVER_INTERNAL_SECRET: ${AI_SERVER_INTERNAL_SECRET:-dev-internal-secret}
       SERVER_FORWARD_HEADERS_STRATEGY: ${SERVER_FORWARD_HEADERS_STRATEGY:-framework}
       JWT_SECRET: ${JWT_SECRET:-local-jwt-secret-key-for-tft-gogo-dev-123456}
       JWT_ACCESS_TOKEN_EXPIRATION_MILLIS: ${JWT_ACCESS_TOKEN_EXPIRATION_MILLIS:-3600000}
+      ADMIN_BOOTSTRAP_PASSWORD: ${ADMIN_BOOTSTRAP_PASSWORD:-}
 
   ai-server:
     build:
       context: ./ai-server
       dockerfile: Dockerfile
     container_name: tftgogo-ai
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     depends_on:
       postgres:
         condition: service_healthy
+    environment:
+      INTERNAL_SECRET: ${AI_SERVER_INTERNAL_SECRET:-dev-internal-secret}
     env_file:
       - path: ./ai-server/.env
         required: false
