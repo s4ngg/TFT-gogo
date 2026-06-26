@@ -1,9 +1,14 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import { resolveGuideImportPatchVersion } from '../guideImportVersion'
+import { isLatestGuideImportPatchVersion, resolveGuideImportPatchVersion } from '../guideImportVersion'
 
 describe('resolveGuideImportPatchVersion', () => {
+  it('detects latest alias with surrounding whitespace', () => {
+    assert.equal(isLatestGuideImportPatchVersion(' latest '), true)
+    assert.equal(isLatestGuideImportPatchVersion('17.6'), false)
+  })
+
   it('uses the current patch version when latest is entered', () => {
     assert.equal(resolveGuideImportPatchVersion('latest', '17.6'), '17.6')
   })

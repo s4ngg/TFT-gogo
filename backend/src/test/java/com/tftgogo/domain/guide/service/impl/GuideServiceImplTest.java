@@ -176,7 +176,7 @@ class GuideServiceImplTest {
     void split_trait_response_skips_entries_without_champions() {
         // given
         when(guideTraitRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
-        when(guideTraitRepository.existsStargazerVariantByPatchVersion("17.0")).thenReturn(false);
+        when(guideTraitRepository.countStargazerVariantsByPatchVersion("17.0")).thenReturn(0L);
         when(guideTraitRepository.searchPage(eq("17.0"), isNull(), eq(false), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(
                         List.of(

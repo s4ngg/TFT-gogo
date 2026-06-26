@@ -118,7 +118,7 @@ public class GuideServiceImpl implements GuideService {
                 yield toPageResponse(toChampionResponses(page.getContent()), page, normalizedPage, normalizedPageSize);
             }
             case TRAIT -> {
-                boolean hideBaseStargazer = guideTraitRepository.existsStargazerVariantByPatchVersion(patchVersion);
+                boolean hideBaseStargazer = guideTraitRepository.countStargazerVariantsByPatchVersion(patchVersion) > 0;
                 Page<GuideTrait> page = guideTraitRepository.searchPage(
                         patchVersion,
                         normalizedQuery,

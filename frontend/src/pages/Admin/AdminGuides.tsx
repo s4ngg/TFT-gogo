@@ -1,5 +1,6 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Download, RefreshCcw } from 'lucide-react'
 import {
   fetchAdminPatchNotes,
   importGuideCdragonData,
@@ -7,7 +8,8 @@ import {
   type GuideCdragonImportRequest,
   type GuideImportResponse,
 } from '../../api/adminApi'
-import { resolveGuideImportPatchVersion } from './utils/guideImportVersion'
+import { getEstimatedGuideImportProgress } from './utils/guideImportProgress'
+import { isLatestGuideImportPatchVersion, resolveGuideImportPatchVersion } from './utils/guideImportVersion'
 import styles from './Admin.module.css'
 
 interface GuideImportFormState {
@@ -38,6 +40,7 @@ function AdminGuides() {
   const [result, setResult] = useState<GuideImportResponse | null>(null)
   const [error, setError] = useState('')
   const [importing, setImporting] = useState(false)
+  const [importElapsedSeconds, setImportElapsedSeconds] = useState(0)
 
   const patchNotesQuery = useQuery({
     queryFn: fetchAdminPatchNotes,
@@ -50,14 +53,34 @@ function AdminGuides() {
     [patchNotes],
   )
   const resolvedPatchVersion = resolveGuideImportPatchVersion(form.patchVersion, currentPatchVersion)
-  const isResolvingPatchVersion = form.patchVersion.trim().toLowerCase() === 'latest' && patchNotesQuery.isFetching
+  const isLatestPatchVersion = isLatestGuideImportPatchVersion(form.patchVersion)
+  const isCheckingPatchVersion = isLatestPatchVersion && patchNotesQuery.isFetching
+  const importProgressValue = getEstimatedGuideImportProgress(importElapsedSeconds)
+  const importProgressStatus = isCheckingPatchVersion
+    ? '최신 패치 버전 확인 중'
+    : 'CDragon 데이터 수집 및 저장 중'
+
+  useEffect(() => {
+    if (!importing) {
+      setImportElapsedSeconds(0)
+      return undefined
+    }
+
+    const startedAt = Date.now()
+    setImportElapsedSeconds(0)
+    const timerId = window.setInterval(() => {
+      setImportElapsedSeconds(Math.floor((Date.now() - startedAt) / 1000))
+    }, 1000)
+
+    return () => window.clearInterval(timerId)
+  }, [importing])
 
   function patch<K extends keyof GuideImportFormState>(key: K, value: GuideImportFormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
   }
 
-  function buildPayload(): GuideCdragonImportRequest | null {
-    const patchVersion = resolvedPatchVersion
+  function buildPayload(patchVersionInput: string): GuideCdragonImportRequest | null {
+    const patchVersion = patchVersionInput.trim()
     const setNumber = Number(form.setNumber)
 
     if (!patchVersion) {
@@ -86,16 +109,29 @@ function AdminGuides() {
     }
   }
 
-  async function handleImport(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+  async function resolvePatchVersionForImport(patchVersionInput: string) {
+    if (!isLatestGuideImportPatchVersion(patchVersionInput)) {
+      return patchVersionInput
+    }
 
-    const payload = buildPayload()
-    if (!payload) return
+    const latestPatchNotes = await patchNotesQuery.refetch()
+    const latestCurrentPatchVersion =
+      latestPatchNotes.data?.find((note) => note.isCurrent)?.version ??
+      latestPatchNotes.data?.[0]?.version ??
+      currentPatchVersion
 
+    return resolveGuideImportPatchVersion(patchVersionInput, latestCurrentPatchVersion)
+  }
+
+  async function runImport(patchVersionInput: string) {
     setImporting(true)
     setError('')
     setResult(null)
     try {
+      const resolvedImportPatchVersion = await resolvePatchVersionForImport(patchVersionInput)
+      const payload = buildPayload(resolvedImportPatchVersion)
+      if (!payload) return
+
       const response = await importGuideCdragonData(payload)
       setResult(response)
     } catch {
@@ -103,6 +139,16 @@ function AdminGuides() {
     } finally {
       setImporting(false)
     }
+  }
+
+  async function handleImport(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    await runImport(resolvedPatchVersion)
+  }
+
+  async function handleLatestImportClick() {
+    patch('patchVersion', 'latest')
+    await runImport('latest')
   }
 
   const importedCount = result?.importedCount ?? 0
@@ -195,10 +241,39 @@ function AdminGuides() {
 
           <div className={styles.guideImportActions}>
             {error && <span className={styles.guideImportError}>{error}</span>}
-            <button className={styles.saveBtn} type="submit" disabled={importing || isResolvingPatchVersion}>
-              {importing ? '가져오는 중...' : isResolvingPatchVersion ? '패치 확인 중...' : 'CDragon 가져오기'}
+            <button
+              className={styles.resetBtn}
+              type="button"
+              disabled={importing}
+              onClick={() => void handleLatestImportClick()}
+            >
+              <RefreshCcw size={14} />
+              {isCheckingPatchVersion ? '패치 확인 중' : '최신 버전 가져오기'}
+            </button>
+            <button className={styles.saveBtn} type="submit" disabled={importing}>
+              <Download size={14} />
+              {importing ? '가져오는 중...' : '지정값으로 가져오기'}
             </button>
           </div>
+
+          {importing && (
+            <div className={styles.guideImportProgress} role="status" aria-live="polite">
+              <div className={styles.guideImportProgressHeader}>
+                <span>{importProgressStatus}</span>
+                <strong>예상 {importProgressValue}%</strong>
+              </div>
+              <progress
+                className={styles.guideImportProgressBar}
+                max={100}
+                value={importProgressValue}
+              >
+                {importProgressValue}%
+              </progress>
+              <span className={styles.guideImportProgressHint}>
+                {importElapsedSeconds}초 경과 · 완료되면 결과 카드에 생성/수정/스킵 개수가 표시됩니다.
+              </span>
+            </div>
+          )}
         </form>
 
         {result && (

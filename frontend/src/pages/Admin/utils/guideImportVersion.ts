@@ -1,7 +1,11 @@
+export function isLatestGuideImportPatchVersion(input: string): boolean {
+  return input.trim().toLowerCase() === 'latest'
+}
+
 export function resolveGuideImportPatchVersion(input: string, currentPatchVersion: string | null): string {
   const trimmed = input.trim()
 
-  if (trimmed.toLowerCase() === 'latest' && currentPatchVersion) {
+  if (isLatestGuideImportPatchVersion(trimmed) && currentPatchVersion) {
     return currentPatchVersion
   }
 
