@@ -23,6 +23,7 @@ import {
   type AdminPatchNote,
   type AdminPatchNotePayload,
 } from '../../../api/adminApi'
+import { shouldShowPatchChangeValues } from '../utils/patchChangeValues'
 import styles from '../AdminPatchNotes.module.css'
 
 const PATCH_NOTE_QUERY_KEY = ['admin', 'patch-notes'] as const
@@ -1221,7 +1222,7 @@ function AdminPatchNotesManager() {
                     </span>
                   </div>
                   <p className={styles.changeSummary}>{change.summary}</p>
-                  {(change.beforeValue || change.afterValue) && (
+                  {shouldShowPatchChangeValues(change) && (
                     <p className={styles.changeValues}>
                       {change.beforeValue || '-'} → {change.afterValue || '-'}
                     </p>
