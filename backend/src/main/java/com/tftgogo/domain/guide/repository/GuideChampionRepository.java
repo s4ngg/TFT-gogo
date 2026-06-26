@@ -27,6 +27,7 @@ public interface GuideChampionRepository extends JpaRepository<GuideChampion, Lo
                             OR LOWER(name) LIKE LOWER(CONCAT('%', :query, '%'))
                             OR LOWER(champion_key) LIKE LOWER(CONCAT('%', :query, '%'))
                       )
+                      AND JSON_TYPE(traits_json) = 'ARRAY'
                       AND JSON_LENGTH(traits_json) > 0
                     ORDER BY name ASC, id ASC
                     """,
@@ -40,6 +41,7 @@ public interface GuideChampionRepository extends JpaRepository<GuideChampion, Lo
                             OR LOWER(name) LIKE LOWER(CONCAT('%', :query, '%'))
                             OR LOWER(champion_key) LIKE LOWER(CONCAT('%', :query, '%'))
                       )
+                      AND JSON_TYPE(traits_json) = 'ARRAY'
                       AND JSON_LENGTH(traits_json) > 0
                     """,
             nativeQuery = true
