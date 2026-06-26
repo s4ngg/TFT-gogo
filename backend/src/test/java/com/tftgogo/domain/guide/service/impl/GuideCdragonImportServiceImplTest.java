@@ -136,6 +136,26 @@ class GuideCdragonImportServiceImplTest {
     }
 
     @Test
+    void cdragon_import_expands_item_keyword_template_tokens() {
+        // given
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonItemKeywordJson());
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request(false, false, true, false));
+
+        // then
+        assertThat(response.getCreatedCount()).isEqualTo(1);
+        ArgumentCaptor<GuideItem> itemCaptor = ArgumentCaptor.forClass(GuideItem.class);
+        verify(guideItemRepository).save(itemCaptor.capture());
+        GuideItem item = itemCaptor.getValue();
+        assertThat(item.getItemKey()).isEqualTo("TFT_Item_InfinityEdge");
+        assertThat(item.getDescription())
+                .isEqualTo("정밀을 얻습니다. 정밀: 스킬과 아이템 피해가 치명타로 적용될 수 있습니다.");
+        assertThat(item.getCombinationsJson()).contains("Sparring Gloves");
+    }
+
+    @Test
     void cdragon_import_saves_augment_without_stats_aggregation_values() {
         // given
         when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
@@ -338,6 +358,48 @@ class GuideCdragonImportServiceImplTest {
                   ],
                   "sets": {},
                   "items": []
+                }
+                """;
+    }
+
+    private String cdragonItemKeywordJson() {
+        return """
+                {
+                  "setData": [
+                    {
+                      "number": 17,
+                      "mutator": "TFTSet17",
+                      "champions": [],
+                      "traits": [],
+                      "augments": []
+                    }
+                  ],
+                  "sets": {},
+                  "items": [
+                    {
+                      "apiName": "TFT_Item_BFSword",
+                      "name": "B.F. Sword",
+                      "icon": "ASSETS/Maps/Particles/TFT/Item_Icons/Standard/BFSword.png"
+                    },
+                    {
+                      "apiName": "TFT_Item_SparringGloves",
+                      "name": "Sparring Gloves",
+                      "icon": "ASSETS/Maps/Particles/TFT/Item_Icons/Standard/SparringGloves.png"
+                    },
+                    {
+                      "apiName": "TFT_Item_InfinityEdge",
+                      "name": "무한의 대검",
+                      "desc": "<TFTKeyword>정밀</TFTKeyword>을 얻습니다.<br><br>{{TFT_Keyword_Precision}}",
+                      "effects": {
+                        "AD": 0.35,
+                        "CritChance": 35,
+                        "CritDamageToGive": null
+                      },
+                      "icon": "ASSETS/Maps/TFT/Icons/Items/Hexcore/TFT_Item_InfinityEdge.TFT_Set13.tex",
+                      "composition": ["TFT_Item_BFSword", "TFT_Item_SparringGloves"],
+                      "associatedTraits": []
+                    }
+                  ]
                 }
                 """;
     }
