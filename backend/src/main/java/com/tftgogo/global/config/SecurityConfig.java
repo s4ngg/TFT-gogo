@@ -60,6 +60,7 @@ public class SecurityConfig {
                                 "/api/admin/**",        // AdminTokenFilter가 직접 검증
                                 "/api/match/**",
                                 "/api/summoners/**",
+                                "/api/cdragon/**",
                                 "/api/guide",
                                 "/api/guide/**",
                                 "/api/patch-notes",
