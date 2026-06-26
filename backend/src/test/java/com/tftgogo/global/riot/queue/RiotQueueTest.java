@@ -8,6 +8,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -161,20 +164,49 @@ class RiotQueueTest {
 
     @Test
     void foreground_작업이_background보다_우선_처리된다() throws Exception {
-        CountDownLatch bgStarted = new CountDownLatch(1);
-        CountDownLatch fgCompleted = new CountDownLatch(1);
+        RiotProperties props = new RiotProperties();
+        props.setApiKey("test-key");
+        props.setQueueWorkerConcurrency(1);
+        props.setMaxForegroundStreak(5);
+        props.setForegroundTaskTtlMs(5_000L);
+        props.setBackgroundTaskTtlMs(10_000L);
+        RiotQueue serialQueue = new RiotQueue(props, new ThreadPoolTaskExecutorAdapter(1), new SimpleMeterRegistry());
 
-        CompletableFuture<String> bgFuture = riotQueue.submit(() -> {
-            bgStarted.countDown();
-            return "bg";
-        });
+        try {
+            List<String> executionOrder = Collections.synchronizedList(new ArrayList<>());
+            CountDownLatch blockerStarted = new CountDownLatch(1);
+            CountDownLatch blockerRelease = new CountDownLatch(1);
 
-        CompletableFuture<String> fgFuture = riotQueue.submitForeground(() -> "fg");
+            serialQueue.submitForeground(() -> {
+                blockerStarted.countDown();
+                try { blockerRelease.await(5, TimeUnit.SECONDS); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+                return "blocker";
+            });
+            blockerStarted.await(3, TimeUnit.SECONDS);
 
-        fgFuture.thenRun(fgCompleted::countDown);
+            // sentinel: 스케줄러가 이 작업을 꺼내고 semaphore.acquire()에서 대기하게 만듦
+            serialQueue.submitForeground(() -> "sentinel");
+            Thread.sleep(50);
 
-        assertThat(fgFuture.get(5, TimeUnit.SECONDS)).isEqualTo("fg");
-        assertThat(bgFuture.get(5, TimeUnit.SECONDS)).isEqualTo("bg");
+            // 스케줄러가 semaphore 대기 중이므로 bg/fg 모두 안전하게 큐에 적재
+            CompletableFuture<String> bgFuture = serialQueue.submit(() -> {
+                executionOrder.add("bg");
+                return "bg";
+            });
+            CompletableFuture<String> fgFuture = serialQueue.submitForeground(() -> {
+                executionOrder.add("fg");
+                return "fg";
+            });
+
+            blockerRelease.countDown();
+
+            fgFuture.get(5, TimeUnit.SECONDS);
+            bgFuture.get(5, TimeUnit.SECONDS);
+
+            assertThat(executionOrder).containsExactly("fg", "bg");
+        } finally {
+            serialQueue.destroy();
+        }
     }
 
     private static class ThreadPoolTaskExecutorAdapter implements Executor {
