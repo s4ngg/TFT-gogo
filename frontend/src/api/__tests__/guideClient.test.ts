@@ -24,6 +24,25 @@ function toRecord(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>
 }
 
+function createGuideResponse(config: Parameters<AxiosAdapter>[0]): AxiosResponse {
+  return {
+    config,
+    data: {
+      data: {
+        items: [],
+        page: 1,
+        pageSize: 6,
+        totalItems: 0,
+        totalPages: 1,
+      },
+      success: true,
+    },
+    headers: {},
+    status: 200,
+    statusText: 'OK',
+  }
+}
+
 afterEach(() => {
   axiosInstance.defaults.adapter = originalAdapter
 })
@@ -35,22 +54,7 @@ describe('getGuideTabItems', () => {
     const adapter: AxiosAdapter = async (config): Promise<AxiosResponse> => {
       capturedParams = config.params
 
-      return {
-        config,
-        data: {
-          data: {
-            items: [],
-            page: 1,
-            pageSize: 6,
-            totalItems: 0,
-            totalPages: 1,
-          },
-          success: true,
-        },
-        headers: {},
-        status: 200,
-        statusText: 'OK',
-      }
+      return createGuideResponse(config)
     }
     axiosInstance.defaults.adapter = adapter
 
@@ -65,5 +69,28 @@ describe('getGuideTabItems', () => {
     const params = toRecord(capturedParams)
 
     assert.equal(params.patchVersion, '17.6')
+  })
+
+  it('빈 패치 버전은 탭 조회 요청에서 제외한다', async () => {
+    let capturedParams: unknown
+
+    const adapter: AxiosAdapter = async (config): Promise<AxiosResponse> => {
+      capturedParams = config.params
+
+      return createGuideResponse(config)
+    }
+    axiosInstance.defaults.adapter = adapter
+
+    await getGuideTabItems({
+      page: 1,
+      pageSize: 6,
+      patchVersion: '',
+      query: '',
+      tab: 'traits',
+    }, fallbackCatalog)
+
+    const params = toRecord(capturedParams)
+
+    assert.equal(params.patchVersion, undefined)
   })
 })
