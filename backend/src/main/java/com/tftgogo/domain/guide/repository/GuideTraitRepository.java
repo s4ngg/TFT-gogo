@@ -63,24 +63,22 @@ public interface GuideTraitRepository extends JpaRepository<GuideTrait, Long> {
 
     @Query(
             value = """
-                    SELECT EXISTS(
-                        SELECT 1
-                        FROM tft_guide_traits
-                        WHERE patch_version = :patchVersion
-                          AND trait_key IN (
-                              'TFT17_Stargazer_Wolf',
-                              'TFT17_Stargazer_Medallion',
-                              'TFT17_Stargazer_Huntress',
-                              'TFT17_Stargazer_Serpent',
-                              'TFT17_Stargazer_Shield',
-                              'TFT17_Stargazer_Fountain',
-                              'TFT17_Stargazer_Mountain'
-                          )
-                    )
+                    SELECT COUNT(*)
+                    FROM tft_guide_traits
+                    WHERE patch_version = :patchVersion
+                      AND trait_key IN (
+                          'TFT17_Stargazer_Wolf',
+                          'TFT17_Stargazer_Medallion',
+                          'TFT17_Stargazer_Huntress',
+                          'TFT17_Stargazer_Serpent',
+                          'TFT17_Stargazer_Shield',
+                          'TFT17_Stargazer_Fountain',
+                          'TFT17_Stargazer_Mountain'
+                      )
                     """,
             nativeQuery = true
     )
-    boolean existsStargazerVariantByPatchVersion(@Param("patchVersion") String patchVersion);
+    long countStargazerVariantsByPatchVersion(@Param("patchVersion") String patchVersion);
 
     @Query(value = """
             SELECT patch_version
