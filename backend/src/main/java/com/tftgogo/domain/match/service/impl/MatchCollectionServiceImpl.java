@@ -12,6 +12,7 @@ import com.tftgogo.domain.summoner.dto.response.SummonerMatchItemDto;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import com.tftgogo.global.riot.RiotApiClient;
+import com.tftgogo.global.riot.config.RiotProperties;
 import com.tftgogo.global.riot.dto.MatchDto;
 import com.tftgogo.global.riot.queue.RiotQueue;
 import org.apache.logging.log4j.LogManager;
@@ -32,7 +33,6 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
 
     private static final Logger logger = LogManager.getLogger(MatchCollectionServiceImpl.class);
     private static final Set<Integer> VALID_QUEUE_IDS = Set.of(1090, 1100);
-    private static final long FETCH_TIMEOUT_SECONDS = 60L;
 
     // MatchDto는 @Getter만 있고 setter 없음 → FIELD visibility로 직접 접근
     private static final ObjectMapper CACHE_MAPPER = new ObjectMapper()
@@ -45,6 +45,7 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
     private final RiotQueue riotQueue;
     private final CachedMatchRepository cachedMatchRepository;
     private final Executor matchCollectionExecutor;
+    private final long fetchTimeoutSeconds;
 
     // 진행 중인 수집 작업 추적 (puuid → 진행 여부)
     private final ConcurrentHashMap<String, Boolean> inProgressMap = new ConcurrentHashMap<>();
@@ -53,11 +54,13 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
             RiotApiClient riotApiClient,
             RiotQueue riotQueue,
             CachedMatchRepository cachedMatchRepository,
-            @Qualifier("matchCollectionExecutor") Executor matchCollectionExecutor) {
+            @Qualifier("matchCollectionExecutor") Executor matchCollectionExecutor,
+            RiotProperties riotProperties) {
         this.riotApiClient = riotApiClient;
         this.riotQueue = riotQueue;
         this.cachedMatchRepository = cachedMatchRepository;
         this.matchCollectionExecutor = matchCollectionExecutor;
+        this.fetchTimeoutSeconds = riotProperties.getMatchFetchTimeoutSeconds();
     }
 
     @Override
@@ -96,8 +99,8 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
             CompletableFuture<List<String>> normalFuture =
                     riotQueue.submitForeground(() -> riotApiClient.getMatchIds(puuid, count, start, 1090));
 
-            List<String> ranked = rankedFuture.get(FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-            List<String> normal = normalFuture.get(FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            List<String> ranked = rankedFuture.get(fetchTimeoutSeconds, TimeUnit.SECONDS);
+            List<String> normal = normalFuture.get(fetchTimeoutSeconds, TimeUnit.SECONDS);
 
             Set<String> merged = new LinkedHashSet<>(ranked);
             merged.addAll(normal);
@@ -128,7 +131,7 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
         inProgressMap.put(puuid, Boolean.TRUE);
 
         for (String matchId : toFetch) {
-            riotQueue.submit(() -> riotApiClient.getMatch(matchId))
+            riotQueue.submit("match:" + matchId, () -> riotApiClient.getMatch(matchId))
                     .thenApplyAsync(matchDto -> {
                         persistMatch(matchId, matchDto);
                         return null;
@@ -149,7 +152,7 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
         }
 
         try {
-            boolean finished = latch.await(FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            boolean finished = latch.await(fetchTimeoutSeconds, TimeUnit.SECONDS);
             if (!finished) {
                 logger.warn("매치 수집 타임아웃 (첫 {}개): puuid={}", fastTarget, puuid);
             }
@@ -259,7 +262,7 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
                     try {
                         List<String> matchIds = riotQueue
                                 .submit(() -> riotApiClient.getMatchIds(puuid, count, 0, 1100))
-                                .get(FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                                .get(fetchTimeoutSeconds, TimeUnit.SECONDS);
                         Set<String> cachedIds = new HashSet<>(
                                 cachedMatchRepository.findMatchIdsByMatchIdIn(matchIds));
                         List<String> toFetch = matchIds.stream()

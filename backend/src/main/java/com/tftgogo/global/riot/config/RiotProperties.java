@@ -36,4 +36,7 @@ public class RiotProperties {
     private long foregroundTaskTtlMs = 60_000L;
     @Positive(message = "riot.background-task-ttl-ms는 0보다 커야 합니다.")
     private long backgroundTaskTtlMs = 300_000L;
+
+    @Positive(message = "riot.match-fetch-timeout-seconds는 0보다 커야 합니다.")
+    private long matchFetchTimeoutSeconds = 60L;
 }

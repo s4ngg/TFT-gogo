@@ -65,14 +65,18 @@ public class RiotQueue implements DisposableBean {
         if (dedupKey == null) {
             return enqueue(foregroundQueue, task, foregroundTaskTtlMs);
         }
-        return (CompletableFuture<T>) deduplicationMap.compute(dedupKey, (k, existing) -> {
+        boolean[] created = {false};
+        CompletableFuture<T> future = (CompletableFuture<T>) deduplicationMap.compute(dedupKey, (k, existing) -> {
             if (existing != null && !existing.isDone()) {
                 return existing;
             }
-            CompletableFuture<T> future = enqueue(foregroundQueue, task, foregroundTaskTtlMs);
-            future.whenComplete((r, ex) -> deduplicationMap.remove(k, future));
-            return future;
+            created[0] = true;
+            return enqueue(foregroundQueue, task, foregroundTaskTtlMs);
         });
+        if (created[0]) {
+            future.whenComplete((r, ex) -> deduplicationMap.remove(dedupKey, future));
+        }
+        return future;
     }
 
     public <T> CompletableFuture<T> submit(Supplier<T> task) {
@@ -84,14 +88,18 @@ public class RiotQueue implements DisposableBean {
         if (dedupKey == null) {
             return enqueue(backgroundQueue, task, backgroundTaskTtlMs);
         }
-        return (CompletableFuture<T>) deduplicationMap.compute(dedupKey, (k, existing) -> {
+        boolean[] created = {false};
+        CompletableFuture<T> future = (CompletableFuture<T>) deduplicationMap.compute(dedupKey, (k, existing) -> {
             if (existing != null && !existing.isDone()) {
                 return existing;
             }
-            CompletableFuture<T> future = enqueue(backgroundQueue, task, backgroundTaskTtlMs);
-            future.whenComplete((r, ex) -> deduplicationMap.remove(k, future));
-            return future;
+            created[0] = true;
+            return enqueue(backgroundQueue, task, backgroundTaskTtlMs);
         });
+        if (created[0]) {
+            future.whenComplete((r, ex) -> deduplicationMap.remove(dedupKey, future));
+        }
+        return future;
     }
 
     public int getForegroundQueueSize() {
