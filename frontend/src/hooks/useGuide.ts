@@ -68,18 +68,22 @@ export function useGuideTabItems<T extends GuideTab>({
   params,
 }: UseGuideTabItemsOptions<T>) {
   const placeholderData = createGuidePlaceholderPage(params)
+  const resolvedParams = {
+    ...params,
+    patchVersion: params.patchVersion ?? fallbackData.patchVersion,
+  }
   const guideQuery = useQuery<GuideTabPageResult<T>>({
     placeholderData: keepPreviousData,
-    queryFn: () => getGuideTabItems(params, fallbackData),
+    queryFn: () => getGuideTabItems(resolvedParams, fallbackData),
     queryKey: [
       'guide',
       'tab-items',
-      params.tab,
-      params.patchVersion ?? fallbackData.patchVersion,
-      params.page ?? 1,
-      params.pageSize ?? DEFAULT_GUIDE_PAGE_SIZE,
-      params.query ?? '',
-      params.cost ?? 'all',
+      resolvedParams.tab,
+      resolvedParams.patchVersion,
+      resolvedParams.page ?? 1,
+      resolvedParams.pageSize ?? DEFAULT_GUIDE_PAGE_SIZE,
+      resolvedParams.query ?? '',
+      resolvedParams.cost ?? 'all',
     ],
     ...LIVE_CONTENT_QUERY_OPTIONS,
   })
