@@ -14,11 +14,13 @@ const AUGMENT_GUIDE_PAGE_SIZE = 6
 
 interface AugmentGuideViewProps {
   fallbackData: GuideCatalog
+  patchVersion: string
   query: string
 }
 
 function AugmentGuideView({
   fallbackData,
+  patchVersion,
   query,
 }: AugmentGuideViewProps) {
   const {
@@ -30,6 +32,7 @@ function AugmentGuideView({
     params: {
       page: currentPage,
       pageSize: AUGMENT_GUIDE_PAGE_SIZE,
+      patchVersion,
       query,
       tab: 'augments',
     },

@@ -75,7 +75,7 @@ export function useGuideTabItems<T extends GuideTab>({
       'guide',
       'tab-items',
       params.tab,
-      fallbackData.patchVersion,
+      params.patchVersion ?? fallbackData.patchVersion,
       params.page ?? 1,
       params.pageSize ?? DEFAULT_GUIDE_PAGE_SIZE,
       params.query ?? '',
