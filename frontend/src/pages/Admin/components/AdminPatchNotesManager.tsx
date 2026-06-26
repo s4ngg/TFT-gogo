@@ -23,6 +23,7 @@ import {
   type AdminPatchNote,
   type AdminPatchNotePayload,
 } from '../../../api/adminApi'
+import { shouldShowPatchChangeValues } from '../utils/patchChangeValues'
 import styles from '../AdminPatchNotes.module.css'
 
 const PATCH_NOTE_QUERY_KEY = ['admin', 'patch-notes'] as const
@@ -334,6 +335,7 @@ function AdminPatchNotesManager() {
   const [showAdvancedPatchChangeForm, setShowAdvancedPatchChangeForm] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [parserWarnings, setParserWarnings] = useState<string[]>([])
 
   const patchNotesQuery = useQuery({
     queryFn: fetchAdminPatchNotes,
@@ -440,6 +442,7 @@ function AdminPatchNotesManager() {
       setShowPatchNoteForm(false)
       setShowAdvancedPatchChangeForm(false)
       setPatchNoteImportForm((prev) => ({ ...prev, sourceUrl: '', version: '' }))
+      setParserWarnings(result.parserWarnings)
       setMessage(
         `Riot ${result.version} 가져오기 완료: 패치노트 ${patchNoteStatus}, 변경사항 생성 ${result.createdChanges}개, 수정 ${result.updatedChanges}개, 스킵 ${result.skippedChanges}개${warningText}.`,
       )
@@ -473,6 +476,7 @@ function AdminPatchNotesManager() {
       setShowAdvancedPatchChangeForm(false)
       setMessage('변경사항을 수정했습니다.')
       await refreshPatchChanges()
+      await refreshPatchNotes()
     },
   })
 
@@ -515,6 +519,7 @@ function AdminPatchNotesManager() {
   function clearNotice() {
     setError('')
     setMessage('')
+    setParserWarnings([])
   }
 
   function clearPatchChangeEdit() {
@@ -779,7 +784,19 @@ function AdminPatchNotesManager() {
 
       {(message || error) && (
         <div className={error ? styles.errorBanner : styles.successBanner} role="status">
-          {error || message}
+          <p className={styles.noticeText}>{error || message}</p>
+          {!error && parserWarnings.length > 0 && (
+            <details className={styles.parserWarningDetails}>
+              <summary>파서 경고 상세 {parserWarnings.length}건</summary>
+              <ul className={styles.parserWarningList}>
+                {parserWarnings.map((warning, index) => (
+                  <li key={`${warning}-${index}`} className={styles.parserWarningItem}>
+                    {warning}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
         </div>
       )}
 
@@ -1221,7 +1238,7 @@ function AdminPatchNotesManager() {
                     </span>
                   </div>
                   <p className={styles.changeSummary}>{change.summary}</p>
-                  {(change.beforeValue || change.afterValue) && (
+                  {shouldShowPatchChangeValues(change) && (
                     <p className={styles.changeValues}>
                       {change.beforeValue || '-'} → {change.afterValue || '-'}
                     </p>

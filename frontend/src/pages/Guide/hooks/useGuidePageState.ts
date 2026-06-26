@@ -4,13 +4,19 @@ import {
   type GuideTab,
   type RecentGuide,
 } from '../../../api/guide'
+import {
+  readFavoriteChampions,
+  readRecentGuides,
+  writeFavoriteChampions,
+  writeRecentGuides,
+} from '../utils/guideQuickAccessStorage'
 
 const GUIDE_SEARCH_DEBOUNCE_MS = 300
 
 export function useGuidePageState() {
   const [activeTab, setActiveTab] = useState<GuideTab>('traits')
-  const [favoriteChampions, setFavoriteChampions] = useState<string[]>([])
-  const [recentGuides, setRecentGuides] = useState<RecentGuide[]>([])
+  const [favoriteChampions, setFavoriteChampions] = useState<string[]>(readFavoriteChampions)
+  const [recentGuides, setRecentGuides] = useState<RecentGuide[]>(readRecentGuides)
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
 
@@ -28,6 +34,14 @@ export function useGuidePageState() {
       window.clearTimeout(timeoutId)
     }
   }, [search])
+
+  useEffect(() => {
+    writeFavoriteChampions(favoriteChampions)
+  }, [favoriteChampions])
+
+  useEffect(() => {
+    writeRecentGuides(recentGuides)
+  }, [recentGuides])
 
   function addRecentGuide(guide: RecentGuide) {
     setRecentGuides((current) => [

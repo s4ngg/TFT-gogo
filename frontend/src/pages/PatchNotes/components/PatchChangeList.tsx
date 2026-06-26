@@ -92,6 +92,7 @@ function PatchChangeList({ patchChanges }: PatchChangeListProps) {
                             <span
                               key={`${status.tone}-${status.label}`}
                               className={`${styles.changeStatusBadge} ${STATUS_TONE_CLASS[status.tone]}`}
+                              aria-label={`상태: ${status.label}`}
                             >
                               {status.label}
                             </span>
