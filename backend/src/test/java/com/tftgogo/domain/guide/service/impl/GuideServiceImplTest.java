@@ -238,6 +238,21 @@ class GuideServiceImplTest {
     }
 
     @Test
+    void sort_parameter_throws_exception_until_metric_sort_is_supported() {
+        // given, when, then
+        assertThatThrownBy(() -> guideService.getGuideTabItems(
+                "champions",
+                "17.0",
+                null,
+                1,
+                10,
+                "avgPlace",
+                "desc",
+                null
+        )).isInstanceOf(BusinessException.class);
+    }
+
+    @Test
     void invalid_tab_throws_exception() {
         // given, when, then
         assertThatThrownBy(() -> guideService.getGuideTabItems(
