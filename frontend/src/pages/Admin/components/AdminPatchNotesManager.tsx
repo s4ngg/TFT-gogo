@@ -474,6 +474,7 @@ function AdminPatchNotesManager() {
       setShowAdvancedPatchChangeForm(false)
       setMessage('변경사항을 수정했습니다.')
       await refreshPatchChanges()
+      await refreshPatchNotes()
     },
   })
 
