@@ -9,10 +9,18 @@ type Status = 'loading' | 'authenticated' | 'unauthenticated'
  * HttpOnly 쿠키를 이용해 자동으로 Access Token을 복구한다.
  */
 export function useAdminAuth(): Status {
-  const { setSession } = useAdminSession()
+  const { setSession, session } = useAdminSession()
   const [status, setStatus] = useState<Status>(() =>
     getAccessToken() ? 'authenticated' : 'loading',
   )
+
+  // interceptor에서 refresh 실패로 clearAdminSession()이 호출되면
+  // session이 null로 바뀌고, 이미 authenticated 상태였던 guard를 만료 처리
+  useEffect(() => {
+    if (status === 'authenticated' && session === null) {
+      setStatus('unauthenticated')
+    }
+  }, [session, status])
 
   useEffect(() => {
     if (getAccessToken()) {
