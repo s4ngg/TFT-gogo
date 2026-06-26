@@ -2,6 +2,7 @@ package com.tftgogo.global.exception;
 
 import com.tftgogo.global.response.ApiResponse;
 import jakarta.validation.ConstraintViolationException;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
@@ -77,9 +78,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleHandlerMethodValidationException(HandlerMethodValidationException e) {
         String message = e.getAllValidationResults().stream()
                 .flatMap(r -> r.getResolvableErrors().stream())
-                .findFirst()
                 .map(error -> error.getDefaultMessage())
-                .orElse(ErrorCode.INVALID_INPUT.getMessage());
+                .collect(Collectors.joining(", "));
+        if (message.isBlank()) {
+            message = ErrorCode.INVALID_INPUT.getMessage();
+        }
         logger.warn("HandlerMethodValidationException - {}", message);
         return ResponseEntity
                 .status(ErrorCode.INVALID_INPUT.getStatus())
