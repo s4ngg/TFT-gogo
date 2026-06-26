@@ -2,6 +2,7 @@ import { CheckCircle2, ChevronDown, ChevronRight, History, ListFilter } from 'lu
 import { useEffect, useMemo, useState } from 'react'
 import {
   CHANGE_CATEGORIES,
+  sanitizePatchHighlight,
   type PatchCategory,
   type PatchChangeStats,
   type PatchNoteDetail,
@@ -74,7 +75,7 @@ function buildSeasonGroups(patchHistory: PatchNoteDetail[]) {
 }
 
 function getInsightLabel(highlight: string) {
-  const trimmedHighlight = highlight.trim()
+  const trimmedHighlight = sanitizePatchHighlight(highlight)
   if (!trimmedHighlight) return ''
 
   if (/유닛.*\d단계|\d단계.*유닛/u.test(trimmedHighlight)) return '유닛 단계별 밸런스'
