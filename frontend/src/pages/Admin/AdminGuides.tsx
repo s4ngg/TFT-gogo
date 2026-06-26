@@ -109,17 +109,29 @@ function AdminGuides() {
     }
   }
 
-  async function runImport(patchVersionInput: string) {
-    const payload = buildPayload(patchVersionInput)
-    if (!payload) return
+  async function resolvePatchVersionForImport(patchVersionInput: string) {
+    if (!isLatestGuideImportPatchVersion(patchVersionInput)) {
+      return patchVersionInput
+    }
 
+    const latestPatchNotes = await patchNotesQuery.refetch()
+    const latestCurrentPatchVersion =
+      latestPatchNotes.data?.find((note) => note.isCurrent)?.version ??
+      latestPatchNotes.data?.[0]?.version ??
+      currentPatchVersion
+
+    return resolveGuideImportPatchVersion(patchVersionInput, latestCurrentPatchVersion)
+  }
+
+  async function runImport(patchVersionInput: string) {
     setImporting(true)
     setError('')
     setResult(null)
     try {
-      if (isLatestGuideImportPatchVersion(patchVersionInput)) {
-        await patchNotesQuery.refetch()
-      }
+      const resolvedImportPatchVersion = await resolvePatchVersionForImport(patchVersionInput)
+      const payload = buildPayload(resolvedImportPatchVersion)
+      if (!payload) return
+
       const response = await importGuideCdragonData(payload)
       setResult(response)
     } catch {
