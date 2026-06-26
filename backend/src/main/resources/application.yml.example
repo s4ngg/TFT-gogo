@@ -116,6 +116,12 @@ app:
       - https://tftgogo.com
       - https://www.tftgogo.com
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics
+
 server:
   port: 8080
   # ALB 뒤에서 원래 요청의 https host/protocol을 Spring이 인식하도록 설정
