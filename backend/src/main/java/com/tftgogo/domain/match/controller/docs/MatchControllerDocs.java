@@ -26,7 +26,7 @@ public interface MatchControllerDocs {
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 파라미터 (start < 0 또는 count < 1 또는 count > 20)"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 파라미터 (start < 0 또는 start > 200 또는 count < 1 또는 count > 20)"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429", description = "Riot API Rate Limit 초과")
     })
     ResponseEntity<ApiResponse<List<SummonerMatchItemDto>>> getMatches(

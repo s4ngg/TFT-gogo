@@ -11,6 +11,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
@@ -69,6 +70,20 @@ public class GlobalExceptionHandler {
                         message,
                         ErrorCode.INVALID_INPUT.getStatus()
                 ));
+    }
+
+    // ── @Validated 파라미터 검증 실패 (Spring 6.1+) ──────────
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleHandlerMethodValidationException(HandlerMethodValidationException e) {
+        String message = e.getAllValidationResults().stream()
+                .flatMap(r -> r.getResolvableErrors().stream())
+                .findFirst()
+                .map(error -> error.getDefaultMessage())
+                .orElse(ErrorCode.INVALID_INPUT.getMessage());
+        logger.warn("HandlerMethodValidationException - {}", message);
+        return ResponseEntity
+                .status(ErrorCode.INVALID_INPUT.getStatus())
+                .body(ApiResponse.fail(message, ErrorCode.INVALID_INPUT.getStatus()));
     }
 
     // ── enum / 타입 변환 실패 (@RequestParam, @PathVariable) ──

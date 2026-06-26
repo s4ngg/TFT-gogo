@@ -6,8 +6,6 @@ import com.tftgogo.domain.match.service.MatchService;
 import com.tftgogo.domain.summoner.dto.response.SummonerMatchItemDto;
 import com.tftgogo.global.cdragon.service.TftAssetCacheService;
 import com.tftgogo.global.response.ApiResponse;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -28,8 +26,8 @@ public class MatchController implements MatchControllerDocs {
     @GetMapping("/{puuid}/matches")
     public ResponseEntity<ApiResponse<List<SummonerMatchItemDto>>> getMatches(
             @PathVariable("puuid") String puuid,
-            @Min(0) @Max(200) @RequestParam(name = "start", defaultValue = "0") int start,
-            @Min(1) @Max(20) @RequestParam(name = "count", defaultValue = "20") int count) {
+            @RequestParam(name = "start", defaultValue = "0") int start,
+            @RequestParam(name = "count", defaultValue = "20") int count) {
         return ResponseEntity.ok(ApiResponse.success("매치 목록 조회 성공",
                 matchService.getMatches(puuid, start, count,
                         tftAssetCacheService::getTraitIconUrl,
