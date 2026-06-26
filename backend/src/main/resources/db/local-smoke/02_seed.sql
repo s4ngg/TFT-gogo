@@ -240,3 +240,8 @@ INSERT INTO patch_note_changes (
 );
 
 COMMIT;
+
+-- 관리자 계정 (로컬 개발용) username=admin / password=changeme
+-- BCrypt hash of 'changeme' (rounds=10)
+INSERT IGNORE INTO admin_accounts (username, password, role, enabled)
+VALUES ('admin', '$2a$10$uP.c0PzYAn7WBLAkItOKWuI9aZaGsi5OJaTZQdhlXJBMiUOr3Kpky', 'MASTER', 1);

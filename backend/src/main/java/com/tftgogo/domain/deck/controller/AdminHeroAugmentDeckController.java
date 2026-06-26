@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,6 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/hero-augment-decks")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('ADMIN_MASTER', 'ADMIN_EDITOR', 'ADMIN_VIEWER')")
 public class AdminHeroAugmentDeckController implements AdminHeroAugmentDeckControllerDocs {
 
     private final HeroAugmentDeckService heroAugmentDeckService;
@@ -25,6 +27,7 @@ public class AdminHeroAugmentDeckController implements AdminHeroAugmentDeckContr
         return ResponseEntity.ok(ApiResponse.success("영웅증강 덱 목록 조회 성공", heroAugmentDeckService.findAll()));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN_MASTER', 'ADMIN_EDITOR')")
     @PostMapping
     public ResponseEntity<ApiResponse<HeroAugmentDeckResponse>> create(
             @RequestBody @Valid HeroAugmentDeckRequest request) {
@@ -33,6 +36,7 @@ public class AdminHeroAugmentDeckController implements AdminHeroAugmentDeckContr
                 .body(ApiResponse.success("영웅증강 덱 생성 성공", response));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN_MASTER', 'ADMIN_EDITOR')")
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<HeroAugmentDeckResponse>> update(
             @PathVariable Long id,
@@ -40,6 +44,7 @@ public class AdminHeroAugmentDeckController implements AdminHeroAugmentDeckContr
         return ResponseEntity.ok(ApiResponse.success("영웅증강 덱 수정 성공", heroAugmentDeckService.update(id, request)));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN_MASTER', 'ADMIN_EDITOR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         heroAugmentDeckService.delete(id);

@@ -7,6 +7,7 @@ import com.tftgogo.domain.match.service.AdminMatchService;
 import com.tftgogo.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/admin/match")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('ADMIN_MASTER', 'ADMIN_EDITOR', 'ADMIN_VIEWER')")
 public class AdminMatchController implements AdminMatchControllerDocs {
 
     private final AdminMatchService adminMatchService;
