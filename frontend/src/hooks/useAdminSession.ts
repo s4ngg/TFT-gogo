@@ -13,6 +13,11 @@ export function getAdminSessionSnapshot(): AdminSession | null {
   return _session
 }
 
+export function clearAdminSession(): void {
+  _session = null
+  notifyListeners()
+}
+
 function subscribeAdminSession(fn: () => void): () => void {
   _listeners.add(fn)
   return () => _listeners.delete(fn)

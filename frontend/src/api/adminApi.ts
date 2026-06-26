@@ -2,6 +2,7 @@ import axiosInstance from './axiosInstance'
 import type { AxiosRequestConfig } from 'axios'
 import type { RankFilter } from '../pages/Dashboard/dashboardData'
 import type { AdminRole } from '../types/admin'
+import { clearAdminSession } from '../hooks/useAdminSession'
 
 const GUIDE_CDRAGON_IMPORT_TIMEOUT_MS = 120_000
 const PATCH_NOTE_RIOT_IMPORT_TIMEOUT_MS = 120_000
@@ -137,6 +138,7 @@ axiosInstance.interceptors.response.use(
       return axiosInstance(config)
     } catch {
       clearAccessToken()
+      clearAdminSession()
       return Promise.reject(error)
     }
   },
