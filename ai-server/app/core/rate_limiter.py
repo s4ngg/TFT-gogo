@@ -37,8 +37,8 @@ def _get_bucket() -> _TokenBucket:
 
 def _check_rate_limit() -> bool:
     """전역 토큰이 남아 있으면 True, 소진되면 False."""
-    now = time.monotonic()
     bucket = _get_bucket()
+    now = time.monotonic()
 
     elapsed = now - bucket.last_refill
     refill = elapsed * (settings.rate_limit_requests / settings.rate_limit_window)
