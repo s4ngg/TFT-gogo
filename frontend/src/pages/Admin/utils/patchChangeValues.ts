@@ -21,10 +21,10 @@ export function shouldShowPatchChangeValues(change: PatchChangeValueDisplayInput
   const normalizedBeforeValue = normalizeChangeText(beforeValue)
   const normalizedAfterValue = normalizeChangeText(afterValue)
 
-  const summaryIncludesBefore = normalizedBeforeValue !== '' && normalizedSummary.includes(normalizedBeforeValue)
-  const summaryIncludesAfter = normalizedAfterValue !== '' && normalizedSummary.includes(normalizedAfterValue)
-
-  if (summaryIncludesBefore && summaryIncludesAfter) return false
+  if (normalizedBeforeValue !== '' && normalizedAfterValue !== '') {
+    const normalizedChange = `${normalizedBeforeValue}->${normalizedAfterValue}`
+    if (normalizedSummary.includes(normalizedChange)) return false
+  }
 
   return true
 }
