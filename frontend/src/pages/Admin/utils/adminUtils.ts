@@ -1,8 +1,7 @@
 import { getChampionName, getTraitName, type TFTLocale } from '../../../api/cdragonLocale'
 import type { AdminDeck } from '../../../api/adminApi'
+export { BOARD_ROWS, BOARD_COLS } from '../../DeckDetail/utils/boardUtils'
 
-export const BOARD_ROWS = 4
-export const BOARD_COLS = 7
 export const BOARD_LEVELS = [5, 6, 7, 8, 9, 10]
 
 export interface CellPos { row: number; col: number; items?: string[] }

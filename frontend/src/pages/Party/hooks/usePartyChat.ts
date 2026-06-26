@@ -5,9 +5,9 @@ import { communityChatMessagesQueryKey } from '../../../api/chatQueryKeys'
 import {
   COMMUNITY_CHAT_ROOM_IDS,
   PARTY_RECRUITMENT_ROOM_ID,
+  createCommunityChatRooms,
 } from '../../../constants/communityChatRooms'
 import type { CommunityChatRoomId } from '../../../constants/communityChatRooms'
-import { initialChatRooms } from '../data/partyMockData'
 import {
   applyRoomMessageSnapshot,
   updateChatRoomPreview,
@@ -24,7 +24,7 @@ interface UsePartyChatOptions {
 
 export function usePartyChat({ activeRoomId, onActiveRoomChange }: UsePartyChatOptions) {
   const { isAuthenticated, userId: currentUserId } = usePartyAuth()
-  const [rooms, setRooms] = useState(initialChatRooms)
+  const [rooms, setRooms] = useState(createCommunityChatRooms)
   const [chatInput, setChatInput] = useState('')
   const [chatStatusMessage, setChatStatusMessage] = useState('')
   const roomPreviewQueries = useQueries({
