@@ -84,7 +84,7 @@ function getInsightLabel(highlight: string) {
   if (trimmedHighlight.includes('버그 수정')) return '버그 수정'
   if (trimmedHighlight.includes('밸런스 변경')) return '밸런스 변경'
 
-  return trimmedHighlight
+  return trimmedHighlight.replace(/\s*[:：]\s*$/u, '')
 }
 
 function getInsightCategory(highlight: string): PatchCategory {
@@ -250,7 +250,7 @@ function PatchSideRail({
               빠른 보기
             </span>
             <div className={styles.quickCategoryGrid}>
-              {quickCategories.map(({ category, count }) => (
+              {quickCategories.map(({ category }) => (
                 <button
                   key={category}
                   type="button"
@@ -259,7 +259,6 @@ function PatchSideRail({
                   aria-pressed={activeCategory === category}
                 >
                   <span>{category}</span>
-                  <strong>{count}</strong>
                 </button>
               ))}
             </div>
