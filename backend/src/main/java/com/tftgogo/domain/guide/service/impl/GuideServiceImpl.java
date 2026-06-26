@@ -22,16 +22,14 @@ import com.tftgogo.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.text.Collator;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -45,12 +43,7 @@ public class GuideServiceImpl implements GuideService {
     private static final int MAX_PAGE = 10_000;
     private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int MAX_PAGE_SIZE = 100;
-    private static final Set<String> SORT_KEYS = Set.of("avgPlace", "pickRate", "top4", "winRate");
-    private static final Pattern NUMBER_PATTERN = Pattern.compile("-?\\d+(?:\\.\\d+)?");
     private static final Pattern PATCH_VERSION_PATTERN = Pattern.compile("^(\\d+)\\.(\\d+)([A-Za-z]*)$");
-    private static final ThreadLocal<Collator> KOREAN_COLLATOR = ThreadLocal.withInitial(
-            () -> Collator.getInstance(Locale.KOREAN)
-    );
 
     private final GuideChampionRepository guideChampionRepository;
     private final GuideTraitRepository guideTraitRepository;
@@ -93,33 +86,78 @@ public class GuideServiceImpl implements GuideService {
             return GuidePageResponse.of(List.of(), normalizedPage, normalizedPageSize, 0, 1);
         }
 
-        List<GuideEntryResponse> filteredItems = findSplitTabEntries(guideType, resolvedPatchVersion.get())
-                .stream()
-                .filter(item -> matchesSearch(item, query))
-                .filter(item -> matchesCost(item, guideType, cost))
-                .sorted(buildResponseComparator(sortKey, sortDir))
-                .toList();
+        return findSplitTabPage(
+                guideType,
+                resolvedPatchVersion.get(),
+                query,
+                normalizedPage,
+                normalizedPageSize,
+                cost
+        );
+    }
 
-        return toPageResponse(filteredItems, normalizedPage, normalizedPageSize);
+    private GuidePageResponse<GuideEntryResponse> findSplitTabPage(
+            GuideType guideType,
+            String patchVersion,
+            String query,
+            int normalizedPage,
+            int normalizedPageSize,
+            Integer cost
+    ) {
+        PageRequest pageRequest = PageRequest.of(normalizedPage - 1, normalizedPageSize);
+        String normalizedQuery = normalizeQuery(query);
+
+        return switch (guideType) {
+            case CHAMPION -> {
+                Page<GuideChampion> page = guideChampionRepository.searchPage(
+                        patchVersion,
+                        normalizedQuery,
+                        cost,
+                        pageRequest
+                );
+                yield toPageResponse(toChampionResponses(page.getContent()), page, normalizedPage, normalizedPageSize);
+            }
+            case TRAIT -> {
+                boolean hideBaseStargazer = guideTraitRepository.existsStargazerVariantByPatchVersion(patchVersion);
+                Page<GuideTrait> page = guideTraitRepository.searchPage(
+                        patchVersion,
+                        normalizedQuery,
+                        hideBaseStargazer,
+                        pageRequest
+                );
+                yield toPageResponse(toTraitResponses(page.getContent()), page, normalizedPage, normalizedPageSize);
+            }
+            case ITEM -> {
+                Page<GuideItem> page = guideItemRepository.searchPage(
+                        patchVersion,
+                        normalizedQuery,
+                        pageRequest
+                );
+                yield toPageResponse(toItemResponses(page.getContent()), page, normalizedPage, normalizedPageSize);
+            }
+            case AUGMENT -> {
+                Page<GuideAugment> page = guideAugmentRepository.searchPage(
+                        patchVersion,
+                        normalizedQuery,
+                        pageRequest
+                );
+                yield toPageResponse(toAugmentResponses(page.getContent()), page, normalizedPage, normalizedPageSize);
+            }
+        };
     }
 
     private GuidePageResponse<GuideEntryResponse> toPageResponse(
             List<GuideEntryResponse> items,
+            Page<?> page,
             int normalizedPage,
             int normalizedPageSize
     ) {
-        long totalItems = items.size();
-        int totalPages = Math.max(1, (int) Math.ceil((double) totalItems / normalizedPageSize));
-        long fromIndexLong = Math.min((long) (normalizedPage - 1) * normalizedPageSize, items.size());
-        int fromIndex = (int) fromIndexLong;
-        int toIndex = (int) Math.min(fromIndexLong + normalizedPageSize, items.size());
-
         return GuidePageResponse.of(
-                items.subList(fromIndex, toIndex),
+                items,
                 normalizedPage,
                 normalizedPageSize,
-                totalItems,
-                totalPages
+                page.getTotalElements(),
+                Math.max(1, page.getTotalPages())
         );
     }
 
@@ -370,28 +408,11 @@ public class GuideServiceImpl implements GuideService {
         return maxLevel;
     }
 
-    private boolean matchesSearch(GuideEntryResponse item, String query) {
+    private String normalizeQuery(String query) {
         if (!hasText(query)) {
-            return true;
+            return null;
         }
-        String normalizedQuery = query.trim().toLowerCase();
-        return containsIgnoreCase(item.getName(), normalizedQuery)
-                || containsIgnoreCase(item.getSummary(), normalizedQuery)
-                || containsIgnoreCase(item.getTargetKey(), normalizedQuery);
-    }
-
-    private boolean matchesCost(GuideEntryResponse item, GuideType guideType, Integer cost) {
-        return cost == null
-                || guideType != GuideType.CHAMPION
-                || item.getDataJson().path("cost").asInt() == cost;
-    }
-
-    private boolean hasArrayItems(JsonNode value) {
-        return value != null && value.isArray() && value.size() > 0;
-    }
-
-    private boolean containsIgnoreCase(String value, String normalizedQuery) {
-        return hasText(value) && value.toLowerCase().contains(normalizedQuery);
+        return query.trim().toLowerCase();
     }
 
     private int normalizePage(Integer page) {
@@ -415,11 +436,8 @@ public class GuideServiceImpl implements GuideService {
     }
 
     private void validateSort(String sortKey, String sortDir) {
-        if (hasText(sortKey) && !SORT_KEYS.contains(sortKey)) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT);
-        }
-
-        if (hasText(sortDir) && !sortDir.equals("asc") && !sortDir.equals("desc")) {
+        // Split guide tables do not persist metric columns yet, so sort requests must fail explicitly.
+        if (hasText(sortKey) || hasText(sortDir)) {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
     }
@@ -430,89 +448,8 @@ public class GuideServiceImpl implements GuideService {
         }
     }
 
-    private Comparator<GuideEntryResponse> buildResponseComparator(String sortKey, String sortDir) {
-        if (!hasText(sortKey)) {
-            return this::compareDefault;
-        }
-
-        boolean ascending = "asc".equals(sortDir);
-        return (left, right) -> {
-            Double leftMetric = readMetric(left.getDataJson(), sortKey);
-            Double rightMetric = readMetric(right.getDataJson(), sortKey);
-
-            if (leftMetric == null && rightMetric == null) {
-                return compareDefault(left, right);
-            }
-            if (leftMetric == null) {
-                return 1;
-            }
-            if (rightMetric == null) {
-                return -1;
-            }
-
-            int metricResult = ascending
-                    ? Double.compare(leftMetric, rightMetric)
-                    : Double.compare(rightMetric, leftMetric);
-
-            return metricResult != 0 ? metricResult : compareDefault(left, right);
-        };
-    }
-
-    private int compareDefault(GuideEntryResponse left, GuideEntryResponse right) {
-        int nameResult = compareKoreanText(left.getName(), right.getName());
-        if (nameResult != 0) {
-            return nameResult;
-        }
-        int sortOrderResult = Integer.compare(left.getSortOrder(), right.getSortOrder());
-        if (sortOrderResult != 0) {
-            return sortOrderResult;
-        }
-        return compareNullableId(left.getId(), right.getId());
-    }
-
-    private int compareKoreanText(String left, String right) {
-        return KOREAN_COLLATOR.get().compare(normalizeSortText(left), normalizeSortText(right));
-    }
-
-    private String normalizeSortText(String value) {
-        return value == null ? "" : value;
-    }
-
-    private int compareNullableId(Long left, Long right) {
-        if (left == null && right == null) {
-            return 0;
-        }
-        if (left == null) {
-            return -1;
-        }
-        if (right == null) {
-            return 1;
-        }
-        return Long.compare(left, right);
-    }
-
-    private Double readMetric(JsonNode dataJson, String sortKey) {
-        JsonNode value = dataJson.get(sortKey);
-        if (value == null || value.isNull()) {
-            return null;
-        }
-        if (value.isNumber()) {
-            return value.asDouble();
-        }
-        if (!value.isTextual()) {
-            return null;
-        }
-
-        String normalized = value.asText().replaceAll("\\s+", "").replace(',', '.');
-        Matcher matcher = NUMBER_PATTERN.matcher(normalized);
-        if (!matcher.find()) {
-            return null;
-        }
-        try {
-            return Double.parseDouble(matcher.group());
-        } catch (NumberFormatException e) {
-            return null;
-        }
+    private boolean hasArrayItems(JsonNode value) {
+        return value != null && value.isArray() && value.size() > 0;
     }
 
     private Optional<String> resolvePatchVersion(String patchVersion) {

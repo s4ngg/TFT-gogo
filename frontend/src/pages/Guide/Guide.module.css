@@ -1671,6 +1671,23 @@ button.championMini:hover {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .traitTop {
+    grid-template-columns: 42px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .levelTrackWrap {
+    width: 100%;
+    min-width: 0;
+    grid-column: 1 / -1;
+    justify-items: start;
+  }
+
+  .levelTrack {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+
   .championDialog {
     width: min(100%, 420px);
     max-height: calc(100vh - 32px);

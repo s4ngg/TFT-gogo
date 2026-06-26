@@ -14,6 +14,10 @@ import styles from '../Guide.module.css'
 
 interface ItemStatsViewProps {
   fallbackData: GuideCatalog
+  isGuideFallbackData: boolean
+  isGuideFetching: boolean
+  onGuideRetry: () => void
+  patchVersion: string
   query: string
 }
 
@@ -21,6 +25,10 @@ const ITEM_GUIDE_PAGE_SIZE = 6
 
 function ItemStatsView({
   fallbackData,
+  isGuideFallbackData,
+  isGuideFetching,
+  onGuideRetry,
+  patchVersion,
   query,
 }: ItemStatsViewProps) {
   const {
@@ -32,6 +40,7 @@ function ItemStatsView({
     params: {
       page: currentPage,
       pageSize: ITEM_GUIDE_PAGE_SIZE,
+      patchVersion,
       query,
       tab: 'items',
     },
@@ -47,9 +56,10 @@ function ItemStatsView({
   return (
     <>
       <GuideStatusBanner
-        isFallbackData={itemsQuery.data.source === 'fallback' && !itemsQuery.isFetching}
-        isFetching={itemsQuery.isFetching}
+        isFallbackData={isGuideFallbackData || (itemsQuery.data.source === 'fallback' && !itemsQuery.isFetching)}
+        isFetching={isGuideFetching || itemsQuery.isFetching}
         onRetry={() => {
+          onGuideRetry()
           void itemsQuery.refetch()
         }}
       />
