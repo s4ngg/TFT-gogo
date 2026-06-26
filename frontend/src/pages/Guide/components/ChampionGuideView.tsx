@@ -24,6 +24,7 @@ interface ChampionGuideViewProps {
   favoriteChampions: string[]
   onChampionOpen: (championName: string) => void
   onFavoriteToggle: (championName: string) => void
+  patchVersion: string
   query: string
 }
 
@@ -32,6 +33,7 @@ function ChampionGuideView({
   favoriteChampions,
   onChampionOpen,
   onFavoriteToggle,
+  patchVersion,
   query,
 }: ChampionGuideViewProps) {
   const [costFilter, setCostFilter] = useState<ChampionCostFilter>('all')
@@ -50,6 +52,7 @@ function ChampionGuideView({
       cost: costFilter,
       page: currentPage,
       pageSize: CHAMPION_PAGE_SIZE,
+      patchVersion,
       query,
       tab: 'champions',
     },

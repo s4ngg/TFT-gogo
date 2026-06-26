@@ -13,6 +13,7 @@ import styles from '../Guide.module.css'
 
 interface ItemStatsViewProps {
   fallbackData: GuideCatalog
+  patchVersion: string
   query: string
 }
 
@@ -20,6 +21,7 @@ const ITEM_GUIDE_PAGE_SIZE = 6
 
 function ItemStatsView({
   fallbackData,
+  patchVersion,
   query,
 }: ItemStatsViewProps) {
   const {
@@ -31,6 +33,7 @@ function ItemStatsView({
     params: {
       page: currentPage,
       pageSize: ITEM_GUIDE_PAGE_SIZE,
+      patchVersion,
       query,
       tab: 'items',
     },

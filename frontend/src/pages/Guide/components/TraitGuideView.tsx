@@ -21,6 +21,7 @@ import styles from '../Guide.module.css'
 interface TraitGuideViewProps {
   fallbackData: GuideCatalog
   onChampionSelect: (championName: string) => void
+  patchVersion: string
   query: string
 }
 
@@ -110,6 +111,7 @@ function getTraitSummaryLabel(traitGuide: TraitGuide) {
 function TraitGuideView({
   fallbackData,
   onChampionSelect,
+  patchVersion,
   query,
 }: TraitGuideViewProps) {
   const {
@@ -121,6 +123,7 @@ function TraitGuideView({
     params: {
       page: currentPage,
       pageSize: TRAIT_PAGE_SIZE,
+      patchVersion,
       query,
       tab: 'traits',
     },

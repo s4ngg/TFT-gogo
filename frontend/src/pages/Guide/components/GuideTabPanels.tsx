@@ -33,6 +33,7 @@ function GuideTabPanels({
         <TraitGuideView
           fallbackData={guideData}
           onChampionSelect={(championName) => onGuideJump('champions', championName, championName)}
+          patchVersion={guideData.patchVersion}
           query={query}
         />
       </div>
@@ -44,6 +45,7 @@ function GuideTabPanels({
       <div id="guide-panel-items" role="tabpanel" aria-labelledby="guide-tab-items">
         <ItemStatsView
           fallbackData={guideData}
+          patchVersion={guideData.patchVersion}
           query={query}
         />
       </div>
@@ -55,6 +57,7 @@ function GuideTabPanels({
       <div id="guide-panel-augments" role="tabpanel" aria-labelledby="guide-tab-augments">
         <AugmentGuideView
           fallbackData={guideData}
+          patchVersion={guideData.patchVersion}
           query={query}
         />
       </div>
@@ -72,6 +75,7 @@ function GuideTabPanels({
           tab: 'champions',
         })}
         onFavoriteToggle={onFavoriteToggle}
+        patchVersion={guideData.patchVersion}
         query={query}
       />
     </div>
