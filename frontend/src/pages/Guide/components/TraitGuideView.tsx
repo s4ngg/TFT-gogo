@@ -12,6 +12,7 @@ import {
 } from '../hooks/useGuideTabPagination'
 import {
   EmptyState,
+  GuideAssetImage,
   GuidePagination,
   GuideStatusBanner,
   LinkedChampionMini,
@@ -236,7 +237,11 @@ function TraitGuideView({
                   <div className={styles.specialUnitLine} aria-label={`${traitGuide.name} 소환 유닛`}>
                     {specialUnits.map((specialUnit) => (
                       <span className={styles.specialUnitMini} key={specialUnit.name}>
-                        <img alt={specialUnit.name} src={specialUnit.imageUrl} />
+                        <GuideAssetImage
+                          alt={specialUnit.name}
+                          fallbackLabel={specialUnit.name}
+                          imageUrl={specialUnit.imageUrl}
+                        />
                         <span>{specialUnit.name}</span>
                         {specialUnit.note && <small>{specialUnit.note}</small>}
                       </span>
