@@ -10,8 +10,9 @@ spring:
     enabled: true
     locations: classpath:db/migration
     validate-on-migrate: true
-    # New DB: baseline-on-migrate=false — Flyway applies V1 onwards.
-    # Existing DB: run `flyway baseline -baselineVersion=16` once, then enable.
+    # New DB: Flyway applies V1__init_schema.sql onwards automatically.
+    # Existing DB: run `flyway baseline -baselineVersion=16` once
+    #   (16 = last migration version consolidated into V1).
     baseline-on-migrate: false
   jpa:
     hibernate:
