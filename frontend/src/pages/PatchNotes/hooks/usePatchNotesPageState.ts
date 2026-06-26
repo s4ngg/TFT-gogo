@@ -68,6 +68,9 @@ export function usePatchNotesPageState({
     if (selectedPatchVersionRef.current === selectedPatchVersion) return
 
     selectedPatchVersionRef.current = selectedPatchVersion
+    setActiveCategory(PATCH_CATEGORIES[0])
+    setQuery('')
+    setDebouncedQuery('')
     resetChangeListState()
   }, [resetChangeListState, selectedPatchVersion])
 
