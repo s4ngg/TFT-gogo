@@ -16,6 +16,7 @@ interface ItemStatsViewProps {
   isGuideFallbackData: boolean
   isGuideFetching: boolean
   onGuideRetry: () => void
+  patchVersion: string
   query: string
 }
 
@@ -26,6 +27,7 @@ function ItemStatsView({
   isGuideFallbackData,
   isGuideFetching,
   onGuideRetry,
+  patchVersion,
   query,
 }: ItemStatsViewProps) {
   const {
@@ -37,6 +39,7 @@ function ItemStatsView({
     params: {
       page: currentPage,
       pageSize: ITEM_GUIDE_PAGE_SIZE,
+      patchVersion,
       query,
       tab: 'items',
     },

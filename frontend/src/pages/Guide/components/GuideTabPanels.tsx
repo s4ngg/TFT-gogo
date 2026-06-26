@@ -42,6 +42,7 @@ function GuideTabPanels({
           isGuideFetching={isGuideFetching}
           onChampionSelect={(championName) => onGuideJump('champions', championName, championName)}
           onGuideRetry={onGuideRetry}
+          patchVersion={guideData.patchVersion}
           query={query}
         />
       </div>
@@ -56,6 +57,7 @@ function GuideTabPanels({
           isGuideFallbackData={isGuideFallbackData}
           isGuideFetching={isGuideFetching}
           onGuideRetry={onGuideRetry}
+          patchVersion={guideData.patchVersion}
           query={query}
         />
       </div>
@@ -70,6 +72,7 @@ function GuideTabPanels({
           isGuideFallbackData={isGuideFallbackData}
           isGuideFetching={isGuideFetching}
           onGuideRetry={onGuideRetry}
+          patchVersion={guideData.patchVersion}
           query={query}
         />
       </div>
@@ -90,6 +93,7 @@ function GuideTabPanels({
         })}
         onFavoriteToggle={onFavoriteToggle}
         onGuideRetry={onGuideRetry}
+        patchVersion={guideData.patchVersion}
         query={query}
       />
     </div>

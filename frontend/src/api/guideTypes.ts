@@ -165,6 +165,7 @@ export interface GuideListQuery {
   cost?: ChampionCostFilter
   page?: number
   pageSize?: number
+  patchVersion?: string
   query?: string
   tab: GuideTab
 }

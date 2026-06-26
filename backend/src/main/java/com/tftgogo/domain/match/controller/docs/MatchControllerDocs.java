@@ -26,14 +26,15 @@ public interface MatchControllerDocs {
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 파라미터 (start < 0 또는 count < 1 또는 count > 20)"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 파라미터 (start < 0 또는 start > 200 또는 count < 1 또는 count > 20)"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429", description = "Riot API Rate Limit 초과")
     })
     ResponseEntity<ApiResponse<List<SummonerMatchItemDto>>> getMatches(
             @Parameter(description = "소환사 PUUID", required = true)
             @PathVariable("puuid") String puuid,
-            @Parameter(description = "시작 인덱스 (0 이상, count 단위 증가)", example = "0")
+            @Parameter(description = "시작 인덱스 (0~200, count 단위 증가)", example = "0")
             @Min(value = 0, message = "시작 인덱스는 0 이상이어야 합니다.")
+            @Max(value = 200, message = "시작 인덱스는 200 이하이어야 합니다.")
             @RequestParam(name = "start", defaultValue = "0") int start,
             @Parameter(description = "조회 건수 (1~20, 기본값 20)", example = "20")
             @Min(value = 1, message = "조회 건수는 1 이상이어야 합니다.")

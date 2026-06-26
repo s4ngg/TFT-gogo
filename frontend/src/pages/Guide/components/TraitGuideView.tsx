@@ -24,6 +24,7 @@ interface TraitGuideViewProps {
   isGuideFetching: boolean
   onChampionSelect: (championName: string) => void
   onGuideRetry: () => void
+  patchVersion: string
   query: string
 }
 
@@ -116,6 +117,7 @@ function TraitGuideView({
   isGuideFetching,
   onChampionSelect,
   onGuideRetry,
+  patchVersion,
   query,
 }: TraitGuideViewProps) {
   const {
@@ -127,6 +129,7 @@ function TraitGuideView({
     params: {
       page: currentPage,
       pageSize: TRAIT_PAGE_SIZE,
+      patchVersion,
       query,
       tab: 'traits',
     },

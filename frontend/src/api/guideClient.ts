@@ -38,6 +38,7 @@ export async function getGuideTabItems<T extends GuideTab>(
       params: {
         ...queryParams,
         cost: queryParams.cost === 'all' ? undefined : queryParams.cost,
+        patchVersion: queryParams.patchVersion || undefined,
       },
     })
     const payload = unwrapApiResponse(data)

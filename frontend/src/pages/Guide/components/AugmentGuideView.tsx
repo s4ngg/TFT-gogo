@@ -17,6 +17,7 @@ interface AugmentGuideViewProps {
   isGuideFallbackData: boolean
   isGuideFetching: boolean
   onGuideRetry: () => void
+  patchVersion: string
   query: string
 }
 
@@ -25,6 +26,7 @@ function AugmentGuideView({
   isGuideFallbackData,
   isGuideFetching,
   onGuideRetry,
+  patchVersion,
   query,
 }: AugmentGuideViewProps) {
   const {
@@ -36,6 +38,7 @@ function AugmentGuideView({
     params: {
       page: currentPage,
       pageSize: AUGMENT_GUIDE_PAGE_SIZE,
+      patchVersion,
       query,
       tab: 'augments',
     },
