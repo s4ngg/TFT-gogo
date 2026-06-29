@@ -46,6 +46,9 @@ class PatchNoteImportSchedulerTest {
     @Mock
     private PatchNoteRepository patchNoteRepository;
 
+    @Mock
+    private PatchNoteImportSchedulerLock schedulerLock;
+
     private PatchNoteImportSchedulerProperties properties;
     private PatchNoteImportScheduler scheduler;
 
@@ -57,7 +60,8 @@ class PatchNoteImportSchedulerTest {
                 crawlerFetchService,
                 crawlerParser,
                 patchNoteRepository,
-                properties
+                properties,
+                schedulerLock
         );
     }
 
@@ -87,6 +91,7 @@ class PatchNoteImportSchedulerTest {
         // given
         properties.setEnabled(true);
         properties.setStartupImport(true);
+        givenSchedulerLockRunsTask();
         when(adminPatchNoteService.importRiotPatchNote(any(AdminPatchNoteImportRequest.class)))
                 .thenReturn(importResponse("17.5", "https://example.com/17-5"));
 
@@ -106,6 +111,7 @@ class PatchNoteImportSchedulerTest {
     void 목록_확인은_DB에_없는_패치노트만_상세_import한다() {
         // given
         properties.setEnabled(true);
+        givenSchedulerLockRunsTask();
         PatchNoteCrawlFetchedPage listPage = fetchedPage();
         PatchNoteCrawlListItem latestNew = listItem(
                 "전략적 팀 전투 17.5 패치",
@@ -145,6 +151,7 @@ class PatchNoteImportSchedulerTest {
         // given
         properties.setEnabled(true);
         properties.setStartupImport(true);
+        givenSchedulerLockRunsTask();
         doAnswer(invocation -> {
             scheduler.refreshLatestPatchNote();
             return importResponse("17.5", "https://example.com/17-5");
@@ -162,12 +169,35 @@ class PatchNoteImportSchedulerTest {
         // given
         properties.setEnabled(true);
         properties.setStartupImport(true);
+        givenSchedulerLockRunsTask();
         when(adminPatchNoteService.importRiotPatchNote(any(AdminPatchNoteImportRequest.class)))
                 .thenThrow(new RuntimeException("riot unavailable"));
 
         // when, then
         assertThatCode(() -> scheduler.importOnStartupIfEnabled())
                 .doesNotThrowAnyException();
+    }
+
+    @Test
+    void DB_락을_얻지_못하면_import를_skip한다() {
+        // given
+        properties.setEnabled(true);
+        properties.setStartupImport(true);
+        when(schedulerLock.runWithLock(any(), any())).thenReturn(false);
+
+        // when
+        scheduler.importOnStartupIfEnabled();
+
+        // then
+        verifyNoInteractions(adminPatchNoteService);
+    }
+
+    private void givenSchedulerLockRunsTask() {
+        doAnswer(invocation -> {
+            Runnable task = invocation.getArgument(1);
+            task.run();
+            return true;
+        }).when(schedulerLock).runWithLock(any(), any());
     }
 
     private PatchNoteCrawlFetchedPage fetchedPage() {
