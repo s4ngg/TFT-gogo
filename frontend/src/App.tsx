@@ -16,7 +16,7 @@ import Dashboard from './pages/Dashboard/Dashboard'
 import Guide from './pages/Guide/Guide'
 import Party from './pages/Party/Party'
 import PatchNotes from './pages/PatchNotes/PatchNotes'
-import SummonerDetail from './pages/SummonerDetail/SummonerDetail'
+import SearchDetail from './pages/SearchDetail/SearchDetail'
 import AdminLayout from './pages/Admin/components/AdminLayout'
 import NotFound from './pages/NotFound/NotFound'
 
@@ -28,7 +28,7 @@ function App() {
       <Route path="/login" element={<AuthPage mode="login" />} />
       <Route path="/signup" element={<AuthPage mode="signup" />} />
       <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
-      <Route path="/summoner/:gameName/:tagLine" element={<SummonerDetail />} />
+      <Route path="/summoner/:gameName/:tagLine" element={<SearchDetail />} />
       <Route path="/decks" element={<Decks />} />
       <Route path="/decks/:rankFilter/:deckId" element={<DeckDetail />} />
       <Route path="/ai-recommend" element={<AiRecommend />} />

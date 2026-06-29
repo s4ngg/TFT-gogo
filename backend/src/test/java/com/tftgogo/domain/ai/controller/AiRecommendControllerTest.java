@@ -1,6 +1,6 @@
 package com.tftgogo.domain.ai.controller;
 
-import com.tftgogo.domain.ai.dto.AiRecommendResponse;
+import com.tftgogo.domain.ai.dto.response.AiRecommendResponse;
 import com.tftgogo.domain.ai.service.AiRecommendService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

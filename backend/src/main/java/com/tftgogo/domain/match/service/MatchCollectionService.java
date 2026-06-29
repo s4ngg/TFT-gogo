@@ -1,7 +1,7 @@
 package com.tftgogo.domain.match.service;
 
 import com.tftgogo.domain.match.dto.response.MatchSummaryResponse;
-import com.tftgogo.domain.summoner.dto.response.SummonerMatchItemDto;
+import com.tftgogo.domain.search.dto.response.SummonerMatchItemDto;
 
 import java.util.List;
 import java.util.function.Function;

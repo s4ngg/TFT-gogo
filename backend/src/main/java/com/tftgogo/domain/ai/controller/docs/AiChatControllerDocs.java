@@ -1,7 +1,7 @@
 package com.tftgogo.domain.ai.controller.docs;
 
-import com.tftgogo.domain.ai.dto.AiChatRequest;
-import com.tftgogo.domain.ai.dto.AiChatResponse;
+import com.tftgogo.domain.ai.dto.request.AiChatRequest;
+import com.tftgogo.domain.ai.dto.response.AiChatResponse;
 import com.tftgogo.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

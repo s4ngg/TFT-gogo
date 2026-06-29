@@ -1,5 +1,7 @@
 package com.tftgogo.domain.match.dto.response;
 
+import com.tftgogo.domain.search.dto.response.RankInfoResponse;
+import com.tftgogo.domain.search.dto.response.SummonerProfileResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;

@@ -1,6 +1,6 @@
 package com.tftgogo.global.security.oauth;
 
-import com.tftgogo.domain.member.dto.command.SocialLoginCommand;
+import com.tftgogo.domain.member.dto.request.SocialLoginCommand;
 import com.tftgogo.domain.member.dto.response.AuthResponse;
 import com.tftgogo.domain.member.dto.response.MemberResponse;
 import com.tftgogo.domain.member.entity.SocialProvider;

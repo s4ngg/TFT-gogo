@@ -1,6 +1,11 @@
 import { Navigate, Outlet } from 'react-router-dom'
+<<<<<<<< HEAD:frontend/src/pages/Admin/components/AdminLayout.tsx
 import AdminSidebar from './AdminSidebar'
 import { useAdminAuth } from '../../../hooks/useAdminAuth'
+========
+import AdminSidebar from '../admin/AdminSidebar'
+import { useAdminAuth } from '../../hooks/useAdminAuth'
+>>>>>>>> 07c0792e (refactor: 도메인 패키지 구조 통일 · summoner→search 이관):frontend/src/components/layout/AdminLayout.tsx
 import styles from './AdminLayout.module.css'
 
 function AdminLayout() {

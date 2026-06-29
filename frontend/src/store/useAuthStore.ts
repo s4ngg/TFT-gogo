@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import useSummonerStore from './useSummonerStore'
+import useSearchStore from './useSearchStore'
 
 interface AuthPayload {
   token: string
@@ -34,7 +34,7 @@ const useAuthStore = create<AuthState>()((set) => ({
   clearAuth: () => {
     removeLegacyPersistedAuth()
     set({ token: null })
-    useSummonerStore.getState().clearSummoner()
+    useSearchStore.getState().clearSummoner()
   },
 }))
 

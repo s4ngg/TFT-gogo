@@ -1,6 +1,6 @@
 package com.tftgogo.domain.member.service.impl;
 
-import com.tftgogo.domain.member.dto.command.SocialLoginCommand;
+import com.tftgogo.domain.member.dto.request.SocialLoginCommand;
 import com.tftgogo.domain.member.dto.request.LoginRequest;
 import com.tftgogo.domain.member.dto.request.SignupRequest;
 import com.tftgogo.domain.member.dto.response.AuthResponse;
