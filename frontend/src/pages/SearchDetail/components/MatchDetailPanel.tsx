@@ -38,7 +38,7 @@ export default function MatchDetailPanel({ match, myPuuid }: { match: MatchSumma
               ))}
             </div>
             <div className={styles.detailUnits}>
-              {p.units.slice(0, 8).map((unit, i) => (
+              {p.units.map((unit, i) => (
                 <ChampionCard
                   key={`${unit.characterId}-${i}`}
                   imageUrl={unit.imageUrl || tftChampSquareUrl(unit.characterId)}
