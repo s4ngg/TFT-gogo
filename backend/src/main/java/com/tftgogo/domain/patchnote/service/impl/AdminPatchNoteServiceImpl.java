@@ -465,7 +465,12 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
         if (!highlights.isEmpty()) {
             return highlights;
         }
-        return hasText(document.summary()) ? List.of(document.summary().trim()) : List.of();
+        if (!hasText(document.summary())) {
+            return List.of();
+        }
+
+        String summary = removeLeadingCountPrefix(document.summary());
+        return hasText(summary) ? List.of(summary) : List.of();
     }
 
     private String toDisplaySectionLabel(String value) {
@@ -475,7 +480,11 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
                 .replaceAll("^\\d{1,2}월\\s+\\d{1,2}일\\s*", "")
                 .replaceAll("^\\d{1,2}(?:[.-]\\d{1,2}[a-zA-Z]?)?\\s*(?:추가\\s*)?패치(?:\\s*노트)?\\s*", "")
                 .trim();
-        return hasText(normalizedLabel) ? normalizedLabel : label;
+        return hasText(normalizedLabel) ? removeLeadingCountPrefix(normalizedLabel) : removeLeadingCountPrefix(label);
+    }
+
+    private String removeLeadingCountPrefix(String value) {
+        return value.replaceFirst("^\\s*\\(\\s*\\d+\\s*\\)\\s*", "").trim();
     }
 
     private LocalDateTime resolvePublishedAt(PatchNoteCrawlDocument document, LocalDateTime fallback) {
@@ -548,7 +557,11 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
         List<PatchNote> currentPatchNotes = excludedPatchNoteId == null
                 ? patchNoteRepository.findByCurrentTrueAndDeletedAtIsNull()
                 : patchNoteRepository.findByCurrentTrueAndDeletedAtIsNullAndIdNot(excludedPatchNoteId);
+        if (currentPatchNotes.isEmpty()) {
+            return;
+        }
         currentPatchNotes.forEach(PatchNote::markNotCurrent);
+        patchNoteRepository.flush();
     }
 
     private Map<Long, Long> getChangeCounts(List<PatchNote> patchNotes) {

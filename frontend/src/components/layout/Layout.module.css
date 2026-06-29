@@ -661,6 +661,12 @@
     overscroll-behavior-x: contain;
     padding: 0 var(--space-xl) var(--space-xs);
     scroll-padding-inline: var(--space-xl);
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .navList::-webkit-scrollbar {
+    display: none;
   }
 
   .navItem {

@@ -57,10 +57,19 @@ public enum ErrorCode {
 
     // ── 외부 API ─────────────────────────────────────────
     RIOT_API_RATE_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "Riot API 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요."),
+    RIOT_QUEUE_FULL(HttpStatus.TOO_MANY_REQUESTS, "Riot API 요청 대기열이 가득 찼습니다. 잠시 후 다시 시도해주세요."),
+    RIOT_API_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "Riot API 응답 시간이 초과되었습니다."),
     RIOT_API_ERROR(HttpStatus.BAD_GATEWAY, "Riot API 호출 중 오류가 발생했습니다."),
     EXTERNAL_API_ERROR(HttpStatus.BAD_GATEWAY, "외부 데이터 호출 중 오류가 발생했습니다."),
     AI_CHAT_RATE_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "AI 채팅 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요."),
-    AI_SERVER_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "AI 서버 연결에 실패했습니다.");
+    AI_SERVER_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "AI 서버 연결에 실패했습니다."),
+
+    // ── 관리자 인증 ─────────────────────────────────────
+    ADMIN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "관리자 계정을 찾을 수 없습니다."),
+    ADMIN_INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "아이디 또는 비밀번호가 올바르지 않습니다."),
+    ADMIN_ACCOUNT_DISABLED(HttpStatus.FORBIDDEN, "비활성화된 관리자 계정입니다."),
+    ADMIN_REFRESH_TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "유효하지 않은 Refresh Token입니다."),
+    ADMIN_REFRESH_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "만료된 Refresh Token입니다.");
 
     private final HttpStatus status;
     private final String message;

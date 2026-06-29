@@ -1,6 +1,6 @@
 package com.tftgogo.global.config;
 
-import com.tftgogo.global.filter.AdminTokenFilter;
+import com.tftgogo.global.filter.AdminJwtFilter;
 import com.tftgogo.global.filter.JwtAuthenticationFilter;
 import com.tftgogo.global.security.oauth.SocialOAuth2FailureHandler;
 import com.tftgogo.global.security.oauth.SocialOAuth2SuccessHandler;
@@ -30,7 +30,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final AdminTokenFilter adminTokenFilter;
+    private final AdminJwtFilter adminJwtFilter;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CorsProperties corsProperties;
     private final SocialOAuth2SuccessHandler socialOAuth2SuccessHandler;
@@ -48,29 +48,33 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth ->
                         auth
                         .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/decks/meta").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/community/parties").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/community/chat/rooms/*/messages").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/community/chat/rooms/*/stream").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/riot/status").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/decks/meta").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/community/parties").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/community/chat/rooms/*/messages").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/community/chat/rooms/*/stream").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/riot/status").permitAll()
                         .requestMatchers(
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/logout",
                                 "/api/v1/auth/refresh",
                                 "/api/v1/auth/signup",
                                 "/api/v1/auth/social/**",
-                                "/api/admin/**",        // AdminTokenFilter가 직접 검증
+                                "/api/admin/auth/login",
+                                "/api/admin/auth/refresh",
+                                "/api/admin/auth/logout",
                                 "/api/match/**",
                                 "/api/summoners/**",
+                                "/api/cdragon/**",
                                 "/api/guide",
                                 "/api/guide/**",
                                 "/api/patch-notes",
                                 "/api/patch-notes/**"
                         ).permitAll()
+                        .requestMatchers("/api/admin/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(adminTokenFilter, JwtAuthenticationFilter.class);
+                .addFilterBefore(adminJwtFilter, JwtAuthenticationFilter.class);
 
         return http.build();
     }

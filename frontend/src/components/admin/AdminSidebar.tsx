@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { LayoutGrid, Sword, BookOpen, FileText, Users, MessageSquare, Activity, LogOut } from 'lucide-react'
-import { clearAdminToken } from '../../api/adminApi'
+import { clearAccessToken, adminLogout, getHttpStatus } from '../../api/adminApi'
+import { useAdminSession } from '../../hooks/useAdminSession'
 import styles from './AdminSidebar.module.css'
 
 const NAV_ITEMS = [
@@ -15,10 +17,28 @@ const NAV_ITEMS = [
 
 function AdminSidebar() {
   const navigate = useNavigate()
+  const { session, setSession } = useAdminSession()
+  const [logoutError, setLogoutError] = useState<string | null>(null)
 
-  function handleLogout() {
-    clearAdminToken()
-    navigate('/admin')
+  async function handleLogout() {
+    setLogoutError(null)
+    try {
+      await adminLogout()
+      clearAccessToken()
+      setSession(null)
+      navigate('/admin')
+    } catch (err: unknown) {
+      const status = getHttpStatus(err)
+      // 세션이 이미 무효한 경우(401/403)는 로컬 상태 정리 후 이동
+      if (status === 401 || status === 403) {
+        clearAccessToken()
+        setSession(null)
+        navigate('/admin')
+      } else {
+        // 네트워크/5xx 오류: 서버 쿠키가 만료되지 않을 수 있으므로 경고만 표시
+        setLogoutError('로그아웃 중 오류가 발생했습니다. 다시 시도해주세요.')
+      }
+    }
   }
 
   return (
@@ -26,6 +46,9 @@ function AdminSidebar() {
       <div className={styles.brand}>
         <div className={styles.brandLogo} />
         <strong>관리자</strong>
+        {session && (
+          <span className={styles.brandUser}>{session.username}</span>
+        )}
       </div>
 
       <nav className={styles.navList}>
@@ -56,6 +79,10 @@ function AdminSidebar() {
       </nav>
 
       <div className={styles.fill} />
+
+      {logoutError && (
+        <div className={styles.logoutError}>{logoutError}</div>
+      )}
 
       <button className={styles.logoutBtn} onClick={handleLogout}>
         <LogOut size={16} strokeWidth={2} />

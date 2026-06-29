@@ -56,11 +56,15 @@ Page: /patch-notes.
 - stats are calculated for the selected patch version as a whole, not for the currently filtered page.
 - Frontend normalization must prefer payload.stats before falling back to legacy top-level stats.
 - Change filters are category, type, impact, query, page, and pageSize.
+- Backend accepts page=1..10000 and pageSize=1..1000 for patch changes.
+- Current public frontend requests patch changes with pageSize=1000. #623 owns the future UX/performance policy to reduce this or introduce a clearer paged/whole-list mode.
 - Search/filter changes must not reload the whole page or reset the selected patch unexpectedly.
+- Public search input is debounced before requesting patch changes and resets the change page to 1 only when query/category/selected patch changes.
 - Public API calls must go through frontend/src/api/patchNotes.ts and TanStack Query hooks.
 - Components must not import axios or fetch directly.
 - The UI should group and display patch changes in a readable form, with long rows wrapped safely on desktop and mobile.
 - The public page must not show crawler/import metadata such as importedAt or source diagnostics.
+- Public summary/highlight labels must strip Riot source numbering or date/patch prefixes such as `(6)`, `(5)`, and redundant patch title fragments before display.
 </public-behavior>
 
 <data-model>
@@ -73,6 +77,8 @@ Page: /patch-notes.
 </patch_notes>
 
 <patch_note_changes>
+- Final runtime/ERD table name is `patch_note_changes`. Do not introduce new code or docs that use `patch_changes` as the current table name.
+- Older migrations may mention `patch_changes` only to rename legacy databases to `patch_note_changes`.
 - patch_note_id links each row to patch_notes.
 - category enum values: CHAMPION, TRAIT, ITEM, AUGMENT, SYSTEM.
 - change type enum values: BUFF, NERF, ADJUST, NEW.
@@ -93,6 +99,7 @@ Page: /patch-notes.
 - Deleting a patch note soft-deletes its active/non-deleted patch changes.
 - Admin patch change forms must reject empty sortOrder text before numeric conversion.
 - Editing a patch change must not drift across selected patch notes. If selected patch note changes while editing, clear edit state before save.
+- When marking an imported or manually created patch as current, clear existing current rows and flush before inserting/updating the new current row if the database has a single-current unique index.
 </admin-rules>
 
 <riot-import>
@@ -121,6 +128,7 @@ Page: /patch-notes.
 - If sourceUrl is omitted, fetch the configured tag page and import the first valid detail URL.
 - Detail fetch parses the Riot Next.js __NEXT_DATA__ payload.
 - Parser implementation uses Jsoup and crawler DTOs, not regex-only HTML parsing.
+- Imported highlights are derived from parsed section labels. They must be normalized to remove source numbering, date prefixes, patch-version prefixes, and generic wrapper text before saving when possible.
 - PatchNote upsert matching order is sourceKey, then sourceUrl, then version.
 - PatchChange upsert matching key is patchNote + sourceKey.
 - Imported patch notes/changes with manuallyEdited=false may be updated by re-import.
@@ -172,9 +180,11 @@ Page: /patch-notes.
 <frontend-rules>
 - Public PatchNotes page should default to the latest/current patch.
 - Search input must not cause a full page reload on every keystroke.
+- Search input should be debounced and preserve selected patch/category context while only refreshing the change-list query.
 - Type/category filters should not expose confusing BUFF/NERF/ADJUST badges when the product decision is to simplify display.
 - Long patch change rows must wrap safely and avoid horizontal overflow.
 - Repeated or redundant title/detail text should be collapsed or formatted into title + value lines where possible.
+- Quick insight/summary labels should be derived from cleaned highlight labels and deduplicated before display.
 - ImportedAt/source diagnostics should stay hidden in public UI.
 - Admin import controls should live in /admin/patch-notes, not in the public page.
 - Existing manual CRUD must keep working after import controls are added.

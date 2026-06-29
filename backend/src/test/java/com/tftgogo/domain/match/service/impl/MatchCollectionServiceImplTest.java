@@ -10,11 +10,12 @@ import com.tftgogo.domain.summoner.dto.response.SummonerMatchItemDto;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import com.tftgogo.global.riot.RiotApiClient;
+import com.tftgogo.global.riot.config.RiotProperties;
 import com.tftgogo.global.riot.dto.MatchDto;
 import com.tftgogo.global.riot.queue.RiotQueue;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
@@ -29,6 +30,7 @@ import java.util.function.Function;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -39,13 +41,22 @@ class MatchCollectionServiceImplTest {
     @Mock private RiotQueue riotQueue;
     @Mock private CachedMatchRepository cachedMatchRepository;
     @Mock private Executor matchCollectionExecutor;
-    @InjectMocks private MatchCollectionServiceImpl matchCollectionService;
+    private MatchCollectionServiceImpl matchCollectionService;
 
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
             .setVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE)
             .setVisibility(PropertyAccessor.IS_GETTER, JsonAutoDetect.Visibility.NONE);
+
+    @BeforeEach
+    void setUp() {
+        RiotProperties props = new RiotProperties();
+        props.setApiKey("test-key");
+        matchCollectionService = new MatchCollectionServiceImpl(
+                riotApiClient, riotQueue, cachedMatchRepository,
+                matchCollectionExecutor, props);
+    }
 
     @Test
     void DB에_충분한_데이터가_있으면_Riot_API를_호출하지_않는다() {
@@ -93,9 +104,9 @@ class MatchCollectionServiceImplTest {
         doReturn(CompletableFuture.completedFuture(List.of("m1")))
                 .doReturn(CompletableFuture.completedFuture(List.of()))
                 .when(riotQueue).submitForeground(any());
-        // collectInBackground: getMatch("m1") (submit 1회)
+        // collectInBackground: getMatch("m1") (submit with dedupKey)
         doReturn(CompletableFuture.completedFuture(fetchedDto))
-                .when(riotQueue).submit(any());
+                .when(riotQueue).submit(anyString(), any());
         when(cachedMatchRepository.findMatchIdsByMatchIdIn(any())).thenReturn(List.of());
         doAnswer(inv -> { ((Runnable) inv.getArgument(0)).run(); return null; })
                 .when(matchCollectionExecutor).execute(any());
@@ -108,7 +119,7 @@ class MatchCollectionServiceImplTest {
 
         // then
         verify(riotQueue, times(2)).submitForeground(any()); // matchId 조회 (foreground)
-        verify(riotQueue, times(1)).submit(any());           // 매치 상세 수집 (background)
+        verify(riotQueue, times(1)).submit(anyString(), any()); // 매치 상세 수집 (background, dedupKey)
         verify(cachedMatchRepository).save(any(CachedMatch.class));
         assertThat(result).isEmpty(); // findAllById가 빈 목록 반환
     }
@@ -146,19 +157,58 @@ class MatchCollectionServiceImplTest {
         doReturn(matchIdFuture1).doReturn(matchIdFuture2)
                 .when(riotQueue).submitForeground(any());
 
-        // collectInBackground: 매치 상세 조회 실패 (submit 1회)
+        // collectInBackground: 매치 상세 조회 실패 (submit with dedupKey)
         CompletableFuture<MatchDto> detailFailed = new CompletableFuture<>();
         detailFailed.completeExceptionally(new BusinessException(ErrorCode.RIOT_API_ERROR));
-        doReturn(detailFailed).when(riotQueue).submit(any());
+        doReturn(detailFailed).when(riotQueue).submit(anyString(), any());
 
         // when — 매치 상세 실패해도 예외 없이 반환
-        // 실패한 future는 thenApplyAsync(..., executor)를 건너뛰므로 executor stub 불필요
         List<SummonerMatchItemDto> result = matchCollectionService.fetchAndCache(puuid, 0, 2,
                 Function.identity(), Function.identity(), s -> null);
 
         // then
         assertThat(result).isEmpty();
         verify(cachedMatchRepository, never()).save(any());
+    }
+
+    @Test
+    void 타임아웃시_RIOT_API_TIMEOUT_예외가_발생한다() {
+        // given — 짧은 timeout(1초)으로 서비스 재생성하여 실제 TimeoutException 경로 검증
+        RiotProperties shortTimeoutProps = new RiotProperties();
+        shortTimeoutProps.setApiKey("test-key");
+        shortTimeoutProps.setMatchFetchTimeoutSeconds(1L);
+        MatchCollectionServiceImpl shortTimeoutService = new MatchCollectionServiceImpl(
+                riotApiClient, riotQueue, cachedMatchRepository,
+                matchCollectionExecutor, shortTimeoutProps);
+
+        String puuid = "test-puuid";
+        when(cachedMatchRepository.findByParticipantPuuid(eq(puuid), any(Pageable.class)))
+                .thenReturn(List.of());
+        // 미완료 future → get(1, SECONDS)에서 실제 TimeoutException 발생
+        doReturn(new CompletableFuture<>()).when(riotQueue).submitForeground(any());
+
+        // when / then
+        assertThatThrownBy(() -> shortTimeoutService.fetchAndCache(puuid, 0, 2,
+                Function.identity(), Function.identity(), s -> null))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.RIOT_API_TIMEOUT);
+    }
+
+    @Test
+    void 큐_포화시_RIOT_QUEUE_FULL_예외가_전파된다() {
+        // given
+        String puuid = "test-puuid";
+        when(cachedMatchRepository.findByParticipantPuuid(eq(puuid), any(Pageable.class)))
+                .thenReturn(List.of());
+        CompletableFuture<List<String>> queueFullFuture = new CompletableFuture<>();
+        queueFullFuture.completeExceptionally(new BusinessException(ErrorCode.RIOT_QUEUE_FULL));
+        doReturn(queueFullFuture).when(riotQueue).submitForeground(any());
+
+        // when / then
+        assertThatThrownBy(() -> matchCollectionService.fetchAndCache(puuid, 0, 2,
+                Function.identity(), Function.identity(), s -> null))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.RIOT_QUEUE_FULL);
     }
 
     private CachedMatch cachedMatch(String matchId, String puuid) {
