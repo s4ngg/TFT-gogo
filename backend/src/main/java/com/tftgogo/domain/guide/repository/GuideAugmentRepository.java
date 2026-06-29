@@ -26,6 +26,7 @@ public interface GuideAugmentRepository extends JpaRepository<GuideAugment, Long
                             OR LOWER(name) LIKE LOWER(CONCAT('%', :query, '%'))
                             OR LOWER(description) LIKE LOWER(CONCAT('%', :query, '%'))
                             OR LOWER(augment_key) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(CAST(tags_json AS CHAR)) LIKE LOWER(CONCAT('%', :query, '%'))
                       )
                     ORDER BY name ASC, id ASC
                     """,
@@ -38,6 +39,7 @@ public interface GuideAugmentRepository extends JpaRepository<GuideAugment, Long
                             OR LOWER(name) LIKE LOWER(CONCAT('%', :query, '%'))
                             OR LOWER(description) LIKE LOWER(CONCAT('%', :query, '%'))
                             OR LOWER(augment_key) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(CAST(tags_json AS CHAR)) LIKE LOWER(CONCAT('%', :query, '%'))
                       )
                     """,
             nativeQuery = true
