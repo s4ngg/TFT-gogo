@@ -5,7 +5,7 @@ import {
   type PatchCategory,
 } from '../../../api/patchNotes'
 
-const PATCH_PAGE_SIZE = 1000
+const PATCH_CHANGE_PAGE_SIZE = 100
 const SEARCH_QUERY_DEBOUNCE_MS = 300
 
 interface UsePatchNotesPageStateOptions {
@@ -31,7 +31,7 @@ export function usePatchNotesPageState({
       changeType: '전체',
       highImpactOnly: false,
       page: currentPage,
-      pageSize: PATCH_PAGE_SIZE,
+      pageSize: PATCH_CHANGE_PAGE_SIZE,
       query: debouncedQuery,
       version: selectedPatchVersion,
     }),
