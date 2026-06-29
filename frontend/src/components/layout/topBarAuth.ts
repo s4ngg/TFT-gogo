@@ -1,4 +1,5 @@
 import { AUTH_ME_QUERY_KEY } from '../../hooks/useAuthSession'
+import { setLogoutInProgress } from '../../api/authSessionControl'
 
 interface TopBarAuthQueryClient {
   cancelQueries: (filters: { queryKey: typeof AUTH_ME_QUERY_KEY; exact: true }) => Promise<unknown>
@@ -10,14 +11,16 @@ export async function clearTopBarAuthSession(
   clearAuth: () => void,
   logoutRequest: () => Promise<void> = async () => undefined,
 ): Promise<void> {
-  const logoutPromise = logoutRequest()
+  setLogoutInProgress(true)
 
   clearAuth()
 
   try {
-    await logoutPromise
+    await logoutRequest()
   } catch {
     // Server logout failure must not keep the local session visible.
+  } finally {
+    setLogoutInProgress(false)
   }
 
   try {

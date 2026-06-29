@@ -7,6 +7,7 @@ import com.tftgogo.domain.member.dto.response.AuthResponse;
 import com.tftgogo.domain.member.dto.response.SocialLoginStartResponse;
 import com.tftgogo.domain.member.service.MemberService;
 import com.tftgogo.domain.member.service.SocialLoginStartService;
+import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import com.tftgogo.global.response.ApiResponse;
 import com.tftgogo.global.security.RefreshTokenCookieService;
@@ -55,7 +56,8 @@ public class AuthController implements AuthControllerDocs {
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<AuthResponse>> refresh(HttpServletRequest request) {
         AuthResponse response = memberService.refresh(
-                refreshTokenCookieService.resolveRefreshToken(request).orElse(null)
+                refreshTokenCookieService.resolveRefreshToken(request)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED))
         );
 
         return withRefreshCookie(response, "토큰 재발급 성공");
@@ -74,6 +76,14 @@ public class AuthController implements AuthControllerDocs {
                     resolveBearerToken(authorization),
                     refreshTokenCookieService.resolveRefreshToken(request).orElse(null)
             );
+        } catch (BusinessException e) {
+            return ResponseEntity
+                    .status(e.getErrorCode().getStatus())
+                    .header(HttpHeaders.SET_COOKIE, refreshTokenCookieService.clearCookie().toString())
+                    .body(ApiResponse.fail(
+                            e.getErrorCode().getMessage(),
+                            e.getErrorCode().getStatus()
+                    ));
         } catch (RuntimeException e) {
             logger.warn("Logout cleanup failed. userId={}", userId, e);
             return ResponseEntity

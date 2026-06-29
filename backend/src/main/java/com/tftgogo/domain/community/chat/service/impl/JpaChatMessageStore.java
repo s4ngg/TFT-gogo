@@ -28,6 +28,7 @@ public class JpaChatMessageStore implements ChatMessageStore {
 
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
+    private final JpaChatRoomCreator chatRoomCreator;
 
     @Override
     @Transactional
@@ -65,7 +66,7 @@ public class JpaChatMessageStore implements ChatMessageStore {
 
     private ChatRoomEntity createRoom(String roomId) {
         try {
-            return chatRoomRepository.saveAndFlush(ChatRoomEntity.of(roomId, resolveRoomName(roomId)));
+            return chatRoomCreator.create(roomId, resolveRoomName(roomId));
         } catch (DataIntegrityViolationException e) {
             return chatRoomRepository.findByRoomKey(roomId)
                     .orElseThrow(() -> e);

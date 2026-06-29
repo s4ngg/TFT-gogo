@@ -67,6 +67,7 @@ public class AuthTokenService {
 
         if (session.isRevoked()) {
             session.markReuseDetected(now);
+            session.getMember().incrementAuthTokenVersion();
             revokeActiveRefreshTokens(session.getMember().getUserId(), now);
             throw new BusinessException(ErrorCode.UNAUTHORIZED);
         }

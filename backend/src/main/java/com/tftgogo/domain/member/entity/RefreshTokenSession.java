@@ -70,7 +70,9 @@ public class RefreshTokenSession {
 
     public void revoke(LocalDateTime now) {
         this.revoked = true;
-        this.revokedAt = now;
+        if (this.revokedAt == null) {
+            this.revokedAt = now;
+        }
         this.updatedAt = now;
     }
 

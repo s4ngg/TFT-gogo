@@ -81,4 +81,9 @@ public class Member {
     public boolean isActive() {
         return deletedAt == null;
     }
+
+    public void incrementAuthTokenVersion() {
+        this.authTokenVersion++;
+        this.updatedAt = LocalDateTime.now();
+    }
 }

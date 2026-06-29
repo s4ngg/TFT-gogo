@@ -2,6 +2,7 @@ import axios, { type InternalAxiosRequestConfig } from 'axios'
 import useAuthStore from '../store/useAuthStore'
 import type { ApiResponse } from './apiResponse'
 import { unwrapApiResponse } from './apiResponse'
+import { getAuthSessionRevision, isLogoutInProgress } from './authSessionControl'
 import { normalizeAuthResponse, type RawAuthResponse } from './memberApiPayload'
 
 const DEFAULT_API_BASE_URL = '/api'
@@ -94,7 +95,13 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const config = error.config as RetriableRequestConfig | undefined
 
-    if (error.response?.status === 401 && config && !config._retry && !isAuthEndpoint(config.url)) {
+    if (
+      error.response?.status === 401
+      && config
+      && !config._retry
+      && !isAuthEndpoint(config.url)
+      && !isLogoutInProgress()
+    ) {
       config._retry = true
 
       try {
@@ -127,6 +134,12 @@ function getRefreshAccessTokenPromise(): Promise<string> {
 }
 
 async function refreshAccessToken(): Promise<string> {
+  const refreshStartedAtRevision = getAuthSessionRevision()
+
+  if (isLogoutInProgress()) {
+    throw new Error('Refresh access token skipped during logout.')
+  }
+
   try {
     const apiBaseUrl = resolveApiBaseUrl().replace(/\/$/, '')
     const response = await axios.post<RawAuthResponse | ApiResponse<RawAuthResponse>>(
@@ -139,6 +152,10 @@ async function refreshAccessToken(): Promise<string> {
     )
     const payload = unwrapApiResponse(response.data)
     const auth = normalizeAuthResponse(payload, payload.user?.email ?? payload.member?.email ?? '')
+
+    if (isLogoutInProgress() || getAuthSessionRevision() !== refreshStartedAtRevision) {
+      throw new Error('Refresh access token skipped during logout.')
+    }
 
     useAuthStore.getState().setAuth({ token: auth.token })
     return auth.token

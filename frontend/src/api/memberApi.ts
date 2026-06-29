@@ -2,6 +2,7 @@ import axios from 'axios'
 import axiosInstance from './axiosInstance'
 import type { ApiResponse } from './apiResponse'
 import { unwrapApiResponse } from './apiResponse'
+import { getAuthSessionRevision, isLogoutInProgress, setLogoutInProgress } from './authSessionControl'
 import useAuthStore from '../store/useAuthStore'
 import {
   normalizeAuthResponse,
@@ -58,6 +59,12 @@ export async function signup(request: SignupRequest): Promise<AuthResponse> {
 }
 
 export async function refreshSession(): Promise<AuthResponse> {
+  const refreshStartedAtRevision = getAuthSessionRevision()
+
+  if (isLogoutInProgress()) {
+    throw new Error('Refresh session skipped during logout.')
+  }
+
   try {
     const response = await axiosInstance.post<RawAuthResponse | ApiResponse<RawAuthResponse>>(
       '/v1/auth/refresh',
@@ -65,11 +72,16 @@ export async function refreshSession(): Promise<AuthResponse> {
     const payload = unwrapApiResponse(response.data)
     const auth = normalizeAuthResponse(payload, payload.user?.email ?? payload.member?.email ?? '')
 
+    if (isLogoutInProgress() || getAuthSessionRevision() !== refreshStartedAtRevision) {
+      throw new Error('Refresh session skipped during logout.')
+    }
+
     useAuthStore.getState().setAuth({ token: auth.token })
     return auth
   } catch (error) {
     if (isAuthRestoreFailure(error)) {
       useAuthStore.getState().clearAuth()
+      throw error
     }
 
     const message = error instanceof Error ? error.message : String(error)
@@ -78,12 +90,16 @@ export async function refreshSession(): Promise<AuthResponse> {
 }
 
 export async function logout(): Promise<void> {
+  setLogoutInProgress(true)
+
   try {
     await axiosInstance.post('/v1/auth/logout')
   } catch (error) {
     if (!isAuthRestoreFailure(error)) {
       throw error
     }
+  } finally {
+    setLogoutInProgress(false)
   }
 }
 

@@ -10,6 +10,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 
 @Entity
@@ -44,7 +45,7 @@ public class ChatRoomEntity {
         room.name = name;
         room.type = "PUBLIC";
         room.active = true;
-        room.createdAt = LocalDateTime.now();
+        room.createdAt = LocalDateTime.now(Clock.systemUTC());
         return room;
     }
 }

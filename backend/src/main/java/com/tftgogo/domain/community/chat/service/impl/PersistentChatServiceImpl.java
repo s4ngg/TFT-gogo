@@ -65,9 +65,8 @@ public class PersistentChatServiceImpl implements ChatService {
     @Override
     public SseEmitter subscribe(String roomId) {
         String normalizedRoomId = normalizeSupportedRoomId(roomId);
-        List<ChatMessageResponse> snapshot = getRecentMessages(normalizedRoomId);
 
-        return chatSseHub.subscribe(normalizedRoomId, snapshot);
+        return chatSseHub.subscribe(normalizedRoomId, () -> getRecentMessages(normalizedRoomId));
     }
 
     private void validateAuthenticated(Long userId) {

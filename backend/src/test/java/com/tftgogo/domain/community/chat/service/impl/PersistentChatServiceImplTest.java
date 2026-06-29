@@ -21,11 +21,12 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -99,7 +100,7 @@ class PersistentChatServiceImplTest {
         SseEmitter emitter = new SseEmitter();
 
         when(chatMessageStore.getRecentMessages("general")).thenReturn(List.of(savedMessage));
-        when(chatSseHub.subscribe(eq("general"), anyList())).thenReturn(emitter);
+        when(chatSseHub.subscribe(eq("general"), any())).thenReturn(emitter);
 
         // when
         SseEmitter response = chatService.subscribe("general");
@@ -107,10 +108,10 @@ class PersistentChatServiceImplTest {
         // then
         assertThat(response).isSameAs(emitter);
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<ChatMessageResponse>> snapshotCaptor =
-                ArgumentCaptor.forClass((Class) List.class);
+        ArgumentCaptor<Supplier<List<ChatMessageResponse>>> snapshotCaptor =
+                ArgumentCaptor.forClass((Class) Supplier.class);
         verify(chatSseHub).subscribe(eq("general"), snapshotCaptor.capture());
-        assertThat(snapshotCaptor.getValue())
+        assertThat(snapshotCaptor.getValue().get())
                 .hasSize(1)
                 .first()
                 .extracting(ChatMessageResponse::getContent)

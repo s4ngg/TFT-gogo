@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 @Component
 @Profile("!local & !dev")
@@ -27,7 +28,7 @@ public class ChatSseHub {
     private final ConcurrentHashMap<String, Set<SseEmitter>> roomEmitters = new ConcurrentHashMap<>();
     private final Object globalEmitterLock = new Object();
 
-    public SseEmitter subscribe(String roomId, List<ChatMessageResponse> snapshot) {
+    public SseEmitter subscribe(String roomId, Supplier<List<ChatMessageResponse>> snapshotSupplier) {
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MILLIS);
         Set<SseEmitter> emitters = roomEmitters.computeIfAbsent(
                 roomId,
@@ -43,15 +44,17 @@ public class ChatSseHub {
                 throw new BusinessException(ErrorCode.CHAT_STREAM_CONNECTION_LIMIT_EXCEEDED);
             }
 
-            try {
-                emitter.send(SseEmitter.event()
-                        .name("snapshot")
-                        .data(snapshot));
-                emitters.add(emitter);
-            } catch (IOException | IllegalStateException e) {
-                logger.warn("Failed to send chat snapshot. roomId={}", roomId, e);
-                emitter.completeWithError(e);
-            }
+            emitters.add(emitter);
+        }
+
+        try {
+            emitter.send(SseEmitter.event()
+                    .name("snapshot")
+                    .data(snapshotSupplier.get()));
+        } catch (IOException | IllegalStateException e) {
+            logger.warn("Failed to send chat snapshot. roomId={}", roomId, e);
+            removeEmitter(roomId, emitter);
+            emitter.completeWithError(e);
         }
 
         return emitter;
