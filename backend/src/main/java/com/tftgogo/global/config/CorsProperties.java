@@ -12,5 +12,5 @@ import java.util.List;
 public class CorsProperties {
 
     /** CORS 허용 origin 목록 (allowCredentials=true이므로 wildcard 사용 불가) */
-    private List<String> allowedOrigins = List.of("http://localhost:5173");
+    private List<String> allowedOrigins = List.of("http://localhost:5173", "http://127.0.0.1:5173");
 }

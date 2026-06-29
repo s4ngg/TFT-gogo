@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { AppLayout } from '../../components/layout'
-import { getAdminToken } from '../../api/adminApi'
+import { getAccessToken } from '../../api/adminApi'
 import AdminPage from './components/AdminPage'
 import TokenGate from './components/TokenGate'
 
 function Admin() {
-  const [authed, setAuthed] = useState(() => getAdminToken() !== '')
+  const [authed, setAuthed] = useState(() => getAccessToken() !== null)
 
   if (!authed) {
     return (

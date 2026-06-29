@@ -3,6 +3,14 @@ import { useCDragonLocale } from '../../../hooks/useCDragonLocale'
 import type { RankFilter } from '../../Dashboard/dashboardData'
 import { useAdminDecks } from '../hooks/useAdminDecks'
 import { triggerDeckAggregate, isAdminAuthFailure, isNetworkOrTimeoutError, getServerErrorStatus, getHttpStatus } from '../../../api/adminApi'
+
+function getDeckListErrorMessage(error: unknown): string {
+  if (isAdminAuthFailure(error)) return '인증 실패: 관리자 토큰을 확인해 주세요.'
+  if (isNetworkOrTimeoutError(error)) return '네트워크 오류: 연결 상태를 확인 후 다시 시도해 주세요.'
+  const status = getServerErrorStatus(error)
+  if (status != null) return `서버 오류가 발생했습니다. (${status})`
+  return '덱 목록을 불러오지 못했습니다.'
+}
 import styles from '../Admin.module.css'
 import DeckRow from './DeckRow'
 
@@ -28,7 +36,7 @@ export default function AdminPage() {
   const [aggregating, setAggregating] = useState(false)
   const [aggregateMsg, setAggregateMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const { data: locale } = useCDragonLocale()
-  const { decks, isLoading, updateDeck } = useAdminDecks(rankFilter)
+  const { decks, isLoading, isError, error, refetch, updateDeck } = useAdminDecks(rankFilter)
 
   async function handleAggregate() {
     setAggregating(true)
@@ -77,6 +85,13 @@ export default function AdminPage() {
 
       {isLoading ? (
         <p className={styles.mutedText}>불러오는 중...</p>
+      ) : isError ? (
+        <div>
+          <p className={styles.saveError} role="alert" aria-live="polite">
+            {getDeckListErrorMessage(error)}
+          </p>
+          <button className={styles.boardBtn} onClick={() => void refetch()}>다시 불러오기</button>
+        </div>
       ) : (
         <>
           <select
@@ -102,9 +117,15 @@ export default function AdminPage() {
               </tr>
             </thead>
             <tbody>
-              {decks.map((deck) => (
-                <DeckRow key={deck.id} deck={deck} onSaved={updateDeck} locale={locale} />
-              ))}
+              {decks.length === 0 ? (
+                <tr><td colSpan={8} className={styles.emptyText}>
+                  {`현재 선택한 랭크 조건(${RANK_OPTIONS.find((o) => o.value === rankFilter)?.label ?? rankFilter})에 해당하는 메타덱이 없습니다. 필요한 경우 집계를 실행해 주세요.`}
+                </td></tr>
+              ) : (
+                decks.map((deck) => (
+                  <DeckRow key={deck.id} deck={deck} onSaved={updateDeck} locale={locale} />
+                ))
+              )}
             </tbody>
           </table>
         </>

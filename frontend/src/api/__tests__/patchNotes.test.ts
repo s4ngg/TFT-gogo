@@ -4,7 +4,7 @@ import type { AxiosAdapter, AxiosResponse } from 'axios'
 
 import { getPatchChangeImageUrl } from '../../pages/PatchNotes/patchNotesImages'
 import axiosInstance from '../axiosInstance'
-import { getPatchNotes, type PatchChange, type PatchNoteDetail } from '../patchNotes'
+import { getPatchNotes, sanitizePatchHighlight, type PatchChange, type PatchNoteDetail } from '../patchNotes'
 import { readPatchChangeStatsPayload } from '../patchNoteStatsPayload'
 
 const originalAdapter = axiosInstance.defaults.adapter
@@ -128,6 +128,28 @@ const fallbackPatchNotes: PatchNoteDetail[] = [
 ]
 
 describe('getPatchNotes', () => {
+  it('strips Riot count prefixes from patch highlights', async () => {
+    axiosInstance.defaults.adapter = createAdapter([
+      {
+        description: 'summary',
+        highlights: [
+          'Traits > (6) Animal Squad',
+          '(5) N.O.V.A. additional effects',
+        ],
+        isCurrent: true,
+        publishedAt: '2026-06-09T18:00:00',
+        summary: 'summary',
+        title: '17.6 Patch Notes',
+        version: '17.6',
+      },
+    ])
+
+    const response = await getPatchNotes(fallbackPatchNotes)
+
+    assert.deepEqual(response.data[0]?.highlights, ['Animal Squad', 'N.O.V.A. additional effects'])
+    assert.equal(sanitizePatchHighlight('(6) Animal Squad'), 'Animal Squad')
+  })
+
   it('크롤링 목차 경로로 들어온 focus와 highlights를 사용자용 요약 문구로 정리한다', async () => {
     axiosInstance.defaults.adapter = createAdapter([
       {

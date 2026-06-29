@@ -13,8 +13,9 @@ public interface RiotStatusControllerDocs {
     @Operation(
             summary = "Riot API 상태 조회",
             description = "현재 서버의 Riot API 요청 대기열 상태를 반환합니다. "
-                    + "status는 available 또는 queue 소문자 값으로 내려가며, "
-                    + "activeConnections는 아직 실제 연결 수집원이 없어 0으로 반환하는 예약 필드입니다."
+                    + "foregroundQueueSize/backgroundQueueSize로 큐별 대기 수, "
+                    + "inflightCount로 현재 실행 중인 작업 수를 확인할 수 있습니다. "
+                    + "queueSize는 foreground+background 합산 값(하위호환)입니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공")

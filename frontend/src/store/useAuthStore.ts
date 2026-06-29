@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import useSummonerStore from './useSummonerStore'
 
 interface AuthPayload {
   token: string
@@ -26,7 +27,10 @@ const useAuthStore = create<AuthState>()(
     (set) => ({
       token: null,
       setAuth: ({ token }) => set({ token }),
-      clearAuth: () => set({ token: null }),
+      clearAuth: () => {
+        set({ token: null })
+        useSummonerStore.getState().clearSummoner()
+      },
     }),
     {
       name: 'tftgogo-auth',

@@ -3,6 +3,8 @@ package com.tftgogo.global.cdragon.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tftgogo.global.cdragon.config.CommunityDragonProperties;
+import com.tftgogo.global.exception.BusinessException;
+import com.tftgogo.global.exception.ErrorCode;
 import com.tftgogo.global.riot.config.TftAssetConfig;
 import com.tftgogo.global.riot.util.TftAssetUrlBuilder;
 import jakarta.annotation.PostConstruct;
@@ -29,22 +31,23 @@ public class TftAssetCacheService {
     private volatile Map<String, String> traitIconCache = Map.of();
     private volatile Map<String, String> traitNameCache = Map.of();
     private volatile Map<String, String> itemIconCache = Map.of();
+    private volatile JsonNode tftKoKrLocaleCache;
 
     @PostConstruct
     public void init() {
         try {
-            String response = restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class);
-            if (response == null || response.isBlank()) {
-                logger.warn("CDragon 응답이 비어있습니다. 기본 URL 빌더로 폴백합니다.");
-                return;
-            }
-            JsonNode root = objectMapper.readTree(response);
-            traitIconCache = buildTraitIconCache(root);
-            traitNameCache = buildTraitNameCache(root);
-            itemIconCache = buildItemIconCache(root);
-            logger.info("TFT 에셋 캐시 로드 완료: 시너지 {}개, 아이템 {}개", traitIconCache.size(), itemIconCache.size());
+            JsonNode root = fetchTftKoKrLocaleFromSource();
+            cacheTftKoKrLocale(root);
+            logger.info(
+                    "TFT asset cache loaded: traits={}, items={}",
+                    traitIconCache.size(),
+                    itemIconCache.size()
+            );
         } catch (Exception e) {
-            logger.warn("CDragon에서 TFT 에셋 캐시를 로드하지 못했습니다. 기본 URL 빌더로 폴백합니다. error={}", e.getMessage());
+            logger.warn(
+                    "Failed to load CDragon TFT asset cache. Falling back to asset URL builder. error={}",
+                    e.getMessage()
+            );
         }
     }
 
@@ -63,6 +66,46 @@ public class TftAssetCacheService {
         String url = itemIconCache.get(itemId.toLowerCase(Locale.ROOT));
         if (url != null) return url;
         return TftAssetUrlBuilder.buildItemIconUrl(itemId);
+    }
+
+    public JsonNode getTftKoKrLocale() {
+        JsonNode cachedLocale = tftKoKrLocaleCache;
+        if (cachedLocale != null) {
+            return cachedLocale;
+        }
+
+        synchronized (this) {
+            cachedLocale = tftKoKrLocaleCache;
+            if (cachedLocale != null) {
+                return cachedLocale;
+            }
+
+            try {
+                JsonNode locale = fetchTftKoKrLocaleFromSource();
+                cacheTftKoKrLocale(locale);
+                return locale;
+            } catch (BusinessException e) {
+                throw e;
+            } catch (Exception e) {
+                logger.error("Failed to fetch CDragon TFT locale. error={}", e.getMessage(), e);
+                throw new BusinessException(ErrorCode.EXTERNAL_API_ERROR);
+            }
+        }
+    }
+
+    private JsonNode fetchTftKoKrLocaleFromSource() throws Exception {
+        String response = restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class);
+        if (response == null || response.isBlank()) {
+            throw new BusinessException(ErrorCode.EXTERNAL_API_ERROR);
+        }
+        return objectMapper.readTree(response);
+    }
+
+    private void cacheTftKoKrLocale(JsonNode root) {
+        traitIconCache = buildTraitIconCache(root);
+        traitNameCache = buildTraitNameCache(root);
+        itemIconCache = buildItemIconCache(root);
+        tftKoKrLocaleCache = root;
     }
 
     private Map<String, String> buildTraitIconCache(JsonNode root) {

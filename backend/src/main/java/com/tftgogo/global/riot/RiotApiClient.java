@@ -8,7 +8,8 @@ import com.tftgogo.global.riot.dto.LeagueEntryDto;
 import com.tftgogo.global.riot.dto.LeagueListDto;
 import com.tftgogo.global.riot.dto.MatchDto;
 import com.tftgogo.global.riot.dto.SummonerDto;
-import lombok.RequiredArgsConstructor;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpEntity;
@@ -27,7 +28,6 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 @Component
-@RequiredArgsConstructor
 public class RiotApiClient {
 
     private static final Logger logger = LogManager.getLogger(RiotApiClient.class);
@@ -36,6 +36,21 @@ public class RiotApiClient {
     private final RiotProperties riotProperties;
     private final RestTemplate restTemplate;
     private final RiotRateLimiter rateLimiter;
+    private final Timer rateLimitWaitTimer;
+    private final Timer apiLatencyTimer;
+
+    public RiotApiClient(RiotProperties riotProperties, RestTemplate restTemplate,
+                         RiotRateLimiter rateLimiter, MeterRegistry meterRegistry) {
+        this.riotProperties = riotProperties;
+        this.restTemplate = restTemplate;
+        this.rateLimiter = rateLimiter;
+        this.rateLimitWaitTimer = Timer.builder("riot.rate_limit.wait")
+                .description("Rate limiter 대기 시간")
+                .register(meterRegistry);
+        this.apiLatencyTimer = Timer.builder("riot.api.latency")
+                .description("Riot API HTTP 실행 시간")
+                .register(meterRegistry);
+    }
 
     // ── Challenger 리그 조회 ────────────────────────────────
     public LeagueListDto getChallenger() {
@@ -148,41 +163,46 @@ public class RiotApiClient {
 
     // ── 공통 GET — rate limiter 통과 후 실행 ──
     private <T> T getByUrl(String url, String logPath, Class<T> responseType, ErrorCode notFoundCode) {
+        Timer.Sample sample = Timer.start();
         try {
             rateLimiter.acquire();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new BusinessException(ErrorCode.RIOT_API_ERROR);
+        } finally {
+            sample.stop(rateLimitWaitTimer);
         }
         return executeRequest(url, logPath, responseType, notFoundCode);
     }
 
     // ── HTTP 실행 (스로틀 없음) ──
     private <T> T executeRequest(String url, String logPath, Class<T> responseType, ErrorCode notFoundCode) {
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("X-Riot-Token", riotProperties.getApiKey());
-            HttpEntity<Void> entity = new HttpEntity<>(headers);
+        return apiLatencyTimer.record(() -> {
+            try {
+                HttpHeaders headers = new HttpHeaders();
+                headers.set("X-Riot-Token", riotProperties.getApiKey());
+                HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-            ResponseEntity<T> response = restTemplate.exchange(
-                    url, HttpMethod.GET, entity, responseType);
+                ResponseEntity<T> response = restTemplate.exchange(
+                        url, HttpMethod.GET, entity, responseType);
 
-            return Optional.ofNullable(response.getBody())
-                    .orElseThrow(() -> new BusinessException(ErrorCode.RIOT_API_ERROR));
+                return Optional.ofNullable(response.getBody())
+                        .orElseThrow(() -> new BusinessException(ErrorCode.RIOT_API_ERROR));
 
-        } catch (BusinessException e) {
-            throw e;
-        } catch (HttpClientErrorException.NotFound e) {
-            logger.warn("Riot API 404: endpoint={}", logPath);
-            throw new BusinessException(notFoundCode);
-        } catch (HttpClientErrorException.TooManyRequests e) {
-            int retryAfterSeconds = parseRetryAfterSeconds(e);
-            logger.warn("Riot API rate limit exceeded: endpoint={}, retryAfterSeconds={}", logPath, retryAfterSeconds);
-            throw new BusinessException(ErrorCode.RIOT_API_RATE_LIMIT, retryAfterSeconds);
-        } catch (Exception e) {
-            logger.error("Riot API 호출 실패: endpoint={}", logPath, e);
-            throw new BusinessException(ErrorCode.RIOT_API_ERROR);
-        }
+            } catch (BusinessException e) {
+                throw e;
+            } catch (HttpClientErrorException.NotFound e) {
+                logger.warn("Riot API 404: endpoint={}", logPath);
+                throw new BusinessException(notFoundCode);
+            } catch (HttpClientErrorException.TooManyRequests e) {
+                int retryAfterSeconds = parseRetryAfterSeconds(e);
+                logger.warn("Riot API rate limit exceeded: endpoint={}, retryAfterSeconds={}", logPath, retryAfterSeconds);
+                throw new BusinessException(ErrorCode.RIOT_API_RATE_LIMIT, retryAfterSeconds);
+            } catch (Exception e) {
+                logger.error("Riot API 호출 실패: endpoint={}", logPath, e);
+                throw new BusinessException(ErrorCode.RIOT_API_ERROR);
+            }
+        });
     }
 
     private int parseRetryAfterSeconds(HttpClientErrorException.TooManyRequests e) {

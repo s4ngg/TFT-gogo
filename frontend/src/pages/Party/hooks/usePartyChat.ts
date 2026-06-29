@@ -8,7 +8,6 @@ import {
 } from '../../../constants/communityChatRooms'
 import type { CommunityChatRoomId } from '../../../constants/communityChatRooms'
 import { initialChatRooms } from '../data/partyMockData'
-import type { PartyPost } from '../types'
 import {
   applyRoomMessageSnapshot,
   updateChatRoomPreview,
@@ -16,13 +15,15 @@ import {
 import { usePartyAuth } from './usePartyAuth'
 import { useRealtimeChat } from './useRealtimeChat'
 
+const MAX_CHAT_MESSAGE_LENGTH = 500
+
 interface UsePartyChatOptions {
   activeRoomId: CommunityChatRoomId
   onActiveRoomChange: (roomId: CommunityChatRoomId) => void
 }
 
 export function usePartyChat({ activeRoomId, onActiveRoomChange }: UsePartyChatOptions) {
-  const { displayName: currentUserName, isAuthenticated } = usePartyAuth()
+  const { isAuthenticated, userId: currentUserId } = usePartyAuth()
   const [rooms, setRooms] = useState(initialChatRooms)
   const [chatInput, setChatInput] = useState('')
   const [chatStatusMessage, setChatStatusMessage] = useState('')
@@ -110,38 +111,24 @@ export function usePartyChat({ activeRoomId, onActiveRoomChange }: UsePartyChatO
     onActiveRoomChange(PARTY_RECRUITMENT_ROOM_ID)
   }
 
-  const sendPartyRecruitmentMessage = (message: string, failureMessage: string) => {
+  const preparePartyRoom = () => {
+    openPartyRecruitmentRoom()
     setChatStatusMessage('')
-
-    if (!canSendMessages) {
-      setChatStatusMessage('로그인 후 파티 채팅 알림을 보낼 수 있습니다.')
-      return
-    }
-
-    void sendRealtimeMessage({
-      content: message,
-      roomId: PARTY_RECRUITMENT_ROOM_ID,
-    })
-      .then((sentMessage) => updateLastMessage(sentMessage.roomId, sentMessage.content))
-      .catch(() => setChatStatusMessage(failureMessage))
   }
 
-  const preparePartyRoom = (post: PartyPost, lastMessage?: string) => {
-    const nextMessage = lastMessage ?? `${post.title} 모집글이 등록되었습니다.`
-
-    openPartyRecruitmentRoom()
-    sendPartyRecruitmentMessage(nextMessage, '모집글은 등록됐지만 채팅 알림 전송에 실패했습니다.')
-  }
-
-  const appendPartyMessage = (post: PartyPost, message: string) => {
-    openPartyRecruitmentRoom()
-    sendPartyRecruitmentMessage(message, '참여 상태는 반영됐지만 채팅 알림 전송에 실패했습니다.')
+  const appendPartyMessage = () => {
+    setChatStatusMessage('')
   }
 
   const sendMessage = async () => {
     const trimmedMessage = chatInput.trim()
 
     if (trimmedMessage.length === 0 || !activeRoom || !canSendMessages) {
+      return
+    }
+
+    if (trimmedMessage.length > MAX_CHAT_MESSAGE_LENGTH) {
+      setChatStatusMessage('메시지는 500자 이하로 입력해주세요.')
       return
     }
 
@@ -167,7 +154,7 @@ export function usePartyChat({ activeRoomId, onActiveRoomChange }: UsePartyChatO
     chatInput,
     chatNotice,
     connectionLabel,
-    currentUserName,
+    currentUserId,
     isAuthenticated,
     isLoading,
     isMessageDisabled,

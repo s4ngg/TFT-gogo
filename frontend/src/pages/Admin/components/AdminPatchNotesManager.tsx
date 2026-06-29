@@ -9,6 +9,9 @@ import {
   fetchAdminPatchChanges,
   fetchAdminPatchNotes,
   importAdminPatchNoteFromRiot,
+  isAdminAuthFailure,
+  isNetworkOrTimeoutError,
+  getServerErrorStatus,
   updateAdminPatchChange,
   updateAdminPatchNote,
   type AdminPatchChange,
@@ -20,6 +23,7 @@ import {
   type AdminPatchNote,
   type AdminPatchNotePayload,
 } from '../../../api/adminApi'
+import { shouldShowPatchChangeValues } from '../utils/patchChangeValues'
 import styles from '../AdminPatchNotes.module.css'
 
 const PATCH_NOTE_QUERY_KEY = ['admin', 'patch-notes'] as const
@@ -47,6 +51,14 @@ const IMPACT_OPTIONS: Array<{ label: string; value: AdminPatchChangeImpact }> = 
   { label: '중간', value: 'MEDIUM' },
   { label: '낮음', value: 'LOW' },
 ]
+
+function getAdminListErrorMessage(error: unknown, fallback: string): string {
+  if (isAdminAuthFailure(error)) return '인증 실패: 관리자 토큰을 확인해 주세요.'
+  if (isNetworkOrTimeoutError(error)) return '네트워크 오류: 연결 상태를 확인 후 다시 시도해 주세요.'
+  const status = getServerErrorStatus(error)
+  if (status != null) return `서버 오류가 발생했습니다. (${status})`
+  return fallback
+}
 
 interface PatchNoteFormState {
   current: boolean
@@ -323,6 +335,7 @@ function AdminPatchNotesManager() {
   const [showAdvancedPatchChangeForm, setShowAdvancedPatchChangeForm] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [parserWarnings, setParserWarnings] = useState<string[]>([])
 
   const patchNotesQuery = useQuery({
     queryFn: fetchAdminPatchNotes,
@@ -429,6 +442,7 @@ function AdminPatchNotesManager() {
       setShowPatchNoteForm(false)
       setShowAdvancedPatchChangeForm(false)
       setPatchNoteImportForm((prev) => ({ ...prev, sourceUrl: '', version: '' }))
+      setParserWarnings(result.parserWarnings)
       setMessage(
         `Riot ${result.version} 가져오기 완료: 패치노트 ${patchNoteStatus}, 변경사항 생성 ${result.createdChanges}개, 수정 ${result.updatedChanges}개, 스킵 ${result.skippedChanges}개${warningText}.`,
       )
@@ -462,6 +476,7 @@ function AdminPatchNotesManager() {
       setShowAdvancedPatchChangeForm(false)
       setMessage('변경사항을 수정했습니다.')
       await refreshPatchChanges()
+      await refreshPatchNotes()
     },
   })
 
@@ -504,6 +519,7 @@ function AdminPatchNotesManager() {
   function clearNotice() {
     setError('')
     setMessage('')
+    setParserWarnings([])
   }
 
   function clearPatchChangeEdit() {
@@ -768,7 +784,19 @@ function AdminPatchNotesManager() {
 
       {(message || error) && (
         <div className={error ? styles.errorBanner : styles.successBanner} role="status">
-          {error || message}
+          <p className={styles.noticeText}>{error || message}</p>
+          {!error && parserWarnings.length > 0 && (
+            <details className={styles.parserWarningDetails}>
+              <summary>파서 경고 상세 {parserWarnings.length}건</summary>
+              <ul className={styles.parserWarningList}>
+                {parserWarnings.map((warning, index) => (
+                  <li key={`${warning}-${index}`} className={styles.parserWarningItem}>
+                    {warning}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
         </div>
       )}
 
@@ -784,6 +812,11 @@ function AdminPatchNotesManager() {
 
           {patchNotesQuery.isLoading ? (
             <p className={styles.emptyText}>불러오는 중입니다.</p>
+          ) : patchNotesQuery.isError ? (
+            <div>
+              <p className={styles.errorBanner} role="alert">{getAdminListErrorMessage(patchNotesQuery.error, '패치노트 목록을 불러오지 못했습니다.')}</p>
+              <button className={styles.secondaryButton} onClick={() => void refreshPatchNotes()}>다시 불러오기</button>
+            </div>
           ) : patchNotes.length === 0 ? (
             <p className={styles.emptyText}>등록된 패치노트가 없습니다.</p>
           ) : (
@@ -1185,6 +1218,11 @@ function AdminPatchNotesManager() {
           <div className={styles.changeList}>
             {patchChangesQuery.isFetching ? (
               <p className={styles.emptyText}>변경사항을 불러오는 중입니다.</p>
+            ) : patchChangesQuery.isError ? (
+              <div>
+                <p className={styles.errorBanner} role="alert">{getAdminListErrorMessage(patchChangesQuery.error, '변경사항을 불러오지 못했습니다.')}</p>
+                <button className={styles.secondaryButton} onClick={() => void refreshPatchChanges()}>다시 불러오기</button>
+              </div>
             ) : patchChanges.length === 0 ? (
               <p className={styles.emptyText}>등록된 변경사항이 없습니다.</p>
             ) : (
@@ -1200,7 +1238,7 @@ function AdminPatchNotesManager() {
                     </span>
                   </div>
                   <p className={styles.changeSummary}>{change.summary}</p>
-                  {(change.beforeValue || change.afterValue) && (
+                  {shouldShowPatchChangeValues(change) && (
                     <p className={styles.changeValues}>
                       {change.beforeValue || '-'} → {change.afterValue || '-'}
                     </p>
