@@ -9,14 +9,15 @@ interface TopBarAuthQueryClient {
 export async function clearTopBarAuthSession(
   queryClient: TopBarAuthQueryClient,
   clearAuth: () => void,
-  logoutRequest: () => Promise<void> = async () => undefined,
+  logoutRequest: (accessToken?: string) => Promise<void> = async () => undefined,
+  accessToken?: string | null,
 ): Promise<void> {
   setLogoutInProgress(true)
 
   clearAuth()
 
   try {
-    await logoutRequest()
+    await logoutRequest(accessToken ?? undefined)
   } catch {
     // Server logout failure must not keep the local session visible.
   } finally {

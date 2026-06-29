@@ -72,7 +72,8 @@ function TopBar() {
   }, [isProfileMenuOpen])
 
   function handleLogout() {
-    void clearTopBarAuthSession(queryClient, useAuthStore.getState().clearAuth, logout)
+    const authState = useAuthStore.getState()
+    void clearTopBarAuthSession(queryClient, authState.clearAuth, logout, authState.token)
     setIsProfileMenuOpen(false)
     navigate('/', { replace: true })
   }

@@ -1,5 +1,5 @@
 import axios from 'axios'
-import axiosInstance from './axiosInstance'
+import axiosInstance, { getRefreshAuthSessionPromise } from './axiosInstance'
 import type { ApiResponse } from './apiResponse'
 import { unwrapApiResponse } from './apiResponse'
 import { getAuthSessionRevision, isLogoutInProgress, setLogoutInProgress } from './authSessionControl'
@@ -66,17 +66,12 @@ export async function refreshSession(): Promise<AuthResponse> {
   }
 
   try {
-    const response = await axiosInstance.post<RawAuthResponse | ApiResponse<RawAuthResponse>>(
-      '/v1/auth/refresh',
-    )
-    const payload = unwrapApiResponse(response.data)
-    const auth = normalizeAuthResponse(payload, payload.user?.email ?? payload.member?.email ?? '')
+    const auth = await getRefreshAuthSessionPromise()
 
     if (isLogoutInProgress() || getAuthSessionRevision() !== refreshStartedAtRevision) {
       throw new Error('Refresh session skipped during logout.')
     }
 
-    useAuthStore.getState().setAuth({ token: auth.token })
     return auth
   } catch (error) {
     if (isAuthRestoreFailure(error)) {
@@ -89,11 +84,21 @@ export async function refreshSession(): Promise<AuthResponse> {
   }
 }
 
-export async function logout(): Promise<void> {
+export async function logout(accessToken?: string): Promise<void> {
   setLogoutInProgress(true)
 
   try {
-    await axiosInstance.post('/v1/auth/logout')
+    await axiosInstance.post(
+      '/v1/auth/logout',
+      undefined,
+      accessToken
+        ? {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        : undefined,
+    )
   } catch (error) {
     if (!isAuthRestoreFailure(error)) {
       throw error

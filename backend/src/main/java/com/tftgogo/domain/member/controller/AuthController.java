@@ -126,6 +126,7 @@ public class AuthController implements AuthControllerDocs {
             return null;
         }
 
-        return authorization.substring(BEARER_PREFIX.length());
+        String token = authorization.substring(BEARER_PREFIX.length()).trim();
+        return token.isBlank() ? null : token;
     }
 }

@@ -60,6 +60,29 @@ describe('clearTopBarAuthSession', () => {
     assert.deepEqual(calls, ['clearAuth'])
   })
 
+  it('로컬 토큰을 지운 뒤에도 캡처한 access token으로 서버 로그아웃을 요청한다', async () => {
+    const queryClient = createQueryClient()
+    const calls: string[] = []
+    let logoutToken: string | undefined
+
+    await clearTopBarAuthSession(
+      queryClient.client,
+      () => {
+        calls.push('clearAuth')
+        queryClient.calls.push('clearAuth')
+      },
+      async (accessToken) => {
+        calls.push('logout')
+        logoutToken = accessToken
+      },
+      'captured-access-token',
+    )
+
+    assert.equal(logoutToken, 'captured-access-token')
+    assert.deepEqual(calls, ['clearAuth', 'logout'])
+    assert.deepEqual(queryClient.calls, ['clearAuth', 'cancel', 'remove', 'remove'])
+  })
+
   it('쿼리 취소가 실패해도 로컬 세션과 캐시 제거 흐름을 유지한다', async () => {
     const queryClient = createQueryClient({ rejectCancel: true })
     let clearAuthCount = 0

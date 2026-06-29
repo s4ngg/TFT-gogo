@@ -3,11 +3,11 @@ import useAuthStore from '../store/useAuthStore'
 import type { ApiResponse } from './apiResponse'
 import { unwrapApiResponse } from './apiResponse'
 import { getAuthSessionRevision, isLogoutInProgress } from './authSessionControl'
-import { normalizeAuthResponse, type RawAuthResponse } from './memberApiPayload'
+import { normalizeAuthResponse, type AuthResponse, type RawAuthResponse } from './memberApiPayload'
 
 const DEFAULT_API_BASE_URL = '/api'
 const AUTH_REFRESH_PATH = '/v1/auth/refresh'
-let refreshAccessTokenPromise: Promise<string> | null = null
+let refreshAuthSessionPromise: Promise<AuthResponse> | null = null
 
 interface RetriableRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean
@@ -103,14 +103,22 @@ axiosInstance.interceptors.response.use(
       && !isLogoutInProgress()
     ) {
       config._retry = true
+      const retryStartedAtRevision = getAuthSessionRevision()
 
       try {
-        const token = await getRefreshAccessTokenPromise()
-        config.headers.Authorization = `Bearer ${token}`
+        const auth = await getRefreshAuthSessionPromise()
+
+        if (getAuthSessionRevision() !== retryStartedAtRevision) {
+          throw new Error('Retry skipped because auth session changed.')
+        }
+
+        config.headers.Authorization = `Bearer ${auth.token}`
 
         return axiosInstance(config)
       } catch {
-        useAuthStore.getState().clearAuth()
+        if (getAuthSessionRevision() === retryStartedAtRevision) {
+          useAuthStore.getState().clearAuth()
+        }
       }
     } else if (error.response?.status === 401) {
       useAuthStore.getState().clearAuth()
@@ -124,20 +132,20 @@ function isAuthEndpoint(url: string | undefined): boolean {
   return Boolean(url?.startsWith('/v1/auth/'))
 }
 
-function getRefreshAccessTokenPromise(): Promise<string> {
-  refreshAccessTokenPromise ??= refreshAccessToken()
+export function getRefreshAuthSessionPromise(): Promise<AuthResponse> {
+  refreshAuthSessionPromise ??= refreshAuthSession()
     .finally(() => {
-      refreshAccessTokenPromise = null
+      refreshAuthSessionPromise = null
     })
 
-  return refreshAccessTokenPromise
+  return refreshAuthSessionPromise
 }
 
-async function refreshAccessToken(): Promise<string> {
+async function refreshAuthSession(): Promise<AuthResponse> {
   const refreshStartedAtRevision = getAuthSessionRevision()
 
   if (isLogoutInProgress()) {
-    throw new Error('Refresh access token skipped during logout.')
+    throw new Error('Refresh session skipped during logout.')
   }
 
   try {
@@ -154,14 +162,14 @@ async function refreshAccessToken(): Promise<string> {
     const auth = normalizeAuthResponse(payload, payload.user?.email ?? payload.member?.email ?? '')
 
     if (isLogoutInProgress() || getAuthSessionRevision() !== refreshStartedAtRevision) {
-      throw new Error('Refresh access token skipped during logout.')
+      throw new Error('Refresh session skipped during logout.')
     }
 
     useAuthStore.getState().setAuth({ token: auth.token })
-    return auth.token
+    return auth
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    throw new Error(`Refresh access token failed: ${message}`)
+    throw new Error(`Refresh session failed: ${message}`)
   }
 }
 
