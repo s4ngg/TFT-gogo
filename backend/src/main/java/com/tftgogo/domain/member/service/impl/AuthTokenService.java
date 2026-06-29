@@ -12,6 +12,7 @@ import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import com.tftgogo.global.security.JwtProperties;
 import com.tftgogo.global.security.JwtTokenProvider;
+import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -109,7 +110,7 @@ public class AuthTokenService {
             }
 
             return memberRepository.existsByUserIdAndAuthTokenVersionAndDeletedAtIsNull(userId, authTokenVersion);
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | JwtException e) {
             return false;
         }
     }
@@ -119,7 +120,7 @@ public class AuthTokenService {
             throw new BusinessException(ErrorCode.UNAUTHORIZED);
         }
 
-        return refreshTokenSessionRepository.findByTokenHash(hashRefreshToken(refreshToken))
+        return refreshTokenSessionRepository.findByTokenHashForUpdate(hashRefreshToken(refreshToken))
                 .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
     }
 

@@ -34,25 +34,24 @@ public class ChatSseHub {
                 ignored -> ConcurrentHashMap.newKeySet()
         );
 
-        synchronized (globalEmitterLock) {
-            if (emitters.size() >= MAX_SSE_CONNECTIONS_PER_ROOM || totalEmitterCount() >= MAX_SSE_CONNECTIONS_TOTAL) {
-                throw new BusinessException(ErrorCode.CHAT_STREAM_CONNECTION_LIMIT_EXCEEDED);
-            }
-            emitters.add(emitter);
-        }
-
         emitter.onCompletion(() -> removeEmitter(roomId, emitter));
         emitter.onTimeout(() -> removeEmitter(roomId, emitter));
         emitter.onError(error -> removeEmitter(roomId, emitter));
 
-        try {
-            emitter.send(SseEmitter.event()
-                    .name("snapshot")
-                    .data(snapshot));
-        } catch (IOException | IllegalStateException e) {
-            logger.warn("Failed to send chat snapshot. roomId={}", roomId);
-            removeEmitter(roomId, emitter);
-            emitter.completeWithError(e);
+        synchronized (globalEmitterLock) {
+            if (emitters.size() >= MAX_SSE_CONNECTIONS_PER_ROOM || totalEmitterCount() >= MAX_SSE_CONNECTIONS_TOTAL) {
+                throw new BusinessException(ErrorCode.CHAT_STREAM_CONNECTION_LIMIT_EXCEEDED);
+            }
+
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("snapshot")
+                        .data(snapshot));
+                emitters.add(emitter);
+            } catch (IOException | IllegalStateException e) {
+                logger.warn("Failed to send chat snapshot. roomId={}", roomId, e);
+                emitter.completeWithError(e);
+            }
         }
 
         return emitter;

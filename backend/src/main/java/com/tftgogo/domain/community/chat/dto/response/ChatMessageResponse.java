@@ -17,6 +17,7 @@ public class ChatMessageResponse {
 
     private String id;
     private String roomId;
+    private Long senderId;
     private String senderName;
     private String tier;
     private String content;
@@ -26,6 +27,7 @@ public class ChatMessageResponse {
         return ChatMessageResponse.builder()
                 .id(message.id())
                 .roomId(message.roomId())
+                .senderId(message.senderId())
                 .senderName(message.senderName())
                 .tier(message.tier())
                 .content(message.content())

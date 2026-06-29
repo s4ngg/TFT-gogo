@@ -147,6 +147,7 @@ class PersistentChatServiceImplTest {
         return new ChatMessage(
                 id,
                 roomId,
+                USER_ID,
                 senderName,
                 "Unranked",
                 content,

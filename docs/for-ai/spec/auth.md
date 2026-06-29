@@ -2,7 +2,7 @@
 
 <purpose>
 JWT 기반 일반 회원 인증 흐름.
-General signup/login APIs issue short-lived access tokens and HttpOnly refresh-token cookies, and authenticated requests are resolved through JwtAuthenticationFilter.
+일반 signup/login API는 짧은 수명의 access token과 HttpOnly refresh-token cookie를 발급하고, 인증 요청은 JwtAuthenticationFilter에서 처리한다.
 </purpose>
 
 <routes>
@@ -63,6 +63,7 @@ General signup/login APIs issue short-lived access tokens and HttpOnly refresh-t
 
 <business-rules>
 - 이메일은 중복될 수 없다.
+- 닉네임은 회원가입과 소셜 회원 생성 시 서비스 중복 검증으로 중복 사용을 막는다.
 - 비밀번호는 BCrypt로 암호화해서 저장한다.
 - 로그인 실패 응답은 이메일 존재 여부를 노출하지 않도록 공통 인증 실패로 처리한다.
 - 소셜 회원은 passwordHash가 null일 수 있으며 일반 이메일 로그인으로는 인증되지 않는다.
@@ -82,8 +83,8 @@ General signup/login APIs issue short-lived access tokens and HttpOnly refresh-t
 - 폐기된 refreshToken이 재사용되면 동일 회원의 활성 refreshToken 세션을 모두 폐기한다.
 - JWT 설정값은 앱 기동 시 검증한다.
 - 운영 CORS 허용 origin에는 `https://tftgogo.com`, `https://www.tftgogo.com`을 포함한다.
-- Swagger annotations belong in AuthControllerDocs, not directly in AuthController.
-- Controller response type must be ResponseEntity&lt;ApiResponse&lt;T&gt;&gt;.
+- Swagger annotation은 AuthController에 직접 작성하지 않고 AuthControllerDocs에 작성한다.
+- Controller 응답 타입은 ResponseEntity&lt;ApiResponse&lt;T&gt;&gt;를 사용한다.
 </business-rules>
 
 <backend-structure>
@@ -105,6 +106,7 @@ General signup/login APIs issue short-lived access tokens and HttpOnly refresh-t
 <validation>
 - Signup API success: valid SignupRequest -> AuthResponse with accessToken.
 - Signup API failure: duplicate email -> EMAIL_ALREADY_EXISTS.
+- Signup API failure: duplicate nickname -> NICKNAME_ALREADY_EXISTS.
 - Login API success: valid LoginRequest -> AuthResponse with accessToken.
 - Login API failure: wrong email or password -> common invalid credential error.
 - Login API failure: social-only member with null passwordHash -> common invalid credential error.

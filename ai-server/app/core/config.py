@@ -1,3 +1,4 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -11,11 +12,20 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
 
+    internal_secret: str
+
     riot_api_key: str = ""
     cors_allowed_origins: str = (
         "http://localhost:8080,"
         "http://localhost:5173"
     )
+
+    @field_validator("internal_secret")
+    @classmethod
+    def internal_secret_must_be_set(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("INTERNAL_SECRET 환경변수가 설정되지 않았습니다.")
+        return v
 
     @property
     def cors_allowed_origin_list(self) -> list[str]:

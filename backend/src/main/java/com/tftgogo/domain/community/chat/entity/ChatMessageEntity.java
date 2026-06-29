@@ -15,8 +15,9 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 
 @Entity
 @Table(name = "chat_messages")
@@ -52,7 +53,7 @@ public class ChatMessageEntity {
         message.sender = sender;
         message.content = content;
         message.filtered = false;
-        message.createdAt = LocalDateTime.now();
+        message.createdAt = LocalDateTime.now(Clock.systemUTC());
         return message;
     }
 
@@ -60,10 +61,11 @@ public class ChatMessageEntity {
         return new ChatMessage(
                 String.valueOf(id),
                 room.getRoomKey(),
+                sender.getUserId(),
                 sender.getNickname(),
                 tier,
                 content,
-                createdAt.atZone(ZoneId.systemDefault()).toInstant()
+                createdAt.atOffset(ZoneOffset.UTC).toInstant()
         );
     }
 }

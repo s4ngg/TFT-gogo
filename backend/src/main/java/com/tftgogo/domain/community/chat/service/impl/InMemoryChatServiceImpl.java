@@ -78,6 +78,7 @@ public class InMemoryChatServiceImpl implements ChatService {
         ChatMessage message = new ChatMessage(
                 UUID.randomUUID().toString(),
                 roomId,
+                userId,
                 senderName,
                 DEFAULT_TIER,
                 content,

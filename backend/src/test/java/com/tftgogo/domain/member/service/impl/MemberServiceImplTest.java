@@ -25,6 +25,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -56,6 +57,7 @@ class MemberServiceImplTest {
         ReflectionTestUtils.setField(savedMember, "userId", 1L);
 
         when(memberRepository.existsByEmail("sojung@example.com")).thenReturn(false);
+        when(memberRepository.existsByNickname("소정")).thenReturn(false);
         when(passwordEncoder.encode("password123")).thenReturn("encoded-password");
         when(memberRepository.saveAndFlush(any(Member.class))).thenReturn(savedMember);
         when(authTokenService.issue(savedMember)).thenReturn(authResponse(savedMember));
@@ -92,11 +94,29 @@ class MemberServiceImplTest {
     }
 
     @Test
+    void 이미_사용중인_닉네임이면_비밀번호_암호화나_저장을_하지_않는다() {
+        // given
+        SignupRequest request = signupRequest("sojung@example.com", "password123", "소정");
+
+        when(memberRepository.existsByEmail("sojung@example.com")).thenReturn(false);
+        when(memberRepository.existsByNickname("소정")).thenReturn(true);
+
+        // when, then
+        assertThatThrownBy(() -> memberService.signup(request))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.NICKNAME_ALREADY_EXISTS));
+
+        verify(passwordEncoder, never()).encode(anyString());
+        verify(memberRepository, never()).saveAndFlush(any(Member.class));
+    }
+
+    @Test
     void 저장_중_중복_이메일_제약조건이_터져도_회원가입_중복_예외로_변환한다() {
         // given
         SignupRequest request = signupRequest("sojung@example.com", "password123", "소정");
 
         when(memberRepository.existsByEmail("sojung@example.com")).thenReturn(false);
+        when(memberRepository.existsByNickname("소정")).thenReturn(false);
         when(passwordEncoder.encode("password123")).thenReturn("encoded-password");
         when(memberRepository.saveAndFlush(any(Member.class)))
                 .thenThrow(new DataIntegrityViolationException("duplicate email"));
@@ -105,6 +125,23 @@ class MemberServiceImplTest {
         assertThatThrownBy(() -> memberService.signup(request))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.EMAIL_ALREADY_EXISTS));
+    }
+
+    @Test
+    void 저장_중_중복_닉네임_제약조건이_터지면_닉네임_중복_예외로_변환한다() {
+        // given
+        SignupRequest request = signupRequest("sojung@example.com", "password123", "소정");
+
+        when(memberRepository.existsByEmail("sojung@example.com")).thenReturn(false);
+        when(memberRepository.existsByNickname("소정")).thenReturn(false);
+        when(passwordEncoder.encode("password123")).thenReturn("encoded-password");
+        when(memberRepository.saveAndFlush(any(Member.class)))
+                .thenThrow(new DataIntegrityViolationException("Duplicate entry for key 'nickname'"));
+
+        // when, then
+        assertThatThrownBy(() -> memberService.signup(request))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.NICKNAME_ALREADY_EXISTS));
     }
 
     @Test
@@ -196,7 +233,7 @@ class MemberServiceImplTest {
         when(memberRepository.findBySocialProviderAndSocialId("google", "google-1"))
                 .thenReturn(Optional.empty());
         when(memberRepository.existsByEmail("social@example.com")).thenReturn(false);
-        when(socialMemberCreationService.create(command)).thenReturn(savedMember);
+        when(socialMemberCreationService.create(command, 0)).thenReturn(savedMember);
         when(authTokenService.issue(savedMember)).thenReturn(authResponse(savedMember));
 
         // when
@@ -204,7 +241,7 @@ class MemberServiceImplTest {
 
         // then
         assertThat(response.getAccessToken()).isEqualTo("access-token");
-        verify(socialMemberCreationService).create(command);
+        verify(socialMemberCreationService).create(command, 0);
     }
 
     @Test
@@ -221,7 +258,7 @@ class MemberServiceImplTest {
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.EMAIL_ALREADY_EXISTS));
 
-        verify(socialMemberCreationService, never()).create(any(SocialLoginCommand.class));
+        verify(socialMemberCreationService, never()).create(any(SocialLoginCommand.class), anyInt());
     }
 
     @Test
@@ -234,7 +271,7 @@ class MemberServiceImplTest {
         when(memberRepository.findBySocialProviderAndSocialId("google", "google-1"))
                 .thenReturn(Optional.empty(), Optional.of(existingMember));
         when(memberRepository.existsByEmail("social@example.com")).thenReturn(false);
-        when(socialMemberCreationService.create(command))
+        when(socialMemberCreationService.create(command, 0))
                 .thenThrow(new DataIntegrityViolationException("duplicate social provider"));
         when(authTokenService.issue(existingMember)).thenReturn(authResponse(existingMember));
 
@@ -256,13 +293,84 @@ class MemberServiceImplTest {
         when(memberRepository.findBySocialProviderAndSocialId("google", "google-1"))
                 .thenReturn(Optional.empty());
         when(memberRepository.existsByEmail("social@example.com")).thenReturn(false);
-        when(socialMemberCreationService.create(command))
+        when(socialMemberCreationService.create(command, 0))
                 .thenThrow(new DataIntegrityViolationException("duplicate social provider"));
 
         // when, then
         assertThatThrownBy(() -> memberService.socialLogin(command))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.SOCIAL_LOGIN_FAILED));
+    }
+
+    @Test
+    void 소셜로그인_신규저장중_이메일_제약조건이_깨지면_이메일_중복으로_처리한다() {
+        // given
+        SocialLoginCommand command = socialLoginCommand("social@example.com", "소셜회원");
+
+        when(memberRepository.findBySocialProviderAndSocialId("google", "google-1"))
+                .thenReturn(Optional.empty());
+        when(memberRepository.existsByEmail("social@example.com")).thenReturn(false);
+        when(socialMemberCreationService.create(command, 0))
+                .thenThrow(new DataIntegrityViolationException("Duplicate entry for key 'email'"));
+
+        // when, then
+        assertThatThrownBy(() -> memberService.socialLogin(command))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.EMAIL_ALREADY_EXISTS));
+    }
+
+    @Test
+    void 소셜로그인_닉네임_충돌이면_새_닉네임_후보로_재시도한다() {
+        // given
+        SocialLoginCommand command = socialLoginCommand("social@example.com", "소셜회원");
+        Member savedMember = socialMember("social@example.com", "소셜회원-1-abcd", "google", "google-1");
+        ReflectionTestUtils.setField(savedMember, "userId", 1L);
+
+        when(memberRepository.findBySocialProviderAndSocialId("google", "google-1"))
+                .thenReturn(Optional.empty(), Optional.empty());
+        when(memberRepository.existsByEmail("social@example.com")).thenReturn(false);
+        when(socialMemberCreationService.create(command, 0))
+                .thenThrow(new DataIntegrityViolationException("Duplicate entry for key 'nickname'"));
+        when(socialMemberCreationService.create(command, 1)).thenReturn(savedMember);
+        when(authTokenService.issue(savedMember)).thenReturn(authResponse(savedMember));
+
+        // when
+        AuthResponse response = memberService.socialLogin(command);
+
+        // then
+        assertThat(response.getAccessToken()).isEqualTo("access-token");
+        assertThat(response.getUser())
+                .extracting(MemberResponse::getNickname)
+                .isEqualTo("소셜회원-1-abcd");
+        verify(socialMemberCreationService).create(command, 0);
+        verify(socialMemberCreationService).create(command, 1);
+    }
+
+    @Test
+    void 소셜로그인_닉네임_충돌이_최대_재시도까지_반복되면_소셜로그인_실패로_처리한다() {
+        // given
+        SocialLoginCommand command = socialLoginCommand("social@example.com", "소셜회원");
+        DataIntegrityViolationException nicknameViolation =
+                new DataIntegrityViolationException("Duplicate entry for key 'nickname'");
+
+        when(memberRepository.findBySocialProviderAndSocialId("google", "google-1"))
+                .thenReturn(Optional.empty());
+        when(memberRepository.existsByEmail("social@example.com")).thenReturn(false);
+        when(socialMemberCreationService.create(command, 0)).thenThrow(nicknameViolation);
+        when(socialMemberCreationService.create(command, 1)).thenThrow(nicknameViolation);
+        when(socialMemberCreationService.create(command, 2)).thenThrow(nicknameViolation);
+        when(socialMemberCreationService.create(command, 3)).thenThrow(nicknameViolation);
+
+        // when, then
+        assertThatThrownBy(() -> memberService.socialLogin(command))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.SOCIAL_LOGIN_FAILED));
+
+        verify(socialMemberCreationService).create(command, 0);
+        verify(socialMemberCreationService).create(command, 1);
+        verify(socialMemberCreationService).create(command, 2);
+        verify(socialMemberCreationService).create(command, 3);
+        verify(socialMemberCreationService, never()).create(command, 4);
     }
 
     @Test
@@ -301,6 +409,30 @@ class MemberServiceImplTest {
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED));
 
         verify(memberRepository, never()).findById(any());
+    }
+
+    @Test
+    void refresh는_AuthTokenService에_위임한다() {
+        // given
+        Member member = member("sojung@example.com", "encoded-password", "소정");
+        ReflectionTestUtils.setField(member, "userId", 1L);
+        when(authTokenService.refresh("refresh-token")).thenReturn(authResponse(member));
+
+        // when
+        AuthResponse response = memberService.refresh("refresh-token");
+
+        // then
+        assertThat(response.getAccessToken()).isEqualTo("access-token");
+        verify(authTokenService).refresh("refresh-token");
+    }
+
+    @Test
+    void logout은_AuthTokenService에_위임한다() {
+        // when
+        memberService.logout(1L, "access-token", "refresh-token");
+
+        // then
+        verify(authTokenService).logout(1L, "access-token", "refresh-token");
     }
 
     private SignupRequest signupRequest(String email, String password, String nickname) {

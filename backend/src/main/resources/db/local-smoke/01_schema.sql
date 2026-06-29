@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS users (
     deleted_at DATETIME(6) NULL,
     PRIMARY KEY (user_id),
     UNIQUE KEY uk_users_email (email),
+    UNIQUE KEY uk_users_nickname (nickname),
     UNIQUE KEY ux_users_social_provider_social_id (social_provider, social_id),
     CONSTRAINT chk_users_social_fields_together
         CHECK (

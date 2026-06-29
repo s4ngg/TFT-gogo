@@ -11,6 +11,7 @@ import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import com.tftgogo.global.security.JwtProperties;
 import com.tftgogo.global.security.JwtTokenProvider;
+import io.jsonwebtoken.JwtException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -29,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -69,7 +71,7 @@ class AuthTokenServiceTest {
 
         AuthResponse issued = authTokenService.issue(member);
         RefreshTokenSession issuedSession = savedRefreshSession();
-        when(refreshTokenSessionRepository.findByTokenHash(issuedSession.getTokenHash()))
+        when(refreshTokenSessionRepository.findByTokenHashForUpdate(issuedSession.getTokenHash()))
                 .thenReturn(Optional.of(issuedSession));
 
         // when
@@ -99,7 +101,7 @@ class AuthTokenServiceTest {
         );
         reusedSession.revoke(LocalDateTime.now());
 
-        when(refreshTokenSessionRepository.findByTokenHash(reusedSession.getTokenHash()))
+        when(refreshTokenSessionRepository.findByTokenHashForUpdate(reusedSession.getTokenHash()))
                 .thenReturn(Optional.of(reusedSession));
         when(refreshTokenSessionRepository.findByMemberUserIdAndRevokedFalse(1L))
                 .thenReturn(List.of(activeSession));
@@ -170,6 +172,18 @@ class AuthTokenServiceTest {
 
         // when, then
         assertThat(authTokenService.isAccessTokenUsable("access-token")).isFalse();
+        verify(memberRepository, never()).existsByUserIdAndAuthTokenVersionAndDeletedAtIsNull(anyLong(), anyLong());
+    }
+
+    @Test
+    void accessToken_파싱_예외가_발생하면_사용할_수_없다() {
+        // given
+        when(jwtTokenProvider.validateToken("broken-token")).thenReturn(true);
+        when(jwtTokenProvider.getTokenId("broken-token")).thenThrow(new JwtException("invalid jwt"));
+
+        // when, then
+        assertThat(authTokenService.isAccessTokenUsable("broken-token")).isFalse();
+        verify(accessTokenBlocklistRepository, never()).existsByTokenIdAndExpiresAtAfter(anyString(), any(LocalDateTime.class));
         verify(memberRepository, never()).existsByUserIdAndAuthTokenVersionAndDeletedAtIsNull(anyLong(), anyLong());
     }
 

@@ -1,9 +1,10 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from app.core.security import verify_internal_secret
 from app.models.chat import ChatRequest, ChatResponse
 from app.services import chat as chat_service
 
-router = APIRouter(prefix="/chat", tags=["chat"])
+router = APIRouter(prefix="/chat", tags=["chat"], dependencies=[Depends(verify_internal_secret)])
 
 
 @router.post("", response_model=ChatResponse)

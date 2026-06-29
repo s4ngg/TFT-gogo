@@ -10,13 +10,15 @@ export async function clearTopBarAuthSession(
   clearAuth: () => void,
   logoutRequest: () => Promise<void> = async () => undefined,
 ): Promise<void> {
+  const logoutPromise = logoutRequest()
+
+  clearAuth()
+
   try {
-    await logoutRequest()
+    await logoutPromise
   } catch {
     // Server logout failure must not keep the local session visible.
   }
-
-  clearAuth()
 
   try {
     await queryClient.cancelQueries({ queryKey: AUTH_ME_QUERY_KEY, exact: true })

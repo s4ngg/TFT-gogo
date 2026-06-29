@@ -23,6 +23,7 @@ public class AiServerClient {
     private final RestClient restClient;
     private final RestClient chatRestClient;
     private final ObjectMapper objectMapper;
+    private final String internalSecret;
 
     public AiServerClient(AiServerProperties props, ObjectMapper objectMapper) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
@@ -42,6 +43,7 @@ public class AiServerClient {
                 .requestFactory(chatFactory)
                 .build();
         this.objectMapper = objectMapper;
+        this.internalSecret = props.getInternalSecret();
     }
 
     /**
@@ -54,6 +56,7 @@ public class AiServerClient {
             AiRecommendResponse response = restClient.post()
                     .uri("/api/analyze/with-meta")
                     .header("Content-Type", "application/json")
+                    .header("X-Internal-Secret", internalSecret)
                     .body(json)
                     .retrieve()
                     .body(AiRecommendResponse.class);
@@ -82,6 +85,7 @@ public class AiServerClient {
             return chatRestClient.post()
                     .uri("/api/chat")
                     .header("Content-Type", "application/json")
+                    .header("X-Internal-Secret", internalSecret)
                     .body(json)
                     .retrieve()
                     .body(AiChatResponse.class);

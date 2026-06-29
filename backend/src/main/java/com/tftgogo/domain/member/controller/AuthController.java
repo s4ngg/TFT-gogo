@@ -7,11 +7,14 @@ import com.tftgogo.domain.member.dto.response.AuthResponse;
 import com.tftgogo.domain.member.dto.response.SocialLoginStartResponse;
 import com.tftgogo.domain.member.service.MemberService;
 import com.tftgogo.domain.member.service.SocialLoginStartService;
+import com.tftgogo.global.exception.ErrorCode;
 import com.tftgogo.global.response.ApiResponse;
 import com.tftgogo.global.security.RefreshTokenCookieService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -29,6 +32,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 @RequiredArgsConstructor
 public class AuthController implements AuthControllerDocs {
 
+    private static final Logger logger = LogManager.getLogger(AuthController.class);
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final MemberService memberService;
@@ -64,11 +68,22 @@ public class AuthController implements AuthControllerDocs {
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization,
             HttpServletRequest request
     ) {
-        memberService.logout(
-                userId,
-                resolveBearerToken(authorization),
-                refreshTokenCookieService.resolveRefreshToken(request).orElse(null)
-        );
+        try {
+            memberService.logout(
+                    userId,
+                    resolveBearerToken(authorization),
+                    refreshTokenCookieService.resolveRefreshToken(request).orElse(null)
+            );
+        } catch (RuntimeException e) {
+            logger.warn("Logout cleanup failed. userId={}", userId, e);
+            return ResponseEntity
+                    .status(ErrorCode.INTERNAL_SERVER_ERROR.getStatus())
+                    .header(HttpHeaders.SET_COOKIE, refreshTokenCookieService.clearCookie().toString())
+                    .body(ApiResponse.fail(
+                            ErrorCode.INTERNAL_SERVER_ERROR.getMessage(),
+                            ErrorCode.INTERNAL_SERVER_ERROR.getStatus()
+                    ));
+        }
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, refreshTokenCookieService.clearCookie().toString())

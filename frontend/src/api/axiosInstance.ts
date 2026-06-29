@@ -6,6 +6,7 @@ import { normalizeAuthResponse, type RawAuthResponse } from './memberApiPayload'
 
 const DEFAULT_API_BASE_URL = '/api'
 const AUTH_REFRESH_PATH = '/v1/auth/refresh'
+let refreshAccessTokenPromise: Promise<string> | null = null
 
 interface RetriableRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean
@@ -97,7 +98,7 @@ axiosInstance.interceptors.response.use(
       config._retry = true
 
       try {
-        const token = await refreshAccessToken()
+        const token = await getRefreshAccessTokenPromise()
         config.headers.Authorization = `Bearer ${token}`
 
         return axiosInstance(config)
@@ -114,6 +115,15 @@ axiosInstance.interceptors.response.use(
 
 function isAuthEndpoint(url: string | undefined): boolean {
   return Boolean(url?.startsWith('/v1/auth/'))
+}
+
+function getRefreshAccessTokenPromise(): Promise<string> {
+  refreshAccessTokenPromise ??= refreshAccessToken()
+    .finally(() => {
+      refreshAccessTokenPromise = null
+    })
+
+  return refreshAccessTokenPromise
 }
 
 async function refreshAccessToken(): Promise<string> {

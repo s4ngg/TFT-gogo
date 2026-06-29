@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import { getMe, refreshSession } from '../api/memberApi'
 import useAuthStore from '../store/useAuthStore'
 
@@ -18,7 +19,14 @@ async function getAuthenticatedMember() {
 }
 
 export function useAuthSession() {
-  useAuthStore((state) => state.token)
+  const token = useAuthStore((state) => state.token)
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    if (token) {
+      void queryClient.invalidateQueries({ queryKey: AUTH_ME_QUERY_KEY })
+    }
+  }, [queryClient, token])
 
   return useQuery({
     queryFn: getAuthenticatedMember,

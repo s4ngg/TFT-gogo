@@ -16,7 +16,11 @@ function removeLegacyPersistedAuth() {
     return
   }
 
-  window.localStorage.removeItem('tftgogo-auth')
+  try {
+    window.localStorage.removeItem('tftgogo-auth')
+  } catch {
+    // Legacy cleanup must not prevent auth store initialization.
+  }
 }
 
 removeLegacyPersistedAuth()
