@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 import useSummonerStore from './useSummonerStore'
 
 interface AuthPayload {
@@ -12,37 +11,31 @@ interface AuthState {
   clearAuth: () => void
 }
 
-function hasToken(value: unknown): value is { token: string | null } {
-  if (typeof value !== 'object' || value === null || !('token' in value)) {
-    return false
+function removeLegacyPersistedAuth() {
+  if (typeof window === 'undefined') {
+    return
   }
 
-  const token = (value as { token?: unknown }).token
-
-  return typeof token === 'string' || token === null
+  try {
+    window.localStorage.removeItem('tftgogo-auth')
+  } catch {
+    // Legacy cleanup must not prevent auth store initialization.
+  }
 }
 
-const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      token: null,
-      setAuth: ({ token }) => set({ token }),
-      clearAuth: () => {
-        set({ token: null })
-        useSummonerStore.getState().clearSummoner()
-      },
-    }),
-    {
-      name: 'tftgogo-auth',
-      version: 1,
-      migrate: (persistedState) => ({
-        token: hasToken(persistedState) ? persistedState.token : null,
-      }),
-      partialize: (state) => ({
-        token: state.token,
-      }),
-    },
-  ),
-)
+removeLegacyPersistedAuth()
+
+const useAuthStore = create<AuthState>()((set) => ({
+  token: null,
+  setAuth: ({ token }) => {
+    removeLegacyPersistedAuth()
+    set({ token })
+  },
+  clearAuth: () => {
+    removeLegacyPersistedAuth()
+    set({ token: null })
+    useSummonerStore.getState().clearSummoner()
+  },
+}))
 
 export default useAuthStore

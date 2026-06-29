@@ -50,7 +50,7 @@ class SecurityConfigOAuth2WithoutRepositoryTest {
     private SocialOAuth2FailureHandler socialOAuth2FailureHandler;
 
     @Test
-    void ClientRegistrationRepository가_없으면_OAuth2_시작경로는_provider로_리다이렉트하지_않는다() throws Exception {
+    void ClientRegistrationRepository가_없으면_OAuth2_시작경로는_redirect하지_않는다() throws Exception {
         // given
         String authorizationPath = "/oauth2/authorization/google";
 

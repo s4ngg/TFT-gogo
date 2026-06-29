@@ -1,7 +1,8 @@
 import axios from 'axios'
-import axiosInstance from './axiosInstance'
+import axiosInstance, { getRefreshAuthSessionPromise } from './axiosInstance'
 import type { ApiResponse } from './apiResponse'
 import { unwrapApiResponse } from './apiResponse'
+import { getAuthSessionRevision, isLogoutInProgress, setLogoutInProgress } from './authSessionControl'
 import useAuthStore from '../store/useAuthStore'
 import {
   normalizeAuthResponse,
@@ -54,6 +55,56 @@ export async function signup(request: SignupRequest): Promise<AuthResponse> {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     throw new Error(`Signup failed: ${message}`)
+  }
+}
+
+export async function refreshSession(): Promise<AuthResponse> {
+  const refreshStartedAtRevision = getAuthSessionRevision()
+
+  if (isLogoutInProgress()) {
+    throw new Error('Refresh session skipped during logout.')
+  }
+
+  try {
+    const auth = await getRefreshAuthSessionPromise()
+
+    if (isLogoutInProgress() || getAuthSessionRevision() !== refreshStartedAtRevision) {
+      throw new Error('Refresh session skipped during logout.')
+    }
+
+    return auth
+  } catch (error) {
+    if (isAuthRestoreFailure(error)) {
+      useAuthStore.getState().clearAuth()
+      throw error
+    }
+
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(`Refresh session failed: ${message}`)
+  }
+}
+
+export async function logout(accessToken?: string): Promise<void> {
+  setLogoutInProgress(true)
+
+  try {
+    await axiosInstance.post(
+      '/v1/auth/logout',
+      undefined,
+      accessToken
+        ? {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        : undefined,
+    )
+  } catch (error) {
+    if (!isAuthRestoreFailure(error)) {
+      throw error
+    }
+  } finally {
+    setLogoutInProgress(false)
   }
 }
 

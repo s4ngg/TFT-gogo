@@ -23,15 +23,19 @@ class RiotQueueTest {
 
     @BeforeEach
     void setUp() {
+        riotQueue = createQueue(2, 2);
+    }
+
+    private RiotQueue createQueue(int workerConcurrency, int executorPoolSize) {
         RiotProperties props = new RiotProperties();
         props.setApiKey("test-key");
-        props.setQueueWorkerConcurrency(2);
+        props.setQueueWorkerConcurrency(workerConcurrency);
         props.setMaxForegroundStreak(5);
         props.setForegroundTaskTtlMs(5_000L);
         props.setBackgroundTaskTtlMs(10_000L);
 
-        ThreadPoolTaskExecutorAdapter executor = new ThreadPoolTaskExecutorAdapter(2);
-        riotQueue = new RiotQueue(props, executor, new SimpleMeterRegistry());
+        ThreadPoolTaskExecutorAdapter executor = new ThreadPoolTaskExecutorAdapter(executorPoolSize);
+        return new RiotQueue(props, executor, new SimpleMeterRegistry());
     }
 
     @AfterEach
@@ -95,50 +99,27 @@ class RiotQueueTest {
 
     @Test
     void 큐_포화시_RIOT_QUEUE_FULL_예외가_발생한다() {
-        CountDownLatch blockLatch = new CountDownLatch(1);
+        RiotQueue saturatedQueue = createQueue(0, 1);
 
-        for (int i = 0; i < 200; i++) {
-            riotQueue.submitForeground(() -> {
-                try { blockLatch.await(10, TimeUnit.SECONDS); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
-                return "blocked";
-            });
+        try {
+            CompletableFuture<String> overflowFuture = fillForegroundQueueUntilRejected(saturatedQueue);
+            assertRiotQueueFull(overflowFuture);
+        } finally {
+            saturatedQueue.destroy();
         }
-
-        CompletableFuture<String> overflowFuture = riotQueue.submitForeground(() -> "overflow");
-
-        assertThat(overflowFuture).isCompletedExceptionally();
-        assertThatThrownBy(() -> overflowFuture.get())
-                .hasCauseInstanceOf(BusinessException.class)
-                .satisfies(e -> {
-                    BusinessException be = (BusinessException) e.getCause();
-                    assertThat(be.getErrorCode()).isEqualTo(ErrorCode.RIOT_QUEUE_FULL);
-                });
-
-        blockLatch.countDown();
     }
 
     @Test
     void 큐_포화시_dedupKey_제출해도_IllegalStateException이_발생하지_않는다() {
-        CountDownLatch blockLatch = new CountDownLatch(1);
+        RiotQueue saturatedQueue = createQueue(0, 1);
 
-        for (int i = 0; i < 200; i++) {
-            riotQueue.submitForeground(() -> {
-                try { blockLatch.await(10, TimeUnit.SECONDS); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
-                return "blocked";
-            });
+        try {
+            fillForegroundQueueUntilRejected(saturatedQueue);
+            CompletableFuture<String> dedupFuture = saturatedQueue.submitForeground("saturated-key", () -> "overflow");
+            assertRiotQueueFull(dedupFuture);
+        } finally {
+            saturatedQueue.destroy();
         }
-
-        CompletableFuture<String> dedupFuture = riotQueue.submitForeground("saturated-key", () -> "overflow");
-
-        assertThat(dedupFuture).isCompletedExceptionally();
-        assertThatThrownBy(() -> dedupFuture.get())
-                .hasCauseInstanceOf(BusinessException.class)
-                .satisfies(e -> {
-                    BusinessException be = (BusinessException) e.getCause();
-                    assertThat(be.getErrorCode()).isEqualTo(ErrorCode.RIOT_QUEUE_FULL);
-                });
-
-        blockLatch.countDown();
     }
 
     @Test
@@ -223,5 +204,25 @@ class RiotQueueTest {
         public void execute(Runnable command) {
             delegate.execute(command);
         }
+    }
+
+    private CompletableFuture<String> fillForegroundQueueUntilRejected(RiotQueue targetQueue) {
+        for (int i = 0; i < 300; i++) {
+            CompletableFuture<String> future = targetQueue.submitForeground(() -> "blocked");
+            if (future.isCompletedExceptionally()) {
+                return future;
+            }
+        }
+        throw new AssertionError("큐 포화 상태를 만들지 못했습니다.");
+    }
+
+    private void assertRiotQueueFull(CompletableFuture<String> future) {
+        assertThat(future).isCompletedExceptionally();
+        assertThatThrownBy(future::get)
+                .hasCauseInstanceOf(BusinessException.class)
+                .satisfies(e -> {
+                    BusinessException be = (BusinessException) e.getCause();
+                    assertThat(be.getErrorCode()).isEqualTo(ErrorCode.RIOT_QUEUE_FULL);
+                });
     }
 }

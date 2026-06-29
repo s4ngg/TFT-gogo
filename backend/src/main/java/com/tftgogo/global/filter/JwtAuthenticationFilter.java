@@ -1,6 +1,7 @@
 package com.tftgogo.global.filter;
 
 import com.tftgogo.domain.admin.security.AdminJwtTokenProvider;
+import com.tftgogo.domain.member.service.impl.AuthTokenService;
 import com.tftgogo.global.security.JwtTokenProvider;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -23,6 +24,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final AuthTokenService authTokenService;
     private final AdminJwtTokenProvider adminJwtTokenProvider;
 
     @Override
@@ -31,10 +33,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         String token = resolveToken(request);
 
-        // admin 토큰이 일반 회원 컨텍스트로 인증되는 것을 차단
         if (token != null
                 && !adminJwtTokenProvider.isAdminToken(token)
-                && jwtTokenProvider.validateToken(token)
+                && authTokenService.isAccessTokenUsable(token)
                 && SecurityContextHolder.getContext().getAuthentication() == null) {
             Long userId = jwtTokenProvider.getUserId(token);
             UsernamePasswordAuthenticationToken authentication =
