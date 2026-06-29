@@ -66,6 +66,70 @@ public interface PatchChangeRepository extends JpaRepository<PatchChange, Long> 
             """)
     List<TypeChangeCount> countByPatchNoteGroupByChangeType(@Param("patchNote") PatchNote patchNote);
 
+    @Query("""
+            SELECT c.category AS category, COUNT(c) AS changeCount
+            FROM PatchChange c
+            WHERE c.patchNote = :patchNote
+              AND (:changeType IS NULL OR c.changeType = :changeType)
+              AND (:impact IS NULL OR c.impact = :impact)
+              AND (
+                    :query IS NULL
+                    OR LOWER(c.targetKey) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+                    OR LOWER(c.targetName) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+                    OR LOWER(c.summary) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+              )
+            GROUP BY c.category
+            """)
+    List<CategoryChangeCount> countFilteredChangesGroupByCategory(
+            @Param("patchNote") PatchNote patchNote,
+            @Param("changeType") PatchChangeType changeType,
+            @Param("impact") PatchChangeImpact impact,
+            @Param("query") String query
+    );
+
+    @Query("""
+            SELECT c.changeType AS changeType, COUNT(c) AS changeCount
+            FROM PatchChange c
+            WHERE c.patchNote = :patchNote
+              AND (:changeType IS NULL OR c.changeType = :changeType)
+              AND (:impact IS NULL OR c.impact = :impact)
+              AND (
+                    :query IS NULL
+                    OR LOWER(c.targetKey) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+                    OR LOWER(c.targetName) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+                    OR LOWER(c.summary) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+              )
+            GROUP BY c.changeType
+            """)
+    List<TypeChangeCount> countFilteredChangesGroupByChangeType(
+            @Param("patchNote") PatchNote patchNote,
+            @Param("changeType") PatchChangeType changeType,
+            @Param("impact") PatchChangeImpact impact,
+            @Param("query") String query
+    );
+
+    @Query("""
+            SELECT COUNT(c)
+            FROM PatchChange c
+            WHERE c.patchNote = :patchNote
+              AND (:category IS NULL OR c.category = :category)
+              AND (:changeType IS NULL OR c.changeType = :changeType)
+              AND (:impact IS NULL OR c.impact = :impact)
+              AND (
+                    :query IS NULL
+                    OR LOWER(c.targetKey) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+                    OR LOWER(c.targetName) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+                    OR LOWER(c.summary) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
+              )
+            """)
+    long countFilteredChanges(
+            @Param("patchNote") PatchNote patchNote,
+            @Param("category") PatchChangeCategory category,
+            @Param("changeType") PatchChangeType changeType,
+            @Param("impact") PatchChangeImpact impact,
+            @Param("query") String query
+    );
+
     @Query(
             value = """
             SELECT c
