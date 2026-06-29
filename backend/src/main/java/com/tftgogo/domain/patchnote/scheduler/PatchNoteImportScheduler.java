@@ -35,6 +35,7 @@ public class PatchNoteImportScheduler {
     private final PatchNoteCrawlerParser crawlerParser;
     private final PatchNoteRepository patchNoteRepository;
     private final PatchNoteImportSchedulerProperties properties;
+    private final PatchNoteImportSchedulerLock schedulerLock;
     private final AtomicBoolean running = new AtomicBoolean(false);
 
     @EventListener(ApplicationReadyEvent.class)
@@ -80,7 +81,7 @@ public class PatchNoteImportScheduler {
         }
 
         try {
-            task.run();
+            schedulerLock.runWithLock(trigger, task);
         } catch (Exception e) {
             logger.error("Patch note scheduled import failed. trigger={}", trigger, e);
         } finally {
