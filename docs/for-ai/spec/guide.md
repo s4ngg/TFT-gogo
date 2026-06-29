@@ -188,7 +188,7 @@ Page: Guide (/guide).
 - Startup import runs on ApplicationReadyEvent only when enabled=true and startup-import=true.
 - Sync import runs hourly by default and refresh import runs daily at 06:40 KST by default.
 - Scheduler uses an in-process AtomicBoolean lock to avoid overlapping guide imports in a single server instance.
-- Multi-server deployments require a future shared DB/Redis lock before enabling the scheduler on multiple instances.
+- Scheduler also uses a MySQL advisory DB lock so only one server instance runs CDragon import in multi-server deployments.
 - Local/dev should keep the scheduler disabled by default. Use the admin import button for local QA.
 </scheduler>
 
