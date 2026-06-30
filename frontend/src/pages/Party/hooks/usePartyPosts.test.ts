@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
 import {
+  getPartyAuthQueryState,
   getPartyCustomTagLimit,
   mergeTierIntoTags,
   normalizePartyDraftTags,
@@ -23,5 +24,19 @@ describe('party post tag helpers', () => {
   it('티어 조건 선택 여부에 따라 커스텀 태그 허용 개수를 계산한다', () => {
     assert.equal(getPartyCustomTagLimit('마스터+'), 3)
     assert.equal(getPartyCustomTagLimit('제한 없음'), 4)
+  })
+
+  it('로그인 사용자 ID가 준비되기 전에는 파티 목록 조회를 대기한다', () => {
+    assert.deepEqual(getPartyAuthQueryState(true, null), {
+      isAuthIdentityReady: false,
+      authScope: 'anonymous',
+    })
+  })
+
+  it('로그인 사용자 ID가 있으면 사용자별 파티 목록 스코프를 사용한다', () => {
+    assert.deepEqual(getPartyAuthQueryState(true, '7'), {
+      isAuthIdentityReady: true,
+      authScope: '7',
+    })
   })
 })

@@ -23,7 +23,7 @@ Page: /patch-notes.
 - PATCH /api/admin/patch-notes/{patchNoteId}
   -> update patch note manually.
 - DELETE /api/admin/patch-notes/{patchNoteId}
-  -> soft-delete patch note and its changes.
+  -> soft-delete patch note and hard-delete its patch changes.
 - GET /api/admin/patch-notes/{patchNoteId}/changes
   -> admin patch-change list for a patch note.
 - POST /api/admin/patch-note-changes
@@ -31,7 +31,7 @@ Page: /patch-notes.
 - PATCH /api/admin/patch-note-changes/{changeId}
   -> update patch change manually.
 - DELETE /api/admin/patch-note-changes/{changeId}
-  -> soft-delete patch change.
+  -> hard-delete patch change.
 - POST /api/admin/patch-notes/import/riot
   -> import latest or specified official Riot/TFT patch note.
 </backend>
@@ -56,11 +56,15 @@ Page: /patch-notes.
 - stats are calculated for the selected patch version as a whole, not for the currently filtered page.
 - Frontend normalization must prefer payload.stats before falling back to legacy top-level stats.
 - Change filters are category, type, impact, query, page, and pageSize.
+- Backend accepts page=1..10000 and pageSize=1..1000 for patch changes.
+- Current public frontend requests patch changes with pageSize=1000. #623 owns the future UX/performance policy to reduce this or introduce a clearer paged/whole-list mode.
 - Search/filter changes must not reload the whole page or reset the selected patch unexpectedly.
+- Public search input is debounced before requesting patch changes and resets the change page to 1 only when query/category/selected patch changes.
 - Public API calls must go through frontend/src/api/patchNotes.ts and TanStack Query hooks.
 - Components must not import axios or fetch directly.
 - The UI should group and display patch changes in a readable form, with long rows wrapped safely on desktop and mobile.
 - The public page must not show crawler/import metadata such as importedAt or source diagnostics.
+- Public summary/highlight labels must strip Riot source numbering or date/patch prefixes such as `(6)`, `(5)`, and redundant patch title fragments before display.
 </public-behavior>
 
 <data-model>
@@ -73,6 +77,8 @@ Page: /patch-notes.
 </patch_notes>
 
 <patch_note_changes>
+- Final runtime/ERD table name is `patch_note_changes`. Do not introduce new code or docs that use `patch_changes` as the current table name.
+- Older migrations may mention `patch_changes` only to rename legacy databases to `patch_note_changes`.
 - patch_note_id links each row to patch_notes.
 - category enum values: CHAMPION, TRAIT, ITEM, AUGMENT, SYSTEM.
 - change type enum values: BUFF, NERF, ADJUST, NEW.
@@ -81,6 +87,7 @@ Page: /patch-notes.
 - source_key, source_heading_path, source_order, imported_at, and manually_edited are crawler/import metadata.
 - Imported row duplicate detection uses patchNote + sourceKey.
 - Manual rows may have null sourceKey.
+- PatchChange rows do not use soft delete or deleted_at in the current implementation.
 </patch_note_changes>
 </data-model>
 
@@ -89,10 +96,12 @@ Page: /patch-notes.
 - Manual admin creates/updates validate JSON arrays such as highlights and tags.
 - Manual admin updates to imported patch notes or changes must mark manuallyEdited=true.
 - Imported rows with manuallyEdited=true must be preserved on later imports.
-- Admin delete is soft delete. Do not hard-delete patch notes or patch changes from normal admin flows.
-- Deleting a patch note soft-deletes its active/non-deleted patch changes.
+- Admin patch-note delete is soft delete for the PatchNote row.
+- PatchChange delete is hard delete in the current implementation.
+- Deleting a patch note soft-deletes the PatchNote row and hard-deletes its PatchChange rows.
 - Admin patch change forms must reject empty sortOrder text before numeric conversion.
 - Editing a patch change must not drift across selected patch notes. If selected patch note changes while editing, clear edit state before save.
+- When marking an imported or manually created patch as current, clear existing current rows and flush before inserting/updating the new current row if the database has a single-current unique index.
 </admin-rules>
 
 <riot-import>
@@ -121,11 +130,12 @@ Page: /patch-notes.
 - If sourceUrl is omitted, fetch the configured tag page and import the first valid detail URL.
 - Detail fetch parses the Riot Next.js __NEXT_DATA__ payload.
 - Parser implementation uses Jsoup and crawler DTOs, not regex-only HTML parsing.
+- Imported highlights are derived from parsed section labels. They must be normalized to remove source numbering, date prefixes, patch-version prefixes, and generic wrapper text before saving when possible.
 - PatchNote upsert matching order is sourceKey, then sourceUrl, then version.
 - PatchChange upsert matching key is patchNote + sourceKey.
 - Imported patch notes/changes with manuallyEdited=false may be updated by re-import.
 - Imported patch notes/changes with manuallyEdited=true are skipped by re-import.
-- Stale imported changes may be soft-deleted when a re-import updates an existing patch note.
+- Stale imported changes may be hard-deleted when a re-import updates an existing patch note.
 - Current implementation does not expose dryRun or forceOverwrite. Add those as a separate enhancement if needed.
 </riot-import>
 
@@ -162,6 +172,7 @@ Page: /patch-notes.
   - refresh-cron=0 30 6 * * *
   - zone=Asia/Seoul
 - Startup import runs on ApplicationReadyEvent only when enabled=true and startup-import=true.
+- Startup import runs before guide startup import so guide patch-version=latest can resolve to the latest current patch note.
 - List check runs hourly by default and imports unknown official list items within list-scan-limit.
 - Daily refresh runs at 06:30 KST by default and refreshes the latest patch note.
 - Scheduler uses an in-process AtomicBoolean lock to avoid overlapping imports in a single server instance.
@@ -172,9 +183,11 @@ Page: /patch-notes.
 <frontend-rules>
 - Public PatchNotes page should default to the latest/current patch.
 - Search input must not cause a full page reload on every keystroke.
+- Search input should be debounced and preserve selected patch/category context while only refreshing the change-list query.
 - Type/category filters should not expose confusing BUFF/NERF/ADJUST badges when the product decision is to simplify display.
 - Long patch change rows must wrap safely and avoid horizontal overflow.
 - Repeated or redundant title/detail text should be collapsed or formatted into title + value lines where possible.
+- Quick insight/summary labels should be derived from cleaned highlight labels and deduplicated before display.
 - ImportedAt/source diagnostics should stay hidden in public UI.
 - Admin import controls should live in /admin/patch-notes, not in the public page.
 - Existing manual CRUD must keep working after import controls are added.
@@ -197,7 +210,7 @@ Page: /patch-notes.
 
 <validation>
 - Public service tests should cover list response, latest/current behavior, version not found, filter query, stats separation, page slicing, invalid pagination, enum parsing, and LIKE escaping.
-- Admin service tests should cover patch-note CRUD, patch-change CRUD, JSON array validation, duplicate/current behavior, not found errors, soft delete, and manuallyEdited marking.
+- Admin service tests should cover patch-note CRUD, patch-change CRUD, JSON array validation, duplicate/current behavior, not found errors, patch-note soft delete, patch-change hard delete, and manuallyEdited marking.
 - Import tests should cover latest import by tag page, direct sourceUrl import, repeated import idempotency, manuallyEdited skip, sourceKey matching, stale imported change handling, parser warnings, unsupported host rejection, and current flag behavior.
 - Scheduler tests should cover disabled state, startup-import flag, list scan limit, already-imported skip, current flag, and in-process lock skip.
 - Frontend tests should cover readPatchChangeStatsPayload, latest patch default selection, search without full reload, simplified public display, and mobile no-overflow behavior.

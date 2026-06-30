@@ -1,17 +1,23 @@
 package com.tftgogo.domain.community.chat.dto.response;
 
 import com.tftgogo.domain.community.chat.model.ChatMessage;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
 @Getter
 @Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class ChatMessageResponse {
 
     private String id;
     private String roomId;
+    private Long senderId;
     private String senderName;
     private String tier;
     private String content;
@@ -21,6 +27,7 @@ public class ChatMessageResponse {
         return ChatMessageResponse.builder()
                 .id(message.id())
                 .roomId(message.roomId())
+                .senderId(message.senderId())
                 .senderName(message.senderName())
                 .tier(message.tier())
                 .content(message.content())

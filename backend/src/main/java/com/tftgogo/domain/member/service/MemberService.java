@@ -14,5 +14,9 @@ public interface MemberService {
 
     AuthResponse socialLogin(SocialLoginCommand command);
 
+    AuthResponse refresh(String refreshToken);
+
+    void logout(Long userId, String accessToken, String refreshToken);
+
     MemberResponse getMe(Long userId);
 }

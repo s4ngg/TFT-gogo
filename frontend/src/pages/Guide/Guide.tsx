@@ -1,7 +1,7 @@
 import { BookOpen } from 'lucide-react'
 import { AppLayout } from '../../components/layout'
 import { useGuideCatalog } from '../../hooks/useGuide'
-import { guideFallbackData } from '../../mocks/guideResponseMock'
+import { guideFallbackData } from './guideFallbackData'
 import GuideControls from './components/GuideControls'
 import GuideQuickAccess from './components/GuideQuickAccess'
 import { StatBadge } from './components/GuideShared'
@@ -10,11 +10,17 @@ import { useGuidePageState } from './hooks/useGuidePageState'
 import styles from './Guide.module.css'
 
 function Guide() {
-  const { guideData } = useGuideCatalog({ fallbackData: guideFallbackData })
+  const {
+    guideData,
+    isFallbackData: isGuideFallbackData,
+    isFetching: isGuideFetching,
+    refetchGuideData,
+  } = useGuideCatalog({ fallbackData: guideFallbackData })
   const {
     activeTab,
     activeTabInfo,
     addRecentGuide,
+    debouncedSearch,
     favoriteChampions,
     handleFavoriteToggle,
     jumpToGuide,
@@ -59,10 +65,15 @@ function Guide() {
           activeTab={activeTab}
           favoriteChampions={favoriteChampions}
           guideData={guideData}
+          isGuideFallbackData={isGuideFallbackData}
+          isGuideFetching={isGuideFetching}
           onFavoriteToggle={handleFavoriteToggle}
           onGuideJump={jumpToGuide}
+          onGuideRetry={() => {
+            void refetchGuideData()
+          }}
           onRecentGuideAdd={addRecentGuide}
-          query={search}
+          query={debouncedSearch}
         />
       </div>
     </AppLayout>

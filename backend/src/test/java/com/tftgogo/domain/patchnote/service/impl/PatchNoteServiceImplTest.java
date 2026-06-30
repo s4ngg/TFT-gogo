@@ -3,12 +3,14 @@ package com.tftgogo.domain.patchnote.service.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tftgogo.domain.patchnote.dto.response.PatchChangePageResponse;
 import com.tftgogo.domain.patchnote.dto.response.PatchNoteResponse;
-import com.tftgogo.domain.patchnote.entity.PatchChangeCategory;
 import com.tftgogo.domain.patchnote.entity.PatchChange;
-import com.tftgogo.domain.patchnote.entity.PatchChangeType;
+import com.tftgogo.domain.patchnote.entity.PatchChangeCategory;
 import com.tftgogo.domain.patchnote.entity.PatchChangeImpact;
+import com.tftgogo.domain.patchnote.entity.PatchChangeType;
 import com.tftgogo.domain.patchnote.entity.PatchNote;
 import com.tftgogo.domain.patchnote.repository.PatchChangeRepository;
+import com.tftgogo.domain.patchnote.repository.PatchChangeRepository.CategoryChangeCount;
+import com.tftgogo.domain.patchnote.repository.PatchChangeRepository.TypeChangeCount;
 import com.tftgogo.domain.patchnote.repository.PatchNoteRepository;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
@@ -18,6 +20,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
@@ -26,6 +30,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -82,22 +87,29 @@ class PatchNoteServiceImplTest {
     }
 
     @Test
-    void 변경사항_조회는_필터와_stats를_분리해서_응답한다() {
+    void 변경사항_조회는_검색_조건을_반영한_stats를_응답한다() {
         // given
         PatchNote patchNote = patchNote("17.0", true);
         PatchChange buff = patchChange(patchNote, PatchChangeCategory.CHAMPION, PatchChangeType.BUFF, PatchChangeImpact.HIGH, "카이사", 1);
-        PatchChange nerf = patchChange(patchNote, PatchChangeCategory.ITEM, PatchChangeType.NERF, PatchChangeImpact.LOW, "죽음검", 2);
         when(patchNoteRepository.findByVersionAndDeletedAtIsNull("17.0"))
                 .thenReturn(Optional.of(patchNote));
-        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote))
-                .thenReturn(List.of(buff, nerf));
+        givenPatchChangeStats(
+                patchNote,
+                PatchChangeType.BUFF,
+                PatchChangeImpact.HIGH,
+                "카이사",
+                List.of(categoryChangeCount(PatchChangeCategory.CHAMPION, 1L)),
+                List.of(typeChangeCount(PatchChangeType.BUFF, 1L)),
+                1L
+        );
         when(patchChangeRepository.findFilteredChanges(
                 patchNote,
                 PatchChangeCategory.CHAMPION,
                 PatchChangeType.BUFF,
                 PatchChangeImpact.HIGH,
-                "카이사"
-        )).thenReturn(List.of(buff));
+                "카이사",
+                PageRequest.of(0, 10)
+        )).thenReturn(patchChangePage(List.of(buff), 0, 10, 1));
 
         // when
         PatchChangePageResponse response = patchNoteService.getPatchChanges(
@@ -112,8 +124,10 @@ class PatchNoteServiceImplTest {
 
         // then
         assertThat(response.getItems()).hasSize(1);
-        assertThat(response.getStats().getTotalChanges()).isEqualTo(2L);
-        assertThat(response.getStats().getCategoryCounts()).containsEntry("ALL", 2L);
+        assertThat(response.getStats().getTotalChanges()).isEqualTo(1L);
+        assertThat(response.getStats().getCategoryCounts()).containsEntry("ALL", 1L);
+        assertThat(response.getStats().getCategoryCounts()).containsEntry("CHAMPION", 1L);
+        assertThat(response.getStats().getCategoryCounts()).containsEntry("ITEM", 0L);
         assertThat(response.getStats().getTypeCounts()).containsEntry("BUFF", 1L);
         assertThat(response.getStats().getHighImpactCount()).isEqualTo(1L);
         verify(patchChangeRepository).findFilteredChanges(
@@ -121,7 +135,61 @@ class PatchNoteServiceImplTest {
                 PatchChangeCategory.CHAMPION,
                 PatchChangeType.BUFF,
                 PatchChangeImpact.HIGH,
-                "카이사"
+                "카이사",
+                PageRequest.of(0, 10)
+        );
+        verify(patchChangeRepository, never()).findByPatchNoteOrderBySortOrderAscIdAsc(patchNote);
+    }
+
+    @Test
+    void low_impact_필터는_highImpactCount를_0으로_응답한다() {
+        // given
+        PatchNote patchNote = patchNote("17.0", true);
+        PatchChange nerf = patchChange(patchNote, PatchChangeCategory.ITEM, PatchChangeType.NERF, PatchChangeImpact.LOW, "징크스", 1);
+        when(patchNoteRepository.findByVersionAndDeletedAtIsNull("17.0"))
+                .thenReturn(Optional.of(patchNote));
+        when(patchChangeRepository.countFilteredChangesGroupByCategory(
+                patchNote,
+                PatchChangeType.NERF,
+                PatchChangeImpact.LOW,
+                "징크스"
+        )).thenReturn(List.of(categoryChangeCount(PatchChangeCategory.ITEM, 1L)));
+        when(patchChangeRepository.countFilteredChangesGroupByChangeType(
+                patchNote,
+                PatchChangeType.NERF,
+                PatchChangeImpact.LOW,
+                "징크스"
+        )).thenReturn(List.of(typeChangeCount(PatchChangeType.NERF, 1L)));
+        when(patchChangeRepository.findFilteredChanges(
+                patchNote,
+                PatchChangeCategory.ITEM,
+                PatchChangeType.NERF,
+                PatchChangeImpact.LOW,
+                "징크스",
+                PageRequest.of(0, 10)
+        )).thenReturn(patchChangePage(List.of(nerf), 0, 10, 1));
+
+        // when
+        PatchChangePageResponse response = patchNoteService.getPatchChanges(
+                "17.0",
+                "ITEM",
+                "NERF",
+                "LOW",
+                "징크스",
+                1,
+                10
+        );
+
+        // then
+        assertThat(response.getItems()).hasSize(1);
+        assertThat(response.getStats().getTotalChanges()).isEqualTo(1L);
+        assertThat(response.getStats().getHighImpactCount()).isZero();
+        verify(patchChangeRepository, never()).countFilteredChanges(
+                patchNote,
+                null,
+                PatchChangeType.NERF,
+                PatchChangeImpact.HIGH,
+                "징크스"
         );
     }
 
@@ -131,15 +199,23 @@ class PatchNoteServiceImplTest {
         PatchNote patchNote = patchNote("17.0", true);
         when(patchNoteRepository.findByVersionAndDeletedAtIsNull("17.0"))
                 .thenReturn(Optional.of(patchNote));
-        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote))
-                .thenReturn(List.of());
+        givenPatchChangeStats(
+                patchNote,
+                null,
+                null,
+                "카\\%\\_\\\\이사",
+                List.of(),
+                List.of(),
+                0L
+        );
         when(patchChangeRepository.findFilteredChanges(
                 patchNote,
                 null,
                 null,
                 null,
-                "카\\%\\_\\\\이사"
-        )).thenReturn(List.of());
+                "카\\%\\_\\\\이사",
+                PageRequest.of(0, 10)
+        )).thenReturn(patchChangePage(List.of(), 0, 10, 0));
 
         // when
         PatchChangePageResponse response = patchNoteService.getPatchChanges(
@@ -154,32 +230,62 @@ class PatchNoteServiceImplTest {
 
         // then
         assertThat(response.getItems()).isEmpty();
+        verify(patchChangeRepository).countFilteredChangesGroupByCategory(
+                patchNote,
+                null,
+                null,
+                "카\\%\\_\\\\이사"
+        );
+        verify(patchChangeRepository).countFilteredChangesGroupByChangeType(
+                patchNote,
+                null,
+                null,
+                "카\\%\\_\\\\이사"
+        );
+        verify(patchChangeRepository).countFilteredChanges(
+                patchNote,
+                null,
+                null,
+                PatchChangeImpact.HIGH,
+                "카\\%\\_\\\\이사"
+        );
         verify(patchChangeRepository).findFilteredChanges(
                 patchNote,
                 null,
                 null,
                 null,
-                "카\\%\\_\\\\이사"
+                "카\\%\\_\\\\이사",
+                PageRequest.of(0, 10)
         );
     }
 
     @Test
-    void 변경사항_조회는_두번째_페이지를_페이지크기만큼_잘라서_응답한다() {
+    void 변경사항_조회는_요청한_페이지를_DB_page로_조회한다() {
         // given
         PatchNote patchNote = patchNote("17.0", true);
-        PatchChange buff = patchChange(patchNote, PatchChangeCategory.CHAMPION, PatchChangeType.BUFF, PatchChangeImpact.HIGH, "카이사", 1);
         PatchChange nerf = patchChange(patchNote, PatchChangeCategory.ITEM, PatchChangeType.NERF, PatchChangeImpact.LOW, "죽음검", 2);
         when(patchNoteRepository.findByVersionAndDeletedAtIsNull("17.0"))
                 .thenReturn(Optional.of(patchNote));
-        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote))
-                .thenReturn(List.of(buff, nerf));
+        givenPatchChangeStats(
+                patchNote,
+                List.of(
+                        categoryChangeCount(PatchChangeCategory.CHAMPION, 1L),
+                        categoryChangeCount(PatchChangeCategory.ITEM, 1L)
+                ),
+                List.of(
+                        typeChangeCount(PatchChangeType.BUFF, 1L),
+                        typeChangeCount(PatchChangeType.NERF, 1L)
+                ),
+                1L
+        );
         when(patchChangeRepository.findFilteredChanges(
                 patchNote,
                 null,
                 null,
                 null,
-                null
-        )).thenReturn(List.of(buff, nerf));
+                null,
+                PageRequest.of(1, 1)
+        )).thenReturn(patchChangePage(List.of(nerf), 1, 1, 2));
 
         // when
         PatchChangePageResponse response = patchNoteService.getPatchChanges(
@@ -252,15 +358,26 @@ class PatchNoteServiceImplTest {
         PatchChange nerf = patchChange(patchNote, PatchChangeCategory.ITEM, PatchChangeType.NERF, PatchChangeImpact.LOW, "죽음검", 2);
         when(patchNoteRepository.findByVersionAndDeletedAtIsNull("17.0"))
                 .thenReturn(Optional.of(patchNote));
-        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote))
-                .thenReturn(List.of(buff, nerf));
+        givenPatchChangeStats(
+                patchNote,
+                List.of(
+                        categoryChangeCount(PatchChangeCategory.CHAMPION, 1L),
+                        categoryChangeCount(PatchChangeCategory.ITEM, 1L)
+                ),
+                List.of(
+                        typeChangeCount(PatchChangeType.BUFF, 1L),
+                        typeChangeCount(PatchChangeType.NERF, 1L)
+                ),
+                1L
+        );
         when(patchChangeRepository.findFilteredChanges(
                 patchNote,
                 null,
                 null,
                 null,
-                null
-        )).thenReturn(List.of(buff, nerf));
+                null,
+                PageRequest.of(0, 1000)
+        )).thenReturn(patchChangePage(List.of(buff, nerf), 0, 1000, 2));
 
         // when
         PatchChangePageResponse response = patchNoteService.getPatchChanges(
@@ -283,18 +400,22 @@ class PatchNoteServiceImplTest {
     void 필터_결과가_없으면_빈_items와_정상_페이지_메타를_응답한다() {
         // given
         PatchNote patchNote = patchNote("17.0", true);
-        PatchChange buff = patchChange(patchNote, PatchChangeCategory.CHAMPION, PatchChangeType.BUFF, PatchChangeImpact.HIGH, "카이사", 1);
         when(patchNoteRepository.findByVersionAndDeletedAtIsNull("17.0"))
                 .thenReturn(Optional.of(patchNote));
-        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote))
-                .thenReturn(List.of(buff));
+        givenPatchChangeStats(
+                patchNote,
+                List.of(categoryChangeCount(PatchChangeCategory.CHAMPION, 1L)),
+                List.of(typeChangeCount(PatchChangeType.BUFF, 1L)),
+                1L
+        );
         when(patchChangeRepository.findFilteredChanges(
                 patchNote,
                 PatchChangeCategory.ITEM,
                 null,
                 null,
-                null
-        )).thenReturn(List.of());
+                null,
+                PageRequest.of(0, 10)
+        )).thenReturn(patchChangePage(List.of(), 0, 10, 0));
 
         // when
         PatchChangePageResponse response = patchNoteService.getPatchChanges(
@@ -332,6 +453,41 @@ class PatchNoteServiceImplTest {
                 10
         )).isInstanceOfSatisfying(BusinessException.class, exception ->
                 assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
+    }
+
+    private void givenPatchChangeStats(
+            PatchNote patchNote,
+            List<CategoryChangeCount> categoryCounts,
+            List<TypeChangeCount> typeCounts,
+            long highImpactCount
+    ) {
+        givenPatchChangeStats(patchNote, null, null, null, categoryCounts, typeCounts, highImpactCount);
+    }
+
+    private void givenPatchChangeStats(
+            PatchNote patchNote,
+            PatchChangeType changeType,
+            PatchChangeImpact impact,
+            String query,
+            List<CategoryChangeCount> categoryCounts,
+            List<TypeChangeCount> typeCounts,
+            long highImpactCount
+    ) {
+        when(patchChangeRepository.countFilteredChangesGroupByCategory(patchNote, changeType, impact, query))
+                .thenReturn(categoryCounts);
+        when(patchChangeRepository.countFilteredChangesGroupByChangeType(patchNote, changeType, impact, query))
+                .thenReturn(typeCounts);
+        when(patchChangeRepository.countFilteredChanges(patchNote, null, changeType, PatchChangeImpact.HIGH, query))
+                .thenReturn(highImpactCount);
+    }
+
+    private PageImpl<PatchChange> patchChangePage(
+            List<PatchChange> items,
+            int page,
+            int pageSize,
+            long totalItems
+    ) {
+        return new PageImpl<>(items, PageRequest.of(page, pageSize), totalItems);
     }
 
     private PatchNote patchNote(String version, boolean current) {
@@ -379,6 +535,34 @@ class PatchNoteServiceImplTest {
             @Override
             public Long getPatchNoteId() {
                 return patchNoteId;
+            }
+
+            @Override
+            public Long getChangeCount() {
+                return changeCount;
+            }
+        };
+    }
+
+    private CategoryChangeCount categoryChangeCount(PatchChangeCategory category, Long changeCount) {
+        return new CategoryChangeCount() {
+            @Override
+            public PatchChangeCategory getCategory() {
+                return category;
+            }
+
+            @Override
+            public Long getChangeCount() {
+                return changeCount;
+            }
+        };
+    }
+
+    private TypeChangeCount typeChangeCount(PatchChangeType changeType, Long changeCount) {
+        return new TypeChangeCount() {
+            @Override
+            public PatchChangeType getChangeType() {
+                return changeType;
             }
 
             @Override

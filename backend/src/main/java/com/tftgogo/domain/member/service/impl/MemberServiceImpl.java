@@ -10,7 +10,6 @@ import com.tftgogo.domain.member.repository.MemberRepository;
 import com.tftgogo.domain.member.service.MemberService;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
-import com.tftgogo.global.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,15 +17,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Locale;
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class MemberServiceImpl implements MemberService {
 
+    private static final int SOCIAL_MEMBER_CREATE_MAX_ATTEMPTS = 4;
+
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtTokenProvider jwtTokenProvider;
     private final SocialMemberCreationService socialMemberCreationService;
+    private final AuthTokenService authTokenService;
 
     @Override
     @Transactional
@@ -35,21 +39,24 @@ public class MemberServiceImpl implements MemberService {
             throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
+        if (memberRepository.existsByNickname(request.getNickname())) {
+            throw new BusinessException(ErrorCode.NICKNAME_ALREADY_EXISTS);
+        }
+
         String encodedPassword = passwordEncoder.encode(request.getPassword());
         Member member;
 
         try {
             member = memberRepository.saveAndFlush(request.toEntity(encodedPassword));
         } catch (DataIntegrityViolationException e) {
-            throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
+            throw mapSignupConstraintViolation(e);
         }
 
-        String accessToken = jwtTokenProvider.createAccessToken(member.getUserId());
-
-        return AuthResponse.of(accessToken, MemberResponse.from(member));
+        return authTokenService.issue(member);
     }
 
     @Override
+    @Transactional
     public AuthResponse login(LoginRequest request) {
         Member member = memberRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_LOGIN_CREDENTIALS));
@@ -62,9 +69,7 @@ public class MemberServiceImpl implements MemberService {
             throw new BusinessException(ErrorCode.INVALID_LOGIN_CREDENTIALS);
         }
 
-        String accessToken = jwtTokenProvider.createAccessToken(member.getUserId());
-
-        return AuthResponse.of(accessToken, MemberResponse.from(member));
+        return authTokenService.issue(member);
 
     }
 
@@ -90,6 +95,18 @@ public class MemberServiceImpl implements MemberService {
         return MemberResponse.from(member);
     }
 
+    @Override
+    @Transactional
+    public AuthResponse refresh(String refreshToken) {
+        return authTokenService.refresh(refreshToken);
+    }
+
+    @Override
+    @Transactional
+    public void logout(Long userId, String accessToken, String refreshToken) {
+        authTokenService.logout(userId, accessToken, refreshToken);
+    }
+
     private AuthResponse createSocialMember(SocialLoginCommand command) {
         String provider = command.getProvider().registrationId();
 
@@ -97,18 +114,58 @@ public class MemberServiceImpl implements MemberService {
             throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
-        try {
-            return issueAuthResponse(socialMemberCreationService.create(command));
-        } catch (DataIntegrityViolationException e) {
-            return memberRepository.findBySocialProviderAndSocialId(provider, command.getSocialId())
-                    .map(this::issueAuthResponse)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.SOCIAL_LOGIN_FAILED));
+        for (int attempt = 0; attempt < SOCIAL_MEMBER_CREATE_MAX_ATTEMPTS; attempt++) {
+            try {
+                return issueAuthResponse(socialMemberCreationService.create(command, attempt));
+            } catch (DataIntegrityViolationException e) {
+                Optional<Member> existingMember = memberRepository.findBySocialProviderAndSocialId(
+                        provider,
+                        command.getSocialId()
+                );
+                if (existingMember.isPresent()) {
+                    return issueAuthResponse(existingMember.get());
+                }
+
+                if (isNicknameConstraintViolation(e)) {
+                    if (attempt == SOCIAL_MEMBER_CREATE_MAX_ATTEMPTS - 1) {
+                        throw new BusinessException(ErrorCode.SOCIAL_LOGIN_FAILED);
+                    }
+                    continue;
+                }
+
+                if (isEmailConstraintViolation(e)) {
+                    throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
+                }
+
+                throw new BusinessException(ErrorCode.SOCIAL_LOGIN_FAILED);
+            }
         }
+
+        throw new BusinessException(ErrorCode.SOCIAL_LOGIN_FAILED);
     }
 
     private AuthResponse issueAuthResponse(Member member) {
-        String accessToken = jwtTokenProvider.createAccessToken(member.getUserId());
+        return authTokenService.issue(member);
+    }
 
-        return AuthResponse.of(accessToken, MemberResponse.from(member));
+    private BusinessException mapSignupConstraintViolation(DataIntegrityViolationException exception) {
+        if (isNicknameConstraintViolation(exception)) {
+            return new BusinessException(ErrorCode.NICKNAME_ALREADY_EXISTS);
+        }
+
+        return new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
+    }
+
+    private boolean isNicknameConstraintViolation(DataIntegrityViolationException exception) {
+        return containsConstraintToken(exception, "nickname");
+    }
+
+    private boolean isEmailConstraintViolation(DataIntegrityViolationException exception) {
+        return containsConstraintToken(exception, "email");
+    }
+
+    private boolean containsConstraintToken(DataIntegrityViolationException exception, String token) {
+        String message = exception.getMostSpecificCause().getMessage();
+        return message != null && message.toLowerCase(Locale.ROOT).contains(token);
     }
 }

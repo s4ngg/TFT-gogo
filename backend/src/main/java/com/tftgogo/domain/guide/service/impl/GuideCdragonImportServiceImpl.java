@@ -40,6 +40,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -59,7 +60,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
     private static final Pattern MULTIPLY_EXPRESSION_PATTERN =
             Pattern.compile("^([A-Za-z0-9_]+)\\s*\\*\\s*([0-9]+(?:\\.[0-9]+)?)$");
     private static final Pattern CDRAGON_TOKEN_PATTERN = Pattern.compile("%[A-Za-z_:][A-Za-z0-9_:.-]*%");
-    private static final Pattern DOUBLE_BRACE_TOKEN_PATTERN = Pattern.compile("\\{\\{[^}]+}}");
+    private static final Pattern DOUBLE_BRACE_TOKEN_PATTERN = Pattern.compile("\\{\\{([^}]+)}}");
     private static final Pattern HASH_TAG_PATTERN = Pattern.compile("^\\{[0-9a-fA-F]{6,}\\}$");
     private static final Pattern STANDALONE_PERCENT_PATTERN = Pattern.compile("(^|[^0-9])%");
     private static final Pattern METRIC_ONLY_PATTERN = Pattern.compile("^[+\\-]?\\d[\\d,./%\\s+\\-]*$");
@@ -122,6 +123,9 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             Map.entry("gold", "골드"),
             Map.entry("range", "사거리")
     );
+    private static final Map<String, String> CDRAGON_TEMPLATE_TOKEN_LABELS = Map.ofEntries(
+            Map.entry("TFT_Keyword_Precision", "정밀: 스킬과 아이템 피해가 치명타로 적용될 수 있습니다.")
+    );
     private final GuideChampionRepository guideChampionRepository;
     private final GuideTraitRepository guideTraitRepository;
     private final GuideItemRepository guideItemRepository;
@@ -146,10 +150,15 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
 
         String patchVersion = normalizePatchVersion(request.getPatchVersion());
         JsonNode cdragonData = fetchCdragonData();
-        JsonNode setData = findSetData(cdragonData, request.resolveSetNumber(), request.resolveMutator());
+        ResolvedCdragonSet resolvedSet = resolveSetData(
+                cdragonData,
+                request.getSetNumber(),
+                request.resolveMutator()
+        );
+        JsonNode setData = resolvedSet.data();
         JsonNode items = cdragonData.path("items");
         List<JsonNode> allChampions = readSetChampions(setData);
-        List<JsonNode> champions = readShopChampions(allChampions, request.resolveSetNumber());
+        List<JsonNode> champions = readShopChampions(allChampions, resolvedSet.setNumber());
         List<GuideCandidate> candidates = new ArrayList<>();
         if (request.shouldIncludeChampions()) {
             candidates.addAll(toChampionCandidates(champions, patchVersion));
@@ -194,7 +203,87 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         }
     }
 
-    private JsonNode findSetData(JsonNode root, int setNumber, String mutator) {
+    private ResolvedCdragonSet resolveSetData(JsonNode root, Integer setNumber, String mutator) {
+        if (setNumber != null) {
+            String resolvedMutator = hasText(mutator) ? mutator.trim() : "TFTSet" + setNumber;
+            return new ResolvedCdragonSet(
+                    findExplicitSetData(root, setNumber, resolvedMutator),
+                    setNumber,
+                    resolvedMutator
+            );
+        }
+
+        return findLatestSetData(root)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_INPUT));
+    }
+
+    private Optional<ResolvedCdragonSet> findLatestSetData(JsonNode root) {
+        ResolvedCdragonSet latest = null;
+        for (JsonNode setData : root.path("setData")) {
+            int candidateSetNumber = setData.path("number").asInt(0);
+            if (candidateSetNumber < 1 || !setData.has("champions") || !setData.has("traits")) {
+                continue;
+            }
+
+            ResolvedCdragonSet candidate = new ResolvedCdragonSet(
+                    setData,
+                    candidateSetNumber,
+                    setData.path("mutator").asText("")
+            );
+            if (isPreferredLatestSet(candidate, latest)) {
+                latest = candidate;
+            }
+        }
+
+        JsonNode sets = root.path("sets");
+        Iterator<String> fieldNames = sets.fieldNames();
+        while (fieldNames.hasNext()) {
+            String fieldName = fieldNames.next();
+            int candidateSetNumber = parsePositiveInteger(fieldName);
+            JsonNode setData = sets.path(fieldName);
+            if (candidateSetNumber < 1 || !setData.has("champions") || !setData.has("traits")) {
+                continue;
+            }
+
+            ResolvedCdragonSet candidate = new ResolvedCdragonSet(
+                    setData,
+                    candidateSetNumber,
+                    "TFTSet" + candidateSetNumber
+            );
+            if (isPreferredLatestSet(candidate, latest)) {
+                latest = candidate;
+            }
+        }
+
+        return Optional.ofNullable(latest);
+    }
+
+    private boolean isPreferredLatestSet(ResolvedCdragonSet candidate, ResolvedCdragonSet current) {
+        if (current == null) {
+            return true;
+        }
+        if (candidate.setNumber() != current.setNumber()) {
+            return candidate.setNumber() > current.setNumber();
+        }
+
+        boolean candidateUsesDefaultMutator = isDefaultMutator(candidate);
+        boolean currentUsesDefaultMutator = isDefaultMutator(current);
+        return candidateUsesDefaultMutator && !currentUsesDefaultMutator;
+    }
+
+    private boolean isDefaultMutator(ResolvedCdragonSet set) {
+        return ("TFTSet" + set.setNumber()).equals(set.mutator());
+    }
+
+    private int parsePositiveInteger(String value) {
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private JsonNode findExplicitSetData(JsonNode root, int setNumber, String mutator) {
         for (JsonNode setData : root.path("setData")) {
             if (setData.path("number").asInt() == setNumber
                     && mutator.equals(setData.path("mutator").asText())) {
@@ -1164,7 +1253,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         String withoutBreakTags = BREAK_TAG_PATTERN.matcher(value).replaceAll(" ");
         String withoutTags = TAG_PATTERN.matcher(withoutBreakTags).replaceAll("");
         String withoutPlaceholders = PLACEHOLDER_PATTERN.matcher(withoutTags).replaceAll("");
-        String withoutTemplateTokens = DOUBLE_BRACE_TOKEN_PATTERN.matcher(withoutPlaceholders).replaceAll("");
+        String withoutTemplateTokens = replaceDoubleBraceTokens(withoutPlaceholders);
         String withoutCdragonTokens = CDRAGON_TOKEN_PATTERN.matcher(withoutTemplateTokens).replaceAll("");
         String normalizedPercent = withoutCdragonTokens.replaceAll("(\\d)\\s+%", "$1%");
         String withoutEmptyParens = EMPTY_PARENS_PATTERN.matcher(normalizedPercent).replaceAll("");
@@ -1252,6 +1341,18 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                 .replaceAll("수치의\\s+고정 피해", "고정 피해")
                 .replaceAll("수치의\\s+피해", "피해")
                 .replaceAll("\\s+수치$", "");
+    }
+
+    private String replaceDoubleBraceTokens(String value) {
+        Matcher tokenMatcher = DOUBLE_BRACE_TOKEN_PATTERN.matcher(value);
+        StringBuffer replaced = new StringBuffer();
+        while (tokenMatcher.find()) {
+            String tokenName = tokenMatcher.group(1).trim();
+            String replacement = CDRAGON_TEMPLATE_TOKEN_LABELS.getOrDefault(tokenName, "");
+            tokenMatcher.appendReplacement(replaced, Matcher.quoteReplacement(replacement));
+        }
+        tokenMatcher.appendTail(replaced);
+        return replaced.toString();
     }
 
     private String sanitizeCdragonText(String value, JsonNode effects) {
@@ -1463,6 +1564,13 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             JsonNode dataJson,
             String patchVersion,
             int sortOrder
+    ) {
+    }
+
+    private record ResolvedCdragonSet(
+            JsonNode data,
+            int setNumber,
+            String mutator
     ) {
     }
 

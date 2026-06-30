@@ -1,9 +1,10 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from app.core.security import verify_internal_secret
 from app.models.match import AnalyzeRequest, AnalyzeResponse, AnalyzeWithMetaRequest
 from app.services import analyzer, recommender
 
-router = APIRouter(prefix="/analyze", tags=["analyze"])
+router = APIRouter(prefix="/analyze", tags=["analyze"], dependencies=[Depends(verify_internal_secret)])
 
 
 @router.post("", response_model=AnalyzeResponse)

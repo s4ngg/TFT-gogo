@@ -1,6 +1,8 @@
+import { useRef } from 'react'
 import { AppLayout } from '../../components/layout'
 import { usePatchNotes } from '../../hooks/usePatchNotes'
-import { patchNotesFallbackData } from '../../mocks/patchNotesMock'
+import { patchNotesFallbackData } from './patchNotesFallbackData'
+import type { PatchCategory } from '../../api/patchNotes'
 import PatchChangeFilters from './components/PatchChangeFilters'
 import PatchChangeList from './components/PatchChangeList'
 import PatchHero from './components/PatchHero'
@@ -13,6 +15,7 @@ import { usePatchNotesPageState } from './hooks/usePatchNotesPageState'
 import styles from './PatchNotes.module.css'
 
 function PatchNotes() {
+  const changePanelRef = useRef<HTMLElement | null>(null)
   const {
     isFallbackData,
     isFetching,
@@ -56,6 +59,20 @@ function PatchNotes() {
     setSelectedPatchVersion(version)
   }
 
+  function scrollToChangePanel() {
+    window.setTimeout(() => {
+      changePanelRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    }, 0)
+  }
+
+  function handleCategorySelect(category: PatchCategory) {
+    setActiveCategory(category)
+    scrollToChangePanel()
+  }
+
   if (!selectedPatch) {
     return (
       <AppLayout>
@@ -93,16 +110,14 @@ function PatchNotes() {
 
         <div className={styles.contentGrid}>
           <PatchSideRail
-            activeCategory={activeCategory}
-            categoryCounts={changeStats.categoryCounts}
-            onCategorySelect={setActiveCategory}
+            onInsightSelect={handleCategorySelect}
             onPatchSelect={handlePatchSelect}
             patchHistory={patchHistory}
             selectedPatch={selectedPatch}
             selectedPatchVersion={selectedPatchVersion}
           />
 
-          <section className={styles.changePanel}>
+          <section className={styles.changePanel} ref={changePanelRef}>
             <div className={styles.panelHeader}>
               <div>
                 <span className={styles.sectionLabel}>카테고리별 변경사항</span>
@@ -112,7 +127,7 @@ function PatchNotes() {
 
             <PatchChangeFilters
               activeCategory={activeCategory}
-              onCategoryChange={setActiveCategory}
+              onCategoryChange={handleCategorySelect}
               onQueryChange={setQuery}
               query={query}
               stats={changeStats}

@@ -1,6 +1,5 @@
--- Local smoke schema for the QA bootstrap database.
--- Schema management is manual in this project because JPA ddl-auto is none
--- and no Flyway/Liquibase dependency is configured.
+-- Human-readable reference of the current schema state.
+-- NOT mounted by docker-compose; schema is created by Flyway V1__init_schema.sql.
 -- Keep column names aligned with the current JPA physical naming strategy.
 
 SET NAMES utf8mb4;
@@ -14,17 +13,48 @@ CREATE TABLE IF NOT EXISTS users (
     social_provider VARCHAR(20) NULL,
     social_id VARCHAR(255) NULL,
     notification_enabled TINYINT(1) NOT NULL DEFAULT 1,
+    auth_token_version BIGINT NOT NULL DEFAULT 0,
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     deleted_at DATETIME(6) NULL,
     PRIMARY KEY (user_id),
     UNIQUE KEY uk_users_email (email),
+    UNIQUE KEY uk_users_nickname (nickname),
     UNIQUE KEY ux_users_social_provider_social_id (social_provider, social_id),
     CONSTRAINT chk_users_social_fields_together
         CHECK (
             (social_provider IS NULL AND social_id IS NULL)
             OR (social_provider IS NOT NULL AND social_id IS NOT NULL)
         )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS refresh_token_sessions (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    token_hash VARCHAR(64) NOT NULL,
+    revoked TINYINT(1) NOT NULL DEFAULT 0,
+    reuse_detected TINYINT(1) NOT NULL DEFAULT 0,
+    expires_at DATETIME(6) NOT NULL,
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    revoked_at DATETIME(6) NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_refresh_token_sessions_token_hash (token_hash),
+    KEY idx_refresh_token_sessions_user_active (user_id, revoked, expires_at),
+    CONSTRAINT fk_refresh_token_sessions_user
+        FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS access_token_blocklist (
+    token_id VARCHAR(80) NOT NULL,
+    user_id BIGINT NOT NULL,
+    expires_at DATETIME(6) NOT NULL,
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    PRIMARY KEY (token_id),
+    KEY idx_access_token_blocklist_expiry (expires_at),
+    KEY idx_access_token_blocklist_user (user_id),
+    CONSTRAINT fk_access_token_blocklist_user
+        FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS cached_summoner (
@@ -364,8 +394,8 @@ CREATE TABLE IF NOT EXISTS party_post_tags (
         FOREIGN KEY (party_post_id) REFERENCES party_posts (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ELD reserved tables. Current MVP chat runtime uses CommunityChatRoomIds and
--- InMemoryChatServiceImpl, so these tables are not read or written by the app yet.
+-- Runtime chat room metadata. Local/dev may still use InMemoryChatServiceImpl,
+-- but non-local profiles persist recent chat messages through these tables.
 CREATE TABLE IF NOT EXISTS chat_rooms (
     id BIGINT NOT NULL AUTO_INCREMENT,
     room_key VARCHAR(80) NOT NULL,
@@ -385,7 +415,7 @@ CREATE TABLE IF NOT EXISTS chat_rooms (
         FOREIGN KEY (party_post_id) REFERENCES party_posts (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ELD reserved table. Current MVP chat messages are in-memory only.
+-- Persistent chat messages used by the non-local ChatService implementation.
 CREATE TABLE IF NOT EXISTS chat_messages (
     id BIGINT NOT NULL AUTO_INCREMENT,
     user_id BIGINT NOT NULL,
@@ -417,4 +447,42 @@ CREATE TABLE IF NOT EXISTS hero_augment_decks (
     updated_at      DATETIME(6) NOT NULL,
     PRIMARY KEY (id),
     KEY idx_hero_augment_decks_sort (sort_order, id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS admin_accounts (
+    id         BIGINT NOT NULL AUTO_INCREMENT,
+    username   VARCHAR(50)  NOT NULL,
+    password   VARCHAR(255) NOT NULL,
+    role       VARCHAR(20)  NOT NULL DEFAULT 'VIEWER',
+    enabled    TINYINT(1)   NOT NULL DEFAULT 1,
+    created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_admin_accounts_username (username)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS admin_refresh_tokens (
+    id               BIGINT NOT NULL AUTO_INCREMENT,
+    admin_account_id BIGINT       NOT NULL,
+    token_hash       VARCHAR(255) NOT NULL,
+    expires_at       DATETIME     NOT NULL,
+    created_at       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_admin_refresh_tokens_hash (token_hash),
+    KEY idx_admin_refresh_tokens_expires (expires_at),
+    CONSTRAINT fk_art_admin FOREIGN KEY (admin_account_id) REFERENCES admin_accounts (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS admin_audit_logs (
+    id         BIGINT NOT NULL AUTO_INCREMENT,
+    admin_id   BIGINT       NOT NULL,
+    username   VARCHAR(50)  NOT NULL,
+    ip         VARCHAR(45)  NOT NULL,
+    user_agent VARCHAR(500),
+    action     VARCHAR(100) NOT NULL,
+    target     VARCHAR(255),
+    created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_admin_audit_logs_admin_id (admin_id),
+    KEY idx_admin_audit_logs_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

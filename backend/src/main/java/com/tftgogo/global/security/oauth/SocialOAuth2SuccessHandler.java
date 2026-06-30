@@ -5,11 +5,13 @@ import com.tftgogo.domain.member.entity.SocialProvider;
 import com.tftgogo.domain.member.service.MemberService;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
+import com.tftgogo.global.security.RefreshTokenCookieService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -24,6 +26,7 @@ public class SocialOAuth2SuccessHandler implements AuthenticationSuccessHandler 
 
     private final MemberService memberService;
     private final OAuth2RedirectService redirectService;
+    private final RefreshTokenCookieService refreshTokenCookieService;
 
     @Override
     public void onAuthenticationSuccess(
@@ -42,6 +45,9 @@ public class SocialOAuth2SuccessHandler implements AuthenticationSuccessHandler 
             );
 
             clearOAuthSession(request);
+            response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookieService
+                    .createCookie(authResponse.getRefreshToken())
+                    .toString());
             response.sendRedirect(redirectService.buildSuccessRedirectUri(authResponse.getAccessToken()));
         } catch (BusinessException e) {
             clearOAuthSession(request);

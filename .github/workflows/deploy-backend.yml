@@ -66,6 +66,14 @@ jobs:
           task-definition: task-definition.json
           container-name: ${{ env.CONTAINER_NAME }}
           image: ${{ steps.build-image.outputs.image }}
+          # ADMIN_BOOTSTRAP_PASSWORD는 ECS 태스크 정의의 secrets 섹션에서
+          # Secrets Manager ARN으로 직접 참조합니다 (워크플로 plaintext 전달 금지).
+          # 최초 설정: aws secretsmanager create-secret \
+          #   --name tftgogo/admin-bootstrap-password \
+          #   --secret-string '<password>'
+          # 이후 태스크 정의 secrets에 추가:
+          #   {"name":"ADMIN_BOOTSTRAP_PASSWORD",
+          #    "valueFrom":"arn:aws:secretsmanager:ap-northeast-2:703384431484:secret:tftgogo/admin-bootstrap-password"}
 
       - name: Deploy to ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@8229049d0e7c34be9ba40d443608d2d6cde7510f # v1.6.0

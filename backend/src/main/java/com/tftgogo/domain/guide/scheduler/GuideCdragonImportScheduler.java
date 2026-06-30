@@ -9,6 +9,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -22,9 +24,11 @@ public class GuideCdragonImportScheduler {
 
     private final GuideCdragonImportService guideCdragonImportService;
     private final GuideCdragonImportProperties guideCdragonImportProperties;
+    private final GuideCdragonImportSchedulerLock schedulerLock;
     private final AtomicBoolean running = new AtomicBoolean(false);
 
     @EventListener(ApplicationReadyEvent.class)
+    @Order(Ordered.LOWEST_PRECEDENCE)
     public void importOnStartupIfEnabled() {
         if (!guideCdragonImportProperties.isEnabled()) {
             logger.info("Guide CDragon scheduler disabled (app.guide.cdragon.enabled=false)");
@@ -66,6 +70,14 @@ public class GuideCdragonImportScheduler {
             return;
         }
 
+        try {
+            schedulerLock.runWithLock(trigger, () -> importGuides(trigger));
+        } finally {
+            running.set(false);
+        }
+    }
+
+    private void importGuides(String trigger) {
         GuideCdragonImportRequest request = GuideCdragonImportRequest.of(
                 guideCdragonImportProperties.getPatchVersion(),
                 guideCdragonImportProperties.getSetNumber(),
@@ -97,8 +109,6 @@ public class GuideCdragonImportScheduler {
                     guideCdragonImportProperties.getPatchVersion(),
                     e
             );
-        } finally {
-            running.set(false);
         }
     }
 }

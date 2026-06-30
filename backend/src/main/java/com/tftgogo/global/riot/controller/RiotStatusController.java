@@ -20,7 +20,10 @@ public class RiotStatusController implements RiotStatusControllerDocs {
     @Override
     @GetMapping("/status")
     public ResponseEntity<ApiResponse<RiotApiStatusResponse>> getStatus() {
-        RiotApiStatusResponse status = RiotApiStatusResponse.from(riotQueue.getPendingTaskCount());
+        RiotApiStatusResponse status = RiotApiStatusResponse.from(
+                riotQueue.getForegroundQueueSize(),
+                riotQueue.getBackgroundQueueSize(),
+                riotQueue.getInflightCount());
 
         return ResponseEntity.ok(ApiResponse.success("Riot API 상태 조회 성공", status));
     }

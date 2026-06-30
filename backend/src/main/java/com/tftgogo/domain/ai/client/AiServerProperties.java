@@ -20,4 +20,7 @@ public class AiServerProperties {
 
     @Positive(message = "ai.server.timeout-seconds는 0보다 커야 합니다.")
     private int timeoutSeconds = 10;
+
+    @NotBlank(message = "ai.server.internal-secret 설정은 필수입니다.")
+    private String internalSecret;
 }

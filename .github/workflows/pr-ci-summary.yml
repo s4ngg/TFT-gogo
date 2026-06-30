@@ -88,6 +88,8 @@ jobs:
       - name: Lint with ruff
         run: cd ai-server && ruff check .
       - name: Run tests
+        env:
+          INTERNAL_SECRET: ci-test-secret
         run: cd ai-server && pytest
 
   summary:

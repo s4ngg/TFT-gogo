@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Bell, ChevronDown, CircleHelp, LogIn, LogOut, Mail } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { communityDragonProfileIconUrl } from '../../api/communityDragonAssets'
+import { logout } from '../../api/memberApi'
 import { useAuthSession } from '../../hooks/useAuthSession'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
 import useAuthStore from '../../store/useAuthStore'
@@ -71,7 +72,8 @@ function TopBar() {
   }, [isProfileMenuOpen])
 
   function handleLogout() {
-    void clearTopBarAuthSession(queryClient, useAuthStore.getState().clearAuth)
+    const authState = useAuthStore.getState()
+    void clearTopBarAuthSession(queryClient, authState.clearAuth, logout, authState.token)
     setIsProfileMenuOpen(false)
     navigate('/', { replace: true })
   }

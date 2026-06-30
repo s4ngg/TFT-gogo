@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import analyze, chat
 from app.core.config import settings
+from app.core.rate_limiter import RateLimitMiddleware
 
 sys.stdout.reconfigure(encoding="utf-8")
 sys.stderr.reconfigure(encoding="utf-8")
@@ -23,6 +24,7 @@ app = FastAPI(
     docs_url="/docs" if settings.app_env != "production" else None,
 )
 
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_allowed_origin_list,

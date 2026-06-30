@@ -27,4 +27,16 @@ public class RiotProperties {
     private long shortRateLimitWindowMs = 1_000L;
     private int longRateLimitMax = 100;
     private long longRateLimitWindowMs = 120_000L;
+
+    @Positive(message = "riot.queue-worker-concurrency는 0보다 커야 합니다.")
+    private int queueWorkerConcurrency = 3;
+    @Positive(message = "riot.max-foreground-streak는 0보다 커야 합니다.")
+    private int maxForegroundStreak = 5;
+    @Positive(message = "riot.foreground-task-ttl-ms는 0보다 커야 합니다.")
+    private long foregroundTaskTtlMs = 60_000L;
+    @Positive(message = "riot.background-task-ttl-ms는 0보다 커야 합니다.")
+    private long backgroundTaskTtlMs = 300_000L;
+
+    @Positive(message = "riot.match-fetch-timeout-seconds는 0보다 커야 합니다.")
+    private long matchFetchTimeoutSeconds = 60L;
 }
