@@ -109,14 +109,14 @@ public class AiServerClient {
     ) {
         try {
             String json = objectMapper.writeValueAsString(toGameGuidePathfinderBody(request, selectedEntries));
-            byte[] responseBody = chatRestClient.post()
+            String responseBody = chatRestClient.post()
                     .uri("/api/gameguide/pathfinder")
                     .header("Content-Type", "application/json")
                     .header("X-Internal-Secret", internalSecret)
                     .body(json)
                     .retrieve()
-                    .body(byte[].class);
-            if (responseBody == null || responseBody.length == 0) {
+                    .body(String.class);
+            if (responseBody == null || responseBody.isBlank()) {
                 return null;
             }
             return objectMapper.readValue(responseBody, GameGuideAiPathfinderResponse.class);
