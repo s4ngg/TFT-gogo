@@ -48,7 +48,7 @@ Google, Kakao, Naver 소셜 로그인을 지원합니다. OAuth2 인증 후 JWT 
 
 ## 프로젝트 구조
 
-```
+```text
 TFT-gogo/
 ├── backend/       # Spring Boot API 서버
 ├── ai-server/     # FastAPI AI 추천·채팅 서버
@@ -63,7 +63,7 @@ TFT-gogo/
 
 도메인 주도 설계(DDD) 기반으로, 각 도메인이 동일한 패키지 구조를 따릅니다.
 
-```
+```text
 backend/src/main/java/com/tftgogo/
 ├── domain/
 │   ├── ai/
@@ -115,7 +115,7 @@ backend/src/main/java/com/tftgogo/
 
 ## Frontend 구조
 
-```
+```text
 frontend/src/
 ├── api/           # API 호출 함수 (Axios 인스턴스, 도메인별 API 모듈)
 ├── components/    # 공통 UI 컴포넌트 (ChampionCard, TierBadge 등)
@@ -124,7 +124,7 @@ frontend/src/
 ├── store/         # Zustand 전역 상태 관리
 ├── constants/     # 상수 정의 (티어, 채팅방 ID 등)
 ├── types/         # TypeScript 타입 정의
-└── styles/        # CSS 변수, 글로벌 스타일
+└── styles/        # CSS 변수, 테마 토큰
 ```
 
 | 패키지 | 역할 |
@@ -140,7 +140,7 @@ frontend/src/
 
 ## AI Server 구조
 
-```
+```text
 ai-server/app/
 ├── api/           # FastAPI 라우터 (분석, 채팅 엔드포인트)
 ├── core/          # 환경 설정 (OpenAI API 키, DB 연결 등)
@@ -159,7 +159,7 @@ ai-server/app/
 
 ## 문서 구조
 
-```
+```text
 docs/
 ├── for-ai/        # AI 코드리뷰용 컨벤션·스펙 문서
 ├── for-humans/    # 팀 공유용 기획서·체크리스트·릴리즈노트

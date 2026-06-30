@@ -6,7 +6,7 @@ import { clearTopBarAuthSession } from '../topBarAuth'
 
 interface QueryCall {
   exact?: boolean
-  queryKey: readonly string[]
+  queryKey: readonly unknown[]
 }
 
 function createQueryClient(options: { rejectCancel?: boolean } = {}) {
