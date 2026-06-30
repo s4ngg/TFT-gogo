@@ -17,8 +17,8 @@ All admin backend endpoints are protected by X-Admin-Token.
 </routes>
 
 <frontend-structure>
-- frontend/src/layouts/AdminLayout.tsx
-- frontend/src/components/admin/AdminSidebar.tsx
+- frontend/src/components/layout/AdminLayout.tsx
+- frontend/src/pages/Admin/components/AdminSidebar.tsx
 - frontend/src/pages/Admin/AdminLogin.tsx
 - frontend/src/pages/Admin/AdminDecks.tsx
 - frontend/src/pages/Admin/AdminHeroAugments.tsx

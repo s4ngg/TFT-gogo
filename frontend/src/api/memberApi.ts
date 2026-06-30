@@ -1,4 +1,4 @@
-import axios from 'axios'
+import { isAxiosError } from 'axios'
 import axiosInstance, { getRefreshAuthSessionPromise } from './axiosInstance'
 import type { ApiResponse } from './apiResponse'
 import { unwrapApiResponse } from './apiResponse'
@@ -23,7 +23,7 @@ export interface SignupRequest extends LoginRequest {
 }
 
 function isAuthRestoreFailure(error: unknown): boolean {
-  return axios.isAxiosError(error)
+  return isAxiosError(error)
     && (error.response?.status === 401 || error.response?.status === 403)
 }
 

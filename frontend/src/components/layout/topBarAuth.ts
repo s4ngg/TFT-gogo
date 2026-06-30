@@ -2,7 +2,7 @@ import { AUTH_ME_QUERY_KEY } from '../../hooks/useAuthSession'
 import { setLogoutInProgress } from '../../api/authSessionControl'
 
 interface TopBarAuthQueryClient {
-  cancelQueries: (filters: { queryKey: typeof AUTH_ME_QUERY_KEY; exact: true }) => Promise<unknown>
+  cancelQueries: (filters: { queryKey: readonly string[]; exact?: boolean }) => Promise<unknown>
   removeQueries: (filters: { queryKey: readonly string[]; exact?: boolean }) => void
 }
 
@@ -26,6 +26,7 @@ export async function clearTopBarAuthSession(
 
   try {
     await queryClient.cancelQueries({ queryKey: AUTH_ME_QUERY_KEY, exact: true })
+    await queryClient.cancelQueries({ queryKey: ['aiRecommendation'] })
   } catch {
     // Cache cancellation must not keep a locally logged-in session alive.
   }

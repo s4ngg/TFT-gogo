@@ -1,6 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom'
-import AdminSidebar from '../components/admin/AdminSidebar'
-import { useAdminAuth } from '../hooks/useAdminAuth'
+import AdminSidebar from '../../pages/Admin/components/AdminSidebar'
+import { useAdminAuth } from '../../hooks/useAdminAuth'
 import styles from './AdminLayout.module.css'
 
 function AdminLayout() {

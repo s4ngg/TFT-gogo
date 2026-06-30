@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { LayoutGrid, Sword, BookOpen, FileText, Users, MessageSquare, Activity, LogOut } from 'lucide-react'
-import { clearAccessToken, adminLogout, getHttpStatus } from '../../api/adminApi'
-import { useAdminSession } from '../../hooks/useAdminSession'
+import { clearAccessToken, adminLogout, getHttpStatus } from '../../../api/adminApi'
+import { useAdminSession } from '../../../hooks/useAdminSession'
 import styles from './AdminSidebar.module.css'
 
 const NAV_ITEMS = [

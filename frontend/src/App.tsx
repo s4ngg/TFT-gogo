@@ -17,7 +17,7 @@ import Guide from './pages/Guide/Guide'
 import Party from './pages/Party/Party'
 import PatchNotes from './pages/PatchNotes/PatchNotes'
 import SummonerDetail from './pages/SummonerDetail/SummonerDetail'
-import AdminLayout from './layouts/AdminLayout'
+import AdminLayout from './components/layout/AdminLayout'
 import NotFound from './pages/NotFound/NotFound'
 
 function App() {
