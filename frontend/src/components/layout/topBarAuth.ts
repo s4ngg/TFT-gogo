@@ -1,9 +1,9 @@
 import { AUTH_ME_QUERY_KEY } from '../../hooks/useAuthSession'
 import { setLogoutInProgress } from '../../api/authSessionControl'
 
-interface TopBarAuthQueryClient {
+export interface TopBarAuthQueryClient {
   cancelQueries: (filters: { queryKey: readonly unknown[]; exact?: boolean }) => Promise<unknown>
-  removeQueries: (filters: { queryKey: readonly string[]; exact?: boolean }) => void
+  removeQueries: (filters: { queryKey: readonly unknown[]; exact?: boolean }) => void
 }
 
 export async function clearTopBarAuthSession(

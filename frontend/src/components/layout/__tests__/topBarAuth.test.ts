@@ -2,11 +2,11 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
 import { AUTH_ME_QUERY_KEY } from '../../../hooks/useAuthSession'
-import { clearTopBarAuthSession } from '../topBarAuth'
+import { clearTopBarAuthSession, type TopBarAuthQueryClient } from '../topBarAuth'
 
 interface QueryCall {
   exact?: boolean
-  queryKey: readonly string[]
+  queryKey: readonly unknown[]
 }
 
 function createQueryClient(options: { rejectCancel?: boolean } = {}) {
@@ -14,25 +14,22 @@ function createQueryClient(options: { rejectCancel?: boolean } = {}) {
   const cancelFilters: QueryCall[] = []
   const removeFilters: QueryCall[] = []
 
-  return {
-    calls,
-    client: {
-      cancelQueries: async (filters: QueryCall) => {
-        calls.push('cancel')
-        cancelFilters.push(filters)
+  const client: TopBarAuthQueryClient = {
+    cancelQueries: async (filters) => {
+      calls.push('cancel')
+      cancelFilters.push(filters)
 
-        if (options.rejectCancel) {
-          throw new Error('cancel failed')
-        }
-      },
-      removeQueries: (filters: QueryCall) => {
-        calls.push('remove')
-        removeFilters.push(filters)
-      },
+      if (options.rejectCancel) {
+        throw new Error('cancel failed')
+      }
     },
-    cancelFilters,
-    removeFilters,
+    removeQueries: (filters) => {
+      calls.push('remove')
+      removeFilters.push(filters)
+    },
   }
+
+  return { calls, client, cancelFilters, removeFilters }
 }
 
 describe('clearTopBarAuthSession', () => {
