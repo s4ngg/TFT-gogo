@@ -1,10 +1,10 @@
-import { communityDragonAssetUrl } from '../api/communityDragonAssets'
+import { communityDragonAssetUrl } from '../../api/communityDragonAssets'
 import {
   CHANGE_CATEGORIES,
   type PatchChange,
   type PatchNoteDetail,
   type PatchNoteSummary,
-} from '../api/patchNotes'
+} from '../../api/patchNotes'
 
 const basePatchChanges: PatchChange[] = [
   {

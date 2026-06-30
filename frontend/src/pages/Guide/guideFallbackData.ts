@@ -3,7 +3,7 @@
   tftChampSquareUrl,
   tftItemIconUrl,
   tftTraitIconUrl,
-} from '../api/communityDragonAssets'
+} from '../../api/communityDragonAssets'
 import {
   type AugmentGuide,
   type ChampionGuide,
@@ -12,7 +12,7 @@ import {
   type ItemRef,
   type ItemStatGuide,
   type TraitGuide,
-} from '../api/guide'
+} from '../../api/guide'
 
 function fallbackItemIconUrl(itemId: string) {
   return tftItemIconUrl(itemId, TFT_ASSET_CONFIG.fallbackItemSetTag)

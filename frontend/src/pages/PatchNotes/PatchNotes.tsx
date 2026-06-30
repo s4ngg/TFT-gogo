@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { AppLayout } from '../../components/layout'
 import { usePatchNotes } from '../../hooks/usePatchNotes'
-import { patchNotesFallbackData } from '../../mocks/patchNotesMock'
+import { patchNotesFallbackData } from './patchNotesFallbackData'
 import type { PatchCategory } from '../../api/patchNotes'
 import PatchChangeFilters from './components/PatchChangeFilters'
 import PatchChangeList from './components/PatchChangeList'

@@ -1,7 +1,7 @@
 import { BookOpen } from 'lucide-react'
 import { AppLayout } from '../../components/layout'
 import { useGuideCatalog } from '../../hooks/useGuide'
-import { guideFallbackData } from '../../mocks/guideResponseMock'
+import { guideFallbackData } from './guideFallbackData'
 import GuideControls from './components/GuideControls'
 import GuideQuickAccess from './components/GuideQuickAccess'
 import { StatBadge } from './components/GuideShared'
