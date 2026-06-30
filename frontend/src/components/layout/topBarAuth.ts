@@ -24,12 +24,10 @@ export async function clearTopBarAuthSession(
     setLogoutInProgress(false)
   }
 
-  try {
-    await queryClient.cancelQueries({ queryKey: AUTH_ME_QUERY_KEY, exact: true })
-    await queryClient.cancelQueries({ queryKey: ['aiRecommendation'] })
-  } catch {
-    // Cache cancellation must not keep a locally logged-in session alive.
-  }
+  await Promise.allSettled([
+    queryClient.cancelQueries({ queryKey: AUTH_ME_QUERY_KEY, exact: true }),
+    queryClient.cancelQueries({ queryKey: ['aiRecommendation'] }),
+  ])
 
   queryClient.removeQueries({ queryKey: AUTH_ME_QUERY_KEY, exact: true })
   queryClient.removeQueries({ queryKey: ['aiRecommendation'] })
