@@ -55,6 +55,7 @@ test('normalizeGuideCatalog reads entries from catalog object payload', () => {
 
   assert.equal(result.patchVersion, '17.1')
   assert.equal(result.traits.length, 1)
+  assert.equal(result.traits[0].targetKey, 'TFT17_AnimalSquad')
   assert.equal(result.traits[0].variant, 'Huntress')
   assert.equal(result.traits[0].specialUnits?.[0]?.name, '소형 블랙홀')
   assert.equal(result.traits[0].name, '동물특공대')

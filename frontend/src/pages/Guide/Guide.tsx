@@ -1,15 +1,21 @@
 import { BookOpen } from 'lucide-react'
+import { useState } from 'react'
+import type { GameGuideAiPathfinderRef } from '../../api/gameGuideAiPathfinderApi'
 import { AppLayout } from '../../components/layout'
 import { useGuideCatalog } from '../../hooks/useGuide'
 import { guideFallbackData } from '../../mocks/guideResponseMock'
+import GameGuideAiChatWidget from './components/GameGuideAiChatWidget'
 import GuideControls from './components/GuideControls'
 import GuideQuickAccess from './components/GuideQuickAccess'
 import { StatBadge } from './components/GuideShared'
 import GuideTabPanels from './components/GuideTabPanels'
+import { useGameGuideAiCandidateRefs } from './hooks/useGameGuideAiCandidateRefs'
 import { useGuidePageState } from './hooks/useGuidePageState'
 import styles from './Guide.module.css'
 
 function Guide() {
+  const [isGameGuideAiOpen, setIsGameGuideAiOpen] = useState(false)
+  const [gameGuideAiSelectedRefs, setGameGuideAiSelectedRefs] = useState<GameGuideAiPathfinderRef[]>([])
   const {
     guideData,
     isFallbackData: isGuideFallbackData,
@@ -29,6 +35,19 @@ function Guide() {
     selectTab,
     setSearch,
   } = useGuidePageState()
+  const gameGuideAiCandidateRefs = useGameGuideAiCandidateRefs(guideData, activeTab)
+
+  function handleGameGuideAiAsk(ref: GameGuideAiPathfinderRef) {
+    setGameGuideAiSelectedRefs([ref])
+    setIsGameGuideAiOpen(true)
+  }
+
+  function handleGameGuideAiOpenChange(nextIsOpen: boolean) {
+    setIsGameGuideAiOpen(nextIsOpen)
+    if (!nextIsOpen) {
+      setGameGuideAiSelectedRefs([])
+    }
+  }
 
   return (
     <AppLayout>
@@ -68,12 +87,24 @@ function Guide() {
           isGuideFallbackData={isGuideFallbackData}
           isGuideFetching={isGuideFetching}
           onFavoriteToggle={handleFavoriteToggle}
+          onGameGuideAiAsk={handleGameGuideAiAsk}
           onGuideJump={jumpToGuide}
           onGuideRetry={() => {
             void refetchGuideData()
           }}
           onRecentGuideAdd={addRecentGuide}
           query={debouncedSearch}
+        />
+
+        <GameGuideAiChatWidget
+          activeTab={activeTab}
+          activeTabLabel={activeTabInfo.label}
+          candidateRefs={gameGuideAiCandidateRefs}
+          isOpen={isGameGuideAiOpen}
+          onOpenChange={handleGameGuideAiOpenChange}
+          onGuideJump={jumpToGuide}
+          patchVersion={guideData.patchVersion}
+          selectedRefs={gameGuideAiSelectedRefs}
         />
       </div>
     </AppLayout>

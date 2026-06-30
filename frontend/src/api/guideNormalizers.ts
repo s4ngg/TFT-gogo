@@ -90,6 +90,10 @@ function readPatchVersion(entry: GuideEntryResponse) {
   return entry.patchVersion ?? entry.patch_version ?? undefined
 }
 
+function readTargetKey(entry: GuideEntryResponse) {
+  return entry.targetKey ?? entry.target_key ?? undefined
+}
+
 function readChampionRefs(value: unknown): ChampionRef[] {
   if (!Array.isArray(value)) return []
 
@@ -269,6 +273,7 @@ function isTraitGuide(payload: unknown): payload is TraitGuide {
       Array.isArray(payload.tierEffects) && payload.tierEffects.every(isTraitTierEffect)
     ))
     && isStringList(payload.tips)
+    && (!('targetKey' in payload) || typeof payload.targetKey === 'string')
     && typeof payload.type === 'string'
     && (!('variant' in payload) || typeof payload.variant === 'string')
 }
@@ -290,6 +295,7 @@ function isItemStatGuide(payload: unknown): payload is ItemStatGuide {
     && payload.combinations.every(isItemCombination)
     && typeof payload.imageUrl === 'string'
     && typeof payload.name === 'string'
+    && (!('targetKey' in payload) || typeof payload.targetKey === 'string')
 }
 
 function isAugmentGuide(payload: unknown): payload is AugmentGuide {
@@ -297,6 +303,7 @@ function isAugmentGuide(payload: unknown): payload is AugmentGuide {
     && typeof payload.description === 'string'
     && typeof payload.imageUrl === 'string'
     && typeof payload.name === 'string'
+    && (!('targetKey' in payload) || typeof payload.targetKey === 'string')
     && isStringList(payload.tags)
 }
 
@@ -321,6 +328,7 @@ function isChampionGuide(payload: unknown): payload is ChampionGuide {
     && typeof payload.position === 'string'
     && typeof payload.role === 'string'
     && isChampionStats(payload.stats)
+    && (!('targetKey' in payload) || typeof payload.targetKey === 'string')
     && isStringList(payload.traits)
 }
 
@@ -359,6 +367,7 @@ function guideEntriesToCatalog(entries: GuideEntryResponse[], fallbackData: Guid
         name: entry.name,
         specialUnits: readSpecialUnitRefs(data.specialUnits ?? data.special_units),
         summary,
+        targetKey: readTargetKey(entry),
         tierEffects: readTraitTierEffects(data.tierEffects),
         tips: readStringArray(data, 'tips'),
         tone: readTraitTone(data.tone),
@@ -375,6 +384,7 @@ function guideEntriesToCatalog(entries: GuideEntryResponse[], fallbackData: Guid
         description: sanitizeGuideText(readString(data, 'description', summary)),
         imageUrl,
         name: entry.name,
+        targetKey: readTargetKey(entry),
       })
     }
 
@@ -384,6 +394,7 @@ function guideEntriesToCatalog(entries: GuideEntryResponse[], fallbackData: Guid
         imageUrl,
         name: entry.name,
         tags: readDisplayTags(data, 'tags'),
+        targetKey: readTargetKey(entry),
       })
     }
 
@@ -396,6 +407,7 @@ function guideEntriesToCatalog(entries: GuideEntryResponse[], fallbackData: Guid
         position: readString(data, 'position'),
         role: readString(data, 'role'),
         stats: readChampionStats(data.stats),
+        targetKey: readTargetKey(entry),
         traits: readStringArray(data, 'traits'),
       })
     }

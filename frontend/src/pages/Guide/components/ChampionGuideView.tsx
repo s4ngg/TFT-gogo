@@ -17,6 +17,7 @@ import {
   GuidePagination,
   GuideStatusBanner,
 } from './GuideShared'
+import type { GameGuideAiAskHandler } from '../utils/gameGuideAiRefs'
 import styles from '../Guide.module.css'
 
 interface ChampionGuideViewProps {
@@ -26,6 +27,7 @@ interface ChampionGuideViewProps {
   isGuideFetching: boolean
   onChampionOpen: (championName: string) => void
   onFavoriteToggle: (championName: string) => void
+  onGameGuideAiAsk: GameGuideAiAskHandler
   onGuideRetry: () => void
   patchVersion: string
   query: string
@@ -38,6 +40,7 @@ function ChampionGuideView({
   isGuideFetching,
   onChampionOpen,
   onFavoriteToggle,
+  onGameGuideAiAsk,
   onGuideRetry,
   patchVersion,
   query,
@@ -102,6 +105,7 @@ function ChampionGuideView({
             isFavorite={favoriteChampions.includes(championGuide.name)}
             key={championGuide.name}
             onFavoriteToggle={onFavoriteToggle}
+            onGameGuideAiAsk={onGameGuideAiAsk}
             onOpen={openChampionDetail}
           />
         ))}

@@ -53,6 +53,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/community/chat/rooms/*/messages").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/community/chat/rooms/*/stream").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/riot/status").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/ai/gameguide-pathfinder").permitAll()
                         .requestMatchers(
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/logout",

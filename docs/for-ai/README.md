@@ -15,6 +15,7 @@ Claude/Codex가 작업 시 참조하는 문서 폴더.
 | `spec/decks.md` | Deck 작업 시 |
 | `spec/guide.md` | Guide 작업 시 |
 | `spec/patch-notes.md` | PatchNotes 작업 시 |
+| `spec/gameguide-ai-pathfinder.md` | GameGuide AI Pathfinder 작업 시 |
 | `spec/ai-recommend.md` | AI Recommend 작업 시 |
 | `spec/admin.md` | Admin 작업 시 |
 | `coderabbit-fix-prompt.md` | CodeRabbit 수정 작업 시 |

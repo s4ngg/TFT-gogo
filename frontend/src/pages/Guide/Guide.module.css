@@ -390,7 +390,7 @@
 
 .traitTop {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) auto;
+  grid-template-columns: 42px minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 10px;
 }
@@ -902,7 +902,7 @@ button.championMini:hover {
 
 .augmentCardTop {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
+  grid-template-columns: 44px minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-xl);
 }
@@ -1524,9 +1524,469 @@ button.championMini:hover {
   font-weight: 600;
 }
 
+.gameGuideAiCardButton,
+.gameGuideAiChampionButton {
+  width: var(--size-control-sm);
+  height: var(--size-control-sm);
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 1px solid var(--cyan-border-subtle);
+  border-radius: var(--radius-button);
+  color: var(--color-cyan);
+  background: var(--cyan-bg-faint);
+  cursor: pointer;
+}
+
+.gameGuideAiCardButton {
+  justify-self: end;
+}
+
+.gameGuideAiChampionButton {
+  position: absolute;
+  top: var(--space-md);
+  left: var(--space-md);
+  z-index: 3;
+}
+
+.gameGuideAiCardButton:hover,
+.gameGuideAiChampionButton:hover {
+  border-color: var(--cyan-border-light);
+  color: var(--text-main);
+}
+
+.gameGuideAiShell {
+  position: fixed;
+  right: var(--space-5xl);
+  bottom: var(--space-5xl);
+  z-index: 80;
+}
+
+.gameGuideAiLauncher {
+  width: var(--size-gameguide-ai-launcher);
+  height: var(--size-gameguide-ai-launcher);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--cyan-border-subtle);
+  border-radius: 50%;
+  color: var(--text-main);
+  background: var(--search-btn-bg);
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.34);
+  cursor: pointer;
+}
+
+.gameGuideAiLauncher:hover {
+  border-color: var(--cyan-border-light);
+  color: var(--color-cyan);
+}
+
+.gameGuideAiLauncher span {
+  position: absolute;
+  right: var(--space-xs);
+  bottom: var(--space-xs);
+  display: grid;
+  place-items: center;
+  width: calc(var(--space-4xl) + var(--space-xs));
+  height: calc(var(--space-4xl) + var(--space-xs));
+  border: 1px solid var(--tone-gold-border);
+  border-radius: 50%;
+  color: var(--color-gold);
+  background: var(--bg-tooltip);
+  font-size: var(--font-size-2xs);
+  font-weight: 900;
+}
+
+.gameGuideAiPanel {
+  width: min(var(--size-gameguide-ai-chat-width), calc(100vw - (var(--space-5xl) * 2)));
+  max-height: min(var(--size-gameguide-ai-chat-max-height), calc(100vh - (var(--space-5xl) * 2)));
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  border: 1px solid var(--cyan-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--bg-tooltip);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+}
+
+.gameGuideAiHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  padding: var(--space-2xl);
+  border-bottom: 1px solid var(--border-separator);
+}
+
+.gameGuideAiHeader > div:first-child {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.gameGuideAiHeader span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--text-main);
+  font-size: var(--font-size-sm);
+  font-weight: 900;
+}
+
+.gameGuideAiHeader small {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: var(--font-size-2xs);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gameGuideAiHeaderActions {
+  display: inline-flex;
+  gap: var(--space-sm);
+}
+
+.gameGuideAiHeaderActions button {
+  width: var(--size-control-sm);
+  height: var(--size-control-sm);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border-btn-muted);
+  border-radius: var(--radius-button);
+  color: var(--text-soft);
+  background: var(--bg-btn-dark-soft);
+  cursor: pointer;
+}
+
+.gameGuideAiHeaderActions button:hover {
+  border-color: var(--cyan-border-light);
+  color: var(--color-cyan);
+}
+
+.gameGuideAiSelectedRefs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  padding: var(--space-lg) var(--space-2xl) 0;
+}
+
+.gameGuideAiSelectedRefs span {
+  max-width: 100%;
+  padding: var(--space-xs) var(--space-sm);
+  overflow: hidden;
+  border: 1px solid var(--cyan-border-subtle);
+  border-radius: var(--radius-xs);
+  color: var(--color-cyan);
+  background: var(--cyan-bg-faint);
+  font-size: var(--font-size-2xs);
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gameGuideAiMessages {
+  min-height: 260px;
+  display: grid;
+  align-content: start;
+  gap: var(--space-lg);
+  padding: var(--space-2xl);
+  overflow-y: auto;
+}
+
+.gameGuideAiEmpty {
+  min-height: 210px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: var(--space-lg);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.gameGuideAiEmpty p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.gameGuideAiUserMessage,
+.gameGuideAiAssistantMessage {
+  max-width: 92%;
+  min-width: 0;
+}
+
+.gameGuideAiUserMessage {
+  justify-self: end;
+}
+
+.gameGuideAiAssistantMessage {
+  justify-self: start;
+}
+
+.gameGuideAiUserMessage > p,
+.gameGuideAiAssistantMessage > p {
+  margin: 0;
+  padding: var(--space-lg) var(--space-xl);
+  border-radius: var(--radius-button);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+}
+
+.gameGuideAiUserMessage > p {
+  color: var(--text-main);
+  background: var(--cyan-bg-subtle);
+}
+
+.gameGuideAiAssistantMessage > p {
+  color: var(--text-secondary);
+  background: var(--bg-card-soft);
+}
+
+.gameGuideAiResult {
+  display: grid;
+  gap: var(--space-lg);
+  padding: var(--space-xl);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--bg-card);
+}
+
+.gameGuideAiResult > strong {
+  color: var(--text-main);
+  font-size: var(--font-size-sm);
+  font-weight: 900;
+}
+
+.gameGuideAiResult > p,
+.gameGuideAiSection p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+.gameGuideAiSection {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.gameGuideAiSection article {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border: 1px solid var(--border-separator);
+  border-radius: var(--radius-button);
+  background: var(--bg-btn-dark-soft);
+}
+
+.gameGuideAiSection span {
+  align-self: start;
+  padding: var(--space-3xs) var(--space-xs);
+  border: 1px solid var(--cyan-border-subtle);
+  border-radius: var(--radius-xs);
+  color: var(--color-cyan);
+  background: var(--cyan-bg-faint);
+  font-size: var(--font-size-2xs);
+  font-weight: 900;
+  text-align: center;
+}
+
+.gameGuideAiSection b {
+  display: block;
+  margin-bottom: var(--space-xs);
+  color: var(--text-soft);
+  font-size: var(--font-size-xs);
+}
+
+.gameGuideAiPhaseRefs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.gameGuideAiList {
+  display: grid;
+  gap: var(--space-sm);
+  margin: 0;
+  padding: 0 0 0 var(--space-2xl);
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  line-height: 1.45;
+}
+
+.gameGuideAiRefList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.gameGuideAiRecommendedList {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.gameGuideAiRecommendedList > div {
+  display: grid;
+  gap: var(--space-xs);
+  padding: var(--space-sm);
+  border: 1px solid var(--border-separator);
+  border-radius: var(--radius-button);
+  background: var(--bg-btn-dark-soft);
+}
+
+.gameGuideAiRecommendedList small {
+  color: var(--text-muted);
+  font-size: var(--font-size-2xs);
+  font-weight: 700;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+}
+
+.gameGuideAiRefList button,
+.gameGuideAiPhaseRefs button,
+.gameGuideAiRecommendedList button {
+  max-width: 100%;
+  padding: var(--space-xs) var(--space-sm);
+  overflow: hidden;
+  border: 1px solid var(--cyan-border-subtle);
+  border-radius: var(--radius-xs);
+  color: var(--color-cyan);
+  background: var(--cyan-bg-faint);
+  cursor: pointer;
+  font-size: var(--font-size-2xs);
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gameGuideAiRefList button:hover,
+.gameGuideAiPhaseRefs button:hover,
+.gameGuideAiRecommendedList button:hover {
+  border-color: var(--cyan-border-light);
+  color: var(--text-main);
+}
+
+.gameGuideAiFallbackBadge {
+  justify-self: start;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--tone-gold-border);
+  border-radius: var(--radius-xs);
+  color: var(--color-gold);
+  background: var(--tone-gold-bg);
+  font-size: var(--font-size-2xs);
+  font-weight: 900;
+}
+
+.gameGuideAiMetaBlock {
+  display: grid;
+  gap: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border-separator);
+}
+
+.gameGuideAiMetaBlock > span {
+  color: var(--text-soft);
+  font-size: var(--font-size-2xs);
+  font-weight: 900;
+}
+
+.gameGuideAiTyping {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.gameGuideAiTyping span {
+  width: var(--space-sm);
+  height: var(--space-sm);
+  border-radius: 50%;
+  background: var(--color-cyan);
+  animation: gameguide-ai-typing 900ms infinite ease-in-out;
+}
+
+.gameGuideAiTyping span:nth-child(2) {
+  animation-delay: 120ms;
+}
+
+.gameGuideAiTyping span:nth-child(3) {
+  animation-delay: 240ms;
+}
+
+.gameGuideAiForm {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--size-control-md);
+  gap: var(--space-md);
+  padding: var(--space-2xl);
+  border-top: 1px solid var(--border-separator);
+}
+
+.gameGuideAiForm textarea {
+  min-width: 0;
+  resize: none;
+  border: 1px solid var(--border-btn-muted);
+  border-radius: var(--radius-button);
+  outline: 0;
+  color: var(--text-main);
+  background: var(--bg-input-dark);
+  font-family: inherit;
+  font-size: var(--font-size-xs);
+  line-height: 1.45;
+  padding: var(--space-md) var(--space-lg);
+}
+
+.gameGuideAiForm textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.gameGuideAiForm textarea:focus {
+  border-color: var(--cyan-border-light);
+}
+
+.gameGuideAiForm button {
+  width: var(--size-control-md);
+  height: var(--size-control-md);
+  align-self: end;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--cyan-border-subtle);
+  border-radius: var(--radius-button);
+  color: var(--color-cyan);
+  background: var(--cyan-bg-faint);
+  cursor: pointer;
+}
+
+.gameGuideAiForm button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
 @keyframes status-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes gameguide-ai-typing {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+
+  40% {
+    opacity: 1;
+    transform: translateY(-3px);
   }
 }
 
@@ -1617,6 +2077,12 @@ button.championMini:hover {
     height: calc(var(--size-control-md) + var(--space-md));
   }
 
+  .gameGuideAiCardButton,
+  .gameGuideAiChampionButton {
+    width: calc(var(--size-control-md) + var(--space-xs));
+    height: calc(var(--size-control-md) + var(--space-xs));
+  }
+
   .itemIconButton {
     width: calc(var(--size-control-md) + var(--space-md));
     height: calc(var(--size-control-md) + var(--space-md));
@@ -1674,6 +2140,12 @@ button.championMini:hover {
   .traitTop {
     grid-template-columns: 42px minmax(0, 1fr);
     align-items: start;
+  }
+
+  .traitTop .gameGuideAiCardButton {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
   }
 
   .levelTrackWrap {

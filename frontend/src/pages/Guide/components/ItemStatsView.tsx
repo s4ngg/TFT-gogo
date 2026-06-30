@@ -1,3 +1,4 @@
+import { Bot } from 'lucide-react'
 import type { GuideCatalog } from '../../../api/guide'
 import { useGuideTabItems } from '../../../hooks/useGuide'
 import {
@@ -10,12 +11,17 @@ import {
   GuidePagination,
   GuideStatusBanner,
 } from './GuideShared'
+import {
+  createGameGuideAiRef,
+  type GameGuideAiAskHandler,
+} from '../utils/gameGuideAiRefs'
 import styles from '../Guide.module.css'
 
 interface ItemStatsViewProps {
   fallbackData: GuideCatalog
   isGuideFallbackData: boolean
   isGuideFetching: boolean
+  onGameGuideAiAsk: GameGuideAiAskHandler
   onGuideRetry: () => void
   patchVersion: string
   query: string
@@ -27,6 +33,7 @@ function ItemStatsView({
   fallbackData,
   isGuideFallbackData,
   isGuideFetching,
+  onGameGuideAiAsk,
   onGuideRetry,
   patchVersion,
   query,
@@ -77,6 +84,15 @@ function ItemStatsView({
                   <h3>{itemStat.name}</h3>
                 </div>
               </div>
+              <button
+                aria-label={`${itemStat.name} AI 질문`}
+                className={styles.gameGuideAiCardButton}
+                onClick={() => onGameGuideAiAsk(createGameGuideAiRef('ITEM', itemStat.name, itemStat.targetKey))}
+                title="AI에게 물어보기"
+                type="button"
+              >
+                <Bot size={14} />
+              </button>
             </div>
 
             <p className={styles.itemGuideDescription}>

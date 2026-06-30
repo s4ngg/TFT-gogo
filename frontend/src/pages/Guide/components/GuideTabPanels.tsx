@@ -7,6 +7,7 @@ import AugmentGuideView from './AugmentGuideView'
 import ChampionGuideView from './ChampionGuideView'
 import ItemStatsView from './ItemStatsView'
 import TraitGuideView from './TraitGuideView'
+import type { GameGuideAiAskHandler } from '../utils/gameGuideAiRefs'
 
 interface GuideTabPanelsProps {
   activeTab: GuideTab
@@ -15,6 +16,7 @@ interface GuideTabPanelsProps {
   isGuideFallbackData: boolean
   isGuideFetching: boolean
   onFavoriteToggle: (championName: string) => void
+  onGameGuideAiAsk: GameGuideAiAskHandler
   onGuideJump: (tab: GuideTab, query: string, label?: string) => void
   onGuideRetry: () => void
   onRecentGuideAdd: (guide: RecentGuide) => void
@@ -28,6 +30,7 @@ function GuideTabPanels({
   isGuideFallbackData,
   isGuideFetching,
   onFavoriteToggle,
+  onGameGuideAiAsk,
   onGuideJump,
   onGuideRetry,
   onRecentGuideAdd,
@@ -40,6 +43,7 @@ function GuideTabPanels({
           fallbackData={guideData}
           isGuideFallbackData={isGuideFallbackData}
           isGuideFetching={isGuideFetching}
+          onGameGuideAiAsk={onGameGuideAiAsk}
           onChampionSelect={(championName) => onGuideJump('champions', championName, championName)}
           onGuideRetry={onGuideRetry}
           patchVersion={guideData.patchVersion}
@@ -56,6 +60,7 @@ function GuideTabPanels({
           fallbackData={guideData}
           isGuideFallbackData={isGuideFallbackData}
           isGuideFetching={isGuideFetching}
+          onGameGuideAiAsk={onGameGuideAiAsk}
           onGuideRetry={onGuideRetry}
           patchVersion={guideData.patchVersion}
           query={query}
@@ -71,6 +76,7 @@ function GuideTabPanels({
           fallbackData={guideData}
           isGuideFallbackData={isGuideFallbackData}
           isGuideFetching={isGuideFetching}
+          onGameGuideAiAsk={onGameGuideAiAsk}
           onGuideRetry={onGuideRetry}
           patchVersion={guideData.patchVersion}
           query={query}
@@ -86,6 +92,7 @@ function GuideTabPanels({
         favoriteChampions={favoriteChampions}
         isGuideFallbackData={isGuideFallbackData}
         isGuideFetching={isGuideFetching}
+        onGameGuideAiAsk={onGameGuideAiAsk}
         onChampionOpen={(championName) => onRecentGuideAdd({
           label: championName,
           query: championName,

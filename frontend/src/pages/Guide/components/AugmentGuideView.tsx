@@ -9,6 +9,7 @@ import {
   GuideStatusBanner,
 } from './GuideShared'
 import AugmentGuideList from './AugmentGuideList'
+import type { GameGuideAiAskHandler } from '../utils/gameGuideAiRefs'
 
 const AUGMENT_GUIDE_PAGE_SIZE = 6
 
@@ -16,6 +17,7 @@ interface AugmentGuideViewProps {
   fallbackData: GuideCatalog
   isGuideFallbackData: boolean
   isGuideFetching: boolean
+  onGameGuideAiAsk: GameGuideAiAskHandler
   onGuideRetry: () => void
   patchVersion: string
   query: string
@@ -25,6 +27,7 @@ function AugmentGuideView({
   fallbackData,
   isGuideFallbackData,
   isGuideFetching,
+  onGameGuideAiAsk,
   onGuideRetry,
   patchVersion,
   query,
@@ -63,6 +66,7 @@ function AugmentGuideView({
       />
       <AugmentGuideList
         augments={visibleAugments}
+        onGameGuideAiAsk={onGameGuideAiAsk}
       />
       <GuidePagination currentPage={safePage} onPageChange={setCurrentPage} totalPages={pageData.totalPages} />
     </>

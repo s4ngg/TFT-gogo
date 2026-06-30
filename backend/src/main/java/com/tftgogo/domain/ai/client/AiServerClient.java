@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tftgogo.domain.ai.dto.AiChatRequest;
 import com.tftgogo.domain.ai.dto.AiChatResponse;
 import com.tftgogo.domain.ai.dto.AiRecommendResponse;
+import com.tftgogo.domain.ai.dto.GameGuideAiPathfinderRequest;
+import com.tftgogo.domain.ai.dto.GameGuideAiPathfinderResponse;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import org.apache.logging.log4j.LogManager;
@@ -12,6 +14,8 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -95,6 +99,33 @@ public class AiServerClient {
         }
     }
 
+    public GameGuideAiPathfinderResponse pathfindGameGuide(GameGuideAiPathfinderRequest request) {
+        return pathfindGameGuide(request, toMinimalSelectedEntries(request.getSelectedRefs()));
+    }
+
+    public GameGuideAiPathfinderResponse pathfindGameGuide(
+            GameGuideAiPathfinderRequest request,
+            List<GameGuideSelectedEntry> selectedEntries
+    ) {
+        try {
+            String json = objectMapper.writeValueAsString(toGameGuidePathfinderBody(request, selectedEntries));
+            byte[] responseBody = chatRestClient.post()
+                    .uri("/api/gameguide/pathfinder")
+                    .header("Content-Type", "application/json")
+                    .header("X-Internal-Secret", internalSecret)
+                    .body(json)
+                    .retrieve()
+                    .body(byte[].class);
+            if (responseBody == null || responseBody.length == 0) {
+                return null;
+            }
+            return objectMapper.readValue(responseBody, GameGuideAiPathfinderResponse.class);
+        } catch (Exception e) {
+            logger.warn("GameGuide AI 서버 호출 실패, fallback 사용: {}", e.getMessage());
+            return null;
+        }
+    }
+
     /**
      * AI 서버 헬스체크.
      */
@@ -109,5 +140,90 @@ public class AiServerClient {
             logger.warn("AI 서버 헬스체크 실패: {}", e.getMessage());
             return false;
         }
+    }
+
+    private Map<String, Object> toGameGuidePathfinderBody(
+            GameGuideAiPathfinderRequest request,
+            List<GameGuideSelectedEntry> selectedEntries
+    ) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("patch_version", request.getPatchVersion());
+        body.put("active_tab", request.getActiveTab());
+        body.put("mode", request.getMode());
+        body.put("selected_entries", toSelectedEntryBodies(selectedEntries));
+        body.put("candidate_refs", toGuideRefBodies(request.getCandidateRefs()));
+        body.put("question", request.getQuestion());
+        return body;
+    }
+
+    private List<Map<String, Object>> toSelectedEntryBodies(List<GameGuideSelectedEntry> selectedEntries) {
+        if (selectedEntries == null || selectedEntries.isEmpty()) {
+            return List.of();
+        }
+
+        return selectedEntries.stream()
+                .map(this::toSelectedEntryBody)
+                .toList();
+    }
+
+    private List<GameGuideSelectedEntry> toMinimalSelectedEntries(
+            List<GameGuideAiPathfinderRequest.GuideRefDto> refs
+    ) {
+        if (refs == null || refs.isEmpty()) {
+            return List.of();
+        }
+
+        return refs.stream()
+                .map(ref -> new GameGuideSelectedEntry(
+                        ref.getGuideType(),
+                        ref.getTargetKey(),
+                        ref.getName(),
+                        null,
+                        Map.of()
+                ))
+                .toList();
+    }
+
+    private Map<String, Object> toSelectedEntryBody(GameGuideSelectedEntry entry) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("guide_type", entry.guideType());
+        body.put("target_key", entry.targetKey());
+        if (entry.name() != null) {
+            body.put("name", entry.name());
+        }
+        if (entry.summary() != null) {
+            body.put("summary", entry.summary());
+        }
+        body.put("data", entry.data() == null ? Map.of() : entry.data());
+        return body;
+    }
+
+    private List<Map<String, Object>> toGuideRefBodies(List<GameGuideAiPathfinderRequest.GuideRefDto> refs) {
+        if (refs == null || refs.isEmpty()) {
+            return List.of();
+        }
+
+        return refs.stream()
+                .map(this::toGuideRefBody)
+                .toList();
+    }
+
+    private Map<String, Object> toGuideRefBody(GameGuideAiPathfinderRequest.GuideRefDto ref) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("guide_type", ref.getGuideType());
+        body.put("target_key", ref.getTargetKey());
+        if (ref.getName() != null) {
+            body.put("name", ref.getName());
+        }
+        return body;
+    }
+
+    public record GameGuideSelectedEntry(
+            String guideType,
+            String targetKey,
+            String name,
+            String summary,
+            Map<String, Object> data
+    ) {
     }
 }
