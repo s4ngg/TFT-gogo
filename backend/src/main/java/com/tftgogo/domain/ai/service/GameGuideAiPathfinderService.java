@@ -82,6 +82,10 @@ public class GameGuideAiPathfinderService {
                         "시너지, 챔피언, 아이템, 증강체를 하나씩 연결해 운영 흐름을 좁히는 방식이 안전합니다."
                 ),
                 List.of(
+                        "현재 선택한 가이드 항목과 화면 후보만 기준으로 안내합니다."
+                ),
+                List.of(),
+                List.of(
                         GameGuideAiPathfinderResponse.PhasePlanDto.of(
                                 "ANY",
                                 "가이드 항목 확인",
@@ -306,6 +310,8 @@ public class GameGuideAiPathfinderService {
                 response.getTitle(),
                 response.getSummary(),
                 safeList(response.getCoreConcepts()),
+                safeList(response.getEvidenceNotes()),
+                safeList(response.getCreativeSuggestions()),
                 safeList(response.getPhasePlan()).stream()
                         .map(phase -> GameGuideAiPathfinderResponse.PhasePlanDto.of(
                                 phase.getPhase(),

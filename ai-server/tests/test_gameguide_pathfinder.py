@@ -55,6 +55,8 @@ async def test_API키_미설정_시_fallback_응답_반환():
     assert result.is_fallback is True
     assert result.title == "시너지 가이드 질문"
     assert result.phase_plan[0].phase == "ANY"
+    assert result.evidence_notes == ["현재 선택한 가이드 항목과 화면 후보만 기준으로 안내합니다."]
+    assert result.creative_suggestions == []
     assert "질문: 동물특공대 어떻게 운영해?" in result.limitations
 
 
@@ -79,6 +81,8 @@ async def test_OpenAI_JSON_응답을_구조화_응답으로_반환():
         "title": "동물특공대 운영 루트",
         "summary": "지속 전투 중심으로 앞라인을 먼저 갖추세요.",
         "core_concepts": ["앞라인 유지", "공격 속도 활용"],
+        "evidence_notes": ["선택한 시너지 설명에 지속 전투 성격이 포함됩니다."],
+        "creative_suggestions": ["상황에 따라 공격 속도를 살릴 수 있는 후반 보강을 시도해볼 수 있습니다."],
         "phase_plan": [
             {
                 "phase": "ANY",
@@ -129,6 +133,8 @@ async def test_OpenAI_JSON_응답을_구조화_응답으로_반환():
     # then
     assert result.is_fallback is False
     assert result.title == "동물특공대 운영 루트"
+    assert result.evidence_notes == ["선택한 시너지 설명에 지속 전투 성격이 포함됩니다."]
+    assert result.creative_suggestions == ["상황에 따라 공격 속도를 살릴 수 있는 후반 보강을 시도해볼 수 있습니다."]
     assert result.recommended_refs[0].target_key == "TFT17_ExampleChampion"
     mock_breaker.record_success.assert_called_once()
 
@@ -213,6 +219,12 @@ async def test_OpenAI_JSON_파싱_실패_시_fallback_응답_반환():
 def test_시스템_프롬프트는_없는_메트릭_추측을_금지한다():
     assert "승률, 평균 등수, 픽률, TOP4율" in gameguide_pathfinder._SYSTEM_PROMPT
     assert "생성하거나 추측하지 않습니다" in gameguide_pathfinder._SYSTEM_PROMPT
+
+
+def test_시스템_프롬프트는_근거와_AI제안을_구분한다():
+    assert "evidence_notes" in gameguide_pathfinder._SYSTEM_PROMPT
+    assert "creative_suggestions" in gameguide_pathfinder._SYSTEM_PROMPT
+    assert "가이드 데이터와 AI 제안이 충돌하면 가이드 데이터를 우선합니다" in gameguide_pathfinder._SYSTEM_PROMPT
 
 
 def test_selected_entries_payload는_큰_data를_압축한다():

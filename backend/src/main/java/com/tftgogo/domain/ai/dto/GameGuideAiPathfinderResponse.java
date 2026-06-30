@@ -19,6 +19,10 @@ public class GameGuideAiPathfinderResponse {
     private String summary;
     @JsonAlias("core_concepts")
     private List<String> coreConcepts;
+    @JsonAlias("evidence_notes")
+    private List<String> evidenceNotes;
+    @JsonAlias("creative_suggestions")
+    private List<String> creativeSuggestions;
     @JsonAlias("phase_plan")
     private List<PhasePlanDto> phasePlan;
     @JsonAlias("recommended_refs")
@@ -36,6 +40,8 @@ public class GameGuideAiPathfinderResponse {
             String title,
             String summary,
             List<String> coreConcepts,
+            List<String> evidenceNotes,
+            List<String> creativeSuggestions,
             List<PhasePlanDto> phasePlan,
             List<RecommendedRefDto> recommendedRefs,
             List<String> avoidMistakes,
@@ -47,6 +53,8 @@ public class GameGuideAiPathfinderResponse {
                 title,
                 summary,
                 coreConcepts,
+                evidenceNotes,
+                creativeSuggestions,
                 phasePlan,
                 recommendedRefs,
                 avoidMistakes,

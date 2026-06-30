@@ -1805,6 +1805,26 @@ button.championMini:hover {
   font-size: var(--font-size-xs);
 }
 
+.gameGuideAiInsightGrid {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.gameGuideAiInsightBlock {
+  display: grid;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  border: 1px solid var(--border-separator);
+  border-radius: var(--radius-button);
+  background: var(--bg-btn-dark-soft);
+}
+
+.gameGuideAiInsightBlock > span {
+  color: var(--color-cyan);
+  font-size: var(--font-size-2xs);
+  font-weight: 900;
+}
+
 .gameGuideAiPhaseRefs {
   display: flex;
   flex-wrap: wrap;

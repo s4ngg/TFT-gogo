@@ -120,6 +120,8 @@ ApiResponse&lt;GameGuideAiPathfinderResponse&gt;
   "title": "string",
   "summary": "string",
   "coreConcepts": ["string"],
+  "evidenceNotes": ["string"],
+  "creativeSuggestions": ["string"],
   "phasePlan": [
     {
       "phase": "EARLY" | "MID" | "LATE" | "ANY",
@@ -158,6 +160,8 @@ ApiResponse&lt;GameGuideAiPathfinderResponse&gt;
 <response-rules>
 - title은 한 줄 카드 제목으로 표시 가능해야 한다.
 - summary는 2문장 이내로 제한한다.
+- evidenceNotes는 제공된 Guide 데이터에서 확인 가능한 근거만 담는다.
+- creativeSuggestions는 일반 TFT 운영 감각에 기반한 가능한 선택지를 담고, 확정 표현을 피한다.
 - phasePlan은 최대 4개 항목만 반환한다.
 - recommendedRefs는 최대 5개 항목만 반환한다.
 - avoidMistakes는 최대 4개 항목만 반환한다.
@@ -176,6 +180,8 @@ ApiResponse&lt;GameGuideAiPathfinderResponse&gt;
 - 사용자의 question은 선택된 Guide 항목을 해석하는 보조 질문으로만 사용한다.
 - AI 응답은 한국어만 사용한다.
 - AI 응답은 JSON만 반환하도록 프롬프트를 제한하고, ai-server에서 스키마 검증 후 반환한다.
+- 가이드 데이터 기반 판단은 evidenceNotes, AI의 보조 운영 제안은 creativeSuggestions로 분리한다.
+- creativeSuggestions가 포함되면 limitations에 확정 데이터가 아니라는 한계를 짧게 남긴다.
 - Spring은 AI 장애를 프론트 에러로 직접 노출하지 않고 fallback 응답을 반환한다.
 </business-rules>
 

@@ -48,6 +48,8 @@ class GameGuidePathfinderResponse(BaseModel):
     title: str = Field(max_length=80)
     summary: str = Field(max_length=500)
     core_concepts: list[str] = Field(default_factory=list, max_length=5)
+    evidence_notes: list[str] = Field(default_factory=list, max_length=4)
+    creative_suggestions: list[str] = Field(default_factory=list, max_length=4)
     phase_plan: list[PhasePlan] = Field(default_factory=list, max_length=4)
     recommended_refs: list[RecommendedRef] = Field(default_factory=list, max_length=5)
     avoid_mistakes: list[str] = Field(default_factory=list, max_length=4)

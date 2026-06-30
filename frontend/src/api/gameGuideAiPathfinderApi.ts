@@ -34,6 +34,8 @@ export interface GameGuideAiPathfinderRecommendedRef extends GameGuideAiPathfind
 export interface GameGuideAiPathfinderResponse {
   avoidMistakes: string[]
   coreConcepts: string[]
+  creativeSuggestions: string[]
+  evidenceNotes: string[]
   isFallback: boolean
   limitations: string[]
   phasePlan: GameGuideAiPathfinderPhasePlan[]

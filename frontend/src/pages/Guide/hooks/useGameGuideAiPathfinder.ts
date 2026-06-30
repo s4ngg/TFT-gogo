@@ -57,6 +57,10 @@ export function createGameGuideAiFallbackResponse({
       '질문한 키워드를 현재 가이드 탭에서 먼저 검색해 관련 항목을 확인하세요.',
       '시너지, 챔피언, 아이템, 증강체를 하나씩 연결해서 운영 흐름을 좁히는 방식이 안전합니다.',
     ],
+    creativeSuggestions: [],
+    evidenceNotes: [
+      '현재 선택한 가이드 항목과 화면 후보만 기준으로 안내합니다.',
+    ],
     isFallback: true,
     limitations: [
       '아직 GameGuide AI 백엔드가 연결되지 않아 기본 안내를 표시합니다.',

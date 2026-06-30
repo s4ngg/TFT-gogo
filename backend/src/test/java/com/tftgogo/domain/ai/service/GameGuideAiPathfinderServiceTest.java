@@ -78,6 +78,8 @@ class GameGuideAiPathfinderServiceTest {
         assertThat(response.isFallback()).isTrue();
         assertThat(response.getTitle()).isEqualTo("시너지 가이드 질문");
         assertThat(response.getPhasePlan()).hasSize(2);
+        assertThat(response.getEvidenceNotes()).containsExactly("현재 선택한 가이드 항목과 화면 후보만 기준으로 안내합니다.");
+        assertThat(response.getCreativeSuggestions()).isEmpty();
         assertThat(response.getSourceRefs()).isEmpty();
         assertThat(response.getLimitations()).contains("질문: 동물특공대 어떻게 운영해?");
     }
@@ -171,6 +173,8 @@ class GameGuideAiPathfinderServiceTest {
                   "title": "동물특공대 운영 루트",
                   "summary": "앞라인을 먼저 갖추세요.",
                   "core_concepts": ["앞라인 유지"],
+                  "evidence_notes": ["선택한 시너지 설명에 앞라인 유지가 필요합니다."],
+                  "creative_suggestions": ["상황에 따라 후반 보강을 시도해볼 수 있습니다."],
                   "phase_plan": [
                     {
                       "phase": "ANY",
@@ -215,16 +219,22 @@ class GameGuideAiPathfinderServiceTest {
 
         // then
         assertThat(response.getCoreConcepts()).containsExactly("앞라인 유지");
+        assertThat(response.getEvidenceNotes()).containsExactly("선택한 시너지 설명에 앞라인 유지가 필요합니다.");
+        assertThat(response.getCreativeSuggestions()).containsExactly("상황에 따라 후반 보강을 시도해볼 수 있습니다.");
         assertThat(response.getPhasePlan()).hasSize(1);
         assertThat(response.getPhasePlan().get(0).getGuideRefs().get(0).getGuideType()).isEqualTo("TRAIT");
         assertThat(response.getRecommendedRefs().get(0).getTargetKey()).isEqualTo("TFT17_AnimalSquad");
         assertThat(response.isFallback()).isFalse();
         assertThat(frontendJson).contains("\"coreConcepts\"");
+        assertThat(frontendJson).contains("\"evidenceNotes\"");
+        assertThat(frontendJson).contains("\"creativeSuggestions\"");
         assertThat(frontendJson).contains("\"phasePlan\"");
         assertThat(frontendJson).contains("\"recommendedRefs\"");
         assertThat(frontendJson).contains("\"sourceRefs\"");
         assertThat(frontendJson).contains("\"isFallback\":false");
         assertThat(frontendJson).doesNotContain("\"core_concepts\"");
+        assertThat(frontendJson).doesNotContain("\"evidence_notes\"");
+        assertThat(frontendJson).doesNotContain("\"creative_suggestions\"");
         assertThat(frontendJson).doesNotContain("\"is_fallback\"");
         assertThat(frontendJson).doesNotContain("\"fallback\":");
     }
@@ -243,6 +253,8 @@ class GameGuideAiPathfinderServiceTest {
                 "AI title",
                 "AI summary",
                 List.of("core"),
+                List.of("evidence"),
+                List.of("creative"),
                 List.of(GameGuideAiPathfinderResponse.PhasePlanDto.of(
                         "ANY",
                         "plan",
@@ -263,6 +275,8 @@ class GameGuideAiPathfinderServiceTest {
         // then
         assertThat(response.getTitle()).isEqualTo(expected.getTitle());
         assertThat(response.getSummary()).isEqualTo(expected.getSummary());
+        assertThat(response.getEvidenceNotes()).containsExactly("evidence");
+        assertThat(response.getCreativeSuggestions()).containsExactly("creative");
         assertThat(response.isFallback()).isFalse();
     }
 
@@ -300,6 +314,8 @@ class GameGuideAiPathfinderServiceTest {
         GameGuideAiPathfinderResponse aiResponse = GameGuideAiPathfinderResponse.of(
                 "AI title",
                 "AI summary",
+                List.of(),
+                List.of(),
                 List.of(),
                 List.of(),
                 List.of(),
@@ -388,6 +404,8 @@ class GameGuideAiPathfinderServiceTest {
                 "AI title",
                 "AI summary",
                 List.of(),
+                List.of("evidence"),
+                List.of("creative"),
                 List.of(GameGuideAiPathfinderResponse.PhasePlanDto.of(
                         "ANY",
                         "plan",
@@ -422,6 +440,8 @@ class GameGuideAiPathfinderServiceTest {
 
         // then
         assertThat(result.getRecommendedRefs()).hasSize(1);
+        assertThat(result.getEvidenceNotes()).containsExactly("evidence");
+        assertThat(result.getCreativeSuggestions()).containsExactly("creative");
         assertThat(result.getRecommendedRefs().get(0).getTargetKey()).isEqualTo("TFT17_AllowedChampion");
         assertThat(result.getPhasePlan().get(0).getGuideRefs()).hasSize(1);
         assertThat(result.getSourceRefs()).hasSize(1);

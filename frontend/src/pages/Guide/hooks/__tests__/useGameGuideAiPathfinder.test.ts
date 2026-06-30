@@ -19,6 +19,8 @@ test('GameGuide AI fallback preserves selected guide refs', () => {
 
   assert.equal(response.title, '도전자 가이드 질문')
   assert.equal(response.summary, '도전자 기준의 기본 안내만 표시합니다.')
+  assert.deepEqual(response.evidenceNotes, ['현재 선택한 가이드 항목과 화면 후보만 기준으로 안내합니다.'])
+  assert.deepEqual(response.creativeSuggestions, [])
   assert.deepEqual(response.sourceRefs, selectedRefs)
   assert.ok(response.limitations.includes('선택 항목: 도전자'))
   assert.equal(response.isFallback, true)

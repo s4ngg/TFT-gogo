@@ -68,6 +68,32 @@ function ResultBlock({ onGuideJump, response }: ResultBlockProps) {
       <strong>{response.title}</strong>
       <p>{response.summary}</p>
 
+      {(response.evidenceNotes.length > 0 || response.creativeSuggestions.length > 0) && (
+        <div className={styles.gameGuideAiInsightGrid}>
+          {response.evidenceNotes.length > 0 && (
+            <section className={styles.gameGuideAiInsightBlock}>
+              <span>가이드 근거</span>
+              <ul className={styles.gameGuideAiList}>
+                {response.evidenceNotes.map((note) => (
+                  <li key={note}>{note}</li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {response.creativeSuggestions.length > 0 && (
+            <section className={styles.gameGuideAiInsightBlock}>
+              <span>AI 제안</span>
+              <ul className={styles.gameGuideAiList}>
+                {response.creativeSuggestions.map((suggestion) => (
+                  <li key={suggestion}>{suggestion}</li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
+      )}
+
       {response.phasePlan.length > 0 && (
         <div className={styles.gameGuideAiSection}>
           {response.phasePlan.map((phase) => (
