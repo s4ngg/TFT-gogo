@@ -1,7 +1,7 @@
 import { getChampionShortName, getItemName, getTraitName } from '../../../api/cdragonLocale'
 import type { TFTLocale } from '../../../api/cdragonLocale'
 import { tftItemIconUrl } from '../../../api/communityDragonAssets'
-import { costLimitForLevel } from '../../../utils/deckUtils'
+import { costLimitForLevel } from './deckUtils'
 import type { ChampionItemSummary, ChampionSummary, MetaDeck } from '../../Dashboard/dashboardData'
 
 export type SortKey = 'rank' | 'top4' | 'avgPlace' | 'pickRate'

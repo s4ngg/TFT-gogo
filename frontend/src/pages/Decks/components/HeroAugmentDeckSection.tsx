@@ -1,5 +1,5 @@
 import type { TFTLocale } from '../../../api/cdragonLocale'
-import { useHeroAugmentDecks } from '../../../hooks/useHeroAugmentDecks'
+import { useHeroAugmentDecks } from '../hooks/useHeroAugmentDecks'
 import HeroAugmentDeckCard from './HeroAugmentDeckCard'
 import styles from '../Decks.module.css'
 
