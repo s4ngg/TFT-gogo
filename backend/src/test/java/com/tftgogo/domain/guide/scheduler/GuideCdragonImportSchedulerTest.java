@@ -56,7 +56,7 @@ class GuideCdragonImportSchedulerTest {
     }
 
     @Test
-    void startup_import가_true면_latest_설정값으로_CDragon_import를_실행한다() {
+    void startup_import가_true면_latest_자동_세트_설정값으로_CDragon_import를_실행한다() {
         // given
         when(guideCdragonImportProperties.isEnabled()).thenReturn(true);
         when(guideCdragonImportProperties.isStartupImport()).thenReturn(true);
@@ -74,8 +74,8 @@ class GuideCdragonImportSchedulerTest {
         verify(guideCdragonImportService).importGuides(requestCaptor.capture());
         GuideCdragonImportRequest request = requestCaptor.getValue();
         assertThat(request.getPatchVersion()).isEqualTo("latest");
-        assertThat(request.resolveSetNumber()).isEqualTo(17);
-        assertThat(request.resolveMutator()).isEqualTo("TFTSet17");
+        assertThat(request.getSetNumber()).isNull();
+        assertThat(request.getMutator()).isNull();
         assertThat(request.shouldIncludeChampions()).isTrue();
         assertThat(request.shouldIncludeTraits()).isTrue();
         assertThat(request.shouldIncludeItems()).isTrue();
@@ -146,8 +146,8 @@ class GuideCdragonImportSchedulerTest {
 
     private void stubImportProperties() {
         when(guideCdragonImportProperties.getPatchVersion()).thenReturn("latest");
-        when(guideCdragonImportProperties.getSetNumber()).thenReturn(17);
-        when(guideCdragonImportProperties.getMutator()).thenReturn("TFTSet17");
+        when(guideCdragonImportProperties.getSetNumber()).thenReturn(null);
+        when(guideCdragonImportProperties.getMutator()).thenReturn(null);
         when(guideCdragonImportProperties.isIncludeChampions()).thenReturn(true);
         when(guideCdragonImportProperties.isIncludeTraits()).thenReturn(true);
         when(guideCdragonImportProperties.isIncludeItems()).thenReturn(true);

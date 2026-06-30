@@ -176,8 +176,8 @@ Page: Guide (/guide).
   - enabled=false
   - startup-import=false
   - patch-version=latest
-  - set-number=17
-  - mutator=TFTSet17
+  - set-number unset; omitted requests auto-select the latest TFT set from CDragon data
+  - mutator unset; explicit set-number defaults to TFTSet{setNumber}
   - include-champions=true
   - include-traits=true
   - include-items=true
@@ -186,6 +186,7 @@ Page: Guide (/guide).
   - refresh-cron=0 40 6 * * *
   - zone=Asia/Seoul
 - Startup import runs on ApplicationReadyEvent only when enabled=true and startup-import=true.
+- Startup import runs after patch-note startup import so patch-version=latest can resolve to the latest current patch note.
 - Sync import runs hourly by default and refresh import runs daily at 06:40 KST by default.
 - Scheduler uses an in-process AtomicBoolean lock to avoid overlapping guide imports in a single server instance.
 - Scheduler also uses a MySQL advisory DB lock so only one server instance runs CDragon import in multi-server deployments.
