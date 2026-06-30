@@ -170,6 +170,7 @@ Page: /patch-notes.
   - refresh-cron=0 30 6 * * *
   - zone=Asia/Seoul
 - Startup import runs on ApplicationReadyEvent only when enabled=true and startup-import=true.
+- Startup import runs before guide startup import so guide patch-version=latest can resolve to the latest current patch note.
 - List check runs hourly by default and imports unknown official list items within list-scan-limit.
 - Daily refresh runs at 06:30 KST by default and refreshes the latest patch note.
 - Scheduler uses an in-process AtomicBoolean lock to avoid overlapping imports in a single server instance.

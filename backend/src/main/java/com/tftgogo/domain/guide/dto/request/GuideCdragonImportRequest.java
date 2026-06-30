@@ -56,15 +56,18 @@ public class GuideCdragonImportRequest {
         return request;
     }
 
-    public int resolveSetNumber() {
-        return setNumber != null ? setNumber : 17;
+    public Integer resolveSetNumber() {
+        return setNumber;
     }
 
     public String resolveMutator() {
         if (mutator != null && !mutator.trim().isEmpty()) {
             return mutator.trim();
         }
-        return "TFTSet" + resolveSetNumber();
+        if (setNumber != null) {
+            return "TFTSet" + setNumber;
+        }
+        return null;
     }
 
     public boolean shouldIncludeChampions() {

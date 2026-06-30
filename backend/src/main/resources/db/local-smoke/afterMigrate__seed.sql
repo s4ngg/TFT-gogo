@@ -152,9 +152,23 @@ ON DUPLICATE KEY UPDATE
 
 START TRANSACTION;
 
+SET @has_real_patch_note := (
+  SELECT COUNT(*) > 0
+  FROM patch_notes
+  WHERE deleted_at IS NULL
+    AND version <> '17.3'
+);
+
 UPDATE patch_notes
 SET is_current = 0
-WHERE is_current = 1
+WHERE @has_real_patch_note
+  AND deleted_at IS NULL
+  AND version = '17.3';
+
+UPDATE patch_notes
+SET is_current = 0
+WHERE NOT @has_real_patch_note
+  AND is_current = 1
   AND deleted_at IS NULL
   AND version <> '17.3';
 
@@ -176,7 +190,7 @@ INSERT INTO patch_notes (
     'Local smoke',
     NULL,
     '2026-06-09 00:00:00',
-    1,
+    CASE WHEN @has_real_patch_note THEN 0 ELSE 1 END,
     JSON_ARRAY('Guide and PatchNotes smoke data added', 'Public APIs work without Riot API key')
 )
 ON DUPLICATE KEY UPDATE
@@ -186,9 +200,33 @@ ON DUPLICATE KEY UPDATE
     focus = VALUES(focus),
     representative_image_url = VALUES(representative_image_url),
     published_at = VALUES(published_at),
-    is_current = VALUES(is_current),
+    is_current = CASE WHEN @has_real_patch_note THEN 0 ELSE VALUES(is_current) END,
     highlights_json = VALUES(highlights_json),
     deleted_at = NULL;
+
+SET @has_real_current_patch_note := (
+  SELECT COUNT(*) > 0
+  FROM patch_notes
+  WHERE deleted_at IS NULL
+    AND is_current = 1
+    AND version <> '17.3'
+);
+
+UPDATE patch_notes pn
+JOIN (
+  SELECT id
+  FROM (
+    SELECT id
+    FROM patch_notes
+    WHERE deleted_at IS NULL
+      AND version <> '17.3'
+    ORDER BY published_at DESC, id DESC
+    LIMIT 1
+  ) latest_real_patch_note
+) latest ON latest.id = pn.id
+SET pn.is_current = 1
+WHERE @has_real_patch_note
+  AND NOT @has_real_current_patch_note;
 
 DELETE pc
 FROM patch_note_changes pc
