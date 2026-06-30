@@ -1,10 +1,7 @@
 import json
-import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
-os.environ.setdefault("INTERNAL_SECRET", "test-internal-secret")
 
 from app.models.gameguide_pathfinder import (
     CandidateGuideRef,
