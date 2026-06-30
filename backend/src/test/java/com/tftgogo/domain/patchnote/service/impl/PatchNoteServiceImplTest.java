@@ -142,6 +142,58 @@ class PatchNoteServiceImplTest {
     }
 
     @Test
+    void low_impact_필터는_highImpactCount를_0으로_응답한다() {
+        // given
+        PatchNote patchNote = patchNote("17.0", true);
+        PatchChange nerf = patchChange(patchNote, PatchChangeCategory.ITEM, PatchChangeType.NERF, PatchChangeImpact.LOW, "징크스", 1);
+        when(patchNoteRepository.findByVersionAndDeletedAtIsNull("17.0"))
+                .thenReturn(Optional.of(patchNote));
+        when(patchChangeRepository.countFilteredChangesGroupByCategory(
+                patchNote,
+                PatchChangeType.NERF,
+                PatchChangeImpact.LOW,
+                "징크스"
+        )).thenReturn(List.of(categoryChangeCount(PatchChangeCategory.ITEM, 1L)));
+        when(patchChangeRepository.countFilteredChangesGroupByChangeType(
+                patchNote,
+                PatchChangeType.NERF,
+                PatchChangeImpact.LOW,
+                "징크스"
+        )).thenReturn(List.of(typeChangeCount(PatchChangeType.NERF, 1L)));
+        when(patchChangeRepository.findFilteredChanges(
+                patchNote,
+                PatchChangeCategory.ITEM,
+                PatchChangeType.NERF,
+                PatchChangeImpact.LOW,
+                "징크스",
+                PageRequest.of(0, 10)
+        )).thenReturn(patchChangePage(List.of(nerf), 0, 10, 1));
+
+        // when
+        PatchChangePageResponse response = patchNoteService.getPatchChanges(
+                "17.0",
+                "ITEM",
+                "NERF",
+                "LOW",
+                "징크스",
+                1,
+                10
+        );
+
+        // then
+        assertThat(response.getItems()).hasSize(1);
+        assertThat(response.getStats().getTotalChanges()).isEqualTo(1L);
+        assertThat(response.getStats().getHighImpactCount()).isZero();
+        verify(patchChangeRepository, never()).countFilteredChanges(
+                patchNote,
+                null,
+                PatchChangeType.NERF,
+                PatchChangeImpact.HIGH,
+                "징크스"
+        );
+    }
+
+    @Test
     void 검색어는_like_와일드카드를_이스케이프해서_조회한다() {
         // given
         PatchNote patchNote = patchNote("17.0", true);
@@ -178,6 +230,25 @@ class PatchNoteServiceImplTest {
 
         // then
         assertThat(response.getItems()).isEmpty();
+        verify(patchChangeRepository).countFilteredChangesGroupByCategory(
+                patchNote,
+                null,
+                null,
+                "카\\%\\_\\\\이사"
+        );
+        verify(patchChangeRepository).countFilteredChangesGroupByChangeType(
+                patchNote,
+                null,
+                null,
+                "카\\%\\_\\\\이사"
+        );
+        verify(patchChangeRepository).countFilteredChanges(
+                patchNote,
+                null,
+                null,
+                PatchChangeImpact.HIGH,
+                "카\\%\\_\\\\이사"
+        );
         verify(patchChangeRepository).findFilteredChanges(
                 patchNote,
                 null,

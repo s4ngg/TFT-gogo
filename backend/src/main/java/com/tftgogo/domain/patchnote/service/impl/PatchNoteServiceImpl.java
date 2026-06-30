@@ -172,13 +172,17 @@ public class PatchNoteServiceImpl implements PatchNoteService {
             typeCounts.put(count.getChangeType().name(), count.getChangeCount());
         }
 
+        long highImpactCount = impact != null && impact != PatchChangeImpact.HIGH
+                ? 0L
+                : patchChangeRepository.countFilteredChanges(patchNote, null, changeType, PatchChangeImpact.HIGH, query);
+
         return PatchChangeStatsResponse.of(
                 totalChanges,
                 categoryCounts,
                 typeCounts,
                 typeCounts.get(PatchChangeType.BUFF.name()),
                 typeCounts.get(PatchChangeType.NERF.name()),
-                patchChangeRepository.countFilteredChanges(patchNote, null, changeType, PatchChangeImpact.HIGH, query)
+                highImpactCount
         );
     }
 
