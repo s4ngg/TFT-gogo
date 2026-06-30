@@ -123,7 +123,9 @@ All admin backend endpoints are protected by X-Admin-Token.
 - When the database has a single-current unique index, current patch updates should persist the old rows as not-current before saving the new current row.
 - highlightsJson and tagsJson are JSON string arrays.
 - Patch changes belong to one patch note.
-- Admin delete is soft delete.
+- Admin patch-note delete is soft delete for the patch note row.
+- Patch-change delete is hard delete in the current implementation.
+- Deleting a patch note soft-deletes the patch note row and hard-deletes its patch changes.
 - Manual updates to imported patch notes or changes mark manuallyEdited=true.
 - Riot official import endpoint is POST /api/admin/patch-notes/import/riot.
 - Import request fields are sourceUrl, locale, version, and current.

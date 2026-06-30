@@ -23,7 +23,7 @@ Page: /patch-notes.
 - PATCH /api/admin/patch-notes/{patchNoteId}
   -> update patch note manually.
 - DELETE /api/admin/patch-notes/{patchNoteId}
-  -> soft-delete patch note and its changes.
+  -> soft-delete patch note and hard-delete its patch changes.
 - GET /api/admin/patch-notes/{patchNoteId}/changes
   -> admin patch-change list for a patch note.
 - POST /api/admin/patch-note-changes
@@ -31,7 +31,7 @@ Page: /patch-notes.
 - PATCH /api/admin/patch-note-changes/{changeId}
   -> update patch change manually.
 - DELETE /api/admin/patch-note-changes/{changeId}
-  -> soft-delete patch change.
+  -> hard-delete patch change.
 - POST /api/admin/patch-notes/import/riot
   -> import latest or specified official Riot/TFT patch note.
 </backend>
@@ -87,6 +87,7 @@ Page: /patch-notes.
 - source_key, source_heading_path, source_order, imported_at, and manually_edited are crawler/import metadata.
 - Imported row duplicate detection uses patchNote + sourceKey.
 - Manual rows may have null sourceKey.
+- PatchChange rows do not use soft delete or deleted_at in the current implementation.
 </patch_note_changes>
 </data-model>
 
@@ -95,8 +96,9 @@ Page: /patch-notes.
 - Manual admin creates/updates validate JSON arrays such as highlights and tags.
 - Manual admin updates to imported patch notes or changes must mark manuallyEdited=true.
 - Imported rows with manuallyEdited=true must be preserved on later imports.
-- Admin delete is soft delete. Do not hard-delete patch notes or patch changes from normal admin flows.
-- Deleting a patch note soft-deletes its active/non-deleted patch changes.
+- Admin patch-note delete is soft delete for the PatchNote row.
+- PatchChange delete is hard delete in the current implementation.
+- Deleting a patch note soft-deletes the PatchNote row and hard-deletes its PatchChange rows.
 - Admin patch change forms must reject empty sortOrder text before numeric conversion.
 - Editing a patch change must not drift across selected patch notes. If selected patch note changes while editing, clear edit state before save.
 - When marking an imported or manually created patch as current, clear existing current rows and flush before inserting/updating the new current row if the database has a single-current unique index.
@@ -133,7 +135,7 @@ Page: /patch-notes.
 - PatchChange upsert matching key is patchNote + sourceKey.
 - Imported patch notes/changes with manuallyEdited=false may be updated by re-import.
 - Imported patch notes/changes with manuallyEdited=true are skipped by re-import.
-- Stale imported changes may be soft-deleted when a re-import updates an existing patch note.
+- Stale imported changes may be hard-deleted when a re-import updates an existing patch note.
 - Current implementation does not expose dryRun or forceOverwrite. Add those as a separate enhancement if needed.
 </riot-import>
 
@@ -207,7 +209,7 @@ Page: /patch-notes.
 
 <validation>
 - Public service tests should cover list response, latest/current behavior, version not found, filter query, stats separation, page slicing, invalid pagination, enum parsing, and LIKE escaping.
-- Admin service tests should cover patch-note CRUD, patch-change CRUD, JSON array validation, duplicate/current behavior, not found errors, soft delete, and manuallyEdited marking.
+- Admin service tests should cover patch-note CRUD, patch-change CRUD, JSON array validation, duplicate/current behavior, not found errors, patch-note soft delete, patch-change hard delete, and manuallyEdited marking.
 - Import tests should cover latest import by tag page, direct sourceUrl import, repeated import idempotency, manuallyEdited skip, sourceKey matching, stale imported change handling, parser warnings, unsupported host rejection, and current flag behavior.
 - Scheduler tests should cover disabled state, startup-import flag, list scan limit, already-imported skip, current flag, and in-process lock skip.
 - Frontend tests should cover readPatchChangeStatsPayload, latest patch default selection, search without full reload, simplified public display, and mobile no-overflow behavior.
