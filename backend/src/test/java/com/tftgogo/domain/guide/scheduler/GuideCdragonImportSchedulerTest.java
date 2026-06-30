@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -26,6 +27,9 @@ class GuideCdragonImportSchedulerTest {
 
     @Mock
     private GuideCdragonImportProperties guideCdragonImportProperties;
+
+    @Mock
+    private GuideCdragonImportSchedulerLock schedulerLock;
 
     @InjectMocks
     private GuideCdragonImportScheduler scheduler;
@@ -52,11 +56,12 @@ class GuideCdragonImportSchedulerTest {
     }
 
     @Test
-    void startup_import가_true면_latest_설정값으로_CDragon_import를_실행한다() {
+    void startup_import가_true면_latest_자동_세트_설정값으로_CDragon_import를_실행한다() {
         // given
         when(guideCdragonImportProperties.isEnabled()).thenReturn(true);
         when(guideCdragonImportProperties.isStartupImport()).thenReturn(true);
         stubImportProperties();
+        givenSchedulerLockRunsTask();
         when(guideCdragonImportService.importGuides(any(GuideCdragonImportRequest.class)))
                 .thenReturn(importResponse());
 
@@ -69,8 +74,8 @@ class GuideCdragonImportSchedulerTest {
         verify(guideCdragonImportService).importGuides(requestCaptor.capture());
         GuideCdragonImportRequest request = requestCaptor.getValue();
         assertThat(request.getPatchVersion()).isEqualTo("latest");
-        assertThat(request.resolveSetNumber()).isEqualTo(17);
-        assertThat(request.resolveMutator()).isEqualTo("TFTSet17");
+        assertThat(request.getSetNumber()).isNull();
+        assertThat(request.getMutator()).isNull();
         assertThat(request.shouldIncludeChampions()).isTrue();
         assertThat(request.shouldIncludeTraits()).isTrue();
         assertThat(request.shouldIncludeItems()).isTrue();
@@ -91,6 +96,7 @@ class GuideCdragonImportSchedulerTest {
         // given
         when(guideCdragonImportProperties.isEnabled()).thenReturn(true);
         stubImportProperties();
+        givenSchedulerLockRunsTask();
         when(guideCdragonImportService.importGuides(any(GuideCdragonImportRequest.class)))
                 .thenReturn(importResponse());
 
@@ -107,6 +113,7 @@ class GuideCdragonImportSchedulerTest {
         when(guideCdragonImportProperties.isEnabled()).thenReturn(true);
         when(guideCdragonImportProperties.isStartupImport()).thenReturn(true);
         stubImportProperties();
+        givenSchedulerLockRunsTask();
         when(guideCdragonImportService.importGuides(any(GuideCdragonImportRequest.class)))
                 .thenThrow(new RuntimeException("cdragon unavailable"));
 
@@ -115,10 +122,32 @@ class GuideCdragonImportSchedulerTest {
                 .doesNotThrowAnyException();
     }
 
+    @Test
+    void DB_락을_얻지_못하면_CDragon_import를_실행하지_않는다() {
+        // given
+        when(guideCdragonImportProperties.isEnabled()).thenReturn(true);
+        when(guideCdragonImportProperties.isStartupImport()).thenReturn(true);
+        when(schedulerLock.runWithLock(any(), any())).thenReturn(false);
+
+        // when
+        scheduler.importOnStartupIfEnabled();
+
+        // then
+        verifyNoInteractions(guideCdragonImportService);
+    }
+
+    private void givenSchedulerLockRunsTask() {
+        doAnswer(invocation -> {
+            Runnable task = invocation.getArgument(1);
+            task.run();
+            return true;
+        }).when(schedulerLock).runWithLock(any(), any());
+    }
+
     private void stubImportProperties() {
         when(guideCdragonImportProperties.getPatchVersion()).thenReturn("latest");
-        when(guideCdragonImportProperties.getSetNumber()).thenReturn(17);
-        when(guideCdragonImportProperties.getMutator()).thenReturn("TFTSet17");
+        when(guideCdragonImportProperties.getSetNumber()).thenReturn(null);
+        when(guideCdragonImportProperties.getMutator()).thenReturn(null);
         when(guideCdragonImportProperties.isIncludeChampions()).thenReturn(true);
         when(guideCdragonImportProperties.isIncludeTraits()).thenReturn(true);
         when(guideCdragonImportProperties.isIncludeItems()).thenReturn(true);

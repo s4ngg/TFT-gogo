@@ -4,7 +4,7 @@ import type { GameGuideAiPathfinderRef } from '../../api/gameGuideAiPathfinderAp
 import type { GuideTab, GuideTabItems } from '../../api/guide'
 import { AppLayout } from '../../components/layout'
 import { useGuideCatalog } from '../../hooks/useGuide'
-import { guideFallbackData } from '../../mocks/guideResponseMock'
+import { guideFallbackData } from './guideFallbackData'
 import GameGuideAiChatWidget from './components/GameGuideAiChatWidget'
 import GuideControls from './components/GuideControls'
 import GuideQuickAccess from './components/GuideQuickAccess'
