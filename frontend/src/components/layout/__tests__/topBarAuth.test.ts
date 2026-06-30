@@ -5,8 +5,8 @@ import { AUTH_ME_QUERY_KEY } from '../../../hooks/useAuthSession'
 import { clearTopBarAuthSession } from '../topBarAuth'
 
 interface QueryCall {
-  exact: true
-  queryKey: typeof AUTH_ME_QUERY_KEY
+  exact?: boolean
+  queryKey: readonly unknown[]
 }
 
 function createQueryClient(options: { rejectCancel?: boolean } = {}) {
@@ -25,9 +25,9 @@ function createQueryClient(options: { rejectCancel?: boolean } = {}) {
           throw new Error('cancel failed')
         }
       },
-      removeQueries: (filters: { queryKey: readonly string[]; exact?: boolean }) => {
+      removeQueries: (filters: QueryCall) => {
         calls.push('remove')
-        removeFilters.push(filters as unknown as QueryCall)
+        removeFilters.push(filters)
       },
     },
     cancelFilters,
@@ -45,10 +45,13 @@ describe('clearTopBarAuthSession', () => {
       queryClient.calls.push('clearAuth')
     })
 
-    assert.deepEqual(queryClient.calls, ['clearAuth', 'cancel', 'remove', 'remove'])
+    assert.deepEqual(queryClient.calls, ['clearAuth', 'cancel', 'cancel', 'remove', 'remove'])
     assert.deepEqual(queryClient.cancelFilters[0], {
       exact: true,
       queryKey: AUTH_ME_QUERY_KEY,
+    })
+    assert.deepEqual(queryClient.cancelFilters[1], {
+      queryKey: ['aiRecommendation'],
     })
     assert.deepEqual(queryClient.removeFilters[0], {
       exact: true,
@@ -58,6 +61,29 @@ describe('clearTopBarAuthSession', () => {
       queryKey: ['aiRecommendation'],
     })
     assert.deepEqual(calls, ['clearAuth'])
+  })
+
+  it('로컬 토큰을 지운 뒤에도 캡처한 access token으로 서버 로그아웃을 요청한다', async () => {
+    const queryClient = createQueryClient()
+    const calls: string[] = []
+    let logoutToken: string | undefined
+
+    await clearTopBarAuthSession(
+      queryClient.client,
+      () => {
+        calls.push('clearAuth')
+        queryClient.calls.push('clearAuth')
+      },
+      async (accessToken) => {
+        calls.push('logout')
+        logoutToken = accessToken
+      },
+      'captured-access-token',
+    )
+
+    assert.equal(logoutToken, 'captured-access-token')
+    assert.deepEqual(calls, ['clearAuth', 'logout'])
+    assert.deepEqual(queryClient.calls, ['clearAuth', 'cancel', 'cancel', 'remove', 'remove'])
   })
 
   it('쿼리 취소가 실패해도 로컬 세션과 캐시 제거 흐름을 유지한다', async () => {
@@ -70,7 +96,7 @@ describe('clearTopBarAuthSession', () => {
     })
 
     assert.equal(clearAuthCount, 1)
-    assert.deepEqual(queryClient.calls, ['clearAuth', 'cancel', 'remove', 'remove'])
+    assert.deepEqual(queryClient.calls, ['clearAuth', 'cancel', 'cancel', 'remove', 'remove'])
     assert.deepEqual(queryClient.removeFilters[0], {
       exact: true,
       queryKey: AUTH_ME_QUERY_KEY,

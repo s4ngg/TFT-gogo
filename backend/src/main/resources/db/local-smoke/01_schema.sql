@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
     social_provider VARCHAR(20) NULL,
     social_id VARCHAR(255) NULL,
     notification_enabled TINYINT(1) NOT NULL DEFAULT 1,
+    auth_token_version BIGINT NOT NULL DEFAULT 0,
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     deleted_at DATETIME(6) NULL,
@@ -25,6 +26,35 @@ CREATE TABLE IF NOT EXISTS users (
             (social_provider IS NULL AND social_id IS NULL)
             OR (social_provider IS NOT NULL AND social_id IS NOT NULL)
         )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS refresh_token_sessions (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    token_hash VARCHAR(64) NOT NULL,
+    revoked TINYINT(1) NOT NULL DEFAULT 0,
+    reuse_detected TINYINT(1) NOT NULL DEFAULT 0,
+    expires_at DATETIME(6) NOT NULL,
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    revoked_at DATETIME(6) NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_refresh_token_sessions_token_hash (token_hash),
+    KEY idx_refresh_token_sessions_user_active (user_id, revoked, expires_at),
+    CONSTRAINT fk_refresh_token_sessions_user
+        FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS access_token_blocklist (
+    token_id VARCHAR(80) NOT NULL,
+    user_id BIGINT NOT NULL,
+    expires_at DATETIME(6) NOT NULL,
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    PRIMARY KEY (token_id),
+    KEY idx_access_token_blocklist_expiry (expires_at),
+    KEY idx_access_token_blocklist_user (user_id),
+    CONSTRAINT fk_access_token_blocklist_user
+        FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS cached_summoner (
@@ -364,8 +394,8 @@ CREATE TABLE IF NOT EXISTS party_post_tags (
         FOREIGN KEY (party_post_id) REFERENCES party_posts (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ELD reserved tables. Current MVP chat runtime uses CommunityChatRoomIds and
--- InMemoryChatServiceImpl, so these tables are not read or written by the app yet.
+-- Runtime chat room metadata. Local/dev may still use InMemoryChatServiceImpl,
+-- but non-local profiles persist recent chat messages through these tables.
 CREATE TABLE IF NOT EXISTS chat_rooms (
     id BIGINT NOT NULL AUTO_INCREMENT,
     room_key VARCHAR(80) NOT NULL,
@@ -385,7 +415,7 @@ CREATE TABLE IF NOT EXISTS chat_rooms (
         FOREIGN KEY (party_post_id) REFERENCES party_posts (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ELD reserved table. Current MVP chat messages are in-memory only.
+-- Persistent chat messages used by the non-local ChatService implementation.
 CREATE TABLE IF NOT EXISTS chat_messages (
     id BIGINT NOT NULL AUTO_INCREMENT,
     user_id BIGINT NOT NULL,

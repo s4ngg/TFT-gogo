@@ -457,10 +457,9 @@
 }
 
 .changeTargetGroup {
-  position: relative;
   display: grid;
   gap: var(--space-md);
-  padding: var(--space-lg) 0 var(--space-lg) var(--space-2xl);
+  padding: var(--space-lg) 0;
   border-bottom: 1px solid rgba(112, 144, 152, 0.1);
 }
 
@@ -468,20 +467,25 @@
   border-bottom: 0;
 }
 
-.changeTargetGroup::before {
-  content: "";
-  position: absolute;
-  top: 24px;
-  left: 0;
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: var(--color-cyan);
-  box-shadow: 0 0 0 4px var(--cyan-bg-faint);
+.changeTargetHeader {
+  display: grid;
+  grid-template-columns: calc(var(--size-control-md) + var(--space-md)) minmax(0, 1fr);
+  align-items: flex-start;
+  gap: var(--space-md);
 }
 
-.changeTargetHeader {
+.changeTargetImage {
+  width: calc(var(--size-control-md) + var(--space-md));
+  height: calc(var(--size-control-md) + var(--space-md));
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-button);
+  object-fit: cover;
+  background: var(--bg-btn-dark-soft);
+}
+
+.changeTargetHeading {
   display: flex;
+  min-width: 0;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
@@ -766,8 +770,7 @@
   word-break: keep-all;
 }
 
-.insightSection,
-.quickCategorySection {
+.insightSection {
   display: grid;
   gap: var(--space-lg);
   margin-top: var(--space-2xl);
@@ -782,39 +785,6 @@
   color: var(--text-muted);
   font-size: var(--font-size-xs);
   font-weight: 900;
-}
-
-.quickCategoryGrid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-md);
-}
-
-.quickCategoryButton {
-  min-height: var(--size-control-sm);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: 0 var(--space-lg);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-button);
-  color: var(--text-soft);
-  background: var(--bg-btn-dark-soft);
-  font-size: var(--font-size-xs);
-  font-weight: 900;
-  cursor: pointer;
-}
-
-.quickCategoryButton:hover {
-  border-color: var(--cyan-border-subtle);
-  color: var(--text-main);
-  background: var(--cyan-bg-faint);
-}
-
-.activeQuickCategoryButton {
-  border-color: var(--color-cyan);
-  color: var(--color-cyan);
-  background: var(--cyan-bg-subtle);
 }
 
 .historyHeader {
@@ -1005,5 +975,14 @@
   .changeMetaStack,
   .changeTypeStack {
     justify-content: flex-start;
+  }
+
+  .changeTargetHeader {
+    grid-template-columns: calc(var(--size-control-sm) + var(--space-sm)) minmax(0, 1fr);
+  }
+
+  .changeTargetImage {
+    width: calc(var(--size-control-sm) + var(--space-sm));
+    height: calc(var(--size-control-sm) + var(--space-sm));
   }
 }

@@ -52,6 +52,7 @@ docker compose up -d mysql redis
 - **시드**: `classpath:db/local-smoke`의 `afterMigrate__seed.sql` callback을 마이그레이션 완료 후 실행
 
 Docker Compose backend 서비스는 `SPRING_FLYWAY_LOCATIONS`를 `classpath:db/migration,classpath:db/local-smoke`로 설정하여 시드 callback이 포함됩니다.
+`17.3 Local Patch`는 fallback smoke 데이터이며, Riot import 패치가 이미 있으면 current 패치를 덮어쓰지 않습니다.
 
 기존 DB를 완전히 초기화하려면 먼저 아래 명령을 실행합니다.
 
@@ -89,6 +90,31 @@ cd backend
 .\gradlew.bat bootRun --args='--spring.profiles.active=local'
 ```
 
+## 최신 Guide/PatchNotes import
+
+최신 게임가이드와 패치노트를 로컬 DB에 넣어야 할 때는 backend 시작 전에 import 스위치를 켭니다.
+
+- PatchNotes import는 Riot 공식 패치노트 목록에서 최신 항목을 가져와 current 패치로 저장합니다.
+- Guide import는 `APP_GUIDE_CDRAGON_PATCH_VERSION=latest` 기준으로 current 패치노트 버전을 사용합니다.
+- CDragon 세트 번호와 mutator를 지정하지 않으면 CDragon 응답에서 가장 최신 TFT 세트를 자동 선택합니다.
+
+```powershell
+$env:APP_PATCH_NOTE_SCHEDULER_ENABLED="true"
+$env:APP_PATCH_NOTE_SCHEDULER_STARTUP_IMPORT="true"
+$env:APP_PATCH_NOTE_SCHEDULER_LOCALE="ko-kr"
+$env:APP_PATCH_NOTE_SCHEDULER_CURRENT="true"
+
+$env:APP_GUIDE_CDRAGON_ENABLED="true"
+$env:APP_GUIDE_CDRAGON_STARTUP_IMPORT="true"
+$env:APP_GUIDE_CDRAGON_PATCH_VERSION="latest"
+$env:APP_GUIDE_CDRAGON_INCLUDE_CHAMPIONS="true"
+$env:APP_GUIDE_CDRAGON_INCLUDE_TRAITS="true"
+$env:APP_GUIDE_CDRAGON_INCLUDE_ITEMS="true"
+$env:APP_GUIDE_CDRAGON_INCLUDE_AUGMENTS="true"
+
+docker compose up --build backend
+```
+
 ## 스모크 체크
 
 ```powershell
@@ -99,16 +125,14 @@ curl.exe "http://localhost:8081/api/guide/augments?page=1&pageSize=10"
 curl.exe "http://localhost:8081/api/guide/champions?page=1&pageSize=10&cost=4"
 
 curl.exe http://localhost:8081/api/patch-notes
-curl.exe "http://localhost:8081/api/patch-notes/17.3/changes?page=1&pageSize=10"
-curl.exe "http://localhost:8081/api/patch-notes/17.3/changes?category=CHAMPION&impact=HIGH"
-
-curl.exe -H "X-Admin-Token: local-admin-token" -H "Content-Type: application/json" -d "{\"patchVersion\":\"17.3\",\"setNumber\":17,\"mutator\":\"TFTSet17\",\"includeChampions\":true,\"includeTraits\":true,\"includeItems\":true,\"includeAugments\":true}" http://localhost:8081/api/admin/guides/import/cdragon
-curl.exe -H "X-Admin-Token: local-admin-token" http://localhost:8081/api/admin/patch-notes
+$patchVersion = (Invoke-RestMethod http://localhost:8081/api/patch-notes).data[0].version
+curl.exe "http://localhost:8081/api/patch-notes/$patchVersion/changes?page=1&pageSize=10"
+curl.exe "http://localhost:8081/api/patch-notes/$patchVersion/changes?category=CHAMPION&impact=HIGH"
 ```
 
 기대 결과:
 
-- Guide와 PatchNotes 공개 API가 frontend fallback data 없이 시드된 `17.3` 데이터를 반환합니다.
+- Guide와 PatchNotes 공개 API가 frontend fallback data 없이 최신 import 데이터를 반환합니다.
 - Auth signup/login/me, Party create/join/cancel이 임시 테이블 생성 없이 동작합니다.
 - Chat GET messages/SSE는 공개 접근, POST message는 로그인 토큰으로 동작합니다.
 - Chat DB 테이블은 ELD 예약 테이블이며 현재 MVP 런타임은 in-memory chat을 사용합니다.

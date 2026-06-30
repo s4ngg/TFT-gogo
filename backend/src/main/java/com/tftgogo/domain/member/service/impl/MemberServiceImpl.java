@@ -10,7 +10,6 @@ import com.tftgogo.domain.member.repository.MemberRepository;
 import com.tftgogo.domain.member.service.MemberService;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
-import com.tftgogo.global.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,8 +29,8 @@ public class MemberServiceImpl implements MemberService {
 
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtTokenProvider jwtTokenProvider;
     private final SocialMemberCreationService socialMemberCreationService;
+    private final AuthTokenService authTokenService;
 
     @Override
     @Transactional
@@ -53,12 +52,11 @@ public class MemberServiceImpl implements MemberService {
             throw mapSignupConstraintViolation(e);
         }
 
-        String accessToken = jwtTokenProvider.createAccessToken(member.getUserId());
-
-        return AuthResponse.of(accessToken, MemberResponse.from(member));
+        return authTokenService.issue(member);
     }
 
     @Override
+    @Transactional
     public AuthResponse login(LoginRequest request) {
         Member member = memberRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_LOGIN_CREDENTIALS));
@@ -71,9 +69,7 @@ public class MemberServiceImpl implements MemberService {
             throw new BusinessException(ErrorCode.INVALID_LOGIN_CREDENTIALS);
         }
 
-        String accessToken = jwtTokenProvider.createAccessToken(member.getUserId());
-
-        return AuthResponse.of(accessToken, MemberResponse.from(member));
+        return authTokenService.issue(member);
 
     }
 
@@ -97,6 +93,18 @@ public class MemberServiceImpl implements MemberService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         return MemberResponse.from(member);
+    }
+
+    @Override
+    @Transactional
+    public AuthResponse refresh(String refreshToken) {
+        return authTokenService.refresh(refreshToken);
+    }
+
+    @Override
+    @Transactional
+    public void logout(Long userId, String accessToken, String refreshToken) {
+        authTokenService.logout(userId, accessToken, refreshToken);
     }
 
     private AuthResponse createSocialMember(SocialLoginCommand command) {
@@ -137,9 +145,7 @@ public class MemberServiceImpl implements MemberService {
     }
 
     private AuthResponse issueAuthResponse(Member member) {
-        String accessToken = jwtTokenProvider.createAccessToken(member.getUserId());
-
-        return AuthResponse.of(accessToken, MemberResponse.from(member));
+        return authTokenService.issue(member);
     }
 
     private BusinessException mapSignupConstraintViolation(DataIntegrityViolationException exception) {

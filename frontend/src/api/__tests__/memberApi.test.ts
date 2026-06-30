@@ -1,17 +1,19 @@
 import assert from 'node:assert/strict'
 import { afterEach, describe, it } from 'node:test'
-import { AxiosError, type AxiosAdapter, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
+import axios, { AxiosError, type AxiosAdapter, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
 
 import axiosInstance from '../axiosInstance'
 import useAuthStore from '../../store/useAuthStore'
 
 interface RequestCall {
   data?: unknown
+  headers?: Record<string, unknown>
   method?: string
   url?: string
 }
 
 const originalAdapter = axiosInstance.defaults.adapter
+const originalAxiosAdapter = axios.defaults.adapter
 const requestCalls: RequestCall[] = []
 
 function readRequestData(call: RequestCall | undefined): Record<string, unknown> {
@@ -34,6 +36,7 @@ function createAuthAdapter(): AxiosAdapter {
   return async (config: InternalAxiosRequestConfig): Promise<AxiosResponse> => {
     requestCalls.push({
       data: config.data,
+      headers: config.headers?.toJSON?.() ?? config.headers,
       method: config.method,
       url: config.url,
     })
@@ -61,6 +64,7 @@ function createMemberAdapter(): AxiosAdapter {
   return async (config: InternalAxiosRequestConfig): Promise<AxiosResponse> => {
     requestCalls.push({
       data: config.data,
+      headers: config.headers?.toJSON?.() ?? config.headers,
       method: config.method,
       url: config.url,
     })
@@ -89,6 +93,7 @@ function createErrorAdapter(status: number): AxiosAdapter {
     const statusText = status === 403 ? 'Forbidden' : 'Unauthorized'
     requestCalls.push({
       data: config.data,
+      headers: config.headers?.toJSON?.() ?? config.headers,
       method: config.method,
       url: config.url,
     })
@@ -110,6 +115,7 @@ function createErrorAdapter(status: number): AxiosAdapter {
 
 afterEach(() => {
   axiosInstance.defaults.adapter = originalAdapter
+  axios.defaults.adapter = originalAxiosAdapter
   requestCalls.length = 0
   useAuthStore.getState().clearAuth()
 })
@@ -176,6 +182,7 @@ describe('memberApi', () => {
   it('getMe가 401이면 저장된 인증 토큰을 정리한다', async () => {
     // given
     axiosInstance.defaults.adapter = createErrorAdapter(401)
+    axios.defaults.adapter = createErrorAdapter(401)
     useAuthStore.getState().setAuth({ token: 'expired-token' })
     const { getMe } = await import('../memberApi')
 
@@ -219,5 +226,20 @@ describe('memberApi', () => {
     assert.equal(requestCalls[0]?.method, 'post')
     assert.equal(requestCalls[0]?.url, '/v1/auth/login')
     assert.equal(useAuthStore.getState().token, 'valid-but-forbidden-token')
+  })
+
+  it('logout은 로컬 토큰 정리 후에도 전달받은 access token으로 요청한다', async () => {
+    // given
+    axiosInstance.defaults.adapter = createAuthAdapter()
+    useAuthStore.getState().clearAuth()
+    const { logout } = await import('../memberApi')
+
+    // when
+    await logout('captured-access-token')
+
+    // then
+    assert.equal(requestCalls[0]?.method, 'post')
+    assert.equal(requestCalls[0]?.url, '/v1/auth/logout')
+    assert.equal(requestCalls[0]?.headers?.Authorization, 'Bearer captured-access-token')
   })
 })
