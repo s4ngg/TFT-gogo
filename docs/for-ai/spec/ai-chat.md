@@ -2,7 +2,7 @@
 
 <purpose>
 소환사 전적 데이터를 컨텍스트로 활용해 TFT 관련 질문에 AI가 답변하는 채팅 기능.
-Page: SummonerDetail 우측 패널 (AiChat 컴포넌트)
+Page: SearchDetail 우측 패널 (AiChat 컴포넌트)
 Backend: Spring Boot (프록시) + ai-server (FastAPI) + OpenAI GPT-4o-mini
 </purpose>
 
@@ -62,8 +62,8 @@ Backend: Spring Boot (프록시) + ai-server (FastAPI) + OpenAI GPT-4o-mini
 - frontend/src/pages/AiRecommend/
   - components/AiChat.tsx                      — 채팅 UI 컴포넌트
   - hooks/useAiChat.ts                         — TanStack Query mutation 훅
-- frontend/src/pages/SummonerDetail/
-  - SummonerDetail.tsx                         — chatContext 구성 + AiChat 배치
+- frontend/src/pages/SearchDetail/
+  - SearchDetail.tsx                           — chatContext 구성 + AiChat 배치
 </frontend-structure>
 
 <backend-structure>

@@ -33,11 +33,11 @@ Detailed human spec: docs/for-humans/spec/summoner.md
   — 429 응답 시 `Retry-After` 헤더 포함 (초 단위). 기본값 120초.
 </backend>
 <frontend>
-- frontend/src/api/summonerApi.ts               — getSummonerProfile, getMatchHistory
+- frontend/src/api/searchApi.ts                 — getSummonerProfile, getMatchHistory
 - frontend/src/api/communityDragonAssets.ts     — tftChampSquareUrl, tftTraitIconUrl (CDragon CDN)
 - frontend/src/hooks/useMatchHistory.ts         — getMatchHistory 래핑 + 페이징 상태 관리
-- frontend/src/hooks/useSummonerProfile.ts      — getSummonerProfile 래핑
-- frontend/src/pages/SummonerDetail/SummonerDetail.tsx
+- frontend/src/hooks/useSearchProfile.ts        — getSummonerProfile 래핑
+- frontend/src/pages/SearchDetail/SearchDetail.tsx
 </frontend>
 </api>
 
@@ -70,15 +70,15 @@ Detailed human spec: docs/for-humans/spec/summoner.md
 </business-rules>
 
 <frontend-structure>
-- frontend/src/pages/SummonerDetail/SummonerDetail.tsx              — main page component
-- frontend/src/pages/SummonerDetail/components/RecentSummary.tsx    — 게임 요약 카드 (불러온 전체 매치 기준)
-- frontend/src/pages/SummonerDetail/components/MatchDetailPanel.tsx — 전적 행 상세 펼침 패널 (8인)
-- frontend/src/pages/SummonerDetail/components/EmptyState.tsx       — 소환사 없음 빈 상태
-- frontend/src/pages/SummonerDetail/utils/summonerUtils.ts          — timeAgo, formatDate, placementTone, detailRankClass
-- frontend/src/hooks/useMatchHistory.ts                             — 전적 목록 fetching hook
-- frontend/src/hooks/useSummonerProfile.ts                          — 프로필 fetching hook
-- frontend/src/api/summonerApi.ts                                   — API calls
-- frontend/src/api/communityDragonAssets.ts                         — CDragon image URL helpers
+- frontend/src/pages/SearchDetail/SearchDetail.tsx              — main page component
+- frontend/src/pages/SearchDetail/components/RecentSummary.tsx    — 게임 요약 카드 (불러온 전체 매치 기준)
+- frontend/src/pages/SearchDetail/components/MatchDetailPanel.tsx — 전적 행 상세 펼침 패널 (8인)
+- frontend/src/pages/SearchDetail/components/EmptyState.tsx       — 소환사 없음 빈 상태
+- frontend/src/pages/SearchDetail/utils/searchUtils.ts            — timeAgo, formatDate, placementTone, detailRankClass
+- frontend/src/hooks/useMatchHistory.ts                           — 전적 목록 fetching hook
+- frontend/src/hooks/useSearchProfile.ts                          — 프로필 fetching hook
+- frontend/src/api/searchApi.ts                                   — API calls
+- frontend/src/api/communityDragonAssets.ts                       — CDragon image URL helpers
 </frontend-structure>
 
 <open-issues>
