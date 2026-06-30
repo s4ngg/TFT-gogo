@@ -7,7 +7,7 @@ import {
   PARTY_RECRUITMENT_ROOM_ID,
 } from '../../../constants/communityChatRooms'
 import type { CommunityChatRoomId } from '../../../constants/communityChatRooms'
-import { initialChatRooms } from '../data/partyMockData'
+import { initialChatRooms } from '../data/initialChatRooms'
 import {
   applyRoomMessageSnapshot,
   updateChatRoomPreview,
