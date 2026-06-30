@@ -170,6 +170,7 @@ function GameGuideAiChatWidget({
   selectedRefs,
 }: GameGuideAiChatWidgetProps) {
   const [input, setInput] = useState('')
+  const inputRef = useRef<HTMLTextAreaElement>(null)
   const messagesRef = useRef<HTMLDivElement>(null)
   const {
     isPending,
@@ -178,6 +179,11 @@ function GameGuideAiChatWidget({
     sendQuestion,
   } = useGameGuideAiPathfinder()
   const selectedRefLabel = selectedRefs[0]?.name?.trim()
+  const inputPlaceholder = messages.length > 0
+    ? '이 답변에 이어서 질문 입력'
+    : selectedRefLabel
+      ? `${selectedRefLabel} 질문 입력`
+      : `${activeTabLabel} 질문 입력`
 
   useEffect(() => {
     const messagesElement = messagesRef.current
@@ -185,6 +191,12 @@ function GameGuideAiChatWidget({
 
     messagesElement.scrollTop = messagesElement.scrollHeight
   }, [messages, isPending])
+
+  useEffect(() => {
+    if (!isOpen || isPending) return
+
+    inputRef.current?.focus()
+  }, [isOpen, isPending, messages.length])
 
   function submitQuestion() {
     const question = input.trim()
@@ -287,9 +299,8 @@ function GameGuideAiChatWidget({
               maxLength={500}
               onChange={(event) => setInput(event.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={selectedRefLabel
-                ? `${selectedRefLabel} 질문 입력`
-                : `${activeTabLabel} 질문 입력`}
+              placeholder={inputPlaceholder}
+              ref={inputRef}
               rows={2}
               value={input}
             />

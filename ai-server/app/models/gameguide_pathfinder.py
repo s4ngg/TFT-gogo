@@ -24,12 +24,18 @@ class CandidateGuideRef(GuideRef):
     reason_hint: str | None = Field(default=None, max_length=200)
 
 
+class ConversationMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=700)
+
+
 class GameGuidePathfinderRequest(BaseModel):
     patch_version: str = Field(max_length=20)
     active_tab: GuideTab
     mode: PathfinderMode = "AUTO"
     selected_entries: list[SelectedGuideEntry] = Field(default_factory=list, max_length=5)
     candidate_refs: list[CandidateGuideRef] = Field(default_factory=list, max_length=20)
+    conversation_history: list[ConversationMessage] = Field(default_factory=list, max_length=6)
     question: str = Field(min_length=1, max_length=500)
 
 
@@ -37,7 +43,7 @@ class PhasePlan(BaseModel):
     phase: PathfinderPhase
     title: str = Field(max_length=80)
     description: str = Field(max_length=500)
-    guide_refs: list[GuideRef] = Field(default_factory=list, max_length=5)
+    guide_refs: list[GuideRef] = Field(default_factory=list, max_length=20)
 
 
 class RecommendedRef(GuideRef):
@@ -51,8 +57,8 @@ class GameGuidePathfinderResponse(BaseModel):
     evidence_notes: list[str] = Field(default_factory=list, max_length=4)
     creative_suggestions: list[str] = Field(default_factory=list, max_length=4)
     phase_plan: list[PhasePlan] = Field(default_factory=list, max_length=4)
-    recommended_refs: list[RecommendedRef] = Field(default_factory=list, max_length=5)
+    recommended_refs: list[RecommendedRef] = Field(default_factory=list, max_length=20)
     avoid_mistakes: list[str] = Field(default_factory=list, max_length=4)
-    source_refs: list[GuideRef] = Field(default_factory=list, max_length=5)
+    source_refs: list[GuideRef] = Field(default_factory=list, max_length=20)
     limitations: list[str] = Field(default_factory=list, max_length=4)
     is_fallback: bool = False

@@ -54,6 +54,12 @@ Backend: Spring Boot 프록시 + ai-server(FastAPI) + OpenAI
       "name": "string"
     }
   ],
+  "conversationHistory": [
+    {
+      "role": "user" | "assistant",
+      "content": "string"
+    }
+  ],
   "question": "string | null"
 }
 </request-body>
@@ -65,6 +71,8 @@ Backend: Spring Boot 프록시 + ai-server(FastAPI) + OpenAI
 - 사용자가 챗봇을 직접 열면 selectedRefs 없이 activeTab + candidateRefs 기반으로 질문한다.
 - selectedRefs의 중복 guideType + targetKey 조합은 Spring에서 제거한다.
 - question은 프론트 1차 MVP에서 필수이며 최대 500자까지 허용한다.
+- conversationHistory는 최근 6개 메시지까지만 보낸다.
+- conversationHistory는 이어묻기 의도 파악에만 사용하고 새로운 Guide 데이터 근거로 취급하지 않는다.
 - activeTab은 질문만 있는 경우 AI가 현재 Guide 문맥을 좁히는 힌트로 사용한다.
 - mode는 프론트에서 사용자에게 노출하지 않고 AUTO로 고정한다.
 - 프론트는 AI 서버를 직접 호출하지 않는다.
@@ -101,6 +109,12 @@ ApiResponse&lt;GameGuideAiPathfinderResponse&gt;
       "reason_hint": "selected trait includes this champion"
     }
   ],
+  "conversation_history": [
+    {
+      "role": "user|assistant",
+      "content": "string"
+    }
+  ],
   "question": "string | null"
 }
 </request-body>
@@ -109,6 +123,8 @@ ApiResponse&lt;GameGuideAiPathfinderResponse&gt;
 - selected_entries는 Spring이 Guide split table에서 재조회한 데이터만 사용한다.
 - candidate_refs는 AI가 추천 링크를 만들 때 고를 수 있는 후보 목록이다.
 - candidate_refs는 같은 patchVersion의 실제 Guide 항목만 포함한다.
+- conversation_history는 현재 질문이 이전 답변에 이어지는지 해석하는 보조 문맥이다.
+- conversation_history에만 있는 내용은 evidence_notes 근거로 쓰지 않는다.
 - 전체 Guide catalog를 프롬프트에 넣지 않고, 선택 항목과 관련 후보만 전달한다.
 </notes>
 </spring-to-ai>

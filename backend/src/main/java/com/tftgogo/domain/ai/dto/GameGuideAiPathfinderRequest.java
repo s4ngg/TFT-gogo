@@ -35,6 +35,10 @@ public class GameGuideAiPathfinderRequest {
     @Size(max = 20)
     private List<GuideRefDto> candidateRefs;
 
+    @Valid
+    @Size(max = 6)
+    private List<ConversationMessageDto> conversationHistory;
+
     @NotBlank
     @Size(max = 500)
     private String question;
@@ -46,7 +50,18 @@ public class GameGuideAiPathfinderRequest {
             List<GuideRefDto> selectedRefs,
             String question
     ) {
-        this(patchVersion, activeTab, mode, selectedRefs, List.of(), question);
+        this(patchVersion, activeTab, mode, selectedRefs, List.of(), List.of(), question);
+    }
+
+    public GameGuideAiPathfinderRequest(
+            String patchVersion,
+            String activeTab,
+            String mode,
+            List<GuideRefDto> selectedRefs,
+            List<GuideRefDto> candidateRefs,
+            String question
+    ) {
+        this(patchVersion, activeTab, mode, selectedRefs, candidateRefs, List.of(), question);
     }
 
     @Getter
@@ -63,5 +78,18 @@ public class GameGuideAiPathfinderRequest {
 
         @Size(max = 100)
         private String name;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ConversationMessageDto {
+        @NotBlank
+        @Pattern(regexp = "user|assistant")
+        private String role;
+
+        @NotBlank
+        @Size(max = 700)
+        private String content;
     }
 }

@@ -5,6 +5,7 @@ import pytest
 
 from app.models.gameguide_pathfinder import (
     CandidateGuideRef,
+    ConversationMessage,
     GameGuidePathfinderRequest,
     SelectedGuideEntry,
 )
@@ -191,6 +192,70 @@ async def test_OpenAI가_허용되지_않은_ref를_반환하면_제거한다():
 
 
 @pytest.mark.asyncio
+async def test_OpenAI_ref가_많아도_허용된_5개만_반환한다():
+    # given
+    candidates = [
+        CandidateGuideRef(
+            guide_type="CHAMPION",
+            target_key=f"TFT17_Champion{index}",
+            name=f"Champion {index}",
+        )
+        for index in range(6)
+    ]
+    request = _make_request(candidate_refs=candidates)
+    refs = [
+        {
+            "guide_type": "CHAMPION",
+            "target_key": f"TFT17_Champion{index}",
+            "name": f"Champion {index}",
+        }
+        for index in range(6)
+    ]
+    content = json.dumps({
+        "title": "N.O.V.A. route",
+        "summary": "Use the allowed guide refs without falling back.",
+        "core_concepts": [],
+        "evidence_notes": [],
+        "creative_suggestions": [],
+        "phase_plan": [
+            {
+                "phase": "ANY",
+                "title": "Check refs",
+                "description": "Too many refs should be trimmed.",
+                "guide_refs": refs,
+            }
+        ],
+        "recommended_refs": [
+            {**ref, "reason": "allowed candidate"}
+            for ref in refs
+        ],
+        "avoid_mistakes": [],
+        "source_refs": refs,
+        "limitations": [],
+        "is_fallback": False,
+    }, ensure_ascii=False)
+    mock_client = AsyncMock()
+    mock_client.chat.completions.create.return_value = _mock_openai_response(content)
+
+    # when
+    with patch("app.services.gameguide_pathfinder.settings") as mock_settings, \
+         patch("app.services.gameguide_pathfinder._get_client", return_value=mock_client), \
+         patch(_BUDGET_PATH, return_value=100), \
+         patch(_BREAKER_PATH) as mock_breaker:
+        mock_settings.openai_api_key = "sk-test"
+        mock_settings.openai_model = "gpt-4o-mini"
+        mock_settings.recommend_max_input_tokens = 6000
+        mock_breaker.is_open.return_value = False
+        result = await gameguide_pathfinder.pathfind(request)
+
+    # then
+    assert result.is_fallback is False
+    assert len(result.source_refs) == 5
+    assert len(result.recommended_refs) == 5
+    assert len(result.phase_plan[0].guide_refs) == 5
+
+
+@pytest.mark.asyncio
 async def test_OpenAI_JSON_파싱_실패_시_fallback_응답_반환():
     # given
     request = _make_request()
@@ -224,6 +289,11 @@ def test_시스템_프롬프트는_근거와_AI제안을_구분한다():
     assert "가이드 데이터와 AI 제안이 충돌하면 가이드 데이터를 우선합니다" in gameguide_pathfinder._SYSTEM_PROMPT
 
 
+def test_시스템_프롬프트는_이어묻기_맥락을_구분한다():
+    assert "conversation_history" in gameguide_pathfinder._SYSTEM_PROMPT
+    assert "질문 의도를 파악하는 데만 사용" in gameguide_pathfinder._SYSTEM_PROMPT
+
+
 def test_selected_entries_payload는_큰_data를_압축한다():
     # given
     selected = SelectedGuideEntry(
@@ -255,3 +325,26 @@ def test_selected_entries_payload는_큰_data를_압축한다():
     assert len(entry["data"]["long_text"]) <= gameguide_pathfinder._MAX_DATA_STRING_LENGTH + 3
     assert len(entry["data"]["items"]) == gameguide_pathfinder._MAX_DATA_LIST_ITEMS
     assert entry["data"]["items"][0]["description"].endswith("...")
+
+
+def test_conversation_history_payload는_최근_대화_맥락을_포함한다():
+    # given
+    request = _make_request(
+        question="그럼 아이템은?",
+        selected_entries=[],
+        candidate_refs=[],
+    )
+    request.conversation_history = [
+        ConversationMessage(role="user", content="N.O.V.A. 초반 운영 알려줘"),
+        ConversationMessage(role="assistant", content="초반에는 핵심 유닛을 먼저 잡으세요."),
+    ]
+
+    # when
+    payload = json.loads(gameguide_pathfinder._build_user_payload(request))
+
+    # then
+    assert payload["question"] == "그럼 아이템은?"
+    assert payload["conversation_history"] == [
+        {"role": "user", "content": "N.O.V.A. 초반 운영 알려줘"},
+        {"role": "assistant", "content": "초반에는 핵심 유닛을 먼저 잡으세요."},
+    ]

@@ -12,8 +12,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StreamUtils;
 import org.springframework.web.client.RestClient;
 
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -114,8 +116,14 @@ public class AiServerClient {
                     .header("Content-Type", "application/json")
                     .header("X-Internal-Secret", internalSecret)
                     .body(json)
-                    .retrieve()
-                    .body(String.class);
+                    .exchange((clientRequest, clientResponse) -> {
+                        if (clientResponse.getStatusCode().isError()) {
+                            throw new IllegalStateException(
+                                    "AI server returned status " + clientResponse.getStatusCode()
+                            );
+                        }
+                        return StreamUtils.copyToString(clientResponse.getBody(), StandardCharsets.UTF_8);
+                    });
             if (responseBody == null || responseBody.isBlank()) {
                 return null;
             }
@@ -152,6 +160,7 @@ public class AiServerClient {
         body.put("mode", request.getMode());
         body.put("selected_entries", toSelectedEntryBodies(selectedEntries));
         body.put("candidate_refs", toGuideRefBodies(request.getCandidateRefs()));
+        body.put("conversation_history", toConversationHistoryBodies(request.getConversationHistory()));
         body.put("question", request.getQuestion());
         return body;
     }
@@ -215,6 +224,25 @@ public class AiServerClient {
         if (ref.getName() != null) {
             body.put("name", ref.getName());
         }
+        return body;
+    }
+
+    private List<Map<String, Object>> toConversationHistoryBodies(
+            List<GameGuideAiPathfinderRequest.ConversationMessageDto> messages
+    ) {
+        if (messages == null || messages.isEmpty()) {
+            return List.of();
+        }
+
+        return messages.stream()
+                .map(this::toConversationHistoryBody)
+                .toList();
+    }
+
+    private Map<String, Object> toConversationHistoryBody(GameGuideAiPathfinderRequest.ConversationMessageDto message) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("role", message.getRole());
+        body.put("content", message.getContent());
         return body;
     }
 

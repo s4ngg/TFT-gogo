@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { createGameGuideAiFallbackResponse } from '../useGameGuideAiPathfinder'
+import {
+  createGameGuideAiConversationHistory,
+  createGameGuideAiFallbackResponse,
+  type GameGuideAiChatMessage,
+} from '../useGameGuideAiPathfinder'
 
 test('GameGuide AI fallback preserves selected guide refs', () => {
   const selectedRefs = [
@@ -36,4 +40,21 @@ test('GameGuide AI fallback uses active tab title without selected refs', () => 
   assert.equal(response.title, '아이템 가이드 질문')
   assert.deepEqual(response.sourceRefs, [])
   assert.equal(response.isFallback, true)
+})
+
+test('GameGuide AI conversation history keeps recent compact messages', () => {
+  const longContent = '아이템을 더 자세히 설명해줘 '.repeat(80)
+  const messages: GameGuideAiChatMessage[] = Array.from({ length: 8 }, (_, index) => ({
+    content: index === 7 ? longContent : `message-${index + 1}`,
+    id: index + 1,
+    role: index % 2 === 0 ? 'user' : 'assistant',
+  }))
+
+  const history = createGameGuideAiConversationHistory(messages)
+
+  assert.equal(history.length, 6)
+  assert.equal(history[0].content, 'message-3')
+  assert.equal(history[5].role, 'assistant')
+  assert.ok(history[5].content.endsWith('...'))
+  assert.ok(history[5].content.length <= 703)
 })

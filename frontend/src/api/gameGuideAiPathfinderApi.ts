@@ -11,9 +11,15 @@ export interface GameGuideAiPathfinderRef {
   targetKey: string
 }
 
+export interface GameGuideAiConversationMessage {
+  content: string
+  role: 'assistant' | 'user'
+}
+
 export interface GameGuideAiPathfinderRequest {
   activeTab: GuideTab
   candidateRefs: GameGuideAiPathfinderRef[]
+  conversationHistory: GameGuideAiConversationMessage[]
   mode: GameGuideAiPathfinderMode
   patchVersion: string
   question: string

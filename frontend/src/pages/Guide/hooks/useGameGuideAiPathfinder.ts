@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import {
   requestGameGuideAiPathfinder,
+  type GameGuideAiConversationMessage,
   type GameGuideAiPathfinderRequest,
   type GameGuideAiPathfinderRef,
   type GameGuideAiPathfinderResponse,
@@ -24,6 +25,7 @@ interface SendGameGuideAiQuestionParams {
 }
 
 interface PendingGameGuideAiQuestionParams extends SendGameGuideAiQuestionParams {
+  conversationHistory: GameGuideAiConversationMessage[]
   epoch: number
 }
 
@@ -34,8 +36,47 @@ const FALLBACK_TITLE_BY_TAB: Record<GuideTab, string> = {
   traits: '시너지 가이드 질문',
 }
 
+const MAX_CONVERSATION_HISTORY = 6
+const MAX_CONVERSATION_CONTENT_LENGTH = 700
+
 function getSelectedRefLabel(selectedRefs: GameGuideAiPathfinderRef[]) {
   return selectedRefs[0]?.name?.trim() || selectedRefs[0]?.targetKey.trim() || ''
+}
+
+function truncateConversationContent(content: string) {
+  const trimmed = content.trim()
+  if (trimmed.length <= MAX_CONVERSATION_CONTENT_LENGTH) {
+    return trimmed
+  }
+
+  return `${trimmed.slice(0, MAX_CONVERSATION_CONTENT_LENGTH).trimEnd()}...`
+}
+
+function getConversationMessageContent(message: GameGuideAiChatMessage) {
+  if (!message.response) {
+    return message.content
+  }
+
+  const response = message.response
+  return [
+    response.title,
+    response.summary,
+    ...response.evidenceNotes,
+    ...response.creativeSuggestions,
+    ...response.phasePlan.map((phase) => `${phase.title}: ${phase.description}`),
+  ].join(' ')
+}
+
+export function createGameGuideAiConversationHistory(
+  messages: GameGuideAiChatMessage[],
+): GameGuideAiConversationMessage[] {
+  return messages
+    .filter((message) => getConversationMessageContent(message).trim().length > 0)
+    .slice(-MAX_CONVERSATION_HISTORY)
+    .map((message) => ({
+      content: truncateConversationContent(getConversationMessageContent(message)),
+      role: message.role,
+    }))
 }
 
 export function createGameGuideAiFallbackResponse({
@@ -116,6 +157,7 @@ export function useGameGuideAiPathfinder() {
       const request: GameGuideAiPathfinderRequest = {
         activeTab: params.activeTab,
         candidateRefs: params.candidateRefs,
+        conversationHistory: params.conversationHistory,
         mode: 'AUTO',
         patchVersion: params.patchVersion,
         question: params.question,
@@ -158,6 +200,7 @@ export function useGameGuideAiPathfinder() {
     ])
     mutation.mutate({
       ...params,
+      conversationHistory: createGameGuideAiConversationHistory(messages),
       epoch: resetEpoch.current,
       question,
     })

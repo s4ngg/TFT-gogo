@@ -31,6 +31,7 @@ _MAX_DATA_STRING_LENGTH = 240
 _MAX_DATA_LIST_ITEMS = 8
 _MAX_DATA_DICT_ITEMS = 16
 _MAX_DATA_DEPTH = 4
+_MAX_RESPONSE_REFS = 5
 
 _SYSTEM_PROMPT = """\
 당신은 TFT 게임가이드 페이지의 GameGuide AI입니다.
@@ -56,6 +57,13 @@ _SYSTEM_PROMPT = """\
 - 제공된 guide ref에 없는 항목을 recommended_refs, source_refs, phase_plan.guide_refs에 넣지 않습니다.
 - 현재 Guide 데이터에 없는 승률, 평균 등수, 픽률, TOP4율, 티어 판단은 생성하거나 추측하지 않습니다.
 - 수치가 없으면 수치처럼 말하지 말고, "현재 제공된 가이드 데이터만으로는 확정하기 어렵다"고 말합니다.
+
+## 이어묻기 처리
+- conversation_history는 사용자가 이전 답변에 이어서 질문할 때의 문맥입니다.
+- conversation_history는 질문 의도를 파악하는 데만 사용하고, 새로운 가이드 근거처럼 취급하지 않습니다.
+- 이전 답변을 참조할 때는 "앞에서 말한 운영 흐름 기준으로"처럼 자연스럽게 이어서 답합니다.
+- 현재 question이 짧거나 대명사 중심이면 conversation_history를 활용해 무엇을 이어 묻는지 해석합니다.
+- conversation_history와 현재 Guide 데이터가 충돌하면 현재 Guide 데이터를 우선합니다.
 
 ## 가이드 근거와 AI 제안 구분
 - evidence_notes에는 반드시 제공된 가이드 데이터에서 확인 가능한 내용만 씁니다.
@@ -227,12 +235,27 @@ def _compact_entry(entry: object) -> dict:
     }
 
 
+def _compact_conversation_message(message: object) -> dict:
+    if hasattr(message, "model_dump"):
+        raw = message.model_dump()
+    else:
+        raw = {}
+    return {
+        "role": raw.get("role"),
+        "content": _truncate(_sanitize(raw.get("content")), 700),
+    }
+
+
 def _build_user_payload(request: GameGuidePathfinderRequest) -> str:
     payload = {
         "patch_version": request.patch_version,
         "active_tab": request.active_tab,
         "mode": request.mode,
         "question": _sanitize(request.question),
+        "conversation_history": [
+            _compact_conversation_message(message)
+            for message in request.conversation_history
+        ],
         "selected_entries": [_compact_entry(entry) for entry in request.selected_entries],
         "candidate_refs": [_compact_entry(ref) for ref in request.candidate_refs],
     }
@@ -269,18 +292,21 @@ def _filter_refs(
             phase=phase.phase,
             title=phase.title,
             description=phase.description,
-            guide_refs=[ref for ref in phase.guide_refs if guide_ref_allowed(ref)],
+            guide_refs=[
+                ref for ref in phase.guide_refs
+                if guide_ref_allowed(ref)
+            ][:_MAX_RESPONSE_REFS],
         )
         for phase in response.phase_plan
     ]
     filtered_recommended = [
         ref for ref in response.recommended_refs
         if (ref.guide_type, ref.target_key) in allowed
-    ]
+    ][:_MAX_RESPONSE_REFS]
     filtered_source = [
         ref for ref in response.source_refs
         if guide_ref_allowed(ref)
-    ] or _source_refs(request)
+    ][:_MAX_RESPONSE_REFS] or _source_refs(request)[:_MAX_RESPONSE_REFS]
 
     return response.model_copy(update={
         "phase_plan": filtered_phase_plan,
