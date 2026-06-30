@@ -69,8 +69,8 @@ Backend: Spring Boot (프록시) + ai-server (FastAPI) + OpenAI GPT-4o-mini
 <backend-structure>
 - backend/.../ai/controller/AiChatController.java      — POST /api/ai/chat
 - backend/.../ai/controller/docs/AiChatControllerDocs.java — Swagger 문서
-- backend/.../ai/dto/AiChatRequest.java                — 요청 DTO (messages + context)
-- backend/.../ai/dto/AiChatResponse.java               — 응답 DTO (reply)
+- backend/.../ai/dto/request/AiChatRequest.java         — 요청 DTO (messages + context)
+- backend/.../ai/dto/response/AiChatResponse.java      — 응답 DTO (reply)
 - backend/.../ai/service/AiChatService.java            — AI 서버 프록시 호출
 - backend/.../ai/client/AiServerClient.java            — HTTP 클라이언트 (30s 타임아웃)
 </backend-structure>

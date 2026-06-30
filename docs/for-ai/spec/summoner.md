@@ -2,12 +2,12 @@
 
 <purpose>
 Summoner profile lookup and TFT match history display.
-Page: SummonerDetail (/summoner/:gameName/:tagLine).
+Page: SearchDetail (/summoner/:gameName/:tagLine).
 Detailed human spec: docs/for-humans/spec/summoner.md
 </purpose>
 
 <routes>
-- /summoner/:gameName/:tagLine → SummonerDetail (profile + rank + match history)
+- /summoner/:gameName/:tagLine → SearchDetail (profile + rank + match history)
 </routes>
 
 <api>
