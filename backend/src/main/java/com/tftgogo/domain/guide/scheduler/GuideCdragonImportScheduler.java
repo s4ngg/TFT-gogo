@@ -22,6 +22,7 @@ public class GuideCdragonImportScheduler {
 
     private final GuideCdragonImportService guideCdragonImportService;
     private final GuideCdragonImportProperties guideCdragonImportProperties;
+    private final GuideCdragonImportSchedulerLock schedulerLock;
     private final AtomicBoolean running = new AtomicBoolean(false);
 
     @EventListener(ApplicationReadyEvent.class)
@@ -66,6 +67,14 @@ public class GuideCdragonImportScheduler {
             return;
         }
 
+        try {
+            schedulerLock.runWithLock(trigger, () -> importGuides(trigger));
+        } finally {
+            running.set(false);
+        }
+    }
+
+    private void importGuides(String trigger) {
         GuideCdragonImportRequest request = GuideCdragonImportRequest.of(
                 guideCdragonImportProperties.getPatchVersion(),
                 guideCdragonImportProperties.getSetNumber(),
@@ -97,8 +106,6 @@ public class GuideCdragonImportScheduler {
                     guideCdragonImportProperties.getPatchVersion(),
                     e
             );
-        } finally {
-            running.set(false);
         }
     }
 }

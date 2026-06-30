@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -26,6 +27,9 @@ class GuideCdragonImportSchedulerTest {
 
     @Mock
     private GuideCdragonImportProperties guideCdragonImportProperties;
+
+    @Mock
+    private GuideCdragonImportSchedulerLock schedulerLock;
 
     @InjectMocks
     private GuideCdragonImportScheduler scheduler;
@@ -57,6 +61,7 @@ class GuideCdragonImportSchedulerTest {
         when(guideCdragonImportProperties.isEnabled()).thenReturn(true);
         when(guideCdragonImportProperties.isStartupImport()).thenReturn(true);
         stubImportProperties();
+        givenSchedulerLockRunsTask();
         when(guideCdragonImportService.importGuides(any(GuideCdragonImportRequest.class)))
                 .thenReturn(importResponse());
 
@@ -91,6 +96,7 @@ class GuideCdragonImportSchedulerTest {
         // given
         when(guideCdragonImportProperties.isEnabled()).thenReturn(true);
         stubImportProperties();
+        givenSchedulerLockRunsTask();
         when(guideCdragonImportService.importGuides(any(GuideCdragonImportRequest.class)))
                 .thenReturn(importResponse());
 
@@ -107,12 +113,35 @@ class GuideCdragonImportSchedulerTest {
         when(guideCdragonImportProperties.isEnabled()).thenReturn(true);
         when(guideCdragonImportProperties.isStartupImport()).thenReturn(true);
         stubImportProperties();
+        givenSchedulerLockRunsTask();
         when(guideCdragonImportService.importGuides(any(GuideCdragonImportRequest.class)))
                 .thenThrow(new RuntimeException("cdragon unavailable"));
 
         // when, then
         assertThatCode(() -> scheduler.importOnStartupIfEnabled())
                 .doesNotThrowAnyException();
+    }
+
+    @Test
+    void DB_락을_얻지_못하면_CDragon_import를_실행하지_않는다() {
+        // given
+        when(guideCdragonImportProperties.isEnabled()).thenReturn(true);
+        when(guideCdragonImportProperties.isStartupImport()).thenReturn(true);
+        when(schedulerLock.runWithLock(any(), any())).thenReturn(false);
+
+        // when
+        scheduler.importOnStartupIfEnabled();
+
+        // then
+        verifyNoInteractions(guideCdragonImportService);
+    }
+
+    private void givenSchedulerLockRunsTask() {
+        doAnswer(invocation -> {
+            Runnable task = invocation.getArgument(1);
+            task.run();
+            return true;
+        }).when(schedulerLock).runWithLock(any(), any());
     }
 
     private void stubImportProperties() {
