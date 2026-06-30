@@ -1,6 +1,7 @@
 import { BookOpen } from 'lucide-react'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import type { GameGuideAiPathfinderRef } from '../../api/gameGuideAiPathfinderApi'
+import type { GuideTab, GuideTabItems } from '../../api/guide'
 import { AppLayout } from '../../components/layout'
 import { useGuideCatalog } from '../../hooks/useGuide'
 import { guideFallbackData } from '../../mocks/guideResponseMock'
@@ -16,6 +17,7 @@ import styles from './Guide.module.css'
 function Guide() {
   const [isGameGuideAiOpen, setIsGameGuideAiOpen] = useState(false)
   const [gameGuideAiSelectedRefs, setGameGuideAiSelectedRefs] = useState<GameGuideAiPathfinderRef[]>([])
+  const [gameGuideAiVisibleItems, setGameGuideAiVisibleItems] = useState<GuideTabItems[GuideTab][number][]>([])
   const {
     guideData,
     isFallbackData: isGuideFallbackData,
@@ -35,7 +37,14 @@ function Guide() {
     selectTab,
     setSearch,
   } = useGuidePageState()
-  const gameGuideAiCandidateRefs = useGameGuideAiCandidateRefs(guideData, activeTab)
+  const gameGuideAiCandidateRefs = useGameGuideAiCandidateRefs(activeTab, gameGuideAiVisibleItems)
+  const gameGuideAiContextKey = [
+    activeTab,
+    ...gameGuideAiSelectedRefs.map((ref) => `${ref.guideType}:${ref.targetKey}`),
+  ].join('|')
+  const handleGameGuideAiVisibleItemsChange = useCallback((items: GuideTabItems[GuideTab][number][]) => {
+    setGameGuideAiVisibleItems(items)
+  }, [])
 
   function handleGameGuideAiAsk(ref: GameGuideAiPathfinderRef) {
     setGameGuideAiSelectedRefs([ref])
@@ -88,6 +97,7 @@ function Guide() {
           isGuideFetching={isGuideFetching}
           onFavoriteToggle={handleFavoriteToggle}
           onGameGuideAiAsk={handleGameGuideAiAsk}
+          onGameGuideAiVisibleItemsChange={handleGameGuideAiVisibleItemsChange}
           onGuideJump={jumpToGuide}
           onGuideRetry={() => {
             void refetchGuideData()
@@ -101,6 +111,7 @@ function Guide() {
           activeTabLabel={activeTabInfo.label}
           candidateRefs={gameGuideAiCandidateRefs}
           isOpen={isGameGuideAiOpen}
+          key={gameGuideAiContextKey}
           onOpenChange={handleGameGuideAiOpenChange}
           onGuideJump={jumpToGuide}
           patchVersion={guideData.patchVersion}

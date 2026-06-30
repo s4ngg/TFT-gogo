@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import type {
-  GuideCatalog,
   GuideTab,
+  GuideTabItems,
 } from '../../../api/guide'
 import type { GameGuideAiPathfinderRef } from '../../../api/gameGuideAiPathfinderApi'
 import {
@@ -12,15 +12,15 @@ import {
 const MAX_CANDIDATE_REFS = 20
 
 export function useGameGuideAiCandidateRefs(
-  guideData: GuideCatalog,
   activeTab: GuideTab,
+  visibleItems: GuideTabItems[GuideTab][number][],
 ): GameGuideAiPathfinderRef[] {
   return useMemo(() => {
     const guideType = GUIDE_TYPE_BY_TAB[activeTab]
     const seen = new Set<string>()
     const candidateRefs: GameGuideAiPathfinderRef[] = []
 
-    for (const guideEntry of guideData[activeTab]) {
+    for (const guideEntry of visibleItems) {
       if (candidateRefs.length >= MAX_CANDIDATE_REFS) break
 
       const name = guideEntry.name.trim()
@@ -39,5 +39,5 @@ export function useGameGuideAiCandidateRefs(
     }
 
     return candidateRefs
-  }, [activeTab, guideData])
+  }, [activeTab, visibleItems])
 }

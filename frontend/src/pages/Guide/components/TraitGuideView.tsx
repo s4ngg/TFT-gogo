@@ -1,4 +1,5 @@
 import { Bot } from 'lucide-react'
+import { useEffect } from 'react'
 import {
   TRAIT_PAGE_SIZE,
   type GuideCatalog,
@@ -31,6 +32,7 @@ interface TraitGuideViewProps {
   onGameGuideAiAsk: GameGuideAiAskHandler
   onChampionSelect: (championName: string) => void
   onGuideRetry: () => void
+  onVisibleItemsChange: (items: TraitGuide[]) => void
   patchVersion: string
   query: string
 }
@@ -125,6 +127,7 @@ function TraitGuideView({
   onGameGuideAiAsk,
   onChampionSelect,
   onGuideRetry,
+  onVisibleItemsChange,
   patchVersion,
   query,
 }: TraitGuideViewProps) {
@@ -149,6 +152,10 @@ function TraitGuideView({
     totalPages: pageData.totalPages,
   })
   const visibleTraits = pageData.items
+
+  useEffect(() => {
+    onVisibleItemsChange(visibleTraits)
+  }, [onVisibleItemsChange, visibleTraits])
 
   return (
     <>

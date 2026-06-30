@@ -1,5 +1,6 @@
 package com.tftgogo.domain.ai.client;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tftgogo.domain.ai.dto.AiChatRequest;
 import com.tftgogo.domain.ai.dto.AiChatResponse;
@@ -127,7 +128,15 @@ public class AiServerClient {
             if (responseBody == null || responseBody.isBlank()) {
                 return null;
             }
-            return objectMapper.readValue(responseBody, GameGuideAiPathfinderResponse.class);
+            JsonNode responseJson = objectMapper.readTree(responseBody);
+            if (responseJson.has("success") && !responseJson.path("success").asBoolean()) {
+                return null;
+            }
+            JsonNode dataNode = responseJson.has("data") ? responseJson.get("data") : responseJson;
+            if (dataNode == null || dataNode.isNull()) {
+                return null;
+            }
+            return objectMapper.treeToValue(dataNode, GameGuideAiPathfinderResponse.class);
         } catch (Exception e) {
             logger.warn("GameGuide AI 서버 호출 실패, fallback 사용: {}", e.getMessage());
             return null;

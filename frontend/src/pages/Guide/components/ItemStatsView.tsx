@@ -1,5 +1,6 @@
 import { Bot } from 'lucide-react'
-import type { GuideCatalog } from '../../../api/guide'
+import { useEffect } from 'react'
+import type { GuideCatalog, ItemStatGuide } from '../../../api/guide'
 import { useGuideTabItems } from '../../../hooks/useGuide'
 import {
   useGuidePageBounds,
@@ -23,6 +24,7 @@ interface ItemStatsViewProps {
   isGuideFetching: boolean
   onGameGuideAiAsk: GameGuideAiAskHandler
   onGuideRetry: () => void
+  onVisibleItemsChange: (items: ItemStatGuide[]) => void
   patchVersion: string
   query: string
 }
@@ -35,6 +37,7 @@ function ItemStatsView({
   isGuideFetching,
   onGameGuideAiAsk,
   onGuideRetry,
+  onVisibleItemsChange,
   patchVersion,
   query,
 }: ItemStatsViewProps) {
@@ -59,6 +62,10 @@ function ItemStatsView({
     totalPages: pageData.totalPages,
   })
   const visibleItems = pageData.items
+
+  useEffect(() => {
+    onVisibleItemsChange(visibleItems)
+  }, [onVisibleItemsChange, visibleItems])
 
   return (
     <>

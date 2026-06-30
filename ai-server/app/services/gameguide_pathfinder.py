@@ -295,7 +295,7 @@ def _compact_data_value(value: object, depth: int = 0) -> object:
         ]
     if isinstance(value, dict):
         return {
-            str(key): _compact_data_value(item, depth + 1)
+            _truncate(_sanitize(str(key)), _MAX_DATA_STRING_LENGTH): _compact_data_value(item, depth + 1)
             for key, item in list(value.items())[:_MAX_DATA_DICT_ITEMS]
         }
     return value
@@ -551,22 +551,13 @@ def _contains_forbidden_output(response: GameGuidePathfinderResponse) -> bool:
     return _contains_any_term(combined, _FORBIDDEN_OUTPUT_TERMS)
 
 
-def _request_text_values(request: GameGuidePathfinderRequest) -> list[str]:
-    return [
-        request.question,
-        *(message.content for message in request.conversation_history),
-    ]
-
-
 def _is_prompt_attack_request(request: GameGuidePathfinderRequest) -> bool:
-    combined = "\n".join(_request_text_values(request)).lower()
-    return _contains_any_term(combined, _PROMPT_ATTACK_REQUEST_TERMS)
+    return _contains_any_term(request.question, _PROMPT_ATTACK_REQUEST_TERMS)
 
 
 def _is_unsupported_metric_request(request: GameGuidePathfinderRequest) -> bool:
-    combined = "\n".join(_request_text_values(request)).lower()
-    has_metric = _contains_any_term(combined, _UNSUPPORTED_METRIC_TERMS)
-    asks_to_fabricate = _contains_any_term(combined, _FABRICATION_REQUEST_TERMS)
+    has_metric = _contains_any_term(request.question, _UNSUPPORTED_METRIC_TERMS)
+    asks_to_fabricate = _contains_any_term(request.question, _FABRICATION_REQUEST_TERMS)
     return has_metric and asks_to_fabricate
 
 

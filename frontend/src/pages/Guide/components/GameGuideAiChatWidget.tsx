@@ -218,6 +218,7 @@ function GameGuideAiChatWidget({
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.nativeEvent.isComposing) return
     if (event.key !== 'Enter' || event.shiftKey) return
 
     event.preventDefault()

@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   CHAMPION_PAGE_SIZE,
+  type ChampionGuide,
   type ChampionCostFilter,
   type GuideCatalog,
 } from '../../../api/guide'
@@ -29,6 +30,7 @@ interface ChampionGuideViewProps {
   onFavoriteToggle: (championName: string) => void
   onGameGuideAiAsk: GameGuideAiAskHandler
   onGuideRetry: () => void
+  onVisibleItemsChange: (items: ChampionGuide[]) => void
   patchVersion: string
   query: string
 }
@@ -42,6 +44,7 @@ function ChampionGuideView({
   onFavoriteToggle,
   onGameGuideAiAsk,
   onGuideRetry,
+  onVisibleItemsChange,
   patchVersion,
   query,
 }: ChampionGuideViewProps) {
@@ -73,6 +76,10 @@ function ChampionGuideView({
     totalPages: pageData.totalPages,
   })
   const visibleChampions = pageData.items
+
+  useEffect(() => {
+    onVisibleItemsChange(visibleChampions)
+  }, [onVisibleItemsChange, visibleChampions])
 
   return (
     <>

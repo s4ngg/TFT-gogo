@@ -38,6 +38,7 @@ public class GameGuideAiPathfinderService {
     private final GuideItemRepository guideItemRepository;
     private final GuideTraitRepository guideTraitRepository;
     private final ObjectMapper objectMapper;
+    private final AiChatRateLimiter rateLimiter;
 
     public GameGuideAiPathfinderService(
             AiServerClient aiServerClient,
@@ -45,7 +46,8 @@ public class GameGuideAiPathfinderService {
             GuideChampionRepository guideChampionRepository,
             GuideItemRepository guideItemRepository,
             GuideTraitRepository guideTraitRepository,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            AiChatRateLimiter rateLimiter
     ) {
         this.aiServerClient = aiServerClient;
         this.guideAugmentRepository = guideAugmentRepository;
@@ -53,10 +55,12 @@ public class GameGuideAiPathfinderService {
         this.guideItemRepository = guideItemRepository;
         this.guideTraitRepository = guideTraitRepository;
         this.objectMapper = objectMapper;
+        this.rateLimiter = rateLimiter;
     }
 
-    public GameGuideAiPathfinderResponse pathfind(GameGuideAiPathfinderRequest request) {
+    public GameGuideAiPathfinderResponse pathfind(Long userId, GameGuideAiPathfinderRequest request) {
         validate(request);
+        enforceRateLimit(userId);
         validateGuideRefs(request);
         Set<String> allowedRefKeys = allowedRefKeys(request);
         List<AiServerClient.GameGuideSelectedEntry> selectedEntries = selectedEntries(request);
@@ -76,7 +80,7 @@ public class GameGuideAiPathfinderService {
 
         return GameGuideAiPathfinderResponse.of(
                 "%s 가이드 질문".formatted(tabLabel),
-                "GameGuide AI 서버 연결 전이라 현재 가이드 화면 기준의 기본 안내를 표시합니다.",
+                "GameGuide AI 응답을 일시적으로 생성하지 못해 현재 가이드 화면 기준의 기본 안내를 표시합니다.",
                 List.of(
                         "질문 키워드를 현재 가이드 탭에서 먼저 검색해 관련 항목을 확인하세요.",
                         "시너지, 챔피언, 아이템, 증강체를 하나씩 연결해 운영 흐름을 좁히는 방식이 안전합니다."
@@ -106,11 +110,21 @@ public class GameGuideAiPathfinderService {
                 ),
                 sourceRefs,
                 List.of(
-                        "아직 GameGuide AI 서버가 연결되지 않아 기본 안내를 표시합니다.",
+                        "일시적인 오류로 GameGuide AI 기본 안내를 표시합니다.",
                         "질문: %s".formatted(request.getQuestion().trim())
                 ),
                 true
         );
+    }
+
+    private void enforceRateLimit(Long userId) {
+        if (userId == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED);
+        }
+        if (!rateLimiter.tryAcquire(userId)) {
+            logger.warn("GameGuide AI rate limit 초과: userId={}", userId);
+            throw new BusinessException(ErrorCode.AI_CHAT_RATE_LIMIT);
+        }
     }
 
     private void validate(GameGuideAiPathfinderRequest request) {

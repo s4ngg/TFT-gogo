@@ -24,8 +24,8 @@ Backend: Spring Boot 프록시 + ai-server(FastAPI) + OpenAI
 3. 카드 연동 단계에서는 각 카드의 "AI에게 물어보기" 아이콘 버튼으로 해당 항목 1개를 선택하고 챗봇을 연다.
 4. 사용자는 별도 모드 선택 없이 선택된 카드 기준으로 질문을 입력한다.
    AI는 질문 의도에 따라 개념 설명, 운영 루트, 시너지 확장, 아이템 활용, 전환 후보를 통합 판단한다.
-5. 프론트가 Spring 백엔드로 POST /api/ai/gameguide-pathfinder를 호출한다.
-6. Spring은 선택된 Guide ref가 있으면 같은 패치의 저장 데이터로 재조회하고 AI 서버에 전달할 컨텍스트를 만든다.
+5. 프론트가 인증된 사용자 세션으로 Spring 백엔드 POST /api/ai/gameguide-pathfinder를 호출한다.
+6. Spring은 사용자별 AI 요청 제한을 확인하고, 선택된 Guide ref가 있으면 같은 패치의 저장 데이터로 재조회해 AI 서버에 전달할 컨텍스트를 만든다.
 7. AI 서버가 구조화된 JSON 응답을 생성한다.
 8. Spring은 응답의 추천 Guide ref/source ref를 검증한 뒤 ApiResponse로 래핑해 프론트에 반환한다.
 9. 프론트는 우측 하단 챗봇 위젯 안에서 요약, 운영 단계, 주의점을 메시지형 카드로 표시한다.
@@ -60,7 +60,7 @@ Backend: Spring Boot 프록시 + ai-server(FastAPI) + OpenAI
       "content": "string"
     }
   ],
-  "question": "string | null"
+  "question": "string"
 }
 </request-body>
 
@@ -76,8 +76,9 @@ Backend: Spring Boot 프록시 + ai-server(FastAPI) + OpenAI
 - activeTab은 질문만 있는 경우 AI가 현재 Guide 문맥을 좁히는 힌트로 사용한다.
 - mode는 프론트에서 사용자에게 노출하지 않고 AUTO로 고정한다.
 - 프론트는 AI 서버를 직접 호출하지 않는다.
-- question-only chat sends up to 20 current activeTab Guide entries through candidateRefs.
+- question-only chat sends up to 20 currently visible activeTab Guide entries through candidateRefs.
 - candidateRefs are not user-selected refs; they are only an allow-list for AI recommended links.
+- POST /api/ai/gameguide-pathfinder는 인증 필요 API이며 사용자별 AI rate limit을 통과해야 한다.
 </request-rules>
 
 <response-body>
@@ -91,6 +92,7 @@ ApiResponse&lt;GameGuideAiPathfinderResponse&gt;
 <request-body>
 {
   "patch_version": "17.3",
+  "active_tab": "traits",
   "mode": "AUTO",
   "selected_entries": [
     {
@@ -115,7 +117,7 @@ ApiResponse&lt;GameGuideAiPathfinderResponse&gt;
       "content": "string"
     }
   ],
-  "question": "string | null"
+  "question": "string"
 }
 </request-body>
 
@@ -199,12 +201,14 @@ ApiResponse&lt;GameGuideAiPathfinderResponse&gt;
 - 가이드 데이터 기반 판단은 evidenceNotes, AI의 보조 운영 제안은 creativeSuggestions로 분리한다.
 - creativeSuggestions가 포함되면 limitations에 확정 데이터가 아니라는 한계를 짧게 남긴다.
 - Spring은 AI 장애를 프론트 에러로 직접 노출하지 않고 fallback 응답을 반환한다.
+- AI 서버는 OpenAI 호출 전에 전역 rate limit을 적용하고, 응답은 BaseResponse envelope의 data에 GameGuidePathfinderResponse를 담아 반환한다.
 </business-rules>
 
 <fallback-behavior>
-- OpenAI API 키가 없거나 AI 서버 호출이 실패하면 Spring은 선택 항목 이름 기반의 deterministic fallback을 반환한다.
-- fallback summary는 "선택한 가이드 항목을 기준으로 기본 루트를 표시합니다." 수준으로 제한한다.
-- fallback은 phasePlan을 최소화하고 recommendedRefs는 candidate_refs 상위 항목만 사용한다.
+- OpenAI API 키가 없거나 OpenAI 응답 파싱에 실패하면 AI 서버가 deterministic fallback을 반환한다.
+- AI 서버 호출 자체가 실패하거나 응답 payload가 비어 있으면 Spring이 deterministic fallback을 반환한다.
+- fallback summary는 "현재 가이드 화면 기준의 기본 안내를 표시합니다." 수준으로 제한한다.
+- fallback은 phasePlan을 최소화하고 recommendedRefs는 비워 둔다.
 - fallback에서도 존재하지 않는 메트릭이나 메타 판단을 만들지 않는다.
 </fallback-behavior>
 
@@ -247,6 +251,8 @@ ApiResponse&lt;GameGuideAiPathfinderResponse&gt;
   - POST /api/gameguide/pathfinder
 - ai-server/app/models/gameguide_pathfinder.py
   - GameGuidePathfinderRequest, GameGuidePathfinderResponse Pydantic 모델
+- ai-server/app/models/common.py
+  - BaseResponse envelope 모델
 - ai-server/app/services/gameguide_pathfinder.py
   - 프롬프트 구성, OpenAI 호출, JSON 파싱, fallback 생성
 - ai-server/tests/test_gameguide_pathfinder.py
@@ -292,6 +298,7 @@ ApiResponse&lt;GameGuideAiPathfinderResponse&gt;
 - selectedRefs empty 또는 5개 초과 시 INVALID_INPUT
 - 존재하지 않는 guideType/targetKey/patchVersion 조합은 INVALID_INPUT
 - Spring이 클라이언트 dataJson을 신뢰하지 않고 DB 데이터를 재조회하는지 테스트
+- 인증 userId가 없거나 사용자별 AI rate limit을 초과하면 AI 서버를 호출하지 않는지 테스트
 - AI 서버 장애 시 ApiResponse&lt;GameGuideAiPathfinderResponse&gt; fallback 반환 테스트
 - AI 응답의 recommendedRefs/sourceRefs 검증 및 미존재 ref 제거 테스트
 </backend>
@@ -301,6 +308,8 @@ ApiResponse&lt;GameGuideAiPathfinderResponse&gt;
 - OpenAI 응답이 JSON이 아니면 fallback 반환
 - 없는 메트릭을 만들지 않도록 시스템 프롬프트에 제한 문구가 포함되는지 테스트
 - selected_entries와 candidate_refs가 토큰 예산 내로 제한되는지 테스트
+- /api/gameguide/pathfinder가 전역 rate limit 대상인지 테스트
+- API 응답이 BaseResponse envelope로 반환되는지 테스트
 </ai-server>
 </validation>
 

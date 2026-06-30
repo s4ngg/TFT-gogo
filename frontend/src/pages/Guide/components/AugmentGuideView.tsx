@@ -1,4 +1,5 @@
-import type { GuideCatalog } from '../../../api/guide'
+import { useEffect } from 'react'
+import type { AugmentGuide, GuideCatalog } from '../../../api/guide'
 import { useGuideTabItems } from '../../../hooks/useGuide'
 import {
   useGuidePageBounds,
@@ -19,6 +20,7 @@ interface AugmentGuideViewProps {
   isGuideFetching: boolean
   onGameGuideAiAsk: GameGuideAiAskHandler
   onGuideRetry: () => void
+  onVisibleItemsChange: (items: AugmentGuide[]) => void
   patchVersion: string
   query: string
 }
@@ -29,6 +31,7 @@ function AugmentGuideView({
   isGuideFetching,
   onGameGuideAiAsk,
   onGuideRetry,
+  onVisibleItemsChange,
   patchVersion,
   query,
 }: AugmentGuideViewProps) {
@@ -53,6 +56,10 @@ function AugmentGuideView({
     totalPages: pageData.totalPages,
   })
   const visibleAugments = pageData.items
+
+  useEffect(() => {
+    onVisibleItemsChange(visibleAugments)
+  }, [onVisibleItemsChange, visibleAugments])
 
   return (
     <>

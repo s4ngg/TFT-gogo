@@ -104,7 +104,7 @@ export function createGameGuideAiFallbackResponse({
     ],
     isFallback: true,
     limitations: [
-      '아직 GameGuide AI 백엔드가 연결되지 않아 기본 안내를 표시합니다.',
+      '일시적인 오류로 GameGuide AI 기본 안내를 표시합니다.',
       ...(selectedRefLabel ? [`선택 항목: ${selectedRefLabel}`] : []),
       `질문: ${question}`,
     ],
@@ -126,7 +126,7 @@ export function createGameGuideAiFallbackResponse({
     sourceRefs: selectedRefs,
     summary: selectedRefLabel
       ? `${selectedRefLabel} 기준의 기본 안내만 표시합니다.`
-      : 'GameGuide AI 연결 전이라 현재 가이드 화면 기준의 기본 안내만 표시합니다.',
+      : 'GameGuide AI 응답을 일시적으로 생성하지 못해 현재 가이드 화면 기준의 기본 안내만 표시합니다.',
     title,
   }
 }

@@ -8,6 +8,7 @@ import com.tftgogo.global.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,9 +23,10 @@ public class GameGuideAiPathfinderController implements GameGuideAiPathfinderCon
 
     @PostMapping("/gameguide-pathfinder")
     public ResponseEntity<ApiResponse<GameGuideAiPathfinderResponse>> pathfind(
+            @AuthenticationPrincipal Long userId,
             @Valid @RequestBody GameGuideAiPathfinderRequest request
     ) {
-        GameGuideAiPathfinderResponse response = gameGuideAiPathfinderService.pathfind(request);
+        GameGuideAiPathfinderResponse response = gameGuideAiPathfinderService.pathfind(userId, request);
         return ResponseEntity.ok(ApiResponse.success("GameGuide AI 응답 완료", response));
     }
 }

@@ -17,7 +17,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
@@ -31,6 +33,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,23 +44,25 @@ class GameGuideAiPathfinderServiceTest {
     @Mock private GuideChampionRepository guideChampionRepository;
     @Mock private GuideItemRepository guideItemRepository;
     @Mock private GuideTraitRepository guideTraitRepository;
+    @Mock private AiChatRateLimiter rateLimiter;
 
+    @InjectMocks
     private GameGuideAiPathfinderService service;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    @Spy
+    private ObjectMapper objectMapper = new ObjectMapper();
+
+    private static final Long USER_ID = 1L;
 
     @BeforeEach
     void setUp() {
-        service = new GameGuideAiPathfinderService(
-                aiServerClient,
-                guideAugmentRepository,
-                guideChampionRepository,
-                guideItemRepository,
-                guideTraitRepository,
-                objectMapper
-        );
+        lenient().when(rateLimiter.tryAcquire(USER_ID)).thenReturn(true);
         lenient().when(guideTraitRepository.findByTraitKeyAndPatchVersion(anyString(), anyString()))
                 .thenReturn(Optional.of(mock(GuideTrait.class)));
+    }
+
+    private GameGuideAiPathfinderResponse pathfind(GameGuideAiPathfinderRequest request) {
+        return service.pathfind(USER_ID, request);
     }
 
     @Test
@@ -72,7 +77,7 @@ class GameGuideAiPathfinderServiceTest {
         );
 
         // when
-        GameGuideAiPathfinderResponse response = service.pathfind(request);
+        GameGuideAiPathfinderResponse response = pathfind(request);
 
         // then
         assertThat(response.isFallback()).isTrue();
@@ -101,7 +106,7 @@ class GameGuideAiPathfinderServiceTest {
         );
 
         // when
-        GameGuideAiPathfinderResponse response = service.pathfind(request);
+        GameGuideAiPathfinderResponse response = pathfind(request);
 
         // then
         assertThat(response.getSourceRefs()).hasSize(1);
@@ -122,7 +127,7 @@ class GameGuideAiPathfinderServiceTest {
         );
 
         // when & then
-        assertThatThrownBy(() -> service.pathfind(request))
+        assertThatThrownBy(() -> pathfind(request))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.INVALID_INPUT));
@@ -140,7 +145,7 @@ class GameGuideAiPathfinderServiceTest {
         );
 
         // when & then
-        assertThatThrownBy(() -> service.pathfind(request))
+        assertThatThrownBy(() -> pathfind(request))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.INVALID_INPUT));
@@ -158,7 +163,7 @@ class GameGuideAiPathfinderServiceTest {
         );
 
         // when
-        String json = objectMapper.writeValueAsString(service.pathfind(request));
+        String json = objectMapper.writeValueAsString(pathfind(request));
 
         // then
         assertThat(json).contains("\"isFallback\":true");
@@ -270,7 +275,7 @@ class GameGuideAiPathfinderServiceTest {
         when(aiServerClient.pathfindGameGuide(any(), any())).thenReturn(expected);
 
         // when
-        GameGuideAiPathfinderResponse response = service.pathfind(request);
+        GameGuideAiPathfinderResponse response = pathfind(request);
 
         // then
         assertThat(response.getTitle()).isEqualTo(expected.getTitle());
@@ -327,7 +332,7 @@ class GameGuideAiPathfinderServiceTest {
         when(aiServerClient.pathfindGameGuide(any(), any())).thenReturn(aiResponse);
 
         // when
-        service.pathfind(request);
+        pathfind(request);
 
         // then
         @SuppressWarnings("unchecked")
@@ -368,7 +373,7 @@ class GameGuideAiPathfinderServiceTest {
         );
 
         // when & then
-        assertThatThrownBy(() -> service.pathfind(request))
+        assertThatThrownBy(() -> pathfind(request))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.INVALID_INPUT));
@@ -436,7 +441,7 @@ class GameGuideAiPathfinderServiceTest {
         when(aiServerClient.pathfindGameGuide(any(), any())).thenReturn(aiResponse);
 
         // when
-        GameGuideAiPathfinderResponse result = service.pathfind(request);
+        GameGuideAiPathfinderResponse result = pathfind(request);
 
         // then
         assertThat(result.getRecommendedRefs()).hasSize(1);
@@ -465,9 +470,48 @@ class GameGuideAiPathfinderServiceTest {
         );
 
         // when & then
-        assertThatThrownBy(() -> service.pathfind(request))
+        assertThatThrownBy(() -> pathfind(request))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.INVALID_INPUT));
+    }
+
+    @Test
+    void rate_limit_초과시_AI서버를_호출하지_않고_AI_CHAT_RATE_LIMIT_예외를_던진다() {
+        // given
+        GameGuideAiPathfinderRequest request = new GameGuideAiPathfinderRequest(
+                "17.3",
+                "traits",
+                "AUTO",
+                List.of(),
+                "운영 알려줘"
+        );
+        when(rateLimiter.tryAcquire(USER_ID)).thenReturn(false);
+
+        // when & then
+        assertThatThrownBy(() -> pathfind(request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.AI_CHAT_RATE_LIMIT));
+        verifyNoInteractions(aiServerClient);
+    }
+
+    @Test
+    void 인증_userId가_없으면_UNAUTHORIZED_예외를_던진다() {
+        // given
+        GameGuideAiPathfinderRequest request = new GameGuideAiPathfinderRequest(
+                "17.3",
+                "traits",
+                "AUTO",
+                List.of(),
+                "운영 알려줘"
+        );
+
+        // when & then
+        assertThatThrownBy(() -> service.pathfind(null, request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.UNAUTHORIZED));
+        verifyNoInteractions(aiServerClient);
     }
 }

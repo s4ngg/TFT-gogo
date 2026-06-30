@@ -91,7 +91,9 @@ function readPatchVersion(entry: GuideEntryResponse) {
 }
 
 function readTargetKey(entry: GuideEntryResponse) {
-  return entry.targetKey ?? entry.target_key ?? undefined
+  if (typeof entry.targetKey === 'string') return entry.targetKey
+  if (typeof entry.target_key === 'string') return entry.target_key
+  return undefined
 }
 
 function readChampionRefs(value: unknown): ChampionRef[] {
