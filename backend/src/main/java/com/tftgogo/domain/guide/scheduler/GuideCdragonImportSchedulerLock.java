@@ -45,7 +45,14 @@ public class GuideCdragonImportSchedulerLock {
             statement.setString(1, LOCK_NAME);
             statement.setInt(2, LOCK_TIMEOUT_SECONDS);
             try (ResultSet resultSet = statement.executeQuery()) {
-                return resultSet.next() && resultSet.getInt(1) == 1;
+                if (!resultSet.next()) {
+                    return false;
+                }
+                int acquireResult = resultSet.getInt(1);
+                if (resultSet.wasNull()) {
+                    throw new SQLException("GET_LOCK returned NULL");
+                }
+                return acquireResult == 1;
             }
         }
     }

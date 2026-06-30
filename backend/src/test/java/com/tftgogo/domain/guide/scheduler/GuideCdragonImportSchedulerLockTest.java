@@ -1,8 +1,8 @@
 package com.tftgogo.domain.guide.scheduler;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -40,12 +40,8 @@ class GuideCdragonImportSchedulerLockTest {
     @Mock
     private Runnable task;
 
+    @InjectMocks
     private GuideCdragonImportSchedulerLock schedulerLock;
-
-    @BeforeEach
-    void setUp() {
-        schedulerLock = new GuideCdragonImportSchedulerLock(dataSource);
-    }
 
     @Test
     void DB_락을_얻으면_task_실행후_같은_커넥션에서_락을_해제한다() throws Exception {
@@ -79,6 +75,26 @@ class GuideCdragonImportSchedulerLockTest {
         when(acquireStatement.executeQuery()).thenReturn(acquireResultSet);
         when(acquireResultSet.next()).thenReturn(true);
         when(acquireResultSet.getInt(1)).thenReturn(0);
+
+        // when
+        boolean acquired = schedulerLock.runWithLock("test", task);
+
+        // then
+        assertThat(acquired).isFalse();
+        verify(task, never()).run();
+        verify(connection, never()).prepareStatement("SELECT RELEASE_LOCK(?)");
+        verify(connection).close();
+    }
+
+    @Test
+    void DB_락_응답이_NULL이면_task를_실행하지_않는다() throws Exception {
+        // given
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement("SELECT GET_LOCK(?, ?)")).thenReturn(acquireStatement);
+        when(acquireStatement.executeQuery()).thenReturn(acquireResultSet);
+        when(acquireResultSet.next()).thenReturn(true);
+        when(acquireResultSet.getInt(1)).thenReturn(0);
+        when(acquireResultSet.wasNull()).thenReturn(true);
 
         // when
         boolean acquired = schedulerLock.runWithLock("test", task);
