@@ -79,22 +79,40 @@ _PROMPT_ATTACK_REQUEST_TERMS = (
     "ignore response format",
     "markdown",
     "code block",
+    "guardrail",
+    "hidden rules",
+    "base64",
+    "rot13",
+    "yaml",
+    "dump",
     "이전 지시",
     "지시 무시",
+    "지시서",
+    "최상위 지시",
+    "최상위 메시지",
     "시스템 프롬프트",
     "개발자 메시지",
+    "개발자가 넣은",
     "내부 시크릿",
     "내부 비밀",
+    "내부 규칙",
+    "내부 지침",
     "API 키",
     "환경변수",
     "숨겨진 지시",
+    "숨은 규칙",
+    "안전 정책",
     "내부 설정",
     "내부 설정값",
+    "런타임 설정",
+    "모델 호출 설정",
     "응답 형식",
     "형식 무시",
     "마크다운",
     "코드블록",
     "코드 블록",
+    "덤프",
+    "인코딩",
 )
 _UNSUPPORTED_METRIC_TERMS = (
     "win rate",
@@ -104,14 +122,17 @@ _UNSUPPORTED_METRIC_TERMS = (
     "top 4",
     "tier",
     "승률",
+    "승 률",
     "평균 등수",
     "평균등수",
     "픽률",
     "top4율",
     "TOP4율",
+    "t o p 4",
     "순방률",
     "1등률",
     "티어",
+    "티어표",
     "메타 수치",
     "통계 수치",
 )
@@ -123,15 +144,23 @@ _FABRICATION_REQUEST_TERMS = (
     "fabricate",
     "정확한 숫자",
     "정확한 수치",
+    "숫자",
+    "수치",
     "데이터가 없어도",
     "데이터 없어도",
     "없어도 추정",
+    "합리적 가정",
     "추정해서",
+    "추정해",
     "추측해서",
+    "추측해",
+    "산출",
     "임의로",
     "만들어서",
     "지어서",
     "가정해서",
+    "등급으로",
+    "티어표처럼",
 )
 
 _SYSTEM_PROMPT = """\
@@ -503,9 +532,23 @@ def _response_text_values(response: GameGuidePathfinderResponse) -> list[str]:
     return [value for value in values if value]
 
 
+def _compact_for_detection(value: str) -> str:
+    return re.sub(r"[\s_\-.]+", "", value.lower())
+
+
+def _contains_any_term(value: str, terms: tuple[str, ...]) -> bool:
+    lower_value = value.lower()
+    compact_value = _compact_for_detection(value)
+    return any(
+        term.lower() in lower_value
+        or _compact_for_detection(term) in compact_value
+        for term in terms
+    )
+
+
 def _contains_forbidden_output(response: GameGuidePathfinderResponse) -> bool:
     combined = "\n".join(_response_text_values(response)).lower()
-    return any(term.lower() in combined for term in _FORBIDDEN_OUTPUT_TERMS)
+    return _contains_any_term(combined, _FORBIDDEN_OUTPUT_TERMS)
 
 
 def _request_text_values(request: GameGuidePathfinderRequest) -> list[str]:
@@ -517,13 +560,13 @@ def _request_text_values(request: GameGuidePathfinderRequest) -> list[str]:
 
 def _is_prompt_attack_request(request: GameGuidePathfinderRequest) -> bool:
     combined = "\n".join(_request_text_values(request)).lower()
-    return any(term.lower() in combined for term in _PROMPT_ATTACK_REQUEST_TERMS)
+    return _contains_any_term(combined, _PROMPT_ATTACK_REQUEST_TERMS)
 
 
 def _is_unsupported_metric_request(request: GameGuidePathfinderRequest) -> bool:
     combined = "\n".join(_request_text_values(request)).lower()
-    has_metric = any(term.lower() in combined for term in _UNSUPPORTED_METRIC_TERMS)
-    asks_to_fabricate = any(term.lower() in combined for term in _FABRICATION_REQUEST_TERMS)
+    has_metric = _contains_any_term(combined, _UNSUPPORTED_METRIC_TERMS)
+    asks_to_fabricate = _contains_any_term(combined, _FABRICATION_REQUEST_TERMS)
     return has_metric and asks_to_fabricate
 
 
