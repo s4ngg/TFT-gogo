@@ -18,6 +18,7 @@ AWS ALB + Route53 배포 도메인 기준 라우팅 계약.
 
 <routes>
 - `/api`, `/api/*` -> `tftgogo-backend-tg`
+- `/actuator/health` -> `tftgogo-backend-tg`
 - `/oauth2/*` -> `tftgogo-backend-tg`
 - `/login/oauth2/*` -> `tftgogo-backend-tg`
 - 그 외 모든 경로 -> `tftgogo-frontend-tg`
@@ -33,6 +34,7 @@ AWS ALB + Route53 배포 도메인 기준 라우팅 계약.
   - `APP_OAUTH2_LOGIN_FAILURE_REDIRECT_URI=https://tftgogo.com/login`
   - `AI_SERVER_URL=http://<internal-ai-service>:8000`
   - `SERVER_FORWARD_HEADERS_STRATEGY=framework`
+- Backend ALB target group health check path: `/actuator/health`
 </backend>
 
 <frontend>
