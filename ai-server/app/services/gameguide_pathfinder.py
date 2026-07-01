@@ -120,7 +120,6 @@ _UNSUPPORTED_METRIC_TERMS = (
     "pick rate",
     "top4",
     "top 4",
-    "tier",
     "승률",
     "승 률",
     "평균 등수",
@@ -131,7 +130,6 @@ _UNSUPPORTED_METRIC_TERMS = (
     "t o p 4",
     "순방률",
     "1등률",
-    "티어",
     "티어표",
     "메타 수치",
     "통계 수치",
@@ -144,8 +142,6 @@ _FABRICATION_REQUEST_TERMS = (
     "fabricate",
     "정확한 숫자",
     "정확한 수치",
-    "숫자",
-    "수치",
     "데이터가 없어도",
     "데이터 없어도",
     "없어도 추정",
@@ -154,12 +150,10 @@ _FABRICATION_REQUEST_TERMS = (
     "추정해",
     "추측해서",
     "추측해",
-    "산출",
     "임의로",
     "만들어서",
     "지어서",
     "가정해서",
-    "등급으로",
     "티어표처럼",
 )
 
@@ -546,6 +540,29 @@ def _contains_any_term(value: str, terms: tuple[str, ...]) -> bool:
     )
 
 
+def _contains_metric_guard_term(value: str, terms: tuple[str, ...]) -> bool:
+    lower_value = value.lower()
+    compact_value = _compact_for_detection(value)
+
+    for term in terms:
+        lower_term = term.lower()
+        compact_term = _compact_for_detection(term)
+
+        if re.fullmatch(r"[a-z0-9 ]+", lower_term):
+            pattern = rf"(?<![a-z0-9]){re.escape(lower_term)}(?![a-z0-9])"
+            if re.search(pattern, lower_value):
+                return True
+        elif lower_term in lower_value:
+            return True
+
+        if compact_term != lower_term:
+            is_korean_term = re.search(r"[가-힣]", compact_term) is not None
+            if (is_korean_term or len(compact_term) >= 4) and compact_term in compact_value:
+                return True
+
+    return False
+
+
 def _contains_forbidden_output(response: GameGuidePathfinderResponse) -> bool:
     combined = "\n".join(_response_text_values(response)).lower()
     return _contains_any_term(combined, _FORBIDDEN_OUTPUT_TERMS)
@@ -556,8 +573,8 @@ def _is_prompt_attack_request(request: GameGuidePathfinderRequest) -> bool:
 
 
 def _is_unsupported_metric_request(request: GameGuidePathfinderRequest) -> bool:
-    has_metric = _contains_any_term(request.question, _UNSUPPORTED_METRIC_TERMS)
-    asks_to_fabricate = _contains_any_term(request.question, _FABRICATION_REQUEST_TERMS)
+    has_metric = _contains_metric_guard_term(request.question, _UNSUPPORTED_METRIC_TERMS)
+    asks_to_fabricate = _contains_metric_guard_term(request.question, _FABRICATION_REQUEST_TERMS)
     return has_metric and asks_to_fabricate
 
 
