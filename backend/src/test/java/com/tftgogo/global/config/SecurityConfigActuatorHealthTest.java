@@ -48,15 +48,27 @@ class SecurityConfigActuatorHealthTest {
     private CookieOAuth2AuthorizationRequestRepository cookieOAuth2AuthorizationRequestRepository;
 
     @Test
-    void actuator_health_path_is_public_for_alb_health_check() throws Exception {
-        mockMvc.perform(get("/actuator/health"))
-                .andExpect(status().isOk());
+    void actuator_health_하위_경로도_인증_없이_접근된다() throws Exception {
+        List<String> healthPaths = List.of(
+                "/actuator/health",
+                "/actuator/health/liveness",
+                "/actuator/health/readiness"
+        );
+
+        for (String path : healthPaths) {
+            mockMvc.perform(get(path))
+                    .andExpect(status().isOk());
+        }
     }
 
     @RestController
     static class HealthController {
 
-        @GetMapping("/actuator/health")
+        @GetMapping({
+                "/actuator/health",
+                "/actuator/health/liveness",
+                "/actuator/health/readiness"
+        })
         String health() {
             return "ok";
         }
