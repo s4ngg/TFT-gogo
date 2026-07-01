@@ -63,7 +63,11 @@ class SecurityConfigOAuth2WithoutRepositoryTest {
                 .andExpect(status().isOk())
                 .andExpect(header().doesNotExist("Location"));
 
-        verifyNoInteractions(socialOAuth2SuccessHandler, socialOAuth2FailureHandler);
+        verifyNoInteractions(
+                socialOAuth2SuccessHandler,
+                socialOAuth2FailureHandler,
+                cookieOAuth2AuthorizationRequestRepository
+        );
     }
 
     @RestController

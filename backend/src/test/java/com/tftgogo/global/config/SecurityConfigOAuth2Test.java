@@ -25,6 +25,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -67,6 +69,9 @@ class SecurityConfigOAuth2Test {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(header().string("Location", containsString(expectedGoogleAuthUrl)))
                 .andExpect(header().string("Location", containsString(expectedClientId)));
+
+        verify(cookieOAuth2AuthorizationRequestRepository)
+                .saveAuthorizationRequest(any(), any(), any());
     }
 
     @RestController
