@@ -54,7 +54,8 @@ TFT-gogo/
 ├── ai-server/     # FastAPI AI 추천·채팅 서버
 ├── frontend/      # React 클라이언트
 ├── docs/          # 프로젝트 문서 (스펙, 컨벤션, QA 등)
-└── docker-compose.yml
+├── docker-compose.yml
+└── docker-compose.local-smoke.yml
 ```
 
 <br>
