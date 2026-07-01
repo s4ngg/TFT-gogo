@@ -1,4 +1,4 @@
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings
 
 
@@ -37,6 +37,12 @@ class Settings(BaseSettings):
         if not v or not v.strip():
             raise ValueError("INTERNAL_SECRET 환경변수가 설정되지 않았습니다.")
         return v
+
+    @model_validator(mode="after")
+    def production_openai_api_key_must_be_set(self):
+        if self.app_env.strip().lower() == "production" and not self.openai_api_key.strip():
+            raise ValueError("OPENAI_API_KEY must be set when APP_ENV=production.")
+        return self
 
     @property
     def cors_allowed_origin_list(self) -> list[str]:
