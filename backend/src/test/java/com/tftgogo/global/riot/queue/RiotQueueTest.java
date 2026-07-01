@@ -18,17 +18,20 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class RiotQueueTest {
 
+    private static final int WORKER_CONCURRENCY = 2;
+
     private RiotQueue riotQueue;
 
     @BeforeEach
     void setUp() {
-        riotQueue = createQueue(2, 2);
+        riotQueue = createQueue(WORKER_CONCURRENCY, WORKER_CONCURRENCY);
     }
 
     private RiotQueue createQueue(int workerConcurrency, int executorPoolSize) {
@@ -129,20 +132,23 @@ class RiotQueueTest {
 
     @Test
     void destroy_호출시_대기중인_작업이_예외로_완료된다() throws Exception {
-        CountDownLatch blockLatch = new CountDownLatch(1);
+        CountDownLatch workersRelease = blockForegroundWorkers(riotQueue);
 
-        riotQueue.submit(() -> {
-            try { blockLatch.await(10, TimeUnit.SECONDS); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
-            return "blocked";
-        });
+        try {
+            CompletableFuture<String> schedulerBlockedFuture = blockForegroundScheduler(riotQueue);
+            CompletableFuture<String> pendingFuture = riotQueue.submit(() -> "pending");
 
-        CompletableFuture<String> pendingFuture = riotQueue.submit(() -> "pending");
+            assertThat(riotQueue.getBackgroundQueueSize()).isEqualTo(1);
 
-        Thread.sleep(100);
-        riotQueue.destroy();
-        blockLatch.countDown();
+            riotQueue.destroy();
 
-        assertThat(pendingFuture.isDone()).isTrue();
+            waitUntil(schedulerBlockedFuture::isDone);
+            waitUntil(pendingFuture::isDone);
+            assertRiotQueueFull(schedulerBlockedFuture);
+            assertRiotQueueFull(pendingFuture);
+        } finally {
+            workersRelease.countDown();
+        }
     }
 
     @Test
@@ -214,6 +220,43 @@ class RiotQueueTest {
             }
         }
         throw new AssertionError("큐 포화 상태를 만들지 못했습니다.");
+    }
+
+    private CountDownLatch blockForegroundWorkers(RiotQueue targetQueue) throws InterruptedException {
+        CountDownLatch workersStarted = new CountDownLatch(WORKER_CONCURRENCY);
+        CountDownLatch workersRelease = new CountDownLatch(1);
+
+        for (int i = 0; i < WORKER_CONCURRENCY; i++) {
+            targetQueue.submitForeground(() -> {
+                workersStarted.countDown();
+                try { workersRelease.await(5, TimeUnit.SECONDS); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+                return "worker-blocked";
+            });
+        }
+
+        assertThat(workersStarted.await(3, TimeUnit.SECONDS)).isTrue();
+        return workersRelease;
+    }
+
+    private CompletableFuture<String> blockForegroundScheduler(RiotQueue targetQueue) {
+        CompletableFuture<String> schedulerBlockedFuture = targetQueue.submitForeground(() -> "scheduler-blocked");
+
+        waitUntil(() -> targetQueue.getForegroundQueueSize() == 0);
+        assertThat(schedulerBlockedFuture.isDone()).isFalse();
+        return schedulerBlockedFuture;
+    }
+
+    private void waitUntil(BooleanSupplier condition) {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(3);
+        while (!condition.getAsBoolean() && System.nanoTime() < deadline) {
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new AssertionError("대기 중 인터럽트가 발생했습니다.", e);
+            }
+        }
+        assertThat(condition.getAsBoolean()).isTrue();
     }
 
     private void assertRiotQueueFull(CompletableFuture<String> future) {
