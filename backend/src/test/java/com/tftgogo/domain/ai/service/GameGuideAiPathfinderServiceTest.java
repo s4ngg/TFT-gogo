@@ -252,7 +252,7 @@ class GameGuideAiPathfinderServiceTest {
                 "traits",
                 "AUTO",
                 List.of(),
-                "?숇Ъ?밴났? ?대뼸寃??댁쁺??"
+                "동물특공대 어떻게 운영해?"
         );
         GameGuideAiPathfinderResponse expected = GameGuideAiPathfinderResponse.of(
                 "AI title",
