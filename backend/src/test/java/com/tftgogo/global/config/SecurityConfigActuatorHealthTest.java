@@ -3,6 +3,7 @@ package com.tftgogo.global.config;
 import com.tftgogo.domain.admin.service.AdminAuditService;
 import com.tftgogo.global.filter.AdminJwtFilter;
 import com.tftgogo.global.filter.JwtAuthenticationFilter;
+import com.tftgogo.global.security.oauth.CookieOAuth2AuthorizationRequestRepository;
 import com.tftgogo.global.security.oauth.SocialOAuth2FailureHandler;
 import com.tftgogo.global.security.oauth.SocialOAuth2SuccessHandler;
 import org.junit.jupiter.api.Test;
@@ -42,6 +43,9 @@ class SecurityConfigActuatorHealthTest {
 
     @MockBean
     private SocialOAuth2FailureHandler socialOAuth2FailureHandler;
+
+    @MockBean
+    private CookieOAuth2AuthorizationRequestRepository cookieOAuth2AuthorizationRequestRepository;
 
     @Test
     void actuator_health_path_is_public_for_alb_health_check() throws Exception {
