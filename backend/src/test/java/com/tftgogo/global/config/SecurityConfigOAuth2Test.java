@@ -3,6 +3,7 @@ package com.tftgogo.global.config;
 import com.tftgogo.domain.admin.service.AdminAuditService;
 import com.tftgogo.global.filter.AdminJwtFilter;
 import com.tftgogo.global.filter.JwtAuthenticationFilter;
+import com.tftgogo.global.security.oauth.CookieOAuth2AuthorizationRequestRepository;
 import com.tftgogo.global.security.oauth.SocialOAuth2FailureHandler;
 import com.tftgogo.global.security.oauth.SocialOAuth2SuccessHandler;
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -51,6 +54,9 @@ class SecurityConfigOAuth2Test {
     @MockBean
     private SocialOAuth2FailureHandler socialOAuth2FailureHandler;
 
+    @MockBean
+    private CookieOAuth2AuthorizationRequestRepository cookieOAuth2AuthorizationRequestRepository;
+
     @Test
     void OAuth2_인증시작_경로는_fallback_denyAll이_아니라_provider로_리다이렉트한다() throws Exception {
         // given
@@ -63,6 +69,9 @@ class SecurityConfigOAuth2Test {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(header().string("Location", containsString(expectedGoogleAuthUrl)))
                 .andExpect(header().string("Location", containsString(expectedClientId)));
+
+        verify(cookieOAuth2AuthorizationRequestRepository)
+                .saveAuthorizationRequest(any(), any(), any());
     }
 
     @RestController

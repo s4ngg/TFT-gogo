@@ -66,7 +66,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-tftpass}
       SPRING_FLYWAY_ENABLED: "true"
       SPRING_FLYWAY_BASELINE_ON_MIGRATE: "false"
-      SPRING_FLYWAY_LOCATIONS: "classpath:db/migration,classpath:db/local-smoke"
+      SPRING_FLYWAY_LOCATIONS: ${SPRING_FLYWAY_LOCATIONS:-classpath:db/migration}
       SPRING_JPA_HIBERNATE_DDL_AUTO: validate
       SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQL8Dialect
       SPRING_DATA_REDIS_HOST: redis

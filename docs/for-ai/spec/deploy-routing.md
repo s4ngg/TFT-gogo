@@ -34,6 +34,9 @@ AWS ALB + Route53 배포 도메인 기준 라우팅 계약.
   - `AI_SERVER_URL=http://<internal-ai-service>:8000`
   - `SERVER_FORWARD_HEADERS_STRATEGY=framework`
   - `ADMIN_BOOTSTRAP_PASSWORD` must be empty or a strong one-time bootstrap password.
+  - `SPRING_FLYWAY_LOCATIONS=classpath:db/migration`
+- 운영에서는 `db/local-smoke` Flyway callback을 포함하지 않는다. 로컬 스모크 seed는 `docker-compose.local-smoke.yml`로만 명시적으로 켠다.
+- 운영 secret은 compose 기본값을 사용하지 않고 ECS task definition의 secrets, SSM Parameter Store, 또는 Secrets Manager로 주입한다.
 </backend>
 
 <frontend>
