@@ -31,6 +31,7 @@ AWS ALB + Route53 배포 도메인 기준 라우팅 계약.
   - `APP_OAUTH2_AUTHORIZATION_BASE_URI=https://tftgogo.com`
   - `APP_OAUTH2_AUTHORIZED_REDIRECT_URI=https://tftgogo.com/oauth/callback`
   - `APP_OAUTH2_LOGIN_FAILURE_REDIRECT_URI=https://tftgogo.com/login`
+  - `SPRING_PROFILES_ACTIVE=prod` requires the OAuth2 redirect values above and must not use local HTTP URLs.
   - `AI_SERVER_URL=http://<internal-ai-service>:8000`
   - `SERVER_FORWARD_HEADERS_STRATEGY=framework`
   - `SPRING_FLYWAY_LOCATIONS=classpath:db/migration`
