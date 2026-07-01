@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def production_openai_api_key_must_be_set(self):
         if self.app_env.strip().lower() == "production" and not self.openai_api_key.strip():
-            raise ValueError("OPENAI_API_KEY must be set when APP_ENV=production.")
+            raise ValueError("운영 환경에서는 OPENAI_API_KEY 환경변수가 설정되어야 합니다.")
         return self
 
     @property

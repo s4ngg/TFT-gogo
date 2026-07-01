@@ -45,7 +45,7 @@ AWS ALB + Route53 배포 도메인 기준 라우팅 계약.
 - AI 서버는 공개 ALB path로 노출하지 않는다.
 - Spring 백엔드가 내부 `AI_SERVER_URL`로 AI 서버의 `/api/analyze/with-meta`를 호출한다.
 - CORS는 브라우저 정책일 뿐 공개 엔드포인트 보호 수단이 아니다.
-- Production `APP_ENV=production` requires `OPENAI_API_KEY`; missing value must fail AI server startup.
+- 운영 환경(`APP_ENV=production`)에서는 `OPENAI_API_KEY`가 필수이며, 값이 없으면 AI 서버 시작이 실패해야 한다.
 </ai-server>
 
 <swagger>
