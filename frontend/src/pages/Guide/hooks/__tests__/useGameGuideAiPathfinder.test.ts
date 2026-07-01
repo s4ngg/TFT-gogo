@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { GameGuideAiPathfinderError } from '../../../../api/gameGuideAiPathfinderApi'
 import {
   createGameGuideAiConversationHistory,
   createGameGuideAiFallbackResponse,
+  getGameGuideAiExplicitErrorMessage,
   type GameGuideAiChatMessage,
 } from '../useGameGuideAiPathfinder'
 
@@ -57,4 +59,33 @@ test('GameGuide AI conversation history keeps recent compact messages', () => {
   assert.equal(history[5].role, 'assistant')
   assert.ok(history[5].content.endsWith('...'))
   assert.ok(history[5].content.length <= 703)
+})
+
+test('GameGuide AI explicit error message exposes auth and rate limit errors', () => {
+  assert.equal(
+    getGameGuideAiExplicitErrorMessage(
+      new GameGuideAiPathfinderError('로그인이 필요합니다.', 'AUTH_REQUIRED', 401),
+    ),
+    '로그인이 필요합니다.',
+  )
+  assert.equal(
+    getGameGuideAiExplicitErrorMessage(
+      new GameGuideAiPathfinderError(
+        'GameGuide AI 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요.',
+        'RATE_LIMITED',
+        429,
+      ),
+    ),
+    'GameGuide AI 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요.',
+  )
+})
+
+test('GameGuide AI explicit error message keeps request failures on fallback path', () => {
+  assert.equal(
+    getGameGuideAiExplicitErrorMessage(
+      new GameGuideAiPathfinderError('GameGuide AI 요청 중 오류가 발생했습니다.', 'REQUEST_FAILED'),
+    ),
+    undefined,
+  )
+  assert.equal(getGameGuideAiExplicitErrorMessage(new Error('network')), undefined)
 })

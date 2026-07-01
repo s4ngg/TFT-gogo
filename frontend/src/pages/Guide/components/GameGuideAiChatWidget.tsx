@@ -12,6 +12,7 @@ import type {
   GameGuideAiPathfinderResponse,
 } from '../../../api/gameGuideAiPathfinderApi'
 import type { GuideTab } from '../../../api/guide'
+import useAuthStore from '../../../store/useAuthStore'
 import { useGameGuideAiPathfinder } from '../hooks/useGameGuideAiPathfinder'
 import styles from '../Guide.module.css'
 
@@ -169,6 +170,7 @@ function GameGuideAiChatWidget({
   patchVersion,
   selectedRefs,
 }: GameGuideAiChatWidgetProps) {
+  const token = useAuthStore((state) => state.token)
   const [input, setInput] = useState('')
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const messagesRef = useRef<HTMLDivElement>(null)
@@ -178,12 +180,15 @@ function GameGuideAiChatWidget({
     reset,
     sendQuestion,
   } = useGameGuideAiPathfinder()
+  const isAuthenticated = Boolean(token)
   const selectedRefLabel = selectedRefs[0]?.name?.trim()
-  const inputPlaceholder = messages.length > 0
-    ? '이 답변에 이어서 질문 입력'
-    : selectedRefLabel
-      ? `${selectedRefLabel} 질문 입력`
-      : `${activeTabLabel} 질문 입력`
+  const inputPlaceholder = !isAuthenticated
+    ? '로그인이 필요합니다'
+    : messages.length > 0
+      ? '이 답변에 이어서 질문 입력'
+      : selectedRefLabel
+        ? `${selectedRefLabel} 질문 입력`
+        : `${activeTabLabel} 질문 입력`
 
   useEffect(() => {
     const messagesElement = messagesRef.current
@@ -193,14 +198,14 @@ function GameGuideAiChatWidget({
   }, [messages, isPending])
 
   useEffect(() => {
-    if (!isOpen || isPending) return
+    if (!isOpen || isPending || !isAuthenticated) return
 
     inputRef.current?.focus()
-  }, [isOpen, isPending, messages.length])
+  }, [isAuthenticated, isOpen, isPending, messages.length])
 
   function submitQuestion() {
     const question = input.trim()
-    if (!question || isPending) return
+    if (!question || isPending || !isAuthenticated) return
 
     sendQuestion({
       activeTab,
@@ -260,7 +265,12 @@ function GameGuideAiChatWidget({
           )}
 
           <div className={styles.gameGuideAiMessages} ref={messagesRef}>
-            {messages.length === 0 && (
+            {!isAuthenticated ? (
+              <div className={styles.gameGuideAiEmpty}>
+                <MessageCircle size={20} />
+                <p>로그인 후 GameGuide AI를 이용할 수 있습니다.</p>
+              </div>
+            ) : messages.length === 0 && (
               <div className={styles.gameGuideAiEmpty}>
                 <MessageCircle size={20} />
                 <p>{activeTabLabel}에 대해 물어보세요.</p>
@@ -296,7 +306,7 @@ function GameGuideAiChatWidget({
           <form className={styles.gameGuideAiForm} onSubmit={handleSubmit}>
             <textarea
               aria-label="GameGuide AI 질문"
-              disabled={isPending}
+              disabled={isPending || !isAuthenticated}
               maxLength={500}
               onChange={(event) => setInput(event.target.value)}
               onKeyDown={handleKeyDown}
@@ -307,7 +317,7 @@ function GameGuideAiChatWidget({
             />
             <button
               aria-label="질문 전송"
-              disabled={isPending || !input.trim()}
+              disabled={isPending || !input.trim() || !isAuthenticated}
               type="submit"
             >
               <Send size={16} />

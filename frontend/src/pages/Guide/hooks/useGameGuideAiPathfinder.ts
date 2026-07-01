@@ -1,8 +1,10 @@
 import { useMutation } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import {
+  GameGuideAiPathfinderError,
   requestGameGuideAiPathfinder,
   type GameGuideAiConversationMessage,
+  type GameGuideAiPathfinderErrorCode,
   type GameGuideAiPathfinderRequest,
   type GameGuideAiPathfinderRef,
   type GameGuideAiPathfinderResponse,
@@ -38,6 +40,10 @@ const FALLBACK_TITLE_BY_TAB: Record<GuideTab, string> = {
 
 const MAX_CONVERSATION_HISTORY = 6
 const MAX_CONVERSATION_CONTENT_LENGTH = 700
+const EXPLICIT_ERROR_CODES: ReadonlySet<GameGuideAiPathfinderErrorCode> = new Set([
+  'AUTH_REQUIRED',
+  'RATE_LIMITED',
+])
 
 function getSelectedRefLabel(selectedRefs: GameGuideAiPathfinderRef[]) {
   return selectedRefs[0]?.name?.trim() || selectedRefs[0]?.targetKey.trim() || ''
@@ -131,6 +137,17 @@ export function createGameGuideAiFallbackResponse({
   }
 }
 
+export function getGameGuideAiExplicitErrorMessage(error: unknown) {
+  if (
+    error instanceof GameGuideAiPathfinderError
+    && EXPLICIT_ERROR_CODES.has(error.code)
+  ) {
+    return error.message
+  }
+
+  return undefined
+}
+
 export function useGameGuideAiPathfinder() {
   const [messages, setMessages] = useState<GameGuideAiChatMessage[]>([])
   const nextMessageId = useRef(1)
@@ -171,8 +188,17 @@ export function useGameGuideAiPathfinder() {
         response,
       }
     },
-    onError: (_error, params) => {
+    onError: (error, params) => {
       if (params.epoch !== resetEpoch.current) return
+
+      const explicitErrorMessage = getGameGuideAiExplicitErrorMessage(error)
+      if (explicitErrorMessage) {
+        setMessages((current) => [
+          ...current,
+          createMessage('assistant', explicitErrorMessage),
+        ])
+        return
+      }
 
       const fallback = createGameGuideAiFallbackResponse(params)
       setMessages((current) => [
