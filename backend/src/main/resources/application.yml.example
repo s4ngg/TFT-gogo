@@ -65,8 +65,9 @@ riot:
 
 ai:
   server:
-    url: ${AI_SERVER_URL:http://localhost:8000}   # Docker/ECS 운영: 내부 AI 서버 주소
+    url: ${AI_SERVER_URL}   # Docker/ECS 운영: 내부 AI 서버 주소
     timeout-seconds: 10
+    internal-secret: ${AI_SERVER_INTERNAL_SECRET}
 
 admin:
   secret-token: your-admin-secret-token
