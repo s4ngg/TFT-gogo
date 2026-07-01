@@ -33,6 +33,7 @@ AWS ALB + Route53 배포 도메인 기준 라우팅 계약.
   - `APP_OAUTH2_LOGIN_FAILURE_REDIRECT_URI=https://tftgogo.com/login`
   - `AI_SERVER_URL=http://<internal-ai-service>:8000`
   - `SERVER_FORWARD_HEADERS_STRATEGY=framework`
+  - `ADMIN_BOOTSTRAP_PASSWORD` must be empty or a strong one-time bootstrap password.
 </backend>
 
 <frontend>

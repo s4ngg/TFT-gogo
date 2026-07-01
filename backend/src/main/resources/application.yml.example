@@ -70,6 +70,9 @@ ai:
 
 admin:
   secret-token: your-admin-secret-token
+  bootstrap:
+    username: ${ADMIN_BOOTSTRAP_USERNAME:admin}
+    password: ${ADMIN_BOOTSTRAP_PASSWORD:}
 
 app:
   oauth2:
