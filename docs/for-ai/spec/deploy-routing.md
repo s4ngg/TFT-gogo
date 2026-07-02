@@ -33,6 +33,7 @@ AWS ALB + Route53 배포 도메인 기준 라우팅 계약.
 - ALB 뒤의 Spring Boot는 `server.forward-headers-strategy=framework`를 사용한다.
 - 이 설정이 없으면 OAuth2 시작 URL이나 콜백 URL이 내부 HTTP 주소로 만들어질 수 있다.
 - 운영 환경변수:
+  - `SPRING_PROFILES_ACTIVE=prod`
   - `APP_CORS_ALLOWED_ORIGINS=https://tftgogo.com,https://www.tftgogo.com`
   - `APP_OAUTH2_AUTHORIZATION_BASE_URI=https://tftgogo.com`
   - `APP_OAUTH2_AUTHORIZED_REDIRECT_URI=https://tftgogo.com/oauth/callback`
