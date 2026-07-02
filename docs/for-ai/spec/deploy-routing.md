@@ -23,6 +23,12 @@ AWS ALB + Route53 배포 도메인 기준 라우팅 계약.
 - 그 외 모든 경로 -> `tftgogo-frontend-tg`
 </routes>
 
+<routing-guard>
+- ECS 프론트 nginx(`frontend/nginx.ecs.conf`)는 정적 SPA만 서빙한다. `/api` 같은 백엔드 전용 경로는 ALB에서 백엔드 타깃 그룹으로 라우팅되어야 한다.
+- 백엔드 전용 경로가 프론트 nginx까지 들어오면 `index.html`로 숨기지 않고 502를 반환해 ALB 오라우팅을 조기 감지한다.
+- 운영 배포 확인 시 `/api/*` 응답은 프론트 HTML이 아니라 백엔드 JSON 또는 백엔드 오류 응답이어야 한다.
+</routing-guard>
+
 <backend>
 - ALB 뒤의 Spring Boot는 `server.forward-headers-strategy=framework`를 사용한다.
 - 이 설정이 없으면 OAuth2 시작 URL이나 콜백 URL이 내부 HTTP 주소로 만들어질 수 있다.
