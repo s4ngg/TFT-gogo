@@ -42,6 +42,7 @@ AWS ALB + Route53 배포 도메인 기준 라우팅 계약.
   - `AI_SERVER_URL=http://<internal-ai-service>:8000`
   - `AI_SERVER_INTERNAL_SECRET=<AI 서버 INTERNAL_SECRET과 동일한 값>`
   - `SERVER_FORWARD_HEADERS_STRATEGY=framework`
+  - `ADMIN_BOOTSTRAP_PASSWORD` must be empty or a strong one-time bootstrap password.
   - `SPRING_FLYWAY_LOCATIONS=classpath:db/migration`
 - 백엔드 ALB target group health check path는 `/actuator/health`를 사용한다.
 - 운영에서는 `db/local-smoke` Flyway callback을 포함하지 않는다. 로컬 스모크 seed는 `docker-compose.local-smoke.yml`로만 명시적으로 켠다.
