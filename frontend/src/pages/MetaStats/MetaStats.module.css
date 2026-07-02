@@ -136,6 +136,7 @@
 
 .cardName {
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   color: #fff;
   font-size: 15px;

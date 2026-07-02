@@ -4,6 +4,8 @@ import ChampionCard from '../../../components/common/ChampionCard'
 import TierBadge from '../../../components/common/TierBadge'
 import TraitHexBadge from '../../../components/common/TraitHexBadge'
 import { useMetaSnapshot } from '../../../hooks/useMetaSnapshot'
+import { useCDragonLocale } from '../../../hooks/useCDragonLocale'
+import { deckDisplayName } from '../../Decks/utils/deckListUtils'
 import type { AiRecommendDeckReason } from '../../../api/aiRecommendApi'
 import styles from '../AiRecommend.module.css'
 
@@ -15,6 +17,7 @@ const RANK_FILTER = 'MASTER_PLUS' as const
 
 function AiRecommendedDecks({ deckReasons }: AiRecommendedDecksProps) {
   const navigate = useNavigate()
+  const { data: locale } = useCDragonLocale()
   const { data: metaDeckResponse, isPending, isError } = useMetaSnapshot(RANK_FILTER)
   const metaDecks = metaDeckResponse?.decks ?? []
 
@@ -72,7 +75,7 @@ function AiRecommendedDecks({ deckReasons }: AiRecommendedDecksProps) {
             <div className={styles.aiDeckTop}>
               <span className={styles.aiDeckBadge}>추천 #{i + 1}</span>
               <TierBadge value={deck.grade} />
-              <span className={styles.aiDeckName}>{deck.name}</span>
+              <span className={styles.aiDeckName}>{deckDisplayName(deck, locale)}</span>
               {reason.isPatchTrend && (
                 <span className={styles.patchBadge}>
                   <TrendingUp size={12} /> 패치 후 상승 중
