@@ -7,6 +7,7 @@ import TraitHexBadge from '../../../components/common/TraitHexBadge'
 import { useMetaSnapshot } from '../../../hooks/useMetaSnapshot'
 import { useCDragonLocale } from '../../../hooks/useCDragonLocale'
 import { deckDisplayName } from '../../Decks/utils/deckListUtils'
+import { TIER_ORDER } from '../../../constants/tiers'
 import type { ChampionSummary, MetaDeck, TraitSummary } from '../dashboardData'
 import styles from '../Dashboard.module.css'
 
@@ -41,10 +42,21 @@ function filterMetaDecks(decks: MetaDeck[], filter: MetaFilter) {
   return decks
 }
 
+function tierRank(grade: MetaDeck['grade']): number {
+  const index = TIER_ORDER.indexOf(grade as (typeof TIER_ORDER)[number])
+  return index === -1 ? TIER_ORDER.length : index
+}
+
 function sortMetaDecks(decks: MetaDeck[], sortKey: MetaSortKey) {
   const direction = sortKey === 'avgPlace' ? 1 : -1
 
   return [...decks].sort((a, b) => {
+    const tierResult = tierRank(a.grade) - tierRank(b.grade)
+
+    if (tierResult !== 0) {
+      return tierResult
+    }
+
     const result = toNumber(a[sortKey]) - toNumber(b[sortKey])
 
     if (result === 0) {
@@ -152,7 +164,6 @@ function MetaSnapshot() {
 
       {metaDecks.length > 0 && (
         <div className={styles.deckListHeader}>
-          <span>순위</span>
           <span />
           <span>덱 정보</span>
           <span>챔피언 구성</span>
@@ -168,7 +179,6 @@ function MetaSnapshot() {
         ) : metaDecks.length > 0 ? (
           metaDecks.map((deck) => (
             <article className={styles.deckRow} key={deck.rank}>
-              <strong className={styles.rankNumber}>{deck.rank}</strong>
               <TierBadge value={deck.grade} />
               <div className={styles.deckInfo}>
                 <h3>{deckDisplayName(deck, locale)}</h3>
