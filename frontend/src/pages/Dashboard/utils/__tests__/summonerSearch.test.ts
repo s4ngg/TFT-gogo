@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import { SummonerRateLimitError } from '../../../../api/summonerApi'
+import { SearchRateLimitError } from '../../../../api/searchApi'
 import {
   RECENT_SUMMONER_SEARCHES_KEY,
   formatSummonerDetailPath,
@@ -99,12 +99,12 @@ describe('summonerSearch', () => {
   it('프로필 조회 오류 메시지를 검색 결과 상태로 변환한다', () => {
     assert.equal(mapSummonerSearchError(new Error('NOT_FOUND')), 'notFound')
     assert.equal(mapSummonerSearchError(new Error('RATE_LIMITED')), 'rateLimited')
-    assert.equal(mapSummonerSearchError(new SummonerRateLimitError(42)), 'rateLimited')
+    assert.equal(mapSummonerSearchError(new SearchRateLimitError(42)), 'rateLimited')
     assert.equal(mapSummonerSearchError(new Error('network')), 'error')
   })
 
   it('rate limit 오류의 retry-after 초를 추출한다', () => {
-    assert.equal(getSummonerSearchRetryAfterSeconds(new SummonerRateLimitError(42)), 42)
+    assert.equal(getSummonerSearchRetryAfterSeconds(new SearchRateLimitError(42)), 42)
     assert.equal(getSummonerSearchRetryAfterSeconds(new Error('RATE_LIMITED')), 120)
     assert.equal(getSummonerSearchRetryAfterSeconds(new Error('network')), null)
   })

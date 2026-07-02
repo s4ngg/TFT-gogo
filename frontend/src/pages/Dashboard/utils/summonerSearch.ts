@@ -1,7 +1,7 @@
 import {
-  SummonerRateLimitError,
+  SearchRateLimitError,
   type SummonerProfileResponse,
-} from '../../../api/summonerApi'
+} from '../../../api/searchApi'
 
 export const RECENT_SUMMONER_SEARCHES_KEY = 'tft_recent_searches'
 const DEFAULT_TAG_LINE = 'KR1'
@@ -108,7 +108,7 @@ export function formatSummonerWinRate(wins: number, losses: number): string {
 }
 
 export function mapSummonerSearchError(error: unknown): SummonerSearchErrorState {
-  if (error instanceof SummonerRateLimitError) {
+  if (error instanceof SearchRateLimitError) {
     return 'rateLimited'
   }
 
@@ -121,7 +121,7 @@ export function mapSummonerSearchError(error: unknown): SummonerSearchErrorState
 }
 
 export function getSummonerSearchRetryAfterSeconds(error: unknown): number | null {
-  if (error instanceof SummonerRateLimitError) {
+  if (error instanceof SearchRateLimitError) {
     return error.retryAfterSeconds
   }
 

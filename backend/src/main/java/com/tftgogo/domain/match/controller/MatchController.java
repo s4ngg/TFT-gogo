@@ -3,7 +3,7 @@ package com.tftgogo.domain.match.controller;
 import com.tftgogo.domain.match.controller.docs.MatchControllerDocs;
 import com.tftgogo.domain.match.dto.response.MatchDetailResponse;
 import com.tftgogo.domain.match.service.MatchService;
-import com.tftgogo.domain.summoner.dto.response.SummonerMatchItemDto;
+import com.tftgogo.domain.search.dto.response.SummonerMatchItemDto;
 import com.tftgogo.global.cdragon.service.TftAssetCacheService;
 import com.tftgogo.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;

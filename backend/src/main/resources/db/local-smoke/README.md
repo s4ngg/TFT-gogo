@@ -34,7 +34,9 @@ flyway baseline -baselineVersion=16
 
 ## 로컬 전용 기본값
 
-`docker-compose.yml`의 DB 비밀번호, 관리자 토큰, JWT secret 기본값은 로컬 스모크 전용 placeholder입니다. 운영 또는 공유 환경에서는 사용하지 말고 `MYSQL_PASSWORD`, `ADMIN_SECRET_TOKEN`, `JWT_SECRET` 같은 환경변수로 덮어써야 합니다.
+`docker-compose.yml`의 DB 비밀번호, JWT secret, AI internal secret 기본값은 로컬 개발 편의용 placeholder입니다. 운영 또는 공유 환경에서는 사용하지 말고 `MYSQL_PASSWORD`, `JWT_SECRET`, `AI_SERVER_INTERNAL_SECRET`, `ADMIN_BOOTSTRAP_PASSWORD` 같은 값을 외부 secret으로 주입해야 합니다.
+
+`db/local-smoke` seed는 운영 기본 경로에 포함하지 않습니다. 로컬 스모크 데이터가 필요할 때만 `docker-compose.local-smoke.yml` override를 함께 지정합니다.
 
 ## 인프라 시작
 
@@ -46,12 +48,18 @@ docker compose up -d mysql redis
 
 ## 스키마와 시드 적용
 
-스키마와 시드는 backend 시작 시 Flyway가 자동으로 적용합니다.
+스키마는 backend 시작 시 Flyway가 자동으로 적용합니다. 시드는 로컬 스모크 override를 함께 지정했을 때만 적용합니다.
 
 - **스키마**: `classpath:db/migration`의 `V*.sql` 파일을 순차 실행
 - **시드**: `classpath:db/local-smoke`의 `afterMigrate__seed.sql` callback을 마이그레이션 완료 후 실행
 
-Docker Compose backend 서비스는 `SPRING_FLYWAY_LOCATIONS`를 `classpath:db/migration,classpath:db/local-smoke`로 설정하여 시드 callback이 포함됩니다.
+기본 Docker Compose backend 서비스는 `SPRING_FLYWAY_LOCATIONS`를 `classpath:db/migration`으로 둡니다.
+로컬 스모크 seed가 필요하면 아래처럼 override를 함께 사용합니다.
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.local-smoke.yml up --build backend
+```
+
 `17.3 Local Patch`는 fallback smoke 데이터이며, Riot import 패치가 이미 있으면 current 패치를 덮어쓰지 않습니다.
 
 기존 DB를 완전히 초기화하려면 먼저 아래 명령을 실행합니다.
@@ -81,6 +89,12 @@ Docker image는 profile을 고정하지 않고, 실행 시점의 `SPRING_PROFILE
 
 ```powershell
 docker compose up --build backend
+```
+
+로컬 스모크 seed까지 넣어 확인하려면 override를 함께 지정합니다.
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.local-smoke.yml up --build backend
 ```
 
 선택 사항인 STS/Gradle 경로는 같은 MySQL, Redis, admin token, JWT, Riot placeholder 값에 맞춘 로컬 `backend/src/main/resources/application-local.yml`을 준비한 뒤 `local` profile로만 실행합니다.

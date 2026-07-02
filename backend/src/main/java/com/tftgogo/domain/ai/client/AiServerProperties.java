@@ -16,7 +16,7 @@ import org.springframework.validation.annotation.Validated;
 public class AiServerProperties {
 
     @NotBlank(message = "ai.server.url 설정은 필수입니다.")
-    private String url = "http://localhost:8000";
+    private String url;
 
     @Positive(message = "ai.server.timeout-seconds는 0보다 커야 합니다.")
     private int timeoutSeconds = 10;

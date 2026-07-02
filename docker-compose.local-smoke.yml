@@ -1,0 +1,4 @@
+services:
+  backend:
+    environment:
+      SPRING_FLYWAY_LOCATIONS: "classpath:db/migration,classpath:db/local-smoke"
