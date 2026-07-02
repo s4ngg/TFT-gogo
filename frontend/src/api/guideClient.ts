@@ -1,10 +1,11 @@
 import axiosInstance from './axiosInstance'
-import { unwrapApiResponse, type ApiResponse } from './apiResponse'
+import { isRecord, unwrapApiResponse, type ApiResponse } from './apiResponse'
 import { getFallbackGuideTabPage } from './guideFallback'
 import { hasGuidePayloadData, normalizeGuideCatalog, normalizeGuideTabPage } from './guideNormalizers'
 import type {
   GuideCatalog,
   GuideCatalogResult,
+  GuideDataSource,
   GuideEntryResponse,
   GuideListQuery,
   GuideTab,
@@ -25,6 +26,26 @@ export async function getGuideCatalog(fallbackData: GuideCatalog): Promise<Guide
     return { data: normalizeGuideCatalog(payload, fallbackData), source: 'api' }
   } catch {
     return { data: fallbackData, source: 'fallback' }
+  }
+}
+
+export async function getGuidePatchVersion(
+  fallbackPatchVersion: string,
+): Promise<{ patchVersion: string; source: GuideDataSource }> {
+  try {
+    const { data } = await axiosInstance.get<ApiResponse<{ patchVersion: string }> | { patchVersion: string }>(
+      '/guide/patch-version',
+    )
+    const payload = unwrapApiResponse(data)
+    const patchVersion = isRecord(payload) && typeof payload.patchVersion === 'string' ? payload.patchVersion : ''
+
+    if (!patchVersion) {
+      return { patchVersion: fallbackPatchVersion, source: 'fallback' }
+    }
+
+    return { patchVersion, source: 'api' }
+  } catch {
+    return { patchVersion: fallbackPatchVersion, source: 'fallback' }
   }
 }
 

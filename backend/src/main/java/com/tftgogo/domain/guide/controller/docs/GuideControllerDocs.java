@@ -3,6 +3,7 @@ package com.tftgogo.domain.guide.controller.docs;
 import com.tftgogo.domain.guide.dto.response.GuideCatalogResponse;
 import com.tftgogo.domain.guide.dto.response.GuideEntryResponse;
 import com.tftgogo.domain.guide.dto.response.GuidePageResponse;
+import com.tftgogo.domain.guide.dto.response.GuidePatchVersionResponse;
 import com.tftgogo.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -20,6 +21,12 @@ public interface GuideControllerDocs {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공")
     })
     ResponseEntity<ApiResponse<GuideCatalogResponse>> getGuideCatalog();
+
+    @Operation(summary = "게임가이드 현재 패치 조회", description = "전체 목록을 조회하지 않고 현재 적용 중인 패치 버전만 반환합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공")
+    })
+    ResponseEntity<ApiResponse<GuidePatchVersionResponse>> getCurrentPatchVersion();
 
     @Operation(summary = "게임가이드 탭별 조회", description = "시너지, 아이템, 증강체, 챔피언 탭별 게임가이드 데이터를 페이지 단위로 반환합니다.")
     @ApiResponses({

@@ -4,6 +4,7 @@ import com.tftgogo.domain.guide.controller.docs.GuideControllerDocs;
 import com.tftgogo.domain.guide.dto.response.GuideCatalogResponse;
 import com.tftgogo.domain.guide.dto.response.GuideEntryResponse;
 import com.tftgogo.domain.guide.dto.response.GuidePageResponse;
+import com.tftgogo.domain.guide.dto.response.GuidePatchVersionResponse;
 import com.tftgogo.domain.guide.service.GuideService;
 import com.tftgogo.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,12 @@ public class GuideController implements GuideControllerDocs {
     public ResponseEntity<ApiResponse<GuideCatalogResponse>> getGuideCatalog() {
         GuideCatalogResponse response = guideService.getGuideCatalog();
         return ResponseEntity.ok(ApiResponse.success("게임가이드 조회 성공", response));
+    }
+
+    @GetMapping("/patch-version")
+    public ResponseEntity<ApiResponse<GuidePatchVersionResponse>> getCurrentPatchVersion() {
+        GuidePatchVersionResponse response = guideService.getCurrentPatchVersion();
+        return ResponseEntity.ok(ApiResponse.success("게임가이드 현재 패치 조회 성공", response));
     }
 
     @GetMapping("/{tab}")
