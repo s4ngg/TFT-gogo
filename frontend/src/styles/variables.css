@@ -64,6 +64,9 @@
   --size-admin-change-list-min-width: 320px;
   --size-admin-change-list-max-height: 680px;
   --size-admin-textarea-min-height: 78px;
+  --size-gameguide-ai-chat-width: 380px;
+  --size-gameguide-ai-chat-max-height: 640px;
+  --size-gameguide-ai-launcher: 58px;
 
   --font-size-xs: 12px;
   --font-size-sm: 13px;

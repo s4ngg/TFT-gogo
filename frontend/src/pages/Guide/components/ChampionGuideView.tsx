@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   CHAMPION_PAGE_SIZE,
+  type ChampionGuide,
   type ChampionCostFilter,
   type GuideCatalog,
 } from '../../../api/guide'
@@ -17,6 +18,7 @@ import {
   GuidePagination,
   GuideStatusBanner,
 } from './GuideShared'
+import type { GameGuideAiAskHandler } from '../utils/gameGuideAiRefs'
 import styles from '../Guide.module.css'
 
 interface ChampionGuideViewProps {
@@ -26,7 +28,9 @@ interface ChampionGuideViewProps {
   isGuideFetching: boolean
   onChampionOpen: (championName: string) => void
   onFavoriteToggle: (championName: string) => void
+  onGameGuideAiAsk: GameGuideAiAskHandler
   onGuideRetry: () => void
+  onVisibleItemsChange: (items: ChampionGuide[]) => void
   patchVersion: string
   query: string
 }
@@ -38,7 +42,9 @@ function ChampionGuideView({
   isGuideFetching,
   onChampionOpen,
   onFavoriteToggle,
+  onGameGuideAiAsk,
   onGuideRetry,
+  onVisibleItemsChange,
   patchVersion,
   query,
 }: ChampionGuideViewProps) {
@@ -71,6 +77,10 @@ function ChampionGuideView({
   })
   const visibleChampions = pageData.items
 
+  useEffect(() => {
+    onVisibleItemsChange(visibleChampions)
+  }, [onVisibleItemsChange, visibleChampions])
+
   return (
     <>
       <GuideStatusBanner
@@ -102,6 +112,7 @@ function ChampionGuideView({
             isFavorite={favoriteChampions.includes(championGuide.name)}
             key={championGuide.name}
             onFavoriteToggle={onFavoriteToggle}
+            onGameGuideAiAsk={onGameGuideAiAsk}
             onOpen={openChampionDetail}
           />
         ))}

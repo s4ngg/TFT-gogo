@@ -54,6 +54,7 @@ export interface TraitGuide {
   name: string
   specialUnits?: SpecialUnitRef[]
   summary: string
+  targetKey?: string
   tierEffects?: TraitTierEffect[]
   tips: string[]
   tone?: TraitHexBadgeTone
@@ -74,6 +75,7 @@ export interface ItemStatGuide {
   imageUrl: string
   name: string
   pickRate?: string
+  targetKey?: string
   top4?: string
   winRate?: string
 }
@@ -85,6 +87,7 @@ export interface AugmentGuide {
   name: string
   pickRate?: string
   tags: string[]
+  targetKey?: string
   winRate?: string
 }
 
@@ -104,6 +107,7 @@ export interface ChampionGuide {
     mr: number
     range: number
   }
+  targetKey?: string
   traits: string[]
 }
 

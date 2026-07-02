@@ -53,9 +53,9 @@ def _check_rate_limit() -> bool:
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """AI 엔드포인트(/api/chat, /api/analyze)에 대해 전역 비용 보호 rate limit 적용."""
+    """AI 엔드포인트에 대해 전역 비용 보호 rate limit 적용."""
 
-    _TARGET_PREFIXES = ("/api/chat", "/api/analyze")
+    _TARGET_PREFIXES = ("/api/chat", "/api/analyze", "/api/gameguide/pathfinder")
 
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint

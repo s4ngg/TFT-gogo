@@ -1,3 +1,5 @@
+import { Bot } from 'lucide-react'
+import { useEffect } from 'react'
 import {
   TRAIT_PAGE_SIZE,
   type GuideCatalog,
@@ -17,14 +19,20 @@ import {
   GuideStatusBanner,
   LinkedChampionMini,
 } from './GuideShared'
+import {
+  createGameGuideAiRef,
+  type GameGuideAiAskHandler,
+} from '../utils/gameGuideAiRefs'
 import styles from '../Guide.module.css'
 
 interface TraitGuideViewProps {
   fallbackData: GuideCatalog
   isGuideFallbackData: boolean
   isGuideFetching: boolean
+  onGameGuideAiAsk: GameGuideAiAskHandler
   onChampionSelect: (championName: string) => void
   onGuideRetry: () => void
+  onVisibleItemsChange: (items: TraitGuide[]) => void
   patchVersion: string
   query: string
 }
@@ -116,8 +124,10 @@ function TraitGuideView({
   fallbackData,
   isGuideFallbackData,
   isGuideFetching,
+  onGameGuideAiAsk,
   onChampionSelect,
   onGuideRetry,
+  onVisibleItemsChange,
   patchVersion,
   query,
 }: TraitGuideViewProps) {
@@ -142,6 +152,10 @@ function TraitGuideView({
     totalPages: pageData.totalPages,
   })
   const visibleTraits = pageData.items
+
+  useEffect(() => {
+    onVisibleItemsChange(visibleTraits)
+  }, [onVisibleItemsChange, visibleTraits])
 
   return (
     <>
@@ -189,6 +203,15 @@ function TraitGuideView({
                     ))}
                   </div>
                 </div>
+                <button
+                  aria-label={`${traitGuide.name} AI 질문`}
+                  className={styles.gameGuideAiCardButton}
+                  onClick={() => onGameGuideAiAsk(createGameGuideAiRef('TRAIT', traitGuide.name, traitGuide.targetKey))}
+                  title="AI에게 물어보기"
+                  type="button"
+                >
+                  <Bot size={14} />
+                </button>
               </div>
               {traitDisplay.summary && (
                 <div className={styles.traitSummaryPanel}>

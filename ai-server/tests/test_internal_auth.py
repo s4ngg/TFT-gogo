@@ -79,10 +79,12 @@ CHAT_PAYLOAD = {
 
 @pytest.fixture
 def client():
-    with patch("app.core.config.settings") as mock_settings:
+    with patch("app.core.config.settings") as mock_settings, \
+         patch("app.core.security.settings") as mock_security_settings:
         mock_settings.internal_secret = TEST_SECRET
         mock_settings.app_env = "test"
         mock_settings.cors_allowed_origin_list = []
+        mock_security_settings.internal_secret = TEST_SECRET
         from app.main import app
         yield TestClient(app, raise_server_exceptions=False)
 
