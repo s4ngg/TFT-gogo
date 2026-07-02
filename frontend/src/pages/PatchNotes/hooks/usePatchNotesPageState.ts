@@ -5,7 +5,7 @@ import {
   type PatchCategory,
 } from '../../../api/patchNotes'
 
-const PATCH_CHANGE_PAGE_SIZE = 100
+export const PATCH_CHANGE_PAGE_SIZE = 1000
 const SEARCH_QUERY_DEBOUNCE_MS = 300
 
 interface UsePatchNotesPageStateOptions {
