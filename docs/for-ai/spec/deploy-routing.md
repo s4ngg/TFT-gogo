@@ -56,6 +56,11 @@ AWS ALB + Route53 배포 도메인 기준 라우팅 계약.
 - AI 서버는 공개 ALB path로 노출하지 않는다.
 - Spring 백엔드가 내부 `AI_SERVER_URL`로 AI 서버의 `/api/analyze/with-meta`를 호출한다.
 - CORS는 브라우저 정책일 뿐 공개 엔드포인트 보호 수단이 아니다.
+- 운영 AI 서버 환경변수:
+  - `APP_ENV=production`
+  - `INTERNAL_SECRET=<backend와 동일한 내부 secret>`
+  - `DATABASE_URL=postgresql+asyncpg://<internal-postgres>:5432/<db>`
+  - `OPENAI_API_KEY=<Secrets Manager 또는 SSM에서 주입>`
 </ai-server>
 
 <swagger>
