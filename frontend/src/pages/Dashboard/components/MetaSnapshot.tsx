@@ -5,6 +5,8 @@ import ChampionCard from '../../../components/common/ChampionCard'
 import TierBadge from '../../../components/common/TierBadge'
 import TraitHexBadge from '../../../components/common/TraitHexBadge'
 import { useMetaSnapshot } from '../../../hooks/useMetaSnapshot'
+import { useCDragonLocale } from '../../../hooks/useCDragonLocale'
+import { deckDisplayName } from '../../Decks/utils/deckListUtils'
 import type { ChampionSummary, MetaDeck, TraitSummary } from '../dashboardData'
 import styles from '../Dashboard.module.css'
 
@@ -96,6 +98,7 @@ function Champions({ champions }: ChampionsProps) {
 
 function MetaSnapshot() {
   const { data: metaDeckResponse, isError: isDeckError } = useMetaSnapshot()
+  const { data: locale } = useCDragonLocale()
   const allDecks = useMemo(() => metaDeckResponse?.decks ?? [], [metaDeckResponse?.decks])
   const [selectedFilter, setSelectedFilter] = useState<MetaFilter>('overall')
   const [sortKey, setSortKey] = useState<MetaSortKey>('top4')
@@ -147,6 +150,18 @@ function MetaSnapshot() {
         ))}
       </div>
 
+      {metaDecks.length > 0 && (
+        <div className={styles.deckListHeader}>
+          <span>순위</span>
+          <span />
+          <span>덱 정보</span>
+          <span>챔피언 구성</span>
+          <span>TOP 4</span>
+          <span>평균 등수</span>
+          <span />
+        </div>
+      )}
+
       <div className={styles.deckList}>
         {isDeckError ? (
           <p className={styles.emptyState}>메타 덱 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</p>
@@ -156,12 +171,12 @@ function MetaSnapshot() {
               <strong className={styles.rankNumber}>{deck.rank}</strong>
               <TierBadge value={deck.grade} />
               <div className={styles.deckInfo}>
-                <h3>{deck.name}</h3>
+                <h3>{deckDisplayName(deck, locale)}</h3>
                 <Traits values={deck.traits} />
               </div>
               <Champions champions={deck.champions} />
-              <b className={styles.top4}>{deck.top4}</b>
-              <b className={styles.avgPlace}>{deck.avgPlace}</b>
+              <b className={styles.top4} title="TOP 4 진입 비율">{deck.top4}</b>
+              <b className={styles.avgPlace} title="평균 등수">{deck.avgPlace}</b>
               <ChevronRight className={styles.rowArrow} size={22} />
             </article>
           ))
