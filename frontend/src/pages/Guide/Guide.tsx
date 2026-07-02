@@ -38,10 +38,9 @@ function Guide() {
     setSearch,
   } = useGuidePageState()
   const gameGuideAiCandidateRefs = useGameGuideAiCandidateRefs(activeTab, gameGuideAiVisibleItems)
-  const gameGuideAiContextKey = [
-    activeTab,
-    ...gameGuideAiSelectedRefs.map((ref) => `${ref.guideType}:${ref.targetKey}`),
-  ].join('|')
+  const gameGuideAiSelectionKey = gameGuideAiSelectedRefs
+    .map((ref) => `${ref.guideType}:${ref.targetKey}`)
+    .join('|')
   const handleGameGuideAiVisibleItemsChange = useCallback((items: GuideTabItems[GuideTab][number][]) => {
     setGameGuideAiVisibleItems(items)
   }, [])
@@ -111,7 +110,7 @@ function Guide() {
           activeTabLabel={activeTabInfo.label}
           candidateRefs={gameGuideAiCandidateRefs}
           isOpen={isGameGuideAiOpen}
-          key={gameGuideAiContextKey}
+          key={gameGuideAiSelectionKey}
           onOpenChange={handleGameGuideAiOpenChange}
           onGuideJump={jumpToGuide}
           patchVersion={guideData.patchVersion}
