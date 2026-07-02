@@ -1,6 +1,6 @@
 import { AlertTriangle, ChevronRight, Loader2, Search, UserRound } from 'lucide-react'
 import { communityDragonProfileIconUrl } from '../../../api/communityDragonAssets'
-import type { SummonerProfileResponse } from '../../../api/summonerApi'
+import type { SummonerProfileResponse } from '../../../api/searchApi'
 import {
   formatSummonerTier,
   formatSummonerWinRate,

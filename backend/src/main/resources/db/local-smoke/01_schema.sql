@@ -208,7 +208,7 @@ CREATE TABLE IF NOT EXISTS tft_guide_champions (
     id BIGINT NOT NULL AUTO_INCREMENT,
     champion_key VARCHAR(100) NOT NULL,
     name VARCHAR(100) NOT NULL,
-    cost TINYINT NOT NULL,
+    cost INT NOT NULL,
     role VARCHAR(50) NOT NULL,
     position VARCHAR(50) NOT NULL,
     image_url VARCHAR(500) NOT NULL,

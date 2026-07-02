@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout'
-import { useSummonerProfile } from '../../hooks/useSummonerProfile'
+import { useSearchProfile } from '../../hooks/useSearchProfile'
 import AiDeckRecommend from './components/AiDeckRecommend'
 import LiveChat from './components/LiveChat'
 import MetaSnapshot from './components/MetaSnapshot'
@@ -29,7 +29,7 @@ function Dashboard() {
   const [recentSearches, setRecentSearches] = useState<string[]>(() => readRecentSummonerSearches())
   const lastSavedSearchRef = useRef<string | null>(null)
 
-  const profileQuery = useSummonerProfile(submittedSearch?.gameName ?? '', submittedSearch?.tagLine ?? '')
+  const profileQuery = useSearchProfile(submittedSearch?.gameName ?? '', submittedSearch?.tagLine ?? '')
 
   const searchStatus = useMemo<SummonerSearchResultStatus>(() => {
     if (searchInputMessage) {

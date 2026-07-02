@@ -18,21 +18,35 @@ AWS ALB + Route53 배포 도메인 기준 라우팅 계약.
 
 <routes>
 - `/api`, `/api/*` -> `tftgogo-backend-tg`
+- `/actuator/health`, `/actuator/health/*` -> `tftgogo-backend-tg`
 - `/oauth2/*` -> `tftgogo-backend-tg`
 - `/login/oauth2/*` -> `tftgogo-backend-tg`
 - 그 외 모든 경로 -> `tftgogo-frontend-tg`
 </routes>
 
+<routing-guard>
+- ECS 프론트 nginx(`frontend/nginx.ecs.conf`)는 정적 SPA만 서빙한다. `/api` 같은 백엔드 전용 경로는 ALB에서 백엔드 타깃 그룹으로 라우팅되어야 한다.
+- 백엔드 전용 경로가 프론트 nginx까지 들어오면 `index.html`로 숨기지 않고 502를 반환해 ALB 오라우팅을 조기 감지한다.
+- 운영 배포 확인 시 `/api/*` 응답은 프론트 HTML이 아니라 백엔드 JSON 또는 백엔드 오류 응답이어야 한다.
+</routing-guard>
+
 <backend>
 - ALB 뒤의 Spring Boot는 `server.forward-headers-strategy=framework`를 사용한다.
 - 이 설정이 없으면 OAuth2 시작 URL이나 콜백 URL이 내부 HTTP 주소로 만들어질 수 있다.
 - 운영 환경변수:
+  - `SPRING_PROFILES_ACTIVE=prod`
   - `APP_CORS_ALLOWED_ORIGINS=https://tftgogo.com,https://www.tftgogo.com`
   - `APP_OAUTH2_AUTHORIZATION_BASE_URI=https://tftgogo.com`
   - `APP_OAUTH2_AUTHORIZED_REDIRECT_URI=https://tftgogo.com/oauth/callback`
   - `APP_OAUTH2_LOGIN_FAILURE_REDIRECT_URI=https://tftgogo.com/login`
   - `AI_SERVER_URL=http://<internal-ai-service>:8000`
+  - `AI_SERVER_INTERNAL_SECRET=<AI 서버 INTERNAL_SECRET과 동일한 값>`
   - `SERVER_FORWARD_HEADERS_STRATEGY=framework`
+  - `ADMIN_BOOTSTRAP_PASSWORD` must be empty or a strong one-time bootstrap password.
+  - `SPRING_FLYWAY_LOCATIONS=classpath:db/migration`
+- 백엔드 ALB target group health check path는 `/actuator/health`를 사용한다.
+- 운영에서는 `db/local-smoke` Flyway callback을 포함하지 않는다. 로컬 스모크 seed는 `docker-compose.local-smoke.yml`로만 명시적으로 켠다.
+- 운영 secret은 compose 기본값을 사용하지 않고 ECS task definition의 secrets, SSM Parameter Store, 또는 Secrets Manager로 주입한다.
 </backend>
 
 <frontend>
@@ -45,6 +59,11 @@ AWS ALB + Route53 배포 도메인 기준 라우팅 계약.
 - AI 서버는 공개 ALB path로 노출하지 않는다.
 - Spring 백엔드가 내부 `AI_SERVER_URL`로 AI 서버의 `/api/analyze/with-meta`를 호출한다.
 - CORS는 브라우저 정책일 뿐 공개 엔드포인트 보호 수단이 아니다.
+- 운영 AI 서버 환경변수:
+  - `APP_ENV=production`
+  - `INTERNAL_SECRET=<backend와 동일한 내부 secret>`
+  - `DATABASE_URL=postgresql+asyncpg://<internal-postgres>:5432/<db>`
+  - `OPENAI_API_KEY=<Secrets Manager 또는 SSM에서 주입>`
 </ai-server>
 
 <swagger>

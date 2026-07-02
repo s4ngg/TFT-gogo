@@ -21,6 +21,8 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 COPY --from=build /app/build/libs/*.jar app.jar
 
+ENV SPRING_PROFILES_ACTIVE=prod
+
 USER appuser
 
 EXPOSE 8080

@@ -2,11 +2,11 @@ package com.tftgogo.domain.ai.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tftgogo.domain.ai.dto.AiChatRequest;
-import com.tftgogo.domain.ai.dto.AiChatResponse;
-import com.tftgogo.domain.ai.dto.AiRecommendResponse;
 import com.tftgogo.domain.ai.dto.GameGuideAiPathfinderRequest;
 import com.tftgogo.domain.ai.dto.GameGuideAiPathfinderResponse;
+import com.tftgogo.domain.ai.dto.request.AiChatRequest;
+import com.tftgogo.domain.ai.dto.response.AiChatResponse;
+import com.tftgogo.domain.ai.dto.response.AiRecommendResponse;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import org.apache.logging.log4j.LogManager;
@@ -54,8 +54,8 @@ public class AiServerClient {
     }
 
     /**
-     * AI 서버에 전적 분석 + 메타 덱 매칭 요청.
-     * 통신 오류 시 {@link BusinessException}(AI_SERVER_ERROR)을 던진다.
+     * AI ?쒕쾭???꾩쟻 遺꾩꽍 + 硫뷀? ??留ㅼ묶 ?붿껌.
+     * ?듭떊 ?ㅻ쪟 ??{@link BusinessException}(AI_SERVER_ERROR)???섏쭊??
      */
     public AiRecommendResponse analyzeWithMeta(Map<String, Object> requestBody) {
         try {
@@ -68,23 +68,23 @@ public class AiServerClient {
                     .retrieve()
                     .body(AiRecommendResponse.class);
             if (response == null) {
-                logger.warn("AI 서버 빈 응답 수신");
+                logger.warn("AI ?쒕쾭 鍮??묐떟 ?섏떊");
                 throw new BusinessException(ErrorCode.AI_SERVER_ERROR);
             }
             return response;
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            logger.warn("AI 서버 호출 실패: {}", e.getMessage());
+            logger.warn("AI ?쒕쾭 ?몄텧 ?ㅽ뙣: {}", e.getMessage());
             throw new BusinessException(ErrorCode.AI_SERVER_ERROR);
         }
     }
 
     /**
-     * AI 서버 채팅 요청.
+     * AI ?쒕쾭 梨꾪똿 ?붿껌.
      *
-     * @param request 메시지 히스토리 + 소환사 컨텍스트
-     * @return AI 응답, 오류 시 null
+     * @param request 硫붿떆吏 ?덉뒪?좊━ + ?뚰솚??而⑦뀓?ㅽ듃
+     * @return AI ?묐떟, ?ㅻ쪟 ??null
      */
     public AiChatResponse chat(AiChatRequest request) {
         try {
@@ -97,7 +97,7 @@ public class AiServerClient {
                     .retrieve()
                     .body(AiChatResponse.class);
         } catch (Exception e) {
-            logger.warn("AI 서버 채팅 호출 실패, fallback 사용: {}", e.getMessage());
+            logger.warn("AI ?쒕쾭 梨꾪똿 ?몄텧 ?ㅽ뙣, fallback ?ъ슜: {}", e.getMessage());
             return null;
         }
     }
@@ -138,13 +138,13 @@ public class AiServerClient {
             }
             return objectMapper.treeToValue(dataNode, GameGuideAiPathfinderResponse.class);
         } catch (Exception e) {
-            logger.warn("GameGuide AI 서버 호출 실패, fallback 사용: {}", e.getMessage());
+            logger.warn("GameGuide AI ?쒕쾭 ?몄텧 ?ㅽ뙣, fallback ?ъ슜: {}", e.getMessage());
             return null;
         }
     }
 
     /**
-     * AI 서버 헬스체크.
+     * AI ?쒕쾭 ?ъ뒪泥댄겕.
      */
     public boolean isHealthy() {
         try {
@@ -154,7 +154,7 @@ public class AiServerClient {
                     .toBodilessEntity();
             return true;
         } catch (Exception e) {
-            logger.warn("AI 서버 헬스체크 실패: {}", e.getMessage());
+            logger.warn("AI ?쒕쾭 ?ъ뒪泥댄겕 ?ㅽ뙣: {}", e.getMessage());
             return false;
         }
     }
