@@ -1,10 +1,9 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import {
   DEFAULT_GUIDE_PAGE_SIZE,
-  getGuideCatalog,
+  getGuidePatchVersion,
   getGuideTabItems,
   type GuideCatalog,
-  type GuideCatalogResult,
   type GuideListQuery,
   type GuideTab,
   type GuideTabItems,
@@ -46,20 +45,21 @@ function createGuidePlaceholderPage<T extends GuideTab>(
 }
 
 export function useGuideCatalog({ fallbackData }: UseGuideCatalogOptions) {
-  const placeholderData: GuideCatalogResult = { data: fallbackData, source: 'placeholder' }
-  const guideQuery = useQuery<GuideCatalogResult>({
+  const placeholderData = { patchVersion: fallbackData.patchVersion, source: 'placeholder' as const }
+  const patchVersionQuery = useQuery({
     placeholderData,
-    queryFn: () => getGuideCatalog(fallbackData),
-    queryKey: ['guide', 'catalog'],
+    queryFn: () => getGuidePatchVersion(fallbackData.patchVersion),
+    queryKey: ['guide', 'patch-version'],
     ...LIVE_CONTENT_QUERY_OPTIONS,
   })
-  const guideResult = guideQuery.data ?? placeholderData
+  const patchVersionResult = patchVersionQuery.data ?? placeholderData
+  const guideData: GuideCatalog = { ...fallbackData, patchVersion: patchVersionResult.patchVersion }
 
   return {
-    guideData: guideResult.data,
-    isFallbackData: guideResult.source === 'fallback' && !guideQuery.isFetching,
-    isFetching: guideQuery.isFetching,
-    refetchGuideData: guideQuery.refetch,
+    guideData,
+    isFallbackData: patchVersionResult.source === 'fallback' && !patchVersionQuery.isFetching,
+    isFetching: patchVersionQuery.isFetching,
+    refetchGuideData: patchVersionQuery.refetch,
   }
 }
 
