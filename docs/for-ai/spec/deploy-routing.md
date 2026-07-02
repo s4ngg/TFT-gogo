@@ -1,19 +1,19 @@
 <spec domain="deploy-routing">
 
 <purpose>
-AWS ALB + Route53 배포 도메인 기준 라우팅 계약.
+AWS ALB + Route53 獄쏄퀬猷??袁⑥컭??疫꿸퀣? ??깆뒭???④쑴鍮?
 </purpose>
 
 <domain>
 - Primary: https://tftgogo.com
 - Alias: https://www.tftgogo.com
-- OAuth는 `APP_OAUTH2_AUTHORIZATION_BASE_URI=https://tftgogo.com` 기준으로 시작해 provider callback mismatch를 피한다.
+- OAuth??`APP_OAUTH2_AUTHORIZATION_BASE_URI=https://tftgogo.com` 疫꿸퀣???곗쨮 ??뽰삂??provider callback mismatch????노립??
 </domain>
 
 <alb>
-- 단일 ALB에서 host 기반이 아니라 path 기반으로 라우팅한다.
-- HTTP:80은 HTTPS:443으로 301 리다이렉트한다.
-- HTTPS:443 기본 대상 그룹은 `tftgogo-frontend-tg`다.
+- ??μ뵬 ALB?癒?퐣 host 疫꿸퀡而???袁⑤빍??path 疫꿸퀡而??곗쨮 ??깆뒭??뉖립??
+- HTTP:80?? HTTPS:443??곗쨮 301 ?귐됰뼄????紐낅립??
+- HTTPS:443 疫꿸퀡??????域밸챶竊?? `tftgogo-frontend-tg`??
 </alb>
 
 <routes>
@@ -21,54 +21,55 @@ AWS ALB + Route53 배포 도메인 기준 라우팅 계약.
 - `/actuator/health`, `/actuator/health/*` -> `tftgogo-backend-tg`
 - `/oauth2/*` -> `tftgogo-backend-tg`
 - `/login/oauth2/*` -> `tftgogo-backend-tg`
-- 그 외 모든 경로 -> `tftgogo-frontend-tg`
+- 域???筌뤴뫀諭?野껋럥以?-> `tftgogo-frontend-tg`
 </routes>
 
 <routing-guard>
-- ECS 프론트 nginx(`frontend/nginx.ecs.conf`)는 정적 SPA만 서빙한다. `/api` 같은 백엔드 전용 경로는 ALB에서 백엔드 타깃 그룹으로 라우팅되어야 한다.
-- 백엔드 전용 경로가 프론트 nginx까지 들어오면 `index.html`로 숨기지 않고 502를 반환해 ALB 오라우팅을 조기 감지한다.
-- 운영 배포 확인 시 `/api/*` 응답은 프론트 HTML이 아니라 백엔드 JSON 또는 백엔드 오류 응답이어야 한다.
+- ECS ?袁⑥쨴??nginx(`frontend/nginx.ecs.conf`)???類ㅼ읅 SPA筌???뺥뒅??뺣뼄. `/api` 揶쏆늿? 獄쏄퉮肉???袁⑹뒠 野껋럥以??ALB?癒?퐣 獄쏄퉮肉????繹?域밸챶竊??곗쨮 ??깆뒭??낅┷??곷튊 ??뺣뼄.
+- 獄쏄퉮肉???袁⑹뒠 野껋럥以덂첎? ?袁⑥쨴??nginx繹먮슣? ??쇰선??삠늺 `index.html`嚥???ｋ┛筌왖 ??꾪?502??獄쏆꼹???ALB ??살뵬?怨좊샒??鈺곌퀗由?揶쏅Ŋ???뺣뼄.
+- ??곸겫 獄쏄퀬猷??類ㅼ뵥 ??`/api/*` ?臾먮뼗?? ?袁⑥쨴??HTML???袁⑤빍??獄쏄퉮肉??JSON ?癒?뮉 獄쏄퉮肉????살첒 ?臾먮뼗??곷선????뺣뼄.
 </routing-guard>
 
 <backend>
-- ALB 뒤의 Spring Boot는 `server.forward-headers-strategy=framework`를 사용한다.
-- 이 설정이 없으면 OAuth2 시작 URL이나 콜백 URL이 내부 HTTP 주소로 만들어질 수 있다.
-- 운영 환경변수:
+- ALB ??쇱벥 Spring Boot??`server.forward-headers-strategy=framework`???????뺣뼄.
+- ????쇱젟????곸몵筌?OAuth2 ??뽰삂 URL??援??꾩뮆媛?URL????? HTTP 雅뚯눘?쇗에?筌띾슢諭??곸춳 ????덈뼄.
+- ??곸겫 ??띻펾癰궰??
   - `SPRING_PROFILES_ACTIVE=prod`
   - `APP_CORS_ALLOWED_ORIGINS=https://tftgogo.com,https://www.tftgogo.com`
   - `APP_OAUTH2_AUTHORIZATION_BASE_URI=https://tftgogo.com`
   - `APP_OAUTH2_AUTHORIZED_REDIRECT_URI=https://tftgogo.com/oauth/callback`
   - `APP_OAUTH2_LOGIN_FAILURE_REDIRECT_URI=https://tftgogo.com/login`
   - `AI_SERVER_URL=http://<internal-ai-service>:8000`
-  - `AI_SERVER_INTERNAL_SECRET=<AI 서버 INTERNAL_SECRET과 동일한 값>`
+  - `AI_SERVER_INTERNAL_SECRET=<AI ??뺤쒔 INTERNAL_SECRET????덉뵬??揶?`
   - `SERVER_FORWARD_HEADERS_STRATEGY=framework`
   - `ADMIN_BOOTSTRAP_PASSWORD` must be empty or a strong one-time bootstrap password.
   - `SPRING_FLYWAY_LOCATIONS=classpath:db/migration`
-- 백엔드 ALB target group health check path는 `/actuator/health`를 사용한다.
-- 운영에서는 `db/local-smoke` Flyway callback을 포함하지 않는다. 로컬 스모크 seed는 `docker-compose.local-smoke.yml`로만 명시적으로 켠다.
-- 운영 secret은 compose 기본값을 사용하지 않고 ECS task definition의 secrets, SSM Parameter Store, 또는 Secrets Manager로 주입한다.
+- 獄쏄퉮肉??ALB target group health check path??`/actuator/health`???????뺣뼄.
+- ??곸겫?癒?퐣??`db/local-smoke` Flyway callback????釉??? ??낅뮉?? 嚥≪뮇類???삠걟??seed??`docker-compose.local-smoke.yml`嚥≪뮆彛?筌뤿굞??怨몄몵嚥??녹쥓??
+- ??곸겫 secret?? compose 疫꿸퀡??첎誘れ뱽 ?????? ??꾪?ECS task definition??secrets, SSM Parameter Store, ?癒?뮉 Secrets Manager嚥?雅뚯눘???뺣뼄.
 </backend>
 
 <frontend>
-- Vite API base URL은 기본값 `/api`를 사용한다.
-- 운영에서 `VITE_API_URL` 또는 `VITE_API_BASE_URL`을 별도 API 서브도메인으로 지정하지 않는다.
-- 브라우저는 AI 서버를 직접 호출하지 않고 Spring의 `/api/ai/recommend` 프록시를 호출한다.
+- Vite API base URL?? 疫꿸퀡??첎?`/api`???????뺣뼄.
+- ??곸겫?癒?퐣 `VITE_API_URL` ?癒?뮉 `VITE_API_BASE_URL`??癰귢쑬猷?API ??뺥닏?袁⑥컭?紐꾩몵嚥?筌왖?類λ릭筌왖 ??낅뮉??
+- ?됰슢??怨???AI ??뺤쒔??筌욊낯???紐꾪뀱??? ??꾪?Spring??`/api/ai/recommend` ?袁⑥쨯??? ?紐꾪뀱??뺣뼄.
 </frontend>
 
 <ai-server>
-- AI 서버는 공개 ALB path로 노출하지 않는다.
-- Spring 백엔드가 내부 `AI_SERVER_URL`로 AI 서버의 `/api/analyze/with-meta`를 호출한다.
-- CORS는 브라우저 정책일 뿐 공개 엔드포인트 보호 수단이 아니다.
-- 운영 AI 서버 환경변수:
+- AI ??뺤쒔???⑤벀而?ALB path嚥??紐꾪뀱??? ??낅뮉??
+- Spring 獄쏄퉮肉??? ??? `AI_SERVER_URL`嚥?AI ??뺤쒔??`/api/analyze/with-meta`???紐꾪뀱??뺣뼄.
+- CORS???됰슢??怨? ?類ㅼ퐠?????⑤벀而??遺얜굡?????癰귣똾????롫뼊???袁⑤빍??
+- ?댁쁺 AI ?쒕쾭 ?섍꼍蹂??
   - `APP_ENV=production`
-  - `INTERNAL_SECRET=<backend와 동일한 내부 secret>`
+  - `INTERNAL_SECRET=<backend? ?숈씪???대? secret>`
   - `DATABASE_URL=postgresql+asyncpg://<internal-postgres>:5432/<db>`
-  - `OPENAI_API_KEY=<Secrets Manager 또는 SSM에서 주입>`
+  - `OPENAI_API_KEY=<Secrets Manager ?먮뒗 SSM?먯꽌 二쇱엯>`
+- ?댁쁺 ?섍꼍(`APP_ENV=production`)?먯꽌??`OPENAI_API_KEY`媛 ?꾩닔?대ŉ, 媛믪씠 ?놁쑝硫?AI ?쒕쾭 ?쒖옉???ㅽ뙣?댁빞 ?쒕떎.
 </ai-server>
 
 <swagger>
-- Swagger UI와 OpenAPI 문서는 백엔드 경로다.
-- ALB에서 Swagger를 공개할 경우 `/swagger-ui.html`, `/swagger-ui/*`, `/v3/api-docs`, `/v3/api-docs/*`를 `tftgogo-backend-tg`로 라우팅해야 한다.
+- Swagger UI?? OpenAPI ?얜챷苑??獄쏄퉮肉??野껋럥以??
+- ALB?癒?퐣 Swagger???⑤벀而??野껋럩??`/swagger-ui.html`, `/swagger-ui/*`, `/v3/api-docs`, `/v3/api-docs/*`??`tftgogo-backend-tg`嚥???깆뒭??뉖퉸????뺣뼄.
 </swagger>
 
 <oauth>
