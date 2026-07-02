@@ -20,6 +20,8 @@
 </response>
 
 <dto>
+- Request DTO package: `com.tftgogo.domain.{domain}.dto.request`.
+- Response DTO package: `com.tftgogo.domain.{domain}.dto.response`.
 - RequestDTO may include a toEntity() method.
 - ResponseDTO must use from() or of() static factory methods.
 - @NotNull / @NotBlank annotations are allowed only on RequestDTO, not ResponseDTO.

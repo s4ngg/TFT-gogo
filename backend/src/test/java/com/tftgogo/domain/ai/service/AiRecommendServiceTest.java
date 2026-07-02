@@ -1,14 +1,14 @@
 package com.tftgogo.domain.ai.service;
 
 import com.tftgogo.domain.ai.client.AiServerClient;
-import com.tftgogo.domain.ai.dto.AiRecommendResponse;
+import com.tftgogo.domain.ai.dto.response.AiRecommendResponse;
 import com.tftgogo.domain.deck.dto.response.MetaDeckListResponse;
 import com.tftgogo.domain.deck.entity.RankFilter;
 import com.tftgogo.domain.deck.service.MetaDeckService;
 import com.tftgogo.domain.match.dto.response.MatchSummaryResponse;
-import com.tftgogo.domain.match.dto.response.SummonerProfileResponse;
 import com.tftgogo.domain.match.service.MatchCollectionService;
-import com.tftgogo.domain.summoner.service.SummonerService;
+import com.tftgogo.domain.search.dto.response.SummonerProfileResponse;
+import com.tftgogo.domain.search.service.SummonerService;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import org.junit.jupiter.api.Test;

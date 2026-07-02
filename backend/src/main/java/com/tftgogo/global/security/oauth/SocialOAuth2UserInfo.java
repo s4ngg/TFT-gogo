@@ -1,6 +1,6 @@
 package com.tftgogo.global.security.oauth;
 
-import com.tftgogo.domain.member.dto.command.SocialLoginCommand;
+import com.tftgogo.domain.member.dto.request.SocialLoginCommand;
 import com.tftgogo.domain.member.entity.SocialProvider;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;

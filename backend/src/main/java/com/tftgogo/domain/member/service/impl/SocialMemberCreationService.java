@@ -1,6 +1,6 @@
 package com.tftgogo.domain.member.service.impl;
 
-import com.tftgogo.domain.member.dto.command.SocialLoginCommand;
+import com.tftgogo.domain.member.dto.request.SocialLoginCommand;
 import com.tftgogo.domain.member.entity.Member;
 import com.tftgogo.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;

@@ -8,7 +8,7 @@ import com.tftgogo.domain.match.dto.response.MatchDetailResponse;
 import com.tftgogo.domain.match.entity.CachedMatch;
 import com.tftgogo.domain.match.repository.CachedMatchRepository;
 import com.tftgogo.domain.match.service.MatchCollectionService;
-import com.tftgogo.domain.summoner.dto.response.SummonerMatchItemDto;
+import com.tftgogo.domain.search.dto.response.SummonerMatchItemDto;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import com.tftgogo.global.riot.RiotApiClient;
