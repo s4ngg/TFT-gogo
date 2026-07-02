@@ -87,6 +87,8 @@ public class SecurityConfig {
         http
                 .securityMatcher(
                         "/health",
+                        "/actuator/health",
+                        "/actuator/health/**",
                         "/swagger-ui/**",
                         "/v3/api-docs/**"
                 )

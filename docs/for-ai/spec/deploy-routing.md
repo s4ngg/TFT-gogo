@@ -18,6 +18,7 @@ AWS ALB + Route53 배포 도메인 기준 라우팅 계약.
 
 <routes>
 - `/api`, `/api/*` -> `tftgogo-backend-tg`
+- `/actuator/health`, `/actuator/health/*` -> `tftgogo-backend-tg`
 - `/oauth2/*` -> `tftgogo-backend-tg`
 - `/login/oauth2/*` -> `tftgogo-backend-tg`
 - 그 외 모든 경로 -> `tftgogo-frontend-tg`
@@ -42,6 +43,7 @@ AWS ALB + Route53 배포 도메인 기준 라우팅 계약.
   - `AI_SERVER_INTERNAL_SECRET=<AI 서버 INTERNAL_SECRET과 동일한 값>`
   - `SERVER_FORWARD_HEADERS_STRATEGY=framework`
   - `SPRING_FLYWAY_LOCATIONS=classpath:db/migration`
+- 백엔드 ALB target group health check path는 `/actuator/health`를 사용한다.
 - 운영에서는 `db/local-smoke` Flyway callback을 포함하지 않는다. 로컬 스모크 seed는 `docker-compose.local-smoke.yml`로만 명시적으로 켠다.
 - 운영 secret은 compose 기본값을 사용하지 않고 ECS task definition의 secrets, SSM Parameter Store, 또는 Secrets Manager로 주입한다.
 </backend>
