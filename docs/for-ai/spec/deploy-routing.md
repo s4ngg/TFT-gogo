@@ -36,6 +36,7 @@ AWS ALB + Route53 獄쏄퀬猷??袁⑥컭??疫꿸퀣? ??깆뒭???④쑴鍮?
 - ??곸겫 ??띻펾癰궰??
   - `SPRING_PROFILES_ACTIVE=prod`
   - `APP_CORS_ALLOWED_ORIGINS=https://tftgogo.com,https://www.tftgogo.com`
+  - `SPRING_PROFILES_ACTIVE=prod` requires the CORS origins above and must not include localhost or `*`.
   - `APP_OAUTH2_AUTHORIZATION_BASE_URI=https://tftgogo.com`
   - `APP_OAUTH2_AUTHORIZED_REDIRECT_URI=https://tftgogo.com/oauth/callback`
   - `APP_OAUTH2_LOGIN_FAILURE_REDIRECT_URI=https://tftgogo.com/login`
