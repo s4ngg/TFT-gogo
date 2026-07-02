@@ -1,7 +1,7 @@
 package com.tftgogo.domain.match.controller.docs;
 
 import com.tftgogo.domain.match.dto.response.MatchDetailResponse;
-import com.tftgogo.domain.summoner.dto.response.SummonerMatchItemDto;
+import com.tftgogo.domain.search.dto.response.SummonerMatchItemDto;
 import com.tftgogo.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

@@ -28,8 +28,14 @@ public interface GuideTraitRepository extends JpaRepository<GuideTrait, Long> {
                       AND (
                             :query IS NULL
                             OR LOWER(name) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(type) LIKE LOWER(CONCAT('%', :query, '%'))
                             OR LOWER(summary) LIKE LOWER(CONCAT('%', :query, '%'))
                             OR LOWER(trait_key) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(CAST(levels_json AS CHAR)) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(CAST(tier_effects_json AS CHAR)) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(CAST(champions_json AS CHAR)) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(CAST(special_units_json AS CHAR)) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(CAST(tips_json AS CHAR)) LIKE LOWER(CONCAT('%', :query, '%'))
                       )
                       AND JSON_TYPE(champions_json) = 'ARRAY'
                       AND JSON_LENGTH(champions_json) > 0
@@ -46,8 +52,14 @@ public interface GuideTraitRepository extends JpaRepository<GuideTrait, Long> {
                       AND (
                             :query IS NULL
                             OR LOWER(name) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(type) LIKE LOWER(CONCAT('%', :query, '%'))
                             OR LOWER(summary) LIKE LOWER(CONCAT('%', :query, '%'))
                             OR LOWER(trait_key) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(CAST(levels_json AS CHAR)) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(CAST(tier_effects_json AS CHAR)) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(CAST(champions_json AS CHAR)) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(CAST(special_units_json AS CHAR)) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(CAST(tips_json AS CHAR)) LIKE LOWER(CONCAT('%', :query, '%'))
                       )
                       AND JSON_TYPE(champions_json) = 'ARRAY'
                       AND JSON_LENGTH(champions_json) > 0

@@ -1,5 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { getMatchHistory } from '../api/summonerApi'
+import { getMatchHistory } from '../api/searchApi'
 
 export const useMatchHistory = (puuid: string, count = 20) =>
   useInfiniteQuery({

@@ -22,7 +22,7 @@ Page: Guide (/guide).
 <frontend>
 - frontend/src/api/guide.ts            -> main guide API calls
 - frontend/src/api/guideClient.ts      -> HTTP client wrapper for guide
-- frontend/src/api/guideFallback.ts    -> fallback data when API is unavailable
+- frontend/src/pages/Guide/guideFallbackData.ts -> fallback data when API is unavailable
 - frontend/src/api/guideNormalizers.ts -> normalize raw guide data before use
 - frontend/src/api/guideTypes.ts       -> TypeScript types for guide domain
 - frontend/src/hooks/useGuide.ts       -> TanStack Query hooks for guide catalog and tab pages
@@ -67,7 +67,7 @@ Page: Guide (/guide).
 - #393 owns the separate guide metric strategy. CDragon provides static names/descriptions/images/tags/combinations; Riot match detail stored in cached_match can later provide avgPlace, pickRate, TOP4 rate, winRate, and sampleCount through a dedicated refresh path.
 - Metric refresh must keep "-" and [] fallbacks when an item or augment is below the minimum sample size; do not invent numbers from insufficient samples.
 - Data originates from CDragon where possible; use communityDragonAssets.ts helpers for frontend images.
-- guideFallback.ts provides static fallback when the backend is unreachable.
+- guideFallbackData.ts provides static fallback when the backend is unreachable.
 - guideNormalizers.ts must be applied before passing data to components; do not use raw API responses directly.
 - Public guide UI should request tab data through useGuideTabItems; components must not fetch guide data directly.
 </business-rules>
