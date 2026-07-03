@@ -7,12 +7,17 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.QueryHints;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 public interface PatchNoteRepository extends JpaRepository<PatchNote, Long> {
 
     List<PatchNote> findByDeletedAtIsNullOrderByCurrentDescPublishedAtDescIdDesc();
+
+    List<PatchNote> findByDeletedAtIsNullAndPublishedAtGreaterThanEqualOrderByPublishedAtDescIdDesc(
+            LocalDateTime publishedAt
+    );
 
     Optional<PatchNote> findFirstByDeletedAtIsNullOrderByCurrentDescPublishedAtDescIdDesc();
 

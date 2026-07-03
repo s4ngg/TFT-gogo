@@ -104,11 +104,11 @@ cd backend
 .\gradlew.bat bootRun --args='--spring.profiles.active=local'
 ```
 
-## 최신 Guide/PatchNotes import
+## 최신 Guide/최근 PatchNotes import
 
 최신 게임가이드와 패치노트를 로컬 DB에 넣어야 할 때는 backend 시작 전에 import 스위치를 켭니다.
 
-- PatchNotes import는 Riot 공식 패치노트 목록에서 최신 항목을 가져와 current 패치로 저장합니다.
+- PatchNotes import는 Riot 공식 패치노트 목록에서 최근 6개월 내 미수집 항목을 가져오고, 목록의 최신 항목만 current 패치로 저장합니다.
 - Guide import는 `APP_GUIDE_CDRAGON_PATCH_VERSION=latest` 기준으로 current 패치노트 버전을 사용합니다.
 - CDragon 세트 번호와 mutator를 지정하지 않으면 CDragon 응답에서 가장 최신 TFT 세트를 자동 선택합니다.
 

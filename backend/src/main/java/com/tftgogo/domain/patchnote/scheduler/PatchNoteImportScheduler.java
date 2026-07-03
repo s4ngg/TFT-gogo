@@ -19,6 +19,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -51,7 +52,7 @@ public class PatchNoteImportScheduler {
             logger.info("Patch note startup import disabled (app.patch-note.scheduler.startup-import=false)");
             return;
         }
-        runIfIdle("startup", this::importLatestPatchNote);
+        runIfIdle("startup", this::importUnknownPatchNotesFromList);
     }
 
     @Scheduled(
@@ -67,7 +68,7 @@ public class PatchNoteImportScheduler {
             zone = "${app.patch-note.scheduler.zone:Asia/Seoul}"
     )
     public void refreshLatestPatchNote() {
-        runIfEnabledAndIdle("daily-refresh", this::importLatestPatchNote);
+        runIfEnabledAndIdle("daily-refresh", this::importUnknownPatchNotesFromList);
     }
 
     private void runIfEnabledAndIdle(String trigger, Runnable task) {
@@ -102,10 +103,14 @@ public class PatchNoteImportScheduler {
         }
 
         int scanLimit = Math.min(properties.getListScanLimit(), listItems.size());
+        LocalDateTime historyCutoff = LocalDateTime.now().minusMonths(properties.getHistoryMonths());
         int imported = 0;
         for (int index = scanLimit - 1; index >= 0; index--) {
             PatchNoteCrawlListItem item = listItems.get(index);
             if (!hasText(item.detailUrl())) {
+                continue;
+            }
+            if (!isWithinHistoryWindow(item, historyCutoff)) {
                 continue;
             }
             if (isAlreadyImported(item)) {
@@ -132,25 +137,17 @@ public class PatchNoteImportScheduler {
             );
         }
 
-        logger.info("Patch note list check completed. scanned={}, imported={}", scanLimit, imported);
+        logger.info(
+                "Patch note list check completed. scanned={}, historyMonths={}, historyCutoff={}, imported={}",
+                scanLimit,
+                properties.getHistoryMonths(),
+                historyCutoff,
+                imported
+        );
     }
 
-    private void importLatestPatchNote() {
-        AdminPatchNoteImportRequest request = AdminPatchNoteImportRequest.of(
-                null,
-                normalizeLocale(properties.getLocale()),
-                null,
-                properties.isCurrent()
-        );
-        AdminPatchNoteImportResponse response = adminPatchNoteService.importRiotPatchNote(request);
-        logger.info(
-                "Latest patch note refreshed. version={}, sourceUrl={}, created={}, updated={}, skipped={}",
-                response.getVersion(),
-                response.getSourceUrl(),
-                response.isPatchNoteCreated(),
-                response.isPatchNoteUpdated(),
-                response.isPatchNoteSkipped()
-        );
+    private boolean isWithinHistoryWindow(PatchNoteCrawlListItem item, LocalDateTime historyCutoff) {
+        return item.publishedAt() == null || !item.publishedAt().isBefore(historyCutoff);
     }
 
     private boolean isAlreadyImported(PatchNoteCrawlListItem item) {

@@ -92,8 +92,15 @@ class PatchNoteImportSchedulerTest {
         properties.setEnabled(true);
         properties.setStartupImport(true);
         givenSchedulerLockRunsTask();
+        PatchNoteCrawlListItem latestNew = listItem(
+                "?꾨왂??? ?꾪닾 17.5 ?⑥튂",
+                "riot-content-17-5",
+                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-5/"
+        );
+        givenPatchList(latestNew);
+        givenPatchNoteIsNotImported(latestNew, "17.5");
         when(adminPatchNoteService.importRiotPatchNote(any(AdminPatchNoteImportRequest.class)))
-                .thenReturn(importResponse("17.5", "https://example.com/17-5"));
+                .thenReturn(importResponse("17.5", latestNew.detailUrl()));
 
         // when
         scheduler.importOnStartupIfEnabled();
@@ -102,9 +109,36 @@ class PatchNoteImportSchedulerTest {
         ArgumentCaptor<AdminPatchNoteImportRequest> captor =
                 ArgumentCaptor.forClass(AdminPatchNoteImportRequest.class);
         verify(adminPatchNoteService).importRiotPatchNote(captor.capture());
-        assertThat(captor.getValue().getSourceUrl()).isNull();
+        assertThat(captor.getValue().getSourceUrl()).isEqualTo(latestNew.detailUrl());
         assertThat(captor.getValue().getLocale()).isEqualTo("ko-kr");
         assertThat(captor.getValue().shouldMarkCurrent()).isTrue();
+    }
+
+    @Test
+    void list_check_skips_items_older_than_history_months() {
+        // given
+        properties.setEnabled(true);
+        givenSchedulerLockRunsTask();
+        PatchNoteCrawlListItem latestImported = listItem(
+                "Teamfight Tactics patch 17.5",
+                "riot-content-17-5",
+                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-5/"
+        );
+        PatchNoteCrawlListItem oldNew = listItem(
+                "Teamfight Tactics patch 17.1",
+                LocalDateTime.now().minusMonths(7),
+                "riot-content-17-1",
+                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-1/"
+        );
+        givenPatchList(latestImported, oldNew);
+        when(patchNoteRepository.findBySourceKey("riot-content-17-5"))
+                .thenReturn(Optional.of(patchNote("17.5")));
+
+        // when
+        scheduler.importNewPatchNotesFromList();
+
+        // then
+        verifyNoInteractions(adminPatchNoteService);
     }
 
     @Test
@@ -152,9 +186,16 @@ class PatchNoteImportSchedulerTest {
         properties.setEnabled(true);
         properties.setStartupImport(true);
         givenSchedulerLockRunsTask();
+        PatchNoteCrawlListItem latestNew = listItem(
+                "?꾨왂??? ?꾪닾 17.5 ?⑥튂",
+                "riot-content-17-5",
+                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-5/"
+        );
+        givenPatchList(latestNew);
+        givenPatchNoteIsNotImported(latestNew, "17.5");
         doAnswer(invocation -> {
             scheduler.refreshLatestPatchNote();
-            return importResponse("17.5", "https://example.com/17-5");
+            return importResponse("17.5", latestNew.detailUrl());
         }).when(adminPatchNoteService).importRiotPatchNote(any(AdminPatchNoteImportRequest.class));
 
         // when
@@ -170,6 +211,13 @@ class PatchNoteImportSchedulerTest {
         properties.setEnabled(true);
         properties.setStartupImport(true);
         givenSchedulerLockRunsTask();
+        PatchNoteCrawlListItem latestNew = listItem(
+                "?꾨왂??? ?꾪닾 17.5 ?⑥튂",
+                "riot-content-17-5",
+                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-5/"
+        );
+        givenPatchList(latestNew);
+        givenPatchNoteIsNotImported(latestNew, "17.5");
         when(adminPatchNoteService.importRiotPatchNote(any(AdminPatchNoteImportRequest.class)))
                 .thenThrow(new RuntimeException("riot unavailable"));
 
@@ -200,6 +248,18 @@ class PatchNoteImportSchedulerTest {
         }).when(schedulerLock).runWithLock(any(), any());
     }
 
+    private void givenPatchList(PatchNoteCrawlListItem... items) {
+        PatchNoteCrawlFetchedPage listPage = fetchedPage();
+        when(crawlerFetchService.fetchTagPage("ko-kr")).thenReturn(listPage);
+        when(crawlerParser.parseListPage(listPage)).thenReturn(List.of(items));
+    }
+
+    private void givenPatchNoteIsNotImported(PatchNoteCrawlListItem item, String version) {
+        when(patchNoteRepository.findBySourceKey(item.contentId())).thenReturn(Optional.empty());
+        when(patchNoteRepository.findBySourceUrl(item.detailUrl())).thenReturn(Optional.empty());
+        when(patchNoteRepository.findByVersion(version)).thenReturn(Optional.empty());
+    }
+
     private PatchNoteCrawlFetchedPage fetchedPage() {
         return new PatchNoteCrawlFetchedPage(
                 "https://teamfighttactics.leagueoflegends.com/ko-kr/news/tags/patch-notes/",
@@ -210,9 +270,18 @@ class PatchNoteImportSchedulerTest {
     }
 
     private PatchNoteCrawlListItem listItem(String title, String contentId, String detailUrl) {
+        return listItem(title, LocalDateTime.now().minusDays(1), contentId, detailUrl);
+    }
+
+    private PatchNoteCrawlListItem listItem(
+            String title,
+            LocalDateTime publishedAt,
+            String contentId,
+            String detailUrl
+    ) {
         return new PatchNoteCrawlListItem(
                 title,
-                LocalDateTime.of(2026, 6, 18, 9, 0),
+                publishedAt,
                 "summary",
                 "",
                 contentId,

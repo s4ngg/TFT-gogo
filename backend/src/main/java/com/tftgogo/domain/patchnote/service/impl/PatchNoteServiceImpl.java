@@ -28,6 +28,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -43,6 +44,7 @@ public class PatchNoteServiceImpl implements PatchNoteService {
     private static final int MAX_PAGE = 10_000;
     private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int MAX_PAGE_SIZE = 1000;
+    private static final int PUBLIC_PATCH_HISTORY_MONTHS = 6;
     private static final String LIKE_ESCAPE = "\\";
 
     private final PatchNoteRepository patchNoteRepository;
@@ -51,8 +53,11 @@ public class PatchNoteServiceImpl implements PatchNoteService {
 
     @Override
     public List<PatchNoteResponse> getPatchNotes() {
+        LocalDateTime historyCutoff = LocalDateTime.now().minusMonths(PUBLIC_PATCH_HISTORY_MONTHS);
         List<PatchNote> patchNotes = patchNoteRepository
-                .findByDeletedAtIsNullOrderByCurrentDescPublishedAtDescIdDesc();
+                .findByDeletedAtIsNullAndPublishedAtGreaterThanEqualOrderByPublishedAtDescIdDesc(
+                        historyCutoff
+                );
         Map<Long, Long> changeCounts = getChangeCounts(patchNotes);
 
         return patchNotes.stream()
