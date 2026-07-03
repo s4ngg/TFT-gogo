@@ -105,6 +105,8 @@ const TRAIT_ICON_PATHS: Readonly<Record<string, string>> = {
 const championImagePaths: Readonly<Record<string, string>> = {
   tft17_darkstar_fakeunit: 'ASSETS/Characters/TFT17_DarkStar_FakeUnit/HUD/TFT17_DarkStar_FakeUnit_SmallSplash.TFT_Set17.tex',
   tft17_rhaast: 'ASSETS/Characters/TFT17_Rhaast/HUD/TFT17_Kayn_Slay_Square.TFT_Set17.tex',
+  // 바드 소환수(Follower)는 챔피언 목록에 없어 전용 square 아이콘이 CDragon에 존재하지 않음 -> 바드 본체 아이콘 재사용
+  tft17_bard_follower: 'ASSETS/Characters/TFT17_Bard/HUD/TFT17_Bard_Square.TFT_Set17.tex',
 }
 
 export function tftTraitIconUrl(traitId: string): string {
