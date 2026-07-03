@@ -1,6 +1,10 @@
 package com.tftgogo.domain.patchnote.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tftgogo.domain.guide.entity.GuideChampion;
+import com.tftgogo.domain.guide.entity.GuideTrait;
+import com.tftgogo.domain.guide.repository.GuideChampionRepository;
+import com.tftgogo.domain.guide.repository.GuideTraitRepository;
 import com.tftgogo.domain.patchnote.config.PatchNoteCrawlerProperties;
 import com.tftgogo.domain.patchnote.dto.crawl.PatchChangeCrawlRow;
 import com.tftgogo.domain.patchnote.dto.crawl.PatchNoteCrawlDocument;
@@ -44,6 +48,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -55,6 +60,12 @@ class AdminPatchNoteServiceImplTest {
 
     @Mock
     private PatchChangeRepository patchChangeRepository;
+
+    @Mock
+    private GuideChampionRepository guideChampionRepository;
+
+    @Mock
+    private GuideTraitRepository guideTraitRepository;
 
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
@@ -349,6 +360,165 @@ class AdminPatchNoteServiceImplTest {
     }
 
     @Test
+    void importRiotPatchNote_whenGuideNameAppearsWithoutCategoryHeading_infersGuideCategory() {
+        // given
+        PatchNote existingCurrent = patchNote(1L, "17.4", true);
+        PatchNoteCrawlFetchedPage detailPage = fetchedPage("https://www.leagueoflegends.com/ko-kr/news/game-updates/patch-17-5-notes/");
+        PatchChangeCrawlRow championRow = new PatchChangeCrawlRow(
+                "twisted-fate-candidate",
+                "twisted-fate-row-key",
+                "변경사항",
+                1,
+                "변경사항",
+                "트위스티드 페이트",
+                "트위스티드 페이트 마나 조정",
+                "<li>트위스티드 페이트 마나 조정</li>",
+                "50",
+                "45",
+                List.of()
+        );
+        PatchChangeCrawlRow traitRow = new PatchChangeCrawlRow(
+                "pathfinder-candidate",
+                "pathfinder-row-key",
+                "변경사항",
+                2,
+                "변경사항",
+                "길잡이 뾰족꼬리 휩쓸기 피해량",
+                "길잡이 체력 배수 (스테이지 4~6) 조정",
+                "<li>길잡이 체력 배수 (스테이지 4~6) 조정</li>",
+                "100%",
+                "110%",
+                List.of()
+        );
+        PatchNoteCrawlDocument document = new PatchNoteCrawlDocument(
+                detailPage.sourceUrl(),
+                "ko-kr",
+                "riot-content-17-5-guide-name",
+                "17.5 Patch Notes",
+                "17.5",
+                "Official summary",
+                LocalDateTime.of(2026, 6, 9, 18, 0),
+                "https://example.com/official.png",
+                List.of("Riot"),
+                List.of("변경사항"),
+                List.of(championRow, traitRow),
+                List.of()
+        );
+        AdminPatchNoteImportRequest request = new AdminPatchNoteImportRequest();
+        ReflectionTestUtils.setField(request, "sourceUrl", detailPage.sourceUrl());
+
+        when(crawlerProperties.getDefaultLocale()).thenReturn("ko-kr");
+        when(crawlerFetchService.fetch(detailPage.sourceUrl())).thenReturn(detailPage);
+        when(crawlerParser.parseDetailPage(detailPage, null, "ko-kr")).thenReturn(document);
+        when(patchNoteRepository.findBySourceKey("riot-content-17-5-guide-name")).thenReturn(Optional.empty());
+        when(patchNoteRepository.findBySourceUrl(detailPage.sourceUrl())).thenReturn(Optional.empty());
+        when(patchNoteRepository.findByVersion("17.5")).thenReturn(Optional.empty());
+        when(patchNoteRepository.findByCurrentTrueAndDeletedAtIsNull()).thenReturn(List.of(existingCurrent));
+        when(patchNoteRepository.save(any(PatchNote.class))).thenAnswer(invocation -> {
+            PatchNote patchNote = invocation.getArgument(0);
+            ReflectionTestUtils.setField(patchNote, "id", 2L);
+            return patchNote;
+        });
+        when(guideChampionRepository.findByPatchVersionOrderByNameAscIdAsc("17.5"))
+                .thenReturn(List.of(guideChampion("tft17_twistedfate", "트위스티드 페이트", "17.5")));
+        when(guideTraitRepository.findByPatchVersionOrderByNameAscIdAsc("17.5"))
+                .thenReturn(List.of(guideTrait("tft17_pathfinder", "길잡이", "17.5")));
+        when(patchChangeRepository.findByPatchNoteAndSourceKey(any(PatchNote.class), eq("twisted-fate-row-key")))
+                .thenReturn(Optional.empty());
+        when(patchChangeRepository.findByPatchNoteAndSourceKey(any(PatchNote.class), eq("pathfinder-row-key")))
+                .thenReturn(Optional.empty());
+        when(patchChangeRepository.save(any(PatchChange.class))).thenAnswer(invocation -> {
+            PatchChange patchChange = invocation.getArgument(0);
+            ReflectionTestUtils.setField(patchChange, "id", 10L);
+            return patchChange;
+        });
+
+        // when
+        AdminPatchNoteImportResponse response = adminPatchNoteService.importRiotPatchNote(request);
+
+        // then
+        assertThat(response.getCreatedChanges()).isEqualTo(2);
+
+        ArgumentCaptor<PatchChange> patchChangeCaptor = ArgumentCaptor.forClass(PatchChange.class);
+        verify(patchChangeRepository, times(2)).save(patchChangeCaptor.capture());
+        assertThat(patchChangeCaptor.getAllValues())
+                .extracting(PatchChange::getCategory)
+                .containsExactly(PatchChangeCategory.CHAMPION, PatchChangeCategory.TRAIT);
+        assertThat(patchChangeCaptor.getAllValues())
+                .extracting(PatchChange::getTargetName)
+                .containsExactly("트위스티드 페이트", "길잡이 뾰족꼬리 휩쓸기 피해량");
+    }
+
+    @Test
+    void importRiotPatchNote_whenGuideNameIsEmbeddedInsideAnotherToken_keepsSystemCategory() {
+        // given
+        PatchNote existingCurrent = patchNote(1L, "17.4", true);
+        PatchNoteCrawlFetchedPage detailPage = fetchedPage("https://www.leagueoflegends.com/ko-kr/news/game-updates/patch-17-5-notes/");
+        PatchChangeCrawlRow row = new PatchChangeCrawlRow(
+                "scouting-candidate",
+                "scouting-row-key",
+                "Balance",
+                1,
+                "Balance",
+                "Scouting report",
+                "Scouting report adjusted",
+                "<li>Scouting report adjusted</li>",
+                null,
+                null,
+                List.of()
+        );
+        PatchNoteCrawlDocument document = new PatchNoteCrawlDocument(
+                detailPage.sourceUrl(),
+                "ko-kr",
+                "riot-content-17-5-guide-name-boundary",
+                "17.5 Patch Notes",
+                "17.5",
+                "Official summary",
+                LocalDateTime.of(2026, 6, 9, 18, 0),
+                "https://example.com/official.png",
+                List.of("Riot"),
+                List.of("Balance"),
+                List.of(row),
+                List.of()
+        );
+        AdminPatchNoteImportRequest request = new AdminPatchNoteImportRequest();
+        ReflectionTestUtils.setField(request, "sourceUrl", detailPage.sourceUrl());
+
+        when(crawlerProperties.getDefaultLocale()).thenReturn("ko-kr");
+        when(crawlerFetchService.fetch(detailPage.sourceUrl())).thenReturn(detailPage);
+        when(crawlerParser.parseDetailPage(detailPage, null, "ko-kr")).thenReturn(document);
+        when(patchNoteRepository.findBySourceKey("riot-content-17-5-guide-name-boundary")).thenReturn(Optional.empty());
+        when(patchNoteRepository.findBySourceUrl(detailPage.sourceUrl())).thenReturn(Optional.empty());
+        when(patchNoteRepository.findByVersion("17.5")).thenReturn(Optional.empty());
+        when(patchNoteRepository.findByCurrentTrueAndDeletedAtIsNull()).thenReturn(List.of(existingCurrent));
+        when(patchNoteRepository.save(any(PatchNote.class))).thenAnswer(invocation -> {
+            PatchNote patchNote = invocation.getArgument(0);
+            ReflectionTestUtils.setField(patchNote, "id", 2L);
+            return patchNote;
+        });
+        when(guideChampionRepository.findByPatchVersionOrderByNameAscIdAsc("17.5")).thenReturn(List.of());
+        when(guideTraitRepository.findByPatchVersionOrderByNameAscIdAsc("17.5"))
+                .thenReturn(List.of(guideTrait("tft17_scout", "Scout", "17.5")));
+        when(patchChangeRepository.findByPatchNoteAndSourceKey(any(PatchNote.class), eq("scouting-row-key")))
+                .thenReturn(Optional.empty());
+        when(patchChangeRepository.save(any(PatchChange.class))).thenAnswer(invocation -> {
+            PatchChange patchChange = invocation.getArgument(0);
+            ReflectionTestUtils.setField(patchChange, "id", 10L);
+            return patchChange;
+        });
+
+        // when
+        AdminPatchNoteImportResponse response = adminPatchNoteService.importRiotPatchNote(request);
+
+        // then
+        assertThat(response.getCreatedChanges()).isEqualTo(1);
+
+        ArgumentCaptor<PatchChange> patchChangeCaptor = ArgumentCaptor.forClass(PatchChange.class);
+        verify(patchChangeRepository).save(patchChangeCaptor.capture());
+        assertThat(patchChangeCaptor.getValue().getCategory()).isEqualTo(PatchChangeCategory.SYSTEM);
+    }
+
+    @Test
     void importRiotPatchNote_whenExistingPatchFound_updatesOfficialMetadataAndDeletesOnlyImportedStaleChanges() {
         // given
         PatchNote existingPatchNote = patchNote(1L, "17.3", true);
@@ -640,6 +810,38 @@ class AdminPatchNoteServiceImplTest {
                 .build();
         ReflectionTestUtils.setField(patchChange, "id", id);
         return patchChange;
+    }
+
+    private GuideChampion guideChampion(String championKey, String name, String patchVersion) {
+        return GuideChampion.builder()
+                .championKey(championKey)
+                .name(name)
+                .cost(4)
+                .role("carry")
+                .position("backline")
+                .imageUrl("https://example.com/champion.png")
+                .statsJson("{}")
+                .traitsJson("[]")
+                .bestItemsJson("[]")
+                .patchVersion(patchVersion)
+                .build();
+    }
+
+    private GuideTrait guideTrait(String traitKey, String name, String patchVersion) {
+        return GuideTrait.builder()
+                .traitKey(traitKey)
+                .name(name)
+                .type("origin")
+                .iconUrl("https://example.com/trait.png")
+                .tone("cyan")
+                .summary("trait summary")
+                .levelsJson("[]")
+                .tierEffectsJson("[]")
+                .championsJson("[]")
+                .specialUnitsJson("[]")
+                .tipsJson("[]")
+                .patchVersion(patchVersion)
+                .build();
     }
 
     private PatchNoteCrawlFetchedPage fetchedPage(String sourceUrl) {
