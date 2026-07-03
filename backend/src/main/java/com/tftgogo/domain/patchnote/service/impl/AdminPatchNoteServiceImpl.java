@@ -631,10 +631,26 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
         if (normalizedText.startsWith(guideName) && isGuideNameBoundary(normalizedText, guideName.length())) {
             return true;
         }
-        return guideName.length() >= 4 && normalizedText.contains(guideName);
+        if (guideName.length() < 4) {
+            return false;
+        }
+
+        int matchIndex = normalizedText.indexOf(guideName);
+        while (matchIndex >= 0) {
+            int matchEndIndex = matchIndex + guideName.length();
+            if (isGuideNameBoundary(normalizedText, matchIndex - 1)
+                    && isGuideNameBoundary(normalizedText, matchEndIndex)) {
+                return true;
+            }
+            matchIndex = normalizedText.indexOf(guideName, matchIndex + 1);
+        }
+        return false;
     }
 
     private boolean isGuideNameBoundary(String value, int index) {
+        if (index < 0) {
+            return true;
+        }
         if (index >= value.length()) {
             return true;
         }
