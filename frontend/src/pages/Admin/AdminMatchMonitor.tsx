@@ -123,7 +123,7 @@ function AdminMatchMonitor() {
             <div className={monStyles.statCard}>
               <span className={monStyles.statLabel}>마지막 캐시 저장</span>
               <span className={`${monStyles.statValue} ${monStyles.statValueSm}`}>
-                {cache.lastCachedAt ?? '-'}
+                {cache.lastCachedAt ? fmtTimestamp(new Date(cache.lastCachedAt).getTime()) : '-'}
               </span>
             </div>
           </div>
