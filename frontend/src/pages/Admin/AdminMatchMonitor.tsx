@@ -7,8 +7,9 @@ import monStyles from './AdminMatchMonitor.module.css'
 
 function fmtTimestamp(ts: number | null): string {
   if (ts == null) return '-'
-  return new Date(ts).toLocaleDateString('ko-KR', {
+  return new Date(ts).toLocaleString('ko-KR', {
     year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
   })
 }
 
