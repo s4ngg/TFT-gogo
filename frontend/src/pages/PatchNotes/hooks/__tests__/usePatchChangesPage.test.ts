@@ -51,6 +51,15 @@ test('patch changes fallback keeps API history when it already includes selected
   assert.equal(result, patchHistory)
 })
 
+test('patch changes fallback uses static fallback when requested version is absent from both sources', () => {
+  const fallbackData = [patchNote('17.2', [patchChange()])]
+  const patchHistory = [patchNote('17.1', [patchChange({ target: 'Aphelios' })])]
+
+  const result = resolvePatchChangesFallbackData('17.3', fallbackData, patchHistory)
+
+  assert.equal(result, fallbackData)
+})
+
 test('patch changes page size follows the current public full patch request policy', () => {
   assert.equal(PATCH_CHANGE_PAGE_SIZE, 1000)
 })

@@ -13,6 +13,11 @@ interface UsePatchChangesPageOptions {
   onPageOutOfRange: (page: number) => void
 }
 
+/**
+ * Uses API history only when the requested patch version has change rows.
+ * Otherwise keeps the static fallback data so the UI does not show an empty list
+ * for a version that is missing from API data.
+ */
 export function resolvePatchChangesFallbackData(
   version: string,
   fallbackData: PatchNoteDetail[],
@@ -26,7 +31,7 @@ export function resolvePatchChangesFallbackData(
   const selectedFallbackPatch = fallbackData.find((patch) => patch.version === version)
   if (selectedFallbackPatch && selectedFallbackPatch.changes.length > 0) return fallbackData
 
-  return patchHistory.some((patch) => patch.changes.length > 0) ? patchHistory : fallbackData
+  return fallbackData
 }
 
 export function usePatchChangesPage({
