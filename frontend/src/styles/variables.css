@@ -229,4 +229,6 @@
 :root {
   --page-content-width: 1100px;
   --summoner-right-col-width: 340px;
+  --page-dashboard-width: 1273px;
+  --page-decks-width: 1270px;
 }

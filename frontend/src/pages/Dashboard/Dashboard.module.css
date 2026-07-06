@@ -6,7 +6,7 @@
   --right-bottom-row: 120px;
 
   width: 100%;
-  max-width: 1273px;
+  max-width: var(--page-dashboard-width);
   display: grid;
   grid-template-columns: minmax(210px, 267px) minmax(440px, 566px) minmax(320px, 410px);
   grid-template-rows: var(--top-row-height) minmax(0, var(--snapshot-height));
@@ -1194,7 +1194,9 @@ button:hover {
   }
 }
 
-@media (max-width: 860px) {
+/* 사이드바(222px) + main 패딩(34px) + 3열 최소폭(1000px) 합이 1256px이라
+   그 아래에서는 3열 유지 시 그리드가 다시 넘친다 */
+@media (max-width: 1260px) {
   .dashboardGrid {
     max-width: 100%;
     grid-template-columns: 1fr;
