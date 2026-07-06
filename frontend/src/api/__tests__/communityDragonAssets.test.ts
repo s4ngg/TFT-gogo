@@ -31,6 +31,13 @@ describe('communityDragonAssets', () => {
     )
   })
 
+  it('바드 소환수는 전용 아이콘이 없어 바드 본체 square 이미지 override를 사용한다', () => {
+    assert.equal(
+      tftChampSquareUrl('TFT17_Bard_Follower'),
+      'https://raw.communitydragon.org/latest/game/assets/characters/tft17_bard/hud/tft17_bard_square.tft_set17.png',
+    )
+  })
+
   it('traitId의 set 번호로 fallback trait icon 경로를 만든다', () => {
     assert.equal(
       tftTraitIconUrl('TFT18_Bruiser'),
