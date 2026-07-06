@@ -73,8 +73,8 @@ Page: Guide (/guide).
 - Data originates from CDragon where possible; use communityDragonAssets.ts helpers for frontend images.
 - guideFallbackData.ts provides static fallback when the backend is unreachable.
 - guideNormalizers.ts must be applied before passing data to components; do not use raw API responses directly.
-- Public guide UI should request only the patch version through useGuideCatalog/useGuidePatchVersion-style query,
-  then request tab data through useGuideTabItems. Components must not fetch guide data directly.
+- Public guide UI should request only the patch version through a dedicated patch-version query/hook,
+  not the full catalog query, then request tab data through useGuideTabItems. Components must not fetch guide data directly.
 - GET /api/guide remains available for compatibility, but the Guide page should not prefetch the full catalog on
   every load when only patchVersion is needed.
 - Public guide UI includes the GameGuide AI entry points on guide cards. The AI behavior itself is owned by
