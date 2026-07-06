@@ -2,6 +2,7 @@ package com.tftgogo.domain.deck.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -67,15 +68,21 @@ public class MetaDeck {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    // N+1 방지: 다중 @OneToMany join fetch는 MultipleBagFetchException/카테시안 곱
+    // 위험이 있어 대신 @BatchSize로 부모 엔티티 여러 건의 컬렉션을 IN절 배치 조회한다.
+    @BatchSize(size = 100)
     @OneToMany(mappedBy = "metaDeck", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DeckUnit> units = new ArrayList<>();
 
+    @BatchSize(size = 100)
     @OneToMany(mappedBy = "metaDeck", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DeckTrait> traits = new ArrayList<>();
 
+    @BatchSize(size = 100)
     @OneToMany(mappedBy = "metaDeck", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<HeroAugment> heroAugments = new ArrayList<>();
 
+    @BatchSize(size = 100)
     @OneToMany(mappedBy = "metaDeck", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ArtifactStat> artifactStats = new ArrayList<>();
 
