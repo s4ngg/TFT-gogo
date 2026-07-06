@@ -78,8 +78,9 @@ Page: /patch-notes.
 - source_key, source_url, source_locale, import_source, imported_at, and manually_edited are crawler/import metadata.
 - isCurrent must be unique among active, non-deleted patch notes.
 - Creating or updating a current patch note must unset other active current patch notes in the same transaction.
-- Public history query is supported by idx_patch_notes_history(deleted_at, published_at, id). Keep this index in
-  V1 schema, local-smoke schema, and forward migrations when changing public history filters or sort order.
+- Public history query is supported by idx_patch_notes_history(deleted_at, published_at, id). Add or change this
+  index only through a new forward migration; do not edit already-applied versioned migrations such as V1.
+  Keep the local-smoke schema snapshot aligned with the final migrated schema.
 </patch_notes>
 
 <patch_note_changes>
