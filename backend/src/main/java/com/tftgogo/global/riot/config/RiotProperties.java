@@ -27,6 +27,8 @@ public class RiotProperties {
     private long shortRateLimitWindowMs = 1_000L;
     private int longRateLimitMax = 100;
     private long longRateLimitWindowMs = 120_000L;
+    @Positive(message = "riot.rate-limit-max-wait-ms는 0보다 커야 합니다.")
+    private long rateLimitMaxWaitMs = 3_000L;
 
     @Positive(message = "riot.queue-worker-concurrency는 0보다 커야 합니다.")
     private int queueWorkerConcurrency = 3;
