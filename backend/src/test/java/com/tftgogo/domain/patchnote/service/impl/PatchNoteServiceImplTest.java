@@ -56,10 +56,7 @@ class PatchNoteServiceImplTest {
         // given
         PatchNote currentPatch = patchNote("17.0", true);
         LocalDateTime expectedCutoffStart = LocalDateTime.now().minusMonths(6).minusMinutes(1);
-        when(patchNoteRepository
-                .findByDeletedAtIsNullAndPublishedAtGreaterThanEqualOrderByPublishedAtDescIdDesc(
-                        any(LocalDateTime.class)
-                ))
+        when(patchNoteRepository.findPublicHistorySinceIncludingCurrent(any(LocalDateTime.class)))
                 .thenReturn(List.of(currentPatch));
         when(patchChangeRepository.countByPatchNotes(List.of(currentPatch)))
                 .thenReturn(List.of(patchChangeCount(currentPatch.getId(), 3L)));
@@ -72,10 +69,7 @@ class PatchNoteServiceImplTest {
         assertThat(response.get(0).getHighlights()).containsExactly("챔피언 밸런스 조정", "시너지 조정");
         assertThat(response.get(0).getChangeCount()).isEqualTo(3L);
         ArgumentCaptor<LocalDateTime> cutoffCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
-        verify(patchNoteRepository)
-                .findByDeletedAtIsNullAndPublishedAtGreaterThanEqualOrderByPublishedAtDescIdDesc(
-                        cutoffCaptor.capture()
-                );
+        verify(patchNoteRepository).findPublicHistorySinceIncludingCurrent(cutoffCaptor.capture());
         assertThat(cutoffCaptor.getValue())
                 .isBetween(expectedCutoffStart, LocalDateTime.now().minusMonths(6).plusMinutes(1));
     }

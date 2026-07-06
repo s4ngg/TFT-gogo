@@ -55,9 +55,7 @@ public class PatchNoteServiceImpl implements PatchNoteService {
     public List<PatchNoteResponse> getPatchNotes() {
         LocalDateTime historyCutoff = LocalDateTime.now().minusMonths(PUBLIC_PATCH_HISTORY_MONTHS);
         List<PatchNote> patchNotes = patchNoteRepository
-                .findByDeletedAtIsNullAndPublishedAtGreaterThanEqualOrderByPublishedAtDescIdDesc(
-                        historyCutoff
-                );
+                .findPublicHistorySinceIncludingCurrent(historyCutoff);
         Map<Long, Long> changeCounts = getChangeCounts(patchNotes);
 
         return patchNotes.stream()

@@ -70,6 +70,13 @@ Page: Guide (/guide).
 - guideFallbackData.ts provides static fallback when the backend is unreachable.
 - guideNormalizers.ts must be applied before passing data to components; do not use raw API responses directly.
 - Public guide UI should request tab data through useGuideTabItems; components must not fetch guide data directly.
+- Public guide UI includes the GameGuide AI entry points on guide cards. The AI behavior itself is owned by
+  gameguide-ai-pathfinder.md, but Guide cards are responsible for opening the widget with the selected
+  guideType/targetKey/name ref.
+- On mobile widths, Guide cards and section headers must never expand wider than the viewport. Trait cards use
+  minmax(0, 1fr) internal tracks, wrap tip rows, and keep card-level AI buttons inside the card grid.
+- The top app layout must not inherit horizontal scroll from the mobile nav or top status badges. Guide page
+  mobile QA should assert app shell scrollLeft=0 and document/body scrollWidth equals viewport width.
 </business-rules>
 
 <database-contract>
@@ -212,6 +219,10 @@ Page: Guide (/guide).
 - Public guide tests should cover tab parsing, page/pageSize bounds, sortKey/sortDir validation, cost filtering, JSON object response, latest patch fallback, empty latest patch behavior, split champion/trait filtering, and CDragon import split-table upsert.
 - Import tests should assert importedCount semantics through createdCount + updatedCount, not championCount + traitCount.
 - #393 metric refresh tests should be added with the dedicated refresh implementation: cached match fixture aggregation, queue/patch filtering, duplicate match handling, minimum sample fallback, sampleCount, and idempotent guide metric updates.
+- Frontend/browser QA should cover the /guide mobile layout at 390px width: trait cards, section headers,
+  champion rows, tip rows, and GameGuide AI card buttons must have no right overflow.
+- GameGuide AI card-click smoke QA should verify the widget opens with the selected card ref and, when logged out,
+  shows only the auth-required message defined in gameguide-ai-pathfinder.md.
 </validation>
 
 <data-ingestion>

@@ -68,7 +68,7 @@ public class PatchNoteImportScheduler {
             zone = "${app.patch-note.scheduler.zone:Asia/Seoul}"
     )
     public void refreshLatestPatchNote() {
-        runIfEnabledAndIdle("daily-refresh", this::importUnknownPatchNotesFromList);
+        runIfEnabledAndIdle("daily-refresh", this::importLatestPatchNote);
     }
 
     private void runIfEnabledAndIdle(String trigger, Runnable task) {
@@ -118,23 +118,34 @@ public class PatchNoteImportScheduler {
             }
 
             boolean markCurrent = properties.isCurrent() && index == 0;
+            String version = resolveVersion(item);
             AdminPatchNoteImportRequest request = AdminPatchNoteImportRequest.of(
                     item.detailUrl(),
                     locale,
-                    resolveVersion(item),
+                    version,
                     markCurrent
             );
-            AdminPatchNoteImportResponse response = adminPatchNoteService.importRiotPatchNote(request);
-            imported++;
-            logger.info(
-                    "Patch note imported from list. version={}, sourceUrl={}, current={}, created={}, updated={}, skipped={}",
-                    response.getVersion(),
-                    response.getSourceUrl(),
-                    markCurrent,
-                    response.isPatchNoteCreated(),
-                    response.isPatchNoteUpdated(),
-                    response.isPatchNoteSkipped()
-            );
+            try {
+                AdminPatchNoteImportResponse response = adminPatchNoteService.importRiotPatchNote(request);
+                imported++;
+                logger.info(
+                        "Patch note imported from list. version={}, sourceUrl={}, current={}, created={}, updated={}, skipped={}",
+                        response.getVersion(),
+                        response.getSourceUrl(),
+                        markCurrent,
+                        response.isPatchNoteCreated(),
+                        response.isPatchNoteUpdated(),
+                        response.isPatchNoteSkipped()
+                );
+            } catch (Exception e) {
+                logger.warn(
+                        "Patch note import item failed. detailUrl={}, version={}, current={}",
+                        item.detailUrl(),
+                        version,
+                        markCurrent,
+                        e
+                );
+            }
         }
 
         logger.info(
@@ -147,7 +158,25 @@ public class PatchNoteImportScheduler {
     }
 
     private boolean isWithinHistoryWindow(PatchNoteCrawlListItem item, LocalDateTime historyCutoff) {
-        return item.publishedAt() == null || !item.publishedAt().isBefore(historyCutoff);
+        return item.publishedAt() != null && !item.publishedAt().isBefore(historyCutoff);
+    }
+
+    private void importLatestPatchNote() {
+        AdminPatchNoteImportRequest request = AdminPatchNoteImportRequest.of(
+                null,
+                normalizeLocale(properties.getLocale()),
+                null,
+                properties.isCurrent()
+        );
+        AdminPatchNoteImportResponse response = adminPatchNoteService.importRiotPatchNote(request);
+        logger.info(
+                "Latest patch note refreshed. version={}, sourceUrl={}, created={}, updated={}, skipped={}",
+                response.getVersion(),
+                response.getSourceUrl(),
+                response.isPatchNoteCreated(),
+                response.isPatchNoteUpdated(),
+                response.isPatchNoteSkipped()
+        );
     }
 
     private boolean isAlreadyImported(PatchNoteCrawlListItem item) {

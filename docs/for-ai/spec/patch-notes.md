@@ -49,8 +49,12 @@ Page: /patch-notes.
 
 <public-behavior>
 - Public page selects the active current patch by default.
+- Public history must include the active current patch even when it is outside the normal recent-history cutoff.
+- Public history ordering must place the active current patch first, then remaining patches by publishedAt desc and id desc.
 - If current is not available, the list order must still make the latest patch easy to select.
 - The public list endpoint returns ApiResponse<List<PatchNoteResponse>> and does not include full change rows.
+- PatchNoteResponse exposes current status as both the user-facing status label and the isCurrent/current field
+  used by the frontend default-selection resolver.
 - Patch changes endpoint returns ApiResponse<PatchChangePageResponse>.
 - PatchChangePageResponse contains items, page, pageSize, totalItems, totalPages, and stats.
 - stats are calculated for the selected patch version as a whole, not for the currently filtered page.
@@ -74,6 +78,8 @@ Page: /patch-notes.
 - source_key, source_url, source_locale, import_source, imported_at, and manually_edited are crawler/import metadata.
 - isCurrent must be unique among active, non-deleted patch notes.
 - Creating or updating a current patch note must unset other active current patch notes in the same transaction.
+- Public history query is supported by idx_patch_notes_history(deleted_at, published_at, id). Keep this index in
+  V1 schema, local-smoke schema, and forward migrations when changing public history filters or sort order.
 </patch_notes>
 
 <patch_note_changes>
@@ -175,6 +181,12 @@ Page: /patch-notes.
 - Startup import runs before guide startup import so guide patch-version=latest can resolve to the latest current patch note.
 - List check runs hourly by default and imports unknown official list items within list-scan-limit.
 - Daily refresh runs at 06:30 KST by default and refreshes the latest patch note.
+- Daily refresh imports the latest official patch note directly. It must not skip the latest patch merely because
+  that patch version/sourceUrl is already present locally; re-import keeps existing imported rows up to date.
+- List check skips official list items whose publishedAt cannot be parsed. Unknown dates must not be treated as
+  recent because a Riot markup/locale parsing break could otherwise import up to list-scan-limit old patches.
+- List check isolates import failures per item. If one official detail page fails, log detailUrl/version/current
+  context and continue with the remaining list items so a bad older item does not block the latest/current import.
 - Scheduler uses an in-process AtomicBoolean lock to avoid overlapping imports in a single server instance.
 - Multi-server deployments require a future shared DB/Redis lock before enabling scheduler on multiple instances.
 - Local/dev should keep scheduler disabled by default. Use manual admin import for local QA.
@@ -182,10 +194,17 @@ Page: /patch-notes.
 
 <frontend-rules>
 - Public PatchNotes page should default to the latest/current patch.
+- Frontend normalization must preserve `isCurrent` and map both `status=CURRENT` and `isCurrent=true` to the
+  user-facing current status.
+- Frontend default patch selection must prefer the API current patch version. The first list item is only a fallback
+  when the API does not expose a current patch.
 - Search input must not cause a full page reload on every keystroke.
 - Search input should be debounced and preserve selected patch/category context while only refreshing the change-list query.
 - Type/category filters should not expose confusing BUFF/NERF/ADJUST badges when the product decision is to simplify display.
 - Long patch change rows must wrap safely and avoid horizontal overflow.
+- Mobile PatchNotes layout must not horizontally overflow. The side rail, history panel, category tabs, search box,
+  content grid, summary grid, and change panel must fit inside the viewport. Category tabs wrap on mobile instead
+  of creating a nested horizontal scroller.
 - Repeated or redundant title/detail text should be collapsed or formatted into title + value lines where possible.
 - Quick insight/summary labels should be derived from cleaned highlight labels and deduplicated before display.
 - ImportedAt/source diagnostics should stay hidden in public UI.
@@ -213,7 +232,12 @@ Page: /patch-notes.
 - Admin service tests should cover patch-note CRUD, patch-change CRUD, JSON array validation, duplicate/current behavior, not found errors, patch-note soft delete, patch-change hard delete, and manuallyEdited marking.
 - Import tests should cover latest import by tag page, direct sourceUrl import, repeated import idempotency, manuallyEdited skip, sourceKey matching, stale imported change handling, parser warnings, unsupported host rejection, and current flag behavior.
 - Scheduler tests should cover disabled state, startup-import flag, list scan limit, already-imported skip, current flag, and in-process lock skip.
-- Frontend tests should cover readPatchChangeStatsPayload, latest patch default selection, search without full reload, simplified public display, and mobile no-overflow behavior.
+- Scheduler tests should also cover daily latest refresh even when already imported, publishedAt=null list-item skip,
+  and per-item import failure continuation.
+- Frontend tests should cover readPatchChangeStatsPayload, current patch default selection, search without full reload,
+  simplified public display, and mobile no-overflow behavior.
+- Browser QA should cover /patch-notes at 390px width with app shell scrollLeft=0, document/body scrollWidth equal
+  to viewport width, and no overflow in side rail/history/filter/change panels.
 - Parser tests must use saved reduced Riot HTML snapshots under backend/src/test/resources/patchnote/crawl/ and must not depend on live official pages.
 </validation>
 

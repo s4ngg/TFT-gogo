@@ -115,6 +115,27 @@ class PatchNoteImportSchedulerTest {
     }
 
     @Test
+    void daily_refresh_refreshes_latest_patch_note_even_if_already_imported() {
+        // given
+        properties.setEnabled(true);
+        givenSchedulerLockRunsTask();
+        when(adminPatchNoteService.importRiotPatchNote(any(AdminPatchNoteImportRequest.class)))
+                .thenReturn(importResponse("17.5", "https://example.com/17-5"));
+
+        // when
+        scheduler.refreshLatestPatchNote();
+
+        // then
+        ArgumentCaptor<AdminPatchNoteImportRequest> captor =
+                ArgumentCaptor.forClass(AdminPatchNoteImportRequest.class);
+        verify(adminPatchNoteService).importRiotPatchNote(captor.capture());
+        assertThat(captor.getValue().getSourceUrl()).isNull();
+        assertThat(captor.getValue().getVersion()).isNull();
+        assertThat(captor.getValue().getLocale()).isEqualTo("ko-kr");
+        assertThat(captor.getValue().shouldMarkCurrent()).isTrue();
+    }
+
+    @Test
     void list_check_skips_items_older_than_history_months() {
         // given
         properties.setEnabled(true);
@@ -139,6 +160,65 @@ class PatchNoteImportSchedulerTest {
 
         // then
         verifyNoInteractions(adminPatchNoteService);
+    }
+
+    @Test
+    void list_check_skips_items_without_published_at() {
+        // given
+        properties.setEnabled(true);
+        givenSchedulerLockRunsTask();
+        PatchNoteCrawlListItem noDateNew = listItem(
+                "Teamfight Tactics patch 17.5",
+                null,
+                "riot-content-17-5",
+                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-5/"
+        );
+        givenPatchList(noDateNew);
+
+        // when
+        scheduler.importNewPatchNotesFromList();
+
+        // then
+        verifyNoInteractions(adminPatchNoteService);
+    }
+
+    @Test
+    void list_check_continues_after_single_item_import_failure() {
+        // given
+        properties.setEnabled(true);
+        givenSchedulerLockRunsTask();
+        PatchNoteCrawlListItem latestNew = listItem(
+                "Teamfight Tactics patch 17.5",
+                "riot-content-17-5",
+                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-5/"
+        );
+        PatchNoteCrawlListItem failingOld = listItem(
+                "Teamfight Tactics patch 17.4",
+                "riot-content-17-4",
+                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-4/"
+        );
+        givenPatchList(latestNew, failingOld);
+        givenPatchNoteIsNotImported(latestNew, "17.5");
+        givenPatchNoteIsNotImported(failingOld, "17.4");
+        when(adminPatchNoteService.importRiotPatchNote(any(AdminPatchNoteImportRequest.class)))
+                .thenAnswer(invocation -> {
+                    AdminPatchNoteImportRequest request = invocation.getArgument(0);
+                    if (request.getSourceUrl().contains("17-4")) {
+                        throw new RuntimeException("riot unavailable");
+                    }
+                    return importResponse("17.5", latestNew.detailUrl());
+                });
+
+        // when
+        scheduler.importNewPatchNotesFromList();
+
+        // then
+        ArgumentCaptor<AdminPatchNoteImportRequest> captor =
+                ArgumentCaptor.forClass(AdminPatchNoteImportRequest.class);
+        verify(adminPatchNoteService, times(2)).importRiotPatchNote(captor.capture());
+        assertThat(captor.getAllValues().get(0).getSourceUrl()).isEqualTo(failingOld.detailUrl());
+        assertThat(captor.getAllValues().get(1).getSourceUrl()).isEqualTo(latestNew.detailUrl());
+        assertThat(captor.getAllValues().get(1).shouldMarkCurrent()).isTrue();
     }
 
     @Test
