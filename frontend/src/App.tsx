@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import Dashboard from './pages/Dashboard/Dashboard'
+import styles from './App.module.css'
 
 const AiRecommend = lazy(() => import('./pages/AiRecommend/AiRecommend'))
 const AdminLogin = lazy(() => import('./pages/Admin/AdminLogin'))
@@ -22,20 +23,7 @@ const SearchDetail = lazy(() => import('./pages/SearchDetail/SearchDetail'))
 const AdminLayout = lazy(() => import('./pages/Admin/components/AdminLayout'))
 const NotFound = lazy(() => import('./pages/NotFound/NotFound'))
 
-const routeFallback = (
-  <div
-    style={{
-      alignItems: 'center',
-      color: '#8e97a1',
-      display: 'flex',
-      fontSize: 14,
-      justifyContent: 'center',
-      minHeight: '100vh',
-    }}
-  >
-    불러오는 중...
-  </div>
-)
+const routeFallback = <div className={styles.routeFallback}>불러오는 중...</div>
 
 function App() {
   return (
