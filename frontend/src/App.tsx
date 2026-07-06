@@ -22,9 +22,24 @@ const SearchDetail = lazy(() => import('./pages/SearchDetail/SearchDetail'))
 const AdminLayout = lazy(() => import('./pages/Admin/components/AdminLayout'))
 const NotFound = lazy(() => import('./pages/NotFound/NotFound'))
 
+const routeFallback = (
+  <div
+    style={{
+      alignItems: 'center',
+      color: '#8e97a1',
+      display: 'flex',
+      fontSize: 14,
+      justifyContent: 'center',
+      minHeight: '100vh',
+    }}
+  >
+    불러오는 중...
+  </div>
+)
+
 function App() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={routeFallback}>
       <Routes>
         {/* 일반 페이지 */}
         <Route path="/" element={<Dashboard />} />
