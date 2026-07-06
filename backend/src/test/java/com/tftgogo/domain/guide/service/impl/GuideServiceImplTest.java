@@ -191,6 +191,21 @@ class GuideServiceImplTest {
     }
 
     @Test
+    void current_patch_version_returns_empty_string_when_no_patch_data_exists() {
+        // given
+        when(guideChampionRepository.findLatestPatchVersion()).thenReturn(Optional.empty());
+        when(guideTraitRepository.findLatestPatchVersion()).thenReturn(Optional.empty());
+        when(guideItemRepository.findLatestPatchVersion()).thenReturn(Optional.empty());
+        when(guideAugmentRepository.findLatestPatchVersion()).thenReturn(Optional.empty());
+
+        // when
+        var response = guideService.getCurrentPatchVersion();
+
+        // then
+        assertThat(response.getPatchVersion()).isEqualTo("");
+    }
+
+    @Test
     void split_trait_response_skips_entries_without_champions() {
         // given
         when(guideTraitRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
