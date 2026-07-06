@@ -1,13 +1,16 @@
 .page {
-  width: 1270px;
+  width: 100%;
+  max-width: 1270px;
   padding: 28px 0 60px;
 }
 
 /* ── 헤더 + 탭 ── */
 .pageHeader {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
+  gap: 12px;
   margin-bottom: 0;
 }
 
@@ -36,6 +39,8 @@
 /* ── 랭크 구간 필터 ── */
 .rankFilterBar {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 6px;
 }
 
@@ -67,11 +72,13 @@
 .tabBar {
   display: flex;
   gap: 0;
+  overflow-x: auto;
   border-bottom: 2px solid rgba(112, 144, 152, 0.16);
 }
 
 .tabBar button {
   position: relative;
+  flex: 0 0 auto;
   height: 44px;
   padding: 0 28px;
   border: none;
@@ -79,6 +86,7 @@
   background: transparent;
   font-size: 15px;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   transition: color 0.15s;
 }
@@ -100,8 +108,10 @@
 /* ── 툴바 ── */
 .toolBar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   margin: 14px 0;
 }
 

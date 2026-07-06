@@ -5,9 +5,10 @@
   --right-top-row: 360px;
   --right-bottom-row: 120px;
 
-  width: 1273px;
+  width: 100%;
+  max-width: 1273px;
   display: grid;
-  grid-template-columns: minmax(250px, 267px) minmax(520px, 566px) minmax(380px, 410px);
+  grid-template-columns: minmax(210px, 267px) minmax(440px, 566px) minmax(320px, 410px);
   grid-template-rows: var(--top-row-height) minmax(0, var(--snapshot-height));
   align-content: start;
   justify-content: start;
@@ -1190,5 +1191,23 @@ button:hover {
   .aiOptionIcon {
     width: 24px;
     height: 24px;
+  }
+}
+
+@media (max-width: 860px) {
+  .dashboardGrid {
+    max-width: 100%;
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+  }
+
+  .rightColumn {
+    grid-column: 1;
+    grid-row: auto;
+    height: auto;
+  }
+
+  .metaPanel {
+    grid-column: 1;
   }
 }
