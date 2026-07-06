@@ -19,9 +19,9 @@ public interface PatchNoteRepository extends JpaRepository<PatchNote, Long> {
 
     @Query("SELECT p FROM PatchNote p "
             + "WHERE p.deletedAt IS NULL "
-            + "AND (p.current = true OR p.publishedAt >= :publishedAt) "
+            + "AND (p.current = true OR p.publishedAt >= :cutoff) "
             + "ORDER BY CASE WHEN p.current = true THEN 0 ELSE 1 END, p.publishedAt DESC, p.id DESC")
-    List<PatchNote> findPublicHistorySinceIncludingCurrent(@Param("publishedAt") LocalDateTime publishedAt);
+    List<PatchNote> findPublicHistorySinceIncludingCurrent(@Param("cutoff") LocalDateTime cutoff);
 
     Optional<PatchNote> findFirstByDeletedAtIsNullOrderByCurrentDescPublishedAtDescIdDesc();
 
