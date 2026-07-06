@@ -34,16 +34,6 @@ public interface PatchChangeRepository extends JpaRepository<PatchChange, Long> 
         Long getChangeCount();
     }
 
-    interface PatchChangeStatsCount {
-        PatchChangeCategory getCategory();
-
-        PatchChangeType getChangeType();
-
-        PatchChangeImpact getImpact();
-
-        Long getChangeCount();
-    }
-
     @Query("""
             SELECT c.patchNote.id AS patchNoteId, COUNT(c) AS changeCount
             FROM PatchChange c
@@ -135,30 +125,6 @@ public interface PatchChangeRepository extends JpaRepository<PatchChange, Long> 
     long countFilteredChanges(
             @Param("patchNote") PatchNote patchNote,
             @Param("category") PatchChangeCategory category,
-            @Param("changeType") PatchChangeType changeType,
-            @Param("impact") PatchChangeImpact impact,
-            @Param("query") String query
-    );
-
-    @Query("""
-            SELECT c.category AS category,
-                   c.changeType AS changeType,
-                   c.impact AS impact,
-                   COUNT(c) AS changeCount
-            FROM PatchChange c
-            WHERE c.patchNote = :patchNote
-              AND (:changeType IS NULL OR c.changeType = :changeType)
-              AND (:impact IS NULL OR c.impact = :impact)
-              AND (
-                    :query IS NULL
-                    OR LOWER(c.targetKey) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
-                    OR LOWER(c.targetName) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
-                    OR LOWER(c.summary) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\'
-              )
-            GROUP BY c.category, c.changeType, c.impact
-            """)
-    List<PatchChangeStatsCount> countFilteredChangeStats(
-            @Param("patchNote") PatchNote patchNote,
             @Param("changeType") PatchChangeType changeType,
             @Param("impact") PatchChangeImpact impact,
             @Param("query") String query
