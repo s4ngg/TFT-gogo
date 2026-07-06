@@ -30,6 +30,25 @@ AWS ALB + Route53 獄쏄퀬猷??袁⑥컭??疫꿸퀣? ??깆뒭???④쑴鍮?
 - ??곸겫 獄쏄퀬猷??類ㅼ뵥 ??`/api/*` ?臾먮뼗?? ?袁⑥쨴??HTML???袁⑤빍??獄쏄퉮肉??JSON ?癒?뮉 獄쏄퉮肉????살첒 ?臾먮뼗??곷선????뺣뼄.
 </routing-guard>
 
+<database-migration-guard>
+- Production and shared-env deploys use Flyway as the schema gate. A backend container that fails Flyway validation
+  must be treated as a deploy blocker, not as a recoverable runtime warning.
+- Never deploy a PR that edits an already-merged backend/src/main/resources/db/migration/V*.sql file unless the PR
+  explicitly proves that migration has never been applied to any target database. Use a new forward migration instead.
+- V1__init_schema.sql is not a mutable "latest schema" file. It is a fresh-DB bootstrap migration with checksum
+  history. Existing DB fixes must be V17+ forward migrations, following the baselineVersion=16 contract.
+- Before marking DB-impacting work deploy-ready, run or verify:
+  - clean MySQL volume
+  - Flyway migration from V1 through the new latest version
+  - backend startup with ddl-auto=validate
+  - /actuator/health returns UP
+  - new table/index/column exists through a direct DB query when applicable
+- For existing DB compatibility, inspect the PR diff for modified historical migrations. If any historical migration
+  changed, expect Flyway checksum mismatch and move the change to a new migration before deploy.
+- Local-smoke schema snapshots may be updated for documentation/QA alignment, but they do not protect production
+  databases. The forward migration is the production contract.
+</database-migration-guard>
+
 <backend>
 - ALB ??쇱벥 Spring Boot??`server.forward-headers-strategy=framework`???????뺣뼄.
 - ????쇱젟????곸몵筌?OAuth2 ??뽰삂 URL??援??꾩뮆媛?URL????? HTTP 雅뚯눘?쇗에?筌띾슢諭??곸춳 ????덈뼄.

@@ -78,9 +78,11 @@ Page: /patch-notes.
 - source_key, source_url, source_locale, import_source, imported_at, and manually_edited are crawler/import metadata.
 - isCurrent must be unique among active, non-deleted patch notes.
 - Creating or updating a current patch note must unset other active current patch notes in the same transaction.
-- Public history query is supported by idx_patch_notes_history(deleted_at, published_at, id). Add or change this
-  index only through a new forward migration; do not edit already-applied versioned migrations such as V1.
-  Keep the local-smoke schema snapshot aligned with the final migrated schema.
+- Public history query is supported by idx_patch_notes_history(deleted_at, published_at, id).
+- Add or change patch-note indexes only through a new forward Flyway migration. Do not edit V1__init_schema.sql
+  or any other already-merged/applied V*.sql file to add, remove, or rewrite patch-note indexes.
+- Keep the local-smoke schema snapshot aligned with the final migrated schema, but treat it as QA/reference data
+  only. The forward migration is what protects existing production databases.
 </patch_notes>
 
 <patch_note_changes>
@@ -240,6 +242,8 @@ Page: /patch-notes.
 - Browser QA should cover /patch-notes at 390px width with app shell scrollLeft=0, document/body scrollWidth equal
   to viewport width, and no overflow in side rail/history/filter/change panels.
 - Parser tests must use saved reduced Riot HTML snapshots under backend/src/test/resources/patchnote/crawl/ and must not depend on live official pages.
+- Patch-note DB changes must include migration QA: inspect the diff for historical V*.sql edits, run a clean-DB
+  Flyway migrate plus backend startup, and directly verify the new index/table/column in MySQL when applicable.
 </validation>
 
 </spec>
