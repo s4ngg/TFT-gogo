@@ -110,6 +110,7 @@ class RiotQueueTest {
         RiotQueue saturatedQueue = createQueue(0, 1);
 
         try {
+            primeSchedulerBlock(saturatedQueue);
             CompletableFuture<String> overflowFuture = fillForegroundQueueUntilRejected(saturatedQueue);
             assertRiotQueueFull(overflowFuture);
         } finally {
@@ -122,12 +123,20 @@ class RiotQueueTest {
         RiotQueue saturatedQueue = createQueue(0, 1);
 
         try {
+            primeSchedulerBlock(saturatedQueue);
             fillForegroundQueueUntilRejected(saturatedQueue);
             CompletableFuture<String> dedupFuture = saturatedQueue.submitForeground("saturated-key", () -> "overflow");
             assertRiotQueueFull(dedupFuture);
         } finally {
             saturatedQueue.destroy();
         }
+    }
+
+    // 스케줄러가 태스크 1개를 dequeue한 직후 semaphore.acquire()로 영구 블록되는 시점을 먼저 확정해,
+    // 이후 fillForegroundQueueUntilRejected/dedup 제출이 스케줄러 dequeue 타이밍과 경합하지 않게 한다.
+    private void primeSchedulerBlock(RiotQueue targetQueue) {
+        targetQueue.submitForeground(() -> "prime-block");
+        waitUntil(() -> targetQueue.getForegroundQueueSize() == 0);
     }
 
     @Test

@@ -29,6 +29,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
@@ -170,6 +171,38 @@ class GuideServiceImplTest {
         assertThat(response.getEntries())
                 .extracting(GuideEntryResponse::getTargetKey)
                 .containsExactly("TFT17_AnimalSquad");
+    }
+
+    @Test
+    void current_patch_version_uses_latest_patch_without_loading_entries() {
+        // given
+        when(guideChampionRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.0"));
+        when(guideTraitRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.1"));
+        when(guideItemRepository.findLatestPatchVersion()).thenReturn(Optional.empty());
+        when(guideAugmentRepository.findLatestPatchVersion()).thenReturn(Optional.empty());
+
+        // when
+        var response = guideService.getCurrentPatchVersion();
+
+        // then
+        assertThat(response.getPatchVersion()).isEqualTo("17.1");
+        verify(guideTraitRepository, never()).findByPatchVersionOrderByNameAscIdAsc(anyString());
+        verify(guideChampionRepository, never()).findByPatchVersionOrderByNameAscIdAsc(anyString());
+    }
+
+    @Test
+    void current_patch_version_returns_empty_string_when_no_patch_data_exists() {
+        // given
+        when(guideChampionRepository.findLatestPatchVersion()).thenReturn(Optional.empty());
+        when(guideTraitRepository.findLatestPatchVersion()).thenReturn(Optional.empty());
+        when(guideItemRepository.findLatestPatchVersion()).thenReturn(Optional.empty());
+        when(guideAugmentRepository.findLatestPatchVersion()).thenReturn(Optional.empty());
+
+        // when
+        var response = guideService.getCurrentPatchVersion();
+
+        // then
+        assertThat(response.getPatchVersion()).isEqualTo("");
     }
 
     @Test
