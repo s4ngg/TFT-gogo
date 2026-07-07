@@ -30,7 +30,9 @@ public interface SummonerControllerDocs {
 
     @Operation(
             summary = "전적 갱신",
-            description = "소환사 프로필·랭크 캐시를 무효화하고 Riot API에서 최신 데이터를 다시 조회합니다. 새로운 매치도 수집합니다."
+            description = "소환사 프로필·랭크 캐시를 무효화하고 Riot API에서 최신 데이터를 다시 조회합니다. 새로운 매치도 수집합니다. "
+                    + "단, 프로필·랭크 조회에 시간이 오래 걸려 전체 갱신 소요시간이 내부 상한(riot.refresh-max-wait-ms)을 넘기면 "
+                    + "매치 수집 단계는 생략되고 프로필·랭크만 갱신된 결과가 반환됩니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "갱신 성공"),

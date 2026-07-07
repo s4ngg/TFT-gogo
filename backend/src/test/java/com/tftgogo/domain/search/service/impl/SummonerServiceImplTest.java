@@ -11,6 +11,7 @@ import com.tftgogo.domain.search.repository.CachedSummonerRepository;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import com.tftgogo.global.riot.RiotApiClient;
+import com.tftgogo.global.riot.config.RiotProperties;
 import com.tftgogo.global.riot.dto.AccountDto;
 import com.tftgogo.global.riot.dto.LeagueEntryDto;
 import com.tftgogo.global.riot.dto.SummonerDto;
@@ -27,6 +28,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -37,6 +39,7 @@ class SummonerServiceImplTest {
     @Mock private CachedSummonerRepository cachedSummonerRepository;
     @Mock private CachedRankRepository cachedRankRepository;
     @Mock private MatchCollectionService matchCollectionService;
+    @Mock private RiotProperties riotProperties;
     @InjectMocks private SummonerServiceImpl summonerService;
 
     private static final String PUUID = "test-puuid";
@@ -251,6 +254,46 @@ class SummonerServiceImplTest {
         assertThat(result.getLeaguePoints()).isEqualTo(50);
         assertThat(result.getWins()).isEqualTo(100);
         assertThat(result.getLosses()).isEqualTo(80);
+    }
+
+    // ── refresh ──────────────────────────────────────────────────────────────
+
+    @Test
+    void refresh_정상_흐름에서는_매치_갱신도_호출한다() {
+        // given
+        when(cachedSummonerRepository.findByGameNameIgnoreCaseAndTagLineIgnoreCase(GAME_NAME, TAG_LINE))
+                .thenReturn(Optional.empty());
+        when(riotApiClient.getAccount(GAME_NAME, TAG_LINE))
+                .thenReturn(accountDto(PUUID, GAME_NAME, TAG_LINE));
+        when(riotApiClient.getSummoner(PUUID)).thenReturn(summonerDto(PUUID, 100, 300L));
+        when(riotApiClient.getLeagueByPuuid(PUUID)).thenReturn(Optional.empty());
+        when(riotProperties.getRefreshMaxWaitMs()).thenReturn(45_000L);
+
+        // when
+        SummonerDetailResponse result = summonerService.refresh(GAME_NAME, TAG_LINE);
+
+        // then
+        assertThat(result.getPuuid()).isEqualTo(PUUID);
+        verify(matchCollectionService).refreshMatches(eq(PUUID), anyLong());
+    }
+
+    @Test
+    void refresh_전체_데드라인_소진시_매치_갱신을_생략한다() {
+        // given
+        when(cachedSummonerRepository.findByGameNameIgnoreCaseAndTagLineIgnoreCase(GAME_NAME, TAG_LINE))
+                .thenReturn(Optional.empty());
+        when(riotApiClient.getAccount(GAME_NAME, TAG_LINE))
+                .thenReturn(accountDto(PUUID, GAME_NAME, TAG_LINE));
+        when(riotApiClient.getSummoner(PUUID)).thenReturn(summonerDto(PUUID, 100, 300L));
+        when(riotApiClient.getLeagueByPuuid(PUUID)).thenReturn(Optional.empty());
+        when(riotProperties.getRefreshMaxWaitMs()).thenReturn(0L);
+
+        // when
+        SummonerDetailResponse result = summonerService.refresh(GAME_NAME, TAG_LINE);
+
+        // then: 프로필/랭크는 정상 반환되지만 데드라인 소진으로 매치 갱신은 생략된다
+        assertThat(result.getPuuid()).isEqualTo(PUUID);
+        verify(matchCollectionService, never()).refreshMatches(anyString(), anyLong());
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

@@ -12,6 +12,7 @@ import com.tftgogo.domain.search.service.SummonerService;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import com.tftgogo.global.riot.RiotApiClient;
+import com.tftgogo.global.riot.config.RiotProperties;
 import com.tftgogo.global.riot.dto.AccountDto;
 import com.tftgogo.global.riot.dto.SummonerDto;
 import org.apache.logging.log4j.LogManager;
@@ -33,15 +34,18 @@ public class SummonerServiceImpl implements SummonerService {
     private final CachedSummonerRepository cachedSummonerRepository;
     private final CachedRankRepository cachedRankRepository;
     private final MatchCollectionService matchCollectionService;
+    private final RiotProperties riotProperties;
 
     public SummonerServiceImpl(RiotApiClient riotApiClient,
                                CachedSummonerRepository cachedSummonerRepository,
                                CachedRankRepository cachedRankRepository,
-                               MatchCollectionService matchCollectionService) {
+                               MatchCollectionService matchCollectionService,
+                               RiotProperties riotProperties) {
         this.riotApiClient = riotApiClient;
         this.cachedSummonerRepository = cachedSummonerRepository;
         this.cachedRankRepository = cachedRankRepository;
         this.matchCollectionService = matchCollectionService;
+        this.riotProperties = riotProperties;
     }
 
     @Override
@@ -129,6 +133,11 @@ public class SummonerServiceImpl implements SummonerService {
 
     @Override
     public SummonerDetailResponse refresh(String gameName, String tagLine) {
+        // refresh() 전체(프로필→랭크→매치) 누적 소요 시간의 단일 데드라인.
+        // 개별 외부호출은 각자 자체 타임아웃으로 보호되지만, 3단계가 순차로 쌓이면
+        // 누적 대기시간이 무한정 길어질 수 있어(issue #698과 동일 계열 리스크) 전체 상한을 둔다.
+        long deadline = System.currentTimeMillis() + riotProperties.getRefreshMaxWaitMs();
+
         cachedSummonerRepository
                 .findByGameNameIgnoreCaseAndTagLineIgnoreCase(gameName, tagLine)
                 .ifPresent(cs -> {
@@ -138,7 +147,13 @@ public class SummonerServiceImpl implements SummonerService {
 
         SummonerProfileResponse profile = fetchAndCacheSummoner(gameName, tagLine);
         RankInfoResponse rankInfo = fetchAndCacheRank(profile.getPuuid());
-        matchCollectionService.refreshMatches(profile.getPuuid());
+
+        long remainingMs = deadline - System.currentTimeMillis();
+        if (remainingMs > 0) {
+            matchCollectionService.refreshMatches(profile.getPuuid(), remainingMs);
+        } else {
+            logger.warn("refresh() 전체 데드라인 소진, 매치 갱신 생략: gameName={}, tagLine={}", gameName, tagLine);
+        }
 
         return SummonerDetailResponse.from(profile, rankInfo);
     }

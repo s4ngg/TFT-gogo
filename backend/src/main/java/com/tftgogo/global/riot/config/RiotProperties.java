@@ -41,4 +41,9 @@ public class RiotProperties {
 
     @Positive(message = "riot.match-fetch-timeout-seconds는 0보다 커야 합니다.")
     private long matchFetchTimeoutSeconds = 60L;
+
+    // refresh() 전체(프로필→랭크→매치) 누적 소요 시간의 단일 상한.
+    // 개별 단계별 타임아웃과 별개로, 전체 refresh가 이 시간을 넘기면 매치 갱신 단계를 생략한다.
+    @Positive(message = "riot.refresh-max-wait-ms는 0보다 커야 합니다.")
+    private long refreshMaxWaitMs = 45_000L;
 }

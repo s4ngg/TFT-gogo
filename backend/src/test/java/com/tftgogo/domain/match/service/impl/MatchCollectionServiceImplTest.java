@@ -211,6 +211,62 @@ class MatchCollectionServiceImplTest {
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.RIOT_QUEUE_FULL);
     }
 
+    // ── refreshMatches ─────────────────────────────────────────────────────
+
+    @Test
+    void refreshMatches_정상_흐름에서는_미캐시_매치를_수집한다() {
+        // given
+        String puuid = "test-puuid";
+        MatchDto fetchedDto = matchDto(1100, puuid);
+
+        doReturn(CompletableFuture.completedFuture(List.of("m1")))
+                .doReturn(CompletableFuture.completedFuture(List.of()))
+                .when(riotQueue).submitForeground(any());
+        when(cachedMatchRepository.findMatchIdsByMatchIdIn(any())).thenReturn(List.of());
+        doReturn(CompletableFuture.completedFuture(fetchedDto))
+                .when(riotQueue).submit(anyString(), any());
+        doAnswer(inv -> { ((Runnable) inv.getArgument(0)).run(); return null; })
+                .when(matchCollectionExecutor).execute(any());
+        when(cachedMatchRepository.existsById("m1")).thenReturn(false);
+
+        // when
+        matchCollectionService.refreshMatches(puuid, 30_000L);
+
+        // then
+        verify(riotQueue, times(2)).submitForeground(any());
+        verify(riotQueue, times(1)).submit(eq("match:m1"), any());
+        verify(cachedMatchRepository).save(any(CachedMatch.class));
+    }
+
+    @Test
+    void refreshMatches_matchId가_없으면_아무_수집도_하지_않는다() {
+        // given
+        String puuid = "test-puuid";
+        doReturn(CompletableFuture.completedFuture(List.of()))
+                .doReturn(CompletableFuture.completedFuture(List.of()))
+                .when(riotQueue).submitForeground(any());
+
+        // when
+        matchCollectionService.refreshMatches(puuid, 30_000L);
+
+        // then
+        verify(cachedMatchRepository, never()).findMatchIdsByMatchIdIn(any());
+        verify(riotQueue, never()).submit(anyString(), any());
+    }
+
+    @Test
+    void refreshMatches_maxWaitMs가_설정된_타임아웃보다_짧으면_그_값으로_타임아웃한다() {
+        // given — matchFetchTimeoutSeconds 기본값(60s)보다 훨씬 짧은 maxWaitMs(1s)를 넘겨
+        // 실제로 이 값이 상한으로 쓰이는지 검증 (미완료 future로 진짜 TimeoutException 유도)
+        String puuid = "test-puuid";
+        doReturn(new CompletableFuture<>()).when(riotQueue).submitForeground(any());
+
+        // when / then
+        assertThatThrownBy(() -> matchCollectionService.refreshMatches(puuid, 1_000L))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.RIOT_API_TIMEOUT);
+    }
+
     private CachedMatch cachedMatch(String matchId, String puuid) {
         return CachedMatch.builder()
                 .matchId(matchId)

@@ -93,14 +93,18 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
     }
 
     private List<String> fetchMatchIds(String puuid, int start, int count) {
+        return fetchMatchIds(puuid, start, count, fetchTimeoutSeconds);
+    }
+
+    private List<String> fetchMatchIds(String puuid, int start, int count, long timeoutSeconds) {
         try {
             CompletableFuture<List<String>> rankedFuture =
                     riotQueue.submitForeground(() -> riotApiClient.getMatchIds(puuid, count, start, 1100));
             CompletableFuture<List<String>> normalFuture =
                     riotQueue.submitForeground(() -> riotApiClient.getMatchIds(puuid, count, start, 1090));
 
-            List<String> ranked = rankedFuture.get(fetchTimeoutSeconds, TimeUnit.SECONDS);
-            List<String> normal = normalFuture.get(fetchTimeoutSeconds, TimeUnit.SECONDS);
+            List<String> ranked = rankedFuture.get(timeoutSeconds, TimeUnit.SECONDS);
+            List<String> normal = normalFuture.get(timeoutSeconds, TimeUnit.SECONDS);
 
             Set<String> merged = new LinkedHashSet<>(ranked);
             merged.addAll(normal);
@@ -124,6 +128,10 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
 
     // requestedFast개 수집 완료까지 블로킹, 나머지는 백그라운드 계속 진행
     private void collectInBackground(String puuid, List<String> toFetch, int requestedFast) {
+        collectInBackground(puuid, toFetch, requestedFast, fetchTimeoutSeconds);
+    }
+
+    private void collectInBackground(String puuid, List<String> toFetch, int requestedFast, long timeoutSeconds) {
         int fastTarget = Math.min(requestedFast, toFetch.size());
         CountDownLatch latch = new CountDownLatch(fastTarget);
         AtomicInteger completedCount = new AtomicInteger(0);
@@ -152,7 +160,7 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
         }
 
         try {
-            boolean finished = latch.await(fetchTimeoutSeconds, TimeUnit.SECONDS);
+            boolean finished = latch.await(timeoutSeconds, TimeUnit.SECONDS);
             if (!finished) {
                 logger.warn("매치 수집 타임아웃 (첫 {}개): puuid={}", fastTarget, puuid);
             }
@@ -234,8 +242,11 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
     }
 
     @Override
-    public void refreshMatches(String puuid) {
-        List<String> matchIds = fetchMatchIds(puuid, 0, 20);
+    public void refreshMatches(String puuid, long maxWaitMs) {
+        // refresh() 전체 데드라인이 남긴 예산과 기존 설정값(fetchTimeoutSeconds) 중 더 짧은 쪽을 상한으로 사용
+        long timeoutSeconds = Math.max(1L, Math.min(fetchTimeoutSeconds, maxWaitMs / 1000));
+
+        List<String> matchIds = fetchMatchIds(puuid, 0, 20, timeoutSeconds);
         if (matchIds.isEmpty()) return;
 
         Set<String> cachedIds = new HashSet<>(cachedMatchRepository.findMatchIdsByMatchIdIn(matchIds));
@@ -244,7 +255,7 @@ public class MatchCollectionServiceImpl implements MatchCollectionService {
                 .collect(Collectors.toList());
 
         if (!toFetch.isEmpty()) {
-            collectInBackground(puuid, toFetch, toFetch.size());
+            collectInBackground(puuid, toFetch, toFetch.size(), timeoutSeconds);
         }
     }
 

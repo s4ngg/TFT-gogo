@@ -29,7 +29,9 @@ Detailed human spec: docs/for-humans/spec/summoner.md
   → MatchDetailResponse — 매치에 참가한 8인 전체 상세 데이터
 
 - POST /api/summoners/{gameName}/{tagLine}/refresh
-  → SummonerProfileResponse — Riot API에서 최신 데이터를 가져와 캐시 갱신. 타임아웃 90초.
+  → SummonerProfileResponse — Riot API에서 최신 데이터를 가져와 캐시 갱신.
+  — 전체(프로필→랭크→매치) 누적 소요시간 단일 상한: riot.refresh-max-wait-ms(기본 45초). 프로필·랭크 조회로 상한 소진 시 매치 수집 단계는 생략(경고 로그)하고 프로필·랭크만 갱신된 200 응답 반환.
+  — 매치 수집 단계 자체의 조회/대기 타임아웃도 이 상한(잔여 예산)과 riot.match-fetch-timeout-seconds(기본 60초) 중 짧은 쪽으로 제한 — 초과 시 RIOT_API_TIMEOUT(504) 전파.
   — 429 응답 시 `Retry-After` 헤더 포함 (초 단위). 기본값 120초.
 </backend>
 <frontend>
