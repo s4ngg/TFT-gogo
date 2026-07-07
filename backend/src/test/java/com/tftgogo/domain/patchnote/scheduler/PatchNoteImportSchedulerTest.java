@@ -93,7 +93,7 @@ class PatchNoteImportSchedulerTest {
         properties.setStartupImport(true);
         givenSchedulerLockRunsTask();
         PatchNoteCrawlListItem latestImported = listItem(
-                "?꾨왂??? ?꾪닾 17.5 ?⑥튂",
+                "전략적 팀 전투 17.5 패치",
                 "riot-content-17-5",
                 "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-5/"
         );
@@ -117,7 +117,7 @@ class PatchNoteImportSchedulerTest {
     }
 
     @Test
-    void daily_refresh_refreshes_latest_patch_note_even_if_already_imported() {
+    void 일일_refresh는_이미_import된_최신_패치도_다시_import한다() {
         // given
         properties.setEnabled(true);
         givenSchedulerLockRunsTask();
@@ -138,7 +138,7 @@ class PatchNoteImportSchedulerTest {
     }
 
     @Test
-    void list_check_skips_items_older_than_history_months() {
+    void 목록_확인은_히스토리_기간보다_오래된_항목을_skip한다() {
         // given
         properties.setEnabled(true);
         givenSchedulerLockRunsTask();
@@ -165,7 +165,7 @@ class PatchNoteImportSchedulerTest {
     }
 
     @Test
-    void list_check_skips_items_without_published_at() {
+    void 목록_확인은_publishedAt이_없는_항목을_skip한다() {
         // given
         properties.setEnabled(true);
         givenSchedulerLockRunsTask();
@@ -185,7 +185,7 @@ class PatchNoteImportSchedulerTest {
     }
 
     @Test
-    void list_check_continues_after_single_item_import_failure() {
+    void 목록_확인은_단일_항목_import_실패_후에도_계속_진행한다() {
         // given
         properties.setEnabled(true);
         givenSchedulerLockRunsTask();
@@ -218,9 +218,11 @@ class PatchNoteImportSchedulerTest {
         ArgumentCaptor<AdminPatchNoteImportRequest> captor =
                 ArgumentCaptor.forClass(AdminPatchNoteImportRequest.class);
         verify(adminPatchNoteService, times(2)).importRiotPatchNote(captor.capture());
-        assertThat(captor.getAllValues().get(0).getSourceUrl()).isEqualTo(failingOld.detailUrl());
-        assertThat(captor.getAllValues().get(1).getSourceUrl()).isEqualTo(latestNew.detailUrl());
-        assertThat(captor.getAllValues().get(1).shouldMarkCurrent()).isTrue();
+        List<AdminPatchNoteImportRequest> requests = captor.getAllValues();
+        assertThat(requests.get(0).getSourceUrl()).isEqualTo(failingOld.detailUrl());
+        assertThat(requests.get(0).shouldMarkCurrent()).isFalse();
+        assertThat(requests.get(1).getSourceUrl()).isEqualTo(latestNew.detailUrl());
+        assertThat(requests.get(1).shouldMarkCurrent()).isTrue();
     }
 
     @Test
