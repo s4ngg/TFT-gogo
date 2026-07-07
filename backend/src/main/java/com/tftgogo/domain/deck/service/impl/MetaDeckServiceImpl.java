@@ -26,7 +26,6 @@ import com.tftgogo.global.riot.util.TftShopUnitFilter;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -183,7 +182,6 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     }
 
     @Override
-    @CacheEvict(value = CacheConfig.META_DECKS, allEntries = true)
     public void aggregateAndSave(LocalDate dataDate) {
         if (!aggregating.compareAndSet(false, true)) {
             logger.warn("집계 이미 실행 중 - 중복 요청 skip (date={})", dataDate);
@@ -197,6 +195,11 @@ public class MetaDeckServiceImpl implements MetaDeckService {
             }
             logger.info("전체 랭크 구간 메타 덱 일일 집계 완료 - date={}", dataDate);
         } finally {
+            // 랭크별로 개별 TransactionTemplate 커밋을 사용하므로 일부 랭크 저장 후
+            // 예외가 나도 이미 커밋된 변경이 반영되도록 finally에서 직접 clear한다.
+            // (@CacheEvict는 기본 beforeInvocation=false라 예외 종료 시 무효화되지 않음)
+            java.util.Optional.ofNullable(cacheManager.getCache(CacheConfig.META_DECKS))
+                    .ifPresent(org.springframework.cache.Cache::clear);
             aggregating.set(false);
         }
     }

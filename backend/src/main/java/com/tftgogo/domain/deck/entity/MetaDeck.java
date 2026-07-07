@@ -18,6 +18,10 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MetaDeck {
 
+    // N+1 방지: 다중 @OneToMany join fetch는 MultipleBagFetchException/카테시안 곱
+    // 위험이 있어 대신 @BatchSize로 부모 엔티티 여러 건의 컬렉션을 IN절 배치 조회한다.
+    private static final int COLLECTION_BATCH_SIZE = 100;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -68,21 +72,20 @@ public class MetaDeck {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    // N+1 방지: 다중 @OneToMany join fetch는 MultipleBagFetchException/카테시안 곱
-    // 위험이 있어 대신 @BatchSize로 부모 엔티티 여러 건의 컬렉션을 IN절 배치 조회한다.
-    @BatchSize(size = 100)
+    @BatchSize(size = COLLECTION_BATCH_SIZE)
     @OneToMany(mappedBy = "metaDeck", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DeckUnit> units = new ArrayList<>();
 
-    @BatchSize(size = 100)
+    @BatchSize(size = COLLECTION_BATCH_SIZE)
     @OneToMany(mappedBy = "metaDeck", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DeckTrait> traits = new ArrayList<>();
 
-    @BatchSize(size = 100)
+    // 응답 경로(MetaDeckResponse.from)는 DeckCuration.heroAugments를 사용하므로
+    // 이 컬렉션은 N+1 배치 로딩 대상이 아니다.
     @OneToMany(mappedBy = "metaDeck", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<HeroAugment> heroAugments = new ArrayList<>();
 
-    @BatchSize(size = 100)
+    @BatchSize(size = COLLECTION_BATCH_SIZE)
     @OneToMany(mappedBy = "metaDeck", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ArtifactStat> artifactStats = new ArrayList<>();
 
