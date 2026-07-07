@@ -87,20 +87,21 @@ class PatchNoteImportSchedulerTest {
     }
 
     @Test
-    void startup_import가_true이면_최신_패치노트를_import한다() {
+    void startup_import는_이미_import된_최신_패치도_refresh한다() {
         // given
         properties.setEnabled(true);
         properties.setStartupImport(true);
         givenSchedulerLockRunsTask();
-        PatchNoteCrawlListItem latestNew = listItem(
+        PatchNoteCrawlListItem latestImported = listItem(
                 "?꾨왂??? ?꾪닾 17.5 ?⑥튂",
                 "riot-content-17-5",
                 "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-5/"
         );
-        givenPatchList(latestNew);
-        givenPatchNoteIsNotImported(latestNew, "17.5");
+        givenPatchList(latestImported);
+        when(patchNoteRepository.findBySourceKey("riot-content-17-5"))
+                .thenReturn(Optional.of(patchNote("17.5")));
         when(adminPatchNoteService.importRiotPatchNote(any(AdminPatchNoteImportRequest.class)))
-                .thenReturn(importResponse("17.5", latestNew.detailUrl()));
+                .thenReturn(importResponse("17.5", latestImported.detailUrl()));
 
         // when
         scheduler.importOnStartupIfEnabled();
@@ -109,7 +110,8 @@ class PatchNoteImportSchedulerTest {
         ArgumentCaptor<AdminPatchNoteImportRequest> captor =
                 ArgumentCaptor.forClass(AdminPatchNoteImportRequest.class);
         verify(adminPatchNoteService).importRiotPatchNote(captor.capture());
-        assertThat(captor.getValue().getSourceUrl()).isEqualTo(latestNew.detailUrl());
+        assertThat(captor.getValue().getSourceUrl()).isNull();
+        assertThat(captor.getValue().getVersion()).isNull();
         assertThat(captor.getValue().getLocale()).isEqualTo("ko-kr");
         assertThat(captor.getValue().shouldMarkCurrent()).isTrue();
     }
@@ -266,16 +268,10 @@ class PatchNoteImportSchedulerTest {
         properties.setEnabled(true);
         properties.setStartupImport(true);
         givenSchedulerLockRunsTask();
-        PatchNoteCrawlListItem latestNew = listItem(
-                "?꾨왂??? ?꾪닾 17.5 ?⑥튂",
-                "riot-content-17-5",
-                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-5/"
-        );
-        givenPatchList(latestNew);
-        givenPatchNoteIsNotImported(latestNew, "17.5");
+        givenPatchList();
         doAnswer(invocation -> {
             scheduler.refreshLatestPatchNote();
-            return importResponse("17.5", latestNew.detailUrl());
+            return importResponse("17.5", "https://example.com/17-5");
         }).when(adminPatchNoteService).importRiotPatchNote(any(AdminPatchNoteImportRequest.class));
 
         // when
@@ -291,13 +287,6 @@ class PatchNoteImportSchedulerTest {
         properties.setEnabled(true);
         properties.setStartupImport(true);
         givenSchedulerLockRunsTask();
-        PatchNoteCrawlListItem latestNew = listItem(
-                "?꾨왂??? ?꾪닾 17.5 ?⑥튂",
-                "riot-content-17-5",
-                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-5/"
-        );
-        givenPatchList(latestNew);
-        givenPatchNoteIsNotImported(latestNew, "17.5");
         when(adminPatchNoteService.importRiotPatchNote(any(AdminPatchNoteImportRequest.class)))
                 .thenThrow(new RuntimeException("riot unavailable"));
 

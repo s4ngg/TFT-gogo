@@ -52,7 +52,7 @@ public class PatchNoteImportScheduler {
             logger.info("Patch note startup import disabled (app.patch-note.scheduler.startup-import=false)");
             return;
         }
-        runIfIdle("startup", this::importUnknownPatchNotesFromList);
+        runIfIdle("startup", this::importLatestPatchNoteThenUnknownPatchNotesFromList);
     }
 
     @Scheduled(
@@ -159,6 +159,11 @@ public class PatchNoteImportScheduler {
 
     private boolean isWithinHistoryWindow(PatchNoteCrawlListItem item, LocalDateTime historyCutoff) {
         return item.publishedAt() != null && !item.publishedAt().isBefore(historyCutoff);
+    }
+
+    private void importLatestPatchNoteThenUnknownPatchNotesFromList() {
+        importLatestPatchNote();
+        importUnknownPatchNotesFromList();
     }
 
     private void importLatestPatchNote() {
