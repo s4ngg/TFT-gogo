@@ -1,4 +1,5 @@
 interface ResolvePatchSelectionOptions {
+  currentPatchVersion?: string
   hasUserSelectedPatch: boolean
   isApiData: boolean
   patchVersions: string[]
@@ -6,18 +7,21 @@ interface ResolvePatchSelectionOptions {
 }
 
 export function resolvePatchSelection({
+  currentPatchVersion = '',
   hasUserSelectedPatch,
   isApiData,
   patchVersions,
   selectedPatchVersion,
 }: ResolvePatchSelectionOptions) {
-  const latestPatchVersion = patchVersions[0] ?? ''
-  if (!latestPatchVersion) return selectedPatchVersion
+  const defaultPatchVersion = currentPatchVersion && patchVersions.includes(currentPatchVersion)
+    ? currentPatchVersion
+    : patchVersions[0] ?? ''
+  if (!defaultPatchVersion) return selectedPatchVersion
 
   const hasSelectedPatch = patchVersions.includes(selectedPatchVersion)
-  if (!hasSelectedPatch) return latestPatchVersion
+  if (!hasSelectedPatch) return defaultPatchVersion
 
-  if (isApiData && !hasUserSelectedPatch) return latestPatchVersion
+  if (isApiData && !hasUserSelectedPatch) return defaultPatchVersion
 
   return selectedPatchVersion
 }

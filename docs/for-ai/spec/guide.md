@@ -14,6 +14,7 @@ Page: Guide (/guide).
 <api>
 <backend>
 - GET  /api/guide       -> fetch public guide catalog
+- GET  /api/guide/patch-version -> fetch only the current/latest guide patch version without loading catalog entries
 - GET  /api/guide/{tab} -> fetch public guide data for one tab
 - GET  /api/guide/{tab}?patchVersion=&query=&page=&pageSize=&sortKey=&sortDir=&cost=
 - POST /api/admin/guides/import/cdragon -> import champion/trait/item/augment guide rows from Community Dragon
@@ -25,7 +26,7 @@ Page: Guide (/guide).
 - frontend/src/pages/Guide/guideFallbackData.ts -> fallback data when API is unavailable
 - frontend/src/api/guideNormalizers.ts -> normalize raw guide data before use
 - frontend/src/api/guideTypes.ts       -> TypeScript types for guide domain
-- frontend/src/hooks/useGuide.ts       -> TanStack Query hooks for guide catalog and tab pages
+- frontend/src/hooks/useGuide.ts       -> TanStack Query hooks for guide patch version and tab pages
 - frontend/src/pages/Guide/hooks/      -> page UI state, tab pagination, metric sorting, and dialog state
 - frontend/src/pages/Guide/components/ -> page-specific guide panels/cards/controls
 </frontend>
@@ -43,6 +44,9 @@ Page: Guide (/guide).
 - CDragon import is upsert-based per split table. Same domain key + patchVersion updates the existing row; missing rows are created.
 - Split guide tables do not use soft delete. If deletion/restoration policy is needed later, design it explicitly per table.
 - If patchVersion is omitted on the public catalog, the latest patch is resolved from split guide tables.
+- The public /api/guide/patch-version endpoint resolves only the current/latest guide patch version and must not load
+  catalog entries. It exists so the Guide page can show the patch 기준 and request tab data without an expensive
+  upfront catalog query.
 - If patchVersion is omitted on a tab endpoint, the latest patch is resolved from that tab's table.
 - CDragon import accepts patchVersion=`latest`. The backend resolves it from the current patch note first, then from the latest non-deleted patch note. If no patch note exists, import fails with INVALID_INPUT; local QA should import patch notes first or pass an explicit guide patchVersion.
 - Admin guide import UI defaults patchVersion to `latest` so guide data aligns with the current patch-note version when patch notes are available.
@@ -69,7 +73,17 @@ Page: Guide (/guide).
 - Data originates from CDragon where possible; use communityDragonAssets.ts helpers for frontend images.
 - guideFallbackData.ts provides static fallback when the backend is unreachable.
 - guideNormalizers.ts must be applied before passing data to components; do not use raw API responses directly.
-- Public guide UI should request tab data through useGuideTabItems; components must not fetch guide data directly.
+- Public guide UI should request only the patch version through a dedicated patch-version query/hook,
+  not the full catalog query, then request tab data through useGuideTabItems. Components must not fetch guide data directly.
+- GET /api/guide remains available for compatibility, but the Guide page should not prefetch the full catalog on
+  every load when only patchVersion is needed.
+- Public guide UI includes the GameGuide AI entry points on guide cards. The AI behavior itself is owned by
+  gameguide-ai-pathfinder.md, but Guide cards are responsible for opening the widget with the selected
+  guideType/targetKey/name ref.
+- On mobile widths, Guide cards and section headers must never expand wider than the viewport. Trait cards use
+  minmax(0, 1fr) internal tracks, wrap tip rows, and keep card-level AI buttons inside the card grid.
+- The top app layout must not inherit horizontal scroll from the mobile nav or top status badges. Guide page
+  mobile QA should assert app shell scrollLeft=0 and document/body scrollWidth equals viewport width.
 </business-rules>
 
 <database-contract>
@@ -212,6 +226,10 @@ Page: Guide (/guide).
 - Public guide tests should cover tab parsing, page/pageSize bounds, sortKey/sortDir validation, cost filtering, JSON object response, latest patch fallback, empty latest patch behavior, split champion/trait filtering, and CDragon import split-table upsert.
 - Import tests should assert importedCount semantics through createdCount + updatedCount, not championCount + traitCount.
 - #393 metric refresh tests should be added with the dedicated refresh implementation: cached match fixture aggregation, queue/patch filtering, duplicate match handling, minimum sample fallback, sampleCount, and idempotent guide metric updates.
+- Frontend/browser QA should cover the /guide mobile layout at 390px width: trait cards, section headers,
+  champion rows, tip rows, and GameGuide AI card buttons must have no right overflow.
+- GameGuide AI card-click smoke QA should verify the widget opens with the selected card ref and, when logged out,
+  shows only the auth-required message defined in gameguide-ai-pathfinder.md.
 </validation>
 
 <data-ingestion>

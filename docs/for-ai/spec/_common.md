@@ -42,4 +42,22 @@ Loaded alongside every feature spec file. Defines shared utilities, asset helper
 - CDragon trait data is used for synergy calculation; do not re-implement synergy logic in components.
 </data-types>
 
+<database-migrations>
+- Flyway versioned migrations under backend/src/main/resources/db/migration/V*.sql are executable deployment
+  contracts, not editable schema notes.
+- After a versioned migration has been merged or may have been applied to any shared/local/production database,
+  do not edit that file for schema changes, cleanup, index additions, column type changes, seed changes, or
+  formatting-only rewrites. Add a new V{next}__*.sql forward migration instead.
+- V1__init_schema.sql is the fresh-DB bootstrap migration. Existing databases are expected to be baselined at
+  version 16 before Flyway runs V17+. Do not fix existing databases by changing V1.
+- backend/src/main/resources/db/local-smoke/01_schema.sql is a reference/local-smoke snapshot. Keep it aligned
+  with the final migrated schema when useful, but never treat it as a substitute for a forward Flyway migration.
+- If a PR diff changes an existing V*.sql file, treat it as a deployment-risk finding by default. The PR must
+  either prove the migration has never been merged/applied anywhere or move the change to a new migration.
+- DB/index additions that may already exist in some databases should use an idempotent or conditional migration
+  pattern, for example checking information_schema before CREATE INDEX on MySQL.
+- Deployment QA for DB changes must include a clean-DB Flyway migrate plus backend startup check. Compose config,
+  unit tests, and builds are not enough to catch Flyway checksum mismatch.
+</database-migrations>
+
 </spec>

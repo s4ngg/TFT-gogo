@@ -562,6 +562,7 @@
 
 .traitSection {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-sm);
   margin-top: var(--space-lg);
 }
@@ -677,6 +678,7 @@ button.championMini:hover {
 
 .tipLine {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   margin-top: auto;
   padding-top: 14px;
@@ -2159,7 +2161,7 @@ button.championMini:hover {
     justify-self: start;
   }
 
-.costFilter {
+  .costFilter {
     flex-wrap: wrap;
   }
 
@@ -2170,12 +2172,28 @@ button.championMini:hover {
   .traitTop {
     grid-template-columns: 42px minmax(0, 1fr);
     align-items: start;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
 
   .traitTop .gameGuideAiCardButton {
     grid-column: 2;
     grid-row: 1;
     align-self: start;
+    justify-self: end;
+  }
+
+  .traitGrid,
+  .traitCard,
+  .traitSummaryPanel,
+  .traitSection,
+  .traitSectionHeader,
+  .championLine {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
 
   .levelTrackWrap {

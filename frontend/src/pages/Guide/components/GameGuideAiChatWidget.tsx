@@ -268,7 +268,7 @@ function GameGuideAiChatWidget({
             {!isAuthenticated ? (
               <div className={styles.gameGuideAiEmpty}>
                 <MessageCircle size={20} />
-                <p>로그인 후 GameGuide AI를 이용할 수 있습니다.</p>
+                <p>로그인이 필요합니다</p>
               </div>
             ) : messages.length === 0 && (
               <div className={styles.gameGuideAiEmpty}>

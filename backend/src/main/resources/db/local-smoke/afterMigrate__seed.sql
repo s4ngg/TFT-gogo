@@ -49,7 +49,7 @@ INSERT INTO tft_guide_traits (
     JSON_ARRAY(JSON_OBJECT('name', 'Local Champion', 'cost', 4, 'imageUrl', 'https://example.com/local-smoke-champion.png')),
     JSON_ARRAY(),
     JSON_ARRAY('Check tab rendering and search flow.'),
-    '17.3'
+    '17.6'
 )
 ON DUPLICATE KEY UPDATE
     name = VALUES(name),
@@ -82,7 +82,7 @@ INSERT INTO tft_guide_items (
     JSON_OBJECT(),
     JSON_ARRAY(),
     JSON_ARRAY(JSON_OBJECT('label', 'Local combination', 'items', JSON_ARRAY('B.F. Sword', 'Recurve Bow'))),
-    '17.3'
+    '17.6'
 )
 ON DUPLICATE KEY UPDATE
     name = VALUES(name),
@@ -108,7 +108,7 @@ INSERT INTO tft_guide_augments (
     'https://example.com/local-smoke-augment.png',
     JSON_ARRAY('Flex'),
     JSON_OBJECT(),
-    '17.3'
+    '17.6'
 )
 ON DUPLICATE KEY UPDATE
     name = VALUES(name),
@@ -138,7 +138,7 @@ INSERT INTO tft_guide_champions (
     JSON_OBJECT('ad', 50, 'armor', 30, 'attackSpeed', 0.75, 'hp', 900, 'mana', 80, 'mr', 30, 'range', 4),
     JSON_ARRAY('Local Trait'),
     JSON_ARRAY('Local Item'),
-    '17.3'
+    '17.6'
 )
 ON DUPLICATE KEY UPDATE
     name = VALUES(name),
@@ -152,25 +152,34 @@ ON DUPLICATE KEY UPDATE
 
 START TRANSACTION;
 
+SET @local_smoke_patch_version := _utf8mb4'17.6' COLLATE utf8mb4_unicode_ci;
+SET @local_smoke_patch_imported := (
+  SELECT COUNT(*) > 0
+  FROM patch_notes
+  WHERE deleted_at IS NULL
+    AND version = @local_smoke_patch_version
+    AND (import_source IS NOT NULL OR source_key IS NOT NULL OR source_url IS NOT NULL)
+);
+
 SET @has_real_patch_note := (
   SELECT COUNT(*) > 0
   FROM patch_notes
   WHERE deleted_at IS NULL
-    AND version <> '17.3'
+    AND version <> @local_smoke_patch_version
 );
 
 UPDATE patch_notes
 SET is_current = 0
 WHERE @has_real_patch_note
   AND deleted_at IS NULL
-  AND version = '17.3';
+  AND version = @local_smoke_patch_version;
 
 UPDATE patch_notes
 SET is_current = 0
 WHERE NOT @has_real_patch_note
   AND is_current = 1
   AND deleted_at IS NULL
-  AND version <> '17.3';
+  AND version <> @local_smoke_patch_version;
 
 INSERT INTO patch_notes (
     version,
@@ -183,25 +192,29 @@ INSERT INTO patch_notes (
     is_current,
     highlights_json
 ) VALUES (
-    '17.3',
-    '17.3 Local Patch',
+    @local_smoke_patch_version,
+    '17.6 Local Patch',
     'Local smoke test patch note.',
     'Minimal data for checking Guide/PatchNotes public APIs without frontend fallback.',
     'Local smoke',
     NULL,
-    '2026-06-09 00:00:00',
+    '2026-06-24 03:00:00',
     CASE WHEN @has_real_patch_note THEN 0 ELSE 1 END,
     JSON_ARRAY('Guide and PatchNotes smoke data added', 'Public APIs work without Riot API key')
 )
 ON DUPLICATE KEY UPDATE
-    title = VALUES(title),
-    summary = VALUES(summary),
-    content = VALUES(content),
-    focus = VALUES(focus),
-    representative_image_url = VALUES(representative_image_url),
-    published_at = VALUES(published_at),
-    is_current = CASE WHEN @has_real_patch_note THEN 0 ELSE VALUES(is_current) END,
-    highlights_json = VALUES(highlights_json),
+    title = IF(@local_smoke_patch_imported, title, VALUES(title)),
+    summary = IF(@local_smoke_patch_imported, summary, VALUES(summary)),
+    content = IF(@local_smoke_patch_imported, content, VALUES(content)),
+    focus = IF(@local_smoke_patch_imported, focus, VALUES(focus)),
+    representative_image_url = IF(@local_smoke_patch_imported, representative_image_url, VALUES(representative_image_url)),
+    published_at = IF(@local_smoke_patch_imported, published_at, VALUES(published_at)),
+    is_current = CASE
+        WHEN @local_smoke_patch_imported THEN is_current
+        WHEN @has_real_patch_note THEN 0
+        ELSE VALUES(is_current)
+    END,
+    highlights_json = IF(@local_smoke_patch_imported, highlights_json, VALUES(highlights_json)),
     deleted_at = NULL;
 
 SET @has_real_current_patch_note := (
@@ -209,7 +222,7 @@ SET @has_real_current_patch_note := (
   FROM patch_notes
   WHERE deleted_at IS NULL
     AND is_current = 1
-    AND version <> '17.3'
+    AND version <> @local_smoke_patch_version
 );
 
 UPDATE patch_notes pn
@@ -219,7 +232,7 @@ JOIN (
     SELECT id
     FROM patch_notes
     WHERE deleted_at IS NULL
-      AND version <> '17.3'
+      AND version <> @local_smoke_patch_version
     ORDER BY published_at DESC, id DESC
     LIMIT 1
   ) latest_real_patch_note
@@ -231,11 +244,15 @@ WHERE @has_real_patch_note
 DELETE pc
 FROM patch_note_changes pc
 JOIN patch_notes pn ON pn.id = pc.patch_note_id
-WHERE pn.version = '17.3'
+WHERE pn.version = @local_smoke_patch_version
   AND pc.target_key LIKE 'local-smoke-%';
 
 INSERT INTO patch_note_changes (
     patch_note_id,
+    source_key,
+    source_heading_path,
+    source_order,
+    imported_at,
     category,
     change_type,
     impact,
@@ -247,9 +264,13 @@ INSERT INTO patch_note_changes (
     image_url,
     tags_json,
     sort_order
-) VALUES
-(
-    (SELECT id FROM patch_notes WHERE version = '17.3'),
+)
+SELECT
+    (SELECT id FROM patch_notes WHERE version = @local_smoke_patch_version),
+    'local-smoke-champion',
+    'Local smoke',
+    10,
+    NOW(6),
     'CHAMPION',
     'BUFF',
     'HIGH',
@@ -261,9 +282,14 @@ INSERT INTO patch_note_changes (
     NULL,
     JSON_ARRAY('champion', 'buff'),
     10
-),
-(
-    (SELECT id FROM patch_notes WHERE version = '17.3'),
+WHERE NOT @local_smoke_patch_imported
+UNION ALL
+SELECT
+    (SELECT id FROM patch_notes WHERE version = @local_smoke_patch_version),
+    'local-smoke-trait',
+    'Local smoke',
+    20,
+    NOW(6),
     'TRAIT',
     'ADJUST',
     'MEDIUM',
@@ -275,7 +301,7 @@ INSERT INTO patch_note_changes (
     NULL,
     JSON_ARRAY('trait', 'adjust'),
     20
-);
+WHERE NOT @local_smoke_patch_imported;
 
 COMMIT;
 
