@@ -49,8 +49,13 @@ Page: /patch-notes.
 
 <public-behavior>
 - Public page selects the active current patch by default.
-- Public history must include the active current patch even when it is outside the normal recent-history cutoff.
+- Public `GET /api/patch-notes` returns a recent public history window, not the full admin patch-note table.
+- The current backend public history window is 6 months (`PUBLIC_PATCH_HISTORY_MONTHS=6` in PatchNoteServiceImpl).
+- Public history must include every non-deleted patch with publishedAt inside the 6-month cutoff and must also include
+  the active current patch even when it is outside that cutoff.
 - Public history ordering must place the active current patch first, then remaining patches by publishedAt desc and id desc.
+- The public history repository contract is `findPublicHistorySinceIncludingCurrent(cutoff)`, where `cutoff` means the
+  lower publishedAt bound for the recent-history window.
 - If current is not available, the list order must still make the latest patch easy to select.
 - The public list endpoint returns ApiResponse<List<PatchNoteResponse>> and does not include full change rows.
 - PatchNoteResponse exposes current status as both the user-facing status label and the isCurrent/current field
@@ -78,7 +83,8 @@ Page: /patch-notes.
 - source_key, source_url, source_locale, import_source, imported_at, and manually_edited are crawler/import metadata.
 - isCurrent must be unique among active, non-deleted patch notes.
 - Creating or updating a current patch note must unset other active current patch notes in the same transaction.
-- Public history query is supported by idx_patch_notes_history(deleted_at, published_at, id).
+- Public history query is supported by idx_patch_notes_history(deleted_at, published_at, id). The query still uses
+  current-first ordering with a CASE expression, so very large patch-note tables may need a future execution-plan review.
 - Add or change patch-note indexes only through a new forward Flyway migration. Do not edit V1__init_schema.sql
   or any other already-merged/applied V*.sql file to add, remove, or rewrite patch-note indexes.
 - Keep the local-smoke schema snapshot aligned with the final migrated schema, but treat it as QA/reference data
@@ -146,6 +152,9 @@ Page: /patch-notes.
 - Imported patch notes/changes with manuallyEdited=true are skipped by re-import.
 - Stale imported changes may be hard-deleted when a re-import updates an existing patch note.
 - Current implementation does not expose dryRun or forceOverwrite. Add those as a separate enhancement if needed.
+- Scheduler-driven latest refresh uses the same import endpoint/service path with sourceUrl=null and version=null.
+  It must re-run the latest import even when the latest patch already exists locally so current marking and official
+  Riot content updates are not skipped.
 </riot-import>
 
 <crawler-parser>
@@ -176,20 +185,39 @@ Page: /patch-notes.
   - startup-import=false
   - locale=ko-kr
   - current=true
-  - list-scan-limit=5
+  - history-months=6
+  - list-scan-limit=50
   - list-cron=0 0 * * * *
   - refresh-cron=0 30 6 * * *
   - zone=Asia/Seoul
 - Startup import runs on ApplicationReadyEvent only when enabled=true and startup-import=true.
 - Startup import runs before guide startup import so guide patch-version=latest can resolve to the latest current patch note.
-- List check runs hourly by default and imports unknown official list items within list-scan-limit.
+- Startup import is a two-step sequence under the `startup` lock:
+  1. call latest refresh first (`importLatestPatchNote`) with sourceUrl=null/version=null/current=properties.current.
+  2. run recent-history list backfill (`importUnknownPatchNotesFromList`).
+- The latest refresh step is required even when the latest patch already exists locally. Do not replace startup import
+  with list-only import; list-only import can skip an already-imported latest patch and miss current correction or Riot
+  official content updates.
+- If the latest refresh step fails, the startup task is logged as failed by the scheduler wrapper and the list backfill
+  does not run in that same startup execution. The hourly list-check and next daily refresh can recover later.
+- List check runs hourly by default and imports unknown official list items within list-scan-limit and history-months.
 - Daily refresh runs at 06:30 KST by default and refreshes the latest patch note.
 - Daily refresh imports the latest official patch note directly. It must not skip the latest patch merely because
   that patch version/sourceUrl is already present locally; re-import keeps existing imported rows up to date.
+- List check fetches the official Riot/TFT tag page, parses list items, and scans at most
+  `min(properties.listScanLimit, listItems.size())` items.
+- List check computes one history cutoff per execution: `now - properties.historyMonths`.
+- List check scans the selected window in reverse index order (`scanLimit - 1` down to `0`) so older unknown patches are
+  imported first and the newest list item (`index == 0`) is processed last.
+- List check skips official list items with no detailUrl.
 - List check skips official list items whose publishedAt cannot be parsed. Unknown dates must not be treated as
   recent because a Riot markup/locale parsing break could otherwise import up to list-scan-limit old patches.
+- List check skips official list items older than the history-months cutoff.
+- List check treats an item as already imported if sourceKey, sourceUrl, or resolved version already exists.
+- List check only marks the newest list item current when `properties.current=true` and `index == 0`. Older backfilled
+  items, including items that fail during import, must be requested with current=false.
 - List check isolates import failures per item. If one official detail page fails, log detailUrl/version/current
-  context and continue with the remaining list items so a bad older item does not block the latest/current import.
+  context and continue with the remaining list items so a bad older item does not block later items or the latest/current import.
 - Scheduler uses an in-process AtomicBoolean lock to avoid overlapping imports in a single server instance.
 - Multi-server deployments require a future shared DB/Redis lock before enabling scheduler on multiple instances.
 - Local/dev should keep scheduler disabled by default. Use manual admin import for local QA.
@@ -235,8 +263,13 @@ Page: /patch-notes.
 - Admin service tests should cover patch-note CRUD, patch-change CRUD, JSON array validation, duplicate/current behavior, not found errors, patch-note soft delete, patch-change hard delete, and manuallyEdited marking.
 - Import tests should cover latest import by tag page, direct sourceUrl import, repeated import idempotency, manuallyEdited skip, sourceKey matching, stale imported change handling, parser warnings, unsupported host rejection, and current flag behavior.
 - Scheduler tests should cover disabled state, startup-import flag, list scan limit, already-imported skip, current flag, and in-process lock skip.
-- Scheduler tests should also cover daily latest refresh even when already imported, publishedAt=null list-item skip,
-  and per-item import failure continuation.
+- Scheduler tests should also cover:
+  - startup refresh of the latest patch even when the latest item is already imported.
+  - daily latest refresh even when already imported.
+  - history-months cutoff skip for old list items.
+  - publishedAt=null list-item skip.
+  - per-item import failure continuation.
+  - failed older list item requested with current=false and latest list item requested with current=true.
 - Frontend tests should cover readPatchChangeStatsPayload, current patch default selection, search without full reload,
   simplified public display, and mobile no-overflow behavior.
 - Browser QA should cover /patch-notes at 390px width with app shell scrollLeft=0, document/body scrollWidth equal
