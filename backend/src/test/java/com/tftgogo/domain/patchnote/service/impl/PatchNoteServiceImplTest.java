@@ -9,9 +9,7 @@ import com.tftgogo.domain.patchnote.entity.PatchChangeImpact;
 import com.tftgogo.domain.patchnote.entity.PatchChangeType;
 import com.tftgogo.domain.patchnote.entity.PatchNote;
 import com.tftgogo.domain.patchnote.repository.PatchChangeRepository;
-import com.tftgogo.domain.patchnote.repository.PatchChangeRepository.CategoryChangeCount;
 import com.tftgogo.domain.patchnote.repository.PatchChangeRepository.PatchChangeStatsCount;
-import com.tftgogo.domain.patchnote.repository.PatchChangeRepository.TypeChangeCount;
 import com.tftgogo.domain.patchnote.repository.PatchNoteRepository;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
@@ -32,7 +30,6 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -139,9 +136,6 @@ class PatchNoteServiceImplTest {
                 PatchChangeImpact.HIGH,
                 "카이사"
         );
-        verify(patchChangeRepository, never()).countFilteredChangesGroupByCategory(any(), any(), any(), any());
-        verify(patchChangeRepository, never()).countFilteredChangesGroupByChangeType(any(), any(), any(), any());
-        verify(patchChangeRepository, never()).countFilteredChanges(any(), any(), any(), any(), any());
         verify(patchChangeRepository).findFilteredChanges(
                 patchNote,
                 PatchChangeCategory.CHAMPION,
@@ -195,13 +189,6 @@ class PatchNoteServiceImplTest {
         assertThat(response.getItems()).hasSize(1);
         assertThat(response.getStats().getTotalChanges()).isEqualTo(1L);
         assertThat(response.getStats().getHighImpactCount()).isZero();
-        verify(patchChangeRepository, never()).countFilteredChanges(
-                patchNote,
-                null,
-                PatchChangeType.NERF,
-                PatchChangeImpact.HIGH,
-                "징크스"
-        );
     }
 
     @Test
@@ -455,8 +442,8 @@ class PatchNoteServiceImplTest {
 
     private void givenPatchChangeStats(
             PatchNote patchNote,
-            List<CategoryChangeCount> categoryCounts,
-            List<TypeChangeCount> typeCounts,
+            List<CategoryCount> categoryCounts,
+            List<TypeCount> typeCounts,
             long highImpactCount
     ) {
         givenPatchChangeStats(patchNote, null, null, null, categoryCounts, typeCounts, highImpactCount);
@@ -467,8 +454,8 @@ class PatchNoteServiceImplTest {
             PatchChangeType changeType,
             PatchChangeImpact impact,
             String query,
-            List<CategoryChangeCount> categoryCounts,
-            List<TypeChangeCount> typeCounts,
+            List<CategoryCount> categoryCounts,
+            List<TypeCount> typeCounts,
             long highImpactCount
     ) {
         when(patchChangeRepository.countFilteredChangeStats(patchNote, changeType, impact, query))
@@ -476,8 +463,8 @@ class PatchNoteServiceImplTest {
     }
 
     private List<PatchChangeStatsCount> patchChangeStatsCounts(
-            List<CategoryChangeCount> categoryCounts,
-            List<TypeChangeCount> typeCounts,
+            List<CategoryCount> categoryCounts,
+            List<TypeCount> typeCounts,
             long highImpactCount
     ) {
         List<PatchChangeStatsCount> statsCounts = new ArrayList<>();
@@ -485,15 +472,15 @@ class PatchNoteServiceImplTest {
         int itemCount = Math.min(categoryCounts.size(), typeCounts.size());
 
         for (int index = 0; index < itemCount; index++) {
-            CategoryChangeCount categoryCount = categoryCounts.get(index);
-            TypeChangeCount typeCount = typeCounts.get(index);
-            long changeCount = Math.min(categoryCount.getChangeCount(), typeCount.getChangeCount());
+            CategoryCount categoryCount = categoryCounts.get(index);
+            TypeCount typeCount = typeCounts.get(index);
+            long changeCount = Math.min(categoryCount.changeCount(), typeCount.changeCount());
             PatchChangeImpact impact = remainingHighImpactCount > 0
                     ? PatchChangeImpact.HIGH
                     : PatchChangeImpact.LOW;
             statsCounts.add(patchChangeStatsCount(
-                    categoryCount.getCategory(),
-                    typeCount.getChangeType(),
+                    categoryCount.category(),
+                    typeCount.changeType(),
                     impact,
                     changeCount
             ));
@@ -565,32 +552,18 @@ class PatchNoteServiceImplTest {
         };
     }
 
-    private CategoryChangeCount categoryChangeCount(PatchChangeCategory category, Long changeCount) {
-        return new CategoryChangeCount() {
-            @Override
-            public PatchChangeCategory getCategory() {
-                return category;
-            }
-
-            @Override
-            public Long getChangeCount() {
-                return changeCount;
-            }
-        };
+    private record CategoryCount(PatchChangeCategory category, long changeCount) {
     }
 
-    private TypeChangeCount typeChangeCount(PatchChangeType changeType, Long changeCount) {
-        return new TypeChangeCount() {
-            @Override
-            public PatchChangeType getChangeType() {
-                return changeType;
-            }
+    private record TypeCount(PatchChangeType changeType, long changeCount) {
+    }
 
-            @Override
-            public Long getChangeCount() {
-                return changeCount;
-            }
-        };
+    private CategoryCount categoryChangeCount(PatchChangeCategory category, long changeCount) {
+        return new CategoryCount(category, changeCount);
+    }
+
+    private TypeCount typeChangeCount(PatchChangeType changeType, long changeCount) {
+        return new TypeCount(changeType, changeCount);
     }
 
     private PatchChangeStatsCount patchChangeStatsCount(
