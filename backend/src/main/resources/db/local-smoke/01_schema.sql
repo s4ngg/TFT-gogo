@@ -302,7 +302,8 @@ CREATE TABLE IF NOT EXISTS patch_notes (
     UNIQUE KEY uk_patch_notes_version (version),
     UNIQUE KEY uk_patch_notes_source_key (source_key),
     UNIQUE KEY uk_patch_notes_source_url (source_url),
-    KEY idx_patch_notes_public (deleted_at, is_current, published_at, id)
+    KEY idx_patch_notes_public (deleted_at, is_current, published_at, id),
+    KEY idx_patch_notes_history (deleted_at, published_at, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE UNIQUE INDEX uk_patch_notes_single_current

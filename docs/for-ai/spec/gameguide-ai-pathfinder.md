@@ -212,6 +212,32 @@ ApiResponse&lt;GameGuideAiPathfinderResponse&gt;
 - fallback에서도 존재하지 않는 메트릭이나 메타 판단을 만들지 않는다.
 </fallback-behavior>
 
+<frontend-auth-ux>
+- GameGuide AI is an authenticated feature.
+- When the user is not logged in, clicking a Guide card AI button must open the widget with the selected ref context
+  but must not render an extra login CTA/button inside the widget.
+- The logged-out widget empty state text is exactly: `로그인이 필요합니다`.
+- The logged-out input placeholder is exactly: `로그인이 필요합니다`.
+- The widget must not include internal login links or login buttons. The global TopBar login action remains owned by
+  the shared layout and is not part of the GameGuide AI widget contract.
+- The frontend must preserve explicit AUTH_REQUIRED and RATE_LIMITED messages from the API layer for mutation errors.
+- Mobile QA must verify the opened widget and Guide card AI buttons do not create horizontal overflow at 390px width.
+</frontend-auth-ux>
+
+<latest-implementation-contract>
+- Guide card buttons create a single selected ref through gameGuideAiRefs.ts and open the floating
+  GameGuideAiChatWidget.
+- Question-only requests may omit selected refs, but card-click requests send exactly the clicked card ref.
+- Frontend never calls the FastAPI ai-server directly; it calls Spring POST /api/ai/gameguide-pathfinder.
+- Spring validates selected/candidate refs against the Guide split tables for the requested patchVersion before
+  forwarding compact selected_entries and candidate_refs to ai-server.
+- ai-server returns BaseResponse with GameGuidePathfinderResponse. OpenAI failures, circuit-breaker open state,
+  JSON parsing failures, and token-budget failures must produce deterministic fallback responses instead of exposing
+  raw provider errors to the user.
+- AI responses may include evidence_notes and creative_suggestions, but unavailable metrics such as win rate,
+  pick rate, average placement, or TOP4 rate must not be invented until the guide metric refresh contract exists.
+</latest-implementation-contract>
+
 <frontend-structure>
 - frontend/src/api/gameGuideAiPathfinderApi.ts
   - request/response 타입
@@ -293,6 +319,13 @@ ApiResponse&lt;GameGuideAiPathfinderResponse&gt;
 - fallback 응답 UI 표시 테스트
 - 브라우저 수동 검증: 카드 AI 버튼 렌더링, 선택 카드 칩 표시, 질문 전송 fallback 확인
 </frontend>
+
+<frontend-latest-validation>
+- Logged-out widget QA: clicking a Guide card AI button opens the widget, shows exactly `로그인이 필요합니다`,
+  and renders no login CTA/link/button inside the GameGuide AI widget.
+- Mobile browser QA: /guide at 390px width keeps body/document scrollWidth equal to viewport width after opening
+  the GameGuide AI widget.
+</frontend-latest-validation>
 
 <backend>
 - selectedRefs empty 또는 5개 초과 시 INVALID_INPUT

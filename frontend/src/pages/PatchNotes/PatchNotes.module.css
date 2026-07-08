@@ -953,7 +953,28 @@
   .hero,
   .contentGrid,
   .summaryGrid {
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
+  }
+
+  .hero > *,
+  .contentGrid > *,
+  .summaryGrid > *,
+  .sideRail,
+  .historyPanel,
+  .insightPanel,
+  .changePanel,
+  .toolBar,
+  .searchBox,
+  .categoryTabs,
+  .seasonBlock,
+  .seasonHeaderButton,
+  .seasonPatchButton {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
 
   .toolBar,
@@ -963,9 +984,8 @@
   }
 
   .categoryTabs {
-    overflow-x: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+    flex-wrap: wrap;
+    overflow-x: visible;
   }
 
   .categoryTabs::-webkit-scrollbar {

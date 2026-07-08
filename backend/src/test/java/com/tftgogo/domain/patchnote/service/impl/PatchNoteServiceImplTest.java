@@ -15,6 +15,7 @@ import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -53,7 +54,8 @@ class PatchNoteServiceImplTest {
     void 패치노트_목록은_highlights와_changeCount를_응답한다() {
         // given
         PatchNote currentPatch = patchNote("17.0", true);
-        when(patchNoteRepository.findByDeletedAtIsNullOrderByCurrentDescPublishedAtDescIdDesc())
+        LocalDateTime expectedCutoffStart = LocalDateTime.now().minusMonths(6).minusMinutes(1);
+        when(patchNoteRepository.findPublicHistorySinceIncludingCurrent(any(LocalDateTime.class)))
                 .thenReturn(List.of(currentPatch));
         when(patchChangeRepository.countByPatchNotes(List.of(currentPatch)))
                 .thenReturn(List.of(patchChangeCount(currentPatch.getId(), 3L)));
@@ -65,6 +67,10 @@ class PatchNoteServiceImplTest {
         assertThat(response).hasSize(1);
         assertThat(response.get(0).getHighlights()).containsExactly("챔피언 밸런스 조정", "시너지 조정");
         assertThat(response.get(0).getChangeCount()).isEqualTo(3L);
+        ArgumentCaptor<LocalDateTime> cutoffCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
+        verify(patchNoteRepository).findPublicHistorySinceIncludingCurrent(cutoffCaptor.capture());
+        assertThat(cutoffCaptor.getValue())
+                .isBetween(expectedCutoffStart, LocalDateTime.now().minusMonths(6).plusMinutes(1));
     }
 
     @Test

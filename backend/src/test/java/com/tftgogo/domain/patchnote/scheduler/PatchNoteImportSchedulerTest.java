@@ -87,13 +87,21 @@ class PatchNoteImportSchedulerTest {
     }
 
     @Test
-    void startup_import가_true이면_최신_패치노트를_import한다() {
+    void startup_import는_이미_import된_최신_패치도_refresh한다() {
         // given
         properties.setEnabled(true);
         properties.setStartupImport(true);
         givenSchedulerLockRunsTask();
+        PatchNoteCrawlListItem latestImported = listItem(
+                "전략적 팀 전투 17.5 패치",
+                "riot-content-17-5",
+                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-5/"
+        );
+        givenPatchList(latestImported);
+        when(patchNoteRepository.findBySourceKey("riot-content-17-5"))
+                .thenReturn(Optional.of(patchNote("17.5")));
         when(adminPatchNoteService.importRiotPatchNote(any(AdminPatchNoteImportRequest.class)))
-                .thenReturn(importResponse("17.5", "https://example.com/17-5"));
+                .thenReturn(importResponse("17.5", latestImported.detailUrl()));
 
         // when
         scheduler.importOnStartupIfEnabled();
@@ -103,8 +111,118 @@ class PatchNoteImportSchedulerTest {
                 ArgumentCaptor.forClass(AdminPatchNoteImportRequest.class);
         verify(adminPatchNoteService).importRiotPatchNote(captor.capture());
         assertThat(captor.getValue().getSourceUrl()).isNull();
+        assertThat(captor.getValue().getVersion()).isNull();
         assertThat(captor.getValue().getLocale()).isEqualTo("ko-kr");
         assertThat(captor.getValue().shouldMarkCurrent()).isTrue();
+    }
+
+    @Test
+    void 일일_refresh는_이미_import된_최신_패치도_다시_import한다() {
+        // given
+        properties.setEnabled(true);
+        givenSchedulerLockRunsTask();
+        when(adminPatchNoteService.importRiotPatchNote(any(AdminPatchNoteImportRequest.class)))
+                .thenReturn(importResponse("17.5", "https://example.com/17-5"));
+
+        // when
+        scheduler.refreshLatestPatchNote();
+
+        // then
+        ArgumentCaptor<AdminPatchNoteImportRequest> captor =
+                ArgumentCaptor.forClass(AdminPatchNoteImportRequest.class);
+        verify(adminPatchNoteService).importRiotPatchNote(captor.capture());
+        assertThat(captor.getValue().getSourceUrl()).isNull();
+        assertThat(captor.getValue().getVersion()).isNull();
+        assertThat(captor.getValue().getLocale()).isEqualTo("ko-kr");
+        assertThat(captor.getValue().shouldMarkCurrent()).isTrue();
+    }
+
+    @Test
+    void 목록_확인은_히스토리_기간보다_오래된_항목을_skip한다() {
+        // given
+        properties.setEnabled(true);
+        givenSchedulerLockRunsTask();
+        PatchNoteCrawlListItem latestImported = listItem(
+                "Teamfight Tactics patch 17.5",
+                "riot-content-17-5",
+                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-5/"
+        );
+        PatchNoteCrawlListItem oldNew = listItem(
+                "Teamfight Tactics patch 17.1",
+                LocalDateTime.now().minusMonths(7),
+                "riot-content-17-1",
+                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-1/"
+        );
+        givenPatchList(latestImported, oldNew);
+        when(patchNoteRepository.findBySourceKey("riot-content-17-5"))
+                .thenReturn(Optional.of(patchNote("17.5")));
+
+        // when
+        scheduler.importNewPatchNotesFromList();
+
+        // then
+        verifyNoInteractions(adminPatchNoteService);
+    }
+
+    @Test
+    void 목록_확인은_publishedAt이_없는_항목을_skip한다() {
+        // given
+        properties.setEnabled(true);
+        givenSchedulerLockRunsTask();
+        PatchNoteCrawlListItem noDateNew = listItem(
+                "Teamfight Tactics patch 17.5",
+                null,
+                "riot-content-17-5",
+                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-5/"
+        );
+        givenPatchList(noDateNew);
+
+        // when
+        scheduler.importNewPatchNotesFromList();
+
+        // then
+        verifyNoInteractions(adminPatchNoteService);
+    }
+
+    @Test
+    void 목록_확인은_단일_항목_import_실패_후에도_계속_진행한다() {
+        // given
+        properties.setEnabled(true);
+        givenSchedulerLockRunsTask();
+        PatchNoteCrawlListItem latestNew = listItem(
+                "Teamfight Tactics patch 17.5",
+                "riot-content-17-5",
+                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-5/"
+        );
+        PatchNoteCrawlListItem failingOld = listItem(
+                "Teamfight Tactics patch 17.4",
+                "riot-content-17-4",
+                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-4/"
+        );
+        givenPatchList(latestNew, failingOld);
+        givenPatchNoteIsNotImported(latestNew, "17.5");
+        givenPatchNoteIsNotImported(failingOld, "17.4");
+        when(adminPatchNoteService.importRiotPatchNote(any(AdminPatchNoteImportRequest.class)))
+                .thenAnswer(invocation -> {
+                    AdminPatchNoteImportRequest request = invocation.getArgument(0);
+                    if (request.getSourceUrl().contains("17-4")) {
+                        throw new RuntimeException("riot unavailable");
+                    }
+                    return importResponse("17.5", latestNew.detailUrl());
+                });
+
+        // when
+        scheduler.importNewPatchNotesFromList();
+
+        // then
+        ArgumentCaptor<AdminPatchNoteImportRequest> captor =
+                ArgumentCaptor.forClass(AdminPatchNoteImportRequest.class);
+        verify(adminPatchNoteService, times(2)).importRiotPatchNote(captor.capture());
+        List<AdminPatchNoteImportRequest> requests = captor.getAllValues();
+        assertThat(requests.get(0).getSourceUrl()).isEqualTo(failingOld.detailUrl());
+        assertThat(requests.get(0).shouldMarkCurrent()).isFalse();
+        assertThat(requests.get(1).getSourceUrl()).isEqualTo(latestNew.detailUrl());
+        assertThat(requests.get(1).shouldMarkCurrent()).isTrue();
     }
 
     @Test
@@ -152,6 +270,7 @@ class PatchNoteImportSchedulerTest {
         properties.setEnabled(true);
         properties.setStartupImport(true);
         givenSchedulerLockRunsTask();
+        givenPatchList();
         doAnswer(invocation -> {
             scheduler.refreshLatestPatchNote();
             return importResponse("17.5", "https://example.com/17-5");
@@ -200,6 +319,18 @@ class PatchNoteImportSchedulerTest {
         }).when(schedulerLock).runWithLock(any(), any());
     }
 
+    private void givenPatchList(PatchNoteCrawlListItem... items) {
+        PatchNoteCrawlFetchedPage listPage = fetchedPage();
+        when(crawlerFetchService.fetchTagPage("ko-kr")).thenReturn(listPage);
+        when(crawlerParser.parseListPage(listPage)).thenReturn(List.of(items));
+    }
+
+    private void givenPatchNoteIsNotImported(PatchNoteCrawlListItem item, String version) {
+        when(patchNoteRepository.findBySourceKey(item.contentId())).thenReturn(Optional.empty());
+        when(patchNoteRepository.findBySourceUrl(item.detailUrl())).thenReturn(Optional.empty());
+        when(patchNoteRepository.findByVersion(version)).thenReturn(Optional.empty());
+    }
+
     private PatchNoteCrawlFetchedPage fetchedPage() {
         return new PatchNoteCrawlFetchedPage(
                 "https://teamfighttactics.leagueoflegends.com/ko-kr/news/tags/patch-notes/",
@@ -210,9 +341,18 @@ class PatchNoteImportSchedulerTest {
     }
 
     private PatchNoteCrawlListItem listItem(String title, String contentId, String detailUrl) {
+        return listItem(title, LocalDateTime.now().minusDays(1), contentId, detailUrl);
+    }
+
+    private PatchNoteCrawlListItem listItem(
+            String title,
+            LocalDateTime publishedAt,
+            String contentId,
+            String detailUrl
+    ) {
         return new PatchNoteCrawlListItem(
                 title,
-                LocalDateTime.of(2026, 6, 18, 9, 0),
+                publishedAt,
                 "summary",
                 "",
                 contentId,

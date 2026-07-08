@@ -26,7 +26,10 @@ public class PatchNoteImportSchedulerProperties {
     private boolean current = true;
 
     @Positive
-    private int listScanLimit = 5;
+    private int historyMonths = 6;
+
+    @Positive
+    private int listScanLimit = 50;
 
     @NotBlank
     private String listCron = "0 0 * * * *";

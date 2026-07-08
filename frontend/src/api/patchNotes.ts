@@ -33,6 +33,7 @@ export interface PatchNoteSummary {
   imageUrl: string
   importedAt?: string
   importSource?: string
+  isCurrent?: boolean
   summary?: string
   status: '현재' | '이전'
   sourceUrl?: string
@@ -333,6 +334,7 @@ function normalizePatchNote(note: PatchNoteResponse): PatchNoteDetail {
   const publishedDate = readString(note.date ?? note.publishedAt)
   const summary = readString(note.summary)
   const description = readString(note.description ?? note.content ?? summary)
+  const isCurrent = note.status === '현재' || note.status === 'CURRENT' || note.isCurrent === true
   const imageUrl = readNonEmptyString(note.imageUrl)
     ?? readNonEmptyString(note.representativeImageUrl)
     ?? PATCH_NOTE_DEFAULT_IMAGE
@@ -346,8 +348,9 @@ function normalizePatchNote(note: PatchNoteResponse): PatchNoteDetail {
     imageUrl,
     importedAt: readNonEmptyString(note.importedAt),
     importSource: readNonEmptyString(note.importSource),
+    isCurrent,
     summary,
-    status: note.status === '현재' || note.status === 'CURRENT' || note.isCurrent ? '현재' : '이전',
+    status: isCurrent ? '현재' : '이전',
     sourceUrl: readNonEmptyString(note.sourceUrl),
     title: readString(note.title, `${readString(note.version)} 패치`),
     version: readString(note.version),

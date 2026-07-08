@@ -702,6 +702,8 @@
 
   .topStatusGroup {
     width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .patchBrief {
@@ -709,7 +711,15 @@
   }
 
   .riotStatus {
-    max-width: none;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .riotStatus span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .topActions {

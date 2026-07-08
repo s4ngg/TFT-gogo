@@ -19,6 +19,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -51,7 +52,7 @@ public class PatchNoteImportScheduler {
             logger.info("Patch note startup import disabled (app.patch-note.scheduler.startup-import=false)");
             return;
         }
-        runIfIdle("startup", this::importLatestPatchNote);
+        runIfIdle("startup", this::importLatestPatchNoteThenUnknownPatchNotesFromList);
     }
 
     @Scheduled(
@@ -102,10 +103,14 @@ public class PatchNoteImportScheduler {
         }
 
         int scanLimit = Math.min(properties.getListScanLimit(), listItems.size());
+        LocalDateTime historyCutoff = LocalDateTime.now().minusMonths(properties.getHistoryMonths());
         int imported = 0;
         for (int index = scanLimit - 1; index >= 0; index--) {
             PatchNoteCrawlListItem item = listItems.get(index);
             if (!hasText(item.detailUrl())) {
+                continue;
+            }
+            if (!isWithinHistoryWindow(item, historyCutoff)) {
                 continue;
             }
             if (isAlreadyImported(item)) {
@@ -113,26 +118,52 @@ public class PatchNoteImportScheduler {
             }
 
             boolean markCurrent = properties.isCurrent() && index == 0;
+            String version = resolveVersion(item);
             AdminPatchNoteImportRequest request = AdminPatchNoteImportRequest.of(
                     item.detailUrl(),
                     locale,
-                    resolveVersion(item),
+                    version,
                     markCurrent
             );
-            AdminPatchNoteImportResponse response = adminPatchNoteService.importRiotPatchNote(request);
-            imported++;
-            logger.info(
-                    "Patch note imported from list. version={}, sourceUrl={}, current={}, created={}, updated={}, skipped={}",
-                    response.getVersion(),
-                    response.getSourceUrl(),
-                    markCurrent,
-                    response.isPatchNoteCreated(),
-                    response.isPatchNoteUpdated(),
-                    response.isPatchNoteSkipped()
-            );
+            try {
+                AdminPatchNoteImportResponse response = adminPatchNoteService.importRiotPatchNote(request);
+                imported++;
+                logger.info(
+                        "Patch note imported from list. version={}, sourceUrl={}, current={}, created={}, updated={}, skipped={}",
+                        response.getVersion(),
+                        response.getSourceUrl(),
+                        markCurrent,
+                        response.isPatchNoteCreated(),
+                        response.isPatchNoteUpdated(),
+                        response.isPatchNoteSkipped()
+                );
+            } catch (Exception e) {
+                logger.warn(
+                        "Patch note import item failed. detailUrl={}, version={}, current={}",
+                        item.detailUrl(),
+                        version,
+                        markCurrent,
+                        e
+                );
+            }
         }
 
-        logger.info("Patch note list check completed. scanned={}, imported={}", scanLimit, imported);
+        logger.info(
+                "Patch note list check completed. scanned={}, historyMonths={}, historyCutoff={}, imported={}",
+                scanLimit,
+                properties.getHistoryMonths(),
+                historyCutoff,
+                imported
+        );
+    }
+
+    private boolean isWithinHistoryWindow(PatchNoteCrawlListItem item, LocalDateTime historyCutoff) {
+        return item.publishedAt() != null && !item.publishedAt().isBefore(historyCutoff);
+    }
+
+    private void importLatestPatchNoteThenUnknownPatchNotesFromList() {
+        importLatestPatchNote();
+        importUnknownPatchNotesFromList();
     }
 
     private void importLatestPatchNote() {
