@@ -62,6 +62,7 @@ Detailed human spec: docs/for-humans/spec/summoner.md
 - Search input: split('#') 후 gameName·tagLine 양쪽 모두 trim(). "닉네임 # KR1" 형태 입력 허용.
 - 갱신 버튼 쿨다운:
   - 갱신 성공 후 60초 동안 버튼 비활성화 + 카운트다운 표시 (`N초 후 가능`). 쿨다운은 버튼 전용이며 페이지(RateLimitState)를 가리지 않음.
+  - 갱신 성공 시 refreshSuccess=true, 쿨다운(cooldownSeconds > 0) 동안에만 버튼 아래 "갱신됨" 빨간 텍스트(`var(--danger)`) 표시. 쿨다운 종료 또는 다음 갱신 시작 시 자동 숨김/리셋.
   - localStorage(`tft_last_refresh`)에 소환사별 마지막 갱신 시각 저장. 페이지 재진입 시 잔여 쿨다운 자동 복원.
   - cooldownSeconds(버튼 전용)와 refreshRateLimitSeconds(429 전용)는 별도 상태로 분리.
 - 429 rate limit:
