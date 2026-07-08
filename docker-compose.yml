@@ -107,6 +107,7 @@ services:
         condition: service_healthy
     environment:
       APP_ENV: ${AI_SERVER_APP_ENV:-development}
+      DATABASE_URL: ${AI_SERVER_DATABASE_URL:-postgresql+asyncpg://tftuser:tftpass@postgres:5432/tftgogo_ai}
       INTERNAL_SECRET: ${AI_SERVER_INTERNAL_SECRET:-dev-internal-secret}
     env_file:
       - path: ./ai-server/.env
