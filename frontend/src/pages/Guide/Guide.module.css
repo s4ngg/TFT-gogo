@@ -375,9 +375,9 @@
 
 .traitCard,
 .metricCards article {
-  border: 1px solid rgba(112, 144, 152, 0.16);
+  border: 2px solid var(--border-card-highlight);
   border-radius: 10px;
-  background: linear-gradient(180deg, rgba(8, 21, 29, 0.96), rgba(5, 15, 21, 0.96));
+  background: var(--bg-card-gradient);
   box-shadow: 0 18px 38px rgba(0, 0, 0, 0.18);
 }
 
@@ -881,9 +881,9 @@ button.championMini:hover {
 .augmentListWrap {
   max-width: 100%;
   padding: var(--space-2xl);
-  border: 1px solid var(--border-subtle);
+  border: 2px solid var(--border-card-highlight);
   border-radius: var(--radius-button);
-  background: linear-gradient(180deg, var(--bg-card), var(--bg-main));
+  background: var(--bg-card-gradient);
   box-shadow: 0 18px 38px rgba(0, 0, 0, 0.18);
 }
 
@@ -1121,10 +1121,9 @@ button.championMini:hover {
   justify-items: center;
   gap: 9px;
   padding: 14px 12px 12px;
-  border: 1px solid rgba(112, 144, 152, 0.16);
+  border: 2px solid var(--border-card-highlight);
   border-radius: 10px;
-  background:
-    linear-gradient(180deg, rgba(9, 28, 36, 0.94), rgba(5, 15, 21, 0.96));
+  background: var(--bg-card-gradient);
   box-shadow: 0 18px 38px rgba(0, 0, 0, 0.18);
   cursor: default;
   outline: 0;

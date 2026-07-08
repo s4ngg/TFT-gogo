@@ -53,8 +53,10 @@ font-variant-numeric: tabular-nums;
 | `--bg-sidebar` | `#050a10` | 사이드바 배경 |
 | `--bg-card` | `#0b1420` | 카드 기본 배경 |
 | `--bg-card-soft` | `#101a27` | 부드러운 카드 배경 |
+| `--bg-card-gradient` | `linear-gradient(180deg, rgba(22,37,56,.96), rgba(14,25,38,.96))` | 카드/패널 배경(페이지 배경과 명도 구분) |
 | `--border` | `#1f2a37` | 기본 테두리 |
 | `--border-active` | `#00d4b4` | 활성/포커스 테두리 |
+| `--border-card-highlight` | `rgba(255,255,255,.14)` | 카드/패널 외곽 강조 테두리(흰색) |
 | `--color-cyan` | `#05f3e7` | 활성 아이콘, CTA, 주요 버튼 |
 | `--color-cyan-num` | `#04ede0` | 승률 강조 숫자 |
 | `--color-gold` | `#f7d26d` | 랭크 1~2, 티어 배지 |
@@ -75,6 +77,11 @@ font-variant-numeric: tabular-nums;
 | `--radius-card` | `12px` | 카드 |
 | `--radius-button` | `8px` | 버튼, 탭, 메타 테이블 내부 |
 | _(없음)_ | `6px` | 챔피언 카드, 작은 아이콘 |
+
+- 페이지 배경에 바로 맞닿는 카드/패널(전적 카드, 전적 상세 프로필/통계 카드, 대시보드 패널 등)은
+  `border: 2px solid var(--border-card-highlight)` + `background: var(--bg-card-gradient)`를 기본값으로 사용합니다.
+- 강조색(금색/보라색 등) 테두리가 의미를 가지는 카드(랭크 카드, 메타 덱 카드 등)와
+  중첩된 하위 패널(매치 상세 패널 등)은 예외로, 기존 강조색·배경을 유지합니다.
 
 ## Layout Density
 
