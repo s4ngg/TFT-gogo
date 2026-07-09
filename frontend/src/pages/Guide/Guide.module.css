@@ -2010,7 +2010,7 @@ button.championMini:hover {
     0 0 0 4px var(--cyan-glow-sm),
     0 18px 38px rgba(0, 0, 0, 0.18),
     0 0 28px var(--cyan-glow-md);
-  animation: guide-highlight-pulse var(--guide-highlight-pulse-duration) ease-in-out 2;
+  animation: guide-highlight-pulse var(--guide-highlight-pulse-duration) ease-in-out var(--guide-highlight-pulse-iterations);
 }
 
 @keyframes guide-highlight-pulse {

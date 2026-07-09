@@ -209,6 +209,7 @@
   --cyan-glow-md: rgba(4, 243, 229, 0.16);
   --cyan-glow-lg: rgba(4, 243, 229, 0.24);
   --guide-highlight-pulse-duration: 1.3s;
+  --guide-highlight-pulse-iterations: 2;
   --donut-track-bg: rgba(255, 255, 255, 0.07);
 }
 

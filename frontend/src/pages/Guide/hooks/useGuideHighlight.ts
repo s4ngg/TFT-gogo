@@ -2,8 +2,50 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { GuideTab } from '../../../api/guide'
 import type { HighlightedGuide } from '../utils/guideHighlight'
 
-// Keep this timeout aligned with --guide-highlight-pulse-duration (1.3s) * 2 in variables.css.
-const GUIDE_HIGHLIGHT_DURATION_MS = 2600
+const GUIDE_HIGHLIGHT_DURATION_FALLBACK_MS = 2600
+const GUIDE_HIGHLIGHT_PULSE_DURATION_VAR = '--guide-highlight-pulse-duration'
+const GUIDE_HIGHLIGHT_PULSE_ITERATIONS_VAR = '--guide-highlight-pulse-iterations'
+
+function parseCssTimeToMs(value: string): number | null {
+  const trimmedValue = value.trim()
+  const numericValue = Number.parseFloat(trimmedValue)
+
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    return null
+  }
+
+  if (trimmedValue.endsWith('ms')) {
+    return numericValue
+  }
+
+  if (trimmedValue.endsWith('s')) {
+    return numericValue * 1000
+  }
+
+  return null
+}
+
+function parsePositiveNumber(value: string): number | null {
+  const numericValue = Number.parseFloat(value.trim())
+
+  return Number.isFinite(numericValue) && numericValue > 0 ? numericValue : null
+}
+
+function readGuideHighlightDurationMs(): number {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return GUIDE_HIGHLIGHT_DURATION_FALLBACK_MS
+  }
+
+  const rootStyles = window.getComputedStyle(document.documentElement)
+  const pulseDurationMs = parseCssTimeToMs(rootStyles.getPropertyValue(GUIDE_HIGHLIGHT_PULSE_DURATION_VAR))
+  const pulseIterations = parsePositiveNumber(rootStyles.getPropertyValue(GUIDE_HIGHLIGHT_PULSE_ITERATIONS_VAR))
+
+  if (pulseDurationMs === null || pulseIterations === null) {
+    return GUIDE_HIGHLIGHT_DURATION_FALLBACK_MS
+  }
+
+  return pulseDurationMs * pulseIterations
+}
 
 interface UseGuideHighlightParams {
   onJump: (tab: GuideTab, query: string, label?: string) => void
@@ -33,7 +75,7 @@ export function useGuideHighlight({ onJump }: UseGuideHighlightParams) {
           ? null
           : current
       ))
-    }, GUIDE_HIGHLIGHT_DURATION_MS)
+    }, readGuideHighlightDurationMs())
   }, [onJump])
 
   return {
