@@ -34,3 +34,32 @@ test('isGuideHighlighted ignores matching names on a different tab', () => {
     false,
   )
 })
+
+test('isGuideHighlighted uses targetKey to disambiguate duplicate display names', () => {
+  assert.equal(
+    isGuideHighlighted(
+      'traits',
+      { name: '별돌보미', targetKey: 'TFT17_Stargazer_Wolf' },
+      {
+        label: '별돌보미',
+        query: '별돌보미',
+        tab: 'traits',
+        targetKey: 'TFT17_Stargazer_Huntress',
+      },
+    ),
+    false,
+  )
+  assert.equal(
+    isGuideHighlighted(
+      'traits',
+      { name: '별돌보미', targetKey: 'TFT17_Stargazer_Huntress' },
+      {
+        label: '별돌보미',
+        query: '별돌보미',
+        tab: 'traits',
+        targetKey: 'TFT17_Stargazer_Huntress',
+      },
+    ),
+    true,
+  )
+})

@@ -15,10 +15,13 @@ import { useGuidePageState } from './hooks/useGuidePageState'
 import styles from './Guide.module.css'
 
 const GUIDE_HIGHLIGHT_DURATION_MS = 2600
+type HighlightedGuide = RecentGuide & {
+  targetKey?: string
+}
 
 function Guide() {
   const highlightTimeoutRef = useRef<number | null>(null)
-  const [highlightedGuide, setHighlightedGuide] = useState<RecentGuide | null>(null)
+  const [highlightedGuide, setHighlightedGuide] = useState<HighlightedGuide | null>(null)
   const [isGameGuideAiOpen, setIsGameGuideAiOpen] = useState(false)
   const [gameGuideAiSelectedRefs, setGameGuideAiSelectedRefs] = useState<GameGuideAiPathfinderRef[]>([])
   const [gameGuideAiVisibleItems, setGameGuideAiVisibleItems] = useState<GuideTabItems[GuideTab][number][]>([])
@@ -55,8 +58,8 @@ function Guide() {
     }
   }, [])
 
-  function handleGuideJump(tab: GuideTab, query: string, label = query) {
-    const nextHighlightedGuide = { label, query, tab }
+  function handleGuideJump(tab: GuideTab, query: string, label = query, targetKey?: string) {
+    const nextHighlightedGuide = { label, query, tab, targetKey }
 
     jumpToGuide(tab, query, label)
     setHighlightedGuide(nextHighlightedGuide)

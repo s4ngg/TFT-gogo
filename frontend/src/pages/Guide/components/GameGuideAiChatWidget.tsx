@@ -21,7 +21,7 @@ interface GameGuideAiChatWidgetProps {
   activeTabLabel: string
   candidateRefs: GameGuideAiPathfinderRef[]
   isOpen: boolean
-  onGuideJump: (tab: GuideTab, query: string, label?: string) => void
+  onGuideJump: (tab: GuideTab, query: string, label?: string, targetKey?: string) => void
   onOpenChange: (isOpen: boolean) => void
   patchVersion: string
   selectedRefs: GameGuideAiPathfinderRef[]
@@ -42,14 +42,14 @@ const PHASE_LABELS: Record<GameGuideAiPathfinderPhase, string> = {
 }
 
 interface ResultBlockProps {
-  onGuideJump: (tab: GuideTab, query: string, label?: string) => void
+  onGuideJump: (tab: GuideTab, query: string, label?: string, targetKey?: string) => void
   response: GameGuideAiPathfinderResponse
 }
 
 function ResultBlock({ onGuideJump, response }: ResultBlockProps) {
   function handleRefClick(ref: GameGuideAiPathfinderRef) {
     const label = ref.name?.trim() || ref.targetKey
-    onGuideJump(GUIDE_TAB_BY_REF_TYPE[ref.guideType], label, label)
+    onGuideJump(GUIDE_TAB_BY_REF_TYPE[ref.guideType], label, label, ref.targetKey)
   }
 
   function renderRefButton(ref: GameGuideAiPathfinderRef, suffix?: string) {

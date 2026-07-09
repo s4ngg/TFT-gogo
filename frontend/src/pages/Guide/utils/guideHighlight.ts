@@ -5,6 +5,10 @@ export interface GuideHighlightCandidate {
   targetKey?: string | null
 }
 
+type HighlightedGuide = RecentGuide & {
+  targetKey?: string | null
+}
+
 function normalizeGuideHighlightValue(value?: string | null) {
   return value?.trim().toLowerCase() ?? ''
 }
@@ -12,10 +16,16 @@ function normalizeGuideHighlightValue(value?: string | null) {
 export function isGuideHighlighted(
   tab: GuideTab,
   guide: GuideHighlightCandidate,
-  highlightedGuide?: RecentGuide | null,
+  highlightedGuide?: HighlightedGuide | null,
 ) {
   if (!highlightedGuide || highlightedGuide.tab !== tab) {
     return false
+  }
+
+  const highlightedTargetKey = normalizeGuideHighlightValue(highlightedGuide.targetKey)
+  const guideTargetKey = normalizeGuideHighlightValue(guide.targetKey)
+  if (highlightedTargetKey) {
+    return guideTargetKey === highlightedTargetKey
   }
 
   const highlightValues = [

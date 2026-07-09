@@ -252,6 +252,8 @@ ApiResponse&lt;GameGuideAiPathfinderResponse&gt;
   bestUsers/combinations -> CHAMPION/ITEM refs. AUGMENT tag-only similarity is not used for automatic derivation.
 - Recommended/source/phase guide ref buttons in the widget jump to the matching Guide tab, apply the search query,
   scroll the matching card into view, and temporarily highlight that card. They do not auto-open detail modals.
+- When a clicked response ref includes targetKey, frontend card highlighting uses targetKey first and falls back to
+  name/query matching only when targetKey is unavailable.
 - ai-server returns BaseResponse with GameGuidePathfinderResponse. OpenAI failures, circuit-breaker open state,
   and JSON parsing failures produce deterministic fallback responses. Token-budget and global-rate-limit failures are
   surfaced to Spring as ai-server errors and Spring returns its deterministic fallback to the frontend.
