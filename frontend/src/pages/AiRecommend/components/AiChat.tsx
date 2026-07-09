@@ -16,16 +16,18 @@ function AiChat({ context }: Props) {
   const messagesRef = useRef<HTMLDivElement>(null)
   const lastUserBubbleRef = useRef<HTMLDivElement>(null)
   const lastUserIndex = messages.reduce((acc, msg, i) => (msg.role === 'user' ? i : acc), -1)
+  const prevLengthRef = useRef(messages.length)
 
   useEffect(() => {
     const last = messages[messages.length - 1]
     const container = messagesRef.current
     const bubble = lastUserBubbleRef.current
-    if (last?.role === 'user' && container && bubble) {
+    if (messages.length > prevLengthRef.current && last?.role === 'user' && container && bubble) {
       const offset = bubble.getBoundingClientRect().top - container.getBoundingClientRect().top
       container.scrollTo({ top: container.scrollTop + offset, behavior: 'smooth' })
     }
-  }, [messages.length])
+    prevLengthRef.current = messages.length
+  }, [messages])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

@@ -76,6 +76,7 @@ font-variant-numeric: tabular-nums;
 | --- | ---: | --- |
 | `--radius-card` | `12px` | 카드 |
 | `--radius-button` | `8px` | 버튼, 탭, 메타 테이블 내부 |
+| `--radius-panel` | `10px` | 패널 모서리 (AiRecommend, DeckDetail, Guide, Party 등) |
 | _(없음)_ | `6px` | 챔피언 카드, 작은 아이콘 |
 
 - 페이지 배경에 바로 맞닿는 카드/패널(전적 카드, 전적 상세 프로필/통계 카드, 대시보드 패널 등)은

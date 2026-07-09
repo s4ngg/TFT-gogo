@@ -225,6 +225,7 @@ function SearchDetail() {
 
   useEffect(() => {
     setCooldownSeconds(getInitialCooldown(name, tag))
+    setRefreshSuccess(false)
   }, [name, tag])
 
   useEffect(() => {
@@ -406,7 +407,7 @@ function SearchDetail() {
                             <p className={styles.timeAgo}>{formatDate(match.gameDateTime)} · {timeAgo(match.gameDateTime)}</p>
                           </div>
                           <div className={styles.unitList}>
-                            {match.units.slice(0, 8).map((unit, i) => (
+                            {(match.units.length > 8 ? match.units.slice(0, 7) : match.units).map((unit, i) => (
                               <ChampionCard
                                 key={`${unit.characterId}-${i}`}
                                 imageUrl={unit.imageUrl || tftChampSquareUrl(unit.characterId)}
@@ -417,7 +418,7 @@ function SearchDetail() {
                               />
                             ))}
                             {match.units.length > 8 && (
-                              <span className={styles.unitOverflow}>+{match.units.length - 8}</span>
+                              <span className={styles.unitOverflow}>+{match.units.length - 7}</span>
                             )}
                           </div>
                           <div className={styles.matchChevron}>

@@ -60,7 +60,7 @@
   margin-bottom: 16px;
   padding: 18px 24px;
   border: 2px solid var(--border-card-highlight);
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
   background: var(--bg-card-gradient);
 }
 
@@ -90,7 +90,7 @@
 .panel {
   padding: 20px 22px;
   border: 2px solid var(--border-card-highlight);
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
   background: var(--bg-card-gradient);
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
   margin-bottom: 14px;

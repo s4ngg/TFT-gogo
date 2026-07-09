@@ -159,7 +159,7 @@
 .tableWrap {
   margin-top: 14px;
   border: 2px solid var(--border-card-highlight);
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
   overflow: hidden;
   background: var(--bg-card-gradient);
   box-shadow: 0 18px 38px rgba(0, 0, 0, 0.18);
@@ -357,7 +357,7 @@
   gap: 12px;
   padding: 16px 18px;
   border: 1px solid rgba(167, 139, 250, 0.18);
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
   background: var(--bg-card-gradient);
   transition: border-color 0.15s;
 }

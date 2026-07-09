@@ -222,7 +222,7 @@
   gap: 13px;
   min-height: 86px;
   padding: 18px;
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
 }
 
 .summaryIcon {
@@ -656,7 +656,7 @@
   place-items: center;
   min-height: 180px;
   border: 1px dashed rgba(112, 144, 152, 0.2);
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
   color: #7c8794;
   background: rgba(255, 255, 255, 0.02);
   font-size: 13px;
