@@ -105,6 +105,11 @@ async def ensure_deck_embeddings_cached(meta_decks: list[MetaDeck]) -> bool:
     """
     meta_decks의 임베딩이 전부 pgvector 테이블에 있는 상태로 만든다.
     없는 것만 새로 임베딩해서 upsert. DB/OpenAI 중 하나라도 실패하면 False.
+
+    조회 세션과 upsert 세션을 분리하고 그 사이(OpenAI 호출)에는 DB 세션을
+    붙잡지 않는다 — 임베딩 API가 느려질 때 커넥션 풀이 그만큼 묶이는 것을
+    피하기 위함. 두 트랜잭션 사이에 다른 요청이 같은 signature를 먼저
+    upsert하더라도 on_conflict_do_nothing이라 안전하다.
     """
     if not meta_decks:
         return True
@@ -121,29 +126,29 @@ async def ensure_deck_embeddings_cached(meta_decks: list[MetaDeck]) -> bool:
                 )
             ).scalars().all()
 
-            missing_signatures = [sig for sig in signature_map if sig not in set(existing)]
-            if not missing_signatures:
-                return True
+        missing_signatures = [sig for sig in signature_map if sig not in set(existing)]
+        if not missing_signatures:
+            return True
 
-            texts = [deck_embedding_text(signature_map[sig]) for sig in missing_signatures]
-            vectors = await embed_texts(texts)
-            if vectors is None:
-                return False
+        text_by_signature = {sig: deck_embedding_text(signature_map[sig]) for sig in missing_signatures}
+        vectors = await embed_texts(list(text_by_signature.values()))
+        if vectors is None:
+            return False
 
+        async with session_scope() as session:
             for sig, vector in zip(missing_signatures, vectors):
                 stmt = (
                     pg_insert(MetaDeckEmbedding)
                     .values(
                         signature=sig,
                         embedding=vector,
-                        source_text=deck_embedding_text(signature_map[sig]),
+                        source_text=text_by_signature[sig],
                     )
                     .on_conflict_do_nothing(index_elements=["signature"])
                 )
                 await session.execute(stmt)
-
             await session.commit()
-            return True
+        return True
     except Exception as e:
         logger.warning("메타덱 임베딩 캐시 조회/저장 실패, 벡터 검색 스킵: %s", e)
         return False

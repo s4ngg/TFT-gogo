@@ -39,5 +39,8 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    # vector 익스텐션은 DB 레벨 객체라 이 테이블 마이그레이션이 소유하지 않는다.
+    # 다른 테이블/마이그레이션이 이미 vector를 쓰고 있을 수 있으므로 여기서
+    # DROP EXTENSION을 실행하지 않는다 (CASCADE 없이는 실패하고, CASCADE를
+    # 붙이면 무관한 다른 객체까지 깨질 수 있다).
     op.drop_table("meta_deck_embedding")
-    op.execute("DROP EXTENSION IF EXISTS vector")
