@@ -80,6 +80,7 @@
   --sidebar-collapsed-width: 78px;
   --radius-card: 12px;
   --radius-button: 8px;
+  --radius-panel: 10px;
   --chevron-col-width: 28px;
 }
 
@@ -173,7 +174,8 @@
 
 /* Panel / card background tokens */
 :root {
-  --bg-card-gradient: linear-gradient(180deg, rgba(8, 21, 29, 0.96), rgba(5, 15, 21, 0.96));
+  --bg-card-gradient: linear-gradient(180deg, rgba(22, 37, 56, 0.96), rgba(14, 25, 38, 0.96));
+  --border-card-highlight: rgba(255, 255, 255, 0.14);
   --bg-input-dark: rgba(3, 15, 20, 0.94);
   --bg-btn-dark: rgba(14, 27, 34, 0.74);
   --bg-btn-dark-soft: rgba(14, 27, 34, 0.6);

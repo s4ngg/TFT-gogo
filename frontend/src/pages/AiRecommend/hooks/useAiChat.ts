@@ -7,27 +7,24 @@ export function useAiChat(context?: AiChatContext) {
   const resetRef = useRef(0)
 
   const mutation = useMutation({
-    mutationFn: (userText: string) => {
-      const epoch = resetRef.current
-      const next: AiChatMessage[] = [...messages, { role: 'user', content: userText }]
+    mutationFn: ({ next, epoch }: { next: AiChatMessage[]; epoch: number }) => {
       return sendAiChatMessage({ messages: next, context }).then((reply) => {
-        return { userText, reply, epoch }
+        return { reply, epoch }
       })
     },
-    onSuccess: ({ userText, reply, epoch }) => {
+    onSuccess: ({ reply, epoch }) => {
       if (epoch !== resetRef.current) return
-      setMessages((prev) => [
-        ...prev,
-        { role: 'user', content: userText },
-        { role: 'assistant', content: reply },
-      ])
+      setMessages((prev) => [...prev, { role: 'assistant', content: reply }])
     },
   })
 
   const send = (text: string) => {
     const trimmed = text.trim()
     if (!trimmed || mutation.isPending) return
-    mutation.mutate(trimmed)
+    const epoch = resetRef.current
+    const next: AiChatMessage[] = [...messages, { role: 'user', content: trimmed }]
+    setMessages(next)
+    mutation.mutate({ next, epoch })
   }
 
   const reset = () => {
