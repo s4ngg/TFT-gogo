@@ -15,6 +15,7 @@ from app.core.circuit_breaker import openai_breaker
 from app.core.config import settings
 from app.core.token_budget import check_budget
 from app.models.match import DeckReason, MetaDeck, TraitStat
+from app.services import embedding
 
 logger = logging.getLogger(__name__)
 
@@ -66,8 +67,65 @@ def rank_meta_decks(
     meta_decks: list[MetaDeck],
     good_traits: list[TraitStat],
 ) -> list[MetaDeck]:
-    """내 플레이 스타일 기반으로 메타 덱 정렬."""
+    """내 플레이 스타일 기반으로 메타 덱 정렬 (set-overlap 점수만)."""
     scored = [(deck, _match_score(deck, good_traits)) for deck in meta_decks]
+    scored.sort(key=lambda x: x[1], reverse=True)
+    return [deck for deck, _ in scored]
+
+
+async def _vector_scores(
+    meta_decks: list[MetaDeck],
+    good_traits: list[TraitStat],
+    bad_traits: list[TraitStat],
+) -> dict[int, float] | None:
+    """
+    deck.rank -> pgvector 코사인 유사도(0~1) 매핑.
+    임베딩 캐시 적재, 플레이어 스타일 임베딩, 유사도 조회 중 하나라도
+    실패하면 None을 반환해 호출부가 set-overlap 점수만으로 폴백하게 한다.
+    """
+    if not meta_decks:
+        return {}
+
+    cached = await embedding.ensure_deck_embeddings_cached(meta_decks)
+    if not cached:
+        return None
+
+    style_vectors = await embedding.embed_texts(
+        [embedding.player_style_text(good_traits, bad_traits)]
+    )
+    if not style_vectors:
+        return None
+
+    signature_by_rank = {deck.rank: embedding.deck_signature(deck) for deck in meta_decks}
+    similarities = await embedding.similarity_scores(
+        style_vectors[0], list(signature_by_rank.values())
+    )
+    if similarities is None:
+        return None
+
+    return {
+        rank: similarities.get(sig, 0.0) for rank, sig in signature_by_rank.items()
+    }
+
+
+async def rank_meta_decks_semantic(
+    meta_decks: list[MetaDeck],
+    good_traits: list[TraitStat],
+    bad_traits: list[TraitStat],
+) -> list[MetaDeck]:
+    """
+    set-overlap 점수(_match_score) + pgvector 코사인 유사도 하이브리드 정렬.
+    벡터 검색을 쓸 수 없으면(DB/OpenAI 실패) 기존 set-overlap 점수만으로 동작한다.
+    """
+    vector_scores = await _vector_scores(meta_decks, good_traits, bad_traits)
+
+    scored = []
+    for deck in meta_decks:
+        score = _match_score(deck, good_traits)
+        if vector_scores is not None:
+            score += settings.vector_search_weight * vector_scores.get(deck.rank, 0.0)
+        scored.append((deck, score))
+
     scored.sort(key=lambda x: x[1], reverse=True)
     return [deck for deck, _ in scored]
 
