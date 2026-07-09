@@ -9,25 +9,58 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestBody;
 
 @Tag(name = "Auth", description = "회원 인증 API")
 public interface AuthControllerDocs {
 
-    @Operation(summary = "회원가입", description = "이메일, 비밀번호, 닉네임으로 회원가입하고 JWT 액세스 토큰을 반환합니다.")
+    @Operation(
+            summary = "회원가입",
+            description = "이메일, 비밀번호, 닉네임으로 회원가입하고 JWT 액세스 토큰을 반환하며 Refresh Token은 HttpOnly 쿠키로 설정합니다."
+    )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "회원가입 성공")
     })
     ResponseEntity<ApiResponse<AuthResponse>> signup(@Valid @RequestBody SignupRequest request);
 
-    @Operation(summary = "로그인", description = "이메일과 비밀번호로 로그인하고 JWT 액세스 토큰을 반환합니다.")
+    @Operation(
+            summary = "로그인",
+            description = "이메일과 비밀번호로 로그인하고 JWT 액세스 토큰을 반환하며 Refresh Token은 HttpOnly 쿠키로 설정합니다."
+    )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "로그인 성공")
     })
     ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request);
+
+    @Operation(
+            summary = "토큰 재발급",
+            description = "HttpOnly Refresh Token 쿠키를 검증하고 rotation한 뒤 새 Access Token을 반환합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "토큰 재발급 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Refresh Token 없음, 만료, 재사용 탐지 또는 세션 무효")
+    })
+    ResponseEntity<ApiResponse<AuthResponse>> refresh(HttpServletRequest request);
+
+    @Operation(
+            summary = "로그아웃",
+            description = "Refresh Token 세션을 폐기하고 유효한 Access Token jti를 blocklist에 등록한 뒤 Refresh Token 쿠키를 삭제합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "로그아웃 성공")
+    })
+    ResponseEntity<ApiResponse<Void>> logout(
+            @AuthenticationPrincipal Long userId,
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization,
+            HttpServletRequest request
+    );
 
     @Operation(
             summary = "소셜 로그인 시작 URL 조회",

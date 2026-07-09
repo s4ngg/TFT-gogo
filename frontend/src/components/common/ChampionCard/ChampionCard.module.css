@@ -1,13 +1,13 @@
 .card {
   position: relative;
-  width: 43px;
-  height: 43px;
+  width: 50px;
+  height: 60px;
   display: grid;
   place-items: center;
   flex: 0 0 auto;
   overflow: visible;
   border: 2px solid #bd862d;
-  border-radius: 6px;
+  border-radius: 8px;
   background:
     radial-gradient(circle at 62% 28%, rgba(255, 255, 255, 0.3), transparent 18%),
     linear-gradient(135deg, #1fb7df, #58206d 48%, #d26b54);
@@ -27,15 +27,15 @@
   position: relative;
   z-index: 1;
   color: #ffffff;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
 }
 
 .stars {
   position: absolute;
-  top: -13px;
+  top: -16px;
   color: #ffdc3b;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0;
   text-shadow: 0 1px 0 #000;
@@ -45,8 +45,8 @@
   position: absolute;
   right: 1px;
   bottom: 1px;
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
   overflow: hidden;
   border: 1px solid rgba(255, 215, 92, 0.88);
   border-radius: 2px;
@@ -81,14 +81,15 @@
 }
 
 .itemIcon {
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
   display: block;
   border: 1px solid rgba(255, 206, 76, 0.8);
   border-radius: 2px;
   background: #0b1118;
   object-fit: cover;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.58);
+  pointer-events: auto;
 }
 
 /* 코스트별 색상 (TFT 게임 기준) — 색상 토큰은 variables.css 참조 */
@@ -128,27 +129,31 @@
 
 @media (max-height: 980px) {
   .card {
-    width: 39px;
-    height: 39px;
-    border-radius: 5px;
+    width: 46px;
+    height: 55px;
+    border-radius: 7px;
   }
 
   .image {
-    border-radius: 3px;
+    border-radius: 6px;
   }
 
   .stars {
-    top: -12px;
-    font-size: 9px;
+    top: -15px;
+    font-size: 10px;
   }
 
   .itemMark {
-    width: 11px;
-    height: 11px;
+    width: 12px;
+    height: 12px;
+  }
+
+  .itemTray {
+    gap: 0;
   }
 
   .itemIcon {
-    width: 11px;
-    height: 11px;
+    width: 15px;
+    height: 15px;
   }
 }

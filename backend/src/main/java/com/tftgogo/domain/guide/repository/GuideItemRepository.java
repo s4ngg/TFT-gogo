@@ -24,8 +24,11 @@ public interface GuideItemRepository extends JpaRepository<GuideItem, Long> {
                       AND (
                             :query IS NULL
                             OR LOWER(name) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(category) LIKE LOWER(CONCAT('%', :query, '%'))
                             OR LOWER(description) LIKE LOWER(CONCAT('%', :query, '%'))
                             OR LOWER(item_key) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(CAST(best_users_json AS CHAR)) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(CAST(combinations_json AS CHAR)) LIKE LOWER(CONCAT('%', :query, '%'))
                       )
                     ORDER BY name ASC, id ASC
                     """,
@@ -36,8 +39,11 @@ public interface GuideItemRepository extends JpaRepository<GuideItem, Long> {
                       AND (
                             :query IS NULL
                             OR LOWER(name) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(category) LIKE LOWER(CONCAT('%', :query, '%'))
                             OR LOWER(description) LIKE LOWER(CONCAT('%', :query, '%'))
                             OR LOWER(item_key) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(CAST(best_users_json AS CHAR)) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(CAST(combinations_json AS CHAR)) LIKE LOWER(CONCAT('%', :query, '%'))
                       )
                     """,
             nativeQuery = true

@@ -16,7 +16,7 @@ Pages: Dashboard (/), MetaStats.
 - 검색 결과 카드의 상세 보기 CTA 클릭 시 /summoner/:gameName/:tagLine으로 프론트엔드 라우팅한다.
 </backend>
 <frontend>
-- frontend/src/api/summonerApi.ts — getSummonerProfile (대시보드 검색 결과 카드와 검색 결과 페이지에서 사용)
+- frontend/src/api/searchApi.ts — getSummonerProfile (대시보드 검색 결과 카드와 검색 결과 페이지에서 사용)
 </frontend>
 </api>
 

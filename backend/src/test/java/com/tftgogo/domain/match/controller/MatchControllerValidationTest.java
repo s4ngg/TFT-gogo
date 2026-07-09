@@ -5,6 +5,7 @@ import com.tftgogo.global.cdragon.service.TftAssetCacheService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -22,7 +23,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(
         controllers = MatchController.class,
-        excludeAutoConfiguration = SecurityAutoConfiguration.class,
+        excludeAutoConfiguration = {
+                SecurityAutoConfiguration.class,
+                OAuth2ClientAutoConfiguration.class
+        },
         excludeFilters = @ComponentScan.Filter(
                 type = FilterType.REGEX,
                 pattern = "com\\.tftgogo\\.global\\.(filter|security|config\\.Security).*"

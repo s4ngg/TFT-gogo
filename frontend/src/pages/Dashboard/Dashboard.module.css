@@ -5,9 +5,10 @@
   --right-top-row: 360px;
   --right-bottom-row: 120px;
 
-  width: 1273px;
+  width: 100%;
+  max-width: var(--page-dashboard-width);
   display: grid;
-  grid-template-columns: minmax(250px, 267px) minmax(520px, 566px) minmax(380px, 410px);
+  grid-template-columns: minmax(210px, 267px) minmax(440px, 566px) minmax(320px, 410px);
   grid-template-rows: var(--top-row-height) minmax(0, var(--snapshot-height));
   align-content: start;
   justify-content: start;
@@ -15,9 +16,9 @@
 }
 
 .panel {
-  border: 1px solid var(--border);
+  border: 2px solid var(--border-card-highlight);
   border-radius: var(--radius-card);
-  background: linear-gradient(180deg, rgba(8, 21, 29, 0.96), rgba(5, 15, 21, 0.96));
+  background: var(--bg-card-gradient);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.015), 0 18px 38px rgba(0, 0, 0, 0.18);
 }
 
@@ -332,10 +333,11 @@
   grid-template-columns: 1fr 165px;
   overflow: hidden;
   padding: 23px 19px 20px 22px;
+  border: 2px solid var(--border-card-highlight);
   background:
     radial-gradient(circle at 74% 46%, rgba(0, 139, 218, 0.18), transparent 43%),
     radial-gradient(circle at 88% 24%, rgba(0, 239, 229, 0.12), transparent 30%),
-    linear-gradient(180deg, rgba(8, 21, 29, 0.98), rgba(5, 15, 21, 0.98));
+    var(--bg-card-gradient);
 }
 
 .apiText {
@@ -411,6 +413,10 @@
   flex-direction: column;
   overflow: hidden;
   padding: 16px 18px 14px;
+  --deck-row-columns: 32px minmax(148px, 170px) minmax(288px, 1fr) 56px 56px 22px;
+  --deck-row-gap: 8px;
+  --deck-row-padding-left: 9px;
+  --deck-row-padding-right: 11px;
 }
 
 .panelHeading,
@@ -519,6 +525,23 @@
   box-shadow: inset 0 0 17px rgba(0, 246, 232, 0.13);
 }
 
+.deckListHeader {
+  display: grid;
+  grid-template-columns: var(--deck-row-columns);
+  align-items: center;
+  gap: var(--deck-row-gap);
+  padding: 0 var(--deck-row-padding-right) 6px var(--deck-row-padding-left);
+  border: 1px solid transparent;
+  color: #8b95a0;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.deckListHeader span:nth-child(4),
+.deckListHeader span:nth-child(5) {
+  text-align: center;
+}
+
 .deckList {
   flex: 1 1 auto;
   min-height: 0;
@@ -532,10 +555,10 @@
 .deckRow {
   min-height: 0;
   display: grid;
-  grid-template-columns: 45px 32px minmax(148px, 170px) minmax(288px, 1fr) 56px 56px 58px 22px;
+  grid-template-columns: var(--deck-row-columns);
   align-items: center;
-  gap: 8px;
-  padding: 7px 11px 7px 9px;
+  gap: var(--deck-row-gap);
+  padding: 7px var(--deck-row-padding-right) 7px var(--deck-row-padding-left);
   border-bottom: 1px solid rgba(114, 145, 153, 0.13);
   background: linear-gradient(90deg, rgba(12, 29, 37, 0.78), rgba(6, 17, 24, 0.38));
 }
@@ -544,25 +567,8 @@
   border-bottom: 0;
 }
 
-.rankNumber {
-  width: 46px;
-  height: 49px;
-  display: grid;
-  place-items: center;
-  border-radius: 6px;
-  color: #f7d26d;
-  background: linear-gradient(135deg, rgba(108, 74, 25, 0.86), rgba(35, 37, 36, 0.94));
-  font-size: 30px;
-  font-weight: 800;
-}
-
-.deckRow:nth-child(n + 4) .rankNumber {
-  color: #c3ccd4;
-  background: linear-gradient(135deg, rgba(45, 66, 78, 0.83), rgba(21, 31, 39, 0.92));
-}
-
-.deckRow:nth-child(3) .rankNumber {
-  color: #ed8d48;
+.deckInfo {
+  min-width: 0;
 }
 
 .deckInfo h3 {
@@ -589,6 +595,8 @@
 
 .champions {
   gap: 7px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .winRate,
@@ -1080,6 +1088,9 @@ button:hover {
 
   .metaPanel {
     padding: 14px 16px 12px;
+    --deck-row-columns: 30px minmax(136px, 154px) minmax(260px, 1fr) 52px 52px 20px;
+    --deck-row-padding-left: 8px;
+    --deck-row-padding-right: 10px;
   }
 
   .panelHeading h2 {
@@ -1097,15 +1108,8 @@ button:hover {
   }
 
   .deckRow {
-    grid-template-columns: 42px 30px minmax(136px, 154px) minmax(260px, 1fr) 52px 52px 56px 20px;
-    gap: 8px;
-    padding: 6px 10px 6px 8px;
-  }
-
-  .rankNumber {
-    width: 42px;
-    height: 46px;
-    font-size: 27px;
+    padding-top: 6px;
+    padding-bottom: 6px;
   }
 
   .deckInfo h3 {
@@ -1188,5 +1192,25 @@ button:hover {
   .aiOptionIcon {
     width: 24px;
     height: 24px;
+  }
+}
+
+/* 사이드바(222px) + main 패딩(34px) + 3열 최소폭(1000px) 합이 1256px이라
+   그 아래에서는 3열 유지 시 그리드가 다시 넘친다 */
+@media (max-width: 1260px) {
+  .dashboardGrid {
+    max-width: 100%;
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+  }
+
+  .rightColumn {
+    grid-column: 1;
+    grid-row: auto;
+    height: auto;
+  }
+
+  .metaPanel {
+    grid-column: 1;
   }
 }

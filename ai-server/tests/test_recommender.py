@@ -10,12 +10,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from openai import APITimeoutError, APIConnectionError, APIStatusError
 
 from app.models.match import MetaDeck, TraitStat
+from app.services import embedding
 from app.services.recommender import (
     _fallback_reasons,
     _is_patch_trend,
     _match_score,
     generate_reasons,
     rank_meta_decks,
+    rank_meta_decks_semantic,
 )
 
 _BUDGET_PATH = "app.services.recommender.check_budget"
@@ -68,6 +70,71 @@ def test_rank_meta_decks_겹치는_시너지_없으면_score_0으로_처리한�
     ranked = rank_meta_decks(decks, good)
     # 모두 score 0이므로 원래 순서 유지 (stable sort)
     assert len(ranked) == 2
+
+
+# ── rank_meta_decks_semantic (set-overlap + pgvector 하이브리드) ─────────
+
+@pytest.mark.asyncio
+async def test_rank_meta_decks_semantic_벡터_실패시_matchscore와_동일_순서():
+    good = [_trait("Warrior", avg_place="2.5"), _trait("Mage")]
+    deck_match = _deck(2, "A", ["warrior", "mage", "assassin"])
+    deck_no_match = _deck(1, "S", ["tank", "bruiser"])
+
+    with patch(
+        "app.services.recommender.embedding.ensure_deck_embeddings_cached",
+        AsyncMock(return_value=False),
+    ):
+        ranked = await rank_meta_decks_semantic([deck_no_match, deck_match], good, [])
+
+    fallback_ranked = rank_meta_decks([deck_no_match, deck_match], good)
+    assert [d.rank for d in ranked] == [d.rank for d in fallback_ranked]
+
+
+@pytest.mark.asyncio
+async def test_rank_meta_decks_semantic_플레이어_임베딩_실패시_matchscore와_동일_순서():
+    good = [_trait("Warrior", avg_place="2.5")]
+    deck_match = _deck(2, "A", ["warrior"])
+    deck_no_match = _deck(1, "S", ["tank"])
+
+    with patch(
+        "app.services.recommender.embedding.ensure_deck_embeddings_cached",
+        AsyncMock(return_value=True),
+    ), patch(
+        "app.services.recommender.embedding.embed_texts",
+        AsyncMock(return_value=None),
+    ):
+        ranked = await rank_meta_decks_semantic([deck_no_match, deck_match], good, [])
+
+    assert ranked[0].rank == 2
+
+
+@pytest.mark.asyncio
+async def test_rank_meta_decks_semantic_벡터_유사도가_동점_덱_순서를_바꾼다():
+    good = [_trait("Warrior", avg_place="2.5")]
+    # 둘 다 good_traits와 겹치는 시너지가 없어 _match_score는 0으로 동점
+    deck_a = _deck(1, "S", ["tank"])
+    deck_b = _deck(2, "A", ["bruiser"])
+
+    sig_a = embedding.deck_signature(deck_a)
+    sig_b = embedding.deck_signature(deck_b)
+
+    async def fake_similarity_scores(query_vector, signatures):
+        return {sig_a: 0.1, sig_b: 0.9}
+
+    with patch(
+        "app.services.recommender.embedding.ensure_deck_embeddings_cached",
+        AsyncMock(return_value=True),
+    ), patch(
+        "app.services.recommender.embedding.embed_texts",
+        AsyncMock(return_value=[[0.0]]),
+    ), patch(
+        "app.services.recommender.embedding.similarity_scores",
+        fake_similarity_scores,
+    ):
+        ranked = await rank_meta_decks_semantic([deck_a, deck_b], good, [])
+
+    # match_score는 동점(0)이므로 유사도가 더 높은 deck_b(rank=2)가 앞으로 온다
+    assert ranked[0].rank == 2
 
 
 # ── _match_score ─────────────────────────────────────────────────────────

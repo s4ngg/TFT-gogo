@@ -3,6 +3,10 @@ package com.tftgogo.domain.patchnote.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tftgogo.domain.guide.entity.GuideChampion;
+import com.tftgogo.domain.guide.entity.GuideTrait;
+import com.tftgogo.domain.guide.repository.GuideChampionRepository;
+import com.tftgogo.domain.guide.repository.GuideTraitRepository;
 import com.tftgogo.domain.patchnote.config.PatchNoteCrawlerProperties;
 import com.tftgogo.domain.patchnote.dto.crawl.PatchChangeCrawlRow;
 import com.tftgogo.domain.patchnote.dto.crawl.PatchNoteCrawlDocument;
@@ -61,6 +65,8 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
     private final PatchNoteCrawlerFetchService crawlerFetchService;
     private final PatchNoteCrawlerParser crawlerParser;
     private final PatchNoteCrawlerProperties crawlerProperties;
+    private final GuideChampionRepository guideChampionRepository;
+    private final GuideTraitRepository guideTraitRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -322,11 +328,12 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
         int updated = 0;
         int skipped = 0;
         Set<String> importedSourceKeys = new HashSet<>();
+        PatchChangeGuideNameCatalog guideNameCatalog = buildGuideNameCatalog(patchNote.getVersion());
 
         for (PatchChangeCrawlRow row : rows) {
             String sourceKey = resolveChangeSourceKey(row);
             importedSourceKeys.add(sourceKey);
-            PatchChangeCategory category = inferCategory(row);
+            PatchChangeCategory category = inferCategory(row, guideNameCatalog);
             PatchChangeType changeType = inferChangeType(row);
             PatchChangeImpact impact = PatchChangeImpact.MEDIUM;
             String targetName = resolveTargetName(row);
@@ -491,7 +498,7 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
         return document.publishedAt() == null ? fallback : document.publishedAt();
     }
 
-    private PatchChangeCategory inferCategory(PatchChangeCrawlRow row) {
+    private PatchChangeCategory inferCategory(PatchChangeCrawlRow row, PatchChangeGuideNameCatalog guideNameCatalog) {
         String text = normalizeLower(row.headingPath() + " " + row.sectionTitle() + " " + row.groupTitle());
         if (isBugFixRow(row)) {
             return PatchChangeCategory.SYSTEM;
@@ -508,7 +515,158 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
         if (text.contains("augment") || text.contains("증강")) {
             return PatchChangeCategory.AUGMENT;
         }
+        Optional<PatchChangeCategory> guideCategory = inferCategoryFromGuideNames(row, guideNameCatalog);
+        if (guideCategory.isPresent()) {
+            return guideCategory.get();
+        }
         return PatchChangeCategory.SYSTEM;
+    }
+
+    private PatchChangeGuideNameCatalog buildGuideNameCatalog(String patchVersion) {
+        if (!hasText(patchVersion)) {
+            return PatchChangeGuideNameCatalog.empty();
+        }
+
+        return new PatchChangeGuideNameCatalog(
+                collectGuideChampionNames(patchVersion),
+                collectGuideTraitNames(patchVersion)
+        );
+    }
+
+    private Set<String> collectGuideChampionNames(String patchVersion) {
+        List<GuideChampion> champions = guideChampionRepository.findByPatchVersionOrderByNameAscIdAsc(patchVersion);
+        if (champions == null || champions.isEmpty()) {
+            return Set.of();
+        }
+        Set<String> names = new HashSet<>();
+        champions.forEach(champion -> addGuideName(names, champion.getName()));
+        return names;
+    }
+
+    private Set<String> collectGuideTraitNames(String patchVersion) {
+        List<GuideTrait> traits = guideTraitRepository.findByPatchVersionOrderByNameAscIdAsc(patchVersion);
+        if (traits == null || traits.isEmpty()) {
+            return Set.of();
+        }
+        Set<String> names = new HashSet<>();
+        traits.forEach(trait -> addGuideName(names, trait.getName()));
+        return names;
+    }
+
+    private void addGuideName(Set<String> names, String name) {
+        String normalizedName = normalizeGuideName(name);
+        if (!hasText(normalizedName)) {
+            return;
+        }
+        names.add(normalizedName);
+
+        String compactName = normalizedName.replace(" ", "");
+        if (compactName.length() >= 3) {
+            names.add(compactName);
+        }
+    }
+
+    private Optional<PatchChangeCategory> inferCategoryFromGuideNames(
+            PatchChangeCrawlRow row,
+            PatchChangeGuideNameCatalog guideNameCatalog
+    ) {
+        if (guideNameCatalog.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Optional<PatchChangeCategory> targetCategory = inferCategoryFromGuideText(
+                row.groupTitle() + " " + row.sectionTitle(),
+                guideNameCatalog
+        );
+        if (targetCategory.isPresent()) {
+            return targetCategory;
+        }
+
+        Optional<PatchChangeCategory> rowTextCategory = inferCategoryFromGuideText(row.rowText(), guideNameCatalog);
+        if (rowTextCategory.isPresent()) {
+            return rowTextCategory;
+        }
+
+        return inferCategoryFromGuideText(row.headingPath(), guideNameCatalog);
+    }
+
+    private Optional<PatchChangeCategory> inferCategoryFromGuideText(
+            String text,
+            PatchChangeGuideNameCatalog guideNameCatalog
+    ) {
+        String normalizedText = normalizeGuideName(text);
+        if (!hasText(normalizedText)) {
+            return Optional.empty();
+        }
+
+        int championMatchLength = longestGuideNameMatchLength(normalizedText, guideNameCatalog.championNames());
+        int traitMatchLength = longestGuideNameMatchLength(normalizedText, guideNameCatalog.traitNames());
+
+        if (championMatchLength <= 0 && traitMatchLength <= 0) {
+            return Optional.empty();
+        }
+        if (championMatchLength >= traitMatchLength) {
+            return Optional.of(PatchChangeCategory.CHAMPION);
+        }
+        return Optional.of(PatchChangeCategory.TRAIT);
+    }
+
+    private int longestGuideNameMatchLength(String normalizedText, Set<String> guideNames) {
+        int longestMatchLength = 0;
+        for (String guideName : guideNames) {
+            if (isGuideNameMatch(normalizedText, guideName)) {
+                longestMatchLength = Math.max(longestMatchLength, guideName.length());
+            }
+        }
+        return longestMatchLength;
+    }
+
+    private boolean isGuideNameMatch(String normalizedText, String guideName) {
+        if (!hasText(normalizedText) || !hasText(guideName)) {
+            return false;
+        }
+        if (normalizedText.equals(guideName)) {
+            return true;
+        }
+        if (normalizedText.startsWith(guideName) && isGuideNameBoundary(normalizedText, guideName.length())) {
+            return true;
+        }
+        if (guideName.length() < 4) {
+            return false;
+        }
+
+        int matchIndex = normalizedText.indexOf(guideName);
+        while (matchIndex >= 0) {
+            int matchEndIndex = matchIndex + guideName.length();
+            if (isGuideNameBoundary(normalizedText, matchIndex - 1)
+                    && isGuideNameBoundary(normalizedText, matchEndIndex)) {
+                return true;
+            }
+            matchIndex = normalizedText.indexOf(guideName, matchIndex + 1);
+        }
+        return false;
+    }
+
+    private boolean isGuideNameBoundary(String value, int index) {
+        if (index < 0) {
+            return true;
+        }
+        if (index >= value.length()) {
+            return true;
+        }
+        char boundaryCandidate = value.charAt(index);
+        return Character.isWhitespace(boundaryCandidate)
+                || ":：,，.;·•/\\-–—()[]{}<>".indexOf(boundaryCandidate) >= 0;
+    }
+
+    private String normalizeGuideName(String value) {
+        if (value == null) {
+            return "";
+        }
+        return normalizeLower(value)
+                .replaceAll("[\\s\\u00A0]+", " ")
+                .replaceAll("^\\(\\s*\\d+\\s*\\)\\s*", "")
+                .trim();
     }
 
     private PatchChangeType inferChangeType(PatchChangeCrawlRow row) {
@@ -691,6 +849,16 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
     private record ImportChangeStats(int created, int updated, int skipped) {
         private static ImportChangeStats skipped(int skipped) {
             return new ImportChangeStats(0, 0, skipped);
+        }
+    }
+
+    private record PatchChangeGuideNameCatalog(Set<String> championNames, Set<String> traitNames) {
+        private static PatchChangeGuideNameCatalog empty() {
+            return new PatchChangeGuideNameCatalog(Set.of(), Set.of());
+        }
+
+        private boolean isEmpty() {
+            return championNames.isEmpty() && traitNames.isEmpty();
         }
     }
 }

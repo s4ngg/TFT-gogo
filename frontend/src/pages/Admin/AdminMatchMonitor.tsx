@@ -7,8 +7,9 @@ import monStyles from './AdminMatchMonitor.module.css'
 
 function fmtTimestamp(ts: number | null): string {
   if (ts == null) return '-'
-  return new Date(ts).toLocaleDateString('ko-KR', {
+  return new Date(ts).toLocaleString('ko-KR', {
     year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
   })
 }
 
@@ -122,7 +123,7 @@ function AdminMatchMonitor() {
             <div className={monStyles.statCard}>
               <span className={monStyles.statLabel}>마지막 캐시 저장</span>
               <span className={`${monStyles.statValue} ${monStyles.statValueSm}`}>
-                {cache.lastCachedAt ?? '-'}
+                {cache.lastCachedAt ? fmtTimestamp(new Date(cache.lastCachedAt).getTime()) : '-'}
               </span>
             </div>
           </div>

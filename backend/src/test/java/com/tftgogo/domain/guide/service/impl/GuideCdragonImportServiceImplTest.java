@@ -229,6 +229,25 @@ class GuideCdragonImportServiceImplTest {
     }
 
     @Test
+    void setNumber가_없으면_CDragon_최신_setData를_사용한다() {
+        // given
+        GuideCdragonImportRequest request = request(true, false, false, false);
+        ReflectionTestUtils.setField(request, "setNumber", null);
+        ReflectionTestUtils.setField(request, "mutator", null);
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonMultipleSetsJson());
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request);
+
+        // then
+        assertThat(response.getChampionCount()).isEqualTo(1);
+        ArgumentCaptor<GuideChampion> championCaptor = ArgumentCaptor.forClass(GuideChampion.class);
+        verify(guideChampionRepository).save(championCaptor.capture());
+        assertThat(championCaptor.getValue().getChampionKey()).isEqualTo("TFT18_TestCarry");
+    }
+
+    @Test
     void cdragon_import_saves_special_units_on_trait_without_champion_row() {
         // given
         when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
@@ -287,6 +306,69 @@ class GuideCdragonImportServiceImplTest {
                 .publishedAt(LocalDateTime.of(2026, 6, 18, 9, 0))
                 .current(true)
                 .build();
+    }
+
+    private String cdragonMultipleSetsJson() {
+        return """
+                {
+                  "setData": [
+                    {
+                      "number": 16,
+                      "mutator": "TFTSet16",
+                      "champions": [
+                        {
+                          "apiName": "TFT16_OldCarry",
+                          "name": "Old Carry",
+                          "cost": 4,
+                          "role": "ADCarry",
+                          "squareIcon": "ASSETS/Characters/TFT16_OldCarry/HUD/TFT16_OldCarry_Square.TFT_Set16.tex",
+                          "traits": ["Old Trait"],
+                          "stats": {
+                            "armor": 30,
+                            "attackSpeed": 0.7,
+                            "damage": 50,
+                            "hp": 700,
+                            "initialMana": 0,
+                            "magicResist": 30,
+                            "mana": 60,
+                            "range": 4
+                          }
+                        }
+                      ],
+                      "traits": [],
+                      "augments": []
+                    },
+                    {
+                      "number": 18,
+                      "mutator": "TFTSet18",
+                      "champions": [
+                        {
+                          "apiName": "TFT18_TestCarry",
+                          "name": "Test Carry",
+                          "cost": 5,
+                          "role": "APCarry",
+                          "squareIcon": "ASSETS/Characters/TFT18_TestCarry/HUD/TFT18_TestCarry_Square.TFT_Set18.tex",
+                          "traits": ["Next Trait"],
+                          "stats": {
+                            "armor": 35,
+                            "attackSpeed": 0.8,
+                            "damage": 60,
+                            "hp": 800,
+                            "initialMana": 20,
+                            "magicResist": 35,
+                            "mana": 80,
+                            "range": 4
+                          }
+                        }
+                      ],
+                      "traits": [],
+                      "augments": []
+                    }
+                  ],
+                  "sets": {},
+                  "items": []
+                }
+                """;
     }
 
     private String cdragonSpecialUnitJson() {

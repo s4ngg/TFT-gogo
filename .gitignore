@@ -51,7 +51,11 @@ TASK_PROGRESS.md
 
 # Logs
 logs/
+.codex-*.log
 *.log
+
+# JMeter performance test outputs
+perf-test/results/
 
 # Local AWS deploy artifacts
 /.aws-deploy/

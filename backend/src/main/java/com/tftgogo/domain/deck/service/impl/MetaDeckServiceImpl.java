@@ -2,6 +2,7 @@ package com.tftgogo.domain.deck.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tftgogo.global.config.CacheConfig;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import com.tftgogo.domain.deck.dto.response.MetaDeckListResponse;
@@ -25,6 +26,7 @@ import com.tftgogo.global.riot.util.TftShopUnitFilter;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
@@ -109,9 +111,11 @@ public class MetaDeckServiceImpl implements MetaDeckService {
     private final RiotApiClient riotApiClient;
     private final PlatformTransactionManager transactionManager;
     private final AsyncAggregationRunner asyncAggregationRunner;
+    private final org.springframework.cache.CacheManager cacheManager;
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = CacheConfig.META_DECKS, key = "#rankFilter")
     public MetaDeckListResponse getMetaDecks(RankFilter rankFilter) {
         Optional<String> latestPatchOpt = findLatestPatchVersion(rankFilter);
         if (latestPatchOpt.isEmpty()) {
@@ -191,6 +195,11 @@ public class MetaDeckServiceImpl implements MetaDeckService {
             }
             logger.info("전체 랭크 구간 메타 덱 일일 집계 완료 - date={}", dataDate);
         } finally {
+            // 랭크별로 개별 TransactionTemplate 커밋을 사용하므로 일부 랭크 저장 후
+            // 예외가 나도 이미 커밋된 변경이 반영되도록 finally에서 직접 clear한다.
+            // (@CacheEvict는 기본 beforeInvocation=false라 예외 종료 시 무효화되지 않음)
+            java.util.Optional.ofNullable(cacheManager.getCache(CacheConfig.META_DECKS))
+                    .ifPresent(org.springframework.cache.Cache::clear);
             aggregating.set(false);
         }
     }
@@ -211,6 +220,9 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                     }
                     logger.info("전체 랭크 구간 메타 덱 일일 집계 완료 - date={}", dataDate);
                 } finally {
+                    // 비동기 람다 내부라 @CacheEvict 프록시를 타지 않으므로 직접 무효화한다.
+                    java.util.Optional.ofNullable(cacheManager.getCache(CacheConfig.META_DECKS))
+                            .ifPresent(org.springframework.cache.Cache::clear);
                     aggregating.set(false);
                 }
             });

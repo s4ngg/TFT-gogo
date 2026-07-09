@@ -2,6 +2,7 @@ package com.tftgogo.global.config;
 
 import com.tftgogo.global.filter.AdminJwtFilter;
 import com.tftgogo.global.filter.JwtAuthenticationFilter;
+import com.tftgogo.global.security.oauth.CookieOAuth2AuthorizationRequestRepository;
 import com.tftgogo.global.security.oauth.SocialOAuth2FailureHandler;
 import com.tftgogo.global.security.oauth.SocialOAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,7 @@ public class SecurityConfig {
     private final CorsProperties corsProperties;
     private final SocialOAuth2SuccessHandler socialOAuth2SuccessHandler;
     private final SocialOAuth2FailureHandler socialOAuth2FailureHandler;
+    private final CookieOAuth2AuthorizationRequestRepository cookieOAuth2AuthorizationRequestRepository;
 
     @Bean
     @Order(1)
@@ -55,6 +57,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/riot/status").permitAll()
                         .requestMatchers(
                                 "/api/v1/auth/login",
+                                "/api/v1/auth/logout",
+                                "/api/v1/auth/refresh",
                                 "/api/v1/auth/signup",
                                 "/api/v1/auth/social/**",
                                 "/api/admin/auth/login",
@@ -83,6 +87,8 @@ public class SecurityConfig {
         http
                 .securityMatcher(
                         "/health",
+                        "/actuator/health",
+                        "/actuator/health/**",
                         "/swagger-ui/**",
                         "/v3/api-docs/**"
                 )
@@ -114,6 +120,9 @@ public class SecurityConfig {
 
         if (clientRegistrationRepositoryProvider.getIfAvailable() != null) {
             http.oauth2Login(oauth2 -> oauth2
+                    .authorizationEndpoint(authorization -> authorization
+                            .authorizationRequestRepository(cookieOAuth2AuthorizationRequestRepository)
+                    )
                     .successHandler(socialOAuth2SuccessHandler)
                     .failureHandler(socialOAuth2FailureHandler)
             );

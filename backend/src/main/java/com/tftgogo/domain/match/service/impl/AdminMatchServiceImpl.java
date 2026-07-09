@@ -18,8 +18,7 @@ public class AdminMatchServiceImpl implements AdminMatchService {
     private static final int RANKED_QUEUE_ID = 1100;
     private static final int NORMAL_QUEUE_ID = 1090;
 
-    private static final DateTimeFormatter KST_FMT =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter KST_FMT = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
     private final CachedMatchRepository cachedMatchRepository;
     private final RiotRateLimiter riotRateLimiter;

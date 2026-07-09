@@ -64,6 +64,9 @@
   --size-admin-change-list-min-width: 320px;
   --size-admin-change-list-max-height: 680px;
   --size-admin-textarea-min-height: 78px;
+  --size-gameguide-ai-chat-width: 380px;
+  --size-gameguide-ai-chat-max-height: 640px;
+  --size-gameguide-ai-launcher: 58px;
 
   --font-size-xs: 12px;
   --font-size-sm: 13px;
@@ -77,6 +80,7 @@
   --sidebar-collapsed-width: 78px;
   --radius-card: 12px;
   --radius-button: 8px;
+  --radius-panel: 10px;
   --chevron-col-width: 28px;
 }
 
@@ -170,7 +174,8 @@
 
 /* Panel / card background tokens */
 :root {
-  --bg-card-gradient: linear-gradient(180deg, rgba(8, 21, 29, 0.96), rgba(5, 15, 21, 0.96));
+  --bg-card-gradient: linear-gradient(180deg, rgba(22, 37, 56, 0.96), rgba(14, 25, 38, 0.96));
+  --border-card-highlight: rgba(255, 255, 255, 0.14);
   --bg-input-dark: rgba(3, 15, 20, 0.94);
   --bg-btn-dark: rgba(14, 27, 34, 0.74);
   --bg-btn-dark-soft: rgba(14, 27, 34, 0.6);
@@ -202,6 +207,11 @@
   --cyan-bg-subtle: rgba(4, 243, 229, 0.1);
   --cyan-border-subtle: rgba(4, 243, 229, 0.28);
   --cyan-border-light: rgba(4, 243, 229, 0.3);
+  --cyan-glow-sm: rgba(4, 243, 229, 0.12);
+  --cyan-glow-md: rgba(4, 243, 229, 0.16);
+  --cyan-glow-lg: rgba(4, 243, 229, 0.24);
+  --guide-highlight-pulse-duration: 1.3s;
+  --guide-highlight-pulse-iterations: 2;
   --donut-track-bg: rgba(255, 255, 255, 0.07);
 }
 
@@ -226,4 +236,6 @@
 :root {
   --page-content-width: 1100px;
   --summoner-right-col-width: 340px;
+  --page-dashboard-width: 1273px;
+  --page-decks-width: 1270px;
 }

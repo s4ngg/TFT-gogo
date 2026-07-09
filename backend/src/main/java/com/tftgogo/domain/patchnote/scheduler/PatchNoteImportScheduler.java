@@ -14,9 +14,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,9 +38,11 @@ public class PatchNoteImportScheduler {
     private final PatchNoteCrawlerParser crawlerParser;
     private final PatchNoteRepository patchNoteRepository;
     private final PatchNoteImportSchedulerProperties properties;
+    private final PatchNoteImportSchedulerLock schedulerLock;
     private final AtomicBoolean running = new AtomicBoolean(false);
 
     @EventListener(ApplicationReadyEvent.class)
+    @Order(Ordered.HIGHEST_PRECEDENCE)
     public void importOnStartupIfEnabled() {
         if (!properties.isEnabled()) {
             logger.info("Patch note scheduler disabled (app.patch-note.scheduler.enabled=false)");
@@ -47,7 +52,7 @@ public class PatchNoteImportScheduler {
             logger.info("Patch note startup import disabled (app.patch-note.scheduler.startup-import=false)");
             return;
         }
-        runIfIdle("startup", this::importLatestPatchNote);
+        runIfIdle("startup", this::importLatestPatchNoteThenUnknownPatchNotesFromList);
     }
 
     @Scheduled(
@@ -80,7 +85,7 @@ public class PatchNoteImportScheduler {
         }
 
         try {
-            task.run();
+            schedulerLock.runWithLock(trigger, task);
         } catch (Exception e) {
             logger.error("Patch note scheduled import failed. trigger={}", trigger, e);
         } finally {
@@ -98,10 +103,14 @@ public class PatchNoteImportScheduler {
         }
 
         int scanLimit = Math.min(properties.getListScanLimit(), listItems.size());
+        LocalDateTime historyCutoff = LocalDateTime.now().minusMonths(properties.getHistoryMonths());
         int imported = 0;
         for (int index = scanLimit - 1; index >= 0; index--) {
             PatchNoteCrawlListItem item = listItems.get(index);
             if (!hasText(item.detailUrl())) {
+                continue;
+            }
+            if (!isWithinHistoryWindow(item, historyCutoff)) {
                 continue;
             }
             if (isAlreadyImported(item)) {
@@ -109,26 +118,52 @@ public class PatchNoteImportScheduler {
             }
 
             boolean markCurrent = properties.isCurrent() && index == 0;
+            String version = resolveVersion(item);
             AdminPatchNoteImportRequest request = AdminPatchNoteImportRequest.of(
                     item.detailUrl(),
                     locale,
-                    resolveVersion(item),
+                    version,
                     markCurrent
             );
-            AdminPatchNoteImportResponse response = adminPatchNoteService.importRiotPatchNote(request);
-            imported++;
-            logger.info(
-                    "Patch note imported from list. version={}, sourceUrl={}, current={}, created={}, updated={}, skipped={}",
-                    response.getVersion(),
-                    response.getSourceUrl(),
-                    markCurrent,
-                    response.isPatchNoteCreated(),
-                    response.isPatchNoteUpdated(),
-                    response.isPatchNoteSkipped()
-            );
+            try {
+                AdminPatchNoteImportResponse response = adminPatchNoteService.importRiotPatchNote(request);
+                imported++;
+                logger.info(
+                        "Patch note imported from list. version={}, sourceUrl={}, current={}, created={}, updated={}, skipped={}",
+                        response.getVersion(),
+                        response.getSourceUrl(),
+                        markCurrent,
+                        response.isPatchNoteCreated(),
+                        response.isPatchNoteUpdated(),
+                        response.isPatchNoteSkipped()
+                );
+            } catch (Exception e) {
+                logger.warn(
+                        "Patch note import item failed. detailUrl={}, version={}, current={}",
+                        item.detailUrl(),
+                        version,
+                        markCurrent,
+                        e
+                );
+            }
         }
 
-        logger.info("Patch note list check completed. scanned={}, imported={}", scanLimit, imported);
+        logger.info(
+                "Patch note list check completed. scanned={}, historyMonths={}, historyCutoff={}, imported={}",
+                scanLimit,
+                properties.getHistoryMonths(),
+                historyCutoff,
+                imported
+        );
+    }
+
+    private boolean isWithinHistoryWindow(PatchNoteCrawlListItem item, LocalDateTime historyCutoff) {
+        return item.publishedAt() != null && !item.publishedAt().isBefore(historyCutoff);
+    }
+
+    private void importLatestPatchNoteThenUnknownPatchNotesFromList() {
+        importLatestPatchNote();
+        importUnknownPatchNotesFromList();
     }
 
     private void importLatestPatchNote() {

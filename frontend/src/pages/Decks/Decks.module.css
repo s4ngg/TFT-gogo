@@ -1,13 +1,17 @@
 .page {
-  width: 1270px;
+  width: 100%;
+  max-width: var(--page-decks-width);
+  margin: 0 auto;
   padding: 28px 0 60px;
 }
 
 /* ── 헤더 + 탭 ── */
 .pageHeader {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
+  gap: 12px;
   margin-bottom: 0;
 }
 
@@ -25,6 +29,11 @@
   font-size: 13px;
 }
 
+.titleBlock .patchStaleNotice {
+  margin-top: 4px;
+  color: var(--tone-gold-color);
+}
+
 /* ── 우측 컨트롤 래퍼 ── */
 .rightControls {
   display: flex;
@@ -36,6 +45,8 @@
 /* ── 랭크 구간 필터 ── */
 .rankFilterBar {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 6px;
 }
 
@@ -67,11 +78,18 @@
 .tabBar {
   display: flex;
   gap: 0;
+  overflow-x: auto;
   border-bottom: 2px solid rgba(112, 144, 152, 0.16);
+  scrollbar-width: thin;
+}
+
+.tabBar::-webkit-scrollbar {
+  height: 4px;
 }
 
 .tabBar button {
   position: relative;
+  flex: 0 0 auto;
   height: 44px;
   padding: 0 28px;
   border: none;
@@ -79,6 +97,7 @@
   background: transparent;
   font-size: 15px;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   transition: color 0.15s;
 }
@@ -100,8 +119,10 @@
 /* ── 툴바 ── */
 .toolBar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   margin: 14px 0;
 }
 
@@ -137,10 +158,10 @@
 /* ── 테이블 래퍼 ── */
 .tableWrap {
   margin-top: 14px;
-  border: 1px solid rgba(112, 144, 152, 0.16);
-  border-radius: 10px;
+  border: 2px solid var(--border-card-highlight);
+  border-radius: var(--radius-panel);
   overflow: hidden;
-  background: linear-gradient(180deg, rgba(8, 21, 29, 0.96), rgba(5, 15, 21, 0.96));
+  background: var(--bg-card-gradient);
   box-shadow: 0 18px 38px rgba(0, 0, 0, 0.18);
 }
 
@@ -336,8 +357,8 @@
   gap: 12px;
   padding: 16px 18px;
   border: 1px solid rgba(167, 139, 250, 0.18);
-  border-radius: 10px;
-  background: linear-gradient(180deg, rgba(8, 21, 29, 0.96), rgba(5, 15, 21, 0.96));
+  border-radius: var(--radius-panel);
+  background: var(--bg-card-gradient);
   transition: border-color 0.15s;
 }
 

@@ -1,21 +1,16 @@
-import { CheckCircle2, ChevronDown, ChevronRight, History, ListFilter } from 'lucide-react'
+import { CheckCircle2, ChevronDown, ChevronRight, History } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import {
-  CHANGE_CATEGORIES,
   sanitizePatchHighlight,
   type PatchCategory,
-  type PatchChangeStats,
   type PatchNoteDetail,
 } from '../../../api/patchNotes'
 import styles from '../PatchNotes.module.css'
 
 interface PatchSideRailProps {
-  activeCategory: PatchCategory
-  categoryCounts: PatchChangeStats['categoryCounts']
   patchHistory: PatchNoteDetail[]
   selectedPatch: PatchNoteDetail
   selectedPatchVersion: string
-  onCategorySelect: (category: PatchCategory) => void
   onInsightSelect: (category: PatchCategory) => void
   onPatchSelect: (version: string) => void
 }
@@ -115,9 +110,6 @@ function buildInsightItems(highlights: string[]): InsightItem[] {
 }
 
 function PatchSideRail({
-  activeCategory,
-  categoryCounts,
-  onCategorySelect,
   onInsightSelect,
   onPatchSelect,
   patchHistory,
@@ -126,15 +118,6 @@ function PatchSideRail({
 }: PatchSideRailProps) {
   const seasonGroups = useMemo(() => buildSeasonGroups(patchHistory), [patchHistory])
   const insightItems = useMemo(() => buildInsightItems(selectedPatch.highlights), [selectedPatch.highlights])
-  const quickCategories = useMemo(
-    () => CHANGE_CATEGORIES
-      .map((category) => ({
-        category,
-        count: categoryCounts[category] ?? 0,
-      }))
-      .filter((category) => category.count > 0),
-    [categoryCounts],
-  )
   const summaryText = selectedPatch.summary || selectedPatch.description || selectedPatch.focus
   const selectedSeason = getPatchSeason(selectedPatchVersion)
   const [openSeasons, setOpenSeasons] = useState<Set<string>>(() => new Set([selectedSeason]))
@@ -244,27 +227,6 @@ function PatchSideRail({
           </div>
         )}
 
-        {quickCategories.length > 0 && (
-          <div className={styles.quickCategorySection}>
-            <span className={styles.insightSectionTitle}>
-              <ListFilter size={14} />
-              빠른 보기
-            </span>
-            <div className={styles.quickCategoryGrid}>
-              {quickCategories.map(({ category }) => (
-                <button
-                  key={category}
-                  type="button"
-                  className={`${styles.quickCategoryButton} ${activeCategory === category ? styles.activeQuickCategoryButton : ''}`}
-                  onClick={() => onCategorySelect(category)}
-                  aria-pressed={activeCategory === category}
-                >
-                  <span>{category}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </section>
     </aside>
   )

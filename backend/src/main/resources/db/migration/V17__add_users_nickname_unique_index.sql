@@ -6,18 +6,20 @@ JOIN users earlier_user
     AND earlier_user.user_id < candidate_user.user_id
 GROUP BY candidate_user.user_id;
 
-CREATE TEMPORARY TABLE nickname_dedup_digits (
-    n INT NOT NULL PRIMARY KEY
-);
-
-INSERT INTO nickname_dedup_digits (n)
-VALUES (0), (1), (2), (3), (4), (5), (6), (7), (8), (9);
-
 CREATE TEMPORARY TABLE nickname_dedup_sequence AS
 SELECT ones.n + tens.n * 10 + hundreds.n * 100 AS n
-FROM nickname_dedup_digits ones
-CROSS JOIN nickname_dedup_digits tens
-CROSS JOIN nickname_dedup_digits hundreds;
+FROM (
+    SELECT 0 AS n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4
+    UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9
+) ones
+CROSS JOIN (
+    SELECT 0 AS n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4
+    UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9
+) tens
+CROSS JOIN (
+    SELECT 0 AS n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4
+    UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9
+) hundreds;
 
 CREATE TEMPORARY TABLE nickname_dedup_targets (
     user_id BIGINT NOT NULL PRIMARY KEY,
@@ -66,7 +68,6 @@ LIMIT 1;
 DROP TEMPORARY TABLE nickname_unique_guard;
 DROP TEMPORARY TABLE nickname_dedup_targets;
 DROP TEMPORARY TABLE nickname_dedup_sequence;
-DROP TEMPORARY TABLE nickname_dedup_digits;
 DROP TEMPORARY TABLE nickname_duplicate_users;
 
 ALTER TABLE users

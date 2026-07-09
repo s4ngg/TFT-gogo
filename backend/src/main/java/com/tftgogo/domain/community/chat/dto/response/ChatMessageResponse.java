@@ -1,13 +1,18 @@
 package com.tftgogo.domain.community.chat.dto.response;
 
 import com.tftgogo.domain.community.chat.model.ChatMessage;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
 @Getter
 @Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class ChatMessageResponse {
 
     private String id;

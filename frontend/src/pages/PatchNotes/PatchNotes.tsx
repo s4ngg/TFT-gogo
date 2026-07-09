@@ -1,8 +1,8 @@
 import { useRef } from 'react'
 import { AppLayout } from '../../components/layout'
 import { usePatchNotes } from '../../hooks/usePatchNotes'
-import { patchNotesFallbackData } from '../../mocks/patchNotesMock'
 import type { PatchCategory } from '../../api/patchNotes'
+import { patchNotesFallbackData } from './patchNotesFallbackData'
 import PatchChangeFilters from './components/PatchChangeFilters'
 import PatchChangeList from './components/PatchChangeList'
 import PatchHero from './components/PatchHero'
@@ -110,9 +110,6 @@ function PatchNotes() {
 
         <div className={styles.contentGrid}>
           <PatchSideRail
-            activeCategory={activeCategory}
-            categoryCounts={changeStats.categoryCounts}
-            onCategorySelect={handleCategorySelect}
             onInsightSelect={handleCategorySelect}
             onPatchSelect={handlePatchSelect}
             patchHistory={patchHistory}

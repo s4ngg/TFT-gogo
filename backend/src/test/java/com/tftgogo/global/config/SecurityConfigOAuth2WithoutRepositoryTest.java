@@ -3,6 +3,7 @@ package com.tftgogo.global.config;
 import com.tftgogo.domain.admin.service.AdminAuditService;
 import com.tftgogo.global.filter.AdminJwtFilter;
 import com.tftgogo.global.filter.JwtAuthenticationFilter;
+import com.tftgogo.global.security.oauth.CookieOAuth2AuthorizationRequestRepository;
 import com.tftgogo.global.security.oauth.SocialOAuth2FailureHandler;
 import com.tftgogo.global.security.oauth.SocialOAuth2SuccessHandler;
 import org.junit.jupiter.api.Test;
@@ -49,8 +50,11 @@ class SecurityConfigOAuth2WithoutRepositoryTest {
     @MockBean
     private SocialOAuth2FailureHandler socialOAuth2FailureHandler;
 
+    @MockBean
+    private CookieOAuth2AuthorizationRequestRepository cookieOAuth2AuthorizationRequestRepository;
+
     @Test
-    void ClientRegistrationRepository가_없으면_OAuth2_시작경로는_provider로_리다이렉트하지_않는다() throws Exception {
+    void ClientRegistrationRepository가_없으면_OAuth2_시작경로는_redirect하지_않는다() throws Exception {
         // given
         String authorizationPath = "/oauth2/authorization/google";
 
@@ -59,7 +63,11 @@ class SecurityConfigOAuth2WithoutRepositoryTest {
                 .andExpect(status().isOk())
                 .andExpect(header().doesNotExist("Location"));
 
-        verifyNoInteractions(socialOAuth2SuccessHandler, socialOAuth2FailureHandler);
+        verifyNoInteractions(
+                socialOAuth2SuccessHandler,
+                socialOAuth2FailureHandler,
+                cookieOAuth2AuthorizationRequestRepository
+        );
     }
 
     @RestController

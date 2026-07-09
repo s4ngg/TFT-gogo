@@ -41,6 +41,36 @@ def test_INTERNAL_SECRET_공백값_시_Settings_초기화_실패(monkeypatch):
 
 TEST_SECRET = "test-secret-value"
 
+
+def test_APP_ENV_production_OPENAI_API_KEY_missing_Settings_초기화_실패(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    from app.core.config import Settings
+    with pytest.raises(ValidationError) as exc_info:
+        Settings(
+            _env_file=None,
+            app_env="production",
+            internal_secret=TEST_SECRET,
+            openai_api_key="",
+        )
+
+    assert "OPENAI_API_KEY" in str(exc_info.value)
+
+
+def test_APP_ENV_development_OPENAI_API_KEY_missing_Settings_초기화_허용(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    from app.core.config import Settings
+    settings = Settings(
+        _env_file=None,
+        app_env="development",
+        internal_secret=TEST_SECRET,
+        openai_api_key="",
+    )
+
+    assert settings.openai_api_key == ""
+
+
 CHAT_PAYLOAD = {
     "messages": [{"role": "user", "content": "안녕"}],
     "context": None,
@@ -49,10 +79,12 @@ CHAT_PAYLOAD = {
 
 @pytest.fixture
 def client():
-    with patch("app.core.config.settings") as mock_settings:
+    with patch("app.core.config.settings") as mock_settings, \
+         patch("app.core.security.settings") as mock_security_settings:
         mock_settings.internal_secret = TEST_SECRET
         mock_settings.app_env = "test"
         mock_settings.cors_allowed_origin_list = []
+        mock_security_settings.internal_secret = TEST_SECRET
         from app.main import app
         yield TestClient(app, raise_server_exceptions=False)
 

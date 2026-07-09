@@ -13,9 +13,8 @@ import com.tftgogo.domain.patchnote.entity.PatchChangeType;
 import com.tftgogo.domain.patchnote.entity.PatchChangeImpact;
 import com.tftgogo.domain.patchnote.entity.PatchNote;
 import com.tftgogo.domain.patchnote.repository.PatchChangeRepository;
-import com.tftgogo.domain.patchnote.repository.PatchChangeRepository.CategoryChangeCount;
 import com.tftgogo.domain.patchnote.repository.PatchChangeRepository.PatchChangeCount;
-import com.tftgogo.domain.patchnote.repository.PatchChangeRepository.TypeChangeCount;
+import com.tftgogo.domain.patchnote.repository.PatchChangeRepository.PatchChangeStatsCount;
 import com.tftgogo.domain.patchnote.repository.PatchNoteRepository;
 import com.tftgogo.domain.patchnote.service.PatchNoteService;
 import com.tftgogo.global.exception.BusinessException;
@@ -28,6 +27,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -43,6 +43,7 @@ public class PatchNoteServiceImpl implements PatchNoteService {
     private static final int MAX_PAGE = 10_000;
     private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int MAX_PAGE_SIZE = 1000;
+    private static final int PUBLIC_PATCH_HISTORY_MONTHS = 6;
     private static final String LIKE_ESCAPE = "\\";
 
     private final PatchNoteRepository patchNoteRepository;
@@ -51,8 +52,9 @@ public class PatchNoteServiceImpl implements PatchNoteService {
 
     @Override
     public List<PatchNoteResponse> getPatchNotes() {
+        LocalDateTime historyCutoff = LocalDateTime.now().minusMonths(PUBLIC_PATCH_HISTORY_MONTHS);
         List<PatchNote> patchNotes = patchNoteRepository
-                .findByDeletedAtIsNullOrderByCurrentDescPublishedAtDescIdDesc();
+                .findPublicHistorySinceIncludingCurrent(historyCutoff);
         Map<Long, Long> changeCounts = getChangeCounts(patchNotes);
 
         return patchNotes.stream()
@@ -80,15 +82,16 @@ public class PatchNoteServiceImpl implements PatchNoteService {
         PatchChangeImpact parsedImpact = parseImpact(impact);
         int normalizedPage = normalizePage(page);
         int normalizedPageSize = normalizePageSize(pageSize);
+        String normalizedQuery = normalizeText(query);
 
-        PatchChangeStatsResponse stats = buildStats(patchNote);
+        PatchChangeStatsResponse stats = buildStats(patchNote, parsedType, parsedImpact, normalizedQuery);
 
         Page<PatchChange> filteredChanges = patchChangeRepository.findFilteredChanges(
                 patchNote,
                 parsedCategory,
                 parsedType,
                 parsedImpact,
-                normalizeText(query),
+                normalizedQuery,
                 PageRequest.of(normalizedPage - 1, normalizedPageSize)
         );
 
@@ -135,24 +138,43 @@ public class PatchNoteServiceImpl implements PatchNoteService {
         );
     }
 
-    private PatchChangeStatsResponse buildStats(PatchNote patchNote) {
-        long totalChanges = patchChangeRepository.countByPatchNote(patchNote);
+    private PatchChangeStatsResponse buildStats(
+            PatchNote patchNote,
+            PatchChangeType changeType,
+            PatchChangeImpact impact,
+            String query
+    ) {
         Map<String, Long> categoryCounts = new LinkedHashMap<>();
-        categoryCounts.put("ALL", totalChanges);
+        categoryCounts.put("ALL", 0L);
         for (PatchChangeCategory category : PatchChangeCategory.values()) {
             categoryCounts.put(category.name(), 0L);
-        }
-        for (CategoryChangeCount count : patchChangeRepository.countByPatchNoteGroupByCategory(patchNote)) {
-            categoryCounts.put(count.getCategory().name(), count.getChangeCount());
         }
 
         Map<String, Long> typeCounts = new LinkedHashMap<>();
         for (PatchChangeType type : PatchChangeType.values()) {
             typeCounts.put(type.name(), 0L);
         }
-        for (TypeChangeCount count : patchChangeRepository.countByPatchNoteGroupByChangeType(patchNote)) {
-            typeCounts.put(count.getChangeType().name(), count.getChangeCount());
+
+        long totalChanges = 0L;
+        long highImpactCount = 0L;
+        for (PatchChangeStatsCount count : patchChangeRepository.countFilteredChangeStats(
+                patchNote,
+                changeType,
+                impact,
+                query
+        )) {
+            long changeCount = count.getChangeCount();
+            String categoryName = count.getCategory().name();
+            String typeName = count.getChangeType().name();
+
+            categoryCounts.put(categoryName, categoryCounts.get(categoryName) + changeCount);
+            typeCounts.put(typeName, typeCounts.get(typeName) + changeCount);
+            totalChanges += changeCount;
+            if (count.getImpact() == PatchChangeImpact.HIGH) {
+                highImpactCount += changeCount;
+            }
         }
+        categoryCounts.put("ALL", totalChanges);
 
         return PatchChangeStatsResponse.of(
                 totalChanges,
@@ -160,7 +182,7 @@ public class PatchNoteServiceImpl implements PatchNoteService {
                 typeCounts,
                 typeCounts.get(PatchChangeType.BUFF.name()),
                 typeCounts.get(PatchChangeType.NERF.name()),
-                patchChangeRepository.countByPatchNoteAndImpact(patchNote, PatchChangeImpact.HIGH)
+                highImpactCount
         );
     }
 

@@ -1,24 +1,33 @@
-import { Star } from 'lucide-react'
+import { Bot, Star } from 'lucide-react'
 import type { ChampionGuide } from '../../../api/guide'
 import { GuideChampionImage } from './GuideShared'
+import {
+  createGameGuideAiRef,
+  type GameGuideAiAskHandler,
+} from '../utils/gameGuideAiRefs'
+import { getGuideHighlightAttrs } from '../utils/guideHighlight'
 import styles from '../Guide.module.css'
 
 interface ChampionGuideCardProps {
   championGuide: ChampionGuide
   isFavorite: boolean
+  isHighlighted: boolean
   onFavoriteToggle: (championName: string) => void
+  onGameGuideAiAsk: GameGuideAiAskHandler
   onOpen: (championGuide: ChampionGuide) => void
 }
 
 function ChampionGuideCard({
   championGuide,
   isFavorite,
+  isHighlighted,
   onFavoriteToggle,
+  onGameGuideAiAsk,
   onOpen,
 }: ChampionGuideCardProps) {
   return (
     <article
-      className={styles.championCard}
+      {...getGuideHighlightAttrs(isHighlighted, styles.championCard, styles.guideHighlighted)}
       key={championGuide.name}
     >
       <button
@@ -35,6 +44,21 @@ function ChampionGuideCard({
         type="button"
       >
         <Star size={14} />
+      </button>
+      <button
+        aria-label={`${championGuide.name} AI 질문`}
+        className={styles.gameGuideAiChampionButton}
+        onClick={(event) => {
+          event.stopPropagation()
+          onGameGuideAiAsk(createGameGuideAiRef('CHAMPION', championGuide.name, championGuide.targetKey))
+        }}
+        onKeyDown={(event) => {
+          event.stopPropagation()
+        }}
+        title="AI에게 물어보기"
+        type="button"
+      >
+        <Bot size={14} />
       </button>
       <button
         className={styles.championOpenButton}

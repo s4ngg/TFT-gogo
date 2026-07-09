@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tftgogo.domain.guide.dto.response.GuideCatalogResponse;
 import com.tftgogo.domain.guide.dto.response.GuideEntryResponse;
 import com.tftgogo.domain.guide.dto.response.GuidePageResponse;
+import com.tftgogo.domain.guide.dto.response.GuidePatchVersionResponse;
 import com.tftgogo.domain.guide.entity.GuideAugment;
 import com.tftgogo.domain.guide.entity.GuideChampion;
 import com.tftgogo.domain.guide.entity.GuideItem;
@@ -62,6 +63,11 @@ public class GuideServiceImpl implements GuideService {
                     );
                 })
                 .orElseGet(() -> GuideCatalogResponse.of("", List.of()));
+    }
+
+    @Override
+    public GuidePatchVersionResponse getCurrentPatchVersion() {
+        return GuidePatchVersionResponse.of(resolvePatchVersion(null).orElse(""));
     }
 
     @Override

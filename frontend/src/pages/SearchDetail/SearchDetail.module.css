@@ -1,0 +1,866 @@
+.page {
+  max-width: var(--page-content-width);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 40px;
+}
+
+.topSearch {
+  height: 46px;
+  display: grid;
+  grid-template-columns: 1fr 52px;
+  overflow: hidden;
+  border: 1px solid var(--border-active);
+  border-radius: var(--radius-button);
+  background: var(--bg-input-dark);
+  box-shadow: 0 0 18px rgba(0, 221, 215, 0.08);
+}
+
+.topSearch input {
+  min-width: 0;
+  padding: 0 16px;
+  border: 0;
+  outline: 0;
+  color: var(--text-main);
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.topSearch input::placeholder {
+  color: var(--text-soft);
+}
+
+.topSearch button {
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-left: 1px solid var(--search-btn-border);
+  color: var(--text-main);
+  background: var(--search-btn-bg);
+  cursor: pointer;
+}
+
+.profileCard {
+  display: grid;
+  grid-template-columns: 80px 240px 1fr auto;
+  align-items: center;
+  gap: 24px;
+  padding: 24px 28px;
+  border: 2px solid var(--border-card-highlight);
+  border-radius: var(--radius-card);
+  background: var(--bg-card-gradient);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.015), 0 18px 38px rgba(0, 0, 0, 0.18);
+}
+
+.profileCardNoEmblem {
+  grid-template-columns: 80px 1fr auto;
+}
+
+.profileIconWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.profileIcon {
+  width: 68px;
+  height: 68px;
+  border: 2px solid var(--border-active);
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.profileLevel {
+  padding: 2px 10px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--bg-profile-level);
+  color: var(--color-cyan);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+}
+
+.emblem {
+  width: 240px;
+  height: 220px;
+  background: url("/assets/ranks/platinum-emblem.png") center / contain no-repeat;
+}
+
+.profileInfo h1 {
+  margin: 0 0 8px;
+  color: var(--text-main);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.tag {
+  margin-left: 4px;
+  color: var(--text-muted);
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.tierLine {
+  margin: 0 0 6px;
+  color: var(--color-cyan);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.recordLine {
+  display: flex;
+  gap: 12px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.winRateText {
+  color: var(--color-win);
+}
+
+.updateBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 20px;
+  border: 1px solid var(--border-btn-muted);
+  border-radius: var(--radius-button);
+  color: var(--text-ui);
+  background: var(--bg-btn-dark);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.updateBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.refreshSuccess {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--danger);
+  text-align: right;
+}
+
+.refreshError {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--danger);
+  text-align: right;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+/* ── 소환사 없음 ── */
+.emptyState {
+  padding: 60px 32px;
+  border: 2px solid var(--border-card-highlight);
+  border-radius: var(--radius-card);
+  background: var(--bg-card-gradient);
+  text-align: center;
+}
+
+.emptyTitle {
+  margin: 0 0 12px;
+  color: var(--text-main);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.emptyDesc {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.matchError {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-button);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+.loadMoreBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px 0;
+  border: 1px solid var(--border-load-more);
+  border-radius: var(--radius-button);
+  color: var(--text-secondary);
+  background: var(--bg-btn-dark-soft);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.loadMoreBtn:hover {
+  background: var(--cyan-bg-faint);
+  color: var(--color-cyan);
+  border-color: var(--cyan-border-light);
+}
+
+.matchSection h2 {
+  margin: 0 0 12px;
+  color: var(--text-main);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.matchList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.matchEmptyState {
+  padding: 48px 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.matchItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.matchRow {
+  display: grid;
+  grid-template-columns: 80px 1fr 428px var(--chevron-col-width);
+  align-items: center;
+  gap: 20px;
+  padding: 14px 20px;
+  border: 2px solid var(--border-card-highlight);
+  border-left-width: 4px;
+  border-radius: var(--radius-card);
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+
+.matchRow:hover {
+  filter: brightness(1.08);
+}
+
+.matchRowOpen {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-color: transparent;
+}
+
+.gold {
+  border-left-color: var(--color-gold);
+  background: linear-gradient(90deg, var(--match-row-gold-start), var(--match-row-base-end));
+}
+
+.gold .placementBadge span {
+  color: var(--color-gold);
+}
+
+.top4 {
+  border-left-color: var(--color-cyan);
+  background: linear-gradient(90deg, var(--match-row-top4-start), var(--match-row-base-end));
+}
+
+.top4 .placementBadge span {
+  color: var(--color-cyan);
+}
+
+.bot4 {
+  border-left-color: var(--color-red);
+  background: linear-gradient(90deg, var(--match-row-bot4-start), var(--match-row-base-end));
+}
+
+.bot4 .placementBadge span {
+  color: var(--color-red);
+}
+
+.placementBadge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.placementBadge span {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.matchMeta .deckName {
+  margin: 0 0 4px;
+  color: var(--text-main);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.matchMeta .timeAgo {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+.matchChevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+/* ── 게임 유형 배지 ── */
+.gameTypeBadge {
+  display: inline-flex;
+  align-items: center;
+  height: 16px;
+  padding: 0 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  margin-right: 6px;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.gameTypeBadgeRanked {
+  background: var(--cyan-bg-subtle);
+  color: var(--color-cyan);
+  border: 1px solid var(--cyan-border-subtle);
+}
+
+.gameTypeBadgeNormal {
+  background: var(--badge-normal-bg);
+  color: var(--text-muted);
+  border: 1px solid var(--badge-normal-border);
+}
+
+/* ── 게임 유형 필터 ── */
+.filterBar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.filterBtn {
+  height: var(--rank-filter-height);
+  padding: 0 var(--rank-filter-padding-x);
+  border: 1px solid var(--rank-filter-border);
+  border-radius: var(--rank-filter-radius);
+  color: var(--rank-filter-text);
+  background: transparent;
+  font-size: var(--rank-filter-font-size);
+  font-weight: var(--rank-filter-font-weight);
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.filterBtn:hover {
+  color: var(--rank-filter-text-hover);
+  border-color: var(--rank-filter-border-hover);
+}
+
+.filterBtnActive {
+  color: var(--rank-filter-active) !important;
+  border-color: var(--rank-filter-active) !important;
+  background: var(--rank-filter-active-bg) !important;
+}
+
+/* ── profileCard 확장 ── */
+.avgPlaceText {
+  color: var(--color-purple);
+}
+
+.top4Text {
+  color: var(--color-cyan);
+}
+
+.profileRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+/* ── 시너지/챔피언 섹션 ── */
+.statSection {
+  padding: 20px 24px;
+  border: 2px solid var(--border-card-highlight);
+  border-radius: var(--radius-card);
+  background: var(--bg-card-gradient);
+}
+
+.statSectionTitle {
+  margin: 0 0 14px;
+  color: var(--text-main);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* ── 시너지 행 ── */
+.topTraitList,
+.topChampList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.topTraitRow,
+.topChampRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topRank {
+  width: 16px;
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.topName {
+  flex: 1;
+  color: var(--text-ui);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topGames {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.topAvg {
+  color: var(--color-purple);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ── 챔피언 썸네일 ── */
+.champThumbWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.champThumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  object-fit: cover;
+  display: block;
+}
+
+.champCost {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  color: var(--text-main);
+  font-size: 9px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* ── 유닛 이미지 목록 ── */
+.unitList {
+  display: flex;
+  gap: 4px;
+  flex-wrap: nowrap;
+  padding-bottom: 14px;
+}
+
+.unitOverflow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 43px;
+  height: 43px;
+  flex: 0 0 auto;
+  border-radius: 6px;
+  background: var(--bg-btn-dark);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+}
+
+.unitWrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.unitStar3 .unitImg {
+  border: 2px solid var(--color-star);
+  border-radius: 6px;
+}
+
+.unitImg {
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 2px solid transparent;
+}
+
+.unitStars {
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--color-star);
+  font-size: 8px;
+  white-space: nowrap;
+  letter-spacing: -1px;
+}
+
+.unitItemRow {
+  display: flex;
+  gap: 1px;
+  margin-top: 2px;
+}
+
+.unitItemImg {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  object-fit: cover;
+}
+
+/* ── 매치 상세 패널 ── */
+.matchDetailPanel {
+  overflow-x: auto;
+  border: 1px solid var(--border-subtle);
+  border-top: none;
+  border-left-width: 4px;
+  border-left-color: var(--border-subtle);
+  border-radius: 0 0 var(--radius-card) var(--radius-card);
+  background: var(--bg-match-panel);
+}
+
+.matchDetailDate {
+  margin: 0;
+  padding: 6px 16px;
+  color: var(--text-muted);
+  font-size: var(--font-size-2xs);
+  border-bottom: 1px solid var(--border-separator);
+}
+
+.matchDetailHeader {
+  display: grid;
+  grid-template-columns: 26px 148px 58px 116px 1fr 44px 58px;
+  gap: 8px;
+  padding: 7px 16px;
+  border-bottom: 1px solid var(--border-separator);
+  color: var(--text-muted);
+  font-size: var(--font-size-2xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.matchDetailRow {
+  display: grid;
+  grid-template-columns: 26px 148px 58px 116px 1fr 44px 58px;
+  gap: 8px;
+  padding: 7px 16px;
+  align-items: center;
+  border-bottom: 1px solid var(--border-row-divider);
+  transition: background 0.1s;
+}
+
+.matchDetailRow:last-child {
+  border-bottom: none;
+}
+
+.matchDetailRow:hover {
+  background: var(--bg-row-hover);
+}
+
+.myMatchDetailRow {
+  background: var(--match-my-row-bg);
+}
+
+.myMatchDetailRow:hover {
+  background: var(--match-my-row-hover);
+}
+
+.detailRank {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  text-align: center;
+}
+
+.detailRankGold   { color: var(--color-gold); }
+.detailRankSilver { color: var(--color-silver); }
+.detailRankBronze { color: var(--color-bronze); }
+
+.detailPlayer {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.detailName {
+  color: var(--text-ui);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detailTag {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.detailStage {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+.detailTraits {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+
+.detailUnits {
+  display: flex;
+  gap: 3px;
+  flex-wrap: nowrap;
+  padding-bottom: 14px;
+}
+
+.detailUnitWrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.detailUnitImg {
+  width: 32px;
+  height: 32px;
+  border-radius: 5px;
+  object-fit: cover;
+  border: 2px solid transparent;
+}
+
+.detailUnitStar3 .detailUnitImg {
+  border-color: var(--color-star);
+}
+
+.detailUnitStars {
+  position: absolute;
+  bottom: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--color-star);
+  font-size: 7px;
+  white-space: nowrap;
+  letter-spacing: -1px;
+}
+
+.detailKills {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--text-ui);
+}
+
+.detailGold {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--color-gold);
+}
+
+.detailUnitItems {
+  display: flex;
+  gap: 1px;
+  margin-top: 2px;
+  justify-content: center;
+}
+
+.detailUnitItemImg {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  object-fit: cover;
+}
+
+/* ── 매치+우측패널 그리드 ── */
+.mainGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--summoner-right-col-width);
+  gap: 16px;
+  align-items: start;
+}
+
+.rightCol {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── 30게임 요약 ── */
+.summarySection {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 20px 24px;
+  margin-bottom: 10px;
+  border: 2px solid var(--border-card-highlight);
+  border-radius: var(--radius-card);
+  background: var(--bg-card-gradient);
+}
+
+.winRateDonut {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: conic-gradient(var(--color-cyan) var(--pct), var(--donut-track-bg) 0);
+  flex-shrink: 0;
+}
+
+.winRateInner {
+  position: absolute;
+  inset: 13px;
+  border-radius: 50%;
+  background: var(--bg-donut-inner);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.winRatePct {
+  color: var(--color-cyan);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.summaryStats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.summaryStatLabel {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-2xs);
+  font-weight: 600;
+}
+
+.summaryStatValue {
+  margin: 0 0 10px;
+  color: var(--text-main);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.summaryStatValue:last-child {
+  margin-bottom: 0;
+}
+
+.summaryStatSub {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.summaryStatTh {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+/* ── 툴팁 ── */
+.tip {
+  position: relative;
+}
+
+.tip[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 5px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--bg-tooltip);
+  border: 1px solid var(--border-tooltip);
+  color: var(--text-ui);
+  font-size: var(--font-size-2xs);
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 200;
+}
+
+.tip[data-tip]:hover::after {
+  opacity: 1;
+}
+
+.itemTipWrap {
+  display: inline-flex;
+}

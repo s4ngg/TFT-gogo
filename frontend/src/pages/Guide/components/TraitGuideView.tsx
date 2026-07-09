@@ -1,3 +1,5 @@
+import { Bot } from 'lucide-react'
+import { useEffect, useRef } from 'react'
 import {
   TRAIT_PAGE_SIZE,
   type GuideCatalog,
@@ -17,14 +19,28 @@ import {
   GuideStatusBanner,
   LinkedChampionMini,
 } from './GuideShared'
+import {
+  createGameGuideAiRef,
+  type GameGuideAiAskHandler,
+} from '../utils/gameGuideAiRefs'
+import {
+  getGuideHighlightAttrs,
+  getGuideHighlightWatchKey,
+  type HighlightedGuide,
+  isGuideHighlighted,
+} from '../utils/guideHighlight'
+import { useGuideHighlightScroll } from '../hooks/useGuideHighlightScroll'
 import styles from '../Guide.module.css'
 
 interface TraitGuideViewProps {
   fallbackData: GuideCatalog
+  highlightedGuide: HighlightedGuide | null
   isGuideFallbackData: boolean
   isGuideFetching: boolean
+  onGameGuideAiAsk: GameGuideAiAskHandler
   onChampionSelect: (championName: string) => void
   onGuideRetry: () => void
+  onVisibleItemsChange: (items: TraitGuide[]) => void
   patchVersion: string
   query: string
 }
@@ -114,13 +130,17 @@ function getTraitSummaryLabel(traitGuide: TraitGuide) {
 
 function TraitGuideView({
   fallbackData,
+  highlightedGuide,
   isGuideFallbackData,
   isGuideFetching,
+  onGameGuideAiAsk,
   onChampionSelect,
   onGuideRetry,
+  onVisibleItemsChange,
   patchVersion,
   query,
 }: TraitGuideViewProps) {
+  const traitGridRef = useRef<HTMLElement>(null)
   const {
     currentPage,
     setCurrentPage,
@@ -142,6 +162,13 @@ function TraitGuideView({
     totalPages: pageData.totalPages,
   })
   const visibleTraits = pageData.items
+  const highlightWatchKey = getGuideHighlightWatchKey(visibleTraits)
+
+  useGuideHighlightScroll(traitGridRef, 'traits', highlightedGuide, highlightWatchKey)
+
+  useEffect(() => {
+    onVisibleItemsChange(visibleTraits)
+  }, [onVisibleItemsChange, visibleTraits])
 
   return (
     <>
@@ -153,14 +180,18 @@ function TraitGuideView({
           void traitsQuery.refetch()
         }}
       />
-      <section className={styles.traitGrid}>
+      <section className={styles.traitGrid} ref={traitGridRef}>
         {visibleTraits.length === 0 && <EmptyState />}
         {visibleTraits.map((traitGuide) => {
           const traitDisplay = getTraitDisplay(traitGuide)
           const specialUnits = traitGuide.specialUnits ?? []
+          const isHighlighted = isGuideHighlighted('traits', traitGuide, highlightedGuide)
 
           return (
-            <article className={styles.traitCard} key={getTraitCardKey(traitGuide)}>
+            <article
+              {...getGuideHighlightAttrs(isHighlighted, styles.traitCard, styles.guideHighlighted)}
+              key={getTraitCardKey(traitGuide)}
+            >
               <div className={styles.traitTop}>
                 <TraitHexBadge
                   count={traitGuide.count}
@@ -189,6 +220,15 @@ function TraitGuideView({
                     ))}
                   </div>
                 </div>
+                <button
+                  aria-label={`${traitGuide.name} AI 질문`}
+                  className={styles.gameGuideAiCardButton}
+                  onClick={() => onGameGuideAiAsk(createGameGuideAiRef('TRAIT', traitGuide.name, traitGuide.targetKey))}
+                  title="AI에게 물어보기"
+                  type="button"
+                >
+                  <Bot size={14} />
+                </button>
               </div>
               {traitDisplay.summary && (
                 <div className={styles.traitSummaryPanel}>

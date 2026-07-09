@@ -34,7 +34,9 @@ flyway baseline -baselineVersion=16
 
 ## 로컬 전용 기본값
 
-`docker-compose.yml`의 DB 비밀번호, 관리자 토큰, JWT secret 기본값은 로컬 스모크 전용 placeholder입니다. 운영 또는 공유 환경에서는 사용하지 말고 `MYSQL_PASSWORD`, `ADMIN_SECRET_TOKEN`, `JWT_SECRET` 같은 환경변수로 덮어써야 합니다.
+`docker-compose.yml`의 DB 비밀번호, JWT secret, AI internal secret 기본값은 로컬 개발 편의용 placeholder입니다. 운영 또는 공유 환경에서는 사용하지 말고 `MYSQL_PASSWORD`, `JWT_SECRET`, `AI_SERVER_INTERNAL_SECRET`, `ADMIN_BOOTSTRAP_PASSWORD` 같은 값을 외부 secret으로 주입해야 합니다.
+
+`db/local-smoke` seed는 운영 기본 경로에 포함하지 않습니다. 로컬 스모크 데이터가 필요할 때만 `docker-compose.local-smoke.yml` override를 함께 지정합니다.
 
 ## 인프라 시작
 
@@ -46,12 +48,19 @@ docker compose up -d mysql redis
 
 ## 스키마와 시드 적용
 
-스키마와 시드는 backend 시작 시 Flyway가 자동으로 적용합니다.
+스키마는 backend 시작 시 Flyway가 자동으로 적용합니다. 시드는 로컬 스모크 override를 함께 지정했을 때만 적용합니다.
 
 - **스키마**: `classpath:db/migration`의 `V*.sql` 파일을 순차 실행
 - **시드**: `classpath:db/local-smoke`의 `afterMigrate__seed.sql` callback을 마이그레이션 완료 후 실행
 
-Docker Compose backend 서비스는 `SPRING_FLYWAY_LOCATIONS`를 `classpath:db/migration,classpath:db/local-smoke`로 설정하여 시드 callback이 포함됩니다.
+기본 Docker Compose backend 서비스는 `SPRING_FLYWAY_LOCATIONS`를 `classpath:db/migration`으로 둡니다.
+로컬 스모크 seed가 필요하면 아래처럼 override를 함께 사용합니다.
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.local-smoke.yml up --build backend
+```
+
+`17.6 Local Patch`는 fallback smoke 데이터이며, Riot import 패치가 이미 있으면 current 패치를 덮어쓰지 않습니다. 같은 버전의 실제 Riot 패치가 import되면 local smoke 변경사항은 stale imported change로 정리됩니다.
 
 기존 DB를 완전히 초기화하려면 먼저 아래 명령을 실행합니다.
 
@@ -82,11 +91,42 @@ Docker image는 profile을 고정하지 않고, 실행 시점의 `SPRING_PROFILE
 docker compose up --build backend
 ```
 
+로컬 스모크 seed까지 넣어 확인하려면 override를 함께 지정합니다.
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.local-smoke.yml up --build backend
+```
+
 선택 사항인 STS/Gradle 경로는 같은 MySQL, Redis, admin token, JWT, Riot placeholder 값에 맞춘 로컬 `backend/src/main/resources/application-local.yml`을 준비한 뒤 `local` profile로만 실행합니다.
 
 ```powershell
 cd backend
 .\gradlew.bat bootRun --args='--spring.profiles.active=local'
+```
+
+## 최신 Guide/최근 PatchNotes import
+
+최신 게임가이드와 패치노트를 로컬 DB에 넣어야 할 때는 backend 시작 전에 import 스위치를 켭니다.
+
+- PatchNotes import는 Riot 공식 패치노트 목록에서 최근 6개월 내 미수집 항목을 가져오고, 목록의 최신 항목만 current 패치로 저장합니다.
+- Guide import는 `APP_GUIDE_CDRAGON_PATCH_VERSION=latest` 기준으로 current 패치노트 버전을 사용합니다.
+- CDragon 세트 번호와 mutator를 지정하지 않으면 CDragon 응답에서 가장 최신 TFT 세트를 자동 선택합니다.
+
+```powershell
+$env:APP_PATCH_NOTE_SCHEDULER_ENABLED="true"
+$env:APP_PATCH_NOTE_SCHEDULER_STARTUP_IMPORT="true"
+$env:APP_PATCH_NOTE_SCHEDULER_LOCALE="ko-kr"
+$env:APP_PATCH_NOTE_SCHEDULER_CURRENT="true"
+
+$env:APP_GUIDE_CDRAGON_ENABLED="true"
+$env:APP_GUIDE_CDRAGON_STARTUP_IMPORT="true"
+$env:APP_GUIDE_CDRAGON_PATCH_VERSION="latest"
+$env:APP_GUIDE_CDRAGON_INCLUDE_CHAMPIONS="true"
+$env:APP_GUIDE_CDRAGON_INCLUDE_TRAITS="true"
+$env:APP_GUIDE_CDRAGON_INCLUDE_ITEMS="true"
+$env:APP_GUIDE_CDRAGON_INCLUDE_AUGMENTS="true"
+
+docker compose up --build backend
 ```
 
 ## 스모크 체크
@@ -99,16 +139,14 @@ curl.exe "http://localhost:8081/api/guide/augments?page=1&pageSize=10"
 curl.exe "http://localhost:8081/api/guide/champions?page=1&pageSize=10&cost=4"
 
 curl.exe http://localhost:8081/api/patch-notes
-curl.exe "http://localhost:8081/api/patch-notes/17.3/changes?page=1&pageSize=10"
-curl.exe "http://localhost:8081/api/patch-notes/17.3/changes?category=CHAMPION&impact=HIGH"
-
-curl.exe -H "X-Admin-Token: local-admin-token" -H "Content-Type: application/json" -d "{\"patchVersion\":\"17.3\",\"setNumber\":17,\"mutator\":\"TFTSet17\",\"includeChampions\":true,\"includeTraits\":true,\"includeItems\":true,\"includeAugments\":true}" http://localhost:8081/api/admin/guides/import/cdragon
-curl.exe -H "X-Admin-Token: local-admin-token" http://localhost:8081/api/admin/patch-notes
+$patchVersion = (Invoke-RestMethod http://localhost:8081/api/patch-notes).data[0].version
+curl.exe "http://localhost:8081/api/patch-notes/$patchVersion/changes?page=1&pageSize=10"
+curl.exe "http://localhost:8081/api/patch-notes/$patchVersion/changes?category=CHAMPION&impact=HIGH"
 ```
 
 기대 결과:
 
-- Guide와 PatchNotes 공개 API가 frontend fallback data 없이 시드된 `17.3` 데이터를 반환합니다.
+- Guide와 PatchNotes 공개 API가 frontend fallback data 없이 최신 import 데이터를 반환합니다.
 - Auth signup/login/me, Party create/join/cancel이 임시 테이블 생성 없이 동작합니다.
 - Chat GET messages/SSE는 공개 접근, POST message는 로그인 토큰으로 동작합니다.
 - Chat DB 테이블은 ELD 예약 테이블이며 현재 MVP 런타임은 in-memory chat을 사용합니다.

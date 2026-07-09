@@ -39,8 +39,10 @@ async def analyze_with_meta(request: AnalyzeWithMetaRequest) -> AnalyzeResponse:
     bad_traits = result["bad_traits"]
     stats = result["stats"]
 
-    # 메타 덱 중 내 스타일과 잘 맞는 덱 순위 재정렬
-    ranked_decks = recommender.rank_meta_decks(request.meta_decks, good_traits)
+    # 메타 덱 중 내 스타일과 잘 맞는 덱 순위 재정렬 (set-overlap + pgvector 유사도 하이브리드)
+    ranked_decks = await recommender.rank_meta_decks_semantic(
+        request.meta_decks, good_traits, bad_traits
+    )
 
     stats_summary = (
         f"평균 {stats.avg_place}등, TOP4율 {stats.top4_rate}, "

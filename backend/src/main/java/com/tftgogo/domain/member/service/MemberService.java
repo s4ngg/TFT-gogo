@@ -1,6 +1,6 @@
 package com.tftgogo.domain.member.service;
 
-import com.tftgogo.domain.member.dto.command.SocialLoginCommand;
+import com.tftgogo.domain.member.dto.request.SocialLoginCommand;
 import com.tftgogo.domain.member.dto.request.LoginRequest;
 import com.tftgogo.domain.member.dto.request.SignupRequest;
 import com.tftgogo.domain.member.dto.response.AuthResponse;
@@ -13,6 +13,10 @@ public interface MemberService {
     AuthResponse login(LoginRequest request);
 
     AuthResponse socialLogin(SocialLoginCommand command);
+
+    AuthResponse refresh(String refreshToken);
+
+    void logout(Long userId, String accessToken, String refreshToken);
 
     MemberResponse getMe(Long userId);
 }
