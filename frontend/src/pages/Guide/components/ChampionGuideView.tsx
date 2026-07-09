@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   CHAMPION_PAGE_SIZE,
   type ChampionGuide,
@@ -11,6 +11,7 @@ import {
   useGuidePageBounds,
   useGuideTabPagination,
 } from '../hooks/useGuideTabPagination'
+import { useGuideHighlightScroll } from '../hooks/useGuideHighlightScroll'
 import ChampionGuideCard from './ChampionGuideCard'
 import ChampionDetailDialog from './ChampionDetailDialog'
 import {
@@ -19,11 +20,17 @@ import {
   GuideStatusBanner,
 } from './GuideShared'
 import type { GameGuideAiAskHandler } from '../utils/gameGuideAiRefs'
+import {
+  getGuideHighlightWatchKey,
+  type HighlightedGuide,
+  isGuideHighlighted,
+} from '../utils/guideHighlight'
 import styles from '../Guide.module.css'
 
 interface ChampionGuideViewProps {
   fallbackData: GuideCatalog
   favoriteChampions: string[]
+  highlightedGuide: HighlightedGuide | null
   isGuideFallbackData: boolean
   isGuideFetching: boolean
   onChampionOpen: (championName: string) => void
@@ -38,6 +45,7 @@ interface ChampionGuideViewProps {
 function ChampionGuideView({
   fallbackData,
   favoriteChampions,
+  highlightedGuide,
   isGuideFallbackData,
   isGuideFetching,
   onChampionOpen,
@@ -48,6 +56,7 @@ function ChampionGuideView({
   patchVersion,
   query,
 }: ChampionGuideViewProps) {
+  const championGridRef = useRef<HTMLElement>(null)
   const [costFilter, setCostFilter] = useState<ChampionCostFilter>('all')
   const {
     currentPage,
@@ -76,6 +85,9 @@ function ChampionGuideView({
     totalPages: pageData.totalPages,
   })
   const visibleChampions = pageData.items
+  const highlightWatchKey = getGuideHighlightWatchKey(visibleChampions)
+
+  useGuideHighlightScroll(championGridRef, 'champions', highlightedGuide, highlightWatchKey)
 
   useEffect(() => {
     onVisibleItemsChange(visibleChampions)
@@ -104,12 +116,13 @@ function ChampionGuideView({
           </button>
         ))}
       </div>
-      <section className={styles.championGrid}>
+      <section className={styles.championGrid} ref={championGridRef}>
         {visibleChampions.length === 0 && <EmptyState />}
         {visibleChampions.map((championGuide) => (
           <ChampionGuideCard
             championGuide={championGuide}
             isFavorite={favoriteChampions.includes(championGuide.name)}
+            isHighlighted={isGuideHighlighted('champions', championGuide, highlightedGuide)}
             key={championGuide.name}
             onFavoriteToggle={onFavoriteToggle}
             onGameGuideAiAsk={onGameGuideAiAsk}

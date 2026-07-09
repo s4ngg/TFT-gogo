@@ -5,11 +5,13 @@ import {
   createGameGuideAiRef,
   type GameGuideAiAskHandler,
 } from '../utils/gameGuideAiRefs'
+import { getGuideHighlightAttrs } from '../utils/guideHighlight'
 import styles from '../Guide.module.css'
 
 interface ChampionGuideCardProps {
   championGuide: ChampionGuide
   isFavorite: boolean
+  isHighlighted: boolean
   onFavoriteToggle: (championName: string) => void
   onGameGuideAiAsk: GameGuideAiAskHandler
   onOpen: (championGuide: ChampionGuide) => void
@@ -18,13 +20,14 @@ interface ChampionGuideCardProps {
 function ChampionGuideCard({
   championGuide,
   isFavorite,
+  isHighlighted,
   onFavoriteToggle,
   onGameGuideAiAsk,
   onOpen,
 }: ChampionGuideCardProps) {
   return (
     <article
-      className={styles.championCard}
+      {...getGuideHighlightAttrs(isHighlighted, styles.championCard, styles.guideHighlighted)}
       key={championGuide.name}
     >
       <button

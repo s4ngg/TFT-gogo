@@ -6,6 +6,7 @@ import com.tftgogo.domain.ai.client.AiServerClient;
 import com.tftgogo.domain.ai.dto.GameGuideAiPathfinderRequest;
 import com.tftgogo.domain.ai.dto.GameGuideAiPathfinderResponse;
 import com.tftgogo.domain.guide.entity.GuideChampion;
+import com.tftgogo.domain.guide.entity.GuideItem;
 import com.tftgogo.domain.guide.entity.GuideTrait;
 import com.tftgogo.domain.guide.repository.GuideAugmentRepository;
 import com.tftgogo.domain.guide.repository.GuideChampionRepository;
@@ -32,6 +33,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -83,7 +85,7 @@ class GameGuideAiPathfinderServiceTest {
         assertThat(response.isFallback()).isTrue();
         assertThat(response.getTitle()).isEqualTo("시너지 가이드 질문");
         assertThat(response.getPhasePlan()).hasSize(2);
-        assertThat(response.getEvidenceNotes()).containsExactly("현재 선택한 가이드 항목과 화면 후보만 기준으로 안내합니다.");
+        assertThat(response.getEvidenceNotes()).containsExactly("현재 선택한 가이드 항목과 관련 후보만 기준으로 안내합니다.");
         assertThat(response.getCreativeSuggestions()).isEmpty();
         assertThat(response.getSourceRefs()).isEmpty();
         assertThat(response.getLimitations()).contains("질문: 동물특공대 어떻게 운영해?");
@@ -272,7 +274,7 @@ class GameGuideAiPathfinderServiceTest {
                 List.of(),
                 false
         );
-        when(aiServerClient.pathfindGameGuide(any(), any())).thenReturn(expected);
+        when(aiServerClient.pathfindGameGuide(any(), any(), any())).thenReturn(expected);
 
         // when
         GameGuideAiPathfinderResponse response = pathfind(request);
@@ -329,7 +331,7 @@ class GameGuideAiPathfinderServiceTest {
                 List.of(),
                 false
         );
-        when(aiServerClient.pathfindGameGuide(any(), any())).thenReturn(aiResponse);
+        when(aiServerClient.pathfindGameGuide(any(), any(), any())).thenReturn(aiResponse);
 
         // when
         pathfind(request);
@@ -338,7 +340,7 @@ class GameGuideAiPathfinderServiceTest {
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<AiServerClient.GameGuideSelectedEntry>> selectedEntriesCaptor =
                 ArgumentCaptor.forClass(List.class);
-        verify(aiServerClient).pathfindGameGuide(any(), selectedEntriesCaptor.capture());
+        verify(aiServerClient).pathfindGameGuide(any(), selectedEntriesCaptor.capture(), any());
 
         List<AiServerClient.GameGuideSelectedEntry> selectedEntries = selectedEntriesCaptor.getValue();
         assertThat(selectedEntries).hasSize(1);
@@ -351,6 +353,339 @@ class GameGuideAiPathfinderServiceTest {
         assertThat(selectedEntry.data()).containsEntry("tone", "tempo");
         assertThat(selectedEntry.data().get("levels")).isInstanceOf(List.class);
         assertThat((List<?>) selectedEntry.data().get("levels")).hasSize(1);
+    }
+
+    @Test
+    void selected_champion_candidate_lookup_reuses_patch_indexes() {
+        // given
+        GuideChampion jinx = GuideChampion.builder()
+                .championKey("TFT17_Jinx")
+                .name("Jinx")
+                .cost(4)
+                .role("carry")
+                .position("backline")
+                .imageUrl("jinx.png")
+                .statsJson("{}")
+                .traitsJson("[\"Animal Squad\"]")
+                .bestItemsJson("[{\"name\":\"Guinsoo's Rageblade\"}]")
+                .patchVersion("17.3")
+                .build();
+        GuideChampion vayne = GuideChampion.builder()
+                .championKey("TFT17_Vayne")
+                .name("Vayne")
+                .cost(2)
+                .role("carry")
+                .position("backline")
+                .imageUrl("vayne.png")
+                .statsJson("{}")
+                .traitsJson("[\"Animal Squad\"]")
+                .bestItemsJson("[{\"name\":\"Guinsoo's Rageblade\"}]")
+                .patchVersion("17.3")
+                .build();
+        GuideTrait trait = GuideTrait.builder()
+                .traitKey("TFT17_AnimalSquad")
+                .name("Animal Squad")
+                .type("origin")
+                .iconUrl("trait.png")
+                .tone("tempo")
+                .summary("team trait")
+                .levelsJson("[]")
+                .tierEffectsJson("[]")
+                .championsJson("[]")
+                .specialUnitsJson("[]")
+                .tipsJson("[]")
+                .patchVersion("17.3")
+                .build();
+        GuideItem item = GuideItem.builder()
+                .itemKey("TFT_Item_GuinsoosRageblade")
+                .name("Guinsoo's Rageblade")
+                .category("completed")
+                .imageUrl("guinsoo.png")
+                .description("attack speed")
+                .statsJson("{}")
+                .bestUsersJson("[]")
+                .combinationsJson("[]")
+                .patchVersion("17.3")
+                .build();
+        when(guideChampionRepository.findByChampionKeyAndPatchVersion("TFT17_Jinx", "17.3"))
+                .thenReturn(Optional.of(jinx));
+        when(guideChampionRepository.findByChampionKeyAndPatchVersion("TFT17_Vayne", "17.3"))
+                .thenReturn(Optional.of(vayne));
+        when(guideTraitRepository.findByPatchVersionOrderByNameAscIdAsc("17.3"))
+                .thenReturn(List.of(trait));
+        when(guideItemRepository.findByPatchVersionOrderByNameAscIdAsc("17.3"))
+                .thenReturn(List.of(item));
+        when(aiServerClient.pathfindGameGuide(any(), any(), any())).thenReturn(GameGuideAiPathfinderResponse.of(
+                "AI title",
+                "AI summary",
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                false
+        ));
+        GameGuideAiPathfinderRequest request = new GameGuideAiPathfinderRequest(
+                "17.3",
+                "champions",
+                "AUTO",
+                List.of(
+                        new GameGuideAiPathfinderRequest.GuideRefDto("CHAMPION", "TFT17_Jinx", "Jinx"),
+                        new GameGuideAiPathfinderRequest.GuideRefDto("CHAMPION", "TFT17_Vayne", "Vayne")
+                ),
+                "compare selected champions"
+        );
+
+        // when
+        pathfind(request);
+
+        // then
+        verify(guideTraitRepository, times(1)).findByPatchVersionOrderByNameAscIdAsc("17.3");
+        verify(guideItemRepository, times(1)).findByPatchVersionOrderByNameAscIdAsc("17.3");
+    }
+
+    @Test
+    void 선택한_시너지의_소속_챔피언은_AI_server_candidateRefs로_파생된다() {
+        // given
+        GuideTrait trait = GuideTrait.builder()
+                .traitKey("TFT17_AnimalSquad")
+                .name("동물특공대")
+                .type("origin")
+                .iconUrl("icon.png")
+                .tone("tempo")
+                .summary("체력 보너스와 지속 전투에 강한 시너지")
+                .levelsJson("[]")
+                .tierEffectsJson("[]")
+                .championsJson("[{\"name\":\"징크스\"}]")
+                .specialUnitsJson("[]")
+                .tipsJson("[]")
+                .patchVersion("17.3")
+                .build();
+        GuideChampion champion = GuideChampion.builder()
+                .championKey("TFT17_Jinx")
+                .name("징크스")
+                .cost(4)
+                .role("carry")
+                .position("backline")
+                .imageUrl("jinx.png")
+                .statsJson("{}")
+                .traitsJson("[\"동물특공대\"]")
+                .bestItemsJson("[]")
+                .patchVersion("17.3")
+                .build();
+        when(guideTraitRepository.findByTraitKeyAndPatchVersion("TFT17_AnimalSquad", "17.3"))
+                .thenReturn(Optional.of(trait));
+        when(guideChampionRepository.findByPatchVersionOrderByNameAscIdAsc("17.3"))
+                .thenReturn(List.of(champion));
+        when(aiServerClient.pathfindGameGuide(any(), any(), any())).thenReturn(GameGuideAiPathfinderResponse.of(
+                "AI title",
+                "AI summary",
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                false
+        ));
+        GameGuideAiPathfinderRequest request = new GameGuideAiPathfinderRequest(
+                "17.3",
+                "traits",
+                "AUTO",
+                List.of(new GameGuideAiPathfinderRequest.GuideRefDto(
+                        "TRAIT",
+                        "TFT17_AnimalSquad",
+                        "동물특공대"
+                )),
+                "관련 챔피언 알려줘"
+        );
+
+        // when
+        pathfind(request);
+
+        // then
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<GameGuideAiPathfinderRequest.GuideRefDto>> candidateRefsCaptor =
+                ArgumentCaptor.forClass(List.class);
+        verify(aiServerClient).pathfindGameGuide(any(), any(), candidateRefsCaptor.capture());
+
+        assertThat(candidateRefsCaptor.getValue())
+                .extracting(GameGuideAiPathfinderRequest.GuideRefDto::getGuideType)
+                .containsExactly("CHAMPION");
+        assertThat(candidateRefsCaptor.getValue().get(0).getTargetKey()).isEqualTo("TFT17_Jinx");
+        assertThat(candidateRefsCaptor.getValue().get(0).getName()).isEqualTo("징크스");
+    }
+
+    @Test
+    void 선택한_챔피언의_시너지와_추천_아이템은_AI_server_candidateRefs로_파생된다() {
+        // given
+        GuideChampion champion = GuideChampion.builder()
+                .championKey("TFT17_Jinx")
+                .name("징크스")
+                .cost(4)
+                .role("carry")
+                .position("backline")
+                .imageUrl("jinx.png")
+                .statsJson("{}")
+                .traitsJson("[\"동물특공대\"]")
+                .bestItemsJson("[{\"name\":\"구인수의 격노검\"}]")
+                .patchVersion("17.3")
+                .build();
+        GuideTrait trait = GuideTrait.builder()
+                .traitKey("TFT17_AnimalSquad")
+                .name("동물특공대")
+                .type("origin")
+                .iconUrl("trait.png")
+                .tone("tempo")
+                .summary("체력 보너스")
+                .levelsJson("[]")
+                .tierEffectsJson("[]")
+                .championsJson("[]")
+                .specialUnitsJson("[]")
+                .tipsJson("[]")
+                .patchVersion("17.3")
+                .build();
+        GuideItem item = GuideItem.builder()
+                .itemKey("TFT_Item_GuinsoosRageblade")
+                .name("구인수의 격노검")
+                .category("completed")
+                .imageUrl("guinsoo.png")
+                .description("공격 속도 증가")
+                .statsJson("{}")
+                .bestUsersJson("[]")
+                .combinationsJson("[]")
+                .patchVersion("17.3")
+                .build();
+        when(guideChampionRepository.findByChampionKeyAndPatchVersion("TFT17_Jinx", "17.3"))
+                .thenReturn(Optional.of(champion));
+        when(guideTraitRepository.findByPatchVersionOrderByNameAscIdAsc("17.3"))
+                .thenReturn(List.of(trait));
+        when(guideItemRepository.findByPatchVersionOrderByNameAscIdAsc("17.3"))
+                .thenReturn(List.of(item));
+        when(aiServerClient.pathfindGameGuide(any(), any(), any())).thenReturn(GameGuideAiPathfinderResponse.of(
+                "AI title",
+                "AI summary",
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                false
+        ));
+        GameGuideAiPathfinderRequest request = new GameGuideAiPathfinderRequest(
+                "17.3",
+                "champions",
+                "AUTO",
+                List.of(new GameGuideAiPathfinderRequest.GuideRefDto(
+                        "CHAMPION",
+                        "TFT17_Jinx",
+                        "징크스"
+                )),
+                "같이 볼 시너지와 아이템 알려줘"
+        );
+
+        // when
+        pathfind(request);
+
+        // then
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<GameGuideAiPathfinderRequest.GuideRefDto>> candidateRefsCaptor =
+                ArgumentCaptor.forClass(List.class);
+        verify(aiServerClient).pathfindGameGuide(any(), any(), candidateRefsCaptor.capture());
+
+        assertThat(candidateRefsCaptor.getValue())
+                .extracting(GameGuideAiPathfinderRequest.GuideRefDto::getTargetKey)
+                .containsExactly("TFT17_AnimalSquad", "TFT_Item_GuinsoosRageblade");
+    }
+
+    @Test
+    void 선택한_아이템의_추천_챔피언과_조합_아이템은_AI_server_candidateRefs로_파생된다() {
+        // given
+        GuideItem selectedItem = GuideItem.builder()
+                .itemKey("TFT_Item_GuinsoosRageblade")
+                .name("구인수의 격노검")
+                .category("completed")
+                .imageUrl("guinsoo.png")
+                .description("공격 속도 증가")
+                .statsJson("{}")
+                .bestUsersJson("[{\"name\":\"징크스\"}]")
+                .combinationsJson("[{\"items\":[{\"name\":\"곡궁\"}]}]")
+                .patchVersion("17.3")
+                .build();
+        GuideItem componentItem = GuideItem.builder()
+                .itemKey("TFT_Item_RecurveBow")
+                .name("곡궁")
+                .category("component")
+                .imageUrl("bow.png")
+                .description("공격 속도")
+                .statsJson("{}")
+                .bestUsersJson("[]")
+                .combinationsJson("[]")
+                .patchVersion("17.3")
+                .build();
+        GuideChampion champion = GuideChampion.builder()
+                .championKey("TFT17_Jinx")
+                .name("징크스")
+                .cost(4)
+                .role("carry")
+                .position("backline")
+                .imageUrl("jinx.png")
+                .statsJson("{}")
+                .traitsJson("[]")
+                .bestItemsJson("[]")
+                .patchVersion("17.3")
+                .build();
+        when(guideItemRepository.findByItemKeyAndPatchVersion("TFT_Item_GuinsoosRageblade", "17.3"))
+                .thenReturn(Optional.of(selectedItem));
+        when(guideChampionRepository.findByPatchVersionOrderByNameAscIdAsc("17.3"))
+                .thenReturn(List.of(champion));
+        when(guideItemRepository.findByPatchVersionOrderByNameAscIdAsc("17.3"))
+                .thenReturn(List.of(componentItem));
+        when(aiServerClient.pathfindGameGuide(any(), any(), any())).thenReturn(GameGuideAiPathfinderResponse.of(
+                "AI title",
+                "AI summary",
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                false
+        ));
+        GameGuideAiPathfinderRequest request = new GameGuideAiPathfinderRequest(
+                "17.3",
+                "items",
+                "AUTO",
+                List.of(new GameGuideAiPathfinderRequest.GuideRefDto(
+                        "ITEM",
+                        "TFT_Item_GuinsoosRageblade",
+                        "구인수의 격노검"
+                )),
+                "이 아이템 관련 후보 알려줘"
+        );
+
+        // when
+        pathfind(request);
+
+        // then
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<GameGuideAiPathfinderRequest.GuideRefDto>> candidateRefsCaptor =
+                ArgumentCaptor.forClass(List.class);
+        verify(aiServerClient).pathfindGameGuide(any(), any(), candidateRefsCaptor.capture());
+
+        assertThat(candidateRefsCaptor.getValue())
+                .extracting(GameGuideAiPathfinderRequest.GuideRefDto::getTargetKey)
+                .containsExactly("TFT17_Jinx", "TFT_Item_RecurveBow");
     }
 
     @Test
@@ -438,7 +773,7 @@ class GameGuideAiPathfinderServiceTest {
         );
         when(guideChampionRepository.findByChampionKeyAndPatchVersion("TFT17_AllowedChampion", "17.3"))
                 .thenReturn(Optional.of(mock(GuideChampion.class)));
-        when(aiServerClient.pathfindGameGuide(any(), any())).thenReturn(aiResponse);
+        when(aiServerClient.pathfindGameGuide(any(), any(), any())).thenReturn(aiResponse);
 
         // when
         GameGuideAiPathfinderResponse result = pathfind(request);

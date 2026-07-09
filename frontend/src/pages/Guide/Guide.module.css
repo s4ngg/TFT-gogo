@@ -2001,6 +2001,32 @@ button.championMini:hover {
   opacity: 0.45;
 }
 
+.guideHighlighted {
+  scroll-margin: 96px;
+  outline: 2px solid var(--cyan-border-light);
+  outline-offset: 3px;
+  box-shadow:
+    0 0 0 4px var(--cyan-glow-sm),
+    0 18px 38px rgba(0, 0, 0, 0.18),
+    0 0 28px var(--cyan-glow-md);
+  animation: guide-highlight-pulse var(--guide-highlight-pulse-duration) ease-in-out var(--guide-highlight-pulse-iterations);
+}
+
+@keyframes guide-highlight-pulse {
+  0%,
+  100% {
+    outline-color: var(--cyan-border-light);
+  }
+
+  50% {
+    outline-color: var(--color-cyan);
+    box-shadow:
+      0 0 0 5px var(--cyan-glow-md),
+      0 18px 38px rgba(0, 0, 0, 0.18),
+      0 0 34px var(--cyan-glow-lg);
+  }
+}
+
 @keyframes status-spin {
   to {
     transform: rotate(360deg);

@@ -16,7 +16,7 @@ Page: Guide (/guide).
 - GET  /api/guide       -> fetch public guide catalog
 - GET  /api/guide/patch-version -> fetch only the current/latest guide patch version without loading catalog entries
 - GET  /api/guide/{tab} -> fetch public guide data for one tab
-- GET  /api/guide/{tab}?patchVersion=&query=&page=&pageSize=&sortKey=&sortDir=&cost=
+- GET  /api/guide/{tab}?patchVersion=&query=&page=&pageSize=&cost=
 - POST /api/admin/guides/import/cdragon -> import champion/trait/item/augment guide rows from Community Dragon
 - GET  /api/cdragon/tft/ko-kr -> backend-proxied CDragon TFT locale JSON for frontend name/trait/item resolution
 </backend>
@@ -27,7 +27,7 @@ Page: Guide (/guide).
 - frontend/src/api/guideNormalizers.ts -> normalize raw guide data before use
 - frontend/src/api/guideTypes.ts       -> TypeScript types for guide domain
 - frontend/src/hooks/useGuide.ts       -> TanStack Query hooks for guide patch version and tab pages
-- frontend/src/pages/Guide/hooks/      -> page UI state, tab pagination, metric sorting, and dialog state
+- frontend/src/pages/Guide/hooks/      -> page UI state, tab pagination, quick-access, candidate-ref, and dialog state
 - frontend/src/pages/Guide/components/ -> page-specific guide panels/cards/controls
 </frontend>
 </api>
@@ -40,7 +40,7 @@ Page: Guide (/guide).
 - dataJson must serialize as a JSON object, not a raw JSON string.
 - The legacy unified `guides` table is not part of the current contract and must not be reintroduced for admin CRUD or public fallback.
 - Admin manual guide CRUD is removed from the backend contract. Admin guide writes currently happen only through /api/admin/guides/import/cdragon.
-- Admin endpoints are protected by X-Admin-Token through /api/admin/**.
+- Admin endpoints under /api/admin/** require an admin JWT bearer token. /api/admin/guides/import/cdragon requires ADMIN_MASTER or ADMIN_EDITOR.
 - CDragon import is upsert-based per split table. Same domain key + patchVersion updates the existing row; missing rows are created.
 - Split guide tables do not use soft delete. If deletion/restoration policy is needed later, design it explicitly per table.
 - If patchVersion is omitted on the public catalog, the latest patch is resolved from split guide tables.
@@ -51,14 +51,17 @@ Page: Guide (/guide).
 - CDragon import accepts patchVersion=`latest`. The backend resolves it from the current patch note first, then from the latest non-deleted patch note. If no patch note exists, import fails with INVALID_INPUT; local QA should import patch notes first or pass an explicit guide patchVersion.
 - Admin guide import UI defaults patchVersion to `latest` so guide data aligns with the current patch-note version when patch notes are available.
 - Latest patch selection sorts patchVersion numerically by major/minor parts, then lexicographically as a final tie-breaker.
-- Public page defaults are page=1 and pageSize=10. page must be 1..10000 and pageSize must be 1..100.
-- Public sortKey is optional and limited to avgPlace, pickRate, top4, winRate. Current static CDragon rows do not provide production metrics; missing metrics sort last and default ordering is used.
-- Public default ordering is Korean name collation, then sortOrder, then id.
+- Backend public tab defaults are page=1 and pageSize=10 when omitted. page must be 1..10000 and pageSize must be 1..100.
+- Frontend tab requests use tab-specific page sizes: traits/items/augments use 6 and champions use 15.
+- Public sortKey/sortDir are not supported while metric refresh is unimplemented. Any non-empty sortKey or sortDir must fail with INVALID_INPUT instead of pretending to sort unavailable metrics.
+- Public default ordering for API tab pages is database name ASC, then id ASC. Static fallback data may use Korean name collation client-side.
 - cost filter is valid only as 1..5 and applies only to champion data.
-- query searches name, summary, and targetKey in memory after loading the resolved split-table patch.
+- query is handled by split-table database search, not in-memory filtering. Each table searches the fields available for that guide type, including name/domain key and relevant JSON/text columns.
+- Champion tab responses include only rows whose traits_json is a non-empty JSON array.
+- Trait tab responses include only rows whose champions_json is a non-empty JSON array. If Stargazer variant rows exist for a patch, the base TFT{set}_Stargazer row is hidden.
 - If no patch exists, /api/guide returns an empty catalog and /api/guide/{tab} returns an empty page with totalPages=1.
 - Invalid persisted JSON fields are treated as GUIDE_INVALID_DATA and should be fixed in import/storage logic, not hidden by public API fallback.
-- CDragon import request fields: patchVersion (required, max 20, supports `latest`), setNumber (default 17), mutator (default TFTSet{setNumber}), includeChampions, includeTraits, includeItems, includeAugments.
+- CDragon import request fields: patchVersion (required, max 20, supports `latest`), setNumber (optional), mutator (optional; explicit setNumber defaults mutator to TFTSet{setNumber}), includeChampions, includeTraits, includeItems, includeAugments.
 - CDragon import request flag behavior: omitted includeChampions/includeTraits default to true; omitted includeItems/includeAugments default to false at request DTO level, so admin UI and scheduler must send explicit true when items/augments should be imported.
 - CDragon import rejects requests where includeChampions, includeTraits, includeItems, and includeAugments all resolve to false.
 - CDragon import response fields: createdCount, updatedCount, skippedCount, championCount, traitCount, itemCount, augmentCount, importedCount (= createdCount + updatedCount).
@@ -171,7 +174,7 @@ Page: Guide (/guide).
 
 <backend-implementation>
 - GuideController owns public read endpoints under /api/guide.
-- GuideServiceImpl resolves patch versions from split repositories, validates query params, parses split JSON columns, sorts responses, and builds GuidePageResponse.
+- GuideServiceImpl resolves patch versions from split repositories, validates query params, delegates tab search/pagination to split-table repositories, parses split JSON columns, and builds GuidePageResponse.
 - AdminGuideController owns only /api/admin/guides/import/cdragon for guide writes.
 - GuideCdragonImportServiceImpl fetches CommunityDragonProperties.tftKoKrUrl using RestTemplate and builds split-table guide candidates.
 - CDragon set data resolution first searches root.setData by setNumber + mutator, then falls back to root.sets[setNumber] if champions and traits exist.

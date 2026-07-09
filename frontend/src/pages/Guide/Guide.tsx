@@ -11,6 +11,7 @@ import GuideQuickAccess from './components/GuideQuickAccess'
 import { StatBadge } from './components/GuideShared'
 import GuideTabPanels from './components/GuideTabPanels'
 import { useGameGuideAiCandidateRefs } from './hooks/useGameGuideAiCandidateRefs'
+import { useGuideHighlight } from './hooks/useGuideHighlight'
 import { useGuidePageState } from './hooks/useGuidePageState'
 import styles from './Guide.module.css'
 
@@ -44,6 +45,7 @@ function Guide() {
   const handleGameGuideAiVisibleItemsChange = useCallback((items: GuideTabItems[GuideTab][number][]) => {
     setGameGuideAiVisibleItems(items)
   }, [])
+  const { handleGuideJump, highlightedGuide } = useGuideHighlight({ onJump: jumpToGuide })
 
   function handleGameGuideAiAsk(ref: GameGuideAiPathfinderRef) {
     setGameGuideAiSelectedRefs([ref])
@@ -84,7 +86,7 @@ function Guide() {
 
         <GuideQuickAccess
           favoriteChampions={favoriteChampions}
-          onJump={jumpToGuide}
+          onJump={handleGuideJump}
           recentGuides={recentGuides}
         />
 
@@ -92,12 +94,13 @@ function Guide() {
           activeTab={activeTab}
           favoriteChampions={favoriteChampions}
           guideData={guideData}
+          highlightedGuide={highlightedGuide}
           isGuideFallbackData={isGuideFallbackData}
           isGuideFetching={isGuideFetching}
           onFavoriteToggle={handleFavoriteToggle}
           onGameGuideAiAsk={handleGameGuideAiAsk}
           onGameGuideAiVisibleItemsChange={handleGameGuideAiVisibleItemsChange}
-          onGuideJump={jumpToGuide}
+          onGuideJump={handleGuideJump}
           onGuideRetry={() => {
             void refetchGuideData()
           }}
@@ -112,7 +115,7 @@ function Guide() {
           isOpen={isGameGuideAiOpen}
           key={gameGuideAiSelectionKey}
           onOpenChange={handleGameGuideAiOpenChange}
-          onGuideJump={jumpToGuide}
+          onGuideJump={handleGuideJump}
           patchVersion={guideData.patchVersion}
           selectedRefs={gameGuideAiSelectedRefs}
         />

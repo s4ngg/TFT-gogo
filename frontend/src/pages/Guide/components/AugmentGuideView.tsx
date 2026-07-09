@@ -11,11 +11,13 @@ import {
 } from './GuideShared'
 import AugmentGuideList from './AugmentGuideList'
 import type { GameGuideAiAskHandler } from '../utils/gameGuideAiRefs'
+import type { HighlightedGuide } from '../utils/guideHighlight'
 
 const AUGMENT_GUIDE_PAGE_SIZE = 6
 
 interface AugmentGuideViewProps {
   fallbackData: GuideCatalog
+  highlightedGuide: HighlightedGuide | null
   isGuideFallbackData: boolean
   isGuideFetching: boolean
   onGameGuideAiAsk: GameGuideAiAskHandler
@@ -27,6 +29,7 @@ interface AugmentGuideViewProps {
 
 function AugmentGuideView({
   fallbackData,
+  highlightedGuide,
   isGuideFallbackData,
   isGuideFetching,
   onGameGuideAiAsk,
@@ -73,6 +76,7 @@ function AugmentGuideView({
       />
       <AugmentGuideList
         augments={visibleAugments}
+        highlightedGuide={highlightedGuide}
         onGameGuideAiAsk={onGameGuideAiAsk}
       />
       <GuidePagination currentPage={safePage} onPageChange={setCurrentPage} totalPages={pageData.totalPages} />

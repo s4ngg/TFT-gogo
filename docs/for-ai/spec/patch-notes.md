@@ -38,7 +38,7 @@ Page: /patch-notes.
 <frontend>
 - frontend/src/api/patchNotes.ts -> public patch-note API functions.
 - frontend/src/api/patchNoteStatsPayload.ts -> nested stats payload reader.
-- frontend/src/api/adminApi.ts -> admin patch note/change/import functions with X-Admin-Token.
+- frontend/src/api/adminApi.ts -> admin patch note/change/import functions with admin JWT Authorization bearer header.
 - frontend/src/hooks/usePatchNotes.ts -> TanStack Query hooks.
 - frontend/src/pages/PatchNotes/hooks/ -> public page state and query wiring.
 - frontend/src/pages/PatchNotes/components/ -> public patch-note sections.
@@ -62,7 +62,8 @@ Page: /patch-notes.
   used by the frontend default-selection resolver.
 - Patch changes endpoint returns ApiResponse<PatchChangePageResponse>.
 - PatchChangePageResponse contains items, page, pageSize, totalItems, totalPages, and stats.
-- stats are calculated for the selected patch version as a whole, not for the currently filtered page.
+- stats are calculated for the selected patch version using the active type/impact/query filters, but not limited to the currently filtered page.
+- Category counts intentionally remain available across categories so the category tabs can show useful counts while one category is selected.
 - Frontend normalization must prefer payload.stats before falling back to legacy top-level stats.
 - Change filters are category, type, impact, query, page, and pageSize.
 - Backend accepts page=1..10000 and pageSize=1..1000 for patch changes.
@@ -107,7 +108,9 @@ Page: /patch-notes.
 </data-model>
 
 <admin-rules>
-- Admin endpoints are protected by X-Admin-Token through /api/admin/**.
+- Admin endpoints under /api/admin/** require an admin JWT bearer token, except /api/admin/auth/login, /api/admin/auth/refresh, and /api/admin/auth/logout.
+- Admin patch-note read endpoints allow ADMIN_MASTER, ADMIN_EDITOR, and ADMIN_VIEWER.
+- Admin patch-note writes, deletes, Riot import, and patch-change writes/deletes require ADMIN_MASTER or ADMIN_EDITOR.
 - Manual admin creates/updates validate JSON arrays such as highlights and tags.
 - Manual admin updates to imported patch notes or changes must mark manuallyEdited=true.
 - Imported rows with manuallyEdited=true must be preserved on later imports.
@@ -170,10 +173,11 @@ Page: /patch-notes.
 - Category inference is conservative:
   - SYSTEM for bug fix/system/loot/mode/ranked/encounter context.
   - CHAMPION, TRAIT, ITEM, AUGMENT only when heading/group/row context is clear.
+  - Imported rows may also use same-patch Guide champion/trait names as a secondary signal when heading/group context is weak.
 - Change type inference is conservative:
   - NEW for clearly new/added content.
-  - ADJUST for bug fixes, mixed changes, unclear numeric direction, or low confidence.
-  - BUFF/NERF only when implemented confidence is sufficient.
+  - Current Riot import maps bug fixes, mixed changes, unclear numeric direction, and all non-new rows to ADJUST.
+  - BUFF/NERF are supported enum values for manual/admin curation, but the current Riot importer does not infer them automatically.
 - Impact defaults to MEDIUM.
 </crawler-parser>
 
@@ -261,7 +265,7 @@ Page: /patch-notes.
 <validation>
 - Public service tests should cover list response, latest/current behavior, version not found, filter query, stats separation, page slicing, invalid pagination, enum parsing, and LIKE escaping.
 - Admin service tests should cover patch-note CRUD, patch-change CRUD, JSON array validation, duplicate/current behavior, not found errors, patch-note soft delete, patch-change hard delete, and manuallyEdited marking.
-- Import tests should cover latest import by tag page, direct sourceUrl import, repeated import idempotency, manuallyEdited skip, sourceKey matching, stale imported change handling, parser warnings, unsupported host rejection, and current flag behavior.
+- Import tests should cover latest import by tag page, direct sourceUrl import, repeated import idempotency, manuallyEdited skip, sourceKey matching, stale imported change handling, parser warnings, unsupported host rejection, current flag behavior, and Guide-name-assisted category inference.
 - Scheduler tests should cover disabled state, startup-import flag, list scan limit, already-imported skip, current flag, and in-process lock skip.
 - Scheduler tests should also cover:
   - startup refresh of the latest patch even when the latest item is already imported.
