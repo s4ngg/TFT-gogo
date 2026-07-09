@@ -375,9 +375,9 @@
 
 .traitCard,
 .metricCards article {
-  border: 1px solid rgba(112, 144, 152, 0.16);
-  border-radius: 10px;
-  background: linear-gradient(180deg, rgba(8, 21, 29, 0.96), rgba(5, 15, 21, 0.96));
+  border: 2px solid var(--border-card-highlight);
+  border-radius: var(--radius-panel);
+  background: var(--bg-card-gradient);
   box-shadow: 0 18px 38px rgba(0, 0, 0, 0.18);
 }
 
@@ -881,9 +881,9 @@ button.championMini:hover {
 .augmentListWrap {
   max-width: 100%;
   padding: var(--space-2xl);
-  border: 1px solid var(--border-subtle);
+  border: 2px solid var(--border-card-highlight);
   border-radius: var(--radius-button);
-  background: linear-gradient(180deg, var(--bg-card), var(--bg-main));
+  background: var(--bg-card-gradient);
   box-shadow: 0 18px 38px rgba(0, 0, 0, 0.18);
 }
 
@@ -1121,10 +1121,9 @@ button.championMini:hover {
   justify-items: center;
   gap: 9px;
   padding: 14px 12px 12px;
-  border: 1px solid rgba(112, 144, 152, 0.16);
-  border-radius: 10px;
-  background:
-    linear-gradient(180deg, rgba(9, 28, 36, 0.94), rgba(5, 15, 21, 0.96));
+  border: 2px solid var(--border-card-highlight);
+  border-radius: var(--radius-panel);
+  background: var(--bg-card-gradient);
   box-shadow: 0 18px 38px rgba(0, 0, 0, 0.18);
   cursor: default;
   outline: 0;
@@ -1242,7 +1241,7 @@ button.championMini:hover {
   padding: 13px;
   opacity: 0;
   border: 1px solid rgba(5, 243, 231, 0.34);
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
   background: rgba(4, 12, 18, 0.98);
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
   transform: translate(-50%, 6px);
@@ -1342,7 +1341,7 @@ button.championMini:hover {
   width: 420px;
   padding: 18px;
   border: 1px solid rgba(5, 243, 231, 0.34);
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
   background: rgba(4, 12, 18, 0.98);
   box-shadow: 0 28px 70px rgba(0, 0, 0, 0.55);
 }
@@ -1519,7 +1518,7 @@ button.championMini:hover {
   align-content: center;
   gap: 8px;
   border: 1px solid rgba(112, 144, 152, 0.14);
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
   color: #6b7580;
   background: rgba(8, 20, 28, 0.58);
   font-size: 13px;

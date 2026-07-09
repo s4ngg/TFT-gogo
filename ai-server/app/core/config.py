@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     openai_model: str = "gpt-4o-mini"
     openai_timeout: int = 30
 
+    embedding_model: str = "text-embedding-3-small"
+    embedding_timeout: int = 10
+    # 벡터 유사도 점수(0~1)에 곱해 _match_score(정수 스케일)와 합산하는 가중치
+    vector_search_weight: float = 3.0
+
     chat_max_input_tokens: int = 4000
     recommend_max_input_tokens: int = 6000
 

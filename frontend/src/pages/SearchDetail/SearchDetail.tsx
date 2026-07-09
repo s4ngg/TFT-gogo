@@ -79,6 +79,7 @@ function SearchDetail() {
   const [refreshRateLimitSeconds, setRefreshRateLimitSeconds] = useState(0)
   const [cooldownSeconds, setCooldownSeconds] = useState(() => getInitialCooldown(name, tag))
   const [refreshError, setRefreshError] = useState<string | null>(null)
+  const [refreshSuccess, setRefreshSuccess] = useState(false)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const setSummoner = useSearchStore((s) => s.setSummoner)
@@ -224,6 +225,7 @@ function SearchDetail() {
 
   useEffect(() => {
     setCooldownSeconds(getInitialCooldown(name, tag))
+    setRefreshSuccess(false)
   }, [name, tag])
 
   useEffect(() => {
@@ -253,6 +255,7 @@ function SearchDetail() {
     if (!name || !tag || isRefreshing) return
     setIsRefreshing(true)
     setRefreshError(null)
+    setRefreshSuccess(false)
     try {
       await refreshSummoner(name, tag)
       await queryClient.invalidateQueries({ queryKey: ['summoner', 'profile', name, tag] })
@@ -260,6 +263,7 @@ function SearchDetail() {
       await queryClient.invalidateQueries({ queryKey: ['summoner', 'stats', profile?.puuid] })
       setCooldownSeconds(REFRESH_COOLDOWN)
       saveCooldownTimestamp(name, tag)
+      setRefreshSuccess(true)
     } catch (err: unknown) {
       const status = (err as HttpError)?.response?.status
       if (status === 429) {
@@ -341,6 +345,7 @@ function SearchDetail() {
                   <RefreshCcw size={16} className={isRefreshing ? styles.spin : ''} />
                   {isRefreshing ? '갱신 중...' : cooldownSeconds > 0 ? `${cooldownSeconds}초 후 가능` : '갱신가능'}
                 </button>
+                {refreshSuccess && !isRefreshing && cooldownSeconds > 0 && <p className={styles.refreshSuccess}>갱신됨</p>}
                 {refreshError && <p className={styles.refreshError}>{refreshError}</p>}
               </div>
             </section>
@@ -402,7 +407,7 @@ function SearchDetail() {
                             <p className={styles.timeAgo}>{formatDate(match.gameDateTime)} · {timeAgo(match.gameDateTime)}</p>
                           </div>
                           <div className={styles.unitList}>
-                            {match.units.slice(0, 8).map((unit, i) => (
+                            {(match.units.length > 8 ? match.units.slice(0, 7) : match.units).map((unit, i) => (
                               <ChampionCard
                                 key={`${unit.characterId}-${i}`}
                                 imageUrl={unit.imageUrl || tftChampSquareUrl(unit.characterId)}
@@ -413,7 +418,7 @@ function SearchDetail() {
                               />
                             ))}
                             {match.units.length > 8 && (
-                              <span className={styles.unitOverflow}>+{match.units.length - 8}</span>
+                              <span className={styles.unitOverflow}>+{match.units.length - 7}</span>
                             )}
                           </div>
                           <div className={styles.matchChevron}>

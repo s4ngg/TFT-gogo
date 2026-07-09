@@ -14,11 +14,20 @@ function AiChat({ context }: Props) {
   const { messages, send, reset, isPending, isError } = useAiChat(context)
   const [input, setInput] = useState('')
   const messagesRef = useRef<HTMLDivElement>(null)
+  const lastUserBubbleRef = useRef<HTMLDivElement>(null)
+  const lastUserIndex = messages.reduce((acc, msg, i) => (msg.role === 'user' ? i : acc), -1)
+  const prevLengthRef = useRef(messages.length)
 
   useEffect(() => {
-    const el = messagesRef.current
-    if (el) el.scrollTop = el.scrollHeight
-  }, [messages, isPending])
+    const last = messages[messages.length - 1]
+    const container = messagesRef.current
+    const bubble = lastUserBubbleRef.current
+    if (messages.length > prevLengthRef.current && last?.role === 'user' && container && bubble) {
+      const offset = bubble.getBoundingClientRect().top - container.getBoundingClientRect().top
+      container.scrollTo({ top: container.scrollTop + offset, behavior: 'smooth' })
+    }
+    prevLengthRef.current = messages.length
+  }, [messages])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -62,6 +71,7 @@ function AiChat({ context }: Props) {
         {messages.map((msg, i) => (
           <div
             key={i}
+            ref={i === lastUserIndex ? lastUserBubbleRef : undefined}
             className={msg.role === 'user' ? styles.chatBubbleUser : styles.chatBubbleAssistant}
           >
             {msg.role === 'assistant' && (

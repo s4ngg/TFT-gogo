@@ -49,7 +49,7 @@
   align-items: center;
   gap: 24px;
   padding: 24px 28px;
-  border: 1px solid var(--border);
+  border: 2px solid var(--border-card-highlight);
   border-radius: var(--radius-card);
   background: var(--bg-card-gradient);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.015), 0 18px 38px rgba(0, 0, 0, 0.18);
@@ -146,6 +146,13 @@
   cursor: not-allowed;
 }
 
+.refreshSuccess {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--danger);
+  text-align: right;
+}
+
 .refreshError {
   margin: 0;
   font-size: var(--font-size-xs);
@@ -165,9 +172,9 @@
 /* ── 소환사 없음 ── */
 .emptyState {
   padding: 60px 32px;
-  border: 1px solid var(--border);
+  border: 2px solid var(--border-card-highlight);
   border-radius: var(--radius-card);
-  background: var(--bg-card);
+  background: var(--bg-card-gradient);
   text-align: center;
 }
 
@@ -247,11 +254,11 @@
 
 .matchRow {
   display: grid;
-  grid-template-columns: 80px 1fr auto var(--chevron-col-width);
+  grid-template-columns: 80px 1fr 428px var(--chevron-col-width);
   align-items: center;
   gap: 20px;
   padding: 14px 20px;
-  border: 1px solid var(--border-subtle);
+  border: 2px solid var(--border-card-highlight);
   border-left-width: 4px;
   border-radius: var(--radius-card);
   cursor: pointer;
@@ -405,7 +412,7 @@
 /* ── 시너지/챔피언 섹션 ── */
 .statSection {
   padding: 20px 24px;
-  border: 1px solid var(--border);
+  border: 2px solid var(--border-card-highlight);
   border-radius: var(--radius-card);
   background: var(--bg-card-gradient);
 }
@@ -565,6 +572,7 @@
 
 /* ── 매치 상세 패널 ── */
 .matchDetailPanel {
+  overflow-x: auto;
   border: 1px solid var(--border-subtle);
   border-top: none;
   border-left-width: 4px;
@@ -738,7 +746,7 @@
 /* ── 매치+우측패널 그리드 ── */
 .mainGrid {
   display: grid;
-  grid-template-columns: 1fr var(--summoner-right-col-width);
+  grid-template-columns: minmax(0, 1fr) var(--summoner-right-col-width);
   gap: 16px;
   align-items: start;
 }
@@ -756,7 +764,7 @@
   gap: 24px;
   padding: 20px 24px;
   margin-bottom: 10px;
-  border: 1px solid var(--border);
+  border: 2px solid var(--border-card-highlight);
   border-radius: var(--radius-card);
   background: var(--bg-card-gradient);
 }
