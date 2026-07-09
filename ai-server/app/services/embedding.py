@@ -116,16 +116,21 @@ async def ensure_deck_embeddings_cached(meta_decks: list[MetaDeck]) -> bool:
 
     signature_map = {deck_signature(d): d for d in meta_decks}
 
+    current_model = settings.embedding_model
+
     try:
         async with session_scope() as session:
             existing = (
                 await session.execute(
                     select(MetaDeckEmbedding.signature).where(
-                        MetaDeckEmbedding.signature.in_(signature_map.keys())
+                        MetaDeckEmbedding.signature.in_(signature_map.keys()),
+                        MetaDeckEmbedding.model == current_model,
                     )
                 )
             ).scalars().all()
 
+        # 다른 모델로 저장된 캐시 행이 있어도 여기서는 "없음"으로 취급해 현재
+        # 모델로 다시 임베딩한다 — signature만 같다고 벡터를 재사용하지 않는다.
         missing_signatures = [sig for sig in signature_map if sig not in set(existing)]
         if not missing_signatures:
             return True
@@ -141,10 +146,11 @@ async def ensure_deck_embeddings_cached(meta_decks: list[MetaDeck]) -> bool:
                     pg_insert(MetaDeckEmbedding)
                     .values(
                         signature=sig,
+                        model=current_model,
                         embedding=vector,
                         source_text=text_by_signature[sig],
                     )
-                    .on_conflict_do_nothing(index_elements=["signature"])
+                    .on_conflict_do_nothing(index_elements=["signature", "model"])
                 )
                 await session.execute(stmt)
             await session.commit()
@@ -169,7 +175,10 @@ async def similarity_scores(
             rows = (
                 await session.execute(
                     select(MetaDeckEmbedding.signature, distance.label("distance")).where(
-                        MetaDeckEmbedding.signature.in_(signatures)
+                        MetaDeckEmbedding.signature.in_(signatures),
+                        # query_vector도 현재 모델로 만들어졌으므로, 다른 모델로
+                        # 저장된 행과는 절대 비교하지 않는다(임베딩 공간이 다름).
+                        MetaDeckEmbedding.model == settings.embedding_model,
                     )
                 )
             ).all()

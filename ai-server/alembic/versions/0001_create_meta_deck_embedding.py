@@ -26,7 +26,10 @@ def upgrade() -> None:
 
     op.create_table(
         "meta_deck_embedding",
+        # (signature, model) 복합 PK: EMBEDDING_MODEL을 바꾸면 이전 모델의
+        # 캐시 행과 뒤섞이지 않도록 모델별로 캐시를 분리한다.
         sa.Column("signature", sa.String(length=64), primary_key=True),
+        sa.Column("model", sa.String(length=64), primary_key=True),
         sa.Column("embedding", Vector(_EMBEDDING_DIMENSIONS), nullable=False),
         sa.Column("source_text", sa.String(length=512), nullable=False),
         sa.Column(
