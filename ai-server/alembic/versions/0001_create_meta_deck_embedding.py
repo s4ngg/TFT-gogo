@@ -8,13 +8,17 @@ from alembic import op
 import sqlalchemy as sa
 from pgvector.sqlalchemy import Vector
 
-from app.core.config import settings
-
 # revision identifiers, used by Alembic.
 revision = "0001"
 down_revision = None
 branch_labels = None
 depends_on = None
+
+# settings(.env)를 읽지 않고 고정 리터럴을 쓴다 — 마이그레이션은 실행 시점의
+# 환경변수 값과 무관하게 항상 같은 스키마를 만들어야 한다. 반드시
+# app/db/models.py의 EMBEDDING_DIMENSIONS와 같은 값으로 유지할 것.
+# 값을 바꿔야 하면 이 상수가 아니라 새 revision을 추가한다.
+_EMBEDDING_DIMENSIONS = 256
 
 
 def upgrade() -> None:
@@ -23,7 +27,7 @@ def upgrade() -> None:
     op.create_table(
         "meta_deck_embedding",
         sa.Column("signature", sa.String(length=64), primary_key=True),
-        sa.Column("embedding", Vector(settings.embedding_dimensions), nullable=False),
+        sa.Column("embedding", Vector(_EMBEDDING_DIMENSIONS), nullable=False),
         sa.Column("source_text", sa.String(length=512), nullable=False),
         sa.Column(
             "updated_at",

@@ -20,7 +20,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from app.core.ai_logger import AiRequestLog
 from app.core.circuit_breaker import CircuitBreaker
 from app.core.config import settings
-from app.db.models import MetaDeckEmbedding
+from app.db.models import EMBEDDING_DIMENSIONS, MetaDeckEmbedding
 from app.db.session import session_scope
 from app.models.match import MetaDeck, TraitStat
 
@@ -75,7 +75,9 @@ async def embed_texts(texts: list[str]) -> list[list[float]] | None:
         response = await client.embeddings.create(
             model=settings.embedding_model,
             input=texts,
-            dimensions=settings.embedding_dimensions,
+            # DB 컬럼 차원(app.db.models.EMBEDDING_DIMENSIONS)과 반드시 일치해야
+            # 하므로 settings가 아니라 스키마 상수를 그대로 쓴다.
+            dimensions=EMBEDDING_DIMENSIONS,
         )
         log.stop_timer()
         if response.usage:

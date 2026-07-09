@@ -108,7 +108,11 @@ services:
     environment:
       APP_ENV: ${AI_SERVER_APP_ENV:-development}
       INTERNAL_SECRET: ${AI_SERVER_INTERNAL_SECRET:-dev-internal-secret}
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-tftuser}:${POSTGRES_PASSWORD:-tftpass}@postgres:5432/${POSTGRES_DB:-tftgogo_ai}
+      # compose가 postgres 서비스에 붙일 기본 접속 문자열. ai-server/.env의
+      # DATABASE_URL은 environment:가 항상 이겨서 무시되므로, docker compose
+      # 실행에서 접속 정보를 바꾸려면 이 AI_SERVER_DATABASE_URL을 셸/루트 .env에서
+      # 지정한다 (ai-server를 컨테이너 밖에서 직접 돌릴 때만 ai-server/.env가 적용됨).
+      DATABASE_URL: ${AI_SERVER_DATABASE_URL:-postgresql+asyncpg://tftuser:tftpass@postgres:5432/tftgogo_ai}
     env_file:
       - path: ./ai-server/.env
         required: false

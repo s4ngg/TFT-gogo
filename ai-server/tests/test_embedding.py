@@ -122,7 +122,6 @@ async def test_embed_texts_정상_응답():
          patch(_BREAKER_PATH) as mock_breaker:
         mock_settings.openai_api_key = "fake-key"
         mock_settings.embedding_model = "text-embedding-3-small"
-        mock_settings.embedding_dimensions = 2
         mock_breaker.is_open.return_value = False
         client = AsyncMock()
         client.embeddings.create = AsyncMock(return_value=response)
@@ -141,7 +140,6 @@ async def test_embed_texts_api_오류시_none_및_breaker_기록():
          patch(_BREAKER_PATH) as mock_breaker:
         mock_settings.openai_api_key = "fake-key"
         mock_settings.embedding_model = "text-embedding-3-small"
-        mock_settings.embedding_dimensions = 2
         mock_breaker.is_open.return_value = False
         client = AsyncMock()
         client.embeddings.create = AsyncMock(side_effect=APIConnectionError(request=MagicMock()))

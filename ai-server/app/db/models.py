@@ -12,7 +12,10 @@ from pgvector.sqlalchemy import Vector
 from sqlalchemy import DateTime, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-from app.core.config import settings
+# 스키마 차원. settings(.env)로 바꿀 수 있는 값이 아니라 이 테이블의 실제 컬럼
+# 타입에 고정된 상수다 — alembic 마이그레이션도 반드시 이 값을 그대로 가져다 쓴다.
+# 바꾸려면: 새 alembic 마이그레이션(+ 기존 캐시 행 폐기 또는 재임베딩)이 필요하다.
+EMBEDDING_DIMENSIONS = 256
 
 
 class Base(DeclarativeBase):
@@ -23,7 +26,7 @@ class MetaDeckEmbedding(Base):
     __tablename__ = "meta_deck_embedding"
 
     signature: Mapped[str] = mapped_column(String(64), primary_key=True)
-    embedding: Mapped[list[float]] = mapped_column(Vector(settings.embedding_dimensions))
+    embedding: Mapped[list[float]] = mapped_column(Vector(EMBEDDING_DIMENSIONS))
     source_text: Mapped[str] = mapped_column(String(512))
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
