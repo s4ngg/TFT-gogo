@@ -108,6 +108,7 @@ services:
     environment:
       APP_ENV: ${AI_SERVER_APP_ENV:-development}
       INTERNAL_SECRET: ${AI_SERVER_INTERNAL_SECRET:-dev-internal-secret}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-tftuser}:${POSTGRES_PASSWORD:-tftpass}@postgres:5432/${POSTGRES_DB:-tftgogo_ai}
     env_file:
       - path: ./ai-server/.env
         required: false
