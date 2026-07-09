@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import type { AugmentGuide, GuideCatalog } from '../../../api/guide'
+import type { AugmentGuide, GuideCatalog, RecentGuide } from '../../../api/guide'
 import { useGuideTabItems } from '../../../hooks/useGuide'
 import {
   useGuidePageBounds,
@@ -16,6 +16,7 @@ const AUGMENT_GUIDE_PAGE_SIZE = 6
 
 interface AugmentGuideViewProps {
   fallbackData: GuideCatalog
+  highlightedGuide: RecentGuide | null
   isGuideFallbackData: boolean
   isGuideFetching: boolean
   onGameGuideAiAsk: GameGuideAiAskHandler
@@ -27,6 +28,7 @@ interface AugmentGuideViewProps {
 
 function AugmentGuideView({
   fallbackData,
+  highlightedGuide,
   isGuideFallbackData,
   isGuideFetching,
   onGameGuideAiAsk,
@@ -73,6 +75,7 @@ function AugmentGuideView({
       />
       <AugmentGuideList
         augments={visibleAugments}
+        highlightedGuide={highlightedGuide}
         onGameGuideAiAsk={onGameGuideAiAsk}
       />
       <GuidePagination currentPage={safePage} onPageChange={setCurrentPage} totalPages={pageData.totalPages} />

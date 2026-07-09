@@ -1,7 +1,7 @@
 import { BookOpen } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { GameGuideAiPathfinderRef } from '../../api/gameGuideAiPathfinderApi'
-import type { GuideTab, GuideTabItems } from '../../api/guide'
+import type { GuideTab, GuideTabItems, RecentGuide } from '../../api/guide'
 import { AppLayout } from '../../components/layout'
 import { useGuideCatalog } from '../../hooks/useGuide'
 import { guideFallbackData } from './guideFallbackData'
@@ -14,7 +14,11 @@ import { useGameGuideAiCandidateRefs } from './hooks/useGameGuideAiCandidateRefs
 import { useGuidePageState } from './hooks/useGuidePageState'
 import styles from './Guide.module.css'
 
+const GUIDE_HIGHLIGHT_DURATION_MS = 2600
+
 function Guide() {
+  const highlightTimeoutRef = useRef<number | null>(null)
+  const [highlightedGuide, setHighlightedGuide] = useState<RecentGuide | null>(null)
   const [isGameGuideAiOpen, setIsGameGuideAiOpen] = useState(false)
   const [gameGuideAiSelectedRefs, setGameGuideAiSelectedRefs] = useState<GameGuideAiPathfinderRef[]>([])
   const [gameGuideAiVisibleItems, setGameGuideAiVisibleItems] = useState<GuideTabItems[GuideTab][number][]>([])
@@ -44,6 +48,29 @@ function Guide() {
   const handleGameGuideAiVisibleItemsChange = useCallback((items: GuideTabItems[GuideTab][number][]) => {
     setGameGuideAiVisibleItems(items)
   }, [])
+
+  useEffect(() => () => {
+    if (highlightTimeoutRef.current !== null) {
+      window.clearTimeout(highlightTimeoutRef.current)
+    }
+  }, [])
+
+  function handleGuideJump(tab: GuideTab, query: string, label = query) {
+    const nextHighlightedGuide = { label, query, tab }
+
+    jumpToGuide(tab, query, label)
+    setHighlightedGuide(nextHighlightedGuide)
+    if (highlightTimeoutRef.current !== null) {
+      window.clearTimeout(highlightTimeoutRef.current)
+    }
+    highlightTimeoutRef.current = window.setTimeout(() => {
+      setHighlightedGuide((current) => (
+        current?.tab === nextHighlightedGuide.tab && current.query === nextHighlightedGuide.query
+          ? null
+          : current
+      ))
+    }, GUIDE_HIGHLIGHT_DURATION_MS)
+  }
 
   function handleGameGuideAiAsk(ref: GameGuideAiPathfinderRef) {
     setGameGuideAiSelectedRefs([ref])
@@ -84,7 +111,7 @@ function Guide() {
 
         <GuideQuickAccess
           favoriteChampions={favoriteChampions}
-          onJump={jumpToGuide}
+          onJump={handleGuideJump}
           recentGuides={recentGuides}
         />
 
@@ -92,12 +119,13 @@ function Guide() {
           activeTab={activeTab}
           favoriteChampions={favoriteChampions}
           guideData={guideData}
+          highlightedGuide={highlightedGuide}
           isGuideFallbackData={isGuideFallbackData}
           isGuideFetching={isGuideFetching}
           onFavoriteToggle={handleFavoriteToggle}
           onGameGuideAiAsk={handleGameGuideAiAsk}
           onGameGuideAiVisibleItemsChange={handleGameGuideAiVisibleItemsChange}
-          onGuideJump={jumpToGuide}
+          onGuideJump={handleGuideJump}
           onGuideRetry={() => {
             void refetchGuideData()
           }}
@@ -112,7 +140,7 @@ function Guide() {
           isOpen={isGameGuideAiOpen}
           key={gameGuideAiSelectionKey}
           onOpenChange={handleGameGuideAiOpenChange}
-          onGuideJump={jumpToGuide}
+          onGuideJump={handleGuideJump}
           patchVersion={guideData.patchVersion}
           selectedRefs={gameGuideAiSelectedRefs}
         />

@@ -10,6 +10,7 @@ import styles from '../Guide.module.css'
 interface ChampionGuideCardProps {
   championGuide: ChampionGuide
   isFavorite: boolean
+  isHighlighted: boolean
   onFavoriteToggle: (championName: string) => void
   onGameGuideAiAsk: GameGuideAiAskHandler
   onOpen: (championGuide: ChampionGuide) => void
@@ -18,13 +19,15 @@ interface ChampionGuideCardProps {
 function ChampionGuideCard({
   championGuide,
   isFavorite,
+  isHighlighted,
   onFavoriteToggle,
   onGameGuideAiAsk,
   onOpen,
 }: ChampionGuideCardProps) {
   return (
     <article
-      className={styles.championCard}
+      className={`${styles.championCard} ${isHighlighted ? styles.guideHighlighted : ''}`}
+      data-guide-highlighted={isHighlighted ? 'true' : undefined}
       key={championGuide.name}
     >
       <button

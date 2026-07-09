@@ -110,8 +110,20 @@ public class AiServerClient {
             GameGuideAiPathfinderRequest request,
             List<GameGuideSelectedEntry> selectedEntries
     ) {
+        return pathfindGameGuide(request, selectedEntries, request.getCandidateRefs());
+    }
+
+    public GameGuideAiPathfinderResponse pathfindGameGuide(
+            GameGuideAiPathfinderRequest request,
+            List<GameGuideSelectedEntry> selectedEntries,
+            List<GameGuideAiPathfinderRequest.GuideRefDto> candidateRefs
+    ) {
         try {
-            String json = objectMapper.writeValueAsString(toGameGuidePathfinderBody(request, selectedEntries));
+            String json = objectMapper.writeValueAsString(toGameGuidePathfinderBody(
+                    request,
+                    selectedEntries,
+                    candidateRefs
+            ));
             String responseBody = chatRestClient.post()
                     .uri("/api/gameguide/pathfinder")
                     .header("Content-Type", "application/json")
@@ -161,14 +173,15 @@ public class AiServerClient {
 
     private Map<String, Object> toGameGuidePathfinderBody(
             GameGuideAiPathfinderRequest request,
-            List<GameGuideSelectedEntry> selectedEntries
+            List<GameGuideSelectedEntry> selectedEntries,
+            List<GameGuideAiPathfinderRequest.GuideRefDto> candidateRefs
     ) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("patch_version", request.getPatchVersion());
         body.put("active_tab", request.getActiveTab());
         body.put("mode", request.getMode());
         body.put("selected_entries", toSelectedEntryBodies(selectedEntries));
-        body.put("candidate_refs", toGuideRefBodies(request.getCandidateRefs()));
+        body.put("candidate_refs", toGuideRefBodies(candidateRefs));
         body.put("conversation_history", toConversationHistoryBodies(request.getConversationHistory()));
         body.put("question", request.getQuestion());
         return body;
