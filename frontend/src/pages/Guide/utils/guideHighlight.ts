@@ -5,8 +5,13 @@ export interface GuideHighlightCandidate {
   targetKey?: string | null
 }
 
-type HighlightedGuide = RecentGuide & {
+export type HighlightedGuide = RecentGuide & {
   targetKey?: string | null
+}
+
+interface GuideHighlightAttrs {
+  className: string
+  'data-guide-highlighted'?: 'true'
 }
 
 function normalizeGuideHighlightValue(value?: string | null) {
@@ -44,4 +49,15 @@ export function getGuideHighlightWatchKey(guides: GuideHighlightCandidate[]) {
   return guides
     .map((guide) => `${guide.targetKey ?? ''}:${guide.name}`)
     .join('|')
+}
+
+export function getGuideHighlightAttrs(
+  isHighlighted: boolean,
+  baseClassName: string,
+  highlightedClassName: string,
+): GuideHighlightAttrs {
+  return {
+    className: `${baseClassName} ${isHighlighted ? highlightedClassName : ''}`.trim(),
+    'data-guide-highlighted': isHighlighted ? 'true' : undefined,
+  }
 }

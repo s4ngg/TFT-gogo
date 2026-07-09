@@ -33,6 +33,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -352,6 +353,98 @@ class GameGuideAiPathfinderServiceTest {
         assertThat(selectedEntry.data()).containsEntry("tone", "tempo");
         assertThat(selectedEntry.data().get("levels")).isInstanceOf(List.class);
         assertThat((List<?>) selectedEntry.data().get("levels")).hasSize(1);
+    }
+
+    @Test
+    void selected_champion_candidate_lookup_reuses_patch_indexes() {
+        // given
+        GuideChampion jinx = GuideChampion.builder()
+                .championKey("TFT17_Jinx")
+                .name("Jinx")
+                .cost(4)
+                .role("carry")
+                .position("backline")
+                .imageUrl("jinx.png")
+                .statsJson("{}")
+                .traitsJson("[\"Animal Squad\"]")
+                .bestItemsJson("[{\"name\":\"Guinsoo's Rageblade\"}]")
+                .patchVersion("17.3")
+                .build();
+        GuideChampion vayne = GuideChampion.builder()
+                .championKey("TFT17_Vayne")
+                .name("Vayne")
+                .cost(2)
+                .role("carry")
+                .position("backline")
+                .imageUrl("vayne.png")
+                .statsJson("{}")
+                .traitsJson("[\"Animal Squad\"]")
+                .bestItemsJson("[{\"name\":\"Guinsoo's Rageblade\"}]")
+                .patchVersion("17.3")
+                .build();
+        GuideTrait trait = GuideTrait.builder()
+                .traitKey("TFT17_AnimalSquad")
+                .name("Animal Squad")
+                .type("origin")
+                .iconUrl("trait.png")
+                .tone("tempo")
+                .summary("team trait")
+                .levelsJson("[]")
+                .tierEffectsJson("[]")
+                .championsJson("[]")
+                .specialUnitsJson("[]")
+                .tipsJson("[]")
+                .patchVersion("17.3")
+                .build();
+        GuideItem item = GuideItem.builder()
+                .itemKey("TFT_Item_GuinsoosRageblade")
+                .name("Guinsoo's Rageblade")
+                .category("completed")
+                .imageUrl("guinsoo.png")
+                .description("attack speed")
+                .statsJson("{}")
+                .bestUsersJson("[]")
+                .combinationsJson("[]")
+                .patchVersion("17.3")
+                .build();
+        when(guideChampionRepository.findByChampionKeyAndPatchVersion("TFT17_Jinx", "17.3"))
+                .thenReturn(Optional.of(jinx));
+        when(guideChampionRepository.findByChampionKeyAndPatchVersion("TFT17_Vayne", "17.3"))
+                .thenReturn(Optional.of(vayne));
+        when(guideTraitRepository.findByPatchVersionOrderByNameAscIdAsc("17.3"))
+                .thenReturn(List.of(trait));
+        when(guideItemRepository.findByPatchVersionOrderByNameAscIdAsc("17.3"))
+                .thenReturn(List.of(item));
+        when(aiServerClient.pathfindGameGuide(any(), any(), any())).thenReturn(GameGuideAiPathfinderResponse.of(
+                "AI title",
+                "AI summary",
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                false
+        ));
+        GameGuideAiPathfinderRequest request = new GameGuideAiPathfinderRequest(
+                "17.3",
+                "champions",
+                "AUTO",
+                List.of(
+                        new GameGuideAiPathfinderRequest.GuideRefDto("CHAMPION", "TFT17_Jinx", "Jinx"),
+                        new GameGuideAiPathfinderRequest.GuideRefDto("CHAMPION", "TFT17_Vayne", "Vayne")
+                ),
+                "compare selected champions"
+        );
+
+        // when
+        pathfind(request);
+
+        // then
+        verify(guideTraitRepository, times(1)).findByPatchVersionOrderByNameAscIdAsc("17.3");
+        verify(guideItemRepository, times(1)).findByPatchVersionOrderByNameAscIdAsc("17.3");
     }
 
     @Test

@@ -1,12 +1,13 @@
 import { useEffect, type RefObject } from 'react'
-import type { GuideTab, RecentGuide } from '../../../api/guide'
+import type { GuideTab } from '../../../api/guide'
+import type { HighlightedGuide } from '../utils/guideHighlight'
 
 const GUIDE_HIGHLIGHT_SELECTOR = '[data-guide-highlighted="true"]'
 
 export function useGuideHighlightScroll(
   containerRef: RefObject<HTMLElement>,
   tab: GuideTab,
-  highlightedGuide: RecentGuide | null | undefined,
+  highlightedGuide: HighlightedGuide | null | undefined,
   watchKey: string,
 ) {
   useEffect(() => {

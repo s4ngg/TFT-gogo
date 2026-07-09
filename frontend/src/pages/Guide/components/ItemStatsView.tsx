@@ -1,6 +1,6 @@
 import { Bot } from 'lucide-react'
 import { useEffect, useRef } from 'react'
-import type { GuideCatalog, ItemStatGuide, RecentGuide } from '../../../api/guide'
+import type { GuideCatalog, ItemStatGuide } from '../../../api/guide'
 import { useGuideTabItems } from '../../../hooks/useGuide'
 import {
   useGuidePageBounds,
@@ -18,14 +18,16 @@ import {
   type GameGuideAiAskHandler,
 } from '../utils/gameGuideAiRefs'
 import {
+  getGuideHighlightAttrs,
   getGuideHighlightWatchKey,
+  type HighlightedGuide,
   isGuideHighlighted,
 } from '../utils/guideHighlight'
 import styles from '../Guide.module.css'
 
 interface ItemStatsViewProps {
   fallbackData: GuideCatalog
-  highlightedGuide: RecentGuide | null
+  highlightedGuide: HighlightedGuide | null
   isGuideFallbackData: boolean
   isGuideFetching: boolean
   onGameGuideAiAsk: GameGuideAiAskHandler
@@ -94,8 +96,7 @@ function ItemStatsView({
 
           return (
             <article
-              className={`${styles.itemGuideCard} ${isHighlighted ? styles.guideHighlighted : ''}`}
-              data-guide-highlighted={isHighlighted ? 'true' : undefined}
+              {...getGuideHighlightAttrs(isHighlighted, styles.itemGuideCard, styles.guideHighlighted)}
               key={itemStat.name}
             >
               <div className={styles.itemGuideTop}>

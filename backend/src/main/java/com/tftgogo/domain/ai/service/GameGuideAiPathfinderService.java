@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -310,6 +311,7 @@ public class GameGuideAiPathfinderService {
         }
 
         String patchVersion = request.getPatchVersion().trim();
+        CandidateRefLookup candidateRefLookup = new CandidateRefLookup(patchVersion);
         Set<String> selectedRefKeys = new HashSet<>();
         selectedRefs.forEach(ref -> selectedRefKeys.add(refKey(ref.getGuideType(), ref.getTargetKey())));
 
@@ -317,7 +319,7 @@ public class GameGuideAiPathfinderService {
         for (GameGuideAiPathfinderRequest.GuideRefDto selectedRef : selectedRefs) {
             addCandidateRefs(
                     mergedRefs,
-                    deriveCandidateRefs(selectedRef, patchVersion),
+                    deriveCandidateRefs(selectedRef, candidateRefLookup),
                     selectedRefKeys
             );
             if (mergedRefs.size() >= MAX_CANDIDATE_REFS) {
@@ -347,15 +349,15 @@ public class GameGuideAiPathfinderService {
 
     private List<GameGuideAiPathfinderRequest.GuideRefDto> deriveCandidateRefs(
             GameGuideAiPathfinderRequest.GuideRefDto selectedRef,
-            String patchVersion
+            CandidateRefLookup candidateRefLookup
     ) {
         String guideType = selectedRef.getGuideType().trim();
         String targetKey = selectedRef.getTargetKey().trim();
 
         return switch (guideType) {
-            case "TRAIT" -> traitCandidateRefs(targetKey, patchVersion);
-            case "ITEM" -> itemCandidateRefs(targetKey, patchVersion);
-            case "CHAMPION" -> championCandidateRefs(targetKey, patchVersion);
+            case "TRAIT" -> traitCandidateRefs(targetKey, candidateRefLookup);
+            case "ITEM" -> itemCandidateRefs(targetKey, candidateRefLookup);
+            case "CHAMPION" -> championCandidateRefs(targetKey, candidateRefLookup);
             case "AUGMENT" -> List.of();
             default -> throw new BusinessException(ErrorCode.INVALID_INPUT);
         };
@@ -363,72 +365,84 @@ public class GameGuideAiPathfinderService {
 
     private List<GameGuideAiPathfinderRequest.GuideRefDto> traitCandidateRefs(
             String targetKey,
-            String patchVersion
+            CandidateRefLookup candidateRefLookup
     ) {
-        GuideTrait trait = guideTraitRepository.findByTraitKeyAndPatchVersion(targetKey, patchVersion)
+        GuideTrait trait = guideTraitRepository.findByTraitKeyAndPatchVersion(
+                        targetKey,
+                        candidateRefLookup.patchVersion
+                )
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_INPUT));
         return championRefsFromRelatedRefs(
                 readRelatedRefs("trait.champions", trait.getChampionsJson()),
-                patchVersion
+                candidateRefLookup
         );
     }
 
     private List<GameGuideAiPathfinderRequest.GuideRefDto> itemCandidateRefs(
             String targetKey,
-            String patchVersion
+            CandidateRefLookup candidateRefLookup
     ) {
-        GuideItem item = guideItemRepository.findByItemKeyAndPatchVersion(targetKey, patchVersion)
+        GuideItem item = guideItemRepository.findByItemKeyAndPatchVersion(
+                        targetKey,
+                        candidateRefLookup.patchVersion
+                )
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_INPUT));
 
         List<GameGuideAiPathfinderRequest.GuideRefDto> refs = new ArrayList<>();
         refs.addAll(championRefsFromRelatedRefs(
                 readRelatedRefs("item.bestUsers", item.getBestUsersJson()),
-                patchVersion
+                candidateRefLookup
         ));
         refs.addAll(itemRefsFromRelatedRefs(
                 readCombinationItemRefs("item.combinations", item.getCombinationsJson()),
-                patchVersion
+                candidateRefLookup
         ));
         return refs;
     }
 
     private List<GameGuideAiPathfinderRequest.GuideRefDto> championCandidateRefs(
             String targetKey,
-            String patchVersion
+            CandidateRefLookup candidateRefLookup
     ) {
-        GuideChampion champion = guideChampionRepository.findByChampionKeyAndPatchVersion(targetKey, patchVersion)
+        GuideChampion champion = guideChampionRepository.findByChampionKeyAndPatchVersion(
+                        targetKey,
+                        candidateRefLookup.patchVersion
+                )
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_INPUT));
 
         List<GameGuideAiPathfinderRequest.GuideRefDto> refs = new ArrayList<>();
         refs.addAll(traitRefsFromRelatedRefs(
                 readRelatedRefs("champion.traits", champion.getTraitsJson()),
-                patchVersion
+                candidateRefLookup
         ));
         refs.addAll(itemRefsFromRelatedRefs(
                 readRelatedRefs("champion.bestItems", champion.getBestItemsJson()),
-                patchVersion
+                candidateRefLookup
         ));
         return refs;
     }
 
     private List<GameGuideAiPathfinderRequest.GuideRefDto> championRefsFromRelatedRefs(
             List<RelatedGuideRef> relatedRefs,
-            String patchVersion
+            CandidateRefLookup candidateRefLookup
     ) {
-        List<GuideChampion> champions = guideChampionRepository.findByPatchVersionOrderByNameAscIdAsc(patchVersion);
-        if (champions.isEmpty()) {
+        if (relatedRefs.isEmpty()) {
             return List.of();
         }
 
         List<GameGuideAiPathfinderRequest.GuideRefDto> refs = new ArrayList<>();
         Set<String> addedTargetKeys = new HashSet<>();
         for (RelatedGuideRef relatedRef : relatedRefs) {
-            GuideChampion champion = findChampion(champions, relatedRef);
-            if (champion != null && addedTargetKeys.add(champion.getChampionKey())) {
+            Optional<GuideChampion> champion = candidateRefLookup.findChampion(relatedRef);
+            if (champion.isEmpty()) {
+                continue;
+            }
+            GuideChampion matchedChampion = champion.get();
+            if (addedTargetKeys.add(matchedChampion.getChampionKey())) {
                 refs.add(new GameGuideAiPathfinderRequest.GuideRefDto(
                         "CHAMPION",
-                        champion.getChampionKey(),
-                        champion.getName()
+                        matchedChampion.getChampionKey(),
+                        matchedChampion.getName()
                 ));
             }
         }
@@ -437,22 +451,25 @@ public class GameGuideAiPathfinderService {
 
     private List<GameGuideAiPathfinderRequest.GuideRefDto> traitRefsFromRelatedRefs(
             List<RelatedGuideRef> relatedRefs,
-            String patchVersion
+            CandidateRefLookup candidateRefLookup
     ) {
-        List<GuideTrait> traits = guideTraitRepository.findByPatchVersionOrderByNameAscIdAsc(patchVersion);
-        if (traits.isEmpty()) {
+        if (relatedRefs.isEmpty()) {
             return List.of();
         }
 
         List<GameGuideAiPathfinderRequest.GuideRefDto> refs = new ArrayList<>();
         Set<String> addedTargetKeys = new HashSet<>();
         for (RelatedGuideRef relatedRef : relatedRefs) {
-            GuideTrait trait = findTrait(traits, relatedRef);
-            if (trait != null && addedTargetKeys.add(trait.getTraitKey())) {
+            Optional<GuideTrait> trait = candidateRefLookup.findTrait(relatedRef);
+            if (trait.isEmpty()) {
+                continue;
+            }
+            GuideTrait matchedTrait = trait.get();
+            if (addedTargetKeys.add(matchedTrait.getTraitKey())) {
                 refs.add(new GameGuideAiPathfinderRequest.GuideRefDto(
                         "TRAIT",
-                        trait.getTraitKey(),
-                        trait.getName()
+                        matchedTrait.getTraitKey(),
+                        matchedTrait.getName()
                 ));
             }
         }
@@ -461,74 +478,142 @@ public class GameGuideAiPathfinderService {
 
     private List<GameGuideAiPathfinderRequest.GuideRefDto> itemRefsFromRelatedRefs(
             List<RelatedGuideRef> relatedRefs,
-            String patchVersion
+            CandidateRefLookup candidateRefLookup
     ) {
-        List<GuideItem> items = guideItemRepository.findByPatchVersionOrderByNameAscIdAsc(patchVersion);
-        if (items.isEmpty()) {
+        if (relatedRefs.isEmpty()) {
             return List.of();
         }
 
         List<GameGuideAiPathfinderRequest.GuideRefDto> refs = new ArrayList<>();
         Set<String> addedTargetKeys = new HashSet<>();
         for (RelatedGuideRef relatedRef : relatedRefs) {
-            GuideItem item = findItem(items, relatedRef);
-            if (item != null && addedTargetKeys.add(item.getItemKey())) {
+            Optional<GuideItem> item = candidateRefLookup.findItem(relatedRef);
+            if (item.isEmpty()) {
+                continue;
+            }
+            GuideItem matchedItem = item.get();
+            if (addedTargetKeys.add(matchedItem.getItemKey())) {
                 refs.add(new GameGuideAiPathfinderRequest.GuideRefDto(
                         "ITEM",
-                        item.getItemKey(),
-                        item.getName()
+                        matchedItem.getItemKey(),
+                        matchedItem.getName()
                 ));
             }
         }
         return refs;
     }
 
-    private GuideChampion findChampion(List<GuideChampion> champions, RelatedGuideRef relatedRef) {
-        GuideChampion keyMatch = champions.stream()
-                .filter(champion -> equalsNormalized(champion.getChampionKey(), relatedRef.targetKey()))
-                .findFirst()
-                .orElse(null);
-        if (keyMatch != null) {
-            return keyMatch;
+    private final class CandidateRefLookup {
+        private final String patchVersion;
+        private boolean championsLoaded;
+        private boolean traitsLoaded;
+        private boolean itemsLoaded;
+        private Map<String, GuideChampion> championsByKey = Map.of();
+        private Map<String, GuideChampion> championsByName = Map.of();
+        private Map<String, GuideTrait> traitsByKey = Map.of();
+        private Map<String, GuideTrait> traitsByName = Map.of();
+        private Map<String, GuideItem> itemsByKey = Map.of();
+        private Map<String, GuideItem> itemsByName = Map.of();
+
+        private CandidateRefLookup(String patchVersion) {
+            this.patchVersion = patchVersion;
         }
 
-        return champions.stream()
-                .filter(champion -> equalsNormalized(champion.getName(), relatedRef.name())
-                        || equalsNormalized(champion.getName(), relatedRef.targetKey()))
-                .findFirst()
-                .orElse(null);
+        private Optional<GuideChampion> findChampion(RelatedGuideRef relatedRef) {
+            loadChampions();
+            return firstPresent(
+                    championsByKey.get(normalizeLookupValue(relatedRef.targetKey())),
+                    championsByName.get(normalizeLookupValue(relatedRef.name())),
+                    championsByName.get(normalizeLookupValue(relatedRef.targetKey()))
+            );
+        }
+
+        private Optional<GuideTrait> findTrait(RelatedGuideRef relatedRef) {
+            loadTraits();
+            return firstPresent(
+                    traitsByKey.get(normalizeLookupValue(relatedRef.targetKey())),
+                    traitsByName.get(normalizeLookupValue(relatedRef.name())),
+                    traitsByName.get(normalizeLookupValue(relatedRef.targetKey()))
+            );
+        }
+
+        private Optional<GuideItem> findItem(RelatedGuideRef relatedRef) {
+            loadItems();
+            return firstPresent(
+                    itemsByKey.get(normalizeLookupValue(relatedRef.targetKey())),
+                    itemsByName.get(normalizeLookupValue(relatedRef.name())),
+                    itemsByName.get(normalizeLookupValue(relatedRef.targetKey()))
+            );
+        }
+
+        private void loadChampions() {
+            if (championsLoaded) {
+                return;
+            }
+
+            championsLoaded = true;
+            Map<String, GuideChampion> nextByKey = new LinkedHashMap<>();
+            Map<String, GuideChampion> nextByName = new LinkedHashMap<>();
+            for (GuideChampion champion : guideChampionRepository.findByPatchVersionOrderByNameAscIdAsc(patchVersion)) {
+                putNormalized(nextByKey, champion.getChampionKey(), champion);
+                putNormalized(nextByName, champion.getName(), champion);
+            }
+            championsByKey = nextByKey;
+            championsByName = nextByName;
+        }
+
+        private void loadTraits() {
+            if (traitsLoaded) {
+                return;
+            }
+
+            traitsLoaded = true;
+            Map<String, GuideTrait> nextByKey = new LinkedHashMap<>();
+            Map<String, GuideTrait> nextByName = new LinkedHashMap<>();
+            for (GuideTrait trait : guideTraitRepository.findByPatchVersionOrderByNameAscIdAsc(patchVersion)) {
+                putNormalized(nextByKey, trait.getTraitKey(), trait);
+                putNormalized(nextByName, trait.getName(), trait);
+            }
+            traitsByKey = nextByKey;
+            traitsByName = nextByName;
+        }
+
+        private void loadItems() {
+            if (itemsLoaded) {
+                return;
+            }
+
+            itemsLoaded = true;
+            Map<String, GuideItem> nextByKey = new LinkedHashMap<>();
+            Map<String, GuideItem> nextByName = new LinkedHashMap<>();
+            for (GuideItem item : guideItemRepository.findByPatchVersionOrderByNameAscIdAsc(patchVersion)) {
+                putNormalized(nextByKey, item.getItemKey(), item);
+                putNormalized(nextByName, item.getName(), item);
+            }
+            itemsByKey = nextByKey;
+            itemsByName = nextByName;
+        }
     }
 
-    private GuideTrait findTrait(List<GuideTrait> traits, RelatedGuideRef relatedRef) {
-        GuideTrait keyMatch = traits.stream()
-                .filter(trait -> equalsNormalized(trait.getTraitKey(), relatedRef.targetKey()))
-                .findFirst()
-                .orElse(null);
-        if (keyMatch != null) {
-            return keyMatch;
+    private <T> Optional<T> firstPresent(T first, T second, T third) {
+        if (first != null) {
+            return Optional.of(first);
         }
-
-        return traits.stream()
-                .filter(trait -> equalsNormalized(trait.getName(), relatedRef.name())
-                        || equalsNormalized(trait.getName(), relatedRef.targetKey()))
-                .findFirst()
-                .orElse(null);
+        if (second != null) {
+            return Optional.of(second);
+        }
+        return Optional.ofNullable(third);
     }
 
-    private GuideItem findItem(List<GuideItem> items, RelatedGuideRef relatedRef) {
-        GuideItem keyMatch = items.stream()
-                .filter(item -> equalsNormalized(item.getItemKey(), relatedRef.targetKey()))
-                .findFirst()
-                .orElse(null);
-        if (keyMatch != null) {
-            return keyMatch;
+    private <T> void putNormalized(Map<String, T> index, String key, T value) {
+        String normalizedKey = normalizeLookupValue(key);
+        if (hasText(normalizedKey)) {
+            index.putIfAbsent(normalizedKey, value);
         }
+    }
 
-        return items.stream()
-                .filter(item -> equalsNormalized(item.getName(), relatedRef.name())
-                        || equalsNormalized(item.getName(), relatedRef.targetKey()))
-                .findFirst()
-                .orElse(null);
+    private String normalizeLookupValue(String value) {
+        return hasText(value) ? value.trim().toLowerCase(Locale.ROOT) : "";
     }
 
     private List<RelatedGuideRef> readRelatedRefs(String fieldName, String json) {
@@ -612,14 +697,6 @@ public class GameGuideAiPathfinderService {
             }
         }
         return "";
-    }
-
-    private boolean equalsNormalized(String left, String right) {
-        if (!hasText(left) || !hasText(right)) {
-            return false;
-        }
-        return left.trim().toLowerCase(Locale.ROOT)
-                .equals(right.trim().toLowerCase(Locale.ROOT));
     }
 
     private String championSummary(GuideChampion champion) {

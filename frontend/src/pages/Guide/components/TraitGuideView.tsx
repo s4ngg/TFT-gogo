@@ -3,7 +3,6 @@ import { useEffect, useRef } from 'react'
 import {
   TRAIT_PAGE_SIZE,
   type GuideCatalog,
-  type RecentGuide,
   type TraitGuide,
   type TraitTierEffect,
 } from '../../../api/guide'
@@ -25,7 +24,9 @@ import {
   type GameGuideAiAskHandler,
 } from '../utils/gameGuideAiRefs'
 import {
+  getGuideHighlightAttrs,
   getGuideHighlightWatchKey,
+  type HighlightedGuide,
   isGuideHighlighted,
 } from '../utils/guideHighlight'
 import { useGuideHighlightScroll } from '../hooks/useGuideHighlightScroll'
@@ -33,7 +34,7 @@ import styles from '../Guide.module.css'
 
 interface TraitGuideViewProps {
   fallbackData: GuideCatalog
-  highlightedGuide: RecentGuide | null
+  highlightedGuide: HighlightedGuide | null
   isGuideFallbackData: boolean
   isGuideFetching: boolean
   onGameGuideAiAsk: GameGuideAiAskHandler
@@ -188,8 +189,7 @@ function TraitGuideView({
 
           return (
             <article
-              className={`${styles.traitCard} ${isHighlighted ? styles.guideHighlighted : ''}`}
-              data-guide-highlighted={isHighlighted ? 'true' : undefined}
+              {...getGuideHighlightAttrs(isHighlighted, styles.traitCard, styles.guideHighlighted)}
               key={getTraitCardKey(traitGuide)}
             >
               <div className={styles.traitTop}>

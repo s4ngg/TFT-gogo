@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { isGuideHighlighted } from '../guideHighlight'
+import {
+  getGuideHighlightAttrs,
+  isGuideHighlighted,
+} from '../guideHighlight'
 
 test('isGuideHighlighted matches the guide name on the active tab', () => {
   assert.equal(
@@ -61,5 +64,22 @@ test('isGuideHighlighted uses targetKey to disambiguate duplicate display names'
       },
     ),
     true,
+  )
+})
+
+test('getGuideHighlightAttrs returns class and data attribute only when highlighted', () => {
+  assert.deepEqual(
+    getGuideHighlightAttrs(true, 'card', 'highlighted'),
+    {
+      className: 'card highlighted',
+      'data-guide-highlighted': 'true',
+    },
+  )
+  assert.deepEqual(
+    getGuideHighlightAttrs(false, 'card', 'highlighted'),
+    {
+      className: 'card',
+      'data-guide-highlighted': undefined,
+    },
   )
 })

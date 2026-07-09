@@ -1,6 +1,6 @@
 import { Bot } from 'lucide-react'
 import { useRef } from 'react'
-import type { AugmentGuide, RecentGuide } from '../../../api/guide'
+import type { AugmentGuide } from '../../../api/guide'
 import {
   EmptyState,
   GuideAssetImage,
@@ -10,7 +10,9 @@ import {
   type GameGuideAiAskHandler,
 } from '../utils/gameGuideAiRefs'
 import {
+  getGuideHighlightAttrs,
   getGuideHighlightWatchKey,
+  type HighlightedGuide,
   isGuideHighlighted,
 } from '../utils/guideHighlight'
 import { useGuideHighlightScroll } from '../hooks/useGuideHighlightScroll'
@@ -18,7 +20,7 @@ import styles from '../Guide.module.css'
 
 interface AugmentGuideListProps {
   augments: AugmentGuide[]
-  highlightedGuide: RecentGuide | null
+  highlightedGuide: HighlightedGuide | null
   onGameGuideAiAsk: GameGuideAiAskHandler
 }
 
@@ -41,8 +43,7 @@ function AugmentGuideList({
 
             return (
               <article
-                className={`${styles.augmentCard} ${isHighlighted ? styles.guideHighlighted : ''}`}
-                data-guide-highlighted={isHighlighted ? 'true' : undefined}
+                {...getGuideHighlightAttrs(isHighlighted, styles.augmentCard, styles.guideHighlighted)}
                 key={augment.name}
               >
                 <div className={styles.augmentCardTop}>

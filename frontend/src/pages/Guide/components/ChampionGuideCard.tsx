@@ -5,6 +5,7 @@ import {
   createGameGuideAiRef,
   type GameGuideAiAskHandler,
 } from '../utils/gameGuideAiRefs'
+import { getGuideHighlightAttrs } from '../utils/guideHighlight'
 import styles from '../Guide.module.css'
 
 interface ChampionGuideCardProps {
@@ -26,8 +27,7 @@ function ChampionGuideCard({
 }: ChampionGuideCardProps) {
   return (
     <article
-      className={`${styles.championCard} ${isHighlighted ? styles.guideHighlighted : ''}`}
-      data-guide-highlighted={isHighlighted ? 'true' : undefined}
+      {...getGuideHighlightAttrs(isHighlighted, styles.championCard, styles.guideHighlighted)}
       key={championGuide.name}
     >
       <button

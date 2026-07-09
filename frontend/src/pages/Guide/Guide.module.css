@@ -2007,10 +2007,10 @@ button.championMini:hover {
   outline: 2px solid var(--cyan-border-light);
   outline-offset: 3px;
   box-shadow:
-    0 0 0 4px rgba(4, 243, 229, 0.12),
+    0 0 0 4px var(--cyan-glow-sm),
     0 18px 38px rgba(0, 0, 0, 0.18),
-    0 0 28px rgba(4, 243, 229, 0.16);
-  animation: guide-highlight-pulse 1.3s ease-in-out 2;
+    0 0 28px var(--cyan-glow-md);
+  animation: guide-highlight-pulse var(--guide-highlight-pulse-duration) ease-in-out 2;
 }
 
 @keyframes guide-highlight-pulse {
@@ -2022,9 +2022,9 @@ button.championMini:hover {
   50% {
     outline-color: var(--color-cyan);
     box-shadow:
-      0 0 0 5px rgba(4, 243, 229, 0.16),
+      0 0 0 5px var(--cyan-glow-md),
       0 18px 38px rgba(0, 0, 0, 0.18),
-      0 0 34px rgba(4, 243, 229, 0.24);
+      0 0 34px var(--cyan-glow-lg);
   }
 }
 

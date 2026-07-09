@@ -9,18 +9,19 @@ import ChampionGuideView from './ChampionGuideView'
 import ItemStatsView from './ItemStatsView'
 import TraitGuideView from './TraitGuideView'
 import type { GameGuideAiAskHandler } from '../utils/gameGuideAiRefs'
+import type { HighlightedGuide } from '../utils/guideHighlight'
 
 interface GuideTabPanelsProps {
   activeTab: GuideTab
   favoriteChampions: string[]
   guideData: GuideCatalog
-  highlightedGuide: RecentGuide | null
+  highlightedGuide: HighlightedGuide | null
   isGuideFallbackData: boolean
   isGuideFetching: boolean
   onFavoriteToggle: (championName: string) => void
   onGameGuideAiAsk: GameGuideAiAskHandler
   onGameGuideAiVisibleItemsChange: (items: GuideTabItems[GuideTab][number][]) => void
-  onGuideJump: (tab: GuideTab, query: string, label?: string) => void
+  onGuideJump: (tab: GuideTab, query: string, label?: string, targetKey?: string) => void
   onGuideRetry: () => void
   onRecentGuideAdd: (guide: RecentGuide) => void
   query: string

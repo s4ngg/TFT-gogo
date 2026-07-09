@@ -4,7 +4,6 @@ import {
   type ChampionGuide,
   type ChampionCostFilter,
   type GuideCatalog,
-  type RecentGuide,
 } from '../../../api/guide'
 import { useGuideTabItems } from '../../../hooks/useGuide'
 import { useChampionDetailDialog } from '../hooks/useChampionDetailDialog'
@@ -23,6 +22,7 @@ import {
 import type { GameGuideAiAskHandler } from '../utils/gameGuideAiRefs'
 import {
   getGuideHighlightWatchKey,
+  type HighlightedGuide,
   isGuideHighlighted,
 } from '../utils/guideHighlight'
 import styles from '../Guide.module.css'
@@ -30,7 +30,7 @@ import styles from '../Guide.module.css'
 interface ChampionGuideViewProps {
   fallbackData: GuideCatalog
   favoriteChampions: string[]
-  highlightedGuide: RecentGuide | null
+  highlightedGuide: HighlightedGuide | null
   isGuideFallbackData: boolean
   isGuideFetching: boolean
   onChampionOpen: (championName: string) => void

@@ -1,7 +1,7 @@
 import { BookOpen } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 import type { GameGuideAiPathfinderRef } from '../../api/gameGuideAiPathfinderApi'
-import type { GuideTab, GuideTabItems, RecentGuide } from '../../api/guide'
+import type { GuideTab, GuideTabItems } from '../../api/guide'
 import { AppLayout } from '../../components/layout'
 import { useGuideCatalog } from '../../hooks/useGuide'
 import { guideFallbackData } from './guideFallbackData'
@@ -11,17 +11,11 @@ import GuideQuickAccess from './components/GuideQuickAccess'
 import { StatBadge } from './components/GuideShared'
 import GuideTabPanels from './components/GuideTabPanels'
 import { useGameGuideAiCandidateRefs } from './hooks/useGameGuideAiCandidateRefs'
+import { useGuideHighlight } from './hooks/useGuideHighlight'
 import { useGuidePageState } from './hooks/useGuidePageState'
 import styles from './Guide.module.css'
 
-const GUIDE_HIGHLIGHT_DURATION_MS = 2600
-type HighlightedGuide = RecentGuide & {
-  targetKey?: string
-}
-
 function Guide() {
-  const highlightTimeoutRef = useRef<number | null>(null)
-  const [highlightedGuide, setHighlightedGuide] = useState<HighlightedGuide | null>(null)
   const [isGameGuideAiOpen, setIsGameGuideAiOpen] = useState(false)
   const [gameGuideAiSelectedRefs, setGameGuideAiSelectedRefs] = useState<GameGuideAiPathfinderRef[]>([])
   const [gameGuideAiVisibleItems, setGameGuideAiVisibleItems] = useState<GuideTabItems[GuideTab][number][]>([])
@@ -51,29 +45,7 @@ function Guide() {
   const handleGameGuideAiVisibleItemsChange = useCallback((items: GuideTabItems[GuideTab][number][]) => {
     setGameGuideAiVisibleItems(items)
   }, [])
-
-  useEffect(() => () => {
-    if (highlightTimeoutRef.current !== null) {
-      window.clearTimeout(highlightTimeoutRef.current)
-    }
-  }, [])
-
-  function handleGuideJump(tab: GuideTab, query: string, label = query, targetKey?: string) {
-    const nextHighlightedGuide = { label, query, tab, targetKey }
-
-    jumpToGuide(tab, query, label)
-    setHighlightedGuide(nextHighlightedGuide)
-    if (highlightTimeoutRef.current !== null) {
-      window.clearTimeout(highlightTimeoutRef.current)
-    }
-    highlightTimeoutRef.current = window.setTimeout(() => {
-      setHighlightedGuide((current) => (
-        current?.tab === nextHighlightedGuide.tab && current.query === nextHighlightedGuide.query
-          ? null
-          : current
-      ))
-    }, GUIDE_HIGHLIGHT_DURATION_MS)
-  }
+  const { handleGuideJump, highlightedGuide } = useGuideHighlight({ onJump: jumpToGuide })
 
   function handleGameGuideAiAsk(ref: GameGuideAiPathfinderRef) {
     setGameGuideAiSelectedRefs([ref])

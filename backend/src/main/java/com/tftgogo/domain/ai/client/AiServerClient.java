@@ -102,17 +102,6 @@ public class AiServerClient {
         }
     }
 
-    public GameGuideAiPathfinderResponse pathfindGameGuide(GameGuideAiPathfinderRequest request) {
-        return pathfindGameGuide(request, toMinimalSelectedEntries(request.getSelectedRefs()));
-    }
-
-    public GameGuideAiPathfinderResponse pathfindGameGuide(
-            GameGuideAiPathfinderRequest request,
-            List<GameGuideSelectedEntry> selectedEntries
-    ) {
-        return pathfindGameGuide(request, selectedEntries, request.getCandidateRefs());
-    }
-
     public GameGuideAiPathfinderResponse pathfindGameGuide(
             GameGuideAiPathfinderRequest request,
             List<GameGuideSelectedEntry> selectedEntries,
@@ -194,24 +183,6 @@ public class AiServerClient {
 
         return selectedEntries.stream()
                 .map(this::toSelectedEntryBody)
-                .toList();
-    }
-
-    private List<GameGuideSelectedEntry> toMinimalSelectedEntries(
-            List<GameGuideAiPathfinderRequest.GuideRefDto> refs
-    ) {
-        if (refs == null || refs.isEmpty()) {
-            return List.of();
-        }
-
-        return refs.stream()
-                .map(ref -> new GameGuideSelectedEntry(
-                        ref.getGuideType(),
-                        ref.getTargetKey(),
-                        ref.getName(),
-                        null,
-                        Map.of()
-                ))
                 .toList();
     }
 
