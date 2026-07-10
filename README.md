@@ -10,28 +10,56 @@
 
 <br>
 
-## 도메인별 기능 및 담당자
+## 주요 화면
 
-### 🔍 전적 검색 (`search` · `match`) — 김성원 (gungang1212-tech)
+> 📸 스크린샷 준비 중입니다. 아래 화면이 순차적으로 추가될 예정입니다.
+
+| 화면 | 설명 |
+|------|------|
+| 대시보드 | ![dashboard](./docs/screenshots/dashboard.png) |
+| AI 추천 | ![ai-recommend](./docs/screenshots/ai-recommend.png) |
+| 메타 덱 모음 | ![decks](./docs/screenshots/decks.png) |
+| 게임 가이드 | ![guide](./docs/screenshots/guide.png) |
+| 전적 검색 · 매치 상세 | (추가 예정) |
+| 커뮤니티 · 파티 모집 | (추가 예정) |
+| 패치노트 | (추가 예정) |
+| 로그인 | (추가 예정) |
+
+<br>
+
+## 핵심 기능
+
+### 🔍 전적 검색
 소환사명 + 태그로 Riot API에서 프로필(레벨, 아이콘, 랭크 정보)을 조회하고, 최근 매치 기록을 수집합니다. 매치 상세에서는 배치 순위, 덱 구성, 시너지, 아이템 등을 확인할 수 있습니다. Riot API Rate Limiter와 매치 캐싱으로 호출 제한을 관리합니다.
 
-### 🤖 AI 추천 · 채팅 (`ai` · `ai-server`) — 김상우 (s4ngg)
+### 🤖 AI 추천 · 채팅
 소환사의 최근 랭크 전적과 현재 메타 덱 데이터를 조합하여 AI 서버로 전송하면, OpenAI API 기반으로 맞춤 덱을 추천합니다. 별도의 AI 채팅 기능에서는 TFT 전략 관련 질의응답이 가능하며, 사용자별 Rate Limit이 적용됩니다.
 
-### 📊 메타 덱 · 영웅증강 덱 (`deck`) — 김상우 (s4ngg)
+### 📊 메타 덱 · 영웅증강 덱
 티어별(마스터+, 다이아+ 등) 메타 덱 순위를 스케줄러로 자동 수집하여 제공합니다. 각 덱의 챔피언 구성, 시너지, 핵심 아이템, 승률 등을 조회할 수 있습니다. 관리자가 영웅증강 기반 추천 덱을 직접 등록·관리하는 기능도 포함합니다.
 
-### 📖 게임 가이드 (`guide`) — 이현재 (TIG-korea)
+### 📖 게임 가이드
 Community Dragon(CDragon)에서 챔피언, 시너지, 아이템, 증강 데이터를 스케줄러로 자동 import합니다. 패치 버전별로 데이터가 관리되며, 키워드 검색과 DB 페이지네이션을 지원합니다.
 
-### 📰 패치노트 (`patchnote`) — 이현재 (TIG-korea)
+### 📰 패치노트
 공식 패치노트를 크롤링·파싱하여 변경사항을 카테고리(챔피언, 아이템, 시너지 등)와 영향도(buff, nerf, adjust)로 분류합니다. 패치별 필터링, 검색, 요약 하이라이트 기능을 제공합니다.
 
-### 🎉 커뮤니티 · 파티 모집 (`community`) — 이소정 (DevAgumon)
+### 🎉 커뮤니티 · 파티 모집
 게임 모드별 파티 모집글을 작성하고, 다른 유저가 신청·수락할 수 있습니다. 파티 채팅방에서 실시간 메시지 교환이 가능합니다.
 
-### 🔐 회원 · 인증 (`member`) — 이소정 (DevAgumon)
+### 🔐 회원 · 인증
 Google, Kakao, Naver 소셜 로그인을 지원합니다. OAuth2 인증 후 JWT 토큰을 발급하여 API 인증에 사용합니다. 관리자 계정은 별도 JWT 기반 인증으로 분리되어 있습니다.
+
+<br>
+
+## 시스템 아키텍처
+
+![architecture](./docs/screenshots/architecture.svg)
+
+- **Frontend**(React, Nginx) → **Backend**(Spring Boot)로 API 요청
+- **Backend**는 MySQL(영속 데이터)과 Redis(캐시 · Rate Limit)를 사용하고, Riot Games API를 외부 호출
+- **Backend** ↔ **AI Server**(FastAPI)는 내부 시크릿 기반으로 통신하며, AI Server는 PostgreSQL(pgvector)과 OpenAI API를 사용
+- 배포: GitHub Actions → Docker 이미지 빌드 → AWS EC2(Docker Compose + Nginx 리버스 프록시)
 
 <br>
 
@@ -43,6 +71,40 @@ Google, Kakao, Naver 소셜 로그인을 지원합니다. OAuth2 인증 후 JWT 
 | **AI Server** | FastAPI, PostgreSQL, pgvector, OpenAI API |
 | **Frontend** | React 18 (Vite), Zustand, TanStack Query |
 | **Infra** | AWS EC2, Nginx, Docker, GitHub Actions |
+
+<br>
+
+## 실행 방법
+
+### 사전 요구사항
+- Docker, Docker Compose
+
+### 로컬 실행 (Docker Compose)
+
+```bash
+git clone https://github.com/s4ngg/TFT-gogo.git
+cd TFT-gogo
+```
+
+루트에 `.env` 파일을 생성하고 필요한 값을 채웁니다 (`docker-compose.yml` 참고). 대부분의 값은 로컬 개발용 기본값이 설정되어 있으며, 아래 값은 실제 기능 동작을 위해 채워야 합니다.
+
+```bash
+RIOT_API_KEY=your-riot-api-key
+JWT_SECRET=your-jwt-secret
+AI_SERVER_INTERNAL_SECRET=your-internal-secret
+```
+
+```bash
+docker compose up -d --build
+```
+
+실행 후 접속:
+
+| 서비스 | 주소 |
+|--------|------|
+| Frontend | http://localhost:3000 |
+| Backend | http://localhost:8081 |
+| AI Server | 컨테이너 내부 전용 (Backend를 통해서만 접근) |
 
 <br>
 
@@ -168,3 +230,17 @@ docs/
 ├── screenshots/   # GitHub 이슈·PR용 스크린샷
 └── team-share/    # AWS 인프라 가이드, 운영 런북
 ```
+
+<br>
+
+## 도메인별 담당자
+
+| 도메인 | 담당자 |
+|--------|--------|
+| 🔍 전적 검색 (`search` · `match`) | 김성원 (gungang1212-tech) |
+| 🤖 AI 추천 · 채팅 (`ai` · `ai-server`) | 김상우 (s4ngg) |
+| 📊 메타 덱 · 영웅증강 덱 (`deck`) | 김상우 (s4ngg) |
+| 📖 게임 가이드 (`guide`) | 이현재 (TIG-korea) |
+| 📰 패치노트 (`patchnote`) | 이현재 (TIG-korea) |
+| 🎉 커뮤니티 · 파티 모집 (`community`) | 이소정 (DevAgumon) |
+| 🔐 회원 · 인증 (`member`) | 이소정 (DevAgumon) |
