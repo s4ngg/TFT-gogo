@@ -100,6 +100,15 @@ cd TFT-gogo
 RIOT_API_KEY=your-riot-api-key
 ```
 
+**Riot API 키 발급 방법**
+
+1. [Riot Developer Portal](https://developer.riotgames.com/)에 접속합니다.
+2. 우측 상단에서 로그인합니다.
+3. 로그인 후 같은 페이지에서 **REGENERATE API KEY** 버튼을 클릭해 키를 발급합니다.
+4. 발급된 키를 복사해 `.env`의 `RIOT_API_KEY` 값에 붙여넣습니다.
+
+> ⚠️ 이 키는 24시간마다 만료되는 개발용 키입니다. 만료 시 같은 방법으로 재발급 후 `.env`를 갱신하고 컨테이너를 재시작해야 합니다.
+
 ```bash
 docker compose up -d --build
 ```
