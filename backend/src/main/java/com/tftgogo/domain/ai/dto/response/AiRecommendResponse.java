@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.AccessLevel;
 
 import java.util.List;
@@ -51,6 +52,9 @@ public class AiRecommendResponse {
     @Getter
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class TraitStat {
+        // ai-server가 CDragon trait key에서 뽑은 영문 suffix(예: "psyops")로 내려주는데,
+        // AiRecommendService가 GuideTrait 기준 한글 이름으로 치환할 수 있도록 setter를 연다.
+        @Setter
         private String name;
 
         @JsonAlias("icon_url")
