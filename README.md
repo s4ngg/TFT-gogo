@@ -12,8 +12,6 @@
 
 ## 주요 화면
 
-> 📸 커뮤니티 · 파티 모집 화면은 스크린샷 준비 중입니다.
-
 | 화면 | 설명 |
 |------|------|
 | 대시보드 | ![dashboard](./docs/screenshots/dashboard.png) |
@@ -21,7 +19,7 @@
 | 메타 덱 모음 | ![decks](./docs/screenshots/decks.png) |
 | 게임 가이드 | ![guide](./docs/screenshots/guide.png) |
 | 전적 검색 · 매치 상세 | ![search-match-detail](./docs/screenshots/search-match-detail.png) |
-| 커뮤니티 · 파티 모집 | (추가 예정) |
+| 커뮤니티 · 파티 모집 | ![community](./docs/screenshots/community.png) |
 | 패치노트 | ![patchnote](./docs/screenshots/patchnote.png) |
 | 로그인 | ![login](./docs/screenshots/login.png) |
 
