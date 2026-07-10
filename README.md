@@ -12,7 +12,7 @@
 
 ## 주요 화면
 
-> 📸 스크린샷 준비 중입니다. 아래 화면이 순차적으로 추가될 예정입니다.
+> 📸 커뮤니티 · 파티 모집 화면은 스크린샷 준비 중입니다.
 
 | 화면 | 설명 |
 |------|------|
@@ -20,10 +20,10 @@
 | AI 추천 | ![ai-recommend](./docs/screenshots/ai-recommend.png) |
 | 메타 덱 모음 | ![decks](./docs/screenshots/decks.png) |
 | 게임 가이드 | ![guide](./docs/screenshots/guide.png) |
-| 전적 검색 · 매치 상세 | (추가 예정) |
+| 전적 검색 · 매치 상세 | ![search-match-detail](./docs/screenshots/search-match-detail.png) |
 | 커뮤니티 · 파티 모집 | (추가 예정) |
-| 패치노트 | (추가 예정) |
-| 로그인 | (추가 예정) |
+| 패치노트 | ![patchnote](./docs/screenshots/patchnote.png) |
+| 로그인 | ![login](./docs/screenshots/login.png) |
 
 <br>
 
