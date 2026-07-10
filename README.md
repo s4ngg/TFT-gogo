@@ -94,12 +94,10 @@ git clone https://github.com/s4ngg/TFT-gogo.git
 cd TFT-gogo
 ```
 
-루트에 `.env` 파일을 생성하고 필요한 값을 채웁니다 (`docker-compose.yml` 참고). 대부분의 값은 로컬 개발용 기본값이 설정되어 있으며, 아래 값은 실제 기능 동작을 위해 채워야 합니다.
+루트에 `.env` 파일을 생성합니다 (`docker-compose.yml` 참고). `JWT_SECRET`, `AI_SERVER_INTERNAL_SECRET` 등은 로컬 개발용 기본값이 이미 동작하므로 그대로 두어도 되지만, 전적 검색·매치 조회 기능을 실제로 확인하려면 발급받은 Riot API 키가 필요합니다.
 
 ```bash
 RIOT_API_KEY=your-riot-api-key
-JWT_SECRET=your-jwt-secret
-AI_SERVER_INTERNAL_SECRET=your-internal-secret
 ```
 
 ```bash
@@ -112,6 +110,7 @@ docker compose up -d --build
 |--------|------|
 | Frontend | http://localhost:3000 |
 | Backend | http://localhost:8081 |
+| Backend API 문서 (Swagger) | http://localhost:8081/swagger-ui/index.html |
 | AI Server | 컨테이너 내부 전용 (Backend를 통해서만 접근) |
 
 <br>
