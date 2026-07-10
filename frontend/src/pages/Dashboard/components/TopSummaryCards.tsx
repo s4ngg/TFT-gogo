@@ -2,17 +2,19 @@ import { ClipboardList, Search } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useLatestPatchNote } from '../../Decks/hooks/useLatestPatchVersion'
 import styles from '../Dashboard.module.css'
 
 function PatchMetaCard() {
   const navigate = useNavigate()
+  const latestPatch = useLatestPatchNote()
 
   return (
     <section className={`${styles.panel} ${styles.patchCard}`}>
       <div className={styles.patchEmblemArt} aria-hidden="true" />
       <div className={styles.patchCopy}>
-        <h2>17.3 추천 메타</h2>
-        <p>5월 20일 업데이트</p>
+        <h2>{latestPatch ? `${latestPatch.version} 추천 메타` : '추천 메타'}</h2>
+        <p>{latestPatch ? `${latestPatch.date} 업데이트` : '패치 데이터를 불러오는 중입니다'}</p>
       </div>
       <button type="button" onClick={() => navigate('/patch-notes')}>
         <ClipboardList size={19} />
