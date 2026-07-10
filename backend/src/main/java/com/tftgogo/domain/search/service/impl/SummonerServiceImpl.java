@@ -48,7 +48,7 @@ public class SummonerServiceImpl implements SummonerService {
     public SummonerProfileResponse getProfile(String gameName, String tagLine) {
         return cachedSummonerRepository
                 .findByGameNameIgnoreCaseAndTagLineIgnoreCase(gameName, tagLine)
-                .filter(cs -> isFresh(cs.getCachedAt(), SUMMONER_TTL_MINUTES))
+                .filter(cs -> isFresh(cs.getCachedAt(), SUMMONER_TTL_MINUTES, cs.getPuuid()))
                 .map(cs -> SummonerProfileResponse.builder()
                         .puuid(cs.getPuuid())
                         .gameName(cs.getGameName())
@@ -80,7 +80,7 @@ public class SummonerServiceImpl implements SummonerService {
     @Override
     public RankInfoResponse getRank(String puuid) {
         return cachedRankRepository.findById(puuid)
-                .filter(cr -> isFresh(cr.getCachedAt(), RANK_TTL_MINUTES))
+                .filter(cr -> isFresh(cr.getCachedAt(), RANK_TTL_MINUTES, puuid))
                 .map(cr -> RankInfoResponse.builder()
                         .tier(cr.getTier())
                         .rank(cr.getRank())
@@ -143,7 +143,11 @@ public class SummonerServiceImpl implements SummonerService {
         return SummonerDetailResponse.from(profile, rankInfo);
     }
 
-    private boolean isFresh(LocalDateTime cachedAt, int ttlMinutes) {
-        return cachedAt != null && cachedAt.isAfter(LocalDateTime.now().minusMinutes(ttlMinutes));
+    private boolean isFresh(LocalDateTime cachedAt, int ttlMinutes, String puuid) {
+        if (cachedAt == null) {
+            return false;
+        }
+        long jitterSeconds = Math.floorMod(puuid.hashCode(), 30);
+        return cachedAt.isAfter(LocalDateTime.now().minusMinutes(ttlMinutes).minusSeconds(jitterSeconds));
     }
 }
