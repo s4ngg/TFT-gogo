@@ -63,14 +63,22 @@ Google, Kakao, Naver 소셜 로그인을 지원합니다. OAuth2 인증 후 JWT 
 
 <br>
 
-## 기술 스택
+## 기술 스택 및 선정 이유
 
-| 영역 | 기술 |
-|------|------|
-| **Backend** | Spring Boot 3, MySQL, Redis, JWT, OAuth2 |
-| **AI Server** | FastAPI, PostgreSQL, pgvector, OpenAI API |
-| **Frontend** | React 18 (Vite), Zustand, TanStack Query |
-| **Infra** | AWS EC2, Nginx, Docker, GitHub Actions |
+| 영역 | 기술 | 선정 이유 |
+|------|------|-----------|
+| **Backend** | Spring Boot 3 | 성숙한 생태계와 DDD 구조 적용 용이성 |
+| | MySQL | 전적·회원·덱 등 관계형 데이터의 정합성 관리 |
+| | Redis | Riot API 응답 캐싱(TTL)과 Rate Limiter 구현에 사용, 외부 API 호출 제한 대응 |
+| | JWT / OAuth2 | Google·Kakao·Naver 소셜 로그인 후 무상태(stateless) 인증으로 서버 확장성 확보 |
+| **AI Server** | FastAPI | Python 기반 AI/LLM 생태계와의 호환성, 비동기 처리로 OpenAI API 호출 대응 |
+| | PostgreSQL + pgvector | 메타 덱 임베딩을 저장하고 벡터 유사도 검색으로 추천 품질을 높이기 위해 채택 |
+| | OpenAI API | 자체 LLM 학습·운영 없이 검증된 모델을 프롬프트 엔지니어링으로 빠르게 적용 |
+| **Frontend** | React 18 (Vite) | 빠른 HMR과 컴포넌트 기반 재사용성 |
+| | Zustand | Redux 대비 보일러플레이트가 적은 경량 전역 상태 관리 |
+| | TanStack Query | 서버 상태(캐싱·재검증·로딩/에러)를 선언적으로 관리해 불필요한 API 재호출 최소화 |
+| **Infra** | AWS EC2, Nginx, Docker | 컨테이너 기반으로 환경 일관성을 확보하고, Nginx로 리버스 프록시·정적 파일을 서빙 |
+| | GitHub Actions | 빌드·배포 파이프라인 자동화 |
 
 <br>
 
