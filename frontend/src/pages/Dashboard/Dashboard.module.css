@@ -8,7 +8,7 @@
   width: 100%;
   max-width: var(--page-dashboard-width);
   display: grid;
-  grid-template-columns: minmax(210px, 267px) minmax(440px, 566px) minmax(320px, 410px);
+  grid-template-columns: minmax(210px, 267px) minmax(490px, 803px) minmax(270px, 360px);
   grid-template-rows: var(--top-row-height) minmax(0, var(--snapshot-height));
   align-content: start;
   justify-content: start;

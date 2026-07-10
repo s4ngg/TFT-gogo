@@ -4,8 +4,8 @@ import { LIVE_CONTENT_QUERY_OPTIONS } from '../../../hooks/liveContentQueryOptio
 
 const EMPTY_FALLBACK: never[] = []
 
-export function useLatestPatchVersion() {
-  const { data } = useQuery({
+function useLatestPatchNoteQuery() {
+  return useQuery({
     queryFn: () => getPatchNotes(EMPTY_FALLBACK),
     // PatchNotes 페이지의 usePatchNotes()는 ['patch-notes', 'list']를 쓰며
     // 그 캐시에는 patchNotesFallbackData가 채워져야 한다. 같은 키를 쓰면 이
@@ -14,6 +14,14 @@ export function useLatestPatchVersion() {
     queryKey: ['patch-notes', 'latest-version'],
     ...LIVE_CONTENT_QUERY_OPTIONS,
   })
+}
 
+export function useLatestPatchVersion() {
+  const { data } = useLatestPatchNoteQuery()
   return data?.data[0]?.version
+}
+
+export function useLatestPatchNote() {
+  const { data } = useLatestPatchNoteQuery()
+  return data?.data[0]
 }
