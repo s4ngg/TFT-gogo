@@ -13,7 +13,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
-@Profile("!local & !dev")
+@Profile("!local")
 @RequiredArgsConstructor
 public class RedisChatRealtimePublisher implements ChatRealtimePublisher {
 
