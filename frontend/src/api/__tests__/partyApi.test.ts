@@ -368,6 +368,25 @@ describe('partyApi', () => {
     )
   })
 
+  it('createPartyPost는 일반 실패 응답에는 기본 등록 실패 메시지를 사용한다', async () => {
+    axiosInstance.defaults.adapter = createRejectingPartyAdapter({
+      success: false,
+    }, 500)
+
+    await assert.rejects(
+      () =>
+        createPartyPost({
+          capacity: '1/2',
+          deadline: '2026-06-16T21:00:00',
+          description: '랭크 듀오 구합니다',
+          mode: '랭크',
+          tags: ['마스터+', '랭크'],
+          title: '마스터 듀오',
+        }),
+      /파티 모집글 등록 실패/,
+    )
+  })
+
   it('파티 참여와 취소 응답 payload가 없으면 성공으로 처리하지 않는다', async () => {
     axiosInstance.defaults.adapter = createPartyAdapter({
       data: null,
