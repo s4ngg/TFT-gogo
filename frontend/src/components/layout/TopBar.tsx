@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Bell, ChevronDown, CircleHelp, LogIn, LogOut, Mail } from 'lucide-react'
+import { ChevronDown, LogIn, LogOut } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { communityDragonProfileIconUrl } from '../../api/communityDragonAssets'
 import { logout } from '../../api/memberApi'
@@ -25,6 +25,9 @@ function TopBar() {
   const { data: member } = useAuthSession()
   const { data: metaDeckResponse } = useMetaSnapshot()
   const patchVersion = metaDeckResponse?.patchVersion ?? '집계 대기'
+  const patchBriefText = metaDeckResponse?.dataStartDate
+    ? `${metaDeckResponse.dataStartDate} 이후 메타 덱 집계 기준`
+    : '메타 덱 데이터를 집계 중입니다'
   const displayName = member?.nickname ?? member?.email ?? 'TFTgogo'
   const memberProfileIconUrl = member?.profileImage || profileIconUrl
 
@@ -83,25 +86,11 @@ function TopBar() {
       <div className={styles.topStatusGroup}>
         <div className={styles.patchBrief} aria-label="패치 한줄 요약">
           <span>{patchVersion} 패치 요약</span>
-          <strong>상위권 선봉대 벡스와 6악복 중심으로 압축 중</strong>
+          <strong>{patchBriefText}</strong>
         </div>
         <RiotApiStatusBadge />
       </div>
       <div className={styles.topActions}>
-        {isLoggedIn && (
-          <>
-            <button type="button" className={styles.notificationButton} aria-label="알림">
-              <Bell size={23} />
-              <span>3</span>
-            </button>
-            <button type="button" className={styles.iconButton} aria-label="메일">
-              <Mail size={24} />
-            </button>
-          </>
-        )}
-        <button type="button" className={styles.iconButton} aria-label="도움말">
-          <CircleHelp size={24} />
-        </button>
         {isLoggedIn ? (
           <div className={styles.profileMenuShell}>
             <button
