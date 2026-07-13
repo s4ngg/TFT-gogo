@@ -8,9 +8,9 @@
   --border: #1f2a37;
   --border-subtle: rgba(114, 145, 153, 0.18);
   --border-faint:  rgba(114, 145, 153, 0.08);
-  --border-active: #00d4b4;
-  --accent: #00d4b4;
-  --accent-bright: #1fe5c8;
+  --border-active: #ff8c42;
+  --accent: #ff8c42;
+  --accent-bright: #ffa366;
 
   --color-cyan: #04f3e5;
   --color-gold: #f7d26d;
@@ -238,4 +238,68 @@
   --summoner-right-col-width: 340px;
   --page-dashboard-width: 1460px;
   --page-decks-width: 1270px;
+}
+
+/* Home (sunshine/sunset) card theme tokens — scoped locally via Dashboard.module.css */
+:root {
+  --bg-card-sun: #ffd93d;
+  --bg-card-sun-soft: #ffc627;
+  --bg-card-sun-gradient: linear-gradient(180deg, #ffe066 0%, #ffd93d 100%);
+  --border-card-sun: rgba(0, 0, 0, 0.65);
+  --divider-sun: rgba(0, 0, 0, 0.2);
+  --text-sun-main: #1a1300;
+  --text-sun-soft: #332609;
+  --text-sun-secondary: #4a3d1f;
+  --text-sun-muted: #6b5a30;
+  --accent-bg-faint: rgba(255, 140, 66, 0.1);
+  --accent-border-subtle: rgba(255, 140, 66, 0.32);
+
+  /* 홈 화면 카드(패널) 전용 선셋 오렌지 테마 — 노란 배경 위 카드용 */
+  --bg-card-orange: #ff8c42;
+  --bg-card-orange-soft: #f77a28;
+  --bg-card-orange-gradient: linear-gradient(180deg, #ffa366 0%, #ff8c42 100%);
+  --border-card-orange: rgba(0, 0, 0, 0.65);
+  --text-orange-main: #000000;
+  --text-orange-soft: rgba(0, 0, 0, 0.78);
+  --text-orange-secondary: rgba(0, 0, 0, 0.62);
+  --text-orange-muted: rgba(0, 0, 0, 0.46);
+
+  /* 홈 화면 배경 전용 화이트 테마 — 카드는 노랑, 배경은 흰색 */
+  --bg-page-white-gradient: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+
+  /* 홈 화면 배경 전용 블랙 테마 — 사이드바/카드는 오렌지, 나머지 배경은 검정 */
+  --bg-page-black-gradient: linear-gradient(180deg, #0a0a0a 0%, #000000 100%);
+
+  /* 사이드바 전용 민트 그린 테마 */
+  --bg-sidebar-mint: #6bcb77;
+  --bg-sidebar-mint-gradient: linear-gradient(180deg, #86d692 0%, #6bcb77 100%);
+  --divider-mint: rgba(0, 0, 0, 0.2);
+  --text-mint-main: #0d2b12;
+  --text-mint-secondary: #1f4726;
+
+  /* 홈 화면 카드(패널) 전용 아쿠아 민트 테마 */
+  --bg-card-aqua: #00c9a7;
+  --bg-card-aqua-soft: #00b090;
+  --bg-card-aqua-gradient: linear-gradient(180deg, #29d9bb 0%, #00c9a7 100%);
+  --border-card-aqua: rgba(0, 0, 0, 0.65);
+  --text-aqua-main: #00332b;
+  --text-aqua-soft: #0d4a3d;
+  --text-aqua-secondary: #1a5c4c;
+  --text-aqua-muted: #3d7a6a;
+
+  /* 오렌지/밝은 카드 위에 얹히는 흰 배경 버튼·인풋 공용 토큰 */
+  --bg-onlight: #ffffff;
+  --bg-onlight-hover: #f2f2f2;
+  --text-onlight-main: #000000;
+  --border-onlight-subtle: rgba(0, 0, 0, 0.25);
+  --overlay-onlight-faint: rgba(0, 0, 0, 0.06);
+  --overlay-onlight-soft: rgba(0, 0, 0, 0.22);
+  --selected-filter-bg-onlight: rgba(120, 62, 8, 0.56);
+
+  /* 오렌지 카드 위 자체 다크 배경 박스(검색결과·채팅·AI위젯 등)에서 복귀하는 공용 밝은 텍스트 토큰 */
+  --text-ondark-main: #ffffff;
+  --text-ondark-ui: #d9dde3;
+  --text-ondark-soft: #c6ccd8;
+  --text-ondark-secondary: #b5bdc5;
+  --text-ondark-muted: #8b92a8;
 }

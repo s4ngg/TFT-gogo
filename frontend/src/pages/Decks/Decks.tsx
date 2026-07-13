@@ -38,7 +38,7 @@ function Decks() {
   )
 
   return (
-    <AppLayout>
+    <AppLayout sunTheme>
       <div className={styles.page}>
         <div className={styles.pageHeader}>
           <div className={styles.titleBlock}>

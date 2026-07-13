@@ -72,7 +72,7 @@
 }
 
 .panelHeader h2 {
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 22px;
   font-weight: 650;
   letter-spacing: -0.024em;
@@ -105,6 +105,9 @@
 }
 
 .primaryButton:disabled {
+  /* 오렌지 카드 위 자체 다크 배경 박스 — 밝은 텍스트로 복귀 */
+  --text-muted: var(--text-ondark-muted);
+
   color: var(--text-muted);
   border-color: var(--border-subtle);
   background: var(--bg-btn-dark-soft);
@@ -157,6 +160,9 @@
 }
 
 .composeBox {
+  /* 오렌지 카드 위 자체 다크 배경 박스 — 밝은 텍스트로 복귀 */
+  --text-main: var(--text-ondark-main);
+
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) 96px 112px 92px;
   gap: 8px;
@@ -430,6 +436,9 @@
 }
 
 .joinButton:disabled {
+  /* 오렌지 카드 위 자체 다크 배경 박스 — 밝은 텍스트로 복귀 */
+  --text-muted: var(--text-ondark-muted);
+
   color: var(--text-muted);
   border-color: var(--border-subtle);
   background: var(--bg-btn-dark-soft);
@@ -533,6 +542,9 @@
 }
 
 .chatStatus {
+  /* 오렌지 카드 위 자체 다크 배경 박스 — 밝은 텍스트로 복귀 */
+  --text-secondary: var(--text-ondark-secondary);
+
   margin: 0;
   padding: var(--space-lg) var(--space-xl);
   border-bottom: 1px solid var(--border-separator);
@@ -606,6 +618,9 @@
 }
 
 .messageForm {
+  /* 오렌지 카드 위 자체 다크 배경 박스 — 밝은 텍스트로 복귀 */
+  --text-muted: var(--text-ondark-muted);
+
   height: 50px;
   display: grid;
   grid-template-columns: 24px minmax(0, 1fr) 36px;

@@ -105,7 +105,7 @@
 }
 .panelHead h2 {
   margin: 0;
-  color: #fff;
+  color: var(--text-main);
   font-size: 17px;
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -557,6 +557,9 @@
 }
 
 .heroAugEntry {
+  /* 오렌지 카드 위 자체 다크 배경 박스 — 밝은 텍스트로 복귀 */
+  --text-muted: var(--text-ondark-muted);
+
   display: flex;
   align-items: center;
   gap: 10px;

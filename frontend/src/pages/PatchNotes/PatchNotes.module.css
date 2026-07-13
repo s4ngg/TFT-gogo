@@ -44,7 +44,7 @@
 
 .heroCopy h1 {
   margin: 12px 0 9px;
-  color: #fff;
+  color: var(--text-main);
   font-size: 28px;
   font-weight: 700;
   letter-spacing: -0.024em;
@@ -113,7 +113,7 @@
 .releaseCard strong {
   display: block;
   margin-top: 8px;
-  color: #fff;
+  color: var(--text-main);
   font-size: 30px;
   font-weight: 800;
   letter-spacing: -0.02em;
@@ -162,6 +162,9 @@
 }
 
 .statusBanner button {
+  /* 오렌지 카드 위 자체 다크 배경 박스 — 밝은 텍스트로 복귀 */
+  --text-ui: var(--text-ondark-ui);
+
   height: var(--size-control-sm);
   display: inline-flex;
   align-items: center;
@@ -241,7 +244,7 @@
 
 .summaryCard strong {
   display: block;
-  color: #fff;
+  color: var(--text-main);
   font-size: 21px;
   font-weight: 800;
   letter-spacing: 0;
@@ -288,7 +291,7 @@
 .insightPanel h2,
 .historyPanel h2 {
   margin: 6px 0 0;
-  color: #fff;
+  color: var(--text-main);
   font-size: 21px;
   font-weight: 700;
   letter-spacing: -0.024em;
@@ -412,6 +415,9 @@
 }
 
 .changeSectionHeader {
+  /* 오렌지 카드 위 자체 다크 배경 박스 — 밝은 텍스트로 복귀 */
+  --text-main: var(--text-ondark-main);
+
   min-height: 44px;
   display: flex;
   align-items: center;
@@ -810,6 +816,10 @@
 }
 
 .seasonHeaderButton {
+  /* 오렌지 카드 위 자체 다크 배경 박스 — 밝은 텍스트로 복귀 */
+  --text-main: var(--text-ondark-main);
+  --text-muted: var(--text-ondark-muted);
+
   width: 100%;
   min-height: 46px;
   display: grid;

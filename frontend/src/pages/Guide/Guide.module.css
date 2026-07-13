@@ -207,17 +207,17 @@
   align-items: center;
   gap: var(--space-sm);
   padding: 0 var(--space-lg);
-  border: 1px solid var(--border-active);
+  border: 1px solid rgba(114, 150, 160, 0.38);
   border-radius: var(--radius-button);
-  color: var(--accent-bright);
-  background: var(--bg-card-soft);
+  color: var(--text-onlight-main);
+  background: var(--bg-onlight);
   font-size: var(--font-size-xs);
   font-weight: 800;
   cursor: pointer;
 }
 
 .statusBanner button:hover {
-  background: var(--bg-card);
+  background: var(--bg-onlight-hover);
 }
 
 .statusLoading {
@@ -273,10 +273,10 @@
   height: 25px;
   padding: 0 9px;
   overflow: hidden;
-  border: 1px solid rgba(110, 142, 150, 0.22);
+  border: 1px solid rgba(114, 150, 160, 0.38);
   border-radius: 6px;
-  color: #cfd6de;
-  background: rgba(10, 22, 30, 0.82);
+  color: var(--text-onlight-main);
+  background: var(--bg-onlight);
   font-size: 11px;
   font-weight: 700;
   text-overflow: ellipsis;
@@ -285,8 +285,7 @@
 }
 
 .quickGroup button:hover {
-  color: #05f3e7;
-  border-color: rgba(5, 243, 231, 0.42);
+  background: var(--bg-onlight-hover);
 }
 
 .sortButton {
@@ -401,7 +400,7 @@
 
 .traitTitle h2 {
   margin: 0;
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 19px;
   font-weight: 700;
   letter-spacing: 0;
@@ -468,6 +467,10 @@
 }
 
 .traitSummaryPanel {
+  /* 오렌지 카드 위 자체 다크 배경 박스 — 밝은 텍스트로 복귀 */
+  --text-soft: var(--text-ondark-soft);
+  --text-secondary: var(--text-ondark-secondary);
+
   display: grid;
   gap: var(--space-sm);
   margin: 13px 0 14px;
@@ -497,6 +500,10 @@
 }
 
 .traitEffectList {
+  /* 오렌지 카드 위 자체 다크 배경 박스 — 밝은 텍스트로 복귀 */
+  --text-soft: var(--text-ondark-soft);
+  --text-secondary: var(--text-ondark-secondary);
+
   display: grid;
   gap: var(--space-sm);
   margin: 0 0 14px;
@@ -744,7 +751,7 @@ button.championMini:hover {
 .itemGuideIdentity h3 {
   margin: 0;
   overflow-wrap: anywhere;
-  color: #ffffff;
+  color: var(--text-main);
   font-size: var(--font-size-md);
   font-weight: 800;
   line-height: 1.25;
@@ -826,7 +833,7 @@ button.championMini:hover {
 }
 
 .itemRecipeText span {
-  color: #ffffff;
+  color: var(--text-main);
   font-size: var(--font-size-xs);
   font-weight: 700;
   line-height: 1.35;
@@ -1067,7 +1074,7 @@ button.championMini:hover {
 .metricCards strong {
   display: block;
   margin-top: 10px;
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 14px;
   font-weight: 700;
 }
@@ -1216,7 +1223,7 @@ button.championMini:hover {
 .championInfo strong {
   display: block;
   overflow: hidden;
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 14px;
   font-weight: 800;
   text-overflow: ellipsis;
@@ -1600,6 +1607,15 @@ button.championMini:hover {
 }
 
 .gameGuideAiPanel {
+  /* AI 챗 위젯은 오렌지 카드 위에 얹힌 자체 다크 배경 — 원래 다크 테마 토큰으로 복귀 */
+  --text-main: var(--text-ondark-main);
+  --text-ui: var(--text-ondark-ui);
+  --text-soft: var(--text-ondark-soft);
+  --text-secondary: var(--text-ondark-secondary);
+  --text-muted: var(--text-ondark-muted);
+  --bg-card: #0e1926;
+  --bg-card-soft: #142235;
+
   width: min(var(--size-gameguide-ai-chat-width), calc(100vw - (var(--space-5xl) * 2)));
   height: min(var(--size-gameguide-ai-chat-max-height), calc(100vh - (var(--space-5xl) * 2)));
   height: min(var(--size-gameguide-ai-chat-max-height), calc(100dvh - (var(--space-5xl) * 2)));

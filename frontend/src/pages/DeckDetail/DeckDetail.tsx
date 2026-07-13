@@ -105,7 +105,7 @@ function DeckDetail() {
 
   if (isLoading) {
     return (
-      <AppLayout>
+      <AppLayout sunTheme>
         <div className={styles.page}>
           <p className={styles.loading}>불러오는 중...</p>
         </div>
@@ -115,7 +115,7 @@ function DeckDetail() {
 
   if (isError) {
     return (
-      <AppLayout>
+      <AppLayout sunTheme>
         <div className={styles.page}>
           <button type="button" className={styles.backBtn} onClick={() => navigate('/decks')}>
             <ArrowLeft size={16} /> 덱모음으로
@@ -128,7 +128,7 @@ function DeckDetail() {
 
   if (!deck) {
     return (
-      <AppLayout>
+      <AppLayout sunTheme>
         <div className={styles.page}>
           <button type="button" className={styles.backBtn} onClick={() => navigate(`/decks`)}>
             <ArrowLeft size={16} /> 덱모음으로
@@ -142,7 +142,7 @@ function DeckDetail() {
   const displayName = deckDisplayName(deck, locale)
 
   return (
-    <AppLayout>
+    <AppLayout sunTheme>
       <div className={styles.page}>
         <button type="button" className={styles.backBtn} onClick={() => navigate('/decks')}>
           <ArrowLeft size={16} /> 덱모음으로

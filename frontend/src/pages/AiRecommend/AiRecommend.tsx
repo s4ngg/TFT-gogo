@@ -108,7 +108,7 @@ function AiRecommend() {
   }
 
   return (
-    <AppLayout>
+    <AppLayout sunTheme>
       <div className={styles.page}>
         <div className={styles.pageHeader}>
           <div>

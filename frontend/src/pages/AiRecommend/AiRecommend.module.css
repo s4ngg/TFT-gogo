@@ -96,7 +96,7 @@
 
 .panelHead h2 {
   margin: 0;
-  color: #fff;
+  color: var(--text-main);
   font-size: 17px;
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -179,15 +179,16 @@
 }
 
 .connectBtn {
+  /* 홈 화면 CTA 버튼(.patchCard button)과 동일한 흰 배경 + 검정 텍스트 패턴 */
   display: inline-flex;
   align-items: center;
   gap: 8px;
   height: 44px;
   padding: 0 22px;
-  border: 1px solid #04f3e5;
+  border: 1px solid rgba(114, 150, 160, 0.38);
   border-radius: 8px;
-  color: #fff;
-  background: linear-gradient(180deg, rgba(4, 160, 155, 0.9), rgba(3, 80, 86, 0.95));
+  color: var(--text-onlight-main);
+  background: var(--bg-onlight);
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
@@ -206,6 +207,13 @@
 .statusMessage.error { color: var(--danger); }
 .statusMessage.loading { color: var(--text-muted); }
 .statusMessage.empty { color: var(--text-muted); }
+
+/* 카드 없이 검정 페이지 배경 위에 바로 놓이는 상태 메시지(.page 직속 자식) —
+   위 .text-muted override가 검정으로 바뀌어 검정 배경 위에서 안 보이므로 원래 밝은 값으로 복귀 */
+.page > .statusMessage.loading,
+.page > .statusMessage.empty {
+  color: #8b92a8;
+}
 
 /* ── 최근 전적 요약 ── */
 .summaryPanel { }
@@ -698,6 +706,10 @@
 }
 
 .chatInput {
+  /* 오렌지 카드 위 자체 다크 입력창 배경 — 밝은 텍스트로 복귀 */
+  --text-ui: var(--text-ondark-ui);
+  --text-muted: var(--text-ondark-muted);
+
   flex: 1;
   padding: 10px 14px;
   border: 1px solid var(--border-subtle);
@@ -721,6 +733,9 @@
 .chatInput:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .chatSendBtn {
+  /* 오렌지 카드 위 자체 틸 그라디언트 배경(--search-btn-bg는 미변경) — 밝은 아이콘 색상 유지 */
+  --text-main: var(--text-ondark-main);
+
   width: 38px;
   height: 38px;
   flex-shrink: 0;
