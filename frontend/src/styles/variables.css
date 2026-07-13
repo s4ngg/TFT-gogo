@@ -34,6 +34,7 @@
   --hero-aug-badge-bg: rgba(167, 139, 250, 0.10);
 
   --text-main: #ffffff;
+  --text-primary: var(--text-main);
   --text-ui: #d9dde3;
   --text-soft: #c6ccd8;
   --text-secondary: #b5bdc5;
