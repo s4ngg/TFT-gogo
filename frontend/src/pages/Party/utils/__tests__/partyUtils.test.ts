@@ -23,6 +23,7 @@ function partyPost(id: string): PartyPost {
     description: '같이 플레이할 파티원을 구합니다.',
     tags: ['랭크'],
     icon: 'crown',
+    isClosed: false,
     tone: 'purple',
   }
 }
@@ -106,6 +107,7 @@ describe('partyUtils', () => {
     const result = getPartyJoinActionState({
       hasJoinedOtherPost: false,
       isAuthenticated: false,
+      isClosed: false,
       isFull: false,
       isJoined: false,
       isJoinPending: false,
@@ -120,6 +122,7 @@ describe('partyUtils', () => {
     const result = getPartyJoinActionState({
       hasJoinedOtherPost: false,
       isAuthenticated: true,
+      isClosed: true,
       isFull: true,
       isJoined: true,
       isJoinPending: false,
@@ -134,6 +137,7 @@ describe('partyUtils', () => {
     const result = getPartyJoinActionState({
       hasJoinedOtherPost: false,
       isAuthenticated: false,
+      isClosed: false,
       isFull: false,
       isJoined: true,
       isJoinPending: false,
@@ -147,6 +151,7 @@ describe('partyUtils', () => {
     const ownerResult = getPartyJoinActionState({
       hasJoinedOtherPost: false,
       isAuthenticated: true,
+      isClosed: false,
       isFull: false,
       isJoined: true,
       isJoinPending: false,
@@ -155,6 +160,7 @@ describe('partyUtils', () => {
     const pendingResult = getPartyJoinActionState({
       hasJoinedOtherPost: false,
       isAuthenticated: true,
+      isClosed: false,
       isFull: false,
       isJoined: false,
       isJoinPending: true,
@@ -165,10 +171,25 @@ describe('partyUtils', () => {
     assert.deepEqual(pendingResult, { disabled: true, label: '처리중' })
   })
 
+  it('마감된 모집글은 인원이 남아도 참여 버튼을 열지 않는다', () => {
+    const result = getPartyJoinActionState({
+      hasJoinedOtherPost: false,
+      isAuthenticated: true,
+      isClosed: true,
+      isFull: false,
+      isJoined: false,
+      isJoinPending: false,
+      isOwner: false,
+    })
+
+    assert.deepEqual(result, { disabled: true, label: '마감' })
+  })
+
   it('로그인 사용자는 참여 가능한 모집글에서 참여 버튼을 본다', () => {
     const result = getPartyJoinActionState({
       hasJoinedOtherPost: false,
       isAuthenticated: true,
+      isClosed: false,
       isFull: false,
       isJoined: false,
       isJoinPending: false,

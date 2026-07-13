@@ -111,13 +111,14 @@ export function usePartyChat({ activeRoomId, onActiveRoomChange }: UsePartyChatO
     onActiveRoomChange(PARTY_RECRUITMENT_ROOM_ID)
   }
 
-  const preparePartyRoom = () => {
+  const preparePartyRoom = (_post?: unknown, message?: string) => {
     openPartyRecruitmentRoom()
-    setChatStatusMessage('')
+    setChatStatusMessage(message ?? '')
   }
 
-  const appendPartyMessage = () => {
-    setChatStatusMessage('')
+  const appendPartyMessage = (_post?: unknown, message?: string) => {
+    openPartyRecruitmentRoom()
+    setChatStatusMessage(message ?? '')
   }
 
   const sendMessage = async () => {
