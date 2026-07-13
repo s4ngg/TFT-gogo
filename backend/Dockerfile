@@ -22,6 +22,11 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 COPY --from=build /app/build/libs/*.jar app.jar
 
 ENV SPRING_PROFILES_ACTIVE=prod
+# JVM 기본 http.maxConnections(=5)는 AiServerClient(SimpleClientHttpRequestFactory,
+# 커넥션 풀링 없음)가 ai-server로 보내는 동시 요청을 호스트당 5개로 제한한다.
+# open-in-view=false로 DB 커넥션 병목을 없앤 뒤 재측정하니 이 제한이 다음 병목으로
+# 드러나 완화한다 (#733).
+ENV JAVA_TOOL_OPTIONS="-Dhttp.maxConnections=100"
 
 USER appuser
 
