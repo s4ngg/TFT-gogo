@@ -52,6 +52,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -116,7 +117,7 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
         String explicitVersion = normalizeText(importRequest.getVersion());
         PatchNoteCrawlFetchedPage detailPage = fetchImportDetailPage(importRequest, locale);
         PatchNoteCrawlDocument document = crawlerParser.parseDetailPage(detailPage, explicitVersion, locale);
-        int incomingRowCount = validateImportDocument(document);
+        Set<String> incomingSourceKeys = validateImportDocument(document);
         String version = requireText(document.version(), ErrorCode.PATCH_NOTE_INVALID_DATA);
         String sourceUrl = requireText(document.sourceUrl(), ErrorCode.PATCH_NOTE_INVALID_DATA);
         String sourceKey = resolvePatchNoteSourceKey(document);
@@ -126,7 +127,7 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
                 .filter(patchNote -> !patchNote.isManuallyEdited())
                 .map(patchChangeRepository::findByPatchNoteOrderBySortOrderAscIdAsc)
                 .orElseGet(List::of);
-        validateRetainedRowRatio(version, incomingRowCount, existingPatchChanges);
+        validateRetainedRowRatio(version, incomingSourceKeys, existingPatchChanges);
 
         LocalDateTime importedAt = LocalDateTime.now();
         PatchNote patchNote;
@@ -332,7 +333,7 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
         return patchNoteRepository.findByVersion(version);
     }
 
-    private int validateImportDocument(PatchNoteCrawlDocument document) {
+    private Set<String> validateImportDocument(PatchNoteCrawlDocument document) {
         if (document == null || document.rows() == null || document.rows().isEmpty()) {
             logger.warn("Patch note import rejected because parsed rows are empty");
             throw new BusinessException(ErrorCode.PATCH_NOTE_INVALID_DATA);
@@ -366,33 +367,41 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
                 throw new BusinessException(ErrorCode.PATCH_NOTE_INVALID_DATA);
             }
         }
-        return sourceKeys.size();
+        return sourceKeys;
     }
 
     private void validateRetainedRowRatio(
             String version,
-            int incomingRowCount,
+            Set<String> incomingSourceKeys,
             List<PatchChange> existingPatchChanges
     ) {
-        long existingImportedRowCount = existingPatchChanges.stream()
+        Set<String> existingImportedSourceKeys = existingPatchChanges.stream()
                 .filter(patchChange -> patchChange.getImportedAt() != null)
-                .count();
-        if (existingImportedRowCount == 0) {
+                .filter(patchChange -> !patchChange.isManuallyEdited())
+                .map(PatchChange::getSourceKey)
+                .filter(this::hasText)
+                .collect(Collectors.toSet());
+        if (existingImportedSourceKeys.isEmpty()) {
             return;
         }
 
-        double retainedRowRatio = incomingRowCount / (double) existingImportedRowCount;
+        long retainedSourceKeyCount = existingImportedSourceKeys.stream()
+                .filter(incomingSourceKeys::contains)
+                .count();
+        double retainedRowRatio = retainedSourceKeyCount / (double) existingImportedSourceKeys.size();
         double minimumRetainedRowRatio = crawlerProperties.getMinRetainedRowRatio();
         if (retainedRowRatio >= minimumRetainedRowRatio) {
             return;
         }
 
         logger.warn(
-                "Patch note import rejected because parsed row count dropped abnormally. "
-                        + "version={}, existingRows={}, incomingRows={}, retainedRatio={}, minimumRatio={}",
+                "Patch note import rejected because imported source key retention dropped abnormally. "
+                        + "version={}, existingRows={}, incomingRows={}, retainedRows={}, "
+                        + "retainedRatio={}, minimumRatio={}",
                 version,
-                existingImportedRowCount,
-                incomingRowCount,
+                existingImportedSourceKeys.size(),
+                incomingSourceKeys.size(),
+                retainedSourceKeyCount,
                 retainedRowRatio,
                 minimumRetainedRowRatio
         );

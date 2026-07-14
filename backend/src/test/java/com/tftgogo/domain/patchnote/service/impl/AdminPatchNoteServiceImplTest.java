@@ -682,6 +682,76 @@ class AdminPatchNoteServiceImplTest {
     }
 
     @Test
+    void importRiotPatchNote_whenRowCountIsSameButSourceKeysDoNotOverlap_preservesExistingData() {
+        // given
+        PatchNote existingPatchNote = importedPatchNote(1L, "17.3", true);
+        List<PatchChange> existingChanges = List.of(
+                importedPatchChange(1L, existingPatchNote, "existing-row-1", 1),
+                importedPatchChange(2L, existingPatchNote, "existing-row-2", 2)
+        );
+        PatchNoteCrawlFetchedPage detailPage = fetchedPage(existingPatchNote.getSourceUrl());
+        PatchNoteCrawlDocument document = patchNoteCrawlDocument(
+                detailPage,
+                List.of(
+                        patchChangeCrawlRow("incoming-row-1", 1),
+                        patchChangeCrawlRow("incoming-row-2", 2)
+                ),
+                List.of()
+        );
+        AdminPatchNoteImportRequest request = patchNoteImportRequest(detailPage.sourceUrl(), false);
+
+        when(crawlerProperties.getDefaultLocale()).thenReturn("ko-kr");
+        when(crawlerProperties.getMinRetainedRowRatio()).thenReturn(0.5);
+        when(crawlerFetchService.fetch(detailPage.sourceUrl())).thenReturn(detailPage);
+        when(crawlerParser.parseDetailPage(detailPage, null, "ko-kr")).thenReturn(document);
+        when(patchNoteRepository.findBySourceKey("riot-content-17-3")).thenReturn(Optional.of(existingPatchNote));
+        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(existingPatchNote))
+                .thenReturn(existingChanges);
+
+        // when, then
+        assertThatThrownBy(() -> adminPatchNoteService.importRiotPatchNote(request))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PATCH_NOTE_INVALID_DATA));
+        verify(patchChangeRepository, never()).findByPatchNoteAndSourceKey(any(PatchNote.class), any(String.class));
+        verify(patchChangeRepository, never()).save(any(PatchChange.class));
+        verify(patchChangeRepository, never()).deleteAllInBatch(any());
+    }
+
+    @Test
+    void importRiotPatchNote_whenImportedRowsAreManuallyEdited_excludesThemFromRetainedRatio() {
+        // given
+        PatchNote existingPatchNote = importedPatchNote(1L, "17.3", true);
+        PatchChange retainedChange = importedPatchChange(1L, existingPatchNote, "row-1", 1);
+        PatchChange manuallyEditedChange = importedPatchChange(2L, existingPatchNote, "manual-row", 2);
+        manuallyEditedChange.markManuallyEditedIfImported();
+        List<PatchChange> existingChanges = List.of(retainedChange, manuallyEditedChange);
+        PatchNoteCrawlFetchedPage detailPage = fetchedPage(existingPatchNote.getSourceUrl());
+        PatchNoteCrawlDocument document = patchNoteCrawlDocument(
+                detailPage,
+                List.of(patchChangeCrawlRow("row-1", 1)),
+                List.of()
+        );
+        AdminPatchNoteImportRequest request = patchNoteImportRequest(detailPage.sourceUrl(), false);
+
+        when(crawlerProperties.getDefaultLocale()).thenReturn("ko-kr");
+        when(crawlerProperties.getMinRetainedRowRatio()).thenReturn(1.0);
+        when(crawlerFetchService.fetch(detailPage.sourceUrl())).thenReturn(detailPage);
+        when(crawlerParser.parseDetailPage(detailPage, null, "ko-kr")).thenReturn(document);
+        when(patchNoteRepository.findBySourceKey("riot-content-17-3")).thenReturn(Optional.of(existingPatchNote));
+        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(existingPatchNote))
+                .thenReturn(existingChanges);
+        when(patchChangeRepository.findByPatchNoteAndSourceKey(existingPatchNote, "row-1"))
+                .thenReturn(Optional.of(retainedChange));
+
+        // when
+        AdminPatchNoteImportResponse response = adminPatchNoteService.importRiotPatchNote(request);
+
+        // then
+        assertThat(response.getUpdatedChanges()).isEqualTo(1);
+        verify(patchChangeRepository, never()).deleteAllInBatch(any());
+    }
+
+    @Test
     void importRiotPatchNote_whenRowRatioEqualsMinimum_updatesAndDeletesOnlyStaleRows() {
         // given
         PatchNote existingPatchNote = importedPatchNote(1L, "17.3", true);
