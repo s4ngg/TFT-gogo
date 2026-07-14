@@ -85,6 +85,7 @@ function ChampionGuideView({
     totalPages: pageData.totalPages,
   })
   const visibleChampions = pageData.items
+  const isUnavailableData = championsQuery.data.source === 'unavailable' && !championsQuery.isFetching
   const highlightWatchKey = getGuideHighlightWatchKey(visibleChampions)
 
   useGuideHighlightScroll(championGridRef, 'champions', highlightedGuide, highlightWatchKey)
@@ -96,12 +97,14 @@ function ChampionGuideView({
   return (
     <>
       <GuideStatusBanner
-        isFallbackData={isGuideFallbackData || (championsQuery.data.source === 'fallback' && !championsQuery.isFetching)}
+        isFallbackData={!isUnavailableData && (isGuideFallbackData || (championsQuery.data.source === 'fallback' && !championsQuery.isFetching))}
         isFetching={isGuideFetching || championsQuery.isFetching}
+        isUnavailableData={isUnavailableData}
         onRetry={() => {
           onGuideRetry()
           void championsQuery.refetch()
         }}
+        patchVersion={championsQuery.data.patchVersion || patchVersion}
       />
       <div className={styles.costFilter} aria-label="챔피언 비용 필터">
         {(['all', 1, 2, 3, 4, 5] as const).map((cost) => (

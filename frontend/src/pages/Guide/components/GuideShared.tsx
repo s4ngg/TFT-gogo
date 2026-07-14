@@ -18,7 +18,9 @@ import styles from '../Guide.module.css'
 interface GuideStatusBannerProps {
   isFallbackData: boolean
   isFetching: boolean
+  isUnavailableData: boolean
   onRetry: () => void
+  patchVersion: string
 }
 
 interface SortHeaderButtonProps {
@@ -141,9 +143,22 @@ export function EmptyState() {
 export function GuideStatusBanner({
   isFallbackData,
   isFetching,
+  isUnavailableData,
   onRetry,
+  patchVersion,
 }: GuideStatusBannerProps) {
-  if (!isFetching && !isFallbackData) return null
+  if (!isFetching && !isFallbackData && !isUnavailableData) return null
+
+  const statusTitle = isFetching
+    ? '가이드 데이터를 불러오는 중입니다.'
+    : isUnavailableData
+      ? `${patchVersion} 패치 가이드를 불러오지 못했습니다.`
+      : `${patchVersion} 버전 기본 가이드로 표시 중입니다.`
+  const statusDescription = isFetching
+    ? '최신 가이드 응답을 확인하는 동안 같은 버전의 데이터만 표시합니다.'
+    : isUnavailableData
+      ? '같은 버전의 준비된 데이터가 없어 다른 패치 내용을 대신 표시하지 않습니다.'
+      : 'API 응답을 가져오지 못해 같은 버전의 준비된 기본 데이터를 보여주고 있습니다.'
 
   return (
     <div
@@ -154,12 +169,8 @@ export function GuideStatusBanner({
         {isFetching ? <Loader2 size={16} /> : <AlertTriangle size={16} />}
       </span>
       <div>
-        <strong>{isFetching ? '가이드 데이터를 불러오는 중입니다.' : '샘플 데이터로 표시 중입니다.'}</strong>
-        <p>
-          {isFetching
-            ? '최신 가이드 응답을 확인하는 동안 현재 데이터를 유지합니다.'
-            : '가이드 API 응답을 가져오지 못해 준비된 샘플 데이터를 보여주고 있습니다.'}
-        </p>
+        <strong>{statusTitle}</strong>
+        <p>{statusDescription}</p>
       </div>
       {!isFetching && (
         <button onClick={onRetry} type="button">

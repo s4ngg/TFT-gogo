@@ -14,7 +14,7 @@ import type { HighlightedGuide } from '../utils/guideHighlight'
 interface GuideTabPanelsProps {
   activeTab: GuideTab
   favoriteChampions: string[]
-  guideData: GuideCatalog
+  fallbackData: GuideCatalog
   highlightedGuide: HighlightedGuide | null
   isGuideFallbackData: boolean
   isGuideFetching: boolean
@@ -24,13 +24,14 @@ interface GuideTabPanelsProps {
   onGuideJump: (tab: GuideTab, query: string, label?: string, targetKey?: string) => void
   onGuideRetry: () => void
   onRecentGuideAdd: (guide: RecentGuide) => void
+  patchVersion: string
   query: string
 }
 
 function GuideTabPanels({
   activeTab,
   favoriteChampions,
-  guideData,
+  fallbackData,
   highlightedGuide,
   isGuideFallbackData,
   isGuideFetching,
@@ -40,13 +41,14 @@ function GuideTabPanels({
   onGuideJump,
   onGuideRetry,
   onRecentGuideAdd,
+  patchVersion,
   query,
 }: GuideTabPanelsProps) {
   if (activeTab === 'traits') {
     return (
       <div id="guide-panel-traits" role="tabpanel" aria-labelledby="guide-tab-traits">
         <TraitGuideView
-          fallbackData={guideData}
+          fallbackData={fallbackData}
           highlightedGuide={highlightedGuide}
           isGuideFallbackData={isGuideFallbackData}
           isGuideFetching={isGuideFetching}
@@ -54,7 +56,7 @@ function GuideTabPanels({
           onVisibleItemsChange={onGameGuideAiVisibleItemsChange}
           onChampionSelect={(championName) => onGuideJump('champions', championName, championName)}
           onGuideRetry={onGuideRetry}
-          patchVersion={guideData.patchVersion}
+          patchVersion={patchVersion}
           query={query}
         />
       </div>
@@ -65,14 +67,14 @@ function GuideTabPanels({
     return (
       <div id="guide-panel-items" role="tabpanel" aria-labelledby="guide-tab-items">
         <ItemStatsView
-          fallbackData={guideData}
+          fallbackData={fallbackData}
           highlightedGuide={highlightedGuide}
           isGuideFallbackData={isGuideFallbackData}
           isGuideFetching={isGuideFetching}
           onGameGuideAiAsk={onGameGuideAiAsk}
           onVisibleItemsChange={onGameGuideAiVisibleItemsChange}
           onGuideRetry={onGuideRetry}
-          patchVersion={guideData.patchVersion}
+          patchVersion={patchVersion}
           query={query}
         />
       </div>
@@ -83,14 +85,14 @@ function GuideTabPanels({
     return (
       <div id="guide-panel-augments" role="tabpanel" aria-labelledby="guide-tab-augments">
         <AugmentGuideView
-          fallbackData={guideData}
+          fallbackData={fallbackData}
           highlightedGuide={highlightedGuide}
           isGuideFallbackData={isGuideFallbackData}
           isGuideFetching={isGuideFetching}
           onGameGuideAiAsk={onGameGuideAiAsk}
           onVisibleItemsChange={onGameGuideAiVisibleItemsChange}
           onGuideRetry={onGuideRetry}
-          patchVersion={guideData.patchVersion}
+          patchVersion={patchVersion}
           query={query}
         />
       </div>
@@ -100,7 +102,7 @@ function GuideTabPanels({
   return (
     <div id="guide-panel-champions" role="tabpanel" aria-labelledby="guide-tab-champions">
       <ChampionGuideView
-        fallbackData={guideData}
+        fallbackData={fallbackData}
         favoriteChampions={favoriteChampions}
         highlightedGuide={highlightedGuide}
         isGuideFallbackData={isGuideFallbackData}
@@ -114,7 +116,7 @@ function GuideTabPanels({
         })}
         onFavoriteToggle={onFavoriteToggle}
         onGuideRetry={onGuideRetry}
-        patchVersion={guideData.patchVersion}
+        patchVersion={patchVersion}
         query={query}
       />
     </div>

@@ -12,6 +12,20 @@ import type {
   GuideTabPageResult,
 } from './guideTypes'
 
+function getGuideTabFallbackResult<T extends GuideTab>(
+  params: GuideListQuery & { tab: T },
+  fallbackData: GuideCatalog,
+): GuideTabPageResult<T> {
+  const patchVersion = params.patchVersion?.trim() ?? ''
+  const hasMatchingFallback = patchVersion.length > 0 && patchVersion === fallbackData.patchVersion
+
+  return {
+    data: getFallbackGuideTabPage(params, fallbackData),
+    patchVersion,
+    source: hasMatchingFallback ? 'fallback' : 'unavailable',
+  }
+}
+
 export async function getGuideCatalog(fallbackData: GuideCatalog): Promise<GuideCatalogResult> {
   try {
     const { data } = await axiosInstance.get<
@@ -37,7 +51,9 @@ export async function getGuidePatchVersion(
       '/guide/patch-version',
     )
     const payload = unwrapApiResponse(data)
-    const patchVersion = isRecord(payload) && typeof payload.patchVersion === 'string' ? payload.patchVersion : ''
+    const patchVersion = isRecord(payload) && typeof payload.patchVersion === 'string'
+      ? payload.patchVersion.trim()
+      : ''
 
     if (!patchVersion) {
       return { patchVersion: fallbackPatchVersion, source: 'fallback' }
@@ -66,11 +82,11 @@ export async function getGuideTabItems<T extends GuideTab>(
     const page = normalizeGuideTabPage(payload, params, fallbackData)
 
     if (!page) {
-      return { data: getFallbackGuideTabPage(params, fallbackData), source: 'fallback' }
+      return getGuideTabFallbackResult(params, fallbackData)
     }
 
-    return { data: page, source: 'api' }
+    return { data: page, patchVersion: params.patchVersion?.trim() ?? '', source: 'api' }
   } catch {
-    return { data: getFallbackGuideTabPage(params, fallbackData), source: 'fallback' }
+    return getGuideTabFallbackResult(params, fallbackData)
   }
 }
