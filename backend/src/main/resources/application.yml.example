@@ -95,8 +95,9 @@ app:
       startup-import: false
       # Use the latest current patch note version as the guide patch label.
       patch-version: latest
-      set-number: 17
-      mutator: TFTSet17
+      # Required when the scheduler is enabled. This pair is the allowed source for patch-version.
+      set-number: ${APP_GUIDE_CDRAGON_SET_NUMBER:}
+      mutator: ${APP_GUIDE_CDRAGON_MUTATOR:}
       include-champions: true
       include-traits: true
       include-items: true

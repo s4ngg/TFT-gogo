@@ -72,10 +72,16 @@ Page: Guide (/guide).
 - If no ACTIVE snapshot exists, /api/guide returns an empty catalog, /api/guide/patch-version returns an empty string,
   and /api/guide/{tab} returns an empty page with totalPages=1.
 - Invalid persisted JSON fields are treated as GUIDE_INVALID_DATA and should be fixed in import/storage logic, not hidden by public API fallback.
-- CDragon import request fields: patchVersion (required, max 20, supports `latest`), setNumber (optional), mutator (optional; explicit setNumber defaults mutator to TFTSet{setNumber}), includeChampions, includeTraits, includeItems, includeAugments.
+- CDragon import request fields: patchVersion (required, max 20, supports `latest`), setNumber (required, positive), mutator (required, max 100), includeChampions, includeTraits, includeItems, includeAugments.
 - CDragon import request flag behavior: omitted includeChampions/includeTraits default to true; omitted includeItems/includeAugments default to false at request DTO level, so admin UI and scheduler must send explicit true when items/augments should be imported.
 - CDragon import rejects requests where includeChampions, includeTraits, includeItems, and includeAugments all resolve to false.
-- CDragon import response fields: createdCount, updatedCount, skippedCount, championCount, traitCount, itemCount, augmentCount, importedCount (= createdCount + updatedCount).
+- CDragon import response fields: patchVersion, setNumber, mutator, createdCount, updatedCount, skippedCount, championCount, traitCount, itemCount, augmentCount, importedCount (= createdCount + updatedCount).
+- When an operating CDragon source is configured, the configured patchVersion (including `latest` resolved from patch notes)
+  permits only that configured setNumber/mutator pair. A different pair is rejected before CDragon fetch and DB writes.
+- A requested patchVersion newer than the configured operating patch is rejected before CDragon fetch and DB writes,
+  even when it supplies a different future/PBE set pair. Older historical patches remain importable with an explicit source.
+- Every guide snapshot records its source setNumber/mutator. A later import for the same patchVersion must use the same
+  source pair; legacy snapshots with both source values null bind to the first successful explicit import.
 - CDragon item import includes only completed craftable TFT_Item_* rows with exactly two composition components and no associatedTraits.
 - CDragon item import excludes component-only rows, emblem/trait-associated rows, radiant/artifact/support/non-craftable rows that do not match the completed-item policy.
 - CDragon augment import reads only the requested set/mutator augments and requires apiName, name, description, and icon.
@@ -131,11 +137,13 @@ Page: Guide (/guide).
 
 <tft-guide-snapshots>
 - Table: tft_guide_snapshots
-- Columns: id, patch_version, status, champion_count, trait_count, item_count, augment_count, validated_at, activated_at, created_at, updated_at
+- Columns: id, patch_version, source_set_number, source_mutator, status, champion_count, trait_count, item_count, augment_count, validated_at, activated_at, created_at, updated_at
 - Status: STAGING | ACTIVE | INACTIVE
 - Unique: patch_version
 - Integrity: a functional unique index permits at most one ACTIVE row
 - Integrity: CHECK constraints restrict status values, forbid unvalidated ACTIVE rows, and require positive counts for every validated row
+- Source integrity: legacy rows may have both source columns null; otherwise both must be present, source_set_number must
+  be positive, and source_mutator must be nonblank
 - Publication: only a complete, minimum-count-validated four-type import can move a snapshot to ACTIVE
 - Migration: legacy rows are grandfathered only when all four tables meet the same Flyway minimum-count placeholders;
   rows below those thresholds remain hidden because no snapshot is created
@@ -201,7 +209,9 @@ Page: Guide (/guide).
 - AdminGuideController owns only /api/admin/guides/import/cdragon for guide writes.
 - GuideCdragonImportServiceImpl fetches CommunityDragonProperties.tftKoKrUrl using RestTemplate, validates requested
   candidate counts before persistence, writes split-table candidates, and activates only complete four-type snapshots.
-- CDragon set data resolution first searches root.setData by setNumber + mutator, then falls back to root.sets[setNumber] if champions and traits exist.
+- CDragon set data resolution requires an explicit setNumber + mutator and first searches root.setData for that exact pair.
+  It may fall back to root.sets[setNumber] only for the default `TFTSet{setNumber}` mutator. It never auto-selects the
+  largest set number.
 - Champion import includes only shop champions whose apiName starts with TFT{setNumber}_, cost is 1..5, has at least one trait, and has a display name.
 - Trait import skips traits with no matching shop champion references.
 - Generated/summon units are excluded from champion rows and attached to trait special_units_json when explicitly mapped.
@@ -217,8 +227,8 @@ Page: Guide (/guide).
   - enabled=false
   - startup-import=false
   - patch-version=latest
-  - set-number unset; omitted requests auto-select the latest TFT set from CDragon data
-  - mutator unset; explicit set-number defaults to TFTSet{setNumber}
+  - set-number unset by default; scheduler execution requires an explicit operating value
+  - mutator unset by default; scheduler execution requires an explicit operating value
   - include-champions=true
   - include-traits=true
   - include-items=true
@@ -235,6 +245,7 @@ Page: Guide (/guide).
 - Sync import runs hourly by default and refresh import runs daily at 06:40 KST by default.
 - Scheduler uses an in-process AtomicBoolean lock to avoid overlapping guide imports in a single server instance.
 - Scheduler also uses a MySQL advisory DB lock so only one server instance runs CDragon import in multi-server deployments.
+- Scheduler skips before acquiring the DB lock when set-number or mutator is missing, preserving the current ACTIVE snapshot.
 - Local/dev should keep the scheduler disabled by default. Use the admin import button for local QA.
 </scheduler>
 

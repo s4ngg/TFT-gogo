@@ -72,6 +72,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
     private static final Pattern METRIC_ONLY_PATTERN = Pattern.compile("^[+\\-]?\\d[\\d,./%\\s+\\-]*$");
     private static final Pattern EMPTY_PARENS_PATTERN = Pattern.compile("\\(\\s*\\)");
     private static final int PATCH_VERSION_MAX_LENGTH = 20;
+    private static final int MUTATOR_MAX_LENGTH = 100;
     private static final String LATEST_PATCH_VERSION_ALIAS = "latest";
     private static final Set<String> SPECIAL_UNIT_KEYS = Set.of(
             "TFT17_DarkStar_FakeUnit"
@@ -156,12 +157,14 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
 
+        GuideImportSource requestedSource = resolveRequestedSource(request.getSetNumber(), request.resolveMutator());
         String patchVersion = normalizePatchVersion(request.getPatchVersion());
+        validateConfiguredPatchSource(request.getPatchVersion(), patchVersion, requestedSource);
         JsonNode cdragonData = fetchCdragonData();
         ResolvedCdragonSet resolvedSet = resolveSetData(
                 cdragonData,
-                request.getSetNumber(),
-                request.resolveMutator()
+                requestedSource.setNumber(),
+                requestedSource.mutator()
         );
         JsonNode setData = resolvedSet.data();
         JsonNode items = cdragonData.path("items");
@@ -190,6 +193,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         validateRequestedImport(request, counts);
         boolean completeImport = isCompleteImport(request);
         Optional<GuideSnapshot> targetSnapshot = guideSnapshotRepository.findByPatchVersionForUpdate(patchVersion);
+        validateSnapshotSource(patchVersion, targetSnapshot, resolvedSet);
         if (!completeImport) {
             validatePartialImportTarget(patchVersion, targetSnapshot);
         }
@@ -199,13 +203,15 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             counter.add(upsertSplitGuide(candidate));
         }
         if (completeImport) {
-            activateCompleteSnapshot(patchVersion, counts, targetSnapshot);
+            activateCompleteSnapshot(patchVersion, resolvedSet, counts, targetSnapshot);
         } else {
-            stagePartialSnapshot(request, patchVersion, counts, targetSnapshot);
+            stagePartialSnapshot(request, patchVersion, resolvedSet, counts, targetSnapshot);
         }
 
         return GuideImportResponse.builder()
                 .patchVersion(patchVersion)
+                .setNumber(resolvedSet.setNumber())
+                .mutator(resolvedSet.mutator())
                 .createdCount(counter.createdCount)
                 .updatedCount(counter.updatedCount)
                 .skippedCount(counter.skippedCount)
@@ -221,6 +227,108 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                 && request.shouldIncludeTraits()
                 && request.shouldIncludeItems()
                 && request.shouldIncludeAugments();
+    }
+
+    private GuideImportSource resolveRequestedSource(Integer setNumber, String mutator) {
+        if (setNumber == null
+                || setNumber < 1
+                || !hasText(mutator)
+                || mutator.trim().length() > MUTATOR_MAX_LENGTH) {
+            logger.warn(
+                    "CDragon guide import rejected because set number and mutator must be explicit. setNumber={}",
+                    setNumber
+            );
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+        return new GuideImportSource(setNumber, mutator.trim());
+    }
+
+    private void validateConfiguredPatchSource(
+            String requestedPatchVersion,
+            String resolvedPatchVersion,
+            GuideImportSource requestedSource
+    ) {
+        Integer configuredSetNumber = guideCdragonImportProperties.getSetNumber();
+        String configuredMutator = guideCdragonImportProperties.getMutator();
+        boolean hasConfiguredSource = configuredSetNumber != null || configuredMutator != null;
+        if (!guideCdragonImportProperties.isEnabled() && !hasConfiguredSource) {
+            return;
+        }
+
+        GuideImportSource configuredSource = resolveRequestedSource(configuredSetNumber, configuredMutator);
+        String configuredPatchVersion = resolveConfiguredPatchVersion(
+                requestedPatchVersion,
+                resolvedPatchVersion
+        );
+        if (comparePatchVersions(resolvedPatchVersion, configuredPatchVersion) > 0) {
+            logger.warn(
+                    "CDragon guide import rejected because the requested patch is newer than the configured "
+                            + "production patch. requestedPatchVersion={}, configuredPatchVersion={}",
+                    resolvedPatchVersion,
+                    configuredPatchVersion
+            );
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+        if (configuredSource.equals(requestedSource)) {
+            return;
+        }
+        if (!resolvedPatchVersion.equals(configuredPatchVersion)) {
+            return;
+        }
+
+        logger.warn(
+                "CDragon guide import rejected by configured patch-source mapping. "
+                        + "patchVersion={}, requestedSetNumber={}, requestedMutator={}, "
+                        + "configuredSetNumber={}, configuredMutator={}",
+                resolvedPatchVersion,
+                requestedSource.setNumber(),
+                requestedSource.mutator(),
+                configuredSource.setNumber(),
+                configuredSource.mutator()
+        );
+        throw new BusinessException(ErrorCode.INVALID_INPUT);
+    }
+
+    private String resolveConfiguredPatchVersion(
+            String requestedPatchVersion,
+            String resolvedPatchVersion
+    ) {
+        String configuredPatchVersion = guideCdragonImportProperties.getPatchVersion();
+        if (isLatestPatchVersion(configuredPatchVersion)
+                && isLatestPatchVersion(requestedPatchVersion)) {
+            return resolvedPatchVersion;
+        }
+        return normalizePatchVersion(configuredPatchVersion);
+    }
+
+    private boolean isLatestPatchVersion(String patchVersion) {
+        return hasText(patchVersion)
+                && LATEST_PATCH_VERSION_ALIAS.equalsIgnoreCase(patchVersion.trim());
+    }
+
+    private void validateSnapshotSource(
+            String patchVersion,
+            Optional<GuideSnapshot> targetSnapshot,
+            ResolvedCdragonSet resolvedSet
+    ) {
+        if (targetSnapshot.isEmpty()
+                || !targetSnapshot.get().hasSource()
+                || targetSnapshot.get().matchesSource(resolvedSet.setNumber(), resolvedSet.mutator())) {
+            return;
+        }
+
+        GuideSnapshot snapshot = targetSnapshot.get();
+        logger.warn(
+                "CDragon guide import rejected because snapshot source differs. "
+                        + "patchVersion={}, requestedSetNumber={}, requestedMutator={}, "
+                        + "snapshotSetNumber={}, snapshotMutator={}",
+                patchVersion,
+                resolvedSet.setNumber(),
+                resolvedSet.mutator(),
+                snapshot.getSourceSetNumber(),
+                snapshot.getSourceMutator()
+        );
+        throw new BusinessException(ErrorCode.INVALID_INPUT);
     }
 
     private void validateRequestedImport(GuideCdragonImportRequest request, GuideImportCounts counts) {
@@ -264,6 +372,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
 
     private void activateCompleteSnapshot(
             String patchVersion,
+            ResolvedCdragonSet resolvedSet,
             GuideImportCounts counts,
             Optional<GuideSnapshot> targetSnapshot
     ) {
@@ -271,12 +380,15 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         GuideSnapshot snapshot = targetSnapshot
                 .orElseGet(() -> GuideSnapshot.builder()
                         .patchVersion(patchVersion)
+                        .sourceSetNumber(resolvedSet.setNumber())
+                        .sourceMutator(resolvedSet.mutator())
                         .status(GuideSnapshotStatus.STAGING)
                         .championCount(counts.championCount())
                         .traitCount(counts.traitCount())
                         .itemCount(counts.itemCount())
                         .augmentCount(counts.augmentCount())
                         .build());
+        snapshot.recordSource(resolvedSet.setNumber(), resolvedSet.mutator());
         snapshot.updateValidation(
                 counts.championCount(),
                 counts.traitCount(),
@@ -311,11 +423,13 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
     private void stagePartialSnapshot(
             GuideCdragonImportRequest request,
             String patchVersion,
+            ResolvedCdragonSet resolvedSet,
             GuideImportCounts counts,
             Optional<GuideSnapshot> targetSnapshot
     ) {
         if (targetSnapshot.isPresent()) {
             GuideSnapshot snapshot = targetSnapshot.get();
+            snapshot.recordSource(resolvedSet.setNumber(), resolvedSet.mutator());
             snapshot.updateCounts(
                     request.shouldIncludeChampions() ? counts.championCount() : snapshot.getChampionCount(),
                     request.shouldIncludeTraits() ? counts.traitCount() : snapshot.getTraitCount(),
@@ -327,6 +441,8 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         }
         guideSnapshotRepository.save(GuideSnapshot.builder()
                 .patchVersion(patchVersion)
+                .sourceSetNumber(resolvedSet.setNumber())
+                .sourceMutator(resolvedSet.mutator())
                 .status(GuideSnapshotStatus.STAGING)
                 .championCount(counts.championCount())
                 .traitCount(counts.traitCount())
@@ -379,84 +495,12 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         }
     }
 
-    private ResolvedCdragonSet resolveSetData(JsonNode root, Integer setNumber, String mutator) {
-        if (setNumber != null) {
-            String resolvedMutator = hasText(mutator) ? mutator.trim() : "TFTSet" + setNumber;
-            return new ResolvedCdragonSet(
-                    findExplicitSetData(root, setNumber, resolvedMutator),
-                    setNumber,
-                    resolvedMutator
-            );
-        }
-
-        return findLatestSetData(root)
-                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_INPUT));
-    }
-
-    private Optional<ResolvedCdragonSet> findLatestSetData(JsonNode root) {
-        ResolvedCdragonSet latest = null;
-        for (JsonNode setData : root.path("setData")) {
-            int candidateSetNumber = setData.path("number").asInt(0);
-            if (candidateSetNumber < 1 || !setData.has("champions") || !setData.has("traits")) {
-                continue;
-            }
-
-            ResolvedCdragonSet candidate = new ResolvedCdragonSet(
-                    setData,
-                    candidateSetNumber,
-                    setData.path("mutator").asText("")
-            );
-            if (isPreferredLatestSet(candidate, latest)) {
-                latest = candidate;
-            }
-        }
-
-        JsonNode sets = root.path("sets");
-        Iterator<String> fieldNames = sets.fieldNames();
-        while (fieldNames.hasNext()) {
-            String fieldName = fieldNames.next();
-            int candidateSetNumber = parsePositiveInteger(fieldName);
-            JsonNode setData = sets.path(fieldName);
-            if (candidateSetNumber < 1 || !setData.has("champions") || !setData.has("traits")) {
-                continue;
-            }
-
-            ResolvedCdragonSet candidate = new ResolvedCdragonSet(
-                    setData,
-                    candidateSetNumber,
-                    "TFTSet" + candidateSetNumber
-            );
-            if (isPreferredLatestSet(candidate, latest)) {
-                latest = candidate;
-            }
-        }
-
-        return Optional.ofNullable(latest);
-    }
-
-    private boolean isPreferredLatestSet(ResolvedCdragonSet candidate, ResolvedCdragonSet current) {
-        if (current == null) {
-            return true;
-        }
-        if (candidate.setNumber() != current.setNumber()) {
-            return candidate.setNumber() > current.setNumber();
-        }
-
-        boolean candidateUsesDefaultMutator = isDefaultMutator(candidate);
-        boolean currentUsesDefaultMutator = isDefaultMutator(current);
-        return candidateUsesDefaultMutator && !currentUsesDefaultMutator;
-    }
-
-    private boolean isDefaultMutator(ResolvedCdragonSet set) {
-        return ("TFTSet" + set.setNumber()).equals(set.mutator());
-    }
-
-    private int parsePositiveInteger(String value) {
-        try {
-            return Integer.parseInt(value);
-        } catch (NumberFormatException e) {
-            return 0;
-        }
+    private ResolvedCdragonSet resolveSetData(JsonNode root, int setNumber, String mutator) {
+        return new ResolvedCdragonSet(
+                findExplicitSetData(root, setNumber, mutator),
+                setNumber,
+                mutator
+        );
     }
 
     private JsonNode findExplicitSetData(JsonNode root, int setNumber, String mutator) {
@@ -468,7 +512,10 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         }
 
         JsonNode fallback = root.path("sets").path(String.valueOf(setNumber));
-        if (!fallback.isMissingNode() && fallback.has("champions") && fallback.has("traits")) {
+        if (("TFTSet" + setNumber).equals(mutator)
+                && !fallback.isMissingNode()
+                && fallback.has("champions")
+                && fallback.has("traits")) {
             return fallback;
         }
 
@@ -1745,6 +1792,12 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
 
     private record ResolvedCdragonSet(
             JsonNode data,
+            int setNumber,
+            String mutator
+    ) {
+    }
+
+    private record GuideImportSource(
             int setNumber,
             String mutator
     ) {

@@ -65,6 +65,15 @@ public class GuideCdragonImportScheduler {
     }
 
     private void runIfIdle(String trigger) {
+        if (!hasExplicitSourceConfiguration()) {
+            logger.warn(
+                    "Guide CDragon import skipped because set number and mutator are not explicitly configured. "
+                            + "trigger={}, setNumber={}",
+                    trigger,
+                    guideCdragonImportProperties.getSetNumber()
+            );
+            return;
+        }
         if (!running.compareAndSet(false, true)) {
             logger.info("Guide CDragon import skipped because another import is running. trigger={}", trigger);
             return;
@@ -91,9 +100,12 @@ public class GuideCdragonImportScheduler {
         try {
             GuideImportResponse response = guideCdragonImportService.importGuides(request);
             logger.info(
-                    "Guide CDragon import completed. trigger={}, patchVersion={}, created={}, updated={}, skipped={}, champions={}, traits={}, items={}, augments={}",
+                    "Guide CDragon import completed. trigger={}, patchVersion={}, setNumber={}, mutator={}, "
+                            + "created={}, updated={}, skipped={}, champions={}, traits={}, items={}, augments={}",
                     trigger,
                     response.getPatchVersion(),
+                    response.getSetNumber(),
+                    response.getMutator(),
                     response.getCreatedCount(),
                     response.getUpdatedCount(),
                     response.getSkippedCount(),
@@ -110,5 +122,15 @@ public class GuideCdragonImportScheduler {
                     e
             );
         }
+    }
+
+    private boolean hasExplicitSourceConfiguration() {
+        Integer setNumber = guideCdragonImportProperties.getSetNumber();
+        String mutator = guideCdragonImportProperties.getMutator();
+        return setNumber != null
+                && setNumber > 0
+                && mutator != null
+                && !mutator.trim().isEmpty()
+                && mutator.trim().length() <= 100;
     }
 }

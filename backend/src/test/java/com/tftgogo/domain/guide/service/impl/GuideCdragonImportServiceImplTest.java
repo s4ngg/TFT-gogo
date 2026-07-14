@@ -122,12 +122,16 @@ class GuideCdragonImportServiceImplTest {
         assertThat(response.getTraitCount()).isEqualTo(1);
         assertThat(response.getItemCount()).isEqualTo(1);
         assertThat(response.getAugmentCount()).isEqualTo(1);
+        assertThat(response.getSetNumber()).isEqualTo(17);
+        assertThat(response.getMutator()).isEqualTo("TFTSet17");
         assertThat(previousActive.getStatus()).isEqualTo(GuideSnapshotStatus.INACTIVE);
 
         ArgumentCaptor<GuideSnapshot> snapshotCaptor = ArgumentCaptor.forClass(GuideSnapshot.class);
         verify(guideSnapshotRepository).save(snapshotCaptor.capture());
         GuideSnapshot activatedSnapshot = snapshotCaptor.getValue();
         assertThat(activatedSnapshot.getPatchVersion()).isEqualTo("17.3");
+        assertThat(activatedSnapshot.getSourceSetNumber()).isEqualTo(17);
+        assertThat(activatedSnapshot.getSourceMutator()).isEqualTo("TFTSet17");
         assertThat(activatedSnapshot.getStatus()).isEqualTo(GuideSnapshotStatus.ACTIVE);
         assertThat(activatedSnapshot.getChampionCount()).isEqualTo(1);
         assertThat(activatedSnapshot.getTraitCount()).isEqualTo(1);
@@ -168,6 +172,8 @@ class GuideCdragonImportServiceImplTest {
         verify(guideSnapshotRepository).save(snapshotCaptor.capture());
         GuideSnapshot historicalSnapshot = snapshotCaptor.getValue();
         assertThat(historicalSnapshot.getPatchVersion()).isEqualTo("17.2");
+        assertThat(historicalSnapshot.getSourceSetNumber()).isEqualTo(17);
+        assertThat(historicalSnapshot.getSourceMutator()).isEqualTo("TFTSet17");
         assertThat(historicalSnapshot.getStatus()).isEqualTo(GuideSnapshotStatus.INACTIVE);
         assertThat(historicalSnapshot.getValidatedAt()).isNotNull();
         assertThat(historicalSnapshot.getActivatedAt()).isNull();
@@ -258,6 +264,8 @@ class GuideCdragonImportServiceImplTest {
         verify(guideSnapshotRepository).save(snapshotCaptor.capture());
         GuideSnapshot stagedSnapshot = snapshotCaptor.getValue();
         assertThat(stagedSnapshot.getStatus()).isEqualTo(GuideSnapshotStatus.STAGING);
+        assertThat(stagedSnapshot.getSourceSetNumber()).isEqualTo(17);
+        assertThat(stagedSnapshot.getSourceMutator()).isEqualTo("TFTSet17");
         assertThat(stagedSnapshot.getChampionCount()).isEqualTo(1);
         assertThat(stagedSnapshot.getTraitCount()).isZero();
         assertThat(stagedSnapshot.getItemCount()).isZero();
@@ -350,6 +358,8 @@ class GuideCdragonImportServiceImplTest {
 
         // then
         assertThat(stagedSnapshot.getStatus()).isEqualTo(GuideSnapshotStatus.STAGING);
+        assertThat(stagedSnapshot.getSourceSetNumber()).isEqualTo(17);
+        assertThat(stagedSnapshot.getSourceMutator()).isEqualTo("TFTSet17");
         assertThat(stagedSnapshot.getChampionCount()).isEqualTo(1);
         assertThat(stagedSnapshot.getTraitCount()).isEqualTo(2);
         assertThat(stagedSnapshot.getItemCount()).isEqualTo(1);
@@ -508,22 +518,142 @@ class GuideCdragonImportServiceImplTest {
     }
 
     @Test
-    void setNumber가_없으면_CDragon_최신_setData를_사용한다() {
+    void setNumber가_없으면_CDragon을_조회하지_않고_거절한다() {
         // given
         GuideCdragonImportRequest request = request(true, false, false, false);
         ReflectionTestUtils.setField(request, "setNumber", null);
-        ReflectionTestUtils.setField(request, "mutator", null);
+
+        // when, then
+        assertThatThrownBy(() -> guideCdragonImportService.importGuides(request))
+                .isInstanceOf(BusinessException.class);
+        verify(restTemplate, never()).getForObject(communityDragonProperties.getTftKoKrUrl(), String.class);
+        verify(guideSnapshotRepository, never()).findByPatchVersionForUpdate(any());
+        verify(guideChampionRepository, never()).save(any(GuideChampion.class));
+    }
+
+    @Test
+    void mutator가_비어있으면_CDragon을_조회하지_않고_거절한다() {
+        // given
+        GuideCdragonImportRequest request = request(true, false, false, false);
+        ReflectionTestUtils.setField(request, "mutator", "   ");
+
+        // when, then
+        assertThatThrownBy(() -> guideCdragonImportService.importGuides(request))
+                .isInstanceOf(BusinessException.class);
+        verify(restTemplate, never()).getForObject(communityDragonProperties.getTftKoKrUrl(), String.class);
+        verify(guideSnapshotRepository, never()).findByPatchVersionForUpdate(any());
+        verify(guideChampionRepository, never()).save(any(GuideChampion.class));
+    }
+
+    @Test
+    void 명시한_현재_set만_사용하고_더_큰_미래_set은_선택하지_않는다() {
+        // given
         when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
                 .thenReturn(cdragonMultipleSetsJson());
 
         // when
-        GuideImportResponse response = guideCdragonImportService.importGuides(request);
+        GuideImportResponse response = guideCdragonImportService.importGuides(
+                request(true, false, false, false)
+        );
 
         // then
         assertThat(response.getChampionCount()).isEqualTo(1);
+        assertThat(response.getSetNumber()).isEqualTo(17);
+        assertThat(response.getMutator()).isEqualTo("TFTSet17");
         ArgumentCaptor<GuideChampion> championCaptor = ArgumentCaptor.forClass(GuideChampion.class);
         verify(guideChampionRepository).save(championCaptor.capture());
-        assertThat(championCaptor.getValue().getChampionKey()).isEqualTo("TFT18_TestCarry");
+        assertThat(championCaptor.getValue().getChampionKey()).isEqualTo("TFT17_CurrentCarry");
+    }
+
+    @Test
+    void 신규_패치에서_운영_설정과_다른_미래_set은_저장하지_않는다() {
+        // given
+        guideCdragonImportProperties.setEnabled(true);
+        guideCdragonImportProperties.setSetNumber(17);
+        guideCdragonImportProperties.setMutator("TFTSet17");
+        GuideCdragonImportRequest request = request(true, false, false, false);
+        ReflectionTestUtils.setField(request, "patchVersion", "latest");
+        ReflectionTestUtils.setField(request, "setNumber", 18);
+        ReflectionTestUtils.setField(request, "mutator", "TFTSet18");
+        when(patchNoteRepository.findFirstByCurrentTrueAndDeletedAtIsNullOrderByPublishedAtDescIdDesc())
+                .thenReturn(Optional.of(patchNote("17.3")));
+
+        // when, then
+        assertThatThrownBy(() -> guideCdragonImportService.importGuides(request))
+                .isInstanceOf(BusinessException.class);
+        verify(restTemplate, never()).getForObject(communityDragonProperties.getTftKoKrUrl(), String.class);
+        verify(guideSnapshotRepository, never()).findByPatchVersionForUpdate(any());
+        verify(guideChampionRepository, never()).save(any(GuideChampion.class));
+    }
+
+    @Test
+    void 운영_패치보다_미래인_패치와_set은_CDragon_조회_전에_거절한다() {
+        // given
+        guideCdragonImportProperties.setEnabled(true);
+        guideCdragonImportProperties.setPatchVersion("latest");
+        guideCdragonImportProperties.setSetNumber(17);
+        guideCdragonImportProperties.setMutator("TFTSet17");
+        GuideCdragonImportRequest request = request(true, false, false, false);
+        ReflectionTestUtils.setField(request, "patchVersion", "17.4");
+        ReflectionTestUtils.setField(request, "setNumber", 18);
+        ReflectionTestUtils.setField(request, "mutator", "TFTSet18");
+        when(patchNoteRepository.findFirstByCurrentTrueAndDeletedAtIsNullOrderByPublishedAtDescIdDesc())
+                .thenReturn(Optional.of(patchNote("17.3")));
+
+        // when, then
+        assertThatThrownBy(() -> guideCdragonImportService.importGuides(request))
+                .isInstanceOf(BusinessException.class);
+        verify(restTemplate, never()).getForObject(communityDragonProperties.getTftKoKrUrl(), String.class);
+        verify(guideSnapshotRepository, never()).findByPatchVersionForUpdate(any());
+        verify(guideChampionRepository, never()).save(any(GuideChampion.class));
+    }
+
+    @Test
+    void 기존_스냅샷과_source가_다르면_분할_테이블_저장_전에_거절한다() {
+        // given
+        GuideSnapshot stagedSnapshot = GuideSnapshot.builder()
+                .patchVersion("17.3")
+                .sourceSetNumber(17)
+                .sourceMutator("TFTSet17")
+                .status(GuideSnapshotStatus.STAGING)
+                .championCount(1)
+                .traitCount(0)
+                .itemCount(0)
+                .augmentCount(0)
+                .build();
+        GuideCdragonImportRequest request = request(true, false, false, false);
+        ReflectionTestUtils.setField(request, "setNumber", 18);
+        ReflectionTestUtils.setField(request, "mutator", "TFTSet18");
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonMultipleSetsJson());
+        when(guideSnapshotRepository.findByPatchVersionForUpdate("17.3"))
+                .thenReturn(Optional.of(stagedSnapshot));
+
+        // when, then
+        assertThatThrownBy(() -> guideCdragonImportService.importGuides(request))
+                .isInstanceOf(BusinessException.class);
+        assertThat(stagedSnapshot.getSourceSetNumber()).isEqualTo(17);
+        assertThat(stagedSnapshot.getSourceMutator()).isEqualTo("TFTSet17");
+        assertThat(stagedSnapshot.getChampionCount()).isEqualTo(1);
+        verify(guideChampionRepository, never()).findByChampionKeyAndPatchVersion(any(), any());
+        verify(guideChampionRepository, never()).save(any(GuideChampion.class));
+        verify(guideSnapshotRepository, never()).save(any(GuideSnapshot.class));
+        verify(guideSnapshotRepository, never()).findAllByStatus(any());
+    }
+
+    @Test
+    void 비기본_mutator는_sets_폴백으로_대체하지_않는다() {
+        // given
+        GuideCdragonImportRequest request = request(true, false, false, false);
+        ReflectionTestUtils.setField(request, "mutator", "TFTSet17_PBE");
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonFallbackSetJson());
+
+        // when, then
+        assertThatThrownBy(() -> guideCdragonImportService.importGuides(request))
+                .isInstanceOf(BusinessException.class);
+        verify(guideSnapshotRepository, never()).findByPatchVersionForUpdate(any());
+        verify(guideChampionRepository, never()).save(any(GuideChampion.class));
     }
 
     @Test
@@ -592,16 +722,16 @@ class GuideCdragonImportServiceImplTest {
                 {
                   "setData": [
                     {
-                      "number": 16,
-                      "mutator": "TFTSet16",
+                      "number": 17,
+                      "mutator": "TFTSet17",
                       "champions": [
                         {
-                          "apiName": "TFT16_OldCarry",
-                          "name": "Old Carry",
+                          "apiName": "TFT17_CurrentCarry",
+                          "name": "Current Carry",
                           "cost": 4,
                           "role": "ADCarry",
-                          "squareIcon": "ASSETS/Characters/TFT16_OldCarry/HUD/TFT16_OldCarry_Square.TFT_Set16.tex",
-                          "traits": ["Old Trait"],
+                          "squareIcon": "ASSETS/Characters/TFT17_CurrentCarry/HUD/TFT17_CurrentCarry_Square.TFT_Set17.tex",
+                          "traits": ["Current Trait"],
                           "stats": {
                             "armor": 30,
                             "attackSpeed": 0.7,
@@ -645,6 +775,32 @@ class GuideCdragonImportServiceImplTest {
                     }
                   ],
                   "sets": {},
+                  "items": []
+                }
+                """;
+    }
+
+    private String cdragonFallbackSetJson() {
+        return """
+                {
+                  "setData": [],
+                  "sets": {
+                    "17": {
+                      "champions": [
+                        {
+                          "apiName": "TFT17_CurrentCarry",
+                          "name": "Current Carry",
+                          "cost": 4,
+                          "role": "ADCarry",
+                          "traits": ["Current Trait"],
+                          "stats": {
+                            "range": 4
+                          }
+                        }
+                      ],
+                      "traits": []
+                    }
+                  },
                   "items": []
                 }
                 """;

@@ -36,6 +36,12 @@ public class GuideSnapshot {
     @Column(name = "patch_version", nullable = false, length = 20)
     private String patchVersion;
 
+    @Column(name = "source_set_number")
+    private Integer sourceSetNumber;
+
+    @Column(name = "source_mutator", length = 100)
+    private String sourceMutator;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private GuideSnapshotStatus status;
@@ -67,6 +73,8 @@ public class GuideSnapshot {
     @Builder
     public GuideSnapshot(
             String patchVersion,
+            Integer sourceSetNumber,
+            String sourceMutator,
             GuideSnapshotStatus status,
             int championCount,
             int traitCount,
@@ -76,6 +84,8 @@ public class GuideSnapshot {
             LocalDateTime activatedAt
     ) {
         this.patchVersion = patchVersion;
+        this.sourceSetNumber = sourceSetNumber;
+        this.sourceMutator = sourceMutator;
         this.status = status;
         this.championCount = championCount;
         this.traitCount = traitCount;
@@ -106,6 +116,27 @@ public class GuideSnapshot {
         this.traitCount = traitCount;
         this.itemCount = itemCount;
         this.augmentCount = augmentCount;
+    }
+
+    public boolean hasSource() {
+        return sourceSetNumber != null && sourceMutator != null;
+    }
+
+    public boolean matchesSource(int setNumber, String mutator) {
+        return hasSource()
+                && sourceSetNumber == setNumber
+                && sourceMutator.equals(mutator);
+    }
+
+    public void recordSource(int setNumber, String mutator) {
+        if (setNumber < 1 || mutator == null || mutator.trim().isEmpty()) {
+            throw new IllegalArgumentException("Guide snapshot source must be explicit");
+        }
+        if (hasSource() && !matchesSource(setNumber, mutator)) {
+            throw new IllegalStateException("Guide snapshot source cannot be changed");
+        }
+        this.sourceSetNumber = setNumber;
+        this.sourceMutator = mutator;
     }
 
     public void activate(LocalDateTime activatedAt) {
