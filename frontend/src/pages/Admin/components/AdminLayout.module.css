@@ -2,7 +2,7 @@
   /* 메인 앱과 동일한 오렌지 사이드바 + 검정 배경 테마 */
   min-height: 100vh;
   display: flex;
-  color: #f6f8fb;
+  color: var(--text-main);
   background: var(--bg-page-black-gradient);
 }
 

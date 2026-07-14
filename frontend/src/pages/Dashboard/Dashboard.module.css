@@ -5,7 +5,7 @@
   --right-top-row: 360px;
   --right-bottom-row: 120px;
 
-  --search-btn-bg: linear-gradient(135deg, rgba(10, 8, 6, 0.92), rgba(4, 3, 2, 0.96));
+  --search-btn-bg: linear-gradient(135deg, #c55a00, #ff8c42);
 
   width: 100%;
   max-width: var(--page-dashboard-width);
@@ -137,14 +137,14 @@
   padding: 0 16px;
   border: 0;
   outline: 0;
-  color: #ffffff;
+  color: var(--text-main);
   background: transparent;
   font-size: 14px;
   font-weight: 500;
 }
 
 .searchBox input::placeholder {
-  color: #c2c9cf;
+  color: var(--text-secondary);
 }
 
 .searchBox button {
@@ -152,7 +152,7 @@
   place-items: center;
   border: 0;
   border-left: 1px solid rgba(0, 0, 0, 0.4);
-  color: #ffffff;
+  color: var(--text-main);
   background: var(--search-btn-bg);
   cursor: pointer;
 }
@@ -188,14 +188,6 @@
 }
 
 .searchResultCard {
-  /* 이 박스는 노란 패널 위에 얹힌 자체 다크 배경이라, 상위(.dashboardGrid)의
-     다크 텍스트 override를 되돌려 원래 다크 배경용 밝은 텍스트를 사용한다 */
-  --text-main: var(--text-ondark-main);
-  --text-ui: var(--text-ondark-ui);
-  --text-soft: var(--text-ondark-soft);
-  --text-secondary: var(--text-ondark-secondary);
-  --text-muted: var(--text-ondark-muted);
-
   flex: 1 1 auto;
   min-height: 0;
   display: grid;
@@ -366,7 +358,7 @@
   width: 13px;
   height: 13px;
   border-radius: 999px;
-  background: #76ef33;
+  background: var(--color-win);
   box-shadow: 0 0 12px #4ddc1e;
 }
 
@@ -584,7 +576,7 @@
 .deckInfo h3 {
   margin: 0 0 10px;
   overflow: hidden;
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.015em;

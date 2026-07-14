@@ -224,10 +224,6 @@
 }
 
 .noteItem {
-  /* 오렌지 패널 위 자체 다크 배경 박스 — 밝은 텍스트로 복귀 */
-  --text-main: var(--text-ondark-main);
-  --text-muted: var(--text-ondark-muted);
-
   display: grid;
   grid-template-columns: var(--size-admin-note-version-width) minmax(0, 1fr);
   gap: var(--space-xs) var(--space-lg);
@@ -289,9 +285,6 @@
 .field input,
 .field select,
 .field textarea {
-  /* 오렌지 패널 위 자체 다크 배경 입력창 — 밝은 텍스트로 복귀 */
-  --text-ui: var(--text-ondark-ui);
-
   width: 100%;
   box-sizing: border-box;
   border: 1px solid var(--border-subtle);
@@ -372,11 +365,6 @@
 }
 
 .changeItem {
-  /* 오렌지 패널 위 자체 다크 배경 박스 — 밝은 텍스트로 복귀 */
-  --text-main: var(--text-ondark-main);
-  --text-muted: var(--text-ondark-muted);
-  --text-soft: var(--text-ondark-soft);
-
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);

@@ -8,10 +8,6 @@
 }
 
 .topSearch {
-  /* 오렌지 카드 위 자체 다크 배경 박스 — 밝은 텍스트로 복귀 */
-  --text-main: var(--text-ondark-main);
-  --text-soft: var(--text-ondark-soft);
-
   height: 46px;
   display: grid;
   grid-template-columns: 1fr 52px;
@@ -83,7 +79,7 @@
   border: 1px solid var(--border);
   border-radius: 20px;
   background: var(--bg-profile-level);
-  color: var(--color-cyan);
+  color: var(--accent);
   font-size: var(--font-size-xs);
   font-weight: 700;
 }
@@ -111,7 +107,7 @@
 
 .tierLine {
   margin: 0 0 6px;
-  color: var(--color-cyan);
+  color: var(--accent);
   font-size: 16px;
   font-weight: 600;
 }
@@ -130,9 +126,6 @@
 }
 
 .updateBtn {
-  /* 오렌지 카드 위 자체 다크 배경 박스 — 밝은 텍스트로 복귀 */
-  --text-ui: var(--text-ondark-ui);
-
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -211,9 +204,6 @@
 }
 
 .loadMoreBtn {
-  /* 오렌지 카드 위 자체 다크 배경 박스 — 밝은 텍스트로 복귀 */
-  --text-secondary: var(--text-ondark-secondary);
-
   display: flex;
   align-items: center;
   justify-content: center;
@@ -232,7 +222,7 @@
 
 .loadMoreBtn:hover {
   background: var(--cyan-bg-faint);
-  color: var(--color-cyan);
+  color: var(--accent);
   border-color: var(--cyan-border-light);
 }
 
@@ -306,12 +296,12 @@
 }
 
 .top4 {
-  border-left-color: var(--color-cyan);
+  border-left-color: var(--accent);
   background: linear-gradient(90deg, var(--match-row-top4-start), var(--match-row-base-end));
 }
 
 .top4 .placementBadge span {
-  color: var(--color-cyan);
+  color: var(--accent);
 }
 
 .bot4 {
@@ -373,7 +363,7 @@
 
 .gameTypeBadgeRanked {
   background: var(--cyan-bg-subtle);
-  color: var(--color-cyan);
+  color: var(--accent);
   border: 1px solid var(--cyan-border-subtle);
 }
 
@@ -420,7 +410,7 @@
 }
 
 .top4Text {
-  color: var(--color-cyan);
+  color: var(--accent);
 }
 
 .profileRight {
@@ -533,9 +523,6 @@
 }
 
 .unitOverflow {
-  /* 오렌지 카드 위 자체 다크 배경 박스 — 밝은 텍스트로 복귀 */
-  --text-muted: var(--text-ondark-muted);
-
   display: flex;
   align-items: center;
   justify-content: center;
@@ -596,11 +583,6 @@
 
 /* ── 매치 상세 패널 ── */
 .matchDetailPanel {
-  /* 오렌지 카드 위 자체 다크 배경 박스 — 밝은 텍스트로 복귀 */
-  --text-muted: var(--text-ondark-muted);
-  --text-ui: var(--text-ondark-ui);
-  --text-secondary: var(--text-ondark-secondary);
-
   overflow-x: auto;
   border: 1px solid var(--border-subtle);
   border-top: none;
@@ -818,7 +800,7 @@
 }
 
 .winRatePct {
-  color: var(--color-cyan);
+  color: var(--accent);
   font-size: 14px;
   font-weight: 800;
   line-height: 1;
@@ -867,9 +849,6 @@
 }
 
 .tip[data-tip]::after {
-  /* 오렌지 카드 위 자체 다크 배경 박스 — 밝은 텍스트로 복귀 */
-  --text-ui: var(--text-ondark-ui);
-
   content: attr(data-tip);
   position: absolute;
   bottom: calc(100% + 5px);

@@ -23,14 +23,14 @@
   align-items: center;
   gap: 7px;
   margin-bottom: 8px;
-  color: #05f3e7;
+  color: var(--accent);
   font-size: 12px;
   font-weight: 700;
 }
 
 .titleBlock h1 {
   margin: 0 0 6px;
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 26px;
   font-weight: 700;
   letter-spacing: 0;
@@ -38,7 +38,7 @@
 
 .titleBlock p {
   margin: 0;
-  color: #8e97a1;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
@@ -54,9 +54,9 @@
   min-height: 46px;
   display: inline-flex;
   justify-content: center;
-  border: 1px solid rgba(112, 144, 152, 0.18);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: rgba(8, 20, 28, 0.76);
+  background: var(--bg-card);
 }
 
 .statBadge {
@@ -67,13 +67,13 @@
 }
 
 .statBadge small {
-  color: #6b7580;
+  color: var(--text-muted);
   font-size: 11px;
   font-weight: 600;
 }
 
 .statBadge strong {
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 16px;
   font-weight: 700;
 }
@@ -103,7 +103,7 @@
   padding: 10px 13px;
   border: 1px solid rgba(112, 144, 152, 0.18);
   border-radius: 8px;
-  color: #8e97a1;
+  color: var(--text-secondary);
   background: rgba(8, 20, 28, 0.72);
   cursor: pointer;
   text-align: left;
@@ -124,7 +124,7 @@
 
 .tabBar button small {
   overflow: hidden;
-  color: #6b7580;
+  color: var(--text-muted);
   font-size: 11px;
   font-weight: 500;
   text-overflow: ellipsis;
@@ -147,7 +147,7 @@
   padding: 0 12px;
   border: 1px solid rgba(110, 142, 150, 0.32);
   border-radius: 8px;
-  color: #8e97a1;
+  color: var(--text-secondary);
   background: rgba(5, 14, 20, 0.92);
 }
 
@@ -157,7 +157,7 @@
   height: 100%;
   border: 0;
   outline: 0;
-  color: #ffffff;
+  color: var(--text-main);
   background: transparent;
   font-size: 13px;
 }
@@ -306,11 +306,11 @@
 }
 
 .sortButton:hover {
-  color: #05f3e7;
+  color: var(--accent);
 }
 
 .sortButton span {
-  color: #05f3e7;
+  color: var(--accent);
   font-size: 10px;
 }
 
@@ -332,7 +332,7 @@
   padding: 0 10px;
   border: 1px solid rgba(110, 142, 150, 0.28);
   border-radius: 7px;
-  color: #8e97a1;
+  color: var(--text-secondary);
   background: rgba(8, 20, 28, 0.82);
   font-size: 12px;
   font-weight: 700;
@@ -453,7 +453,7 @@
   place-items: center;
   border: 1px solid rgba(112, 144, 152, 0.24);
   border-radius: 6px;
-  color: #6b7580;
+  color: var(--text-muted);
   background: rgba(10, 22, 30, 0.84);
   font-size: 12px;
 }
@@ -467,10 +467,6 @@
 }
 
 .traitSummaryPanel {
-  /* 오렌지 카드 위 자체 다크 배경 박스 — 밝은 텍스트로 복귀 */
-  --text-soft: var(--text-ondark-soft);
-  --text-secondary: var(--text-ondark-secondary);
-
   display: grid;
   gap: var(--space-sm);
   margin: 13px 0 14px;
@@ -500,10 +496,6 @@
 }
 
 .traitEffectList {
-  /* 오렌지 카드 위 자체 다크 배경 박스 — 밝은 텍스트로 복귀 */
-  --text-soft: var(--text-ondark-soft);
-  --text-secondary: var(--text-ondark-secondary);
-
   display: grid;
   gap: var(--space-sm);
   margin: 0 0 14px;
@@ -679,7 +671,7 @@
 }
 
 button.championMini:hover {
-  color: #05f3e7;
+  color: var(--accent);
   border-color: rgba(5, 243, 231, 0.42);
 }
 
@@ -1013,7 +1005,7 @@ button.championMini:hover {
 .comboCell span {
   display: block;
   margin-top: 3px;
-  color: #6b7580;
+  color: var(--text-muted);
   font-size: 11px;
 }
 
@@ -1068,7 +1060,7 @@ button.championMini:hover {
 .metricCards article {
   min-height: 112px;
   padding: 17px;
-  color: #05f3e7;
+  color: var(--accent);
 }
 
 .metricCards strong {
@@ -1082,7 +1074,7 @@ button.championMini:hover {
 .metricCards span {
   display: block;
   margin-top: 8px;
-  color: #8e97a1;
+  color: var(--text-secondary);
   font-size: 12px;
   line-height: 1.45;
   word-break: keep-all;
@@ -1093,7 +1085,7 @@ button.championMini:hover {
   padding: 0 12px;
   border: 1px solid rgba(110, 142, 150, 0.28);
   border-radius: 6px;
-  color: #8e97a1;
+  color: var(--text-secondary);
   background: rgba(8, 20, 28, 0.82);
   font-size: 12px;
   font-weight: 700;
@@ -1182,7 +1174,7 @@ button.championMini:hover {
   padding: 0;
   border: 1px solid rgba(110, 142, 150, 0.28);
   border-radius: 7px;
-  color: #8e97a1;
+  color: var(--text-secondary);
   background: rgba(7, 18, 25, 0.86);
   cursor: pointer;
 }
@@ -1233,7 +1225,7 @@ button.championMini:hover {
 .championInfo span {
   display: block;
   margin-top: 4px;
-  color: #8e97a1;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
@@ -1277,14 +1269,14 @@ button.championMini:hover {
 }
 
 .tooltipTop strong {
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 14px;
 }
 
 .tooltipTop span {
   display: block;
   margin-top: 4px;
-  color: #8e97a1;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
@@ -1317,7 +1309,7 @@ button.championMini:hover {
 }
 
 .statGrid dt {
-  color: #6b7580;
+  color: var(--text-muted);
   font-size: 10px;
 }
 
@@ -1440,7 +1432,7 @@ button.championMini:hover {
 
 .dialogHero strong {
   display: block;
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 20px;
   font-weight: 800;
 }
@@ -1448,7 +1440,7 @@ button.championMini:hover {
 .dialogHero span {
   display: block;
   margin-top: 5px;
-  color: #05f3e7;
+  color: var(--accent);
   font-size: 13px;
   font-weight: 700;
 }
@@ -1456,7 +1448,7 @@ button.championMini:hover {
 .dialogHero p,
 .dialogPosition {
   margin: 6px 0 0;
-  color: #8e97a1;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
@@ -1489,13 +1481,13 @@ button.championMini:hover {
 }
 
 .dialogStats dt {
-  color: #6b7580;
+  color: var(--text-muted);
   font-size: 11px;
 }
 
 .dialogStats dd {
   margin: 5px 0 0;
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 14px;
   font-weight: 800;
 }
@@ -1526,7 +1518,7 @@ button.championMini:hover {
   gap: 8px;
   border: 1px solid rgba(112, 144, 152, 0.14);
   border-radius: var(--radius-panel);
-  color: #6b7580;
+  color: var(--text-muted);
   background: rgba(8, 20, 28, 0.58);
   font-size: 13px;
   font-weight: 600;
