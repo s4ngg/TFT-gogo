@@ -1,10 +1,15 @@
 package com.tftgogo.domain.content.scheduler;
 
+import com.tftgogo.domain.content.entity.ContentRefreshFailureType;
+import com.tftgogo.domain.content.entity.ContentRefreshJobType;
+import com.tftgogo.domain.content.service.ContentRefreshMonitoringService;
 import com.tftgogo.domain.guide.dto.response.GuideImportResponse;
 import com.tftgogo.domain.guide.scheduler.GuideCdragonImportTask;
 import com.tftgogo.domain.patchnote.config.PatchNoteImportSchedulerProperties;
 import com.tftgogo.domain.patchnote.dto.response.AdminPatchNoteImportResponse;
 import com.tftgogo.domain.patchnote.scheduler.PatchNoteImportTask;
+import com.tftgogo.domain.patchnote.scheduler.PatchNoteImportTask.HistoryBackfillResult;
+import com.tftgogo.domain.patchnote.scheduler.PatchNoteImportTask.PatchNoteRefreshResult;
 import com.tftgogo.global.config.GuideCdragonImportProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,10 +26,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -43,6 +49,9 @@ class ContentRefreshSchedulerTest {
     @Mock
     private ContentRefreshSchedulerLock schedulerLock;
 
+    @Mock
+    private ContentRefreshMonitoringService monitoringService;
+
     private PatchNoteImportSchedulerProperties patchNoteProperties;
     private GuideCdragonImportProperties guideProperties;
     private ContentRefreshScheduler scheduler;
@@ -57,7 +66,8 @@ class ContentRefreshSchedulerTest {
                 guideCdragonImportTask,
                 patchNoteProperties,
                 guideProperties,
-                schedulerLock
+                schedulerLock,
+                monitoringService
         );
     }
 
@@ -70,7 +80,7 @@ class ContentRefreshSchedulerTest {
         scheduler.syncContent();
 
         // then
-        verifyNoInteractions(schedulerLock, patchNoteImportTask, guideCdragonImportTask);
+        verifyNoInteractions(schedulerLock, patchNoteImportTask, guideCdragonImportTask, monitoringService);
     }
 
     @Test
@@ -79,7 +89,7 @@ class ContentRefreshSchedulerTest {
         scheduler.importOnStartupIfEnabled();
 
         // then
-        verifyNoInteractions(schedulerLock, patchNoteImportTask, guideCdragonImportTask);
+        verifyNoInteractions(schedulerLock, patchNoteImportTask, guideCdragonImportTask, monitoringService);
     }
 
     @Test
@@ -102,7 +112,9 @@ class ContentRefreshSchedulerTest {
         enableGuide();
         givenSchedulerLockRunsTask();
         when(patchNoteImportTask.importLatestPatchNoteThenUnknownPatchNotesFromList())
-                .thenReturn(importResponse(" 17.5 "));
+                .thenReturn(refreshResult(" 17.5 "));
+        when(guideCdragonImportTask.importGuides("sync", "17.5"))
+                .thenReturn(guideImportResponse("17.5"));
 
         // when
         scheduler.syncContent();
@@ -111,6 +123,8 @@ class ContentRefreshSchedulerTest {
         InOrder inOrder = inOrder(patchNoteImportTask, guideCdragonImportTask);
         inOrder.verify(patchNoteImportTask).importLatestPatchNoteThenUnknownPatchNotesFromList();
         inOrder.verify(guideCdragonImportTask).importGuides("sync", "17.5");
+        verify(monitoringService).recordSuccess(ContentRefreshJobType.PATCH_NOTE, "17.5", 1L);
+        verify(monitoringService).recordSuccess(ContentRefreshJobType.GAME_GUIDE, "17.5", 140L);
     }
 
     @Test
@@ -119,6 +133,8 @@ class ContentRefreshSchedulerTest {
         enableGuide();
         givenSchedulerLockRunsTask();
         when(patchNoteImportTask.importLatestPatchNote()).thenReturn(importResponse("17.5"));
+        when(guideCdragonImportTask.importGuides("daily-refresh", "17.5"))
+                .thenReturn(guideImportResponse("17.5"));
 
         // when
         scheduler.refreshContent();
@@ -139,6 +155,11 @@ class ContentRefreshSchedulerTest {
 
         // when, then
         assertThatCode(scheduler::syncContent).doesNotThrowAnyException();
+        verify(monitoringService).recordAttempt(ContentRefreshJobType.PATCH_NOTE);
+        verify(monitoringService).recordFailure(
+                eq(ContentRefreshJobType.PATCH_NOTE),
+                any(RuntimeException.class)
+        );
         verify(guideCdragonImportTask, never()).importGuides(anyString(), anyString());
     }
 
@@ -148,7 +169,7 @@ class ContentRefreshSchedulerTest {
         enableGuide();
         givenSchedulerLockRunsTask();
         when(patchNoteImportTask.importLatestPatchNoteThenUnknownPatchNotesFromList())
-                .thenReturn(importResponse("   "));
+                .thenReturn(refreshResult("   "));
 
         // when
         scheduler.syncContent();
@@ -164,10 +185,10 @@ class ContentRefreshSchedulerTest {
         enableGuide();
         givenSchedulerLockRunsTask();
         when(patchNoteImportTask.importLatestPatchNoteThenUnknownPatchNotesFromList())
-                .thenReturn(importResponse("17.5"));
+                .thenReturn(refreshResult("17.5"));
         when(guideCdragonImportTask.importGuides("sync", "17.5"))
                 .thenThrow(new RuntimeException("cdragon unavailable"))
-                .thenReturn(mock(GuideImportResponse.class));
+                .thenReturn(guideImportResponse("17.5"));
 
         // when
         scheduler.syncContent();
@@ -176,6 +197,11 @@ class ContentRefreshSchedulerTest {
         // then
         verify(patchNoteImportTask, times(2)).importLatestPatchNoteThenUnknownPatchNotesFromList();
         verify(guideCdragonImportTask, times(2)).importGuides("sync", "17.5");
+        verify(monitoringService, times(2)).recordAttempt(ContentRefreshJobType.GAME_GUIDE);
+        verify(monitoringService).recordFailure(
+                eq(ContentRefreshJobType.GAME_GUIDE),
+                any(RuntimeException.class)
+        );
     }
 
     @Test
@@ -185,7 +211,7 @@ class ContentRefreshSchedulerTest {
         when(patchNoteImportTask.importLatestPatchNoteThenUnknownPatchNotesFromList())
                 .thenAnswer(invocation -> {
                     scheduler.syncContent();
-                    return importResponse("17.5");
+                    return refreshResult("17.5");
                 });
 
         // when
@@ -205,7 +231,7 @@ class ContentRefreshSchedulerTest {
         scheduler.syncContent();
 
         // then
-        verifyNoInteractions(patchNoteImportTask, guideCdragonImportTask);
+        verifyNoInteractions(patchNoteImportTask, guideCdragonImportTask, monitoringService);
     }
 
     @Test
@@ -216,7 +242,8 @@ class ContentRefreshSchedulerTest {
                 guideCdragonImportTask,
                 patchNoteProperties,
                 guideProperties,
-                schedulerLock
+                schedulerLock,
+                monitoringService
         );
         AtomicBoolean lockHeld = new AtomicBoolean(false);
         CountDownLatch firstTaskStarted = new CountDownLatch(1);
@@ -237,7 +264,7 @@ class ContentRefreshSchedulerTest {
                 .thenAnswer(invocation -> {
                     firstTaskStarted.countDown();
                     allowFirstTaskToFinish.await(2, TimeUnit.SECONDS);
-                    return importResponse("17.5");
+                    return refreshResult("17.5");
                 });
 
         Thread firstServer = new Thread(scheduler::syncContent);
@@ -256,6 +283,56 @@ class ContentRefreshSchedulerTest {
         assertThat(firstServer.isAlive()).isFalse();
         verify(schedulerLock, times(2)).runWithLock(anyString(), any(Runnable.class));
         verify(patchNoteImportTask).importLatestPatchNoteThenUnknownPatchNotesFromList();
+    }
+
+    @Test
+    void 상태_기록이_실패해도_patch_commit_후_guide를_계속_import한다() {
+        // given
+        enableGuide();
+        givenSchedulerLockRunsTask();
+        when(patchNoteImportTask.importLatestPatchNoteThenUnknownPatchNotesFromList())
+                .thenReturn(refreshResult("17.5"));
+        when(guideCdragonImportTask.importGuides("sync", "17.5"))
+                .thenReturn(guideImportResponse("17.5"));
+        doAnswer(invocation -> {
+            if (invocation.getArgument(0) == ContentRefreshJobType.PATCH_NOTE) {
+                throw new RuntimeException("monitoring unavailable");
+            }
+            return null;
+        }).when(monitoringService).recordSuccess(any(ContentRefreshJobType.class), anyString(), anyLong());
+
+        // when, then
+        assertThatCode(scheduler::syncContent).doesNotThrowAnyException();
+        verify(guideCdragonImportTask).importGuides("sync", "17.5");
+        verify(monitoringService).recordSuccess(ContentRefreshJobType.GAME_GUIDE, "17.5", 140L);
+    }
+
+    @Test
+    void history_backfill이_부분_실패해도_guide를_계속하고_patch_경고를_기록한다() {
+        // given
+        enableGuide();
+        givenSchedulerLockRunsTask();
+        PatchNoteRefreshResult partialResult = new PatchNoteRefreshResult(
+                importResponse("17.5"),
+                new HistoryBackfillResult(5, 2, 1)
+        );
+        when(patchNoteImportTask.importLatestPatchNoteThenUnknownPatchNotesFromList())
+                .thenReturn(partialResult);
+        when(guideCdragonImportTask.importGuides("sync", "17.5"))
+                .thenReturn(guideImportResponse("17.5"));
+
+        // when
+        scheduler.syncContent();
+
+        // then
+        verify(monitoringService, never()).recordSuccess(ContentRefreshJobType.PATCH_NOTE, "17.5", 1L);
+        verify(monitoringService).recordPartialSuccess(
+                ContentRefreshJobType.PATCH_NOTE,
+                "17.5",
+                1L,
+                ContentRefreshFailureType.HISTORY_BACKFILL
+        );
+        verify(guideCdragonImportTask).importGuides("sync", "17.5");
     }
 
     private void enableGuide() {
@@ -283,6 +360,25 @@ class ContentRefreshSchedulerTest {
                 0,
                 0,
                 List.of()
+        );
+    }
+
+    private GuideImportResponse guideImportResponse(String patchVersion) {
+        return GuideImportResponse.builder()
+                .patchVersion(patchVersion)
+                .setNumber(17)
+                .mutator("TFTSet17")
+                .championCount(40)
+                .traitCount(20)
+                .itemCount(30)
+                .augmentCount(50)
+                .build();
+    }
+
+    private PatchNoteRefreshResult refreshResult(String version) {
+        return new PatchNoteRefreshResult(
+                importResponse(version),
+                new HistoryBackfillResult(0, 0, 0)
         );
     }
 }

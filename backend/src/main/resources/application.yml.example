@@ -80,6 +80,13 @@ admin:
     password: ${ADMIN_BOOTSTRAP_PASSWORD:}
 
 app:
+  content-refresh:
+    monitoring:
+      # Scheduled refreshes run hourly by default. Keep a wider stale window to avoid false alerts
+      # during planned maintenance; repeated failures become critical at the threshold below.
+      stale-after-hours: ${APP_CONTENT_REFRESH_MONITORING_STALE_AFTER_HOURS:26}
+      consecutive-failure-critical-threshold: ${APP_CONTENT_REFRESH_MONITORING_FAILURE_THRESHOLD:3}
+      running-timeout-minutes: ${APP_CONTENT_REFRESH_MONITORING_RUNNING_TIMEOUT_MINUTES:120}
   oauth2:
     authorization-base-uri: ${APP_OAUTH2_AUTHORIZATION_BASE_URI:https://tftgogo.com}
     authorized-redirect-uri: ${APP_OAUTH2_AUTHORIZED_REDIRECT_URI:https://tftgogo.com/oauth/callback}

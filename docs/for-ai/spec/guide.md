@@ -249,6 +249,12 @@ Page: Guide (/guide).
   back, the current ACTIVE snapshot remains public, and the next scheduled refresh retries.
 - Admin manual patch-note and CDragon imports use the same advisory lock and return CONTENT_REFRESH_ALREADY_RUNNING
   when another automatic or manual content import owns it.
+- Automatic guide attempts and results are persisted in content_refresh_job_statuses. The admin-only
+  GET /api/admin/content-refresh/health endpoint reports the last successful guide version/count and validates the
+  current ACTIVE snapshot plus the actual four guide-table row counts against all configured minimum counts and the
+  current patch-note version.
+- Monitoring persistence is best-effort and must not change guide import commit/rollback behavior. Content freshness
+  warnings are not added to the public /actuator/health response used by infrastructure health checks.
 - Local/dev should keep the scheduler disabled by default. Use the admin import button for local QA.
 </scheduler>
 
