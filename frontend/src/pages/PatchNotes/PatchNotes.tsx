@@ -75,7 +75,7 @@ function PatchNotes() {
 
   if (!selectedPatch) {
     return (
-      <AppLayout>
+      <AppLayout sunTheme>
         <div className={styles.page}>
           <PatchStatusBanner
             isFallbackData={false}
@@ -90,7 +90,7 @@ function PatchNotes() {
   }
 
   return (
-    <AppLayout>
+    <AppLayout sunTheme>
       <div className={styles.page}>
         <PatchHero selectedPatch={selectedPatch} />
 

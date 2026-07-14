@@ -294,7 +294,7 @@ function SearchDetail() {
   }
 
   return (
-    <AppLayout>
+    <AppLayout sunTheme>
       <div className={styles.page}>
         <form className={styles.topSearch} onSubmit={handleSearch}>
           <input placeholder="소환사명#태그 검색" value={query} onChange={(e) => setQuery(e.target.value)} />

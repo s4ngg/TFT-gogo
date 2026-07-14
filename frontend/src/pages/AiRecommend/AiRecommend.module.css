@@ -20,7 +20,7 @@
   align-items: center;
   gap: 10px;
   margin: 0 0 5px;
-  color: #fff;
+  color: var(--text-main);
   font-size: 26px;
   font-weight: 700;
   letter-spacing: -0.03em;
@@ -28,7 +28,7 @@
 
 .pageHeader p {
   margin: 0;
-  color: #8e97a1;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
@@ -37,10 +37,10 @@
   align-items: center;
   gap: 8px;
   padding: 8px 14px;
-  border: 1px solid rgba(4, 243, 229, 0.28);
+  border: 1px solid var(--cyan-border-subtle);
   border-radius: 8px;
-  background: rgba(4, 80, 86, 0.3);
-  color: #fff;
+  background: var(--cyan-bg-subtle);
+  color: var(--text-main);
   font-size: 14px;
   font-weight: 600;
 }
@@ -49,12 +49,12 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #04f3e5;
+  background: var(--accent);
   box-shadow: 0 0 8px #04f3e5;
 }
 
 .summonerTag {
-  color: #6b757e;
+  color: var(--text-muted);
   font-size: 13px;
   font-weight: 400;
 }
@@ -62,15 +62,15 @@
 .summonerDivider {
   width: 1px;
   height: 14px;
-  background: rgba(112, 144, 152, 0.3);
+  background: var(--border-subtle);
   margin: 0 2px;
 }
 
 .summonerTier {
   padding: 2px 8px;
   border-radius: 4px;
-  background: rgba(4, 100, 106, 0.4);
-  color: #04ede0;
+  background: var(--cyan-bg-subtle);
+  color: var(--accent);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -91,19 +91,19 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 16px;
-  color: #04ede0;
+  color: var(--accent);
 }
 
 .panelHead h2 {
   margin: 0;
-  color: #fff;
+  color: var(--text-main);
   font-size: 17px;
   font-weight: 600;
   letter-spacing: -0.02em;
 }
 
 .panelSub {
-  color: #5a6470;
+  color: var(--text-muted);
   font-size: 12px;
   font-weight: 400;
 }
@@ -127,10 +127,10 @@
 .promptCard {
   width: 520px;
   padding: 40px;
-  border: 1px solid rgba(4, 243, 229, 0.18);
+  border: 1px solid var(--border-separator);
   border-radius: 14px;
   text-align: center;
-  background: linear-gradient(180deg, rgba(5, 60, 65, 0.28), rgba(5, 14, 21, 0.97));
+  background: var(--bg-card-gradient);
 }
 
 .promptIcon {
@@ -139,16 +139,16 @@
   display: grid;
   place-items: center;
   margin: 0 auto 20px;
-  border: 1px solid rgba(4, 243, 229, 0.3);
+  border: 1px solid var(--accent-border-subtle);
   border-radius: 18px;
-  color: #04f3e5;
-  background: rgba(4, 90, 96, 0.36);
+  color: var(--accent);
+  background: var(--accent-bg-faint);
   box-shadow: 0 0 24px rgba(4, 243, 229, 0.12);
 }
 
 .promptCard h2 {
   margin: 0 0 12px;
-  color: #fff;
+  color: var(--text-main);
   font-size: 20px;
   font-weight: 700;
   line-height: 1.4;
@@ -157,7 +157,7 @@
 
 .promptCard p {
   margin: 0 0 22px;
-  color: #8e97a1;
+  color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.6;
 }
@@ -173,21 +173,22 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  color: #6b757e;
+  color: var(--text-muted);
   font-size: 13px;
   font-weight: 500;
 }
 
 .connectBtn {
+  /* 홈 화면 CTA 버튼(.patchCard button)과 동일한 흰 배경 + 검정 텍스트 패턴 */
   display: inline-flex;
   align-items: center;
   gap: 8px;
   height: 44px;
   padding: 0 22px;
-  border: 1px solid #04f3e5;
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
-  color: #fff;
-  background: linear-gradient(180deg, rgba(4, 160, 155, 0.9), rgba(3, 80, 86, 0.95));
+  color: var(--text-onlight-main);
+  background: var(--bg-onlight);
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
@@ -207,6 +208,13 @@
 .statusMessage.loading { color: var(--text-muted); }
 .statusMessage.empty { color: var(--text-muted); }
 
+/* 카드 없이 검정 페이지 배경 위에 바로 놓이는 상태 메시지(.page 직속 자식) —
+   위 .text-muted override가 검정으로 바뀌어 검정 배경 위에서 안 보이므로 원래 밝은 값으로 복귀 */
+.page > .statusMessage.loading,
+.page > .statusMessage.empty {
+  color: var(--text-muted);
+}
+
 /* ── 최근 전적 요약 ── */
 .summaryPanel { }
 
@@ -218,28 +226,28 @@
 
 .statCard {
   padding: 14px;
-  border: 1px solid rgba(112, 144, 152, 0.14);
+  border: 1px solid var(--border-separator);
   border-radius: 8px;
   text-align: center;
-  background: rgba(6, 17, 24, 0.7);
+  background: var(--bg-card);
 }
 
 .statCard small {
   display: block;
   margin-bottom: 6px;
-  color: #5a6470;
+  color: var(--text-muted);
   font-size: 12px;
 }
 
 .statCard strong {
-  color: #e0e6ec;
+  color: var(--text-main);
   font-size: 22px;
   font-weight: 700;
 }
 
-.statCard[data-tone="purple"] strong { color: #a78bfa; }
-.statCard[data-tone="green"] strong { color: #04ede0; }
-.statCard[data-tone="gold"] strong { color: #f9c860; }
+.statCard[data-tone="purple"] strong { color: var(--color-purple); }
+.statCard[data-tone="green"] strong { color: var(--accent); }
+.statCard[data-tone="gold"] strong { color: var(--color-star); }
 
 /* ── 최근 등수 ── */
 .placementsRow {
@@ -249,11 +257,11 @@
   gap: 12px;
   margin-top: 14px;
   padding-top: 14px;
-  border-top: 1px solid rgba(112, 144, 152, 0.1);
+  border-top: 1px solid var(--border-separator);
 }
 
 .placementsLabel {
-  color: #5a6470;
+  color: var(--text-muted);
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
@@ -276,16 +284,16 @@
   display: grid;
   place-items: center;
   border-radius: 5px;
-  border: 1px solid rgba(112, 144, 152, 0.2);
-  background: rgba(8, 20, 28, 0.7);
-  color: #5a6470;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-muted);
   font-size: 13px;
   font-weight: 700;
 }
 
 .placementBadge[data-top4="true"] {
   border-color: rgba(4, 243, 229, 0.3);
-  color: #04ede0;
+  color: var(--accent);
 }
 
 .tierInfo {
@@ -310,7 +318,7 @@
 }
 
 .tierName {
-  color: #f9c860;
+  color: var(--color-star);
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.03em;
@@ -318,15 +326,15 @@
 }
 
 .tierLp {
-  color: #6b757e;
+  color: var(--text-muted);
   font-size: 11px;
   font-weight: 500;
 }
 
 .placementBadge[data-first="true"] {
-  border-color: rgba(249, 200, 96, 0.4);
+  border-color: var(--tone-gold-border);
   background: rgba(249, 200, 96, 0.08);
-  color: #f9c860;
+  color: var(--color-star);
 }
 
 /* ── 자주 쓴 덱 / 시너지 ── */
@@ -373,14 +381,14 @@
 .myDeckStats {
   display: flex;
   gap: 12px;
-  color: #6b757e;
+  color: var(--text-muted);
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
 }
 
 .myAvg  { color: #a78bfa; }
-.myTop4 { color: #04ede0; }
+.myTop4 { color: var(--accent); }
 
 /* ── 증강 분석 ── */
 .augmentList { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
@@ -421,7 +429,7 @@
   background: #a78bfa;
 }
 
-.augProgress[data-tone="best"] { color: #04ede0; }
+.augProgress[data-tone="best"] { color: var(--accent); }
 .augProgress[data-tone="worst"] { color: #f87171; }
 .augProgress[data-tone="best"]::-webkit-progress-value { background: #04ede0; }
 .augProgress[data-tone="worst"]::-webkit-progress-value { background: #f87171; }
@@ -430,7 +438,7 @@
 
 .augPlace { font-size: 13px; font-weight: 700; text-align: right; }
 .augPlace[data-tone="default"] { color: #c0c8d0; }
-.augPlace[data-tone="best"] { color: #04ede0; }
+.augPlace[data-tone="best"] { color: var(--accent); }
 .augPlace[data-tone="worst"] { color: #f87171; }
 .augGames { color: #4a5560; font-size: 12px; text-align: right; }
 
@@ -438,13 +446,13 @@
   margin: 0;
   padding: 10px 14px;
   border-radius: 7px;
-  color: #8e97a1;
+  color: var(--text-secondary);
   background: rgba(4, 243, 229, 0.06);
   font-size: 13px;
   line-height: 1.5;
 }
 
-.augTip b { color: #04f3e5; }
+.augTip b { color: var(--accent); }
 
 /* ── AI 추천 덱 ── */
 .aiDeckList {
@@ -478,7 +486,7 @@
 .aiDeckBadge {
   padding: 2px 8px;
   border-radius: 4px;
-  color: #04f3e5;
+  color: var(--accent);
   background: rgba(4, 100, 106, 0.38);
   font-size: 11px;
   font-weight: 700;
@@ -487,7 +495,7 @@
 .aiDeckName {
   min-width: 0;
   overflow: hidden;
-  color: #fff;
+  color: var(--text-main);
   font-size: 13px;
   font-weight: 600;
   text-overflow: ellipsis;
@@ -501,7 +509,7 @@
   align-items: center;
   transition: color 0.15s;
 }
-.aiDeckCard:hover .aiDeckArrow { color: #04ede0; }
+.aiDeckCard:hover .aiDeckArrow { color: var(--accent); }
 
 .aiDeckTraits {
   display: flex;
@@ -521,14 +529,14 @@
   display: flex;
   gap: 12px;
   margin-bottom: 10px;
-  color: #6b757e;
+  color: var(--text-muted);
   font-size: 12px;
 }
 
 .aiDeckStats b { font-weight: 700; }
-.green  { color: #04ede0; }
+.green  { color: var(--accent); }
 .purple { color: #a78bfa; }
-.gold   { color: #f9c860; }
+.gold   { color: var(--color-star); }
 
 .aiReason {
   display: flex;
@@ -536,7 +544,7 @@
   gap: 6px;
   padding: 6px 10px;
   border-radius: 5px;
-  color: #8e97a1;
+  color: var(--text-secondary);
   background: rgba(255, 255, 255, 0.04);
   font-size: 12px;
 }
@@ -566,7 +574,7 @@
   font-weight: 600;
 }
 
-.deckPerfGood { color: #04ede0; }
+.deckPerfGood { color: var(--accent); }
 .deckPerfBad  { color: #f87171; }
 
 .deckPerfDivider {
@@ -721,6 +729,9 @@
 .chatInput:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .chatSendBtn {
+  /* 오렌지 카드 위 자체 틸 그라디언트 배경(--search-btn-bg는 미변경) — 밝은 아이콘 색상 유지 */
+  --text-main: var(--text-ondark-main);
+
   width: 38px;
   height: 38px;
   flex-shrink: 0;
@@ -762,7 +773,7 @@
   padding: 2px 8px;
   border: 1px solid rgba(249, 200, 96, 0.35);
   border-radius: 4px;
-  color: #f9c860;
+  color: var(--color-star);
   background: rgba(249, 200, 96, 0.1);
   font-size: 11px;
   font-weight: 700;
@@ -775,7 +786,7 @@
 }
 
 .aiReasonPatch {
-  color: #f9c860;
+  color: var(--color-star);
   background: rgba(249, 200, 96, 0.07);
 }
 

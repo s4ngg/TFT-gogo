@@ -116,7 +116,7 @@ function Dashboard() {
   }, [profileQuery.data])
 
   return (
-    <AppLayout>
+    <AppLayout sunTheme>
       <div className={styles.dashboardGrid}>
         <TopSummaryCards
           isSummonerSearchInvalid={searchStatus === 'empty'}

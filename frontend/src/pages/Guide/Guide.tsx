@@ -60,7 +60,7 @@ function Guide() {
   }
 
   return (
-    <AppLayout>
+    <AppLayout sunTheme>
       <div className={styles.page}>
         <header className={styles.pageHeader}>
           <div className={styles.titleBlock}>

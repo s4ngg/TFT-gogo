@@ -9,14 +9,14 @@ function Admin() {
 
   if (!authed) {
     return (
-      <AppLayout>
+      <AppLayout sunTheme>
         <TokenGate onSuccess={() => setAuthed(true)} />
       </AppLayout>
     )
   }
 
   return (
-    <AppLayout>
+    <AppLayout sunTheme>
       <AdminPage />
     </AppLayout>
   )
