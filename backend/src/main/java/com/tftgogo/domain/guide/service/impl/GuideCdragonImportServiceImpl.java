@@ -281,7 +281,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                 validatedAt
         );
         Optional<GuideSnapshot> activeSnapshot = guideSnapshotRepository
-                .findFirstByStatusForUpdate(GuideSnapshotStatus.ACTIVE);
+                .findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE);
         boolean targetIsAlreadyActive = activeSnapshot
                 .map(current -> current.getPatchVersion().equals(patchVersion))
                 .orElse(false);

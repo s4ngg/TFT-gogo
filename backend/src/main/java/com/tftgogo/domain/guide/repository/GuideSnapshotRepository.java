@@ -21,11 +21,5 @@ public interface GuideSnapshotRepository extends JpaRepository<GuideSnapshot, Lo
     Optional<GuideSnapshot> findFirstByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus status);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("""
-            SELECT snapshot
-            FROM GuideSnapshot snapshot
-            WHERE snapshot.status = :status
-            ORDER BY snapshot.activatedAt DESC, snapshot.id DESC
-            """)
-    Optional<GuideSnapshot> findFirstByStatusForUpdate(@Param("status") GuideSnapshotStatus status);
+    Optional<GuideSnapshot> findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus status);
 }
