@@ -8,7 +8,7 @@ import { useMetaSnapshot } from '../../../hooks/useMetaSnapshot'
 import { useCDragonLocale } from '../../../hooks/useCDragonLocale'
 import { deckDisplayName } from '../../Decks/utils/deckListUtils'
 import { TIER_ORDER } from '../../../constants/tiers'
-import type { ChampionSummary, MetaDeck, TraitSummary } from '../dashboardData'
+import type { ChampionSummary, MetaDeck, RankFilter, TraitSummary } from '../dashboardData'
 import styles from '../Dashboard.module.css'
 
 type MetaFilter = 'overall' | 'upper' | 'master'
@@ -24,6 +24,8 @@ const sortOptions: { label: string; value: MetaSortKey }[] = [
   { label: 'TOP 4', value: 'top4' },
   { label: '평균 등수', value: 'avgPlace' },
 ]
+
+const DETAIL_RANK_FILTER: RankFilter = 'EMERALD_PLUS'
 
 function toNumber(value: string | undefined): number {
   if (!value) return 0
@@ -120,6 +122,10 @@ function MetaSnapshot() {
   )
   const navigate = useNavigate()
 
+  function handleDeckDetailClick(deck: MetaDeck) {
+    navigate(`/decks/${DETAIL_RANK_FILTER}/${deck.rank}`)
+  }
+
   return (
     <section className={`${styles.panel} ${styles.metaPanel}`}>
       <div className={styles.panelHeading}>
@@ -185,9 +191,22 @@ function MetaSnapshot() {
                 <Traits values={deck.traits} />
               </div>
               <Champions champions={deck.champions} />
-              <b className={styles.top4} title="TOP 4 진입 비율">{deck.top4}</b>
-              <b className={styles.avgPlace} title="평균 등수">{deck.avgPlace}</b>
-              <ChevronRight className={styles.rowArrow} size={22} />
+              <div className={styles.metricCell} title="TOP 4 진입 비율">
+                <span>TOP 4</span>
+                <b>{deck.top4}</b>
+              </div>
+              <div className={styles.metricCell} title="평균 등수">
+                <span>평균</span>
+                <b>{deck.avgPlace}</b>
+              </div>
+              <button
+                aria-label={`${deckDisplayName(deck, locale)} 상세 보기`}
+                className={styles.rowArrow}
+                onClick={() => handleDeckDetailClick(deck)}
+                type="button"
+              >
+                <ChevronRight size={20} />
+              </button>
             </article>
           ))
         ) : (
