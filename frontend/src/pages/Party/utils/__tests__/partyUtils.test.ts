@@ -80,6 +80,21 @@ describe('partyUtils', () => {
     assert.equal(result.status, '모집중')
   })
 
+  it('마감 시간이 지나고 정원도 찬 모집글은 참여 취소 후에도 마감 상태를 유지한다', () => {
+    const result = updatePostJoinState({
+      ...partyPost('expired-full-party'),
+      capacity: '2/2',
+      isClosed: true,
+      isDeadlineExpired: true,
+      isJoined: true,
+      status: '대기중',
+    }, false)
+
+    assert.equal(result.capacity, '1/2')
+    assert.equal(result.isClosed, true)
+    assert.equal(result.status, '대기중')
+  })
+
   it('정원 외 사유로 마감된 모집글은 참여 취소 후에도 마감 상태를 유지한다', () => {
     const result = updatePostJoinState({
       ...partyPost('closed-party'),

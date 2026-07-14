@@ -157,6 +157,32 @@ describe('partyApi', () => {
 
     assert.equal(response.source, 'api')
     assert.equal(response.data[0]?.close, '1/1 21:00 마감')
+    assert.equal(response.data[0]?.isDeadlineExpired, false)
+  })
+
+  it('getPartyPosts는 지난 마감 시간을 optimistic 상태 계산용으로 보존한다', async () => {
+    axiosInstance.defaults.adapter = createPartyAdapter({
+      data: [
+        {
+          chatRoomId: 'party-recruitment',
+          closed: true,
+          content: '마감 시간 경과 확인',
+          currentMembers: 2,
+          deadline: '2020-01-01T21:00:00',
+          gameMode: 'RANKED_TFT',
+          id: 12,
+          maxMembers: 2,
+          tags: [],
+          title: '마감된 랭크 파티',
+        },
+      ],
+      success: true,
+    })
+
+    const response = await getPartyPosts()
+
+    assert.equal(response.source, 'api')
+    assert.equal(response.data[0]?.isDeadlineExpired, true)
   })
 
   it('getPartyPosts는 티어 조건을 태그에서 파생한다', async () => {

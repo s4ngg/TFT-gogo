@@ -23,6 +23,7 @@ export interface PartyPost {
   icon: PartyIcon
   id: string
   isClosed: boolean
+  isDeadlineExpired?: boolean
   isJoined?: boolean
   isOwner?: boolean
   mode: PartyMode
@@ -228,6 +229,16 @@ function formatCloseLabel(value: string | null | undefined) {
   return `${date.getMonth() + 1}/${date.getDate()} ${hours}:${minutes} 마감`
 }
 
+function isDeadlineExpired(value: string | null | undefined) {
+  if (!value) {
+    return false
+  }
+
+  const deadline = new Date(value)
+
+  return !Number.isNaN(deadline.getTime()) && deadline.getTime() <= Date.now()
+}
+
 function toGameMode(mode: PartyMode) {
   if (mode === '일반') return 'NORMAL_TFT'
   if (mode === '커스텀') return 'CUSTOM'
@@ -323,6 +334,7 @@ function normalizePartyPost(response: PartyPostResponse, index: number): PartyPo
   const chatRoomId = normalizeCommunityChatRoomId(readId(response.chatRoomId, PARTY_RECRUITMENT_ROOM_ID))
     ?? PARTY_RECRUITMENT_ROOM_ID
   const isClosed = readBoolean(response.closed ?? response.isClosed)
+  const deadline = response.deadline ?? response.close
 
   return {
     id,
@@ -331,8 +343,9 @@ function normalizePartyPost(response: PartyPostResponse, index: number): PartyPo
     mode,
     tier,
     capacity,
-    close: formatCloseLabel(response.deadline ?? response.close),
+    close: formatCloseLabel(deadline),
     isClosed,
+    isDeadlineExpired: isDeadlineExpired(deadline),
     status: normalizeStatus(response.status, capacity, isClosed),
     description: readString(response.description ?? response.content, '상세 설명이 없습니다.'),
     tags,

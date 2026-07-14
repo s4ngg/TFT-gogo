@@ -94,7 +94,8 @@ export function removePostOverride(overrides: Record<string, PartyPost>, postId:
 export function updatePostJoinState(post: PartyPost, isJoining: boolean): PartyPost {
   const { current, total } = parseCapacity(post.capacity)
   const nextCurrent = isJoining ? Math.min(total, current + 1) : Math.max(0, current - 1)
-  const isClosedForNonCapacityReason = post.isClosed && current < total
+  const isClosedForNonCapacityReason = post.isDeadlineExpired === true
+    || (post.isClosed && current < total)
   const isClosed = isClosedForNonCapacityReason || nextCurrent >= total
 
   return {
