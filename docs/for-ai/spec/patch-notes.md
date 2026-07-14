@@ -182,7 +182,8 @@ Page: /patch-notes.
 </crawler-parser>
 
 <scheduler>
-- PatchNoteImportScheduler is implemented.
+- ContentRefreshScheduler is the only automatic entry point for patch-note and CDragon guide refreshes.
+- PatchNoteImportTask owns the patch-note latest-refresh and recent-history backfill steps without scheduling or locks.
 - Scheduler properties use prefix app.patch-note.scheduler.
 - Defaults:
   - enabled=false
@@ -194,18 +195,18 @@ Page: /patch-notes.
   - list-cron=0 0 * * * *
   - refresh-cron=0 30 6 * * *
   - zone=Asia/Seoul
-- Startup import runs on ApplicationReadyEvent only when enabled=true and startup-import=true.
-- Startup import runs before guide startup import so guide patch-version=latest can resolve to the latest current patch note.
-- Startup import is a two-step sequence under the `startup` lock:
-  1. call latest refresh first (`importLatestPatchNote`) with sourceUrl=null/version=null/current=properties.current.
-  2. run recent-history list backfill (`importUnknownPatchNotesFromList`).
+- Startup import runs on ApplicationReadyEvent only when patch-note enabled=true and startup-import=true.
+- Startup import refreshes the latest patch first and then runs the recent-history list backfill under the shared
+  content-refresh lock. Its guide step runs only when guide enabled=true and guide startup-import=true.
 - The latest refresh step is required even when the latest patch already exists locally. Do not replace startup import
   with list-only import; list-only import can skip an already-imported latest patch and miss current correction or Riot
   official content updates.
-- If the latest refresh step fails, the startup task is logged as failed by the scheduler wrapper and the list backfill
-  does not run in that same startup execution. The hourly list-check and next daily refresh can recover later.
-- List check runs hourly by default and imports unknown official list items within list-scan-limit and history-months.
-- Daily refresh runs at 06:30 KST by default and refreshes the latest patch note.
+- If the latest refresh step fails or returns no version, the guide step must not run. The next scheduled execution retries.
+- Hourly sync refreshes the latest patch first, backfills unknown official list items within list-scan-limit and
+  history-months, and then imports guides using the exact version returned by the committed latest-patch transaction.
+- A history-list fetch or old-item failure after the latest patch commit is logged but does not replace or invalidate
+  that committed version; the guide step may continue with the exact committed version.
+- Daily refresh runs at 06:30 KST by default and refreshes the latest patch before its guide step.
 - Daily refresh imports the latest official patch note directly. It must not skip the latest patch merely because
   that patch version/sourceUrl is already present locally; re-import keeps existing imported rows up to date.
 - List check fetches the official Riot/TFT tag page, parses list items, and scans at most
@@ -222,8 +223,16 @@ Page: /patch-notes.
   items, including items that fail during import, must be requested with current=false.
 - List check isolates import failures per item. If one official detail page fails, log detailUrl/version/current
   context and continue with the remaining list items so a bad older item does not block later items or the latest/current import.
-- Scheduler uses an in-process AtomicBoolean lock to avoid overlapping imports in a single server instance.
-- Multi-server deployments require a future shared DB/Redis lock before enabling scheduler on multiple instances.
+- ContentRefreshScheduler is not transactional. AdminPatchNoteService completes and commits its transaction before the
+  returned version is passed to the separate transactional guide import.
+- Scheduler uses an in-process AtomicBoolean to prevent same-instance overlap and one MySQL advisory lock named
+  `tftgogo.content.refresh.scheduler.import` to prevent multi-instance overlap across the full patch-to-guide sequence.
+- Holding the advisory lock and running an import transaction require at least two DB-pool connections; shared
+  environments should keep operational headroom (five or more, with the example default of ten).
+- A guide failure rolls back its guide transaction, retains the previous ACTIVE guide snapshot, and is retried by the
+  next scheduled content refresh.
+- Admin manual patch-note and CDragon imports use the same advisory lock and return CONTENT_REFRESH_ALREADY_RUNNING
+  when another automatic or manual content import owns it.
 - Local/dev should keep scheduler disabled by default. Use manual admin import for local QA.
 </scheduler>
 
@@ -256,7 +265,8 @@ Page: /patch-notes.
 - Crawler DTOs: backend/src/main/java/com/tftgogo/domain/patchnote/dto/crawl/
 - Services: backend/src/main/java/com/tftgogo/domain/patchnote/service/
 - Implementations: backend/src/main/java/com/tftgogo/domain/patchnote/service/impl/
-- Scheduler: backend/src/main/java/com/tftgogo/domain/patchnote/scheduler/PatchNoteImportScheduler.java
+- Scheduler: backend/src/main/java/com/tftgogo/domain/content/scheduler/ContentRefreshScheduler.java
+- Patch task: backend/src/main/java/com/tftgogo/domain/patchnote/scheduler/PatchNoteImportTask.java
 - Config: PatchNoteCrawlerProperties and PatchNoteImportSchedulerProperties.
 - Entities: PatchNote and PatchChange.
 - Repositories: PatchNoteRepository and PatchChangeRepository.
@@ -266,7 +276,8 @@ Page: /patch-notes.
 - Public service tests should cover list response, latest/current behavior, version not found, filter query, stats separation, page slicing, invalid pagination, enum parsing, and LIKE escaping.
 - Admin service tests should cover patch-note CRUD, patch-change CRUD, JSON array validation, duplicate/current behavior, not found errors, patch-note soft delete, patch-change hard delete, and manuallyEdited marking.
 - Import tests should cover latest import by tag page, direct sourceUrl import, repeated import idempotency, manuallyEdited skip, sourceKey matching, stale imported change handling, parser warnings, unsupported host rejection, current flag behavior, and Guide-name-assisted category inference.
-- Scheduler tests should cover disabled state, startup-import flag, list scan limit, already-imported skip, current flag, and in-process lock skip.
+- Scheduler tests should cover disabled state, startup-import flags, exact committed-version handoff, patch-failure guide
+  suppression, list scan limit, already-imported skip, current flag, in-process re-entry, and shared DB-lock contention.
 - Scheduler tests should also cover:
   - startup refresh of the latest patch even when the latest item is already imported.
   - daily latest refresh even when already imported.

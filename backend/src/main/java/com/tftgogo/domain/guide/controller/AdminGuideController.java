@@ -1,5 +1,6 @@
 package com.tftgogo.domain.guide.controller;
 
+import com.tftgogo.domain.content.scheduler.ContentRefreshImportGuard;
 import com.tftgogo.domain.guide.controller.docs.AdminGuideControllerDocs;
 import com.tftgogo.domain.guide.dto.request.GuideCdragonImportRequest;
 import com.tftgogo.domain.guide.dto.response.GuideImportResponse;
@@ -21,11 +22,15 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminGuideController implements AdminGuideControllerDocs {
 
     private final GuideCdragonImportService guideCdragonImportService;
+    private final ContentRefreshImportGuard contentRefreshImportGuard;
 
     @PostMapping("/import/cdragon")
     public ResponseEntity<ApiResponse<GuideImportResponse>> importCdragonGuides(
             @RequestBody @Valid GuideCdragonImportRequest request) {
-        GuideImportResponse response = guideCdragonImportService.importGuides(request);
+        GuideImportResponse response = contentRefreshImportGuard.runWithLock(
+                "manual-guide-cdragon",
+                () -> guideCdragonImportService.importGuides(request)
+        );
         return ResponseEntity.ok(ApiResponse.success("Community Dragon 게임가이드 import 성공", response));
     }
 }
