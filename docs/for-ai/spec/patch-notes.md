@@ -34,6 +34,8 @@ Page: /patch-notes.
   -> hard-delete patch change.
 - POST /api/admin/patch-notes/import/riot
   -> import latest or specified official Riot/TFT patch note.
+- GET /api/admin/content-refresh/health
+  -> inspect persisted patch-note/guide scheduler run state and current published-data health.
 </backend>
 <frontend>
 - frontend/src/api/patchNotes.ts -> public patch-note API functions.
@@ -233,6 +235,21 @@ Page: /patch-notes.
   next scheduled content refresh.
 - Admin manual patch-note and CDragon imports use the same advisory lock and return CONTENT_REFRESH_ALREADY_RUNNING
   when another automatic or manual content import owns it.
+- Automatic patch-note and guide steps persist their last attempt/success/failure timestamps, last successful version
+  and processed count, consecutive failure count, and latest failure classification in content_refresh_job_statuses.
+- Monitoring writes use independent transactions and are best-effort. A monitoring write failure must never stop a
+  committed patch-note refresh from continuing to the guide step.
+- If the latest patch commits but one or more 6-month history backfill items fail, the latest success metadata is kept,
+  the patch job records HISTORY_BACKFILL as a partial failure, and the exact committed version still continues to the
+  guide step. A later fully successful run resets the consecutive failure count.
+- GET /api/admin/content-refresh/health is available to ADMIN_MASTER, ADMIN_EDITOR, and ADMIN_VIEWER. It evaluates the
+  persisted run history together with the current patch change count, ACTIVE guide snapshot, and actual row counts in
+  all four guide tables. It is intentionally
+  separate from /actuator/health so stale content does not remove an otherwise healthy server from the load balancer.
+- Default critical monitoring criteria are: no successful run, success older than 26 hours, three consecutive failures,
+  a run stuck for more than 120 minutes, current patch changes equal to zero, missing/unvalidated/under-minimum ACTIVE
+  guide data, invalid guide source configuration, or patch/guide version mismatch. Thresholds are configurable under
+  app.content-refresh.monitoring.
 - Local/dev should keep scheduler disabled by default. Use manual admin import for local QA.
 </scheduler>
 

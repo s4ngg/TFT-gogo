@@ -1,9 +1,14 @@
 package com.tftgogo.domain.content.scheduler;
 
+import com.tftgogo.domain.content.entity.ContentRefreshFailureType;
+import com.tftgogo.domain.content.entity.ContentRefreshJobType;
+import com.tftgogo.domain.content.service.ContentRefreshMonitoringService;
+import com.tftgogo.domain.guide.dto.response.GuideImportResponse;
 import com.tftgogo.domain.guide.scheduler.GuideCdragonImportTask;
 import com.tftgogo.domain.patchnote.config.PatchNoteImportSchedulerProperties;
 import com.tftgogo.domain.patchnote.dto.response.AdminPatchNoteImportResponse;
 import com.tftgogo.domain.patchnote.scheduler.PatchNoteImportTask;
+import com.tftgogo.domain.patchnote.scheduler.PatchNoteImportTask.PatchNoteRefreshResult;
 import com.tftgogo.global.config.GuideCdragonImportProperties;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
@@ -28,6 +33,7 @@ public class ContentRefreshScheduler {
     private final PatchNoteImportSchedulerProperties patchNoteProperties;
     private final GuideCdragonImportProperties guideProperties;
     private final ContentRefreshSchedulerLock schedulerLock;
+    private final ContentRefreshMonitoringService monitoringService;
     private final AtomicBoolean running = new AtomicBoolean(false);
 
     @EventListener(ApplicationReadyEvent.class)
@@ -97,10 +103,8 @@ public class ContentRefreshScheduler {
     }
 
     private void refreshContentUnderLock(String trigger, boolean backfillHistory, boolean importGuide) {
-        AdminPatchNoteImportResponse patchResponse = backfillHistory
-                ? patchNoteImportTask.importLatestPatchNoteThenUnknownPatchNotesFromList()
-                : patchNoteImportTask.importLatestPatchNote();
-        String committedPatchVersion = requirePatchVersion(patchResponse);
+        AdminPatchNoteImportResponse patchResponse = importPatchNotes(backfillHistory);
+        String committedPatchVersion = patchResponse.getVersion().trim();
         logger.info(
                 "Content refresh patch step committed. trigger={}, patchVersion={}",
                 trigger,
@@ -112,7 +116,99 @@ public class ContentRefreshScheduler {
             return;
         }
 
-        guideCdragonImportTask.importGuides(trigger, committedPatchVersion);
+        importGuides(trigger, committedPatchVersion);
+    }
+
+    private AdminPatchNoteImportResponse importPatchNotes(boolean backfillHistory) {
+        recordAttemptSafely(ContentRefreshJobType.PATCH_NOTE);
+        try {
+            PatchNoteRefreshResult refreshResult = backfillHistory
+                    ? patchNoteImportTask.importLatestPatchNoteThenUnknownPatchNotesFromList()
+                    : null;
+            AdminPatchNoteImportResponse response = backfillHistory
+                    ? refreshResult.latestPatchNote()
+                    : patchNoteImportTask.importLatestPatchNote();
+            String version = requirePatchVersion(response);
+            long processedCount = (long) response.getCreatedChanges()
+                    + response.getUpdatedChanges()
+                    + response.getSkippedChanges();
+            if (refreshResult != null && refreshResult.hasHistoryFailures()) {
+                recordPartialSuccessSafely(
+                        ContentRefreshJobType.PATCH_NOTE,
+                        version,
+                        processedCount,
+                        ContentRefreshFailureType.HISTORY_BACKFILL
+                );
+            } else {
+                recordSuccessSafely(ContentRefreshJobType.PATCH_NOTE, version, processedCount);
+            }
+            return response;
+        } catch (RuntimeException e) {
+            recordFailureSafely(ContentRefreshJobType.PATCH_NOTE, e);
+            throw e;
+        }
+    }
+
+    private void importGuides(String trigger, String committedPatchVersion) {
+        recordAttemptSafely(ContentRefreshJobType.GAME_GUIDE);
+        try {
+            GuideImportResponse response = guideCdragonImportTask.importGuides(trigger, committedPatchVersion);
+            long processedCount = (long) response.getChampionCount()
+                    + response.getTraitCount()
+                    + response.getItemCount()
+                    + response.getAugmentCount();
+            recordSuccessSafely(
+                    ContentRefreshJobType.GAME_GUIDE,
+                    response.getPatchVersion(),
+                    processedCount
+            );
+        } catch (RuntimeException e) {
+            recordFailureSafely(ContentRefreshJobType.GAME_GUIDE, e);
+            throw e;
+        }
+    }
+
+    private void recordAttemptSafely(ContentRefreshJobType jobType) {
+        try {
+            monitoringService.recordAttempt(jobType);
+        } catch (RuntimeException e) {
+            logger.error("Content refresh attempt status recording failed. jobType={}", jobType, e);
+        }
+    }
+
+    private void recordSuccessSafely(ContentRefreshJobType jobType, String version, long processedCount) {
+        try {
+            monitoringService.recordSuccess(jobType, version, processedCount);
+        } catch (RuntimeException e) {
+            logger.error(
+                    "Content refresh success status recording failed. jobType={}, version={}, processedCount={}",
+                    jobType,
+                    version,
+                    processedCount,
+                    e
+            );
+        }
+    }
+
+    private void recordFailureSafely(ContentRefreshJobType jobType, RuntimeException failure) {
+        try {
+            monitoringService.recordFailure(jobType, failure);
+        } catch (RuntimeException recordingFailure) {
+            logger.error("Content refresh failure status recording failed. jobType={}", jobType, recordingFailure);
+        }
+    }
+
+    private void recordPartialSuccessSafely(
+            ContentRefreshJobType jobType,
+            String version,
+            long processedCount,
+            ContentRefreshFailureType failureType
+    ) {
+        try {
+            monitoringService.recordPartialSuccess(jobType, version, processedCount, failureType);
+        } catch (RuntimeException recordingFailure) {
+            logger.error("Content refresh partial success status recording failed. jobType={}", jobType, recordingFailure);
+        }
     }
 
     private String requirePatchVersion(AdminPatchNoteImportResponse patchResponse) {
