@@ -1,5 +1,6 @@
 package com.tftgogo.domain.patchnote.controller;
 
+import com.tftgogo.domain.content.scheduler.ContentRefreshImportGuard;
 import com.tftgogo.domain.patchnote.controller.docs.AdminPatchNoteControllerDocs;
 import com.tftgogo.domain.patchnote.dto.request.AdminPatchChangeRequest;
 import com.tftgogo.domain.patchnote.dto.request.AdminPatchNoteImportRequest;
@@ -31,6 +32,7 @@ import java.util.List;
 public class AdminPatchNoteController implements AdminPatchNoteControllerDocs {
 
     private final AdminPatchNoteService adminPatchNoteService;
+    private final ContentRefreshImportGuard contentRefreshImportGuard;
 
     @Override
     @GetMapping("/patch-notes")
@@ -53,7 +55,10 @@ public class AdminPatchNoteController implements AdminPatchNoteControllerDocs {
     @PostMapping("/patch-notes/import/riot")
     public ResponseEntity<ApiResponse<AdminPatchNoteImportResponse>> importRiotPatchNote(
             @Valid @RequestBody(required = false) AdminPatchNoteImportRequest request) {
-        AdminPatchNoteImportResponse response = adminPatchNoteService.importRiotPatchNote(request);
+        AdminPatchNoteImportResponse response = contentRefreshImportGuard.runWithLock(
+                "manual-patch-note",
+                () -> adminPatchNoteService.importRiotPatchNote(request)
+        );
         return ResponseEntity.ok(ApiResponse.success("Riot patch note import success", response));
     }
 
