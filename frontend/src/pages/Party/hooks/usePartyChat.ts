@@ -111,12 +111,7 @@ export function usePartyChat({ activeRoomId, onActiveRoomChange }: UsePartyChatO
     onActiveRoomChange(PARTY_RECRUITMENT_ROOM_ID)
   }
 
-  const preparePartyRoom = (_post?: unknown, message?: string) => {
-    openPartyRecruitmentRoom()
-    setChatStatusMessage(message ?? '')
-  }
-
-  const appendPartyMessage = (_post?: unknown, message?: string) => {
+  const handlePartyAction = (_post?: unknown, message?: string) => {
     openPartyRecruitmentRoom()
     setChatStatusMessage(message ?? '')
   }
@@ -151,7 +146,7 @@ export function usePartyChat({ activeRoomId, onActiveRoomChange }: UsePartyChatO
     activeMessages,
     activeRoomId,
     activeRoomName,
-    appendPartyMessage,
+    appendPartyMessage: handlePartyAction,
     chatInput,
     chatNotice,
     connectionLabel,
@@ -160,7 +155,7 @@ export function usePartyChat({ activeRoomId, onActiveRoomChange }: UsePartyChatO
     isLoading,
     isMessageDisabled,
     isSendBlockedByAuth: !canSendMessages,
-    preparePartyRoom,
+    preparePartyRoom: handlePartyAction,
     rooms: displayedRooms,
     sendMessage,
     setActiveRoomId: onActiveRoomChange,

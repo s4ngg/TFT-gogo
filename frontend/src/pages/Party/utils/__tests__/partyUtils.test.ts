@@ -8,6 +8,7 @@ import {
   getPartyJoinActionState,
   getPartyListEmptyMessage,
   mergePartyPostSources,
+  updatePostJoinState,
 } from '../partyUtils'
 
 function partyPost(id: string): PartyPost {
@@ -63,6 +64,34 @@ describe('partyUtils', () => {
     })
 
     assert.deepEqual(result.map((post) => post.id), ['dup-party'])
+  })
+
+  it('정원 마감된 모집글은 참여 취소 후 다시 모집 상태가 된다', () => {
+    const result = updatePostJoinState({
+      ...partyPost('full-party'),
+      capacity: '2/2',
+      isClosed: true,
+      isJoined: true,
+      status: '대기중',
+    }, false)
+
+    assert.equal(result.capacity, '1/2')
+    assert.equal(result.isClosed, false)
+    assert.equal(result.status, '모집중')
+  })
+
+  it('정원 외 사유로 마감된 모집글은 참여 취소 후에도 마감 상태를 유지한다', () => {
+    const result = updatePostJoinState({
+      ...partyPost('closed-party'),
+      capacity: '2/3',
+      isClosed: true,
+      isJoined: true,
+      status: '대기중',
+    }, false)
+
+    assert.equal(result.capacity, '1/3')
+    assert.equal(result.isClosed, true)
+    assert.equal(result.status, '대기중')
   })
 
   it('비로그인 사용자는 파티 액션 로그인 필요 안내를 본다', () => {
