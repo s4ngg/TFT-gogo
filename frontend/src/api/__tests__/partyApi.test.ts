@@ -68,6 +68,24 @@ function createFailingPartyAdapter(): AxiosAdapter {
   }
 }
 
+function createRejectingPartyAdapter(payload: unknown, status = 409): AxiosAdapter {
+  return async (config: InternalAxiosRequestConfig): Promise<AxiosResponse> => {
+    requestCalls.push({
+      data: config.data,
+      method: config.method,
+      params: config.params,
+      url: config.url,
+    })
+
+    return Promise.reject({
+      response: {
+        data: payload,
+        status,
+      },
+    })
+  }
+}
+
 afterEach(() => {
   axiosInstance.defaults.adapter = originalAdapter
   requestCalls.length = 0
@@ -139,6 +157,32 @@ describe('partyApi', () => {
 
     assert.equal(response.source, 'api')
     assert.equal(response.data[0]?.close, '1/1 21:00 마감')
+    assert.equal(response.data[0]?.isDeadlineExpired, false)
+  })
+
+  it('getPartyPosts는 지난 마감 시간을 optimistic 상태 계산용으로 보존한다', async () => {
+    axiosInstance.defaults.adapter = createPartyAdapter({
+      data: [
+        {
+          chatRoomId: 'party-recruitment',
+          closed: true,
+          content: '마감 시간 경과 확인',
+          currentMembers: 2,
+          deadline: '2020-01-01T21:00:00',
+          gameMode: 'RANKED_TFT',
+          id: 12,
+          maxMembers: 2,
+          tags: [],
+          title: '마감된 랭크 파티',
+        },
+      ],
+      success: true,
+    })
+
+    const response = await getPartyPosts()
+
+    assert.equal(response.source, 'api')
+    assert.equal(response.data[0]?.isDeadlineExpired, true)
   })
 
   it('getPartyPosts는 티어 조건을 태그에서 파생한다', async () => {
@@ -327,6 +371,45 @@ describe('partyApi', () => {
           title: '마스터 듀오',
         }),
       /파티 모집글 등록 응답이 올바르지 않습니다/,
+    )
+  })
+
+  it('createPartyPost는 활성 파티가 있으면 준비중인 기능 안내를 노출한다', async () => {
+    axiosInstance.defaults.adapter = createRejectingPartyAdapter({
+      message: '이미 참여 중인 파티가 있습니다.',
+      success: false,
+    })
+
+    await assert.rejects(
+      () =>
+        createPartyPost({
+          capacity: '1/2',
+          deadline: '2026-06-16T21:00:00',
+          description: '랭크 듀오 구합니다',
+          mode: '랭크',
+          tags: ['마스터+', '랭크'],
+          title: '마스터 듀오',
+        }),
+      /기존 파티 종료 후 새 모집글을 작성하는 기능은 준비중입니다/,
+    )
+  })
+
+  it('createPartyPost는 일반 실패 응답에는 기본 등록 실패 메시지를 사용한다', async () => {
+    axiosInstance.defaults.adapter = createRejectingPartyAdapter({
+      success: false,
+    }, 500)
+
+    await assert.rejects(
+      () =>
+        createPartyPost({
+          capacity: '1/2',
+          deadline: '2026-06-16T21:00:00',
+          description: '랭크 듀오 구합니다',
+          mode: '랭크',
+          tags: ['마스터+', '랭크'],
+          title: '마스터 듀오',
+        }),
+      /파티 모집글 등록 실패/,
     )
   })
 

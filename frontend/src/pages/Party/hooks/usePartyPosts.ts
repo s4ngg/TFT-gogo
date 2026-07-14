@@ -316,9 +316,9 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
         setDescriptionDraft('')
         setComposeError('')
         setIsComposeOpen(false)
-        setPartyStatusMessage('모집글을 등록했습니다.')
+        setPartyStatusMessage('모집글을 등록했습니다. 파티모집 채팅에서 소환사명과 플레이 시간을 조율해 주세요.')
         setCurrentPage(1)
-        onPartyPostCreated(serverPost)
+        onPartyPostCreated(serverPost, '파티모집 채팅에서 소환사명과 플레이 시간을 조율해 주세요.')
 
         void queryClient.invalidateQueries({ queryKey: COMMUNITY_PARTY_POSTS_QUERY_KEY })
       },
@@ -362,14 +362,14 @@ export function usePartyPosts({ onPartyMessage, onPartyPostCreated }: UsePartyPo
     const previousOverride = postOverrides[postId]
     const { current, total } = parseCapacity(targetPost.capacity)
 
-    if (!alreadyJoined && (joinedLockPostId !== null || current >= total)) {
+    if (!alreadyJoined && (joinedLockPostId !== null || targetPost.isClosed || current >= total)) {
       return
     }
 
     const nextCurrent = alreadyJoined ? Math.max(0, current - 1) : Math.min(total, current + 1)
     const nextMessage = alreadyJoined
       ? `${targetPost.title} 참여 신청을 취소했어요.`
-      : `${targetPost.title} 참여 신청했습니다. (${nextCurrent}/${total})`
+      : `${targetPost.title} 참여 신청했습니다. 파티모집 채팅에서 소환사명과 플레이 시간을 조율해 주세요. (${nextCurrent}/${total})`
     const nextPost = withAuthDisplayState(
       updatePostJoinState(targetPost, !alreadyJoined),
       authUserId,
