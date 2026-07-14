@@ -27,11 +27,9 @@ public class RedisChatRealtimePublisher implements ChatRealtimePublisher {
         try {
             redisTemplate.convertAndSend(CHANNEL, objectMapper.writeValueAsString(new ChatRealtimeEvent(roomId, message)));
         } catch (JsonProcessingException e) {
-            logger.warn("Failed to serialize chat realtime event. roomId={}, cause={}", roomId, e.toString());
-            throw new IllegalStateException("Failed to serialize chat realtime event.", e);
+            logger.warn("Failed to serialize chat realtime event. roomId={}", roomId, e);
         } catch (RuntimeException e) {
-            logger.warn("Failed to publish chat realtime event. roomId={}, cause={}", roomId, e.toString());
-            throw e;
+            logger.warn("Failed to publish chat realtime event. roomId={}", roomId, e);
         }
     }
 }
