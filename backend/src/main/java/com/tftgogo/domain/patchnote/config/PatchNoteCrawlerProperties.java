@@ -1,5 +1,7 @@
 package com.tftgogo.domain.patchnote.config;
 
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
@@ -34,4 +36,8 @@ public class PatchNoteCrawlerProperties {
 
     @Positive
     private int maxDetailRows = 1000;
+
+    @DecimalMin(value = "0.0", inclusive = false)
+    @DecimalMax("1.0")
+    private double minRetainedRowRatio = 0.5;
 }

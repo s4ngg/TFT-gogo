@@ -154,6 +154,11 @@ Page: /patch-notes.
 - Imported patch notes/changes with manuallyEdited=false may be updated by re-import.
 - Imported patch notes/changes with manuallyEdited=true are skipped by re-import.
 - Stale imported changes may be hard-deleted when a re-import updates an existing patch note.
+- Import validation runs before patch metadata, current status, or change rows are mutated.
+- Empty parsed rows and fatal parser warnings such as `max detail rows reached` reject the entire import.
+- Existing imported patch rows are protected by `app.patch-note.crawler.min-retained-row-ratio` (default `0.5`).
+  A re-import below that retained-row ratio fails without changing existing data, while smaller reductions and
+  same-patch hotfix additions continue through the normal upsert/stale-delete flow.
 - Current implementation does not expose dryRun or forceOverwrite. Add those as a separate enhancement if needed.
 - Scheduler-driven latest refresh uses the same import endpoint/service path with sourceUrl=null and version=null.
   It must re-run the latest import even when the latest patch already exists locally so current marking and official
@@ -266,6 +271,7 @@ Page: /patch-notes.
 - Public service tests should cover list response, latest/current behavior, version not found, filter query, stats separation, page slicing, invalid pagination, enum parsing, and LIKE escaping.
 - Admin service tests should cover patch-note CRUD, patch-change CRUD, JSON array validation, duplicate/current behavior, not found errors, patch-note soft delete, patch-change hard delete, and manuallyEdited marking.
 - Import tests should cover latest import by tag page, direct sourceUrl import, repeated import idempotency, manuallyEdited skip, sourceKey matching, stale imported change handling, parser warnings, unsupported host rejection, current flag behavior, and Guide-name-assisted category inference.
+- Import safety tests should cover empty rows, fatal/truncated parser warnings, abnormal row-count drops, and allowed small reductions.
 - Scheduler tests should cover disabled state, startup-import flag, list scan limit, already-imported skip, current flag, and in-process lock skip.
 - Scheduler tests should also cover:
   - startup refresh of the latest patch even when the latest item is already imported.
