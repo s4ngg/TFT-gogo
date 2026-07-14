@@ -62,6 +62,8 @@ docker compose -f docker-compose.yml -f docker-compose.local-smoke.yml up --buil
 
 `17.6 Local Patch`는 fallback smoke 데이터이며, Riot import 패치가 이미 있으면 current 패치를 덮어쓰지 않습니다. 같은 버전의 실제 Riot 패치가 import되면 local smoke 변경사항은 stale imported change로 정리됩니다.
 
+Guide 스모크 데이터는 예약 버전 `0.0-local-smoke`를 사용하므로 callback이 같은 버전의 실제 Riot 가이드 스냅샷을 덮어쓰지 않습니다.
+
 기존 DB를 완전히 초기화하려면 먼저 아래 명령을 실행합니다.
 
 주의: `docker compose down -v`는 Compose named volume을 삭제하므로 로컬 QA DB 데이터가 사라집니다.

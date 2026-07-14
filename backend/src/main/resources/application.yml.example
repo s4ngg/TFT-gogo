@@ -10,6 +10,12 @@ spring:
     enabled: true
     locations: classpath:db/migration
     validate-on-migrate: true
+    # V22 applies the same minimum counts when validating legacy guide snapshots.
+    placeholders:
+      guideMinimumChampionCount: ${APP_GUIDE_CDRAGON_MINIMUM_CHAMPION_COUNT:40}
+      guideMinimumTraitCount: ${APP_GUIDE_CDRAGON_MINIMUM_TRAIT_COUNT:20}
+      guideMinimumItemCount: ${APP_GUIDE_CDRAGON_MINIMUM_ITEM_COUNT:30}
+      guideMinimumAugmentCount: ${APP_GUIDE_CDRAGON_MINIMUM_AUGMENT_COUNT:50}
     # New DB: Flyway applies V1__init_schema.sql onwards automatically.
     # Existing DB: run `flyway baseline -baselineVersion=16` once
     #   (16 = last migration version consolidated into V1).
@@ -95,6 +101,11 @@ app:
       include-traits: true
       include-items: true
       include-augments: true
+      # Reject requested guide types below these candidate counts before any data is stored.
+      minimum-champion-count: ${APP_GUIDE_CDRAGON_MINIMUM_CHAMPION_COUNT:40}
+      minimum-trait-count: ${APP_GUIDE_CDRAGON_MINIMUM_TRAIT_COUNT:20}
+      minimum-item-count: ${APP_GUIDE_CDRAGON_MINIMUM_ITEM_COUNT:30}
+      minimum-augment-count: ${APP_GUIDE_CDRAGON_MINIMUM_AUGMENT_COUNT:50}
       # Run after patch-note list checks so guide data follows newly imported patch notes.
       sync-cron: "0 10 * * * *"
       refresh-cron: "0 40 6 * * *"

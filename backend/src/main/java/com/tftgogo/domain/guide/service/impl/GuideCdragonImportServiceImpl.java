@@ -10,16 +10,20 @@ import com.tftgogo.domain.guide.dto.response.GuideImportResponse;
 import com.tftgogo.domain.guide.entity.GuideAugment;
 import com.tftgogo.domain.guide.entity.GuideChampion;
 import com.tftgogo.domain.guide.entity.GuideItem;
+import com.tftgogo.domain.guide.entity.GuideSnapshot;
+import com.tftgogo.domain.guide.entity.GuideSnapshotStatus;
 import com.tftgogo.domain.guide.entity.GuideTrait;
 import com.tftgogo.domain.guide.entity.GuideType;
 import com.tftgogo.domain.guide.repository.GuideAugmentRepository;
 import com.tftgogo.domain.guide.repository.GuideChampionRepository;
 import com.tftgogo.domain.guide.repository.GuideItemRepository;
+import com.tftgogo.domain.guide.repository.GuideSnapshotRepository;
 import com.tftgogo.domain.guide.repository.GuideTraitRepository;
 import com.tftgogo.domain.guide.service.GuideCdragonImportService;
 import com.tftgogo.domain.patchnote.entity.PatchNote;
 import com.tftgogo.domain.patchnote.repository.PatchNoteRepository;
 import com.tftgogo.global.cdragon.config.CommunityDragonProperties;
+import com.tftgogo.global.config.GuideCdragonImportProperties;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +36,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -50,6 +55,7 @@ import java.util.regex.Pattern;
 public class GuideCdragonImportServiceImpl implements GuideCdragonImportService {
 
     private static final Logger logger = LogManager.getLogger(GuideCdragonImportServiceImpl.class);
+    private static final Pattern PATCH_VERSION_PATTERN = Pattern.compile("^(\\d+)\\.(\\d+)(.*)$");
     private static final Pattern BREAK_TAG_PATTERN = Pattern.compile("(?i)<br\\s*/?>|</p>|</li>|</div>");
     private static final Pattern ROW_TAG_PATTERN = Pattern.compile("(?is)<(row|expandRow)>(.*?)</\\1>");
     private static final Pattern STARGAZER_VARIANT_PATTERN = Pattern.compile("이번 게임:\\s*([^\\s(]+)");
@@ -130,10 +136,12 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
     private final GuideTraitRepository guideTraitRepository;
     private final GuideItemRepository guideItemRepository;
     private final GuideAugmentRepository guideAugmentRepository;
+    private final GuideSnapshotRepository guideSnapshotRepository;
     private final PatchNoteRepository patchNoteRepository;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final CommunityDragonProperties communityDragonProperties;
+    private final GuideCdragonImportProperties guideCdragonImportProperties;
 
     @Override
     @Transactional
@@ -173,9 +181,27 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             candidates.addAll(toAugmentCandidates(readAugments(setData.path("augments"), items), patchVersion));
         }
 
+        GuideImportCounts counts = new GuideImportCounts(
+                countByType(candidates, GuideType.CHAMPION),
+                countByType(candidates, GuideType.TRAIT),
+                countByType(candidates, GuideType.ITEM),
+                countByType(candidates, GuideType.AUGMENT)
+        );
+        validateRequestedImport(request, counts);
+        boolean completeImport = isCompleteImport(request);
+        Optional<GuideSnapshot> targetSnapshot = guideSnapshotRepository.findByPatchVersionForUpdate(patchVersion);
+        if (!completeImport) {
+            validatePartialImportTarget(patchVersion, targetSnapshot);
+        }
+
         ImportCounter counter = new ImportCounter();
         for (GuideCandidate candidate : candidates) {
             counter.add(upsertSplitGuide(candidate));
+        }
+        if (completeImport) {
+            activateCompleteSnapshot(patchVersion, counts, targetSnapshot);
+        } else {
+            stagePartialSnapshot(request, patchVersion, counts, targetSnapshot);
         }
 
         return GuideImportResponse.builder()
@@ -183,11 +209,161 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                 .createdCount(counter.createdCount)
                 .updatedCount(counter.updatedCount)
                 .skippedCount(counter.skippedCount)
-                .championCount(countByType(candidates, GuideType.CHAMPION))
-                .traitCount(countByType(candidates, GuideType.TRAIT))
-                .itemCount(countByType(candidates, GuideType.ITEM))
-                .augmentCount(countByType(candidates, GuideType.AUGMENT))
+                .championCount(counts.championCount())
+                .traitCount(counts.traitCount())
+                .itemCount(counts.itemCount())
+                .augmentCount(counts.augmentCount())
                 .build();
+    }
+
+    private boolean isCompleteImport(GuideCdragonImportRequest request) {
+        return request.shouldIncludeChampions()
+                && request.shouldIncludeTraits()
+                && request.shouldIncludeItems()
+                && request.shouldIncludeAugments();
+    }
+
+    private void validateRequestedImport(GuideCdragonImportRequest request, GuideImportCounts counts) {
+        if ((request.shouldIncludeChampions()
+                && counts.championCount() < minimumRequired(guideCdragonImportProperties.getMinimumChampionCount()))
+                || (request.shouldIncludeTraits()
+                && counts.traitCount() < minimumRequired(guideCdragonImportProperties.getMinimumTraitCount()))
+                || (request.shouldIncludeItems()
+                && counts.itemCount() < minimumRequired(guideCdragonImportProperties.getMinimumItemCount()))
+                || (request.shouldIncludeAugments()
+                && counts.augmentCount() < minimumRequired(guideCdragonImportProperties.getMinimumAugmentCount()))) {
+            logger.warn(
+                    "CDragon guide import rejected before persistence. champions={}, traits={}, items={}, augments={}",
+                    counts.championCount(),
+                    counts.traitCount(),
+                    counts.itemCount(),
+                    counts.augmentCount()
+            );
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+    }
+
+    private int minimumRequired(int configuredMinimum) {
+        return Math.max(1, configuredMinimum);
+    }
+
+    private void validatePartialImportTarget(
+            String patchVersion,
+            Optional<GuideSnapshot> targetSnapshot
+    ) {
+        if (targetSnapshot.isPresent()
+                && targetSnapshot.get().getStatus() != GuideSnapshotStatus.STAGING) {
+            logger.warn(
+                    "Partial CDragon guide import rejected for a public or historical snapshot. patchVersion={}, status={}",
+                    patchVersion,
+                    targetSnapshot.get().getStatus()
+            );
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+    }
+
+    private void activateCompleteSnapshot(
+            String patchVersion,
+            GuideImportCounts counts,
+            Optional<GuideSnapshot> targetSnapshot
+    ) {
+        LocalDateTime validatedAt = LocalDateTime.now();
+        GuideSnapshot snapshot = targetSnapshot
+                .orElseGet(() -> GuideSnapshot.builder()
+                        .patchVersion(patchVersion)
+                        .status(GuideSnapshotStatus.STAGING)
+                        .championCount(counts.championCount())
+                        .traitCount(counts.traitCount())
+                        .itemCount(counts.itemCount())
+                        .augmentCount(counts.augmentCount())
+                        .build());
+        snapshot.updateValidation(
+                counts.championCount(),
+                counts.traitCount(),
+                counts.itemCount(),
+                counts.augmentCount(),
+                validatedAt
+        );
+        List<GuideSnapshot> activeSnapshots = guideSnapshotRepository.findAllByStatus(GuideSnapshotStatus.ACTIVE);
+        boolean targetIsAlreadyActive = activeSnapshots.stream()
+                .anyMatch(activeSnapshot -> activeSnapshot.getPatchVersion().equals(patchVersion));
+        Optional<GuideSnapshot> latestOtherActive = activeSnapshots.stream()
+                .filter(activeSnapshot -> !activeSnapshot.getPatchVersion().equals(patchVersion))
+                .max((left, right) -> comparePatchVersions(left.getPatchVersion(), right.getPatchVersion()));
+
+        if (targetIsAlreadyActive) {
+            guideSnapshotRepository.save(snapshot);
+            return;
+        }
+
+        boolean shouldActivate = latestOtherActive.isEmpty()
+                || comparePatchVersions(patchVersion, latestOtherActive.get().getPatchVersion()) > 0;
+        if (shouldActivate) {
+            activeSnapshots.forEach(GuideSnapshot::deactivate);
+            guideSnapshotRepository.flush();
+            snapshot.activate(validatedAt);
+        } else {
+            snapshot.deactivate();
+        }
+        guideSnapshotRepository.save(snapshot);
+    }
+
+    private void stagePartialSnapshot(
+            GuideCdragonImportRequest request,
+            String patchVersion,
+            GuideImportCounts counts,
+            Optional<GuideSnapshot> targetSnapshot
+    ) {
+        if (targetSnapshot.isPresent()) {
+            GuideSnapshot snapshot = targetSnapshot.get();
+            snapshot.updateCounts(
+                    request.shouldIncludeChampions() ? counts.championCount() : snapshot.getChampionCount(),
+                    request.shouldIncludeTraits() ? counts.traitCount() : snapshot.getTraitCount(),
+                    request.shouldIncludeItems() ? counts.itemCount() : snapshot.getItemCount(),
+                    request.shouldIncludeAugments() ? counts.augmentCount() : snapshot.getAugmentCount()
+            );
+            guideSnapshotRepository.save(snapshot);
+            return;
+        }
+        guideSnapshotRepository.save(GuideSnapshot.builder()
+                .patchVersion(patchVersion)
+                .status(GuideSnapshotStatus.STAGING)
+                .championCount(counts.championCount())
+                .traitCount(counts.traitCount())
+                .itemCount(counts.itemCount())
+                .augmentCount(counts.augmentCount())
+                .build());
+    }
+
+    private int comparePatchVersions(String left, String right) {
+        PatchVersionParts leftParts = parsePatchVersion(left);
+        PatchVersionParts rightParts = parsePatchVersion(right);
+
+        int majorResult = Integer.compare(leftParts.major(), rightParts.major());
+        if (majorResult != 0) {
+            return majorResult;
+        }
+        int minorResult = Integer.compare(leftParts.minor(), rightParts.minor());
+        if (minorResult != 0) {
+            return minorResult;
+        }
+        int suffixResult = leftParts.suffix().compareToIgnoreCase(rightParts.suffix());
+        if (suffixResult != 0) {
+            return suffixResult;
+        }
+        return left.compareTo(right);
+    }
+
+    private PatchVersionParts parsePatchVersion(String patchVersion) {
+        Matcher matcher = PATCH_VERSION_PATTERN.matcher(patchVersion == null ? "" : patchVersion.trim());
+        if (!matcher.matches()) {
+            return new PatchVersionParts(0, 0, patchVersion == null ? "" : patchVersion);
+        }
+        return new PatchVersionParts(
+                Integer.parseInt(matcher.group(1)),
+                Integer.parseInt(matcher.group(2)),
+                matcher.group(3)
+        );
     }
 
     private JsonNode fetchCdragonData() {
@@ -1572,6 +1748,17 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             int setNumber,
             String mutator
     ) {
+    }
+
+    private record GuideImportCounts(
+            int championCount,
+            int traitCount,
+            int itemCount,
+            int augmentCount
+    ) {
+    }
+
+    private record PatchVersionParts(int major, int minor, String suffix) {
     }
 
     private static class ImportCounter {
