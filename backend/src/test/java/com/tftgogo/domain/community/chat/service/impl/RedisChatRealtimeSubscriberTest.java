@@ -7,7 +7,9 @@ import com.tftgogo.domain.community.chat.service.ChatSseHub;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.connection.Message;
 
@@ -30,16 +32,20 @@ class RedisChatRealtimeSubscriberTest {
     @Mock
     private Message redisMessage;
 
-    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+    @Spy
+    private ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+
+    @InjectMocks
+    private RedisChatRealtimeSubscriber subscriber;
 
     @Test
     void Redis_메시지를_수신하면_SSE_hub으로_broadcast한다() throws Exception {
         // given
-        RedisChatRealtimeSubscriber subscriber = new RedisChatRealtimeSubscriber(chatSseHub, objectMapper);
         ChatMessageResponse message = message();
         ChatRealtimeEvent event = new ChatRealtimeEvent("party-recruitment", message);
+        byte[] serializedEvent = objectMapper.writeValueAsString(event).getBytes(StandardCharsets.UTF_8);
 
-        when(redisMessage.getBody()).thenReturn(objectMapper.writeValueAsString(event).getBytes(StandardCharsets.UTF_8));
+        when(redisMessage.getBody()).thenReturn(serializedEvent);
 
         // when
         subscriber.onMessage(redisMessage, null);
@@ -71,8 +77,6 @@ class RedisChatRealtimeSubscriberTest {
     @Test
     void Redis_메시지_역직렬화에_실패하면_broadcast하지_않는다() {
         // given
-        RedisChatRealtimeSubscriber subscriber = new RedisChatRealtimeSubscriber(chatSseHub, objectMapper);
-
         when(redisMessage.getBody()).thenReturn("{bad-json".getBytes(StandardCharsets.UTF_8));
 
         // when
