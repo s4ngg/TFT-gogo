@@ -464,7 +464,7 @@ public class GuideServiceImpl implements GuideService {
                     .filter(this::isPubliclyReadable)
                     .map(GuideSnapshot::getPatchVersion);
         }
-        return guideSnapshotRepository.findFirstByStatus(GuideSnapshotStatus.ACTIVE)
+        return guideSnapshotRepository.findFirstByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE)
                 .filter(this::isPubliclyReadable)
                 .map(GuideSnapshot::getPatchVersion);
     }
