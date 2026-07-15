@@ -3,6 +3,7 @@ package com.tftgogo.domain.deck.service.impl;
 import com.tftgogo.domain.deck.entity.DeckCuration;
 import com.tftgogo.domain.deck.entity.MetaDeck;
 import com.tftgogo.domain.deck.entity.RankFilter;
+import com.tftgogo.domain.deck.repository.ClientVersionPatchMappingRepository;
 import com.tftgogo.domain.deck.repository.DeckCurationRepository;
 import com.tftgogo.domain.deck.repository.MetaDeckRepository;
 import com.tftgogo.domain.deck.dto.response.MetaDeckListResponse;
@@ -43,6 +44,9 @@ class MetaDeckServiceImplTest {
 
     @Mock
     private DeckCurationRepository deckCurationRepository;
+
+    @Mock
+    private ClientVersionPatchMappingRepository clientVersionPatchMappingRepository;
 
     @Mock
     private RiotApiClient riotApiClient;
@@ -264,6 +268,52 @@ class MetaDeckServiceImplTest {
 
         // then
         assertThat(latest).isEmpty();
+    }
+
+    // ── normalizePatchVersion (#726) ─────────────────────────────────────
+
+    @Test
+    void 매핑이_등록된_클라이언트_버전은_매핑된_패치_번호로_치환된다() {
+        // given
+        when(clientVersionPatchMappingRepository.findByClientVersion("16.13"))
+                .thenReturn(Optional.of(
+                        com.tftgogo.domain.deck.entity.ClientVersionPatchMapping.builder()
+                                .clientVersion("16.13")
+                                .patchVersion("17.6")
+                                .build()
+                ));
+
+        // when
+        String patchVersion = org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+                metaDeckService, "normalizePatchVersion", "Version 16.13.702.1234");
+
+        // then
+        assertThat(patchVersion).isEqualTo("17.6");
+    }
+
+    @Test
+    void 매핑이_없는_클라이언트_버전은_UNKNOWN이_아니라_원본값을_유지한다() {
+        // given
+        when(clientVersionPatchMappingRepository.findByClientVersion("16.13"))
+                .thenReturn(Optional.empty());
+
+        // when
+        String patchVersion = org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+                metaDeckService, "normalizePatchVersion", "Version 16.13.702.1234");
+
+        // then
+        assertThat(patchVersion).isEqualTo("16.13");
+    }
+
+    @Test
+    void game_version이_비어있으면_매핑_조회_없이_UNKNOWN을_반환한다() {
+        // when
+        String patchVersion = org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+                metaDeckService, "normalizePatchVersion", (String) null);
+
+        // then
+        assertThat(patchVersion).isEqualTo("UNKNOWN");
+        verify(clientVersionPatchMappingRepository, never()).findByClientVersion(anyString());
     }
 
     // ── 헬퍼 ────────────────────────────────────────────────────────────

@@ -3,6 +3,7 @@ package com.tftgogo.domain.deck.repository;
 import com.tftgogo.domain.deck.entity.MetaDeck;
 import com.tftgogo.domain.deck.entity.RankFilter;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -37,4 +38,11 @@ public interface MetaDeckRepository extends JpaRepository<MetaDeck, Long> {
 
     @Query("SELECT DISTINCT d.patchVersion FROM MetaDeck d WHERE d.rankFilter = :rankFilter")
     List<String> findDistinctPatchVersionsByRankFilter(@Param("rankFilter") RankFilter rankFilter);
+
+    // 클라이언트 버전-패치 번호 매핑 등록/수정 시, 이미 집계된 기존 데이터의 표시용 패치 번호를 소급 반영
+    @Modifying
+    @Query("UPDATE MetaDeck d SET d.patchVersion = :patchVersion WHERE d.patchVersion = :clientVersion")
+    int updatePatchVersionByClientVersion(
+            @Param("clientVersion") String clientVersion,
+            @Param("patchVersion") String patchVersion);
 }

@@ -8,6 +8,7 @@ import com.tftgogo.global.exception.ErrorCode;
 import com.tftgogo.domain.deck.dto.response.MetaDeckListResponse;
 import com.tftgogo.domain.deck.dto.response.MetaDeckResponse;
 import com.tftgogo.domain.deck.entity.ArtifactStat;
+import com.tftgogo.domain.deck.entity.ClientVersionPatchMapping;
 import com.tftgogo.domain.deck.entity.DeckTrait;
 import com.tftgogo.domain.deck.entity.DeckUnit;
 import com.tftgogo.domain.deck.entity.MetaDeck;
@@ -108,6 +109,7 @@ public class MetaDeckServiceImpl implements MetaDeckService {
 
     private final MetaDeckRepository metaDeckRepository;
     private final com.tftgogo.domain.deck.repository.DeckCurationRepository deckCurationRepository;
+    private final com.tftgogo.domain.deck.repository.ClientVersionPatchMappingRepository clientVersionPatchMappingRepository;
     private final RiotApiClient riotApiClient;
     private final PlatformTransactionManager transactionManager;
     private final AsyncAggregationRunner asyncAggregationRunner;
@@ -779,7 +781,15 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         }
 
         Matcher matcher = PATCH_VERSION_PATTERN.matcher(gameVersion);
-        return matcher.find() ? matcher.group(1) : UNKNOWN_PATCH_VERSION;
+        if (!matcher.find()) {
+            return UNKNOWN_PATCH_VERSION;
+        }
+
+        String clientVersion = matcher.group(1);
+        // 매핑이 없는 클라이언트 버전은 원본 값을 그대로 노출 (데이터 누락처럼 보이지 않도록 UNKNOWN으로 치환하지 않음)
+        return clientVersionPatchMappingRepository.findByClientVersion(clientVersion)
+                .map(ClientVersionPatchMapping::getPatchVersion)
+                .orElse(clientVersion);
     }
 
     @Override
