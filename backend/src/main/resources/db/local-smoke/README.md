@@ -62,6 +62,8 @@ docker compose -f docker-compose.yml -f docker-compose.local-smoke.yml up --buil
 
 `17.6 Local Patch`는 fallback smoke 데이터이며, Riot import 패치가 이미 있으면 current 패치를 덮어쓰지 않습니다. 같은 버전의 실제 Riot 패치가 import되면 local smoke 변경사항은 stale imported change로 정리됩니다.
 
+Guide 스모크 데이터는 예약 버전 `0.0-local-smoke`를 사용하므로 callback이 같은 버전의 실제 Riot 가이드 스냅샷을 덮어쓰지 않습니다.
+
 기존 DB를 완전히 초기화하려면 먼저 아래 명령을 실행합니다.
 
 주의: `docker compose down -v`는 Compose named volume을 삭제하므로 로컬 QA DB 데이터가 사라집니다.
@@ -110,7 +112,8 @@ cd backend
 
 - PatchNotes import는 Riot 공식 패치노트 목록에서 최근 6개월 내 미수집 항목을 가져오고, 목록의 최신 항목만 current 패치로 저장합니다.
 - Guide import는 `APP_GUIDE_CDRAGON_PATCH_VERSION=latest` 기준으로 current 패치노트 버전을 사용합니다.
-- CDragon 세트 번호와 mutator를 지정하지 않으면 CDragon 응답에서 가장 최신 TFT 세트를 자동 선택합니다.
+- Guide scheduler는 현재 패치에 허용할 CDragon 세트 번호와 mutator를 명시해야 합니다. 누락하면 기존 ACTIVE
+  스냅샷을 유지하고 import를 실행하지 않습니다.
 
 ```powershell
 $env:APP_PATCH_NOTE_SCHEDULER_ENABLED="true"
@@ -121,6 +124,8 @@ $env:APP_PATCH_NOTE_SCHEDULER_CURRENT="true"
 $env:APP_GUIDE_CDRAGON_ENABLED="true"
 $env:APP_GUIDE_CDRAGON_STARTUP_IMPORT="true"
 $env:APP_GUIDE_CDRAGON_PATCH_VERSION="latest"
+$env:APP_GUIDE_CDRAGON_SET_NUMBER="17"
+$env:APP_GUIDE_CDRAGON_MUTATOR="TFTSet17"
 $env:APP_GUIDE_CDRAGON_INCLUDE_CHAMPIONS="true"
 $env:APP_GUIDE_CDRAGON_INCLUDE_TRAITS="true"
 $env:APP_GUIDE_CDRAGON_INCLUDE_ITEMS="true"
