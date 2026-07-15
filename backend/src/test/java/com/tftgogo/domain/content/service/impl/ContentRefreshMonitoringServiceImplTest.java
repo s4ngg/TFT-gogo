@@ -196,7 +196,7 @@ class ContentRefreshMonitoringServiceImplTest {
         when(patchNoteRepository.findFirstByCurrentTrueAndDeletedAtIsNullOrderByPublishedAtDescIdDesc())
                 .thenReturn(Optional.of(currentPatch));
         when(patchChangeRepository.countByPatchNote(currentPatch)).thenReturn(120L);
-        when(guideSnapshotRepository.findFirstByStatus(GuideSnapshotStatus.ACTIVE))
+        when(guideSnapshotRepository.findFirstByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE))
                 .thenReturn(Optional.empty());
 
         // when
@@ -224,7 +224,7 @@ class ContentRefreshMonitoringServiceImplTest {
         when(patchNoteRepository.findFirstByCurrentTrueAndDeletedAtIsNullOrderByPublishedAtDescIdDesc())
                 .thenReturn(Optional.of(currentPatch));
         when(patchChangeRepository.countByPatchNote(currentPatch)).thenReturn(100L);
-        when(guideSnapshotRepository.findFirstByStatus(GuideSnapshotStatus.ACTIVE))
+        when(guideSnapshotRepository.findFirstByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE))
                 .thenReturn(Optional.of(activeGuide));
         when(guideSnapshotRepository.countGuideDataByPatchVersion("17.5"))
                 .thenReturn(guideDataCounts(40, 20, 30, 50));
@@ -252,7 +252,7 @@ class ContentRefreshMonitoringServiceImplTest {
         when(patchNoteRepository.findFirstByCurrentTrueAndDeletedAtIsNullOrderByPublishedAtDescIdDesc())
                 .thenReturn(Optional.of(currentPatch));
         when(patchChangeRepository.countByPatchNote(currentPatch)).thenReturn(0L);
-        when(guideSnapshotRepository.findFirstByStatus(GuideSnapshotStatus.ACTIVE))
+        when(guideSnapshotRepository.findFirstByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE))
                 .thenReturn(Optional.of(activeGuide));
         when(guideSnapshotRepository.countGuideDataByPatchVersion("17.4"))
                 .thenReturn(guideDataCounts(1, 1, 1, 1));
@@ -279,7 +279,7 @@ class ContentRefreshMonitoringServiceImplTest {
         when(statusRepository.findAll()).thenReturn(List.of());
         when(patchNoteRepository.findFirstByCurrentTrueAndDeletedAtIsNullOrderByPublishedAtDescIdDesc())
                 .thenReturn(Optional.empty());
-        when(guideSnapshotRepository.findFirstByStatus(GuideSnapshotStatus.ACTIVE))
+        when(guideSnapshotRepository.findFirstByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE))
                 .thenReturn(Optional.empty());
 
         // when
@@ -306,7 +306,7 @@ class ContentRefreshMonitoringServiceImplTest {
         when(patchNoteRepository.findFirstByCurrentTrueAndDeletedAtIsNullOrderByPublishedAtDescIdDesc())
                 .thenReturn(Optional.of(currentPatch));
         when(patchChangeRepository.countByPatchNote(currentPatch)).thenReturn(100L);
-        when(guideSnapshotRepository.findFirstByStatus(GuideSnapshotStatus.ACTIVE))
+        when(guideSnapshotRepository.findFirstByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE))
                 .thenReturn(Optional.empty());
 
         // when
@@ -336,7 +336,7 @@ class ContentRefreshMonitoringServiceImplTest {
         when(patchNoteRepository.findFirstByCurrentTrueAndDeletedAtIsNullOrderByPublishedAtDescIdDesc())
                 .thenReturn(Optional.of(currentPatch));
         when(patchChangeRepository.countByPatchNote(currentPatch)).thenReturn(100L);
-        when(guideSnapshotRepository.findFirstByStatus(GuideSnapshotStatus.ACTIVE))
+        when(guideSnapshotRepository.findFirstByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE))
                 .thenReturn(Optional.empty());
 
         // when
