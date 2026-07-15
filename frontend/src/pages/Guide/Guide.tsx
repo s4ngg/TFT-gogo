@@ -13,12 +13,22 @@ import GuideTabPanels from './components/GuideTabPanels'
 import { useGameGuideAiCandidateRefs } from './hooks/useGameGuideAiCandidateRefs'
 import { useGuideHighlight } from './hooks/useGuideHighlight'
 import { useGuidePageState } from './hooks/useGuidePageState'
+import {
+  createGameGuideAiScopeKey,
+  createGameGuideAiWidgetKey,
+  readGameGuideAiScopedValue,
+  type GameGuideAiScopedValue,
+} from './utils/gameGuideAiContext'
 import styles from './Guide.module.css'
 
 function Guide() {
   const [isGameGuideAiOpen, setIsGameGuideAiOpen] = useState(false)
-  const [gameGuideAiSelectedRefs, setGameGuideAiSelectedRefs] = useState<GameGuideAiPathfinderRef[]>([])
-  const [gameGuideAiVisibleItems, setGameGuideAiVisibleItems] = useState<GuideTabItems[GuideTab][number][]>([])
+  const [gameGuideAiSelectedState, setGameGuideAiSelectedState] = useState<
+    GameGuideAiScopedValue<GameGuideAiPathfinderRef[]>
+  >({ scopeKey: '', value: [] })
+  const [gameGuideAiVisibleState, setGameGuideAiVisibleState] = useState<
+    GameGuideAiScopedValue<GuideTabItems[GuideTab][number][]>
+  >({ scopeKey: '', value: [] })
   const {
     dataSource: guideDataSource,
     isFallbackData: isGuideFallbackData,
@@ -40,31 +50,43 @@ function Guide() {
     setSearch,
   } = useGuidePageState()
   const isGameGuideAiAvailable = guideDataSource === 'api'
+  const gameGuideAiScopeKey = createGameGuideAiScopeKey(patchVersion, activeTab)
+  const gameGuideAiSelectedRefs = readGameGuideAiScopedValue(
+    gameGuideAiSelectedState,
+    gameGuideAiScopeKey,
+    [],
+  )
+  const gameGuideAiVisibleItems = readGameGuideAiScopedValue(
+    gameGuideAiVisibleState,
+    gameGuideAiScopeKey,
+    [],
+  )
   const gameGuideAiCandidateRefs = useGameGuideAiCandidateRefs(activeTab, gameGuideAiVisibleItems)
-  const gameGuideAiSelectionKey = gameGuideAiSelectedRefs
-    .map((ref) => `${ref.guideType}:${ref.targetKey}`)
-    .join('|')
+  const gameGuideAiWidgetKey = createGameGuideAiWidgetKey(
+    gameGuideAiScopeKey,
+    gameGuideAiSelectedRefs,
+  )
   const handleGameGuideAiVisibleItemsChange = useCallback((items: GuideTabItems[GuideTab][number][]) => {
-    setGameGuideAiVisibleItems(items)
-  }, [])
+    setGameGuideAiVisibleState({ scopeKey: gameGuideAiScopeKey, value: items })
+  }, [gameGuideAiScopeKey])
   const { handleGuideJump, highlightedGuide } = useGuideHighlight({ onJump: jumpToGuide })
 
   useEffect(() => {
     if (isGameGuideAiAvailable) return
     setIsGameGuideAiOpen(false)
-    setGameGuideAiSelectedRefs([])
-    setGameGuideAiVisibleItems([])
-  }, [isGameGuideAiAvailable])
+    setGameGuideAiSelectedState({ scopeKey: gameGuideAiScopeKey, value: [] })
+    setGameGuideAiVisibleState({ scopeKey: gameGuideAiScopeKey, value: [] })
+  }, [gameGuideAiScopeKey, isGameGuideAiAvailable])
 
   function handleGameGuideAiAsk(ref: GameGuideAiPathfinderRef) {
-    setGameGuideAiSelectedRefs([ref])
+    setGameGuideAiSelectedState({ scopeKey: gameGuideAiScopeKey, value: [ref] })
     setIsGameGuideAiOpen(true)
   }
 
   function handleGameGuideAiOpenChange(nextIsOpen: boolean) {
     setIsGameGuideAiOpen(nextIsOpen)
     if (!nextIsOpen) {
-      setGameGuideAiSelectedRefs([])
+      setGameGuideAiSelectedState({ scopeKey: gameGuideAiScopeKey, value: [] })
     }
   }
 
@@ -124,7 +146,7 @@ function Guide() {
             activeTabLabel={activeTabInfo.label}
             candidateRefs={gameGuideAiCandidateRefs}
             isOpen={isGameGuideAiOpen}
-            key={gameGuideAiSelectionKey}
+            key={gameGuideAiWidgetKey}
             onOpenChange={handleGameGuideAiOpenChange}
             onGuideJump={handleGuideJump}
             patchVersion={patchVersion}
