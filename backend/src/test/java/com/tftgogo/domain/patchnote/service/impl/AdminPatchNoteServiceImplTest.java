@@ -836,27 +836,21 @@ class AdminPatchNoteServiceImplTest {
         // given
         String sourceKey = "deleted-source-key";
         PatchNote patchNote = importedPatchNote(1L, "17.3", true);
-        PatchChange patchChange = importedPatchChange(10L, patchNote, sourceKey);
+        PatchChange patchChange = importedPatchChange(10L, patchNote, sourceKey, 1);
         PatchNoteCrawlFetchedPage detailPage = fetchedPage(patchNote.getSourceUrl());
-        PatchChangeCrawlRow row = crawlRow(sourceKey, "Official hotfix", "10", "15");
-        PatchNoteCrawlDocument document = crawlDocument(
-                detailPage.sourceUrl(),
-                "17.3",
-                patchNote.getSourceKey(),
-                List.of(row)
+        PatchNoteCrawlDocument document = patchNoteCrawlDocument(
+                detailPage,
+                List.of(patchChangeCrawlRow(sourceKey, 1)),
+                List.of()
         );
-        AdminPatchNoteImportRequest request = AdminPatchNoteImportRequest.of(
-                detailPage.sourceUrl(),
-                null,
-                null,
-                false
-        );
+        AdminPatchNoteImportRequest request = patchNoteImportRequest(detailPage.sourceUrl(), false);
 
         when(patchChangeRepository.findById(10L)).thenReturn(Optional.of(patchChange));
         when(crawlerProperties.getDefaultLocale()).thenReturn("ko-kr");
         when(crawlerFetchService.fetch(detailPage.sourceUrl())).thenReturn(detailPage);
         when(crawlerParser.parseDetailPage(detailPage, null, "ko-kr")).thenReturn(document);
         when(patchNoteRepository.findBySourceKey(patchNote.getSourceKey())).thenReturn(Optional.of(patchNote));
+        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote)).thenReturn(List.of());
         when(patchChangeTombstoneRepository.findSourceKeysByPatchNote(patchNote)).thenReturn(Set.of(sourceKey));
 
         // when
@@ -898,21 +892,14 @@ class AdminPatchNoteServiceImplTest {
         );
         existingPatchNote.markManuallyEditedIfImported();
         PatchNote previousCurrent = patchNote(2L, "17.2", true);
-        PatchChange existingChange = importedPatchChange(10L, existingPatchNote, sourceKey);
+        PatchChange existingChange = importedPatchChange(10L, existingPatchNote, sourceKey, 1);
         PatchNoteCrawlFetchedPage detailPage = fetchedPage(existingPatchNote.getSourceUrl());
-        PatchChangeCrawlRow hotfixRow = crawlRow(sourceKey, "Official hotfix", "10", "25");
-        PatchNoteCrawlDocument document = crawlDocument(
-                detailPage.sourceUrl(),
-                "17.3",
-                existingPatchNote.getSourceKey(),
-                List.of(hotfixRow)
+        PatchNoteCrawlDocument document = patchNoteCrawlDocument(
+                detailPage,
+                List.of(patchChangeCrawlRow(sourceKey, 1)),
+                List.of()
         );
-        AdminPatchNoteImportRequest request = AdminPatchNoteImportRequest.of(
-                detailPage.sourceUrl(),
-                null,
-                null,
-                true
-        );
+        AdminPatchNoteImportRequest request = patchNoteImportRequest(detailPage.sourceUrl(), true);
 
         when(crawlerProperties.getDefaultLocale()).thenReturn("ko-kr");
         when(crawlerFetchService.fetch(detailPage.sourceUrl())).thenReturn(detailPage);
@@ -921,11 +908,11 @@ class AdminPatchNoteServiceImplTest {
                 .thenReturn(Optional.of(existingPatchNote));
         when(patchNoteRepository.findByCurrentTrueAndDeletedAtIsNullAndIdNot(existingPatchNote.getId()))
                 .thenReturn(List.of(previousCurrent));
+        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(existingPatchNote))
+                .thenReturn(List.of(existingChange));
         when(patchChangeTombstoneRepository.findSourceKeysByPatchNote(existingPatchNote)).thenReturn(Set.of());
         when(patchChangeRepository.findByPatchNoteAndSourceKey(existingPatchNote, sourceKey))
                 .thenReturn(Optional.of(existingChange));
-        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(existingPatchNote))
-                .thenReturn(List.of(existingChange));
 
         // when
         AdminPatchNoteImportResponse response = adminPatchNoteService.importRiotPatchNote(request);
@@ -939,9 +926,9 @@ class AdminPatchNoteServiceImplTest {
         assertThat(existingPatchNote.getDescription()).isEqualTo("관리자 설명");
         assertThat(existingPatchNote.isCurrent()).isTrue();
         assertThat(previousCurrent.isCurrent()).isFalse();
-        assertThat(existingChange.getSummary()).isEqualTo("Official hotfix");
-        assertThat(existingChange.getBeforeValue()).isEqualTo("10");
-        assertThat(existingChange.getAfterValue()).isEqualTo("25");
+        assertThat(existingChange.getSummary()).isEqualTo("Jinx attack damage changed 1");
+        assertThat(existingChange.getBeforeValue()).isEqualTo("50");
+        assertThat(existingChange.getAfterValue()).isEqualTo("55");
         verify(patchNoteRepository).flush();
     }
 
@@ -950,7 +937,7 @@ class AdminPatchNoteServiceImplTest {
         // given
         String sourceKey = "manual-child-source-key";
         PatchNote existingPatchNote = importedPatchNote(1L, "17.3", true);
-        PatchChange existingChange = importedPatchChange(10L, existingPatchNote, sourceKey);
+        PatchChange existingChange = importedPatchChange(10L, existingPatchNote, sourceKey, 1);
         existingChange.update(
                 existingPatchNote,
                 PatchChangeCategory.CHAMPION,
@@ -967,19 +954,12 @@ class AdminPatchNoteServiceImplTest {
         );
         existingChange.markManuallyEditedIfImported();
         PatchNoteCrawlFetchedPage detailPage = fetchedPage(existingPatchNote.getSourceUrl());
-        PatchChangeCrawlRow hotfixRow = crawlRow(sourceKey, "Official overwrite", "10", "50");
-        PatchNoteCrawlDocument document = crawlDocument(
-                detailPage.sourceUrl(),
-                "17.3",
-                existingPatchNote.getSourceKey(),
-                List.of(hotfixRow)
+        PatchNoteCrawlDocument document = patchNoteCrawlDocument(
+                detailPage,
+                List.of(patchChangeCrawlRow(sourceKey, 1)),
+                List.of()
         );
-        AdminPatchNoteImportRequest request = AdminPatchNoteImportRequest.of(
-                detailPage.sourceUrl(),
-                null,
-                null,
-                false
-        );
+        AdminPatchNoteImportRequest request = patchNoteImportRequest(detailPage.sourceUrl(), false);
 
         when(crawlerProperties.getDefaultLocale()).thenReturn("ko-kr");
         when(crawlerFetchService.fetch(detailPage.sourceUrl())).thenReturn(detailPage);
@@ -1240,10 +1220,6 @@ class AdminPatchNoteServiceImplTest {
         return patchChange;
     }
 
-    private PatchChange importedPatchChange(Long id, PatchNote patchNote, String sourceKey) {
-        return importedPatchChange(id, patchNote, sourceKey, 1);
-    }
-
     private AdminPatchNoteImportRequest patchNoteImportRequest(String sourceUrl, boolean current) {
         AdminPatchNoteImportRequest request = new AdminPatchNoteImportRequest();
         ReflectionTestUtils.setField(request, "sourceUrl", sourceUrl);
@@ -1284,44 +1260,6 @@ class AdminPatchNoteServiceImplTest {
                 "<li>Jinx attack damage changed</li>",
                 "50",
                 "55",
-                List.of()
-        );
-    }
-
-    private PatchChangeCrawlRow crawlRow(String sourceKey, String summary, String beforeValue, String afterValue) {
-        return new PatchChangeCrawlRow(
-                sourceKey + "-candidate",
-                sourceKey,
-                "Champions > Jinx",
-                1,
-                "Champions",
-                "Jinx",
-                summary,
-                "<li>" + summary + "</li>",
-                beforeValue,
-                afterValue,
-                List.of()
-        );
-    }
-
-    private PatchNoteCrawlDocument crawlDocument(
-            String sourceUrl,
-            String version,
-            String contentId,
-            List<PatchChangeCrawlRow> rows
-    ) {
-        return new PatchNoteCrawlDocument(
-                sourceUrl,
-                "ko-kr",
-                contentId,
-                version + " Patch Notes",
-                version,
-                "Official summary",
-                LocalDateTime.of(2026, 6, 1, 9, 0),
-                "https://example.com/official-patch.png",
-                List.of("Riot Games"),
-                List.of("Champions"),
-                rows,
                 List.of()
         );
     }
