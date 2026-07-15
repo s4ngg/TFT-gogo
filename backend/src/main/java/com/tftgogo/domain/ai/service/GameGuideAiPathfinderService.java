@@ -9,10 +9,12 @@ import com.tftgogo.domain.ai.dto.GameGuideAiPathfinderResponse;
 import com.tftgogo.domain.guide.entity.GuideAugment;
 import com.tftgogo.domain.guide.entity.GuideChampion;
 import com.tftgogo.domain.guide.entity.GuideItem;
+import com.tftgogo.domain.guide.entity.GuideSnapshot;
 import com.tftgogo.domain.guide.entity.GuideTrait;
 import com.tftgogo.domain.guide.repository.GuideAugmentRepository;
 import com.tftgogo.domain.guide.repository.GuideChampionRepository;
 import com.tftgogo.domain.guide.repository.GuideItemRepository;
+import com.tftgogo.domain.guide.repository.GuideSnapshotRepository;
 import com.tftgogo.domain.guide.repository.GuideTraitRepository;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
@@ -40,6 +42,7 @@ public class GameGuideAiPathfinderService {
     private final GuideAugmentRepository guideAugmentRepository;
     private final GuideChampionRepository guideChampionRepository;
     private final GuideItemRepository guideItemRepository;
+    private final GuideSnapshotRepository guideSnapshotRepository;
     private final GuideTraitRepository guideTraitRepository;
     private final ObjectMapper objectMapper;
     private final AiChatRateLimiter rateLimiter;
@@ -49,6 +52,7 @@ public class GameGuideAiPathfinderService {
             GuideAugmentRepository guideAugmentRepository,
             GuideChampionRepository guideChampionRepository,
             GuideItemRepository guideItemRepository,
+            GuideSnapshotRepository guideSnapshotRepository,
             GuideTraitRepository guideTraitRepository,
             ObjectMapper objectMapper,
             AiChatRateLimiter rateLimiter
@@ -57,6 +61,7 @@ public class GameGuideAiPathfinderService {
         this.guideAugmentRepository = guideAugmentRepository;
         this.guideChampionRepository = guideChampionRepository;
         this.guideItemRepository = guideItemRepository;
+        this.guideSnapshotRepository = guideSnapshotRepository;
         this.guideTraitRepository = guideTraitRepository;
         this.objectMapper = objectMapper;
         this.rateLimiter = rateLimiter;
@@ -65,6 +70,7 @@ public class GameGuideAiPathfinderService {
     public GameGuideAiPathfinderResponse pathfind(Long userId, GameGuideAiPathfinderRequest request) {
         validate(request);
         enforceRateLimit(userId);
+        validatePublishedPatchVersion(request.getPatchVersion());
         validateGuideRefs(request);
         List<AiServerClient.GameGuideSelectedEntry> selectedEntries = selectedEntries(request);
         List<GameGuideAiPathfinderRequest.GuideRefDto> candidateRefs = effectiveCandidateRefs(request);
@@ -158,6 +164,12 @@ public class GameGuideAiPathfinderService {
         String patchVersion = request.getPatchVersion().trim();
         validateGuideRefs(request.getSelectedRefs(), patchVersion);
         validateGuideRefs(request.getCandidateRefs(), patchVersion);
+    }
+
+    private void validatePublishedPatchVersion(String patchVersion) {
+        guideSnapshotRepository.findByPatchVersion(patchVersion.trim())
+                .filter(GuideSnapshot::isPubliclyReadable)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_INPUT));
     }
 
     private void validateGuideRefs(List<GameGuideAiPathfinderRequest.GuideRefDto> refs, String patchVersion) {

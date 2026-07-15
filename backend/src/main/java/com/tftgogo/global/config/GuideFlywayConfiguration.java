@@ -18,25 +18,21 @@ public class GuideFlywayConfiguration {
             Map<String, String> placeholders = new HashMap<>(configuration.getPlaceholders());
             placeholders.put(
                     "guideMinimumChampionCount",
-                    String.valueOf(minimumRequired(properties.getMinimumChampionCount()))
+                    String.valueOf(properties.getMinimumChampionCount())
             );
             placeholders.put(
                     "guideMinimumTraitCount",
-                    String.valueOf(minimumRequired(properties.getMinimumTraitCount()))
+                    String.valueOf(properties.getMinimumTraitCount())
             );
             placeholders.put(
                     "guideMinimumItemCount",
-                    String.valueOf(minimumRequired(properties.getMinimumItemCount()))
+                    String.valueOf(properties.getMinimumItemCount())
             );
             placeholders.put(
                     "guideMinimumAugmentCount",
-                    String.valueOf(minimumRequired(properties.getMinimumAugmentCount()))
+                    String.valueOf(properties.getMinimumAugmentCount())
             );
             configuration.placeholders(placeholders);
         };
-    }
-
-    private int minimumRequired(int configuredMinimum) {
-        return Math.max(1, configuredMinimum);
     }
 }

@@ -70,7 +70,7 @@ class GuideServiceImplTest {
     @Test
     void champion_tab_uses_split_table_page_and_applies_cost_filter() {
         // given
-        when(guideSnapshotRepository.findFirstByStatus(GuideSnapshotStatus.ACTIVE))
+        when(guideSnapshotRepository.findFirstByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE))
                 .thenReturn(Optional.of(snapshot("17.0", GuideSnapshotStatus.ACTIVE, VALIDATED_AT)));
         when(guideChampionRepository.searchPage(eq("17.0"), isNull(), eq(4), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(
@@ -126,13 +126,13 @@ class GuideServiceImplTest {
 
         // then
         assertThat(response.getItems()).hasSize(1);
-        verify(guideSnapshotRepository, never()).findFirstByStatus(GuideSnapshotStatus.ACTIVE);
+        verify(guideSnapshotRepository, never()).findFirstByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE);
     }
 
     @Test
     void tab_items_return_page_metadata_from_repository_page() {
         // given
-        when(guideSnapshotRepository.findFirstByStatus(GuideSnapshotStatus.ACTIVE))
+        when(guideSnapshotRepository.findFirstByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE))
                 .thenReturn(Optional.of(snapshot("17.0", GuideSnapshotStatus.ACTIVE, VALIDATED_AT)));
         when(guideItemRepository.searchPage(eq("17.0"), eq("sword"), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(
@@ -167,7 +167,7 @@ class GuideServiceImplTest {
     @Test
     void 한_분할_테이블에_더_높은_버전이_있어도_카탈로그는_ACTIVE_스냅샷을_사용한다() {
         // given
-        when(guideSnapshotRepository.findFirstByStatus(GuideSnapshotStatus.ACTIVE))
+        when(guideSnapshotRepository.findFirstByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE))
                 .thenReturn(Optional.of(snapshot("17.0", GuideSnapshotStatus.ACTIVE, VALIDATED_AT)));
         lenient().when(guideTraitRepository.findLatestPatchVersion()).thenReturn(Optional.of("17.1"));
         when(guideTraitRepository.findByPatchVersionOrderByNameAscIdAsc("17.0"))
@@ -190,7 +190,7 @@ class GuideServiceImplTest {
     @Test
     void 현재_패치_버전은_ACTIVE_스냅샷을_사용하고_카탈로그를_읽지_않는다() {
         // given
-        when(guideSnapshotRepository.findFirstByStatus(GuideSnapshotStatus.ACTIVE))
+        when(guideSnapshotRepository.findFirstByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE))
                 .thenReturn(Optional.of(snapshot("17.0", GuideSnapshotStatus.ACTIVE, VALIDATED_AT)));
 
         // when
@@ -205,7 +205,7 @@ class GuideServiceImplTest {
     @Test
     void ACTIVE_스냅샷이_없으면_현재_패치_버전은_빈_문자열이다() {
         // given
-        when(guideSnapshotRepository.findFirstByStatus(GuideSnapshotStatus.ACTIVE))
+        when(guideSnapshotRepository.findFirstByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE))
                 .thenReturn(Optional.empty());
 
         // when
@@ -218,7 +218,7 @@ class GuideServiceImplTest {
     @Test
     void 검증_시각이_없는_ACTIVE_스냅샷은_현재_버전으로_공개하지_않는다() {
         // given
-        when(guideSnapshotRepository.findFirstByStatus(GuideSnapshotStatus.ACTIVE))
+        when(guideSnapshotRepository.findFirstByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE))
                 .thenReturn(Optional.of(snapshot("17.1", GuideSnapshotStatus.ACTIVE, null)));
 
         // when
@@ -231,7 +231,7 @@ class GuideServiceImplTest {
     @Test
     void split_trait_response_skips_entries_without_champions() {
         // given
-        when(guideSnapshotRepository.findFirstByStatus(GuideSnapshotStatus.ACTIVE))
+        when(guideSnapshotRepository.findFirstByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE))
                 .thenReturn(Optional.of(snapshot("17.0", GuideSnapshotStatus.ACTIVE, VALIDATED_AT)));
         when(guideTraitRepository.countStargazerVariantsByPatchVersion("17.0")).thenReturn(0L);
         when(guideTraitRepository.searchPage(eq("17.0"), isNull(), eq(false), any(Pageable.class)))
@@ -265,7 +265,7 @@ class GuideServiceImplTest {
     @Test
     void split_champion_response_skips_entries_without_traits() {
         // given
-        when(guideSnapshotRepository.findFirstByStatus(GuideSnapshotStatus.ACTIVE))
+        when(guideSnapshotRepository.findFirstByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE))
                 .thenReturn(Optional.of(snapshot("17.0", GuideSnapshotStatus.ACTIVE, VALIDATED_AT)));
         when(guideChampionRepository.searchPage(eq("17.0"), isNull(), isNull(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(
@@ -349,7 +349,7 @@ class GuideServiceImplTest {
     @Test
     void ACTIVE_스냅샷이_없으면_카탈로그와_탭은_기존_빈_응답을_유지한다() {
         // given
-        when(guideSnapshotRepository.findFirstByStatus(GuideSnapshotStatus.ACTIVE))
+        when(guideSnapshotRepository.findFirstByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE))
                 .thenReturn(Optional.empty());
 
         // when
