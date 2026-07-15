@@ -72,6 +72,7 @@ function ItemStatsView({
     totalPages: pageData.totalPages,
   })
   const visibleItems = pageData.items
+  const isUnavailableData = itemsQuery.data.source === 'unavailable' && !itemsQuery.isFetching
   const highlightWatchKey = getGuideHighlightWatchKey(visibleItems)
 
   useGuideHighlightScroll(itemListRef, 'items', highlightedGuide, highlightWatchKey)
@@ -83,12 +84,14 @@ function ItemStatsView({
   return (
     <>
       <GuideStatusBanner
-        isFallbackData={isGuideFallbackData || (itemsQuery.data.source === 'fallback' && !itemsQuery.isFetching)}
+        isFallbackData={!isUnavailableData && (isGuideFallbackData || (itemsQuery.data.source === 'fallback' && !itemsQuery.isFetching))}
         isFetching={isGuideFetching || itemsQuery.isFetching}
+        isUnavailableData={isUnavailableData}
         onRetry={() => {
           onGuideRetry()
           void itemsQuery.refetch()
         }}
+        patchVersion={itemsQuery.data.patchVersion || patchVersion}
       />
       <section className={styles.itemGuideList} aria-label="아이템 목록" ref={itemListRef}>
         {visibleItems.map((itemStat) => {

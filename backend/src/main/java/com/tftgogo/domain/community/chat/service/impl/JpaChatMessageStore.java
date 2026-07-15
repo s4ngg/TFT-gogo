@@ -19,7 +19,7 @@ import java.util.Collections;
 import java.util.List;
 
 @Service
-@Profile("!local & !dev")
+@Profile("!local")
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class JpaChatMessageStore implements ChatMessageStore {

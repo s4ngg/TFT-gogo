@@ -52,12 +52,14 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
 
     private static final Logger logger = LogManager.getLogger(AdminPatchNoteServiceImpl.class);
+    private static final Set<String> FATAL_PARSER_WARNINGS = Set.of("max detail rows reached");
 
     private final PatchNoteRepository patchNoteRepository;
     private final PatchChangeRepository patchChangeRepository;
@@ -115,12 +117,18 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
         String explicitVersion = normalizeText(importRequest.getVersion());
         PatchNoteCrawlFetchedPage detailPage = fetchImportDetailPage(importRequest, locale);
         PatchNoteCrawlDocument document = crawlerParser.parseDetailPage(detailPage, explicitVersion, locale);
+        Set<String> incomingSourceKeys = validateImportDocument(document);
         String version = requireText(document.version(), ErrorCode.PATCH_NOTE_INVALID_DATA);
         String sourceUrl = requireText(document.sourceUrl(), ErrorCode.PATCH_NOTE_INVALID_DATA);
         String sourceKey = resolvePatchNoteSourceKey(document);
-        LocalDateTime importedAt = LocalDateTime.now();
 
         Optional<PatchNote> existingPatchNote = findImportTarget(sourceKey, sourceUrl, version);
+        List<PatchChange> existingPatchChanges = existingPatchNote
+                .map(patchChangeRepository::findByPatchNoteOrderBySortOrderAscIdAsc)
+                .orElseGet(List::of);
+        validateRetainedRowRatio(version, incomingSourceKeys, existingPatchChanges);
+
+        LocalDateTime importedAt = LocalDateTime.now();
         PatchNote patchNote;
         boolean patchNoteCreated = false;
         boolean patchNoteUpdated = false;
@@ -178,7 +186,13 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
 
         ImportChangeStats changeStats = patchNoteSkipped
                 ? ImportChangeStats.skipped(document.rows().size())
-                : importChanges(patchNote, document.rows(), importedAt, !patchNoteCreated);
+                : importChanges(
+                        patchNote,
+                        document.rows(),
+                        importedAt,
+                        existingPatchChanges,
+                        !patchNoteCreated
+                );
 
         return AdminPatchNoteImportResponse.of(
                 patchNote.getId(),
@@ -318,10 +332,86 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
         return patchNoteRepository.findByVersion(version);
     }
 
+    private Set<String> validateImportDocument(PatchNoteCrawlDocument document) {
+        if (document == null || document.rows() == null || document.rows().isEmpty()) {
+            logger.warn("Patch note import rejected because parsed rows are empty");
+            throw new BusinessException(ErrorCode.PATCH_NOTE_INVALID_DATA);
+        }
+
+        List<String> parserWarnings = document.parserWarnings() == null
+                ? List.of()
+                : document.parserWarnings();
+        Optional<String> fatalWarning = parserWarnings.stream()
+                .filter(this::hasText)
+                .map(warning -> warning.trim().toLowerCase(Locale.ROOT))
+                .filter(FATAL_PARSER_WARNINGS::contains)
+                .findFirst();
+        if (fatalWarning.isPresent()) {
+            logger.warn(
+                    "Patch note import rejected because parser result is incomplete. warning={}, sourceUrl={}",
+                    fatalWarning.get(),
+                    document.sourceUrl()
+            );
+            throw new BusinessException(ErrorCode.PATCH_NOTE_INVALID_DATA);
+        }
+
+        Set<String> sourceKeys = new HashSet<>();
+        for (PatchChangeCrawlRow row : document.rows()) {
+            if (row == null) {
+                throw new BusinessException(ErrorCode.PATCH_NOTE_INVALID_DATA);
+            }
+            requireText(row.rowText(), ErrorCode.PATCH_NOTE_INVALID_DATA);
+            if (!sourceKeys.add(resolveChangeSourceKey(row))) {
+                logger.warn("Patch note import rejected because a duplicate source key was parsed");
+                throw new BusinessException(ErrorCode.PATCH_NOTE_INVALID_DATA);
+            }
+        }
+        return sourceKeys;
+    }
+
+    private void validateRetainedRowRatio(
+            String version,
+            Set<String> incomingSourceKeys,
+            List<PatchChange> existingPatchChanges
+    ) {
+        Set<String> existingImportedSourceKeys = existingPatchChanges.stream()
+                .filter(patchChange -> patchChange.getImportedAt() != null)
+                .filter(patchChange -> !patchChange.isManuallyEdited())
+                .map(PatchChange::getSourceKey)
+                .filter(this::hasText)
+                .collect(Collectors.toSet());
+        if (existingImportedSourceKeys.isEmpty()) {
+            return;
+        }
+
+        long retainedSourceKeyCount = existingImportedSourceKeys.stream()
+                .filter(incomingSourceKeys::contains)
+                .count();
+        double retainedRowRatio = retainedSourceKeyCount / (double) existingImportedSourceKeys.size();
+        double minimumRetainedRowRatio = crawlerProperties.getMinRetainedRowRatio();
+        if (retainedRowRatio >= minimumRetainedRowRatio) {
+            return;
+        }
+
+        logger.warn(
+                "Patch note import rejected because imported source key retention dropped abnormally. "
+                        + "version={}, existingRows={}, incomingRows={}, retainedRows={}, "
+                        + "retainedRatio={}, minimumRatio={}",
+                version,
+                existingImportedSourceKeys.size(),
+                incomingSourceKeys.size(),
+                retainedSourceKeyCount,
+                retainedRowRatio,
+                minimumRetainedRowRatio
+        );
+        throw new BusinessException(ErrorCode.PATCH_NOTE_INVALID_DATA);
+    }
+
     private ImportChangeStats importChanges(
             PatchNote patchNote,
             List<PatchChangeCrawlRow> rows,
             LocalDateTime importedAt,
+            List<PatchChange> existingPatchChanges,
             boolean deleteStaleChanges
     ) {
         int created = 0;
@@ -391,14 +481,17 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
         }
 
         if (deleteStaleChanges) {
-            deleteStaleImportedChanges(patchNote, importedSourceKeys);
+            deleteStaleImportedChanges(existingPatchChanges, importedSourceKeys);
         }
 
         return new ImportChangeStats(created, updated, skipped);
     }
 
-    private void deleteStaleImportedChanges(PatchNote patchNote, Set<String> importedSourceKeys) {
-        List<PatchChange> staleChanges = patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote).stream()
+    private void deleteStaleImportedChanges(
+            List<PatchChange> existingPatchChanges,
+            Set<String> importedSourceKeys
+    ) {
+        List<PatchChange> staleChanges = existingPatchChanges.stream()
                 .filter(patchChange -> patchChange.getImportedAt() != null)
                 .filter(patchChange -> !patchChange.isManuallyEdited())
                 .filter(patchChange -> !hasText(patchChange.getSourceKey())

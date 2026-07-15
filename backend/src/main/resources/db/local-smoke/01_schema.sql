@@ -445,7 +445,7 @@ CREATE TABLE IF NOT EXISTS party_post_tags (
         FOREIGN KEY (party_post_id) REFERENCES party_posts (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Runtime chat room metadata. Local/dev may still use InMemoryChatServiceImpl,
+-- Runtime chat room metadata. The local profile may still use InMemoryChatServiceImpl,
 -- but non-local profiles persist recent chat messages through these tables.
 CREATE TABLE IF NOT EXISTS chat_rooms (
     id BIGINT NOT NULL AUTO_INCREMENT,

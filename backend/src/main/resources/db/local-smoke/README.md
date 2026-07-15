@@ -154,4 +154,4 @@ curl.exe "http://localhost:8081/api/patch-notes/$patchVersion/changes?category=C
 - Guide와 PatchNotes 공개 API가 frontend fallback data 없이 최신 import 데이터를 반환합니다.
 - Auth signup/login/me, Party create/join/cancel이 임시 테이블 생성 없이 동작합니다.
 - Chat GET messages/SSE는 공개 접근, POST message는 로그인 토큰으로 동작합니다.
-- Chat DB 테이블은 ELD 예약 테이블이며 현재 MVP 런타임은 in-memory chat을 사용합니다.
+- Chat DB 테이블은 비로컬 런타임에서 사용하는 영속 채팅 테이블이며, local 프로필만 in-memory chat을 사용합니다.

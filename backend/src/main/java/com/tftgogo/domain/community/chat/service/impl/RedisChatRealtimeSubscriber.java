@@ -15,7 +15,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 @Component
-@Profile("!local & !dev")
+@Profile("!local")
 @RequiredArgsConstructor
 public class RedisChatRealtimeSubscriber implements MessageListener {
 

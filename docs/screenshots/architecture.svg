@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 640" font-family="'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="arrowDashed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1100" height="640" fill="#ffffff"/>
+  <text x="550" y="34" text-anchor="middle" font-size="22" font-weight="700" fill="#0f172a">TFT-gogo 시스템 아키텍처</text>
+
+  <!-- Client -->
+  <rect x="420" y="60" width="260" height="54" rx="10" fill="#1e293b"/>
+  <text x="550" y="93" text-anchor="middle" font-size="15" fill="#ffffff" font-weight="600">사용자 (Browser)</text>
+
+  <!-- Frontend -->
+  <rect x="400" y="160" width="300" height="60" rx="10" fill="#3b82f6"/>
+  <text x="550" y="185" text-anchor="middle" font-size="14" fill="#ffffff" font-weight="700">Frontend</text>
+  <text x="550" y="204" text-anchor="middle" font-size="12" fill="#e0ecff">React 18 (Vite) · Nginx : 3000→80</text>
+
+  <!-- Backend (hub) -->
+  <rect x="390" y="290" width="320" height="70" rx="10" fill="#16a34a"/>
+  <text x="550" y="317" text-anchor="middle" font-size="14" fill="#ffffff" font-weight="700">Backend</text>
+  <text x="550" y="336" text-anchor="middle" font-size="12" fill="#dcfce7">Spring Boot 3 (REST API) · :8080</text>
+
+  <!-- Riot API (external, left of backend) -->
+  <rect x="40" y="295" width="200" height="60" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5,4"/>
+  <text x="140" y="320" text-anchor="middle" font-size="13" fill="#334155" font-weight="700">Riot Games API</text>
+  <text x="140" y="338" text-anchor="middle" font-size="11" fill="#64748b">외부 · Rate Limiter 적용</text>
+
+  <!-- MySQL -->
+  <rect x="80" y="440" width="150" height="56" rx="10" fill="#f97316"/>
+  <text x="155" y="463" text-anchor="middle" font-size="13" fill="#ffffff" font-weight="700">MySQL 8</text>
+  <text x="155" y="480" text-anchor="middle" font-size="11" fill="#ffedd5">전적 · 회원 · 덱</text>
+
+  <!-- Redis -->
+  <rect x="260" y="440" width="150" height="56" rx="10" fill="#f97316"/>
+  <text x="335" y="463" text-anchor="middle" font-size="13" fill="#ffffff" font-weight="700">Redis</text>
+  <text x="335" y="480" text-anchor="middle" font-size="11" fill="#ffedd5">캐시 · Rate Limit</text>
+
+  <!-- AI Server -->
+  <rect x="770" y="290" width="260" height="70" rx="10" fill="#8b5cf6"/>
+  <text x="900" y="317" text-anchor="middle" font-size="14" fill="#ffffff" font-weight="700">AI Server</text>
+  <text x="900" y="336" text-anchor="middle" font-size="12" fill="#ede9fe">FastAPI · :8000 (내부 시크릿 인증)</text>
+
+  <!-- PostgreSQL -->
+  <rect x="800" y="440" width="200" height="56" rx="10" fill="#f97316"/>
+  <text x="900" y="463" text-anchor="middle" font-size="13" fill="#ffffff" font-weight="700">PostgreSQL + pgvector</text>
+  <text x="900" y="480" text-anchor="middle" font-size="11" fill="#ffedd5">임베딩 · 메타 덱 벡터</text>
+
+  <!-- OpenAI API (external) -->
+  <rect x="860" y="560" width="200" height="56" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5,4"/>
+  <text x="960" y="583" text-anchor="middle" font-size="13" fill="#334155" font-weight="700">OpenAI API</text>
+  <text x="960" y="601" text-anchor="middle" font-size="11" fill="#64748b">외부 · 덱 추천 · 채팅</text>
+
+  <!-- Arrows -->
+  <line x1="550" y1="114" x2="550" y2="158" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="550" y1="220" x2="550" y2="288" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <line x1="390" y1="320" x2="242" y2="320" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5,4" marker-end="url(#arrowDashed)"/>
+
+  <line x1="480" y1="360" x2="200" y2="438" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="520" y1="360" x2="340" y2="438" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <line x1="710" y1="320" x2="768" y2="320" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="900" y1="360" x2="900" y2="438" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="930" y1="496" x2="955" y2="558" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5,4" marker-end="url(#arrowDashed)"/>
+
+  <!-- Legend -->
+  <rect x="40" y="580" width="16" height="16" rx="3" fill="#3b82f6"/>
+  <text x="62" y="593" font-size="12" fill="#334155">Frontend</text>
+  <rect x="150" y="580" width="16" height="16" rx="3" fill="#16a34a"/>
+  <text x="172" y="593" font-size="12" fill="#334155">Backend</text>
+  <rect x="250" y="580" width="16" height="16" rx="3" fill="#8b5cf6"/>
+  <text x="272" y="593" font-size="12" fill="#334155">AI Server</text>
+  <rect x="360" y="580" width="16" height="16" rx="3" fill="#f97316"/>
+  <text x="382" y="593" font-size="12" fill="#334155">데이터 저장소</text>
+  <rect x="480" y="580" width="16" height="16" rx="3" fill="#f8fafc" stroke="#94a3b8" stroke-dasharray="3,3"/>
+  <text x="502" y="593" font-size="12" fill="#334155">외부 API (점선)</text>
+
+  <text x="40" y="625" font-size="11" fill="#94a3b8">배포: GitHub Actions → Docker Build → AWS EC2 (Docker Compose + Nginx 리버스 프록시)</text>
+</svg>

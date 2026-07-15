@@ -12,7 +12,7 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @Configuration
-@Profile("!local & !dev")
+@Profile("!local")
 @RequiredArgsConstructor
 public class ChatRedisConfig {
 

@@ -5,6 +5,8 @@
   --right-top-row: 360px;
   --right-bottom-row: 120px;
 
+  --search-btn-bg: linear-gradient(135deg, #c55a00, #ff8c42);
+
   width: 100%;
   max-width: var(--page-dashboard-width);
   display: grid;
@@ -54,7 +56,7 @@
 .sideHeading h2,
 .aiPanel h2 {
   margin: 0;
-  color: #ffffff;
+  color: var(--text-main);
   font-weight: 600;
   letter-spacing: -0.024em;
   line-height: 1.15;
@@ -71,7 +73,7 @@
 .apiText p,
 .aiPanel p {
   margin: 9px 0 0;
-  color: #b5bdc5;
+  color: var(--text-secondary);
   font-size: 13px;
   font-weight: 400;
   letter-spacing: -0.01em;
@@ -95,8 +97,8 @@
   margin-top: 13px;
   border: 1px solid rgba(114, 150, 160, 0.38);
   border-radius: var(--radius-button);
-  color: #ffffff;
-  background: rgba(7, 18, 25, 0.95);
+  color: var(--text-onlight-main);
+  background: var(--bg-onlight);
   font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
@@ -135,23 +137,23 @@
   padding: 0 16px;
   border: 0;
   outline: 0;
-  color: #ffffff;
+  color: var(--text-main);
   background: transparent;
   font-size: 14px;
   font-weight: 500;
 }
 
 .searchBox input::placeholder {
-  color: #c2c9cf;
+  color: var(--text-secondary);
 }
 
 .searchBox button {
   display: grid;
   place-items: center;
   border: 0;
-  border-left: 1px solid rgba(0, 244, 235, 0.55);
-  color: #ffffff;
-  background: linear-gradient(135deg, #075c62, #0b9898);
+  border-left: 1px solid rgba(0, 0, 0, 0.4);
+  color: var(--text-main);
+  background: var(--search-btn-bg);
   cursor: pointer;
 }
 
@@ -166,7 +168,7 @@
 
 .searchTags span {
   flex: 0 0 auto;
-  color: #b5bdc5;
+  color: var(--text-secondary);
   font-size: 13px;
   font-weight: 500;
 }
@@ -177,8 +179,8 @@
   padding: 0 11px;
   border: 1px solid rgba(116, 148, 156, 0.31);
   border-radius: var(--radius-button);
-  color: #c1c8cf;
-  background: rgba(10, 23, 31, 0.82);
+  color: var(--text-onlight-main);
+  background: var(--bg-onlight);
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
@@ -201,8 +203,8 @@
 
 .searchResultSuccess {
   grid-template-columns: 52px minmax(0, 1fr) auto;
-  border-color: var(--cyan-border-subtle);
-  background: var(--cyan-bg-faint);
+  border-color: var(--accent-border-subtle);
+  background: var(--accent-bg-faint);
 }
 
 .searchResultAvatar {
@@ -301,10 +303,10 @@
   height: 38px;
   display: grid;
   place-items: center;
-  border: 1px solid var(--cyan-border-subtle);
+  border: 1px solid var(--accent-border-subtle);
   border-radius: var(--radius-button);
-  color: var(--color-cyan);
-  background: var(--cyan-bg-faint);
+  color: var(--accent);
+  background: var(--accent-bg-faint);
 }
 
 .searchResultError .searchResultStateIcon {
@@ -356,7 +358,7 @@
   width: 13px;
   height: 13px;
   border-radius: 999px;
-  background: #76ef33;
+  background: var(--color-win);
   box-shadow: 0 0 12px #4ddc1e;
 }
 
@@ -380,7 +382,7 @@
 }
 
 .apiStats strong {
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 18px;
   font-weight: 600;
   line-height: 1;
@@ -413,7 +415,7 @@
   flex-direction: column;
   overflow: hidden;
   padding: 16px 18px 14px;
-  --deck-row-columns: 32px minmax(148px, 170px) minmax(288px, 1fr) 56px 56px 22px;
+  --deck-row-columns: 32px minmax(148px, 170px) minmax(288px, 1fr) 58px 58px 28px;
   --deck-row-gap: 8px;
   --deck-row-padding-left: 9px;
   --deck-row-padding-right: 11px;
@@ -443,7 +445,7 @@
   align-items: center;
   gap: 6px;
   margin-left: 10px;
-  color: #aab2ba;
+  color: var(--text-secondary);
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
@@ -455,7 +457,7 @@
   align-items: center;
   gap: 2px;
   border: 0;
-  color: #06e9db;
+  color: var(--accent);
   background: transparent;
   font-size: 13px;
   font-weight: 600;
@@ -469,7 +471,7 @@
 }
 
 .sideHeading button {
-  color: #a8b1b9;
+  color: var(--text-muted);
 }
 
 .metaFilters {
@@ -486,15 +488,15 @@
   height: 29px;
   border: 1px solid rgba(110, 142, 150, 0.28);
   border-radius: 5px;
-  color: #b7bec7;
-  background: rgba(8, 20, 27, 0.84);
+  color: var(--text-onlight-main);
+  background: var(--bg-onlight);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
 }
 
 .metaFilters span {
-  color: #a8b1b9;
+  color: var(--text-secondary);
   font-size: 12px;
   font-weight: 500;
   text-align: center;
@@ -508,21 +510,21 @@
   height: auto;
   padding: 0;
   border: 0;
-  color: #a8b1b9;
+  color: var(--text-secondary);
   background: transparent;
   box-shadow: none;
   text-align: center;
 }
 
 .selectedSort {
-  color: #04f3e5 !important;
+  color: var(--accent) !important;
 }
 
 .selectedFilter {
-  color: #04f3e5 !important;
-  border-color: #05ddd5 !important;
-  background: rgba(5, 102, 104, 0.56) !important;
-  box-shadow: inset 0 0 17px rgba(0, 246, 232, 0.13);
+  color: var(--accent) !important;
+  border-color: var(--accent) !important;
+  background: var(--selected-filter-bg-onlight) !important;
+  box-shadow: inset 0 0 17px var(--accent-bg-faint);
 }
 
 .deckListHeader {
@@ -548,7 +550,7 @@
   display: grid;
   grid-template-rows: repeat(8, minmax(0, 1fr));
   overflow: hidden;
-  border: 1px solid rgba(112, 144, 152, 0.18);
+  border: 1px solid var(--divider-sun);
   border-radius: 8px;
 }
 
@@ -574,7 +576,7 @@
 .deckInfo h3 {
   margin: 0 0 10px;
   overflow: hidden;
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.015em;
@@ -600,8 +602,7 @@
 }
 
 .winRate,
-.top4,
-.avgPlace {
+.metricCell b {
   text-align: center;
   font-size: 15px;
   font-weight: 600;
@@ -611,17 +612,36 @@
   color: #04ede0;
 }
 
-.top4 {
-  color: #f3f5f7;
+.metricCell {
+  min-width: 0;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
 }
 
-.avgPlace {
-  color: #d4dbe2;
+.metricCell span {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.metricCell b {
+  color: var(--text-main);
+  line-height: 1;
 }
 
 .rowArrow {
-  color: #d8dde2;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  color: var(--text-ui);
+  background: var(--bg-btn-dark-soft);
   justify-self: end;
+  cursor: pointer;
 }
 
 .rightColumn {
@@ -661,7 +681,7 @@
   grid-auto-rows: minmax(0, 1fr);
   overflow-x: hidden;
   overflow-y: auto;
-  border: 1px solid rgba(117, 149, 157, 0.16);
+  border: 1px solid var(--divider-sun);
   border-radius: 7px;
 }
 
@@ -688,7 +708,7 @@
   align-items: center;
   gap: 9px;
   padding: 6px 9px 6px 7px;
-  border-bottom: 1px solid rgba(112, 145, 153, 0.12);
+  border-bottom: 1px solid var(--divider-sun);
 }
 
 .partyRow:last-child {
@@ -753,7 +773,7 @@
 .partyRow h3 {
   margin: 0 0 4px;
   overflow: hidden;
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.015em;
@@ -767,7 +787,7 @@
   align-items: center;
   gap: 5px;
   margin: 0;
-  color: #b9c1c9;
+  color: var(--text-secondary);
   font-size: 11px;
   font-weight: 500;
 }
@@ -808,7 +828,7 @@
   overflow-x: hidden;
   overflow-y: auto;
   margin-top: 10px;
-  border-top: 1px solid rgba(114, 145, 153, 0.1);
+  border-top: 1px solid var(--divider-sun);
 }
 
 .chatRow {
@@ -818,9 +838,9 @@
   grid-template-columns: 22px 84px 58px minmax(0, 1fr) 42px;
   align-items: center;
   gap: 5px;
-  border-bottom: 1px solid rgba(114, 145, 153, 0.1);
+  border-bottom: 1px solid var(--divider-sun);
   background: transparent;
-  color: #aeb7c0;
+  color: var(--text-secondary);
   text-align: left;
   text-decoration: none;
   font-size: 11px;
@@ -849,7 +869,7 @@
 }
 
 .chatRow b {
-  color: #f4f7f9;
+  color: var(--text-main);
   font-size: 12px;
   font-weight: 600;
   overflow: hidden;
@@ -861,7 +881,7 @@
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  color: #c4cbd2;
+  color: var(--text-secondary);
 }
 
 .chatRow p {
@@ -873,7 +893,7 @@
 
 .chatRow time {
   text-align: right;
-  color: #8f9aa3;
+  color: var(--text-muted);
 }
 
 .chatButton {
@@ -885,10 +905,10 @@
   justify-content: center;
   gap: 8px;
   margin-top: 7px;
-  border: 1px solid #06d9d1;
+  border: 1px solid var(--accent);
   border-radius: 5px;
-  color: #05f0e3;
-  background: rgba(2, 54, 59, 0.7);
+  color: var(--text-onlight-main);
+  background: var(--bg-onlight);
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
@@ -901,7 +921,7 @@
   place-items: center;
   margin: 0;
   padding: 20px;
-  color: #9ea8b2;
+  color: var(--text-muted);
   font-size: 13px;
   font-weight: 500;
   text-align: center;
@@ -923,7 +943,7 @@
 }
 
 .aiPanel h2 span {
-  color: #03f3e7;
+  color: var(--accent);
 }
 
 .aiPanel p {
@@ -976,16 +996,17 @@
 }
 
 .aiPanel > button {
+  /* 버튼은 흰 배경 + 검정 텍스트로 통일 */
   grid-column: 2;
   grid-row: 1 / 3;
   display: grid;
   place-items: center;
   align-content: center;
   gap: 5px;
-  border: 1px solid #03e1d7;
+  border: 1px solid var(--border-card-highlight);
   border-radius: 7px;
-  color: #ffffff;
-  background: linear-gradient(180deg, rgba(16, 175, 173, 0.94), rgba(5, 78, 86, 0.95));
+  color: var(--text-onlight-main);
+  background: var(--bg-onlight);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -1088,7 +1109,7 @@ button:hover {
 
   .metaPanel {
     padding: 14px 16px 12px;
-    --deck-row-columns: 30px minmax(136px, 154px) minmax(260px, 1fr) 52px 52px 20px;
+    --deck-row-columns: 30px minmax(136px, 154px) minmax(260px, 1fr) 54px 54px 26px;
     --deck-row-padding-left: 8px;
     --deck-row-padding-right: 10px;
   }
@@ -1122,9 +1143,12 @@ button:hover {
   }
 
   .winRate,
-  .top4,
-  .avgPlace {
+  .metricCell b {
     font-size: 14px;
+  }
+
+  .metricCell span {
+    font-size: 9px;
   }
 
   .rightColumn {

@@ -35,7 +35,7 @@ function AdminLogin() {
 
   return (
     <div className={pageStyles.loginPage}>
-      <form className={styles.tokenForm} onSubmit={handleSubmit}>
+      <form className={`${styles.tokenForm} ${pageStyles.loginForm}`} onSubmit={handleSubmit}>
         <h2 className={styles.title}>관리자 로그인</h2>
         <label className={styles.tokenLabel} htmlFor="admin-username">아이디</label>
         <input
