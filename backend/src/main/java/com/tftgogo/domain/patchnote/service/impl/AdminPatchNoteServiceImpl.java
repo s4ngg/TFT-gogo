@@ -124,7 +124,6 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
 
         Optional<PatchNote> existingPatchNote = findImportTarget(sourceKey, sourceUrl, version);
         List<PatchChange> existingPatchChanges = existingPatchNote
-                .filter(patchNote -> !patchNote.isManuallyEdited())
                 .map(patchChangeRepository::findByPatchNoteOrderBySortOrderAscIdAsc)
                 .orElseGet(List::of);
         validateRetainedRowRatio(version, incomingSourceKeys, existingPatchChanges);
