@@ -113,6 +113,10 @@ app:
       minimum-item-count: ${APP_GUIDE_CDRAGON_MINIMUM_ITEM_COUNT:30}
       minimum-augment-count: ${APP_GUIDE_CDRAGON_MINIMUM_AUGMENT_COUNT:50}
   patch-note:
+    crawler:
+      max-detail-rows: 1000
+      # Reject a re-import when fewer than half of the previously imported rows remain.
+      min-retained-row-ratio: 0.5
     scheduler:
       # Master switch and timing for the ordered patch-note -> guide content refresh.
       # Keep disabled in local/dev personal environments. Enable only on shared dev/prod servers.

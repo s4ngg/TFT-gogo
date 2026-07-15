@@ -169,6 +169,13 @@ Page: /patch-notes.
 - Imported changes with manuallyEdited=true are skipped independently by re-import.
 - A crawled change whose patchNote + sourceKey exists in patch_note_change_tombstones is skipped and must not be recreated.
 - Stale imported changes may be hard-deleted when a re-import updates an existing patch note.
+- Import validation runs before patch metadata, current status, or change rows are mutated.
+- Empty parsed rows and fatal parser warnings such as `max detail rows reached` reject the entire import.
+- Existing imported patch rows are protected by `app.patch-note.crawler.min-retained-row-ratio` (default `0.5`).
+  The retained-row ratio is the share of existing, automatically managed sourceKeys that also exist in the new
+  import. Manually edited rows and rows without a sourceKey are excluded from the denominator. A re-import below
+  that ratio fails without changing existing data, while smaller reductions and same-patch hotfix additions
+  continue through the normal upsert/stale-delete flow.
 - Current implementation does not expose dryRun or forceOverwrite. Add those as a separate enhancement if needed.
 - Scheduler-driven latest refresh uses the same import endpoint/service path with sourceUrl=null and version=null.
   It must re-run the latest import even when the latest patch already exists locally so current marking and official
@@ -304,10 +311,11 @@ Page: /patch-notes.
 
 <validation>
 - Public service tests should cover list response, latest/current behavior, version not found, filter query, stats separation, page slicing, invalid pagination, enum parsing, and LIKE escaping.
-- Admin service tests should cover patch-note CRUD, patch-change CRUD, JSON array validation, duplicate/current behavior, not found errors, patch-note soft delete, imported patch-change tombstone creation, patch-change hard delete, and manuallyEdited marking.
-- Import tests should cover latest import by tag page, direct sourceUrl import, repeated import idempotency, deleted sourceKey suppression, header-manual-edit/child-hotfix separation, manually edited child preservation, sourceKey matching, stale imported change handling, parser warnings, unsupported host rejection, current flag behavior, and Guide-name-assisted category inference.
-- Scheduler tests should cover disabled state, startup-import flags, exact committed-version handoff, patch-failure guide
-  suppression, list scan limit, already-imported skip, current flag, in-process re-entry, and shared DB-lock contention.
+- Admin service tests should cover patch-note CRUD, patch-change CRUD, JSON array validation, duplicate/current behavior, not found errors, patch-note soft delete, patch-change hard delete, and manuallyEdited marking.
+- Import tests should cover latest import by tag page, direct sourceUrl import, repeated import idempotency, manuallyEdited skip, sourceKey matching, stale imported change handling, parser warnings, unsupported host rejection, current flag behavior, and Guide-name-assisted category inference.
+- Import safety tests should cover empty rows, fatal/truncated parser warnings, sourceKey retention drops even when
+  row counts are unchanged, manually edited row exclusion, and allowed small reductions.
+- Scheduler tests should cover disabled state, startup-import flag, list scan limit, already-imported skip, current flag, and in-process lock skip.
 - Scheduler tests should also cover:
   - startup refresh of the latest patch even when the latest item is already imported.
   - daily latest refresh even when already imported.
