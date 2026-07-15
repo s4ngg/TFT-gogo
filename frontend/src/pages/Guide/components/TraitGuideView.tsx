@@ -189,6 +189,7 @@ function TraitGuideView({
           const traitDisplay = getTraitDisplay(traitGuide)
           const specialUnits = traitGuide.specialUnits ?? []
           const isHighlighted = isGuideHighlighted('traits', traitGuide, highlightedGuide)
+          const aiRef = createGameGuideAiRef('TRAIT', traitGuide.name, traitGuide.targetKey)
 
           return (
             <article
@@ -223,15 +224,17 @@ function TraitGuideView({
                     ))}
                   </div>
                 </div>
-                <button
-                  aria-label={`${traitGuide.name} AI 질문`}
-                  className={styles.gameGuideAiCardButton}
-                  onClick={() => onGameGuideAiAsk(createGameGuideAiRef('TRAIT', traitGuide.name, traitGuide.targetKey))}
-                  title="AI에게 물어보기"
-                  type="button"
-                >
-                  <Bot size={14} />
-                </button>
+                {aiRef && (
+                  <button
+                    aria-label={`${traitGuide.name} AI 질문`}
+                    className={styles.gameGuideAiCardButton}
+                    onClick={() => onGameGuideAiAsk(aiRef)}
+                    title="AI에게 물어보기"
+                    type="button"
+                  >
+                    <Bot size={14} />
+                  </button>
+                )}
               </div>
               {traitDisplay.summary && (
                 <div className={styles.traitSummaryPanel}>
