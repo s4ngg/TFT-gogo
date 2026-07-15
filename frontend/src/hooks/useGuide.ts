@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   DEFAULT_GUIDE_PAGE_SIZE,
@@ -70,7 +71,20 @@ export function useGuideTabItems<T extends GuideTab>({
     ...params,
     patchVersion: params.patchVersion?.trim() || fallbackData.patchVersion,
   }
-  const placeholderData = createGuidePlaceholderPage(resolvedParams)
+  const placeholderData = useMemo(
+    () => createGuidePlaceholderPage({
+      page: resolvedParams.page,
+      pageSize: resolvedParams.pageSize,
+      patchVersion: resolvedParams.patchVersion,
+      tab: resolvedParams.tab,
+    }),
+    [
+      resolvedParams.page,
+      resolvedParams.pageSize,
+      resolvedParams.patchVersion,
+      resolvedParams.tab,
+    ],
+  )
   const guideQuery = useQuery<GuideTabPageResult<T>>({
     placeholderData: (previousData) => (
       previousData?.patchVersion === resolvedParams.patchVersion

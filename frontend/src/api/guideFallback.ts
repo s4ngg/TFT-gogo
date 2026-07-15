@@ -148,7 +148,7 @@ export function getFallbackGuideTabPage<T extends GuideTab>(
   const page = normalizePositiveInteger(params.page, 1)
   const pageSize = normalizePositiveInteger(params.pageSize, DEFAULT_GUIDE_PAGE_SIZE)
   const requestedPatchVersion = params.patchVersion?.trim() ?? ''
-  const items = requestedPatchVersion === fallbackData.patchVersion
+  const items = requestedPatchVersion.length > 0 && requestedPatchVersion === fallbackData.patchVersion
     ? getFallbackGuideItems(params, fallbackData)
     : [] as GuideTabItems[T]
 

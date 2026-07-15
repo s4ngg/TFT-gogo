@@ -171,4 +171,25 @@ describe('getGuideTabItems', () => {
     assert.equal(result.source, 'fallback')
     assert.deepEqual(result.data.items.map((augment) => augment.name), ['17.0 전용 증강체'])
   })
+
+  it('빈 요청 버전과 빈 fallback 버전이 일치해도 fallback 항목을 노출하지 않는다', async () => {
+    axiosInstance.defaults.adapter = async () => {
+      throw new Error('guide tab request failed')
+    }
+    const emptyVersionFallbackCatalog = {
+      ...fallbackCatalog,
+      patchVersion: '',
+    }
+
+    const result = await getGuideTabItems({
+      page: 1,
+      pageSize: 6,
+      patchVersion: '',
+      query: '',
+      tab: 'augments',
+    }, emptyVersionFallbackCatalog)
+
+    assert.equal(result.source, 'unavailable')
+    assert.deepEqual(result.data.items, [])
+  })
 })
