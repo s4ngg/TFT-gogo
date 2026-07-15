@@ -25,6 +25,8 @@ function ChampionGuideCard({
   onGameGuideAiAsk,
   onOpen,
 }: ChampionGuideCardProps) {
+  const aiRef = createGameGuideAiRef('CHAMPION', championGuide.name, championGuide.targetKey)
+
   return (
     <article
       {...getGuideHighlightAttrs(isHighlighted, styles.championCard, styles.guideHighlighted)}
@@ -45,21 +47,23 @@ function ChampionGuideCard({
       >
         <Star size={14} />
       </button>
-      <button
-        aria-label={`${championGuide.name} AI 질문`}
-        className={styles.gameGuideAiChampionButton}
-        onClick={(event) => {
-          event.stopPropagation()
-          onGameGuideAiAsk(createGameGuideAiRef('CHAMPION', championGuide.name, championGuide.targetKey))
-        }}
-        onKeyDown={(event) => {
-          event.stopPropagation()
-        }}
-        title="AI에게 물어보기"
-        type="button"
-      >
-        <Bot size={14} />
-      </button>
+      {aiRef && (
+        <button
+          aria-label={`${championGuide.name} AI 질문`}
+          className={styles.gameGuideAiChampionButton}
+          onClick={(event) => {
+            event.stopPropagation()
+            onGameGuideAiAsk(aiRef)
+          }}
+          onKeyDown={(event) => {
+            event.stopPropagation()
+          }}
+          title="AI에게 물어보기"
+          type="button"
+        >
+          <Bot size={14} />
+        </button>
+      )}
       <button
         className={styles.championOpenButton}
         onClick={() => {

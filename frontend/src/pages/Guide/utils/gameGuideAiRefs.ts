@@ -13,21 +13,19 @@ export const GUIDE_TYPE_BY_TAB: Record<GuideTab, GuideEntryType> = {
   traits: 'TRAIT',
 }
 
-export function buildGuideTargetKey(guideType: GuideEntryType, name: string) {
-  const normalizedName = name.trim().replace(/\s+/g, '_')
-  return `${guideType}:${normalizedName}`.slice(0, 120)
-}
-
 export function createGameGuideAiRef(
   guideType: GuideEntryType,
   name: string,
   targetKey?: string,
-): GameGuideAiPathfinderRef {
+): GameGuideAiPathfinderRef | null {
   const normalizedName = name.trim()
+  const normalizedTargetKey = targetKey?.trim()
+
+  if (!normalizedName || !normalizedTargetKey) return null
 
   return {
     guideType,
     name: normalizedName,
-    targetKey: targetKey?.trim() || buildGuideTargetKey(guideType, normalizedName),
+    targetKey: normalizedTargetKey,
   }
 }
