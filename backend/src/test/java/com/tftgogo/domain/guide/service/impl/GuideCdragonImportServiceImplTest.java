@@ -708,7 +708,8 @@ class GuideCdragonImportServiceImplTest {
         verify(guideChampionRepository, never()).findByChampionKeyAndPatchVersion(any(), any());
         verify(guideChampionRepository, never()).save(any(GuideChampion.class));
         verify(guideSnapshotRepository, never()).save(any(GuideSnapshot.class));
-        verify(guideSnapshotRepository, never()).findAllByStatus(any());
+        verify(guideSnapshotRepository, never())
+                .findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(any());
     }
 
     @Test
