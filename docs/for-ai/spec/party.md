@@ -53,7 +53,7 @@ Page: Party (/party).
 - party_applications uses a unique key on (party_post_id, user_id) to prevent duplicate joins by the same user.
 - chat_rooms stores the fixed public community chat rooms in non-local runtime profiles.
 - chat_messages stores sent community chat messages in non-local runtime profiles.
-- `local` and `dev` profiles may use `InMemoryChatServiceImpl` for lightweight development.
+- The `local` profile may use `InMemoryChatServiceImpl` for lightweight development.
 - chat_rooms.party_post_id is reserved for the later PARTY chat slice.
 - The ERD snapshot does not include a dedicated party tier column. Tier conditions and other custom user tags are stored in a small helper table, party_post_tags, keyed by party_post_id.
 </database>
@@ -121,7 +121,7 @@ Page: Party (/party).
 - Recent chat message reads are public for dashboard previews. Sending chat messages requires authentication.
 - Fixed community channel SSE reads are public, but the backend limits open SSE emitters to reduce abuse risk.
 - In non-local runtime profiles, chat messages are persisted to `chat_messages`, recent-message reads return the latest 100 messages, and Redis pub/sub fans out new messages across app instances.
-- In local/dev profiles, chat messages may remain in memory and are not shared across app instances.
+- In the local profile, chat messages may remain in memory and are not shared across app instances.
 - Dashboard party preview reads the same public party list through TanStack Query and shows loading/unavailable state separately from empty state.
 - Frontend realtime chat retries SSE stream failures up to 3 times with 1s, 2.5s, and 5s backoff. 400/403/404-style client errors and 401 authentication failures are terminal and must not retry.
 - Reconnecting SSE does not block REST message sending; successfully sent messages are merged into the local query cache.

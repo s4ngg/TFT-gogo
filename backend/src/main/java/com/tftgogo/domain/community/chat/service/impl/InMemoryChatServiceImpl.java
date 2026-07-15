@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.regex.Pattern;
 
 @Service
-@Profile({"local", "dev"})
+@Profile("local")
 @RequiredArgsConstructor
 public class InMemoryChatServiceImpl implements ChatService {
 
