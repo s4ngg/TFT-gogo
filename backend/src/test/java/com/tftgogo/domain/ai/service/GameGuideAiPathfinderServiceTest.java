@@ -7,10 +7,13 @@ import com.tftgogo.domain.ai.dto.GameGuideAiPathfinderRequest;
 import com.tftgogo.domain.ai.dto.GameGuideAiPathfinderResponse;
 import com.tftgogo.domain.guide.entity.GuideChampion;
 import com.tftgogo.domain.guide.entity.GuideItem;
+import com.tftgogo.domain.guide.entity.GuideSnapshot;
+import com.tftgogo.domain.guide.entity.GuideSnapshotStatus;
 import com.tftgogo.domain.guide.entity.GuideTrait;
 import com.tftgogo.domain.guide.repository.GuideAugmentRepository;
 import com.tftgogo.domain.guide.repository.GuideChampionRepository;
 import com.tftgogo.domain.guide.repository.GuideItemRepository;
+import com.tftgogo.domain.guide.repository.GuideSnapshotRepository;
 import com.tftgogo.domain.guide.repository.GuideTraitRepository;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
@@ -23,6 +26,7 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.IntStream;
@@ -45,6 +49,7 @@ class GameGuideAiPathfinderServiceTest {
     @Mock private GuideAugmentRepository guideAugmentRepository;
     @Mock private GuideChampionRepository guideChampionRepository;
     @Mock private GuideItemRepository guideItemRepository;
+    @Mock private GuideSnapshotRepository guideSnapshotRepository;
     @Mock private GuideTraitRepository guideTraitRepository;
     @Mock private AiChatRateLimiter rateLimiter;
 
@@ -59,12 +64,67 @@ class GameGuideAiPathfinderServiceTest {
     @BeforeEach
     void setUp() {
         lenient().when(rateLimiter.tryAcquire(USER_ID)).thenReturn(true);
+        lenient().when(guideSnapshotRepository.findByPatchVersion("17.3"))
+                .thenReturn(Optional.of(snapshot(GuideSnapshotStatus.ACTIVE, LocalDateTime.now())));
         lenient().when(guideTraitRepository.findByTraitKeyAndPatchVersion(anyString(), anyString()))
                 .thenReturn(Optional.of(mock(GuideTrait.class)));
     }
 
     private GameGuideAiPathfinderResponse pathfind(GameGuideAiPathfinderRequest request) {
         return service.pathfind(USER_ID, request);
+    }
+
+    @Test
+    void stagingSnapshot_isRejectedBeforeGuideLookupAndAiCall() {
+        // given
+        GameGuideAiPathfinderRequest request = requestWithoutRefs();
+        when(guideSnapshotRepository.findByPatchVersion("17.3"))
+                .thenReturn(Optional.of(snapshot(GuideSnapshotStatus.STAGING, null)));
+
+        // when, then
+        assertThatThrownBy(() -> pathfind(request))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
+        verifyNoInteractions(aiServerClient, guideAugmentRepository, guideChampionRepository,
+                guideItemRepository, guideTraitRepository);
+    }
+
+    @Test
+    void unvalidatedActiveSnapshot_isRejected() {
+        // given
+        when(guideSnapshotRepository.findByPatchVersion("17.3"))
+                .thenReturn(Optional.of(snapshot(GuideSnapshotStatus.ACTIVE, null)));
+
+        // when, then
+        assertThatThrownBy(() -> pathfind(requestWithoutRefs()))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
+        verifyNoInteractions(aiServerClient);
+    }
+
+    @Test
+    void missingSnapshot_isRejected() {
+        // given
+        when(guideSnapshotRepository.findByPatchVersion("17.3")).thenReturn(Optional.empty());
+
+        // when, then
+        assertThatThrownBy(() -> pathfind(requestWithoutRefs()))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
+        verifyNoInteractions(aiServerClient);
+    }
+
+    @Test
+    void validatedInactiveSnapshot_isReadableAsHistory() {
+        // given
+        when(guideSnapshotRepository.findByPatchVersion("17.3"))
+                .thenReturn(Optional.of(snapshot(GuideSnapshotStatus.INACTIVE, LocalDateTime.now())));
+
+        // when
+        GameGuideAiPathfinderResponse response = pathfind(requestWithoutRefs());
+
+        // then
+        assertThat(response.isFallback()).isTrue();
     }
 
     @Test
@@ -848,5 +908,23 @@ class GameGuideAiPathfinderServiceTest {
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(ErrorCode.UNAUTHORIZED));
         verifyNoInteractions(aiServerClient);
+    }
+
+    private GameGuideAiPathfinderRequest requestWithoutRefs() {
+        return new GameGuideAiPathfinderRequest(
+                "17.3",
+                "traits",
+                "AUTO",
+                List.of(),
+                "guide question"
+        );
+    }
+
+    private GuideSnapshot snapshot(GuideSnapshotStatus status, LocalDateTime validatedAt) {
+        return GuideSnapshot.builder()
+                .patchVersion("17.3")
+                .status(status)
+                .validatedAt(validatedAt)
+                .build();
     }
 }

@@ -461,18 +461,12 @@ public class GuideServiceImpl implements GuideService {
     private Optional<String> resolvePatchVersion(String patchVersion) {
         if (hasText(patchVersion)) {
             return guideSnapshotRepository.findByPatchVersion(patchVersion.trim())
-                    .filter(this::isPubliclyReadable)
+                    .filter(GuideSnapshot::isPubliclyReadable)
                     .map(GuideSnapshot::getPatchVersion);
         }
         return guideSnapshotRepository.findFirstByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE)
-                .filter(this::isPubliclyReadable)
+                .filter(GuideSnapshot::isPubliclyReadable)
                 .map(GuideSnapshot::getPatchVersion);
-    }
-
-    private boolean isPubliclyReadable(GuideSnapshot snapshot) {
-        return snapshot.getValidatedAt() != null
-                && (snapshot.getStatus() == GuideSnapshotStatus.ACTIVE
-                || snapshot.getStatus() == GuideSnapshotStatus.INACTIVE);
     }
 
     private boolean hasText(String value) {

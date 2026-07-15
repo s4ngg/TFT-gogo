@@ -120,6 +120,11 @@ public class GuideSnapshot {
         this.status = GuideSnapshotStatus.INACTIVE;
     }
 
+    public boolean isPubliclyReadable() {
+        return validatedAt != null
+                && (status == GuideSnapshotStatus.ACTIVE || status == GuideSnapshotStatus.INACTIVE);
+    }
+
     @PrePersist
     protected void onCreate() {
         LocalDateTime now = LocalDateTime.now();
