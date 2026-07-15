@@ -50,7 +50,9 @@ function PatchNotes() {
     patchHistory,
   })
   const isPatchChangesFallback = patchChangesQuery.data?.source === 'fallback'
-  const showFallbackStatus = (isFallbackData || isPatchChangesFallback) && !isFetching && !patchChangesQuery.isFetching
+  const isPatchChangesUnavailable = patchChangesQuery.data?.source === 'unavailable'
+  const isContentFetching = isFetching || patchChangesQuery.isFetching
+  const showFallbackStatus = (isFallbackData || isPatchChangesFallback) && !isPatchChangesUnavailable
 
   function handlePatchSelect(version: string) {
     if (version === selectedPatchVersion) return
@@ -80,9 +82,11 @@ function PatchNotes() {
           <PatchStatusBanner
             isFallbackData={false}
             isFetching
+            isUnavailableData={false}
             onRetry={() => {
               void refetchPatchNotes()
             }}
+            patchVersion={selectedPatchVersion}
           />
         </div>
       </AppLayout>
@@ -96,11 +100,13 @@ function PatchNotes() {
 
         <PatchStatusBanner
           isFallbackData={showFallbackStatus}
-          isFetching={isFetching}
+          isFetching={isContentFetching}
+          isUnavailableData={isPatchChangesUnavailable}
           onRetry={() => {
             void refetchPatchNotes()
             void patchChangesQuery.refetch()
           }}
+          patchVersion={selectedPatchVersion}
         />
 
         <PatchSummaryGrid

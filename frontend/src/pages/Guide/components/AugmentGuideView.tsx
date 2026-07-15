@@ -59,6 +59,7 @@ function AugmentGuideView({
     totalPages: pageData.totalPages,
   })
   const visibleAugments = pageData.items
+  const isUnavailableData = augmentsQuery.data.source === 'unavailable' && !augmentsQuery.isFetching
 
   useEffect(() => {
     onVisibleItemsChange(visibleAugments)
@@ -67,12 +68,14 @@ function AugmentGuideView({
   return (
     <>
       <GuideStatusBanner
-        isFallbackData={isGuideFallbackData || (augmentsQuery.data.source === 'fallback' && !augmentsQuery.isFetching)}
+        isFallbackData={!isUnavailableData && (isGuideFallbackData || (augmentsQuery.data.source === 'fallback' && !augmentsQuery.isFetching))}
         isFetching={isGuideFetching || augmentsQuery.isFetching}
+        isUnavailableData={isUnavailableData}
         onRetry={() => {
           onGuideRetry()
           void augmentsQuery.refetch()
         }}
+        patchVersion={augmentsQuery.data.patchVersion || patchVersion}
       />
       <AugmentGuideList
         augments={visibleAugments}

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
-  getFallbackPatchChangePage,
+  getFallbackPatchChangesResult,
   getPatchChanges,
   getPatchNotes,
   type PatchChangesQuery,
@@ -41,7 +41,7 @@ export function usePatchNotes({ fallbackData }: UsePatchNotesOptions) {
   )
 
   const selectedPatch = useMemo(
-    () => patchNotes.find((patch) => patch.version === selectedPatchVersion) ?? patchNotes[0],
+    () => patchNotes.find((patch) => patch.version === selectedPatchVersion),
     [patchNotes, selectedPatchVersion],
   )
 
@@ -79,16 +79,17 @@ export function usePatchNotes({ fallbackData }: UsePatchNotesOptions) {
 
 export function usePatchChanges({ fallbackData, params }: UsePatchChangesOptions) {
   const fallbackResult = useMemo<PatchChangesResult>(
-    () => ({
-      data: getFallbackPatchChangePage(params, fallbackData),
-      source: 'fallback',
-    }),
+    () => getFallbackPatchChangesResult(params, fallbackData),
     [fallbackData, params],
   )
 
   return useQuery<PatchChangesResult>({
     enabled: params.version.length > 0,
-    placeholderData: (previousData) => (params.version ? previousData ?? fallbackResult : undefined),
+    placeholderData: (previousData) => (
+      params.version
+        ? previousData?.patchVersion === params.version ? previousData : fallbackResult
+        : undefined
+    ),
     queryFn: () => getPatchChanges(params, fallbackData),
     queryKey: ['patch-notes', params.version, 'changes', params],
     ...LIVE_CONTENT_QUERY_OPTIONS,
