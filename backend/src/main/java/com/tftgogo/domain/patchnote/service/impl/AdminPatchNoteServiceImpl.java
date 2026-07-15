@@ -21,11 +21,13 @@ import com.tftgogo.domain.patchnote.dto.response.PatchNoteResponse;
 import com.tftgogo.domain.patchnote.entity.PatchChange;
 import com.tftgogo.domain.patchnote.entity.PatchChangeCategory;
 import com.tftgogo.domain.patchnote.entity.PatchChangeImpact;
+import com.tftgogo.domain.patchnote.entity.PatchChangeTombstone;
 import com.tftgogo.domain.patchnote.entity.PatchChangeType;
 import com.tftgogo.domain.patchnote.entity.PatchNote;
 import com.tftgogo.domain.patchnote.entity.PatchNoteImportSource;
 import com.tftgogo.domain.patchnote.repository.PatchChangeRepository;
 import com.tftgogo.domain.patchnote.repository.PatchChangeRepository.PatchChangeCount;
+import com.tftgogo.domain.patchnote.repository.PatchChangeTombstoneRepository;
 import com.tftgogo.domain.patchnote.repository.PatchNoteRepository;
 import com.tftgogo.domain.patchnote.service.AdminPatchNoteService;
 import com.tftgogo.domain.patchnote.service.PatchNoteCrawlerFetchService;
@@ -63,6 +65,7 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
 
     private final PatchNoteRepository patchNoteRepository;
     private final PatchChangeRepository patchChangeRepository;
+    private final PatchChangeTombstoneRepository patchChangeTombstoneRepository;
     private final ObjectMapper objectMapper;
     private final PatchNoteCrawlerFetchService crawlerFetchService;
     private final PatchNoteCrawlerParser crawlerParser;
@@ -138,6 +141,10 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
             patchNote = existingPatchNote.get();
             if (patchNote.isManuallyEdited()) {
                 patchNoteSkipped = true;
+                if (patchNote.getDeletedAt() == null && importRequest.shouldMarkCurrent()) {
+                    clearCurrentPatchNotes(patchNote.getId());
+                    patchNote.markCurrent();
+                }
             } else {
                 if (importRequest.shouldMarkCurrent()) {
                     clearCurrentPatchNotes(patchNote.getId());
@@ -184,7 +191,7 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
             patchNoteCreated = true;
         }
 
-        ImportChangeStats changeStats = patchNoteSkipped
+        ImportChangeStats changeStats = patchNote.getDeletedAt() != null
                 ? ImportChangeStats.skipped(document.rows().size())
                 : importChanges(
                         patchNote,
@@ -239,7 +246,10 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
         patchNote.markManuallyEditedIfImported();
         patchNote.softDelete();
         patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote)
-                .forEach(this::deletePatchChangeByAdmin);
+                .forEach(patchChange -> {
+                    patchChange.markManuallyEditedIfImported();
+                    patchChangeRepository.delete(patchChange);
+                });
     }
 
     @Override
@@ -418,11 +428,16 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
         int updated = 0;
         int skipped = 0;
         Set<String> importedSourceKeys = new HashSet<>();
+        Set<String> tombstonedSourceKeys = patchChangeTombstoneRepository.findSourceKeysByPatchNote(patchNote);
         PatchChangeGuideNameCatalog guideNameCatalog = buildGuideNameCatalog(patchNote.getVersion());
 
         for (PatchChangeCrawlRow row : rows) {
             String sourceKey = resolveChangeSourceKey(row);
             importedSourceKeys.add(sourceKey);
+            if (tombstonedSourceKeys.contains(sourceKey)) {
+                skipped++;
+                continue;
+            }
             PatchChangeCategory category = inferCategory(row, guideNameCatalog);
             PatchChangeType changeType = inferChangeType(row);
             PatchChangeImpact impact = PatchChangeImpact.MEDIUM;
@@ -792,8 +807,26 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
     }
 
     private void deletePatchChangeByAdmin(PatchChange patchChange) {
+        recordPatchChangeTombstone(patchChange);
         patchChange.markManuallyEditedIfImported();
         patchChangeRepository.delete(patchChange);
+    }
+
+    private void recordPatchChangeTombstone(PatchChange patchChange) {
+        if (!patchChange.isImported() || !hasText(patchChange.getSourceKey())) {
+            return;
+        }
+        if (patchChangeTombstoneRepository.existsByPatchNoteAndSourceKey(
+                patchChange.getPatchNote(),
+                patchChange.getSourceKey()
+        )) {
+            return;
+        }
+
+        patchChangeTombstoneRepository.save(PatchChangeTombstone.builder()
+                .patchNote(patchChange.getPatchNote())
+                .sourceKey(patchChange.getSourceKey())
+                .build());
     }
 
     private void validateUniqueVersion(String version, Long excludedPatchNoteId) {

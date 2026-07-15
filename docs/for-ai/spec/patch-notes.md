@@ -155,6 +155,8 @@ Page: /patch-notes.
 - PatchChange upsert matching key is patchNote + sourceKey.
 - Imported patch notes/changes with manuallyEdited=false may be updated by re-import.
 - Imported patch notes/changes with manuallyEdited=true are skipped by re-import.
+- Deleting an imported PatchChange creates a tombstone for its patchNote + sourceKey before the row is deleted.
+- A crawled change whose patchNote + sourceKey exists in patch_note_change_tombstones is skipped and must not be recreated.
 - Stale imported changes may be hard-deleted when a re-import updates an existing patch note.
 - Import validation runs before patch metadata, current status, or change rows are mutated.
 - Empty parsed rows and fatal parser warnings such as `max detail rows reached` reject the entire import.
@@ -292,14 +294,14 @@ Page: /patch-notes.
 - Scheduler: backend/src/main/java/com/tftgogo/domain/content/scheduler/ContentRefreshScheduler.java
 - Patch task: backend/src/main/java/com/tftgogo/domain/patchnote/scheduler/PatchNoteImportTask.java
 - Config: PatchNoteCrawlerProperties and PatchNoteImportSchedulerProperties.
-- Entities: PatchNote and PatchChange.
-- Repositories: PatchNoteRepository and PatchChangeRepository.
+- Entities: PatchNote, PatchChange, and PatchChangeTombstone.
+- Repositories: PatchNoteRepository, PatchChangeRepository, and PatchChangeTombstoneRepository.
 </backend-structure>
 
 <validation>
 - Public service tests should cover list response, latest/current behavior, version not found, filter query, stats separation, page slicing, invalid pagination, enum parsing, and LIKE escaping.
-- Admin service tests should cover patch-note CRUD, patch-change CRUD, JSON array validation, duplicate/current behavior, not found errors, patch-note soft delete, patch-change hard delete, and manuallyEdited marking.
-- Import tests should cover latest import by tag page, direct sourceUrl import, repeated import idempotency, manuallyEdited skip, sourceKey matching, stale imported change handling, parser warnings, unsupported host rejection, current flag behavior, and Guide-name-assisted category inference.
+- Admin service tests should cover patch-note CRUD, patch-change CRUD, JSON array validation, duplicate/current behavior, not found errors, patch-note soft delete, imported patch-change tombstone creation, patch-change hard delete, and manuallyEdited marking.
+- Import tests should cover latest import by tag page, direct sourceUrl import, repeated import idempotency, deleted sourceKey suppression, manuallyEdited skip, sourceKey matching, stale imported change handling, parser warnings, unsupported host rejection, current flag behavior, and Guide-name-assisted category inference.
 - Import safety tests should cover empty rows, fatal/truncated parser warnings, sourceKey retention drops even when
   row counts are unchanged, manually edited row exclusion, and allowed small reductions.
 - Scheduler tests should cover disabled state, startup-import flags, exact committed-version handoff, patch-failure guide
