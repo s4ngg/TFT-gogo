@@ -6,7 +6,7 @@
 .loading,
 .notFound {
   margin-top: 60px;
-  color: #5a6470;
+  color: var(--text-muted);
   font-size: 14px;
   text-align: center;
 }
@@ -20,7 +20,7 @@
   padding: 0;
   border: none;
   background: none;
-  color: #5a6470;
+  color: var(--text-muted);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -38,7 +38,7 @@
 
 .deckName {
   margin: 0;
-  color: #fff;
+  color: var(--text-main);
   font-size: 26px;
   font-weight: 700;
   letter-spacing: -0.03em;
@@ -48,7 +48,7 @@
   padding: 3px 10px;
   border: 1px solid rgba(112, 144, 152, 0.22);
   border-radius: 5px;
-  color: #5a6470;
+  color: var(--text-muted);
   font-size: 12px;
   font-weight: 500;
 }
@@ -71,7 +71,7 @@
   align-items: center;
   gap: 5px;
 }
-.statItem small { color: #5a6470; font-size: 12px; }
+.statItem small { color: var(--text-muted); font-size: 12px; }
 .statItem strong { font-size: 22px; font-weight: 700; }
 
 .statDivider {
@@ -105,13 +105,13 @@
 }
 .panelHead h2 {
   margin: 0;
-  color: #fff;
+  color: var(--text-main);
   font-size: 17px;
   font-weight: 600;
   letter-spacing: -0.02em;
 }
 .panelSub {
-  color: #5a6470;
+  color: var(--text-muted);
   font-size: 12px;
 }
 
@@ -311,7 +311,7 @@
 }
 
 .itemChampName {
-  color: #dde3e9;
+  color: var(--text-main);
   font-size: 12px;
   font-weight: 600;
   text-align: center;
@@ -321,7 +321,7 @@
 /* 공통 섹션 레이블 */
 .itemSectionLabel {
   display: block;
-  color: #5a6470;
+  color: var(--text-muted);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -356,7 +356,7 @@
 }
 
 .coreItemName {
-  color: #8e97a1;
+  color: var(--text-secondary);
   font-size: 10px;
   text-align: center;
   white-space: nowrap;
@@ -557,6 +557,9 @@
 }
 
 .heroAugEntry {
+  /* 오렌지 카드 위 자체 다크 배경 박스 — 밝은 텍스트로 복귀 */
+  --text-muted: var(--text-ondark-muted);
+
   display: flex;
   align-items: center;
   gap: 10px;
@@ -628,7 +631,7 @@
 
 .guidePhaseText {
   font-size: 13px;
-  color: #c8d0d8;
+  color: var(--text-main);
   line-height: 1.65;
   margin: 0;
   white-space: pre-wrap;

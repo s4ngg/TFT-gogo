@@ -20,9 +20,9 @@ function Guide() {
   const [gameGuideAiSelectedRefs, setGameGuideAiSelectedRefs] = useState<GameGuideAiPathfinderRef[]>([])
   const [gameGuideAiVisibleItems, setGameGuideAiVisibleItems] = useState<GuideTabItems[GuideTab][number][]>([])
   const {
-    guideData,
     isFallbackData: isGuideFallbackData,
     isFetching: isGuideFetching,
+    patchVersion,
     refetchGuideData,
   } = useGuideCatalog({ fallbackData: guideFallbackData })
   const {
@@ -60,7 +60,7 @@ function Guide() {
   }
 
   return (
-    <AppLayout>
+    <AppLayout sunTheme>
       <div className={styles.page}>
         <header className={styles.pageHeader}>
           <div className={styles.titleBlock}>
@@ -72,7 +72,7 @@ function Guide() {
             <p>시너지, 아이템, 증강체, 챔피언 정보를 한 화면에서 빠르게 비교합니다.</p>
           </div>
           <div className={styles.headerStats}>
-            <StatBadge label="기준 패치" value={guideData.patchVersion} />
+            <StatBadge label="기준 패치" value={patchVersion} />
           </div>
         </header>
 
@@ -93,7 +93,7 @@ function Guide() {
         <GuideTabPanels
           activeTab={activeTab}
           favoriteChampions={favoriteChampions}
-          guideData={guideData}
+          fallbackData={guideFallbackData}
           highlightedGuide={highlightedGuide}
           isGuideFallbackData={isGuideFallbackData}
           isGuideFetching={isGuideFetching}
@@ -105,6 +105,7 @@ function Guide() {
             void refetchGuideData()
           }}
           onRecentGuideAdd={addRecentGuide}
+          patchVersion={patchVersion}
           query={debouncedSearch}
         />
 
@@ -116,7 +117,7 @@ function Guide() {
           key={gameGuideAiSelectionKey}
           onOpenChange={handleGameGuideAiOpenChange}
           onGuideJump={handleGuideJump}
-          patchVersion={guideData.patchVersion}
+          patchVersion={patchVersion}
           selectedRefs={gameGuideAiSelectedRefs}
         />
       </div>

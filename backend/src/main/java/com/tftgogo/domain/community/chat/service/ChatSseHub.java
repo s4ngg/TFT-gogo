@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 @Component
-@Profile("!local & !dev")
+@Profile("!local")
 public class ChatSseHub {
 
     private static final Logger logger = LogManager.getLogger(ChatSseHub.class);

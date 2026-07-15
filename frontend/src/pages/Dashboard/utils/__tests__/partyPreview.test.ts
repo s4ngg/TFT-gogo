@@ -21,6 +21,7 @@ function partyPost(id: string, mode: PartyMode): PartyPost {
     description: '같이 플레이할 파티원을 구합니다.',
     tags: ['음성 가능'],
     icon: 'crown',
+    isClosed: false,
     tone: 'purple',
   }
 }

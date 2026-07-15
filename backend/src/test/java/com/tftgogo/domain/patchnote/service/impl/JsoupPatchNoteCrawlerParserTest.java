@@ -193,6 +193,53 @@ class JsoupPatchNoteCrawlerParserTest {
     }
 
     @Test
+    void parseDetailPage_whenNoChangeRows_returnsEmptyRows() throws IOException {
+        // given
+        String body = """
+                <div id="patch-notes-container">
+                    <h2>Champions</h2>
+                    <p>No parsed list items</p>
+                </div>
+                """;
+        PatchNoteCrawlFetchedPage fetchedPage = fetchedPage(
+                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-5-notes/",
+                detailFixture(body)
+        );
+
+        // when
+        PatchNoteCrawlDocument document = parser.parseDetailPage(fetchedPage, null, "ko-kr");
+
+        // then
+        assertThat(document.rows()).isEmpty();
+    }
+
+    @Test
+    void parseDetailPage_whenMaxDetailRowsReached_returnsTruncatedWarning() throws IOException {
+        // given
+        properties.setMaxDetailRows(1);
+        String body = """
+                <div id="patch-notes-container">
+                    <h2>Champions</h2>
+                    <ul>
+                        <li>Jinx attack damage increased</li>
+                        <li>Vi armor increased</li>
+                    </ul>
+                </div>
+                """;
+        PatchNoteCrawlFetchedPage fetchedPage = fetchedPage(
+                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-5-notes/",
+                detailFixture(body)
+        );
+
+        // when
+        PatchNoteCrawlDocument document = parser.parseDetailPage(fetchedPage, null, "ko-kr");
+
+        // then
+        assertThat(document.rows()).hasSize(1);
+        assertThat(document.parserWarnings()).contains("max detail rows reached");
+    }
+
+    @Test
     void parseDetailPage_whenNextDataMissing_throwsInvalidData() {
         // given
         PatchNoteCrawlFetchedPage fetchedPage = fetchedPage(

@@ -11,7 +11,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.time.Instant;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -43,7 +43,7 @@ class RedisChatRealtimePublisherTest {
     }
 
     @Test
-    void 이벤트_직렬화에_실패하면_예외를_전파한다() throws Exception {
+    void 이벤트_직렬화에_실패해도_예외를_전파하지_않는다() throws Exception {
         // given
         RedisChatRealtimePublisher publisher = new RedisChatRealtimePublisher(redisTemplate, objectMapper);
         ChatMessageResponse message = message();
@@ -53,13 +53,12 @@ class RedisChatRealtimePublisherTest {
                 });
 
         // when, then
-        assertThatThrownBy(() -> publisher.publish("general", message))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("Failed to serialize chat realtime event.");
+        assertThatCode(() -> publisher.publish("general", message))
+                .doesNotThrowAnyException();
     }
 
     @Test
-    void Redis_발행에_실패하면_예외를_전파한다() throws Exception {
+    void Redis_발행에_실패해도_예외를_전파하지_않는다() throws Exception {
         // given
         RedisChatRealtimePublisher publisher = new RedisChatRealtimePublisher(redisTemplate, objectMapper);
         ChatMessageResponse message = message();
@@ -69,8 +68,8 @@ class RedisChatRealtimePublisherTest {
         doThrow(failure).when(redisTemplate).convertAndSend(eq("tftgogo:community-chat"), any(String.class));
 
         // when, then
-        assertThatThrownBy(() -> publisher.publish("general", message))
-                .isSameAs(failure);
+        assertThatCode(() -> publisher.publish("general", message))
+                .doesNotThrowAnyException();
     }
 
     private ChatMessageResponse message() {

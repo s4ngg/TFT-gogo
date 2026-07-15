@@ -46,6 +46,7 @@ export interface PatchNoteDetail extends PatchNoteSummary {
 }
 
 export type PatchNotesSource = 'api' | 'fallback'
+export type PatchChangesSource = PatchNotesSource | 'unavailable'
 
 export interface PatchNotesResult {
   data: PatchNoteDetail[]
@@ -72,7 +73,8 @@ export interface PatchChangePage {
 
 export interface PatchChangesResult {
   data: PatchChangePage
-  source: PatchNotesSource
+  patchVersion: string
+  source: PatchChangesSource
 }
 
 export interface PatchChangesQuery {
@@ -528,7 +530,7 @@ export function getFallbackPatchChangePage(
   params: PatchChangesQuery,
   fallbackData: PatchNoteDetail[],
 ): PatchChangePage {
-  const fallbackPatch = fallbackData.find((patch) => patch.version === params.version) ?? fallbackData[0]
+  const fallbackPatch = fallbackData.find((patch) => patch.version === params.version)
   const patchChanges = fallbackPatch?.changes ?? []
   const normalizedQuery = params.query.trim().toLowerCase()
   const stats = countPatchChangeStats(patchChanges)
@@ -550,6 +552,21 @@ export function getFallbackPatchChangePage(
     stats,
     totalItems: filteredChanges.length,
     totalPages: Math.max(1, Math.ceil(filteredChanges.length / params.pageSize)),
+  }
+}
+
+export function getFallbackPatchChangesResult(
+  params: PatchChangesQuery,
+  fallbackData: PatchNoteDetail[],
+): PatchChangesResult {
+  const hasMatchingChanges = fallbackData.some(
+    (patch) => patch.version === params.version && patch.changes.length > 0,
+  )
+
+  return {
+    data: getFallbackPatchChangePage(params, fallbackData),
+    patchVersion: params.version,
+    source: hasMatchingChanges ? 'fallback' : 'unavailable',
   }
 }
 
@@ -590,7 +607,7 @@ export async function getPatchChanges(
   fallbackData: PatchNoteDetail[],
 ): Promise<PatchChangesResult> {
   if (!params.version) {
-    return { data: getFallbackPatchChangePage(params, fallbackData), source: 'fallback' }
+    return getFallbackPatchChangesResult(params, fallbackData)
   }
 
   try {
@@ -611,11 +628,11 @@ export async function getPatchChanges(
     const page = normalizePatchChangePage(payload, params)
 
     if (!page) {
-      return { data: getFallbackPatchChangePage(params, fallbackData), source: 'fallback' }
+      return getFallbackPatchChangesResult(params, fallbackData)
     }
 
-    return { data: page, source: 'api' }
+    return { data: page, patchVersion: params.version, source: 'api' }
   } catch {
-    return { data: getFallbackPatchChangePage(params, fallbackData), source: 'fallback' }
+    return getFallbackPatchChangesResult(params, fallbackData)
   }
 }

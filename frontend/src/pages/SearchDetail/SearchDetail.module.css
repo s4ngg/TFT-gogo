@@ -79,7 +79,7 @@
   border: 1px solid var(--border);
   border-radius: 20px;
   background: var(--bg-profile-level);
-  color: var(--color-cyan);
+  color: var(--accent);
   font-size: var(--font-size-xs);
   font-weight: 700;
 }
@@ -107,7 +107,7 @@
 
 .tierLine {
   margin: 0 0 6px;
-  color: var(--color-cyan);
+  color: var(--accent);
   font-size: 16px;
   font-weight: 600;
 }
@@ -222,8 +222,14 @@
 
 .loadMoreBtn:hover {
   background: var(--cyan-bg-faint);
-  color: var(--color-cyan);
+  color: var(--accent);
   border-color: var(--cyan-border-light);
+}
+
+.matchSection {
+  /* 카드 배경 없이 검정 페이지 배경 위에 바로 놓이는 영역 — 밝은 텍스트로 복귀 */
+  --text-main: var(--text-ondark-main);
+  --text-muted: var(--text-ondark-muted);
 }
 
 .matchSection h2 {
@@ -253,6 +259,11 @@
 }
 
 .matchRow {
+  /* 밀도 높은 전적 행 — 오렌지 카드로 바꾸지 않고 원래 다크 테마 유지(searchResultCard 예외 패턴) */
+  --text-main: var(--text-ondark-main);
+  --text-muted: var(--text-ondark-muted);
+  --border-card-highlight: rgba(255, 255, 255, 0.14);
+
   display: grid;
   grid-template-columns: 80px 1fr 428px var(--chevron-col-width);
   align-items: center;
@@ -285,12 +296,12 @@
 }
 
 .top4 {
-  border-left-color: var(--color-cyan);
+  border-left-color: var(--accent);
   background: linear-gradient(90deg, var(--match-row-top4-start), var(--match-row-base-end));
 }
 
 .top4 .placementBadge span {
-  color: var(--color-cyan);
+  color: var(--accent);
 }
 
 .bot4 {
@@ -352,7 +363,7 @@
 
 .gameTypeBadgeRanked {
   background: var(--cyan-bg-subtle);
-  color: var(--color-cyan);
+  color: var(--accent);
   border: 1px solid var(--cyan-border-subtle);
 }
 
@@ -399,7 +410,7 @@
 }
 
 .top4Text {
-  color: var(--color-cyan);
+  color: var(--accent);
 }
 
 .profileRight {
@@ -789,7 +800,7 @@
 }
 
 .winRatePct {
-  color: var(--color-cyan);
+  color: var(--accent);
   font-size: 14px;
   font-weight: 800;
   line-height: 1;

@@ -51,7 +51,7 @@ function Party() {
   }, [activeRoomId, setActiveRoomId])
 
   return (
-    <AppLayout>
+    <AppLayout sunTheme>
       <div className={styles.communityPage}>
         <header className={styles.pageHeader}>
           <div>
