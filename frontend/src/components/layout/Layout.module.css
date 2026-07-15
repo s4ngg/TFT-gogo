@@ -387,39 +387,12 @@
   gap: 19px;
 }
 
-.iconButton,
-.notificationButton,
 .profileButton,
 .loginButton {
   border: 0;
   color: #cfd3da;
   background: transparent;
   cursor: pointer;
-}
-
-.iconButton,
-.notificationButton {
-  position: relative;
-  width: calc(var(--size-control-md) + var(--space-xs));
-  height: calc(var(--size-control-md) + var(--space-xs));
-  display: grid;
-  place-items: center;
-  padding: 0;
-}
-
-.notificationButton span {
-  position: absolute;
-  top: -1px;
-  right: -5px;
-  width: 18px;
-  height: 18px;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  color: var(--text-main);
-  background: #ef423d;
-  font-size: 10px;
-  font-weight: 700;
 }
 
 .profileButton {
@@ -731,16 +704,9 @@
     justify-content: flex-end;
   }
 
-  .iconButton,
-  .notificationButton,
   .loginButton,
   .profileButton {
     min-height: calc(var(--size-control-md) + var(--space-md));
-  }
-
-  .iconButton,
-  .notificationButton {
-    width: calc(var(--size-control-md) + var(--space-md));
   }
 
   .loginButton {

@@ -26,14 +26,20 @@ const statusIconMap: Record<RiotApiStatusKind, typeof Activity> = {
 
 const numberFormatter = new Intl.NumberFormat('ko-KR')
 
+function hasActiveMetrics(status: RiotApiStatus) {
+  return status.source !== 'fallback' && (status.activeConnections > 0 || status.queueSize > 0)
+}
+
 function buildStatusLabel(status: RiotApiStatus) {
   const sourceLabel = status.source === 'fallback' ? 'fallback 표시' : '실시간 응답'
   const metricLabel =
     status.source === 'fallback'
       ? '운영 수치 확인 불가'
-      : `처리 중 요청 ${numberFormatter.format(status.activeConnections)}건, 대기 요청 ${numberFormatter.format(
-          status.queueSize,
-        )}건`
+      : hasActiveMetrics(status)
+        ? `처리 중 요청 ${numberFormatter.format(status.activeConnections)}건, 대기 요청 ${numberFormatter.format(
+            status.queueSize,
+          )}건`
+        : '처리 중 요청 없음'
 
   return `Riot API 상태: ${statusLabelMap[status.status]}, ${metricLabel}, ${sourceLabel}`
 }
@@ -58,11 +64,13 @@ function RiotApiStatusBadge() {
       <strong>{statusLabelMap[status.status]}</strong>
       {status.source === 'fallback' ? (
         <span>수치 확인 불가</span>
-      ) : (
+      ) : hasActiveMetrics(status) ? (
         <>
           <span>요청 {numberFormatter.format(status.activeConnections)}</span>
           <span>대기 {numberFormatter.format(status.queueSize)}</span>
         </>
+      ) : (
+        null
       )}
     </div>
   )

@@ -305,7 +305,7 @@ export interface GuideCdragonImportRequest {
   includeChampions: boolean
   includeItems: boolean
   includeTraits: boolean
-  mutator: string | null
+  mutator: string
   patchVersion: string
   setNumber: number
 }
@@ -316,7 +316,9 @@ export interface GuideImportResponse {
   createdCount: number
   importedCount: number
   itemCount: number
+  mutator: string
   patchVersion: string
+  setNumber: number
   skippedCount: number
   traitCount: number
   updatedCount: number

@@ -278,6 +278,56 @@ CREATE TABLE IF NOT EXISTS tft_guide_augments (
     KEY idx_tft_guide_augments_patch_name (patch_version, name, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS tft_guide_snapshots (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    patch_version VARCHAR(20) NOT NULL,
+    source_set_number INT UNSIGNED NULL,
+    source_mutator VARCHAR(100) NULL,
+    status VARCHAR(20) NOT NULL,
+    champion_count INT UNSIGNED NOT NULL DEFAULT 0,
+    trait_count INT UNSIGNED NOT NULL DEFAULT 0,
+    item_count INT UNSIGNED NOT NULL DEFAULT 0,
+    augment_count INT UNSIGNED NOT NULL DEFAULT 0,
+    validated_at DATETIME(6) NULL,
+    activated_at DATETIME(6) NULL,
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_tft_guide_snapshots_patch (patch_version),
+    KEY idx_tft_guide_snapshots_status_activated (status, activated_at, id),
+    CONSTRAINT chk_tft_guide_snapshots_status
+        CHECK (status IN ('STAGING', 'ACTIVE', 'INACTIVE')),
+    CONSTRAINT chk_tft_guide_snapshots_active_validation
+        CHECK (
+            (validated_at IS NULL AND status <> 'ACTIVE')
+            OR (
+                validated_at IS NOT NULL
+                AND champion_count > 0
+                AND trait_count > 0
+                AND item_count > 0
+                AND augment_count > 0
+            )
+        ),
+    CONSTRAINT chk_tft_guide_snapshots_source_pair
+        CHECK (
+            (source_set_number IS NULL AND source_mutator IS NULL)
+            OR (
+                source_set_number IS NOT NULL
+                AND source_set_number > 0
+                AND source_mutator IS NOT NULL
+                AND CHAR_LENGTH(TRIM(source_mutator)) > 0
+            )
+        )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE UNIQUE INDEX uk_tft_guide_snapshots_single_active
+    ON tft_guide_snapshots (
+        (CASE
+            WHEN status = 'ACTIVE' THEN 1
+            ELSE NULL
+        END)
+    );
+
 CREATE TABLE IF NOT EXISTS patch_notes (
     id BIGINT NOT NULL AUTO_INCREMENT,
     version VARCHAR(20) NOT NULL,

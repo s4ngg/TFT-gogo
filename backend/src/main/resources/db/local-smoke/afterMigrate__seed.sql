@@ -49,7 +49,7 @@ INSERT INTO tft_guide_traits (
     JSON_ARRAY(JSON_OBJECT('name', 'Local Champion', 'cost', 4, 'imageUrl', 'https://example.com/local-smoke-champion.png')),
     JSON_ARRAY(),
     JSON_ARRAY('Check tab rendering and search flow.'),
-    '17.6'
+    '0.0-local-smoke'
 )
 ON DUPLICATE KEY UPDATE
     name = VALUES(name),
@@ -82,7 +82,7 @@ INSERT INTO tft_guide_items (
     JSON_OBJECT(),
     JSON_ARRAY(),
     JSON_ARRAY(JSON_OBJECT('label', 'Local combination', 'items', JSON_ARRAY('B.F. Sword', 'Recurve Bow'))),
-    '17.6'
+    '0.0-local-smoke'
 )
 ON DUPLICATE KEY UPDATE
     name = VALUES(name),
@@ -108,7 +108,7 @@ INSERT INTO tft_guide_augments (
     'https://example.com/local-smoke-augment.png',
     JSON_ARRAY('Flex'),
     JSON_OBJECT(),
-    '17.6'
+    '0.0-local-smoke'
 )
 ON DUPLICATE KEY UPDATE
     name = VALUES(name),
@@ -138,7 +138,7 @@ INSERT INTO tft_guide_champions (
     JSON_OBJECT('ad', 50, 'armor', 30, 'attackSpeed', 0.75, 'hp', 900, 'mana', 80, 'mr', 30, 'range', 4),
     JSON_ARRAY('Local Trait'),
     JSON_ARRAY('Local Item'),
-    '17.6'
+    '0.0-local-smoke'
 )
 ON DUPLICATE KEY UPDATE
     name = VALUES(name),
@@ -149,6 +149,46 @@ ON DUPLICATE KEY UPDATE
     stats_json = VALUES(stats_json),
     traits_json = VALUES(traits_json),
     best_items_json = VALUES(best_items_json);
+
+SET @local_smoke_guide_patch_version := _utf8mb4'0.0-local-smoke' COLLATE utf8mb4_unicode_ci;
+SET @has_real_active_guide_snapshot := (
+    SELECT COUNT(*) > 0
+    FROM tft_guide_snapshots
+    WHERE status = 'ACTIVE'
+      AND patch_version <> @local_smoke_guide_patch_version
+);
+
+INSERT INTO tft_guide_snapshots (
+    patch_version,
+    status,
+    champion_count,
+    trait_count,
+    item_count,
+    augment_count,
+    validated_at,
+    activated_at
+) VALUES (
+    @local_smoke_guide_patch_version,
+    CASE WHEN @has_real_active_guide_snapshot THEN 'INACTIVE' ELSE 'ACTIVE' END,
+    (SELECT COUNT(*) FROM tft_guide_champions WHERE patch_version = @local_smoke_guide_patch_version),
+    (SELECT COUNT(*) FROM tft_guide_traits WHERE patch_version = @local_smoke_guide_patch_version),
+    (SELECT COUNT(*) FROM tft_guide_items WHERE patch_version = @local_smoke_guide_patch_version),
+    (SELECT COUNT(*) FROM tft_guide_augments WHERE patch_version = @local_smoke_guide_patch_version),
+    CURRENT_TIMESTAMP(6),
+    CASE WHEN @has_real_active_guide_snapshot THEN NULL ELSE CURRENT_TIMESTAMP(6) END
+)
+ON DUPLICATE KEY UPDATE
+    champion_count = VALUES(champion_count),
+    trait_count = VALUES(trait_count),
+    item_count = VALUES(item_count),
+    augment_count = VALUES(augment_count),
+    validated_at = VALUES(validated_at),
+    activated_at = CASE
+        WHEN @has_real_active_guide_snapshot THEN activated_at
+        WHEN status = 'ACTIVE' THEN activated_at
+        ELSE VALUES(activated_at)
+    END,
+    status = CASE WHEN @has_real_active_guide_snapshot THEN 'INACTIVE' ELSE 'ACTIVE' END;
 
 START TRANSACTION;
 

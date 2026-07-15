@@ -1974,7 +1974,7 @@ button.championMini:hover {
   border: 1px solid var(--border-btn-muted);
   border-radius: var(--radius-button);
   outline: 0;
-  color: var(--text-main);
+  color: var(--text-onlight-main);
   background: var(--bg-input-dark);
   font-family: inherit;
   font-size: var(--font-size-xs);
