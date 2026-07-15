@@ -25,4 +25,24 @@ public class GuideCdragonImportProperties {
     private String syncCron = "0 10 * * * *";
     private String refreshCron = "0 40 6 * * *";
     private String zone = "Asia/Seoul";
+
+    public int getMinimumChampionCount() {
+        return minimumRequired(minimumChampionCount);
+    }
+
+    public int getMinimumTraitCount() {
+        return minimumRequired(minimumTraitCount);
+    }
+
+    public int getMinimumItemCount() {
+        return minimumRequired(minimumItemCount);
+    }
+
+    public int getMinimumAugmentCount() {
+        return minimumRequired(minimumAugmentCount);
+    }
+
+    private int minimumRequired(int configuredMinimum) {
+        return Math.max(1, configuredMinimum);
+    }
 }

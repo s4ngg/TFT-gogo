@@ -111,8 +111,8 @@ class GuideCdragonImportServiceImplTest {
                 .build();
         when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
                 .thenReturn(cdragonJson());
-        when(guideSnapshotRepository.findAllByStatus(GuideSnapshotStatus.ACTIVE))
-                .thenReturn(List.of(previousActive));
+        when(guideSnapshotRepository.findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE))
+                .thenReturn(Optional.of(previousActive));
 
         // when
         GuideImportResponse response = guideCdragonImportService.importGuides(request(true, true, true, true));
@@ -143,6 +143,76 @@ class GuideCdragonImportServiceImplTest {
     }
 
     @Test
+    void 현재_ACTIVE_패치를_완전_재수집하면_활성_상태를_유지하고_검증_건수를_갱신한다() {
+        // given
+        LocalDateTime activatedAt = LocalDateTime.of(2026, 7, 14, 8, 1);
+        GuideSnapshot currentActive = GuideSnapshot.builder()
+                .patchVersion("17.3")
+                .status(GuideSnapshotStatus.ACTIVE)
+                .championCount(40)
+                .traitCount(20)
+                .itemCount(30)
+                .augmentCount(50)
+                .validatedAt(LocalDateTime.of(2026, 7, 14, 8, 0))
+                .activatedAt(activatedAt)
+                .build();
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonJson());
+        when(guideSnapshotRepository.findByPatchVersionForUpdate("17.3"))
+                .thenReturn(Optional.of(currentActive));
+        when(guideSnapshotRepository.findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE))
+                .thenReturn(Optional.of(currentActive));
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request(true, true, true, true));
+
+        // then
+        assertThat(response.getPatchVersion()).isEqualTo("17.3");
+        assertThat(currentActive.getStatus()).isEqualTo(GuideSnapshotStatus.ACTIVE);
+        assertThat(currentActive.getChampionCount()).isEqualTo(1);
+        assertThat(currentActive.getTraitCount()).isEqualTo(1);
+        assertThat(currentActive.getItemCount()).isEqualTo(1);
+        assertThat(currentActive.getAugmentCount()).isEqualTo(1);
+        assertThat(currentActive.getValidatedAt()).isAfter(LocalDateTime.of(2026, 7, 14, 8, 0));
+        assertThat(currentActive.getActivatedAt()).isEqualTo(activatedAt);
+        verify(guideSnapshotRepository).save(currentActive);
+        verify(guideSnapshotRepository, never()).flush();
+    }
+
+    @Test
+    void 두_자리_마이너_패치는_숫자로_비교해_17_10이_17_9를_대체한다() {
+        // given
+        GuideSnapshot previousActive = GuideSnapshot.builder()
+                .patchVersion("17.9")
+                .status(GuideSnapshotStatus.ACTIVE)
+                .championCount(1)
+                .traitCount(1)
+                .itemCount(1)
+                .augmentCount(1)
+                .validatedAt(LocalDateTime.of(2026, 7, 14, 8, 0))
+                .activatedAt(LocalDateTime.of(2026, 7, 14, 8, 1))
+                .build();
+        GuideCdragonImportRequest request = request(true, true, true, true);
+        ReflectionTestUtils.setField(request, "patchVersion", "17.10");
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonJson());
+        when(guideSnapshotRepository.findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE))
+                .thenReturn(Optional.of(previousActive));
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request);
+
+        // then
+        assertThat(response.getPatchVersion()).isEqualTo("17.10");
+        assertThat(previousActive.getStatus()).isEqualTo(GuideSnapshotStatus.INACTIVE);
+        ArgumentCaptor<GuideSnapshot> snapshotCaptor = ArgumentCaptor.forClass(GuideSnapshot.class);
+        verify(guideSnapshotRepository).save(snapshotCaptor.capture());
+        assertThat(snapshotCaptor.getValue().getPatchVersion()).isEqualTo("17.10");
+        assertThat(snapshotCaptor.getValue().getStatus()).isEqualTo(GuideSnapshotStatus.ACTIVE);
+        verify(guideSnapshotRepository).flush();
+    }
+
+    @Test
     void 과거_패치의_완전한_가져오기는_검증된_히스토리로만_저장한다() {
         // given
         GuideSnapshot currentActive = GuideSnapshot.builder()
@@ -159,8 +229,8 @@ class GuideCdragonImportServiceImplTest {
         ReflectionTestUtils.setField(request, "patchVersion", "17.2");
         when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
                 .thenReturn(cdragonJson());
-        when(guideSnapshotRepository.findAllByStatus(GuideSnapshotStatus.ACTIVE))
-                .thenReturn(List.of(currentActive));
+        when(guideSnapshotRepository.findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE))
+                .thenReturn(Optional.of(currentActive));
 
         // when
         GuideImportResponse response = guideCdragonImportService.importGuides(request);
@@ -202,7 +272,7 @@ class GuideCdragonImportServiceImplTest {
         verify(guideItemRepository, never()).save(any(GuideItem.class));
         verify(guideAugmentRepository, never()).save(any(GuideAugment.class));
         verify(guideSnapshotRepository, never()).save(any(GuideSnapshot.class));
-        verify(guideSnapshotRepository, never()).findAllByStatus(any());
+        verify(guideSnapshotRepository, never()).findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(any());
         verify(guideSnapshotRepository, never()).flush();
         assertThat(previousActive.getStatus()).isEqualTo(GuideSnapshotStatus.ACTIVE);
     }
@@ -218,7 +288,7 @@ class GuideCdragonImportServiceImplTest {
                 .isInstanceOf(BusinessException.class);
         verify(guideAugmentRepository, never()).save(any(GuideAugment.class));
         verify(guideSnapshotRepository, never()).save(any(GuideSnapshot.class));
-        verify(guideSnapshotRepository, never()).findAllByStatus(any());
+        verify(guideSnapshotRepository, never()).findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(any());
     }
 
     @Test
@@ -244,7 +314,7 @@ class GuideCdragonImportServiceImplTest {
         verify(guideItemRepository, never()).save(any(GuideItem.class));
         verify(guideAugmentRepository, never()).save(any(GuideAugment.class));
         verify(guideSnapshotRepository, never()).save(any(GuideSnapshot.class));
-        verify(guideSnapshotRepository, never()).findAllByStatus(any());
+        verify(guideSnapshotRepository, never()).findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(any());
         verify(guideSnapshotRepository, never()).flush();
         assertThat(previousActive.getStatus()).isEqualTo(GuideSnapshotStatus.ACTIVE);
     }
@@ -272,7 +342,7 @@ class GuideCdragonImportServiceImplTest {
         assertThat(stagedSnapshot.getAugmentCount()).isZero();
         assertThat(stagedSnapshot.getValidatedAt()).isNull();
         assertThat(stagedSnapshot.getActivatedAt()).isNull();
-        verify(guideSnapshotRepository, never()).findAllByStatus(any());
+        verify(guideSnapshotRepository, never()).findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(any());
     }
 
     @Test
@@ -307,7 +377,7 @@ class GuideCdragonImportServiceImplTest {
         assertThat(activeSnapshot.getActivatedAt()).isEqualTo(activatedAt);
         verify(guideChampionRepository, never()).save(any(GuideChampion.class));
         verify(guideSnapshotRepository, never()).save(any(GuideSnapshot.class));
-        verify(guideSnapshotRepository, never()).findAllByStatus(any());
+        verify(guideSnapshotRepository, never()).findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(any());
     }
 
     @Test
@@ -334,7 +404,7 @@ class GuideCdragonImportServiceImplTest {
         assertThat(historicalSnapshot.getItemCount()).isEqualTo(30);
         verify(guideItemRepository, never()).save(any(GuideItem.class));
         verify(guideSnapshotRepository, never()).save(any(GuideSnapshot.class));
-        verify(guideSnapshotRepository, never()).findAllByStatus(any());
+        verify(guideSnapshotRepository, never()).findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(any());
     }
 
     @Test
@@ -367,7 +437,7 @@ class GuideCdragonImportServiceImplTest {
         assertThat(stagedSnapshot.getValidatedAt()).isNull();
         assertThat(stagedSnapshot.getActivatedAt()).isNull();
         verify(guideSnapshotRepository).save(stagedSnapshot);
-        verify(guideSnapshotRepository, never()).findAllByStatus(any());
+        verify(guideSnapshotRepository, never()).findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(any());
     }
 
     @Test
