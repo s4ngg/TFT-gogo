@@ -333,13 +333,13 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
 
     private void validateRequestedImport(GuideCdragonImportRequest request, GuideImportCounts counts) {
         if ((request.shouldIncludeChampions()
-                && counts.championCount() < minimumRequired(guideCdragonImportProperties.getMinimumChampionCount()))
+                && counts.championCount() < guideCdragonImportProperties.getMinimumChampionCount())
                 || (request.shouldIncludeTraits()
-                && counts.traitCount() < minimumRequired(guideCdragonImportProperties.getMinimumTraitCount()))
+                && counts.traitCount() < guideCdragonImportProperties.getMinimumTraitCount())
                 || (request.shouldIncludeItems()
-                && counts.itemCount() < minimumRequired(guideCdragonImportProperties.getMinimumItemCount()))
+                && counts.itemCount() < guideCdragonImportProperties.getMinimumItemCount())
                 || (request.shouldIncludeAugments()
-                && counts.augmentCount() < minimumRequired(guideCdragonImportProperties.getMinimumAugmentCount()))) {
+                && counts.augmentCount() < guideCdragonImportProperties.getMinimumAugmentCount())) {
             logger.warn(
                     "CDragon guide import rejected before persistence. champions={}, traits={}, items={}, augments={}",
                     counts.championCount(),
@@ -349,10 +349,6 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             );
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
-    }
-
-    private int minimumRequired(int configuredMinimum) {
-        return Math.max(1, configuredMinimum);
     }
 
     private void validatePartialImportTarget(
@@ -396,23 +392,24 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                 counts.augmentCount(),
                 validatedAt
         );
-        List<GuideSnapshot> activeSnapshots = guideSnapshotRepository.findAllByStatus(GuideSnapshotStatus.ACTIVE);
-        boolean targetIsAlreadyActive = activeSnapshots.stream()
-                .anyMatch(activeSnapshot -> activeSnapshot.getPatchVersion().equals(patchVersion));
-        Optional<GuideSnapshot> latestOtherActive = activeSnapshots.stream()
-                .filter(activeSnapshot -> !activeSnapshot.getPatchVersion().equals(patchVersion))
-                .max((left, right) -> comparePatchVersions(left.getPatchVersion(), right.getPatchVersion()));
+        Optional<GuideSnapshot> activeSnapshot = guideSnapshotRepository
+                .findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE);
+        boolean targetIsAlreadyActive = activeSnapshot
+                .map(current -> current.getPatchVersion().equals(patchVersion))
+                .orElse(false);
 
         if (targetIsAlreadyActive) {
             guideSnapshotRepository.save(snapshot);
             return;
         }
 
-        boolean shouldActivate = latestOtherActive.isEmpty()
-                || comparePatchVersions(patchVersion, latestOtherActive.get().getPatchVersion()) > 0;
+        boolean shouldActivate = activeSnapshot.isEmpty()
+                || comparePatchVersions(patchVersion, activeSnapshot.get().getPatchVersion()) > 0;
         if (shouldActivate) {
-            activeSnapshots.forEach(GuideSnapshot::deactivate);
-            guideSnapshotRepository.flush();
+            activeSnapshot.ifPresent(GuideSnapshot::deactivate);
+            if (activeSnapshot.isPresent()) {
+                guideSnapshotRepository.flush();
+            }
             snapshot.activate(validatedAt);
         } else {
             snapshot.deactivate();

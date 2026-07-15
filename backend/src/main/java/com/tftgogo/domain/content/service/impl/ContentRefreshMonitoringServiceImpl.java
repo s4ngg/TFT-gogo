@@ -103,7 +103,7 @@ public class ContentRefreshMonitoringServiceImpl implements ContentRefreshMonito
         String currentPatchVersion = currentPatch.map(PatchNote::getVersion).orElse(null);
 
         Optional<GuideSnapshot> activeGuide = guideSnapshotRepository
-                .findFirstByStatus(GuideSnapshotStatus.ACTIVE);
+                .findFirstByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE);
         GuideDataCounts activeGuideDataCounts = activeGuide
                 .map(snapshot -> guideSnapshotRepository.countGuideDataByPatchVersion(snapshot.getPatchVersion()))
                 .orElse(null);
