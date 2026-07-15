@@ -7,6 +7,7 @@ import com.tftgogo.global.config.MetaDeckProperties;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -14,6 +15,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 
 @Component
 @RequiredArgsConstructor
@@ -25,6 +28,10 @@ public class MetaDeckScheduler {
     private final MetaDeckService metaDeckService;
     private final MetaDeckRepository metaDeckRepository;
     private final MetaDeckProperties metaDeckProperties;
+    private final MetaDeckSchedulerLock schedulerLock;
+
+    @Qualifier("aggregationExecutor")
+    private final Executor aggregationExecutor;
 
     @EventListener(ApplicationReadyEvent.class)
     public void aggregateOnStartupIfMissing() {
@@ -33,13 +40,22 @@ public class MetaDeckScheduler {
             return;
         }
         LocalDate targetDate = LocalDate.now(SCHEDULE_ZONE).minusDays(1);
-        aggregateIfMissing(targetDate, "서버 시작");
+        submitAggregateIfMissing(targetDate, "서버 시작");
     }
 
     @Scheduled(cron = "0 0 4 * * *", zone = "Asia/Seoul")
     public void scheduledAggregate() {
         LocalDate targetDate = LocalDate.now(SCHEDULE_ZONE).minusDays(1);
-        aggregateIfMissing(targetDate, "스케줄러");
+        submitAggregateIfMissing(targetDate, "스케줄러");
+    }
+
+    private void submitAggregateIfMissing(LocalDate targetDate, String trigger) {
+        try {
+            aggregationExecutor.execute(() ->
+                    schedulerLock.runWithLock(trigger, () -> aggregateIfMissing(targetDate, trigger)));
+        } catch (RejectedExecutionException e) {
+            logger.info("메타 덱 일일 집계 스킵 - trigger={}, date={}, executor 큐 가득참", trigger, targetDate);
+        }
     }
 
     private void aggregateIfMissing(LocalDate targetDate, String trigger) {
