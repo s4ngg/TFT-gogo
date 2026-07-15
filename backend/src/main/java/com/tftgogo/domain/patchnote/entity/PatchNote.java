@@ -151,6 +151,10 @@ public class PatchNote {
         this.current = false;
     }
 
+    public void markCurrent() {
+        this.current = true;
+    }
+
     public void markManuallyEditedIfImported() {
         if (isImported()) {
             this.manuallyEdited = true;

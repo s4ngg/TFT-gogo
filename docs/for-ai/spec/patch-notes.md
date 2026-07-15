@@ -107,6 +107,14 @@ Page: /patch-notes.
 - Manual rows may have null sourceKey.
 - PatchChange rows do not use soft delete or deleted_at in the current implementation.
 </patch_note_changes>
+
+<patch_note_change_tombstones>
+- Stores the deletion intent for an imported PatchChange that an admin hard-deletes.
+- patch_note_id links the tombstone to patch_notes and source_key identifies the deleted imported row.
+- (patch_note_id, source_key) is unique so repeated delete attempts cannot create duplicate suppression records.
+- Tombstones link to patch_notes, not patch_note_changes, because the original change row is hard-deleted.
+- Manual changes with a null sourceKey do not create tombstones because the Riot importer cannot recreate them.
+</patch_note_change_tombstones>
 </data-model>
 
 <admin-rules>
@@ -119,6 +127,8 @@ Page: /patch-notes.
 - Admin patch-note delete is soft delete for the PatchNote row.
 - PatchChange delete is hard delete in the current implementation.
 - Deleting a patch note soft-deletes the PatchNote row and hard-deletes its PatchChange rows.
+- Hard-deleting one imported PatchChange records its patchNote + sourceKey in patch_note_change_tombstones.
+- Deleting a whole PatchNote does not create child tombstones because the manually edited soft-deleted parent already blocks re-import.
 - Admin patch change forms must reject empty sortOrder text before numeric conversion.
 - Editing a patch change must not drift across selected patch notes. If selected patch note changes while editing, clear edit state before save.
 - When marking an imported or manually created patch as current, clear existing current rows and flush before inserting/updating the new current row if the database has a single-current unique index.
@@ -154,7 +164,10 @@ Page: /patch-notes.
 - PatchNote upsert matching order is sourceKey, then sourceUrl, then version.
 - PatchChange upsert matching key is patchNote + sourceKey.
 - Imported patch notes/changes with manuallyEdited=false may be updated by re-import.
-- Imported patch notes/changes with manuallyEdited=true are skipped by re-import.
+- Imported patch-note header fields with manuallyEdited=true are preserved, but this must not stop child change synchronization.
+- A manually edited active patch may still be marked current when an import explicitly requests current=true.
+- Imported changes with manuallyEdited=true are skipped independently by re-import.
+- A crawled change whose patchNote + sourceKey exists in patch_note_change_tombstones is skipped and must not be recreated.
 - Stale imported changes may be hard-deleted when a re-import updates an existing patch note.
 - Current implementation does not expose dryRun or forceOverwrite. Add those as a separate enhancement if needed.
 - Scheduler-driven latest refresh uses the same import endpoint/service path with sourceUrl=null and version=null.
@@ -285,14 +298,14 @@ Page: /patch-notes.
 - Scheduler: backend/src/main/java/com/tftgogo/domain/content/scheduler/ContentRefreshScheduler.java
 - Patch task: backend/src/main/java/com/tftgogo/domain/patchnote/scheduler/PatchNoteImportTask.java
 - Config: PatchNoteCrawlerProperties and PatchNoteImportSchedulerProperties.
-- Entities: PatchNote and PatchChange.
-- Repositories: PatchNoteRepository and PatchChangeRepository.
+- Entities: PatchNote, PatchChange, and PatchChangeTombstone.
+- Repositories: PatchNoteRepository, PatchChangeRepository, and PatchChangeTombstoneRepository.
 </backend-structure>
 
 <validation>
 - Public service tests should cover list response, latest/current behavior, version not found, filter query, stats separation, page slicing, invalid pagination, enum parsing, and LIKE escaping.
-- Admin service tests should cover patch-note CRUD, patch-change CRUD, JSON array validation, duplicate/current behavior, not found errors, patch-note soft delete, patch-change hard delete, and manuallyEdited marking.
-- Import tests should cover latest import by tag page, direct sourceUrl import, repeated import idempotency, manuallyEdited skip, sourceKey matching, stale imported change handling, parser warnings, unsupported host rejection, current flag behavior, and Guide-name-assisted category inference.
+- Admin service tests should cover patch-note CRUD, patch-change CRUD, JSON array validation, duplicate/current behavior, not found errors, patch-note soft delete, imported patch-change tombstone creation, patch-change hard delete, and manuallyEdited marking.
+- Import tests should cover latest import by tag page, direct sourceUrl import, repeated import idempotency, deleted sourceKey suppression, header-manual-edit/child-hotfix separation, manually edited child preservation, sourceKey matching, stale imported change handling, parser warnings, unsupported host rejection, current flag behavior, and Guide-name-assisted category inference.
 - Scheduler tests should cover disabled state, startup-import flags, exact committed-version handoff, patch-failure guide
   suppression, list scan limit, already-imported skip, current flag, in-process re-entry, and shared DB-lock contention.
 - Scheduler tests should also cover:
