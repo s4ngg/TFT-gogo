@@ -281,6 +281,8 @@ CREATE TABLE IF NOT EXISTS tft_guide_augments (
 CREATE TABLE IF NOT EXISTS tft_guide_snapshots (
     id BIGINT NOT NULL AUTO_INCREMENT,
     patch_version VARCHAR(20) NOT NULL,
+    source_set_number INT UNSIGNED NULL,
+    source_mutator VARCHAR(100) NULL,
     status VARCHAR(20) NOT NULL,
     champion_count INT UNSIGNED NOT NULL DEFAULT 0,
     trait_count INT UNSIGNED NOT NULL DEFAULT 0,
@@ -304,6 +306,16 @@ CREATE TABLE IF NOT EXISTS tft_guide_snapshots (
                 AND trait_count > 0
                 AND item_count > 0
                 AND augment_count > 0
+            )
+        ),
+    CONSTRAINT chk_tft_guide_snapshots_source_pair
+        CHECK (
+            (source_set_number IS NULL AND source_mutator IS NULL)
+            OR (
+                source_set_number IS NOT NULL
+                AND source_set_number > 0
+                AND source_mutator IS NOT NULL
+                AND CHAR_LENGTH(TRIM(source_mutator)) > 0
             )
         )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
