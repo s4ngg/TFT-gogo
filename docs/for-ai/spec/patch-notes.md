@@ -311,11 +311,12 @@ Page: /patch-notes.
 
 <validation>
 - Public service tests should cover list response, latest/current behavior, version not found, filter query, stats separation, page slicing, invalid pagination, enum parsing, and LIKE escaping.
-- Admin service tests should cover patch-note CRUD, patch-change CRUD, JSON array validation, duplicate/current behavior, not found errors, patch-note soft delete, patch-change hard delete, and manuallyEdited marking.
-- Import tests should cover latest import by tag page, direct sourceUrl import, repeated import idempotency, manuallyEdited skip, sourceKey matching, stale imported change handling, parser warnings, unsupported host rejection, current flag behavior, and Guide-name-assisted category inference.
+- Admin service tests should cover patch-note CRUD, patch-change CRUD, JSON array validation, duplicate/current behavior, not found errors, patch-note soft delete, imported patch-change tombstone creation, patch-change hard delete, and manuallyEdited marking.
+- Import tests should cover latest import by tag page, direct sourceUrl import, repeated import idempotency, deleted sourceKey suppression, header-manual-edit/child-hotfix separation, manually edited child preservation, sourceKey matching, stale imported change handling, parser warnings, unsupported host rejection, current flag behavior, and Guide-name-assisted category inference.
 - Import safety tests should cover empty rows, fatal/truncated parser warnings, sourceKey retention drops even when
   row counts are unchanged, manually edited row exclusion, and allowed small reductions.
-- Scheduler tests should cover disabled state, startup-import flag, list scan limit, already-imported skip, current flag, and in-process lock skip.
+- Scheduler tests should cover disabled state, startup-import flags, exact committed-version handoff, patch-failure guide
+  suppression, list scan limit, already-imported skip, current flag, in-process re-entry, and shared DB-lock contention.
 - Scheduler tests should also cover:
   - startup refresh of the latest patch even when the latest item is already imported.
   - daily latest refresh even when already imported.
