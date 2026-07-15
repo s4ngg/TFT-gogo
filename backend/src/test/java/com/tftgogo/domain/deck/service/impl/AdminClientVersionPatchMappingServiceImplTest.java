@@ -60,7 +60,7 @@ class AdminClientVersionPatchMappingServiceImplTest {
             ReflectionTestUtils.setField(saved, "id", 1L);
             return saved;
         });
-        when(metaDeckRepository.updatePatchVersionByClientVersion("16.13", "17.6")).thenReturn(3);
+        when(metaDeckRepository.updatePatchVersionByPreviousValue("16.13", "17.6")).thenReturn(3);
         when(cacheManager.getCache("metaDecks")).thenReturn(cache);
 
         // when
@@ -69,7 +69,7 @@ class AdminClientVersionPatchMappingServiceImplTest {
         // then
         assertThat(response.getClientVersion()).isEqualTo("16.13");
         assertThat(response.getPatchVersion()).isEqualTo("17.6");
-        verify(metaDeckRepository).updatePatchVersionByClientVersion("16.13", "17.6");
+        verify(metaDeckRepository).updatePatchVersionByPreviousValue("16.13", "17.6");
         verify(cache).clear();
     }
 
@@ -79,7 +79,7 @@ class AdminClientVersionPatchMappingServiceImplTest {
         AdminClientVersionPatchMappingRequest request = requestOf("16.13", "17.6");
         when(clientVersionPatchMappingRepository.findByClientVersion("16.13")).thenReturn(Optional.empty());
         when(clientVersionPatchMappingRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        when(metaDeckRepository.updatePatchVersionByClientVersion("16.13", "17.6")).thenReturn(0);
+        when(metaDeckRepository.updatePatchVersionByPreviousValue("16.13", "17.6")).thenReturn(0);
 
         // when
         service.createMapping(request);
@@ -116,12 +116,13 @@ class AdminClientVersionPatchMappingServiceImplTest {
     }
 
     @Test
-    void 매핑을_수정하면_원래_클라이언트_버전_기준으로_기존_데이터를_소급_반영한다() {
-        // given
+    void 매핑을_수정하면_원본_클라이언트_버전과_이전_패치_번호_둘_다_기준으로_소급_반영한다() {
+        // given: 이전에 patchVersion이 17.5로 한 번 수정된 적이 있는 매핑을 다시 17.6으로 수정
         ClientVersionPatchMapping mapping = mappingOf(1L, "16.13", "17.5");
         when(clientVersionPatchMappingRepository.findById(1L)).thenReturn(Optional.of(mapping));
         when(clientVersionPatchMappingRepository.findByClientVersion("16.13")).thenReturn(Optional.of(mapping));
-        when(metaDeckRepository.updatePatchVersionByClientVersion("16.13", "17.6")).thenReturn(2);
+        when(metaDeckRepository.updatePatchVersionByPreviousValue("16.13", "17.6")).thenReturn(0);
+        when(metaDeckRepository.updatePatchVersionByPreviousValue("17.5", "17.6")).thenReturn(2);
         when(cacheManager.getCache("metaDecks")).thenReturn(cache);
 
         // when
@@ -129,8 +130,27 @@ class AdminClientVersionPatchMappingServiceImplTest {
 
         // then
         assertThat(response.getPatchVersion()).isEqualTo("17.6");
-        verify(metaDeckRepository).updatePatchVersionByClientVersion("16.13", "17.6");
+        // 아직 매핑이 한 번도 적용되지 않은 원본 클라이언트 버전(16.13) 행도 조회
+        verify(metaDeckRepository).updatePatchVersionByPreviousValue("16.13", "17.6");
+        // 이전 매핑(17.5)으로 이미 소급 반영됐던 행도 새 값으로 다시 반영
+        verify(metaDeckRepository).updatePatchVersionByPreviousValue("17.5", "17.6");
         verify(cache).clear();
+    }
+
+    @Test
+    void 클라이언트_버전과_패치_번호가_같았던_매핑을_수정하면_소급_반영을_중복_실행하지_않는다() {
+        // given: 등록 직후라 clientVersion과 patchVersion이 아직 갈라지지 않은 상태에서 수정
+        ClientVersionPatchMapping mapping = mappingOf(1L, "16.13", "16.13");
+        when(clientVersionPatchMappingRepository.findById(1L)).thenReturn(Optional.of(mapping));
+        when(clientVersionPatchMappingRepository.findByClientVersion("16.13")).thenReturn(Optional.of(mapping));
+        when(metaDeckRepository.updatePatchVersionByPreviousValue("16.13", "17.6")).thenReturn(1);
+
+        // when
+        service.updateMapping(1L, requestOf("16.13", "17.6"));
+
+        // then
+        verify(metaDeckRepository, org.mockito.Mockito.times(1))
+                .updatePatchVersionByPreviousValue(anyString(), anyString());
     }
 
     @Test

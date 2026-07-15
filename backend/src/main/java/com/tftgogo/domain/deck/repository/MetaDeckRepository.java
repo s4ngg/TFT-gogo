@@ -39,10 +39,11 @@ public interface MetaDeckRepository extends JpaRepository<MetaDeck, Long> {
     @Query("SELECT DISTINCT d.patchVersion FROM MetaDeck d WHERE d.rankFilter = :rankFilter")
     List<String> findDistinctPatchVersionsByRankFilter(@Param("rankFilter") RankFilter rankFilter);
 
-    // 클라이언트 버전-패치 번호 매핑 등록/수정 시, 이미 집계된 기존 데이터의 표시용 패치 번호를 소급 반영
+    // 클라이언트 버전-패치 번호 매핑 등록/수정 시, 이미 집계된 기존 데이터의 표시용 패치 번호를 소급 반영.
+    // previousPatchVersionValue는 원본 클라이언트 버전일 수도, 과거에 매핑 적용된 패치 번호일 수도 있다.
     @Modifying
-    @Query("UPDATE MetaDeck d SET d.patchVersion = :patchVersion WHERE d.patchVersion = :clientVersion")
-    int updatePatchVersionByClientVersion(
-            @Param("clientVersion") String clientVersion,
+    @Query("UPDATE MetaDeck d SET d.patchVersion = :patchVersion WHERE d.patchVersion = :previousPatchVersionValue")
+    int updatePatchVersionByPreviousValue(
+            @Param("previousPatchVersionValue") String previousPatchVersionValue,
             @Param("patchVersion") String patchVersion);
 }

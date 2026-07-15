@@ -60,13 +60,19 @@ public class AdminClientVersionPatchMappingServiceImpl implements AdminClientVer
     public ClientVersionPatchMappingResponse updateMapping(Long mappingId, AdminClientVersionPatchMappingRequest request) {
         ClientVersionPatchMapping mapping = findMapping(mappingId);
         String oldClientVersion = mapping.getClientVersion();
+        String oldPatchVersion = mapping.getPatchVersion();
         String clientVersion = request.getClientVersion().trim();
         String patchVersion = request.getPatchVersion().trim();
         validateUniqueClientVersion(clientVersion, mappingId);
 
         mapping.update(clientVersion, patchVersion);
 
+        // 기존 원본 클라이언트 버전(아직 매핑 미적용) 행과, 이전에 이미 매핑 적용되어
+        // oldPatchVersion으로 저장된 행을 모두 새 patchVersion으로 소급 반영한다.
         backfillExistingMetaDecks(oldClientVersion, patchVersion);
+        if (!oldPatchVersion.equals(oldClientVersion)) {
+            backfillExistingMetaDecks(oldPatchVersion, patchVersion);
+        }
         return ClientVersionPatchMappingResponse.from(mapping);
     }
 
@@ -89,13 +95,14 @@ public class AdminClientVersionPatchMappingServiceImpl implements AdminClientVer
         }
     }
 
-    // 매핑 등록/수정 시, 원본 클라이언트 버전으로 이미 저장된 기존 메타덱 집계 데이터의 표시용 패치 번호를 소급 반영
-    private void backfillExistingMetaDecks(String clientVersion, String patchVersion) {
-        int updatedRowCount = metaDeckRepository.updatePatchVersionByClientVersion(clientVersion, patchVersion);
+    // meta_decks.patchVersion에 저장된 이전 값(원본 클라이언트 버전 또는 과거에 매핑 적용된 패치 번호)을
+    // 새 patchVersion으로 소급 반영
+    private void backfillExistingMetaDecks(String previousPatchVersionValue, String patchVersion) {
+        int updatedRowCount = metaDeckRepository.updatePatchVersionByPreviousValue(previousPatchVersionValue, patchVersion);
         if (updatedRowCount > 0) {
             logger.info(
-                    "클라이언트 버전 매핑 적용으로 기존 메타덱 패치 번호 소급 반영 - clientVersion={}, patchVersion={}, updatedRowCount={}",
-                    clientVersion, patchVersion, updatedRowCount
+                    "클라이언트 버전 매핑 적용으로 기존 메타덱 패치 번호 소급 반영 - previousValue={}, patchVersion={}, updatedRowCount={}",
+                    previousPatchVersionValue, patchVersion, updatedRowCount
             );
             Optional.ofNullable(cacheManager.getCache(CacheConfig.META_DECKS))
                     .ifPresent(Cache::clear);
