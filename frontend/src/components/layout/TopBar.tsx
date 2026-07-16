@@ -5,9 +5,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { communityDragonProfileIconUrl } from '../../api/communityDragonAssets'
 import { logout } from '../../api/memberApi'
 import { useAuthSession } from '../../hooks/useAuthSession'
-import { useLatestPatchNote } from '../../pages/Decks/hooks/useLatestPatchVersion'
 import useAuthStore from '../../store/useAuthStore'
-import RiotApiStatusBadge from './RiotApiStatusBadge'
 import { clearTopBarAuthSession } from './topBarAuth'
 import styles from './Layout.module.css'
 
@@ -23,8 +21,6 @@ function TopBar() {
   const token = useAuthStore((state) => state.token)
   const isLoggedIn = Boolean(token)
   const { data: member } = useAuthSession()
-  const latestPatch = useLatestPatchNote()
-  const patchBriefText = latestPatch ? `${latestPatch.version} 패치 요약` : '패치 요약'
   const displayName = member?.nickname ?? member?.email ?? 'TFTgogo'
   const memberProfileIconUrl = member?.profileImage || profileIconUrl
 
@@ -80,12 +76,6 @@ function TopBar() {
 
   return (
     <header className={styles.topBar}>
-      <div className={styles.topStatusGroup}>
-        <div className={styles.patchBrief} aria-label="패치 한줄 요약">
-          <span>{patchBriefText}</span>
-        </div>
-        <RiotApiStatusBadge />
-      </div>
       <div className={styles.topActions}>
         {isLoggedIn ? (
           <div className={styles.profileMenuShell}>
