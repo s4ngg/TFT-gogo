@@ -13,7 +13,7 @@
 
 .pageHeader h1 {
   margin: 0 0 5px;
-  color: #fff;
+  color: var(--text-main);
   font-size: 26px;
   font-weight: 700;
   letter-spacing: -0.03em;
@@ -21,7 +21,7 @@
 
 .pageHeader p {
   margin: 0;
-  color: #8e97a1;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
@@ -67,7 +67,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  color: #6b757e;
+  color: var(--text-muted);
   font-size: 12px;
 }
 
@@ -82,7 +82,7 @@
   gap: 12px;
   margin-bottom: 14px;
   padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--border-separator);
 }
 
 .tierLabel {
@@ -92,14 +92,14 @@
 }
 
 .tierDesc {
-  color: #6b757e;
+  color: var(--text-muted);
   font-size: 13px;
   font-weight: 400;
 }
 
 .tierCount {
   margin-left: auto;
-  color: #5a6470;
+  color: var(--text-muted);
   font-size: 12px;
   font-weight: 500;
 }
@@ -114,15 +114,15 @@
 /* ── 덱 카드 ── */
 .deckCard {
   padding: 16px 18px;
-  border: 1px solid rgba(112, 144, 152, 0.16);
+  border: 1px solid var(--border);
   border-radius: 10px;
-  background: linear-gradient(180deg, rgba(10, 24, 33, 0.96), rgba(6, 16, 22, 0.96));
+  background: var(--bg-card-gradient);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .deckCard:hover {
-  border-color: rgba(4, 243, 229, 0.2);
+  border-color: var(--accent-border-subtle);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(4, 243, 229, 0.08);
 }
 
@@ -138,7 +138,7 @@
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  color: #fff;
+  color: var(--text-main);
   font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.015em;
@@ -147,7 +147,7 @@
 }
 
 .cardRank {
-  color: #4a5560;
+  color: var(--text-muted);
   font-size: 12px;
   font-weight: 500;
 }
@@ -174,7 +174,7 @@
   grid-template-columns: repeat(4, 1fr);
   gap: 4px;
   padding-top: 12px;
-  border-top: 1px solid rgba(112, 144, 152, 0.12);
+  border-top: 1px solid var(--border-separator);
 }
 
 .stat {
@@ -185,17 +185,17 @@
 }
 
 .stat small {
-  color: #5a6470;
+  color: var(--text-muted);
   font-size: 11px;
   font-weight: 500;
 }
 
 .stat strong {
-  color: #e0e6ec;
+  color: var(--text-main);
   font-size: 15px;
   font-weight: 700;
 }
 
-.winRate  { color: #04ede0 !important; }
-.avgPlace { color: #a78bfa !important; }
-.pickRate { color: #f9c860 !important; }
+.winRate  { color: #c55a00 !important; }
+.avgPlace { color: var(--color-purple) !important; }
+.pickRate { color: var(--color-star) !important; }

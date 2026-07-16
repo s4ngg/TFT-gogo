@@ -10,39 +10,117 @@
 
 <br>
 
-## 도메인별 기능 및 담당자
+## 주요 화면
 
-### 🔍 전적 검색 (`search` · `match`) — 김성원 (gungang1212-tech)
+| 화면 | 설명 |
+|------|------|
+| 대시보드 | ![dashboard](./docs/screenshots/dashboard.png) |
+| AI 추천 | ![ai-recommend](./docs/screenshots/ai-recommend.png) |
+| 메타 덱 모음 | ![decks](./docs/screenshots/decks.png) |
+| 게임 가이드 | ![guide](./docs/screenshots/guide.png) |
+| 전적 검색 · 매치 상세 | ![search-match-detail](./docs/screenshots/search-match-detail.png) |
+| 커뮤니티 · 파티 모집 | ![community](./docs/screenshots/community.png) |
+| 패치노트 | ![patchnote](./docs/screenshots/patchnote.png) |
+| 로그인 | ![login](./docs/screenshots/login.png) |
+
+<br>
+
+## 핵심 기능
+
+### 🔍 전적 검색
 소환사명 + 태그로 Riot API에서 프로필(레벨, 아이콘, 랭크 정보)을 조회하고, 최근 매치 기록을 수집합니다. 매치 상세에서는 배치 순위, 덱 구성, 시너지, 아이템 등을 확인할 수 있습니다. Riot API Rate Limiter와 매치 캐싱으로 호출 제한을 관리합니다.
 
-### 🤖 AI 추천 · 채팅 (`ai` · `ai-server`) — 김상우 (s4ngg)
+### 🤖 AI 추천 · 채팅
 소환사의 최근 랭크 전적과 현재 메타 덱 데이터를 조합하여 AI 서버로 전송하면, OpenAI API 기반으로 맞춤 덱을 추천합니다. 별도의 AI 채팅 기능에서는 TFT 전략 관련 질의응답이 가능하며, 사용자별 Rate Limit이 적용됩니다.
 
-### 📊 메타 덱 · 영웅증강 덱 (`deck`) — 김상우 (s4ngg)
+### 📊 메타 덱 · 영웅증강 덱
 티어별(마스터+, 다이아+ 등) 메타 덱 순위를 스케줄러로 자동 수집하여 제공합니다. 각 덱의 챔피언 구성, 시너지, 핵심 아이템, 승률 등을 조회할 수 있습니다. 관리자가 영웅증강 기반 추천 덱을 직접 등록·관리하는 기능도 포함합니다.
 
-### 📖 게임 가이드 (`guide`) — 이현재 (TIG-korea)
+### 📖 게임 가이드
 Community Dragon(CDragon)에서 챔피언, 시너지, 아이템, 증강 데이터를 스케줄러로 자동 import합니다. 패치 버전별로 데이터가 관리되며, 키워드 검색과 DB 페이지네이션을 지원합니다.
 
-### 📰 패치노트 (`patchnote`) — 이현재 (TIG-korea)
+### 📰 패치노트
 공식 패치노트를 크롤링·파싱하여 변경사항을 카테고리(챔피언, 아이템, 시너지 등)와 영향도(buff, nerf, adjust)로 분류합니다. 패치별 필터링, 검색, 요약 하이라이트 기능을 제공합니다.
 
-### 🎉 커뮤니티 · 파티 모집 (`community`) — 이소정 (DevAgumon)
+### 🎉 커뮤니티 · 파티 모집
 게임 모드별 파티 모집글을 작성하고, 다른 유저가 신청·수락할 수 있습니다. 파티 채팅방에서 실시간 메시지 교환이 가능합니다.
 
-### 🔐 회원 · 인증 (`member`) — 이소정 (DevAgumon)
+### 🔐 회원 · 인증
 Google, Kakao, Naver 소셜 로그인을 지원합니다. OAuth2 인증 후 JWT 토큰을 발급하여 API 인증에 사용합니다. 관리자 계정은 별도 JWT 기반 인증으로 분리되어 있습니다.
 
 <br>
 
-## 기술 스택
+## 시스템 아키텍처
 
-| 영역 | 기술 |
-|------|------|
-| **Backend** | Spring Boot 3, MySQL, Redis, JWT, OAuth2 |
-| **AI Server** | FastAPI, PostgreSQL, pgvector, OpenAI API |
-| **Frontend** | React 18 (Vite), Zustand, TanStack Query |
-| **Infra** | AWS EC2, Nginx, Docker, GitHub Actions |
+![architecture](./docs/screenshots/architecture.svg)
+
+- **Frontend**(React, Nginx) → **Backend**(Spring Boot)로 API 요청
+- **Backend**는 MySQL(영속 데이터)과 Redis(캐시 · Rate Limit)를 사용하고, Riot Games API를 외부 호출
+- **Backend** ↔ **AI Server**(FastAPI)는 내부 시크릿 기반으로 통신하며, AI Server는 PostgreSQL(pgvector)과 OpenAI API를 사용
+- 배포: GitHub Actions → Docker 이미지 빌드 → AWS EC2(Docker Compose + Nginx 리버스 프록시)
+
+<br>
+
+## 기술 스택 및 선정 이유
+
+| 영역 | 기술 | 선정 이유 |
+|------|------|-----------|
+| **Backend** | Spring Boot 3 | 성숙한 생태계와 DDD 구조 적용 용이성 |
+| | MySQL | 전적·회원·덱 등 관계형 데이터의 정합성 관리 |
+| | Redis | Riot API 응답 캐싱(TTL)과 Rate Limiter 구현에 사용, 외부 API 호출 제한 대응 |
+| | JWT / OAuth2 | Google·Kakao·Naver 소셜 로그인 후 무상태(stateless) 인증으로 서버 확장성 확보 |
+| **AI Server** | FastAPI | Python 기반 AI/LLM 생태계와의 호환성, 비동기 처리로 OpenAI API 호출 대응 |
+| | PostgreSQL + pgvector | 메타 덱 임베딩을 저장하고 벡터 유사도 검색으로 추천 품질을 높이기 위해 채택 |
+| | OpenAI API | 자체 LLM 학습·운영 없이 검증된 모델을 프롬프트 엔지니어링으로 빠르게 적용 |
+| **Frontend** | React 18 (Vite) | 빠른 HMR과 컴포넌트 기반 재사용성 |
+| | Zustand | Redux 대비 보일러플레이트가 적은 경량 전역 상태 관리 |
+| | TanStack Query | 서버 상태(캐싱·재검증·로딩/에러)를 선언적으로 관리해 불필요한 API 재호출 최소화 |
+| **Infra** | AWS EC2, Nginx, Docker | 컨테이너 기반으로 환경 일관성을 확보하고, Nginx로 리버스 프록시·정적 파일을 서빙 |
+| | GitHub Actions | 빌드·배포 파이프라인 자동화 |
+
+<br>
+
+## 실행 방법
+
+### 사전 요구사항
+- Docker, Docker Compose
+
+### 로컬 실행 (Docker Compose)
+
+```bash
+git clone https://github.com/s4ngg/TFT-gogo.git
+cd TFT-gogo
+```
+
+루트에 `.env` 파일을 생성합니다 (`docker-compose.yml` 참고). `JWT_SECRET`, `AI_SERVER_INTERNAL_SECRET` 등은 로컬 개발용 기본값이 이미 동작하므로 그대로 두어도 되지만, 전적 검색·매치 조회 기능을 실제로 확인하려면 발급받은 Riot API 키가 필요합니다.
+
+> ⚠️ `JWT_SECRET`, `AI_SERVER_INTERNAL_SECRET`의 기본값은 **로컬 개발 전용**입니다. 외부에서 접근 가능한 스테이징/프로덕션/공개 배포 환경에서는 반드시 예측 불가능한 고유 시크릿으로 교체하세요. 또한 `.env` 파일에는 시크릿과 API 키가 포함되므로 저장소에 커밋하거나 공유하지 마세요.
+
+```bash
+RIOT_API_KEY=your-riot-api-key
+```
+
+**Riot API 키 발급 방법**
+
+1. [Riot Developer Portal](https://developer.riotgames.com/)에 접속합니다.
+2. 우측 상단에서 로그인합니다.
+3. 로그인 후 같은 페이지에서 **REGENERATE API KEY** 버튼을 클릭해 키를 발급합니다.
+4. 발급된 키를 복사해 `.env`의 `RIOT_API_KEY` 값에 붙여넣습니다.
+
+> ⚠️ 이 키는 24시간마다 만료되는 개발용 키이며, **로컬 개발·검증 용도로만 사용 가능**합니다. 공개 서비스나 스테이징/프로덕션 배포 환경에서는 사용할 수 없으며, 별도로 승인된 API 키가 필요합니다. 만료 시 같은 방법으로 재발급 후 `.env`를 갱신하고 컨테이너를 재시작해야 하며, 발급받은 키를 저장소에 커밋하거나 다른 사람과 공유하지 마세요.
+
+```bash
+docker compose up -d --build
+```
+
+실행 후 접속:
+
+| 서비스 | 주소 |
+|--------|------|
+| Frontend | http://localhost:3000 |
+| Backend | http://localhost:8081 |
+| Backend API 문서 (Swagger) | http://localhost:8081/swagger-ui/index.html |
+| AI Server | 컨테이너 내부 전용 (Backend를 통해서만 접근) |
 
 <br>
 
@@ -168,3 +246,17 @@ docs/
 ├── screenshots/   # GitHub 이슈·PR용 스크린샷
 └── team-share/    # AWS 인프라 가이드, 운영 런북
 ```
+
+<br>
+
+## 도메인별 담당자
+
+| 도메인 | 담당자 |
+|--------|--------|
+| 🔍 전적 검색 (`search` · `match`) | 김성원 (gungang1212-tech) |
+| 🤖 AI 추천 · 채팅 (`ai` · `ai-server`) | 김상우 (s4ngg) |
+| 📊 메타 덱 · 영웅증강 덱 (`deck`) | 김상우 (s4ngg) |
+| 📖 게임 가이드 (`guide`) | 이현재 (TIG-korea) |
+| 📰 패치노트 (`patchnote`) | 이현재 (TIG-korea) |
+| 🎉 커뮤니티 · 파티 모집 (`community`) | 이소정 (DevAgumon) |
+| 🔐 회원 · 인증 (`member`) | 이소정 (DevAgumon) |

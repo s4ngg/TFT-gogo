@@ -162,6 +162,7 @@ function TraitGuideView({
     totalPages: pageData.totalPages,
   })
   const visibleTraits = pageData.items
+  const isUnavailableData = traitsQuery.data.source === 'unavailable' && !traitsQuery.isFetching
   const highlightWatchKey = getGuideHighlightWatchKey(visibleTraits)
 
   useGuideHighlightScroll(traitGridRef, 'traits', highlightedGuide, highlightWatchKey)
@@ -173,12 +174,14 @@ function TraitGuideView({
   return (
     <>
       <GuideStatusBanner
-        isFallbackData={isGuideFallbackData || (traitsQuery.data.source === 'fallback' && !traitsQuery.isFetching)}
+        isFallbackData={!isUnavailableData && (isGuideFallbackData || (traitsQuery.data.source === 'fallback' && !traitsQuery.isFetching))}
         isFetching={isGuideFetching || traitsQuery.isFetching}
+        isUnavailableData={isUnavailableData}
         onRetry={() => {
           onGuideRetry()
           void traitsQuery.refetch()
         }}
+        patchVersion={traitsQuery.data.patchVersion || patchVersion}
       />
       <section className={styles.traitGrid} ref={traitGridRef}>
         {visibleTraits.length === 0 && <EmptyState />}

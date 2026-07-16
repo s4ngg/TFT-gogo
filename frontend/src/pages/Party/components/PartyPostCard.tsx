@@ -32,9 +32,11 @@ function PartyPostCard({
   const Icon = partyIconMap[post.icon]
   const { current, total } = parseCapacity(post.capacity)
   const isFull = current >= total
+  const isClosed = post.isClosed || isFull
   const joinAction = getPartyJoinActionState({
     hasJoinedOtherPost,
     isAuthenticated,
+    isClosed,
     isFull,
     isJoined,
     isJoinPending,
@@ -49,7 +51,7 @@ function PartyPostCard({
       <div className={styles.partyContent}>
         <div className={styles.partyTitleLine}>
           <h3>{post.title}</h3>
-          <span>{isFull ? '마감' : post.status}</span>
+          <span>{isClosed ? '마감' : post.status}</span>
         </div>
         <p>{post.description}</p>
         <div className={styles.partyMeta}>

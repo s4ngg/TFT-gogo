@@ -6,9 +6,10 @@ import styles from './Layout.module.css'
 
 interface AppLayoutProps {
   children: ReactNode
+  sunTheme?: boolean
 }
 
-function AppLayout({ children }: AppLayoutProps) {
+function AppLayout({ children, sunTheme = false }: AppLayoutProps) {
   const isSidebarCollapsed = useLayoutStore((state) => state.isSidebarCollapsed)
   const toggleSidebarCollapsed = useLayoutStore((state) => state.toggleSidebarCollapsed)
 
@@ -18,7 +19,7 @@ function AppLayout({ children }: AppLayoutProps) {
         isCollapsed={isSidebarCollapsed}
         onToggleCollapsed={toggleSidebarCollapsed}
       />
-      <main className={styles.main}>
+      <main className={`${styles.main} ${sunTheme ? styles.mainSun : ''}`}>
         <TopBar />
         {children}
       </main>

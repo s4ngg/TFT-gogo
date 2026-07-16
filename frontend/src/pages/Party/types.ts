@@ -12,6 +12,8 @@ export interface PartyPost {
   description: string
   icon: PartyIcon
   id: string
+  isClosed: boolean
+  isDeadlineExpired?: boolean
   isJoined?: boolean
   isOwner?: boolean
   mode: PartyMode

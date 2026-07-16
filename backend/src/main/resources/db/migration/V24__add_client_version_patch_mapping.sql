@@ -1,0 +1,7 @@
+CREATE TABLE client_version_patch_mapping (
+    id             BIGINT AUTO_INCREMENT PRIMARY KEY,
+    client_version VARCHAR(20) NOT NULL UNIQUE,
+    patch_version  VARCHAR(20) NOT NULL,
+    created_at     DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at     DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);

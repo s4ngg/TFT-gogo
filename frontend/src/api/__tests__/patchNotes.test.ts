@@ -4,7 +4,14 @@ import type { AxiosAdapter, AxiosResponse } from 'axios'
 
 import { getPatchChangeImageUrl } from '../../pages/PatchNotes/patchNotesImages'
 import axiosInstance from '../axiosInstance'
-import { getPatchNotes, sanitizePatchHighlight, type PatchChange, type PatchNoteDetail } from '../patchNotes'
+import {
+  getPatchChanges,
+  getPatchNotes,
+  sanitizePatchHighlight,
+  type PatchChange,
+  type PatchChangesQuery,
+  type PatchNoteDetail,
+} from '../patchNotes'
 import { readPatchChangeStatsPayload } from '../patchNoteStatsPayload'
 
 const originalAdapter = axiosInstance.defaults.adapter
@@ -192,6 +199,75 @@ function patchChange(overrides: Partial<PatchChange> = {}): PatchChange {
     ...overrides,
   }
 }
+
+function patchChangesQuery(version: string): PatchChangesQuery {
+  return {
+    category: '전체',
+    changeType: '전체',
+    highImpactOnly: false,
+    page: 1,
+    pageSize: 1000,
+    query: '',
+    version,
+  }
+}
+
+describe('getPatchChanges', () => {
+  it('목록 버전의 상세 조회가 실패해도 다른 버전 fallback을 섞지 않는다', async () => {
+    const fallbackData = [{
+      ...fallbackPatchNotes[0],
+      changes: [patchChange({ target: '17.3 전용 변경사항' })],
+    }]
+    const adapter: AxiosAdapter = async (config): Promise<AxiosResponse> => {
+      if (config.url !== '/patch-notes') {
+        throw new Error('patch changes request failed')
+      }
+
+      return {
+        config,
+        data: {
+          data: [{
+            isCurrent: true,
+            publishedAt: '2026-07-14T00:00:00',
+            title: '17.6 Patch Notes',
+            version: '17.6',
+          }],
+          success: true,
+        },
+        headers: {},
+        status: 200,
+        statusText: 'OK',
+      }
+    }
+    axiosInstance.defaults.adapter = adapter
+
+    const patchNotesResult = await getPatchNotes(fallbackData)
+    const selectedVersion = patchNotesResult.data[0]?.version ?? ''
+    const changesResult = await getPatchChanges(patchChangesQuery(selectedVersion), fallbackData)
+
+    assert.equal(patchNotesResult.source, 'api')
+    assert.equal(selectedVersion, '17.6')
+    assert.equal(changesResult.patchVersion, '17.6')
+    assert.equal(changesResult.source, 'unavailable')
+    assert.deepEqual(changesResult.data.items, [])
+  })
+
+  it('상세 조회가 실패하면 요청 버전과 같은 fallback만 사용한다', async () => {
+    const fallbackData = [{
+      ...fallbackPatchNotes[0],
+      changes: [patchChange({ target: '17.3 전용 변경사항' })],
+    }]
+    axiosInstance.defaults.adapter = async () => {
+      throw new Error('patch changes request failed')
+    }
+
+    const result = await getPatchChanges(patchChangesQuery('17.3'), fallbackData)
+
+    assert.equal(result.patchVersion, '17.3')
+    assert.equal(result.source, 'fallback')
+    assert.deepEqual(result.data.items.map((change) => change.target), ['17.3 전용 변경사항'])
+  })
+})
 
 describe('getPatchChangeImageUrl', () => {
   it('backend imageUrl이 있으면 fallback보다 우선한다', () => {

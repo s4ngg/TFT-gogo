@@ -1,6 +1,11 @@
 .loginPage {
   min-height: 100vh;
-  background: var(--bg-main);
+  background: var(--bg-sidebar);
   display: grid;
   place-items: center;
+}
+
+.loginForm {
+  background: var(--bg-card-gradient);
+  border-color: var(--border-card-highlight);
 }

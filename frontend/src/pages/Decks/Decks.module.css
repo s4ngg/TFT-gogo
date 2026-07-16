@@ -249,7 +249,7 @@
 .deckName {
   display: block;
   margin-bottom: 7px;
-  color: #fff;
+  color: var(--text-main);
   font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.015em;
@@ -373,7 +373,7 @@
 }
 
 .haDeckName {
-  color: #fff;
+  color: var(--text-main);
   font-size: 15px;
   font-weight: 700;
   letter-spacing: -0.02em;

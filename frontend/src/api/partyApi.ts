@@ -22,6 +22,8 @@ export interface PartyPost {
   description: string
   icon: PartyIcon
   id: string
+  isClosed: boolean
+  isDeadlineExpired?: boolean
   isJoined?: boolean
   isOwner?: boolean
   mode: PartyMode
@@ -227,6 +229,16 @@ function formatCloseLabel(value: string | null | undefined) {
   return `${date.getMonth() + 1}/${date.getDate()} ${hours}:${minutes} 마감`
 }
 
+function isDeadlineExpired(value: string | null | undefined) {
+  if (!value) {
+    return false
+  }
+
+  const deadline = new Date(value)
+
+  return !Number.isNaN(deadline.getTime()) && deadline.getTime() <= Date.now()
+}
+
 function toGameMode(mode: PartyMode) {
   if (mode === '일반') return 'NORMAL_TFT'
   if (mode === '커스텀') return 'CUSTOM'
@@ -289,6 +301,16 @@ function getPartyApiErrorMessage(error: unknown, fallbackMessage: string) {
   return fallbackMessage
 }
 
+function getPartyCreateErrorMessage(error: unknown) {
+  const message = getPartyApiErrorMessage(error, '파티 모집글 등록 실패')
+
+  if (message.includes('이미 참여 중인 파티')) {
+    return '이미 참여 중인 파티가 있습니다. 기존 파티 종료 후 새 모집글을 작성하는 기능은 준비중입니다.'
+  }
+
+  return message
+}
+
 function normalizeRequiredPartyPost(payload: unknown, fallbackMessage: string): PartyPost {
   if (!isRecord(payload)) {
     throw new Error(fallbackMessage)
@@ -312,6 +334,7 @@ function normalizePartyPost(response: PartyPostResponse, index: number): PartyPo
   const chatRoomId = normalizeCommunityChatRoomId(readId(response.chatRoomId, PARTY_RECRUITMENT_ROOM_ID))
     ?? PARTY_RECRUITMENT_ROOM_ID
   const isClosed = readBoolean(response.closed ?? response.isClosed)
+  const deadline = response.deadline ?? response.close
 
   return {
     id,
@@ -320,7 +343,9 @@ function normalizePartyPost(response: PartyPostResponse, index: number): PartyPo
     mode,
     tier,
     capacity,
-    close: formatCloseLabel(response.deadline ?? response.close),
+    close: formatCloseLabel(deadline),
+    isClosed,
+    isDeadlineExpired: isDeadlineExpired(deadline),
     status: normalizeStatus(response.status, capacity, isClosed),
     description: readString(response.description ?? response.content, '상세 설명이 없습니다.'),
     tags,
@@ -378,7 +403,7 @@ export async function createPartyPost(request: CreatePartyPostRequest): Promise<
 
     return normalizeRequiredPartyPost(payload, '파티 모집글 등록 응답이 올바르지 않습니다.')
   } catch (error) {
-    throw new Error(getPartyApiErrorMessage(error, '파티 모집글 등록 실패'))
+    throw new Error(getPartyCreateErrorMessage(error))
   }
 }
 

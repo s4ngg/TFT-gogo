@@ -8,6 +8,7 @@ import {
   getPartyJoinActionState,
   getPartyListEmptyMessage,
   mergePartyPostSources,
+  updatePostJoinState,
 } from '../partyUtils'
 
 function partyPost(id: string): PartyPost {
@@ -23,6 +24,7 @@ function partyPost(id: string): PartyPost {
     description: '같이 플레이할 파티원을 구합니다.',
     tags: ['랭크'],
     icon: 'crown',
+    isClosed: false,
     tone: 'purple',
   }
 }
@@ -62,6 +64,49 @@ describe('partyUtils', () => {
     })
 
     assert.deepEqual(result.map((post) => post.id), ['dup-party'])
+  })
+
+  it('정원 마감된 모집글은 참여 취소 후 다시 모집 상태가 된다', () => {
+    const result = updatePostJoinState({
+      ...partyPost('full-party'),
+      capacity: '2/2',
+      isClosed: true,
+      isJoined: true,
+      status: '대기중',
+    }, false)
+
+    assert.equal(result.capacity, '1/2')
+    assert.equal(result.isClosed, false)
+    assert.equal(result.status, '모집중')
+  })
+
+  it('마감 시간이 지나고 정원도 찬 모집글은 참여 취소 후에도 마감 상태를 유지한다', () => {
+    const result = updatePostJoinState({
+      ...partyPost('expired-full-party'),
+      capacity: '2/2',
+      isClosed: true,
+      isDeadlineExpired: true,
+      isJoined: true,
+      status: '대기중',
+    }, false)
+
+    assert.equal(result.capacity, '1/2')
+    assert.equal(result.isClosed, true)
+    assert.equal(result.status, '대기중')
+  })
+
+  it('정원 외 사유로 마감된 모집글은 참여 취소 후에도 마감 상태를 유지한다', () => {
+    const result = updatePostJoinState({
+      ...partyPost('closed-party'),
+      capacity: '2/3',
+      isClosed: true,
+      isJoined: true,
+      status: '대기중',
+    }, false)
+
+    assert.equal(result.capacity, '1/3')
+    assert.equal(result.isClosed, true)
+    assert.equal(result.status, '대기중')
   })
 
   it('비로그인 사용자는 파티 액션 로그인 필요 안내를 본다', () => {
@@ -106,6 +151,7 @@ describe('partyUtils', () => {
     const result = getPartyJoinActionState({
       hasJoinedOtherPost: false,
       isAuthenticated: false,
+      isClosed: false,
       isFull: false,
       isJoined: false,
       isJoinPending: false,
@@ -120,6 +166,7 @@ describe('partyUtils', () => {
     const result = getPartyJoinActionState({
       hasJoinedOtherPost: false,
       isAuthenticated: true,
+      isClosed: true,
       isFull: true,
       isJoined: true,
       isJoinPending: false,
@@ -134,6 +181,7 @@ describe('partyUtils', () => {
     const result = getPartyJoinActionState({
       hasJoinedOtherPost: false,
       isAuthenticated: false,
+      isClosed: false,
       isFull: false,
       isJoined: true,
       isJoinPending: false,
@@ -147,6 +195,7 @@ describe('partyUtils', () => {
     const ownerResult = getPartyJoinActionState({
       hasJoinedOtherPost: false,
       isAuthenticated: true,
+      isClosed: false,
       isFull: false,
       isJoined: true,
       isJoinPending: false,
@@ -155,6 +204,7 @@ describe('partyUtils', () => {
     const pendingResult = getPartyJoinActionState({
       hasJoinedOtherPost: false,
       isAuthenticated: true,
+      isClosed: false,
       isFull: false,
       isJoined: false,
       isJoinPending: true,
@@ -165,10 +215,25 @@ describe('partyUtils', () => {
     assert.deepEqual(pendingResult, { disabled: true, label: '처리중' })
   })
 
+  it('마감된 모집글은 인원이 남아도 참여 버튼을 열지 않는다', () => {
+    const result = getPartyJoinActionState({
+      hasJoinedOtherPost: false,
+      isAuthenticated: true,
+      isClosed: true,
+      isFull: false,
+      isJoined: false,
+      isJoinPending: false,
+      isOwner: false,
+    })
+
+    assert.deepEqual(result, { disabled: true, label: '마감' })
+  })
+
   it('로그인 사용자는 참여 가능한 모집글에서 참여 버튼을 본다', () => {
     const result = getPartyJoinActionState({
       hasJoinedOtherPost: false,
       isAuthenticated: true,
+      isClosed: false,
       isFull: false,
       isJoined: false,
       isJoinPending: false,
