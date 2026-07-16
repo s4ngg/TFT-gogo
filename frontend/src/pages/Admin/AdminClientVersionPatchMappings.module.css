@@ -1,0 +1,217 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xl);
+  max-width: var(--size-admin-content-max-width);
+  margin: 0 auto;
+  padding: var(--space-6xl) var(--space-4xl);
+}
+
+.header,
+.panelHeader,
+.actionsEnd,
+.rowActions {
+  display: flex;
+  align-items: center;
+}
+
+.header {
+  justify-content: space-between;
+  gap: var(--space-2xl);
+}
+
+.header .secondaryButton {
+  --text-ui: var(--text-ondark-ui);
+}
+
+.eyebrow {
+  margin: 0 0 var(--space-sm);
+  color: var(--accent);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.title {
+  --text-main: var(--text-ondark-main);
+
+  margin: 0;
+  color: var(--text-main);
+  font-size: var(--font-size-xl);
+  line-height: 1.2;
+}
+
+.successBanner,
+.errorBanner {
+  padding: var(--space-xl);
+  border-radius: var(--radius-button);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.successBanner {
+  color: var(--success);
+  background: var(--tone-gold-bg);
+  border: 1px solid var(--tone-gold-border);
+}
+
+.errorBanner {
+  color: var(--danger);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+}
+
+.noticeText {
+  margin: 0;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+  min-width: 0;
+  padding: var(--space-3xl);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+}
+
+.panelHeader {
+  justify-content: space-between;
+  gap: var(--space-xl);
+}
+
+.panelTitle {
+  margin: 0;
+  color: var(--text-main);
+  font-size: var(--font-size-md);
+  line-height: 1.25;
+}
+
+.panelHint {
+  margin: var(--space-sm) 0 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-xl);
+  align-items: end;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.field span {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+}
+
+.field input {
+  width: 100%;
+  box-sizing: border-box;
+  height: var(--size-control-md);
+  padding: 0 var(--space-lg);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-button);
+  background: var(--bg-main);
+  color: var(--text-ui);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+}
+
+.field input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.primaryButton,
+.secondaryButton,
+.dangerButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  min-height: var(--size-control-action);
+  padding: 0 var(--space-xl);
+  border-radius: var(--radius-button);
+  font-size: var(--font-size-sm);
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.primaryButton {
+  color: var(--bg-main);
+  background: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.secondaryButton {
+  color: var(--text-ui);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+}
+
+.dangerButton {
+  color: var(--danger);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.dangerButton:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.actionsEnd {
+  justify-content: flex-end;
+  gap: var(--space-md);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: var(--space-lg);
+  text-align: left;
+  border-bottom: 1px solid var(--border-faint);
+  font-size: var(--font-size-sm);
+}
+
+.table th {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.table td {
+  color: var(--text-main);
+}
+
+.rowActions {
+  gap: var(--space-md);
+  justify-content: flex-end;
+}
+
+.emptyText {
+  margin: 0;
+  padding: var(--space-5xl) 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}

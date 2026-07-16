@@ -41,7 +41,8 @@ public class AdminDeckServiceImpl implements AdminDeckService {
     }
 
     private List<AdminDeckResponse> buildAdminResponses(RankFilter rankFilter, String patch) {
-        List<MetaDeck> decks = metaDeckRepository.findByRankFilterAndPatchVersion(rankFilter, patch);
+        List<String> rawVersions = metaDeckService.resolveRawVersionsForPatch(rankFilter, patch);
+        List<MetaDeck> decks = metaDeckRepository.findByRankFilterAndPatchVersionIn(rankFilter, rawVersions);
         Map<String, DeckCuration> curationMap = deckCurationRepository
                 .findByRankFilter(rankFilter).stream()
                 .collect(Collectors.toMap(DeckCuration::getSignature, Function.identity()));
