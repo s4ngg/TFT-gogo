@@ -3,6 +3,7 @@ package com.tftgogo.domain.deck.service.impl;
 import com.tftgogo.domain.deck.entity.DeckCuration;
 import com.tftgogo.domain.deck.entity.MetaDeck;
 import com.tftgogo.domain.deck.entity.RankFilter;
+import com.tftgogo.domain.deck.repository.ClientVersionPatchMappingRepository;
 import com.tftgogo.domain.deck.repository.DeckCurationRepository;
 import com.tftgogo.domain.deck.repository.MetaDeckRepository;
 import com.tftgogo.domain.deck.dto.response.MetaDeckListResponse;
@@ -30,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -43,6 +45,9 @@ class MetaDeckServiceImplTest {
 
     @Mock
     private DeckCurationRepository deckCurationRepository;
+
+    @Mock
+    private ClientVersionPatchMappingRepository clientVersionPatchMappingRepository;
 
     @Mock
     private RiotApiClient riotApiClient;
@@ -77,7 +82,7 @@ class MetaDeckServiceImplTest {
         // given
         when(metaDeckRepository.findDistinctPatchVersionsByRankFilter(RankFilter.MASTER_PLUS))
                 .thenReturn(List.of("16.10", "16.11", "16.9"));
-        when(metaDeckRepository.findMetaDecksByPickRate(eq(RankFilter.MASTER_PLUS), eq("16.11"), anyDouble()))
+        when(metaDeckRepository.findMetaDecksByPickRateIn(eq(RankFilter.MASTER_PLUS), eq(List.of("16.11")), anyDouble()))
                 .thenReturn(List.of(metaDeck("sig1", "16.11", "S", 5.0)));
         when(deckCurationRepository.findByRankFilter(RankFilter.MASTER_PLUS))
                 .thenReturn(List.of());
@@ -88,6 +93,34 @@ class MetaDeckServiceImplTest {
         // then
         assertThat(response.getPatchVersion()).isEqualTo("16.11");
         assertThat(response.getDecks()).hasSize(1);
+    }
+
+    @Test
+    void 매핑이_적용되면_표시용_패치_번호로_조회된다() {
+        // given: 서로 다른 client version(16.13, 16.14)이 같은 패치(17.6)로 매핑된 경우
+        // meta_decks에는 원본 client version이 저장되어 있으므로 조회 시점에 매핑을 적용해 함께 조회해야 한다
+        when(metaDeckRepository.findDistinctPatchVersionsByRankFilter(RankFilter.MASTER_PLUS))
+                .thenReturn(List.of("16.13", "16.14"));
+        when(clientVersionPatchMappingRepository.findAll()).thenReturn(List.of(
+                com.tftgogo.domain.deck.entity.ClientVersionPatchMapping.builder()
+                        .clientVersion("16.13").patchVersion("17.6").build(),
+                com.tftgogo.domain.deck.entity.ClientVersionPatchMapping.builder()
+                        .clientVersion("16.14").patchVersion("17.6").build()
+        ));
+        when(metaDeckRepository.findMetaDecksByPickRateIn(eq(RankFilter.MASTER_PLUS), any(), anyDouble()))
+                .thenReturn(List.of(metaDeck("sig1", "16.13", "S", 5.0)));
+        when(deckCurationRepository.findByRankFilter(RankFilter.MASTER_PLUS))
+                .thenReturn(List.of());
+
+        // when
+        MetaDeckListResponse response = metaDeckService.getMetaDecks(RankFilter.MASTER_PLUS);
+
+        // then: 응답의 patchVersion은 매핑된 표시값이고, 조회는 매핑된 원본 client version 둘 다를 대상으로 한다
+        assertThat(response.getPatchVersion()).isEqualTo("17.6");
+        verify(metaDeckRepository).findMetaDecksByPickRateIn(
+                eq(RankFilter.MASTER_PLUS),
+                argThat(rawVersions -> rawVersions.containsAll(List.of("16.13", "16.14")) && rawVersions.size() == 2),
+                anyDouble());
     }
 
     @Test
@@ -104,7 +137,7 @@ class MetaDeckServiceImplTest {
 
         when(metaDeckRepository.findDistinctPatchVersionsByRankFilter(RankFilter.MASTER_PLUS))
                 .thenReturn(List.of("16.11"));
-        when(metaDeckRepository.findMetaDecksByPickRate(any(), anyString(), anyDouble()))
+        when(metaDeckRepository.findMetaDecksByPickRateIn(any(), any(), anyDouble()))
                 .thenReturn(List.of(hiddenDeck, visibleDeck));
         when(deckCurationRepository.findByRankFilter(RankFilter.MASTER_PLUS))
                 .thenReturn(List.of(hiddenCuration));
@@ -132,7 +165,7 @@ class MetaDeckServiceImplTest {
 
         when(metaDeckRepository.findDistinctPatchVersionsByRankFilter(RankFilter.MASTER_PLUS))
                 .thenReturn(List.of("16.11"));
-        when(metaDeckRepository.findMetaDecksByPickRate(any(), anyString(), anyDouble()))
+        when(metaDeckRepository.findMetaDecksByPickRateIn(any(), any(), anyDouble()))
                 .thenReturn(List.of(highPlayRate, lowPlayRateWithPriority));
         when(deckCurationRepository.findByRankFilter(RankFilter.MASTER_PLUS))
                 .thenReturn(List.of(curation));
@@ -264,6 +297,83 @@ class MetaDeckServiceImplTest {
 
         // then
         assertThat(latest).isEmpty();
+    }
+
+    @Test
+    void 매핑이_있으면_최신_패치는_매핑된_표시값_기준으로_계산된다() {
+        // given: 원본은 16.13이지만 17.6으로 매핑되어 있어 표시값 기준(17.6)이 최신이어야 한다
+        when(metaDeckRepository.findDistinctPatchVersionsByRankFilter(RankFilter.EMERALD_PLUS))
+                .thenReturn(List.of("16.13", "16.9"));
+        when(clientVersionPatchMappingRepository.findAll()).thenReturn(List.of(
+                com.tftgogo.domain.deck.entity.ClientVersionPatchMapping.builder()
+                        .clientVersion("16.13").patchVersion("17.6").build()
+        ));
+
+        // when
+        Optional<String> latest = metaDeckService.findLatestPatchVersion(RankFilter.EMERALD_PLUS);
+
+        // then
+        assertThat(latest).contains("17.6");
+    }
+
+    // ── normalizePatchVersion (#726) ─────────────────────────────────────
+    // meta_decks에는 매핑 적용 전 원본 client version을 그대로 저장한다.
+    // client version → 표시용 패치 번호 변환은 조회 시점(findLatestPatchVersion/resolveRawVersionsForPatch)에서만 이루어진다.
+
+    @Test
+    void game_version에서_client_version을_그대로_추출한다() {
+        // when
+        String patchVersion = org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+                metaDeckService, "normalizePatchVersion", "Version 16.13.702.1234");
+
+        // then: 매핑 여부와 무관하게 원본 client version을 반환한다
+        assertThat(patchVersion).isEqualTo("16.13");
+        verify(clientVersionPatchMappingRepository, never()).findByClientVersion(anyString());
+    }
+
+    @Test
+    void game_version이_비어있으면_UNKNOWN을_반환한다() {
+        // when
+        String patchVersion = org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+                metaDeckService, "normalizePatchVersion", (String) null);
+
+        // then
+        assertThat(patchVersion).isEqualTo("UNKNOWN");
+    }
+
+    // ── resolveRawVersionsForPatch ───────────────────────────────────────
+
+    @Test
+    void 표시_패치에_매핑된_원본_client_version들을_모두_반환한다() {
+        // given
+        when(metaDeckRepository.findDistinctPatchVersionsByRankFilter(RankFilter.MASTER_PLUS))
+                .thenReturn(List.of("16.13", "16.14", "16.20"));
+        when(clientVersionPatchMappingRepository.findAll()).thenReturn(List.of(
+                com.tftgogo.domain.deck.entity.ClientVersionPatchMapping.builder()
+                        .clientVersion("16.13").patchVersion("17.6").build(),
+                com.tftgogo.domain.deck.entity.ClientVersionPatchMapping.builder()
+                        .clientVersion("16.14").patchVersion("17.6").build()
+        ));
+
+        // when
+        List<String> rawVersions = metaDeckService.resolveRawVersionsForPatch(RankFilter.MASTER_PLUS, "17.6");
+
+        // then: 16.20은 매핑이 없어 원본값 그대로이므로 17.6 대상에서 제외된다
+        assertThat(rawVersions).containsExactlyInAnyOrder("16.13", "16.14");
+    }
+
+    @Test
+    void 매핑이_삭제되면_다음_조회부터_원본_client_version이_바로_노출된다() {
+        // given: 매핑 테이블에 더 이상 16.13에 대한 항목이 없는 상태(삭제 직후)를 시뮬레이션
+        when(metaDeckRepository.findDistinctPatchVersionsByRankFilter(RankFilter.MASTER_PLUS))
+                .thenReturn(List.of("16.13"));
+        when(clientVersionPatchMappingRepository.findAll()).thenReturn(List.of());
+
+        // when
+        Optional<String> latest = metaDeckService.findLatestPatchVersion(RankFilter.MASTER_PLUS);
+
+        // then: 별도 소급 반영 없이 원본값이 즉시 표시값으로 사용된다
+        assertThat(latest).contains("16.13");
     }
 
     // ── 헬퍼 ────────────────────────────────────────────────────────────
