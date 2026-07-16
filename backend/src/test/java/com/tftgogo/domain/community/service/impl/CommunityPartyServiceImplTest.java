@@ -164,7 +164,7 @@ class CommunityPartyServiceImplTest {
     }
 
     @Test
-    void 이미_활성_모집글을_작성한_사용자는_모집글을_작성할_수_없다() {
+    void 모집_마감_여부와_관계없이_기존_파티_작성자는_모집글을_작성할_수_없다() {
         // given
         PartyPostCreateRequest request = partyPostCreateRequest("마스터 듀오 구합니다", PartyGameMode.RANKED_TFT, 2);
         givenMemberLocked(1L);
@@ -186,7 +186,7 @@ class CommunityPartyServiceImplTest {
     }
 
     @Test
-    void 이미_다른_활성_파티에_참여한_사용자는_모집글을_작성할_수_없다() {
+    void 모집_마감_여부와_관계없이_기존_파티_참여자는_모집글을_작성할_수_없다() {
         // given
         PartyPostCreateRequest request = partyPostCreateRequest("마스터 듀오 구합니다", PartyGameMode.RANKED_TFT, 2);
         givenMemberLocked(1L);
@@ -364,7 +364,7 @@ class CommunityPartyServiceImplTest {
     }
 
     @Test
-    void 이미_다른_활성_파티에_참여한_사용자는_새_파티에_참여할_수_없다() {
+    void 모집_마감_여부와_관계없이_기존_파티_참여자는_새_파티에_참여할_수_없다() {
         // given
         PartyPost partyPost = partyPost(1L, 1L, "마스터 듀오 구합니다", PartyGameMode.RANKED_TFT, 1, 3);
         givenMemberLocked(2L);
@@ -395,7 +395,7 @@ class CommunityPartyServiceImplTest {
     }
 
     @Test
-    void 다른_활성_모집글을_작성한_사용자는_새_파티에_참여할_수_없다() {
+    void 모집_마감_여부와_관계없이_기존_파티_작성자는_새_파티에_참여할_수_없다() {
         // given
         PartyPost partyPost = partyPost(1L, 1L, "마스터 듀오 구합니다", PartyGameMode.RANKED_TFT, 1, 3);
         givenMemberLocked(2L);
