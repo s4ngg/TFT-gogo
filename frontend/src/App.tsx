@@ -9,6 +9,7 @@ const AdminDecks = lazy(() => import('./pages/Admin/AdminDecks'))
 const AdminHeroAugments = lazy(() => import('./pages/Admin/AdminHeroAugments'))
 const AdminGuides = lazy(() => import('./pages/Admin/AdminGuides'))
 const AdminPatchNotes = lazy(() => import('./pages/Admin/AdminPatchNotes'))
+const AdminClientVersionPatchMappings = lazy(() => import('./pages/Admin/AdminClientVersionPatchMappings'))
 const AdminMembers = lazy(() => import('./pages/Admin/AdminMembers'))
 const AdminCommunity = lazy(() => import('./pages/Admin/AdminCommunity'))
 const AdminMatchMonitor = lazy(() => import('./pages/Admin/AdminMatchMonitor'))
@@ -51,6 +52,7 @@ function App() {
           <Route path="/admin/hero-augments" element={<AdminHeroAugments />} />
           <Route path="/admin/guides" element={<AdminGuides />} />
           <Route path="/admin/patch-notes" element={<AdminPatchNotes />} />
+          <Route path="/admin/patch-version-mappings" element={<AdminClientVersionPatchMappings />} />
           <Route path="/admin/members" element={<AdminMembers />} />
           <Route path="/admin/community" element={<AdminCommunity />} />
           <Route path="/admin/match-monitor" element={<AdminMatchMonitor />} />

@@ -62,7 +62,7 @@ class AdminDeckServiceImplTest {
 
         // then
         assertThat(result).isEmpty();
-        verify(metaDeckRepository, never()).findByRankFilterAndPatchVersion(any(), any());
+        verify(metaDeckRepository, never()).findByRankFilterAndPatchVersionIn(any(), any());
     }
 
     @Test
@@ -71,7 +71,9 @@ class AdminDeckServiceImplTest {
         MetaDeck deck = metaDeck(1L, "sig1", RankFilter.MASTER_PLUS, "16.11");
         when(metaDeckService.findLatestPatchVersion(RankFilter.MASTER_PLUS))
                 .thenReturn(Optional.of("16.11"));
-        when(metaDeckRepository.findByRankFilterAndPatchVersion(RankFilter.MASTER_PLUS, "16.11"))
+        when(metaDeckService.resolveRawVersionsForPatch(RankFilter.MASTER_PLUS, "16.11"))
+                .thenReturn(List.of("16.11"));
+        when(metaDeckRepository.findByRankFilterAndPatchVersionIn(RankFilter.MASTER_PLUS, List.of("16.11")))
                 .thenReturn(List.of(deck));
         when(deckCurationRepository.findByRankFilter(RankFilter.MASTER_PLUS))
                 .thenReturn(List.of());
@@ -99,7 +101,9 @@ class AdminDeckServiceImplTest {
 
         when(metaDeckService.findLatestPatchVersion(RankFilter.MASTER_PLUS))
                 .thenReturn(Optional.of("16.11"));
-        when(metaDeckRepository.findByRankFilterAndPatchVersion(RankFilter.MASTER_PLUS, "16.11"))
+        when(metaDeckService.resolveRawVersionsForPatch(RankFilter.MASTER_PLUS, "16.11"))
+                .thenReturn(List.of("16.11"));
+        when(metaDeckRepository.findByRankFilterAndPatchVersionIn(RankFilter.MASTER_PLUS, List.of("16.11")))
                 .thenReturn(List.of(deck));
         when(deckCurationRepository.findByRankFilter(RankFilter.MASTER_PLUS))
                 .thenReturn(List.of(curation));

@@ -6,11 +6,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 public interface MetaDeckRepository extends JpaRepository<MetaDeck, Long> {
 
+    // patchVersion에는 매핑 적용 전 원본 client version이 저장된다 (표시용 패치 번호는 조회 시점에 매핑을 적용해 계산).
     Optional<MetaDeck> findBySignatureAndRankFilterAndPatchVersion(
             String signature, RankFilter rankFilter, String patchVersion);
 
@@ -23,17 +25,15 @@ public interface MetaDeckRepository extends JpaRepository<MetaDeck, Long> {
 
     // #134: default_batch_fetch_size로 N+1 제어 (application.yml 설정)
     // 다중 @OneToMany List 동시 join fetch → MultipleBagFetchException + 카테시안 곱 위험으로 @EntityGraph 미사용
-    @Query("SELECT d FROM MetaDeck d WHERE d.rankFilter = :rankFilter AND d.patchVersion = :patchVersion AND d.playRate >= :minPlayRate ORDER BY d.playRate DESC")
-    List<MetaDeck> findMetaDecksByPickRate(
+    // 표시용 패치 하나가 여러 원본 client version(patchVersion)에 매핑될 수 있어 IN 조건으로 조회한다.
+    @Query("SELECT d FROM MetaDeck d WHERE d.rankFilter = :rankFilter AND d.patchVersion IN :patchVersions AND d.playRate >= :minPlayRate ORDER BY d.playRate DESC")
+    List<MetaDeck> findMetaDecksByPickRateIn(
             @Param("rankFilter") RankFilter rankFilter,
-            @Param("patchVersion") String patchVersion,
+            @Param("patchVersions") Collection<String> patchVersions,
             @Param("minPlayRate") double minPlayRate);
 
-    // 관리자 페이지: 최신 패치의 전체 덱 목록
-    List<MetaDeck> findByRankFilterAndPatchVersion(RankFilter rankFilter, String patchVersion);
-
-    @Query("SELECT MAX(d.patchVersion) FROM MetaDeck d WHERE d.rankFilter = :rankFilter")
-    Optional<String> findLatestPatchVersion(@Param("rankFilter") RankFilter rankFilter);
+    // 관리자 페이지: 최신 패치의 전체 덱 목록 (표시용 패치 하나에 대응하는 원본 client version들 기준 조회)
+    List<MetaDeck> findByRankFilterAndPatchVersionIn(RankFilter rankFilter, Collection<String> patchVersions);
 
     @Query("SELECT DISTINCT d.patchVersion FROM MetaDeck d WHERE d.rankFilter = :rankFilter")
     List<String> findDistinctPatchVersionsByRankFilter(@Param("rankFilter") RankFilter rankFilter);
