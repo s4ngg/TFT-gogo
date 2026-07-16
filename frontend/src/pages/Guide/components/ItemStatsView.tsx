@@ -96,6 +96,7 @@ function ItemStatsView({
       <section className={styles.itemGuideList} aria-label="아이템 목록" ref={itemListRef}>
         {visibleItems.map((itemStat) => {
           const isHighlighted = isGuideHighlighted('items', itemStat, highlightedGuide)
+          const aiRef = createGameGuideAiRef('ITEM', itemStat.name, itemStat.targetKey)
 
           return (
             <article
@@ -113,15 +114,17 @@ function ItemStatsView({
                     <h3>{itemStat.name}</h3>
                   </div>
                 </div>
-                <button
-                  aria-label={`${itemStat.name} AI 질문`}
-                  className={styles.gameGuideAiCardButton}
-                  onClick={() => onGameGuideAiAsk(createGameGuideAiRef('ITEM', itemStat.name, itemStat.targetKey))}
-                  title="AI에게 물어보기"
-                  type="button"
-                >
-                  <Bot size={14} />
-                </button>
+                {aiRef && (
+                  <button
+                    aria-label={`${itemStat.name} AI 질문`}
+                    className={styles.gameGuideAiCardButton}
+                    onClick={() => onGameGuideAiAsk(aiRef)}
+                    title="AI에게 물어보기"
+                    type="button"
+                  >
+                    <Bot size={14} />
+                  </button>
+                )}
               </div>
 
               <p className={styles.itemGuideDescription}>
