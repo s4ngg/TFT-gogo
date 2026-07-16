@@ -35,6 +35,14 @@ function getAdminListErrorMessage(error: unknown, fallback: string): string {
   return fallback
 }
 
+function getAdminSaveErrorMessage(error: unknown, fallback: string): string {
+  if (isAdminAuthFailure(error)) return '인증 실패: 관리자 토큰을 확인해 주세요.'
+  const status = getServerErrorStatus(error)
+  if (status === 409) return '이미 등록된 클라이언트 버전입니다.'
+  if (isNetworkOrTimeoutError(error)) return '네트워크 오류: 연결 상태를 확인 후 다시 시도해 주세요.'
+  return fallback
+}
+
 function toMappingForm(mapping: AdminClientVersionPatchMapping): MappingFormState {
   return {
     clientVersion: mapping.clientVersion,
@@ -141,8 +149,8 @@ function AdminClientVersionPatchMappingsManager() {
       } else {
         await createMutation.mutateAsync(payload)
       }
-    } catch {
-      setError('매핑 저장에 실패했습니다. 입력값과 관리자 토큰을 확인해주세요.')
+    } catch (err) {
+      setError(getAdminSaveErrorMessage(err, '매핑 저장에 실패했습니다. 입력값을 확인해주세요.'))
     }
   }
 
@@ -152,8 +160,8 @@ function AdminClientVersionPatchMappingsManager() {
 
     try {
       await deleteMutation.mutateAsync(mapping.id)
-    } catch {
-      setError('매핑 삭제에 실패했습니다.')
+    } catch (err) {
+      setError(getAdminSaveErrorMessage(err, '매핑 삭제에 실패했습니다.'))
     }
   }
 
@@ -173,8 +181,8 @@ function AdminClientVersionPatchMappingsManager() {
       </header>
 
       <p className={styles.panelHint}>
-        Riot 클라이언트 빌드 버전(예: 16.13)을 TFT 패치 번호(예: 17.6)로 변환하는 매핑입니다. 등록/수정 시 기존
-        메타덱 집계 데이터의 표시용 패치 번호도 함께 반영됩니다.
+        Riot 클라이언트 빌드 버전(예: 16.13)을 TFT 패치 번호(예: 17.6)로 변환하는 매핑입니다. 등록/수정/삭제하면
+        다음 조회부터 메타덱의 표시용 패치 번호에 바로 반영됩니다.
       </p>
 
       {(message || error) && (

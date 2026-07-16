@@ -23,7 +23,7 @@ public interface AdminClientVersionPatchMappingControllerDocs {
     })
     ResponseEntity<ApiResponse<List<ClientVersionPatchMappingResponse>>> getMappings();
 
-    @Operation(summary = "Create client version patch mapping", description = "Registers a client build version to TFT patch version mapping and backfills existing meta deck aggregates.")
+    @Operation(summary = "Create client version patch mapping", description = "Registers a client build version to TFT patch version mapping. Existing meta deck aggregates are re-resolved on the next read, no backfill needed.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Success"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid request"),
@@ -34,7 +34,7 @@ public interface AdminClientVersionPatchMappingControllerDocs {
             @Valid @RequestBody AdminClientVersionPatchMappingRequest request
     );
 
-    @Operation(summary = "Update client version patch mapping", description = "Updates a client build version to TFT patch version mapping and backfills existing meta deck aggregates.")
+    @Operation(summary = "Update client version patch mapping", description = "Updates a client build version to TFT patch version mapping. Existing meta deck aggregates are re-resolved on the next read, no backfill needed.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Success"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid request"),

@@ -4,14 +4,11 @@ import com.tftgogo.domain.deck.dto.request.AdminClientVersionPatchMappingRequest
 import com.tftgogo.domain.deck.dto.response.ClientVersionPatchMappingResponse;
 import com.tftgogo.domain.deck.entity.ClientVersionPatchMapping;
 import com.tftgogo.domain.deck.repository.ClientVersionPatchMappingRepository;
-import com.tftgogo.domain.deck.repository.MetaDeckRepository;
 import com.tftgogo.domain.deck.service.AdminClientVersionPatchMappingService;
 import com.tftgogo.global.config.CacheConfig;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
@@ -24,10 +21,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class AdminClientVersionPatchMappingServiceImpl implements AdminClientVersionPatchMappingService {
 
-    private static final Logger logger = LogManager.getLogger(AdminClientVersionPatchMappingServiceImpl.class);
-
     private final ClientVersionPatchMappingRepository clientVersionPatchMappingRepository;
-    private final MetaDeckRepository metaDeckRepository;
     private final CacheManager cacheManager;
 
     @Override
@@ -51,7 +45,7 @@ public class AdminClientVersionPatchMappingServiceImpl implements AdminClientVer
                 .build();
         ClientVersionPatchMapping savedMapping = clientVersionPatchMappingRepository.save(mapping);
 
-        backfillExistingMetaDecks(clientVersion, patchVersion);
+        evictMetaDecksCache();
         return ClientVersionPatchMappingResponse.from(savedMapping);
     }
 
@@ -59,20 +53,13 @@ public class AdminClientVersionPatchMappingServiceImpl implements AdminClientVer
     @Transactional
     public ClientVersionPatchMappingResponse updateMapping(Long mappingId, AdminClientVersionPatchMappingRequest request) {
         ClientVersionPatchMapping mapping = findMapping(mappingId);
-        String oldClientVersion = mapping.getClientVersion();
-        String oldPatchVersion = mapping.getPatchVersion();
         String clientVersion = request.getClientVersion().trim();
         String patchVersion = request.getPatchVersion().trim();
         validateUniqueClientVersion(clientVersion, mappingId);
 
         mapping.update(clientVersion, patchVersion);
 
-        // 기존 원본 클라이언트 버전(아직 매핑 미적용) 행과, 이전에 이미 매핑 적용되어
-        // oldPatchVersion으로 저장된 행을 모두 새 patchVersion으로 소급 반영한다.
-        backfillExistingMetaDecks(oldClientVersion, patchVersion);
-        if (!oldPatchVersion.equals(oldClientVersion)) {
-            backfillExistingMetaDecks(oldPatchVersion, patchVersion);
-        }
+        evictMetaDecksCache();
         return ClientVersionPatchMappingResponse.from(mapping);
     }
 
@@ -81,6 +68,8 @@ public class AdminClientVersionPatchMappingServiceImpl implements AdminClientVer
     public void deleteMapping(Long mappingId) {
         ClientVersionPatchMapping mapping = findMapping(mappingId);
         clientVersionPatchMappingRepository.delete(mapping);
+
+        evictMetaDecksCache();
     }
 
     private ClientVersionPatchMapping findMapping(Long mappingId) {
@@ -95,17 +84,10 @@ public class AdminClientVersionPatchMappingServiceImpl implements AdminClientVer
         }
     }
 
-    // meta_decks.patchVersion에 저장된 이전 값(원본 클라이언트 버전 또는 과거에 매핑 적용된 패치 번호)을
-    // 새 patchVersion으로 소급 반영
-    private void backfillExistingMetaDecks(String previousPatchVersionValue, String patchVersion) {
-        int updatedRowCount = metaDeckRepository.updatePatchVersionByPreviousValue(previousPatchVersionValue, patchVersion);
-        if (updatedRowCount > 0) {
-            logger.info(
-                    "클라이언트 버전 매핑 적용으로 기존 메타덱 패치 번호 소급 반영 - previousValue={}, patchVersion={}, updatedRowCount={}",
-                    previousPatchVersionValue, patchVersion, updatedRowCount
-            );
-            Optional.ofNullable(cacheManager.getCache(CacheConfig.META_DECKS))
-                    .ifPresent(Cache::clear);
-        }
+    // meta_decks에는 원본 client version이 저장되고 표시용 패치 번호는 조회 시점에 매핑을 적용해 계산되므로,
+    // 매핑을 바꾸면 다음 조회부터 바로 반영된다. 캐시된 응답만 무효화하면 되고 별도 소급 반영(bulk UPDATE)은 필요 없다.
+    private void evictMetaDecksCache() {
+        Optional.ofNullable(cacheManager.getCache(CacheConfig.META_DECKS))
+                .ifPresent(Cache::clear);
     }
 }

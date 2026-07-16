@@ -129,10 +129,11 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                     .build();
         }
         String latestPatchVersion = latestPatchOpt.get();
+        List<String> rawVersions = resolveRawVersionsForPatch(rankFilter, latestPatchVersion);
 
         // 선택률 기준 내림차순 정렬 + 최소 선택률 필터 적용
         List<MetaDeck> decks = metaDeckRepository
-                .findMetaDecksByPickRate(rankFilter, latestPatchVersion, MIN_PLAY_RATE);
+                .findMetaDecksByPickRateIn(rankFilter, rawVersions, MIN_PLAY_RATE);
 
         // 큐레이션 적용: customName 오버라이드, 숨김 처리, sortPriority 정렬
         Map<String, com.tftgogo.domain.deck.entity.DeckCuration> curationMap =
@@ -775,6 +776,8 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         return TftAssetUrlBuilder.buildTraitIconUrl(traitId);
     }
 
+    // meta_decks에는 원본 client version을 그대로 저장한다.
+    // client version → 표시용 패치 번호 변환은 조회 시점에 매핑 테이블을 참조해 계산한다 (#726 관련 소급 반영 문제 회피).
     private String normalizePatchVersion(String gameVersion) {
         if (gameVersion == null || gameVersion.isBlank()) {
             return UNKNOWN_PATCH_VERSION;
@@ -785,18 +788,34 @@ public class MetaDeckServiceImpl implements MetaDeckService {
             return UNKNOWN_PATCH_VERSION;
         }
 
-        String clientVersion = matcher.group(1);
-        // 매핑이 없는 클라이언트 버전은 원본 값을 그대로 노출 (데이터 누락처럼 보이지 않도록 UNKNOWN으로 치환하지 않음)
-        return clientVersionPatchMappingRepository.findByClientVersion(clientVersion)
-                .map(ClientVersionPatchMapping::getPatchVersion)
-                .orElse(clientVersion);
+        return matcher.group(1);
     }
 
     @Override
     public Optional<String> findLatestPatchVersion(RankFilter rankFilter) {
+        Map<String, String> clientVersionToPatch = buildClientVersionToPatchMap();
         return metaDeckRepository.findDistinctPatchVersionsByRankFilter(rankFilter).stream()
-                .filter(patchVersion -> !UNKNOWN_PATCH_VERSION.equals(patchVersion))
+                .filter(rawVersion -> !UNKNOWN_PATCH_VERSION.equals(rawVersion))
+                .map(rawVersion -> resolveDisplayPatchVersion(rawVersion, clientVersionToPatch))
                 .max(this::comparePatchVersions);
+    }
+
+    @Override
+    public List<String> resolveRawVersionsForPatch(RankFilter rankFilter, String displayPatchVersion) {
+        Map<String, String> clientVersionToPatch = buildClientVersionToPatchMap();
+        return metaDeckRepository.findDistinctPatchVersionsByRankFilter(rankFilter).stream()
+                .filter(rawVersion -> resolveDisplayPatchVersion(rawVersion, clientVersionToPatch).equals(displayPatchVersion))
+                .toList();
+    }
+
+    private Map<String, String> buildClientVersionToPatchMap() {
+        return clientVersionPatchMappingRepository.findAll().stream()
+                .collect(Collectors.toMap(ClientVersionPatchMapping::getClientVersion, ClientVersionPatchMapping::getPatchVersion));
+    }
+
+    // 매핑이 없는 클라이언트 버전은 원본 값을 그대로 노출 (데이터 누락처럼 보이지 않도록 UNKNOWN으로 치환하지 않음)
+    private String resolveDisplayPatchVersion(String rawVersion, Map<String, String> clientVersionToPatch) {
+        return clientVersionToPatch.getOrDefault(rawVersion, rawVersion);
     }
 
     private int comparePatchVersions(String left, String right) {
