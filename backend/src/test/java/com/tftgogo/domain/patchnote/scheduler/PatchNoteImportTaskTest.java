@@ -7,6 +7,8 @@ import com.tftgogo.domain.patchnote.dto.request.AdminPatchNoteImportRequest;
 import com.tftgogo.domain.patchnote.dto.response.AdminPatchNoteImportResponse;
 import com.tftgogo.domain.patchnote.entity.PatchNote;
 import com.tftgogo.domain.patchnote.repository.PatchNoteRepository;
+import com.tftgogo.domain.patchnote.scheduler.PatchNoteImportTask.HistoryBackfillResult;
+import com.tftgogo.domain.patchnote.scheduler.PatchNoteImportTask.PatchNoteRefreshResult;
 import com.tftgogo.domain.patchnote.service.AdminPatchNoteService;
 import com.tftgogo.domain.patchnote.service.PatchNoteCrawlerFetchService;
 import com.tftgogo.domain.patchnote.service.PatchNoteCrawlerParser;
@@ -23,7 +25,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -91,10 +92,13 @@ class PatchNoteImportTaskTest {
         when(crawlerFetchService.fetchTagPage("ko-kr"))
                 .thenThrow(new RuntimeException("riot list unavailable"));
 
-        // when, then
-        assertThatCode(() -> assertThat(importTask.importLatestPatchNoteThenUnknownPatchNotesFromList())
-                .isSameAs(response))
-                .doesNotThrowAnyException();
+        // when
+        PatchNoteRefreshResult result = importTask.importLatestPatchNoteThenUnknownPatchNotesFromList();
+
+        // then
+        assertThat(result.latestPatchNote()).isSameAs(response);
+        assertThat(result.hasHistoryFailures()).isTrue();
+        assertThat(result.historyBackfill().failedCount()).isEqualTo(1);
         verify(adminPatchNoteService).importRiotPatchNote(any(AdminPatchNoteImportRequest.class));
     }
 
@@ -116,10 +120,13 @@ class PatchNoteImportTaskTest {
         givenPatchList(oldItem, noDateItem);
 
         // when
-        importTask.importUnknownPatchNotesFromList();
+        HistoryBackfillResult result = importTask.importUnknownPatchNotesFromList();
 
         // then
         verifyNoInteractions(patchNoteRepository, adminPatchNoteService);
+        assertThat(result.scannedCount()).isEqualTo(2);
+        assertThat(result.importedCount()).isZero();
+        assertThat(result.failedCount()).isZero();
     }
 
     @Test
@@ -148,7 +155,7 @@ class PatchNoteImportTaskTest {
                 });
 
         // when
-        importTask.importUnknownPatchNotesFromList();
+        HistoryBackfillResult result = importTask.importUnknownPatchNotesFromList();
 
         // then
         ArgumentCaptor<AdminPatchNoteImportRequest> captor =
@@ -159,6 +166,9 @@ class PatchNoteImportTaskTest {
         assertThat(requests.get(0).shouldMarkCurrent()).isFalse();
         assertThat(requests.get(1).getSourceUrl()).isEqualTo(latestNew.detailUrl());
         assertThat(requests.get(1).shouldMarkCurrent()).isTrue();
+        assertThat(result.scannedCount()).isEqualTo(2);
+        assertThat(result.importedCount()).isEqualTo(1);
+        assertThat(result.failedCount()).isEqualTo(1);
     }
 
     @Test
