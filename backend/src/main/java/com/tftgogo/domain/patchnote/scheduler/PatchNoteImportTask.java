@@ -33,10 +33,11 @@ public class PatchNoteImportTask {
     private final PatchNoteRepository patchNoteRepository;
     private final PatchNoteImportSchedulerProperties properties;
 
-    public AdminPatchNoteImportResponse importLatestPatchNoteThenUnknownPatchNotesFromList() {
+    public PatchNoteRefreshResult importLatestPatchNoteThenUnknownPatchNotesFromList() {
         AdminPatchNoteImportResponse latestPatchNote = importLatestPatchNote();
+        HistoryBackfillResult historyResult;
         try {
-            importUnknownPatchNotesFromList();
+            historyResult = importUnknownPatchNotesFromList();
         } catch (Exception e) {
             logger.warn(
                     "Patch note history backfill failed after latest patch was committed. "
@@ -44,8 +45,9 @@ public class PatchNoteImportTask {
                     latestPatchNote.getVersion(),
                     e
             );
+            historyResult = HistoryBackfillResult.failed();
         }
-        return latestPatchNote;
+        return new PatchNoteRefreshResult(latestPatchNote, historyResult);
     }
 
     public AdminPatchNoteImportResponse importLatestPatchNote() {
@@ -67,18 +69,19 @@ public class PatchNoteImportTask {
         return response;
     }
 
-    public void importUnknownPatchNotesFromList() {
+    public HistoryBackfillResult importUnknownPatchNotesFromList() {
         String locale = normalizeLocale(properties.getLocale());
         PatchNoteCrawlFetchedPage listPage = crawlerFetchService.fetchTagPage(locale);
         List<PatchNoteCrawlListItem> listItems = crawlerParser.parseListPage(listPage);
         if (listItems.isEmpty()) {
             logger.info("Patch note list check skipped because Riot list is empty. locale={}", locale);
-            return;
+            return HistoryBackfillResult.empty();
         }
 
         int scanLimit = Math.min(properties.getListScanLimit(), listItems.size());
         LocalDateTime historyCutoff = LocalDateTime.now().minusMonths(properties.getHistoryMonths());
         int imported = 0;
+        int failed = 0;
         for (int index = scanLimit - 1; index >= 0; index--) {
             PatchNoteCrawlListItem item = listItems.get(index);
             if (!hasText(item.detailUrl())) {
@@ -113,6 +116,7 @@ public class PatchNoteImportTask {
                         response.isPatchNoteSkipped()
                 );
             } catch (Exception e) {
+                failed++;
                 logger.warn(
                         "Patch note import item failed. detailUrl={}, version={}, current={}",
                         item.detailUrl(),
@@ -124,12 +128,14 @@ public class PatchNoteImportTask {
         }
 
         logger.info(
-                "Patch note list check completed. scanned={}, historyMonths={}, historyCutoff={}, imported={}",
+                "Patch note list check completed. scanned={}, historyMonths={}, historyCutoff={}, imported={}, failed={}",
                 scanLimit,
                 properties.getHistoryMonths(),
                 historyCutoff,
-                imported
+                imported,
+                failed
         );
+        return new HistoryBackfillResult(scanLimit, imported, failed);
     }
 
     private boolean isWithinHistoryWindow(PatchNoteCrawlListItem item, LocalDateTime historyCutoff) {
@@ -172,5 +178,24 @@ public class PatchNoteImportTask {
 
     private boolean hasText(String value) {
         return value != null && !value.trim().isEmpty();
+    }
+
+    public record PatchNoteRefreshResult(
+            AdminPatchNoteImportResponse latestPatchNote,
+            HistoryBackfillResult historyBackfill
+    ) {
+        public boolean hasHistoryFailures() {
+            return historyBackfill != null && historyBackfill.failedCount() > 0;
+        }
+    }
+
+    public record HistoryBackfillResult(int scannedCount, int importedCount, int failedCount) {
+        private static HistoryBackfillResult empty() {
+            return new HistoryBackfillResult(0, 0, 0);
+        }
+
+        private static HistoryBackfillResult failed() {
+            return new HistoryBackfillResult(0, 0, 1);
+        }
     }
 }
