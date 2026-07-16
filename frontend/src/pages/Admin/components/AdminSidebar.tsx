@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutGrid, Sword, BookOpen, FileText, Users, MessageSquare, Activity, LogOut } from 'lucide-react'
+import { LayoutGrid, Sword, BookOpen, FileText, Users, MessageSquare, Activity, LogOut, ArrowLeftRight } from 'lucide-react'
 import { clearAccessToken, adminLogout, getHttpStatus } from '../../../api/adminApi'
 import { useAdminSession } from '../../../hooks/useAdminSession'
 import styles from './AdminSidebar.module.css'
@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { path: '/admin/guides',         label: '게임가이드 관리',  icon: BookOpen,      ready: true  },
   { path: '/admin/match-monitor',  label: '전적 모니터링',    icon: Activity,      ready: true  },
   { path: '/admin/patch-notes',    label: '패치노트 관리',    icon: FileText,      ready: true  },
+  { path: '/admin/patch-version-mappings', label: '패치 버전 매핑', icon: ArrowLeftRight, ready: true },
   { path: '/admin/members',        label: '회원 관리',        icon: Users,         ready: false },
   { path: '/admin/community',      label: '커뮤니티 관리',    icon: MessageSquare, ready: false },
 ]
