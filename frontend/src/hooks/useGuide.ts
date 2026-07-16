@@ -56,6 +56,7 @@ export function useGuideCatalog({ fallbackData }: UseGuideCatalogOptions) {
   })
   const patchVersionResult = patchVersionQuery.data ?? placeholderData
   return {
+    dataSource: patchVersionResult.source,
     isFallbackData: patchVersionResult.source === 'fallback' && !patchVersionQuery.isFetching,
     isFetching: patchVersionQuery.isFetching,
     patchVersion: patchVersionResult.patchVersion,

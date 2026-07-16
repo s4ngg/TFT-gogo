@@ -4,17 +4,30 @@ import com.tftgogo.domain.guide.entity.GuideChampion;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface GuideChampionRepository extends JpaRepository<GuideChampion, Long> {
 
     Optional<GuideChampion> findByChampionKeyAndPatchVersion(String championKey, String patchVersion);
 
     List<GuideChampion> findByPatchVersionOrderByNameAscIdAsc(String patchVersion);
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            DELETE FROM GuideChampion champion
+            WHERE champion.patchVersion = :patchVersion
+              AND champion.championKey NOT IN (:retainedKeys)
+            """)
+    int deleteStaleByPatchVersion(
+            @Param("patchVersion") String patchVersion,
+            @Param("retainedKeys") Set<String> retainedKeys
+    );
 
     @Query(
             value = """

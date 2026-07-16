@@ -1,5 +1,5 @@
 import { BookOpen } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { GameGuideAiPathfinderRef } from '../../api/gameGuideAiPathfinderApi'
 import type { GuideTab, GuideTabItems } from '../../api/guide'
 import { AppLayout } from '../../components/layout'
@@ -20,6 +20,7 @@ function Guide() {
   const [gameGuideAiSelectedRefs, setGameGuideAiSelectedRefs] = useState<GameGuideAiPathfinderRef[]>([])
   const [gameGuideAiVisibleItems, setGameGuideAiVisibleItems] = useState<GuideTabItems[GuideTab][number][]>([])
   const {
+    dataSource: guideDataSource,
     isFallbackData: isGuideFallbackData,
     isFetching: isGuideFetching,
     patchVersion,
@@ -38,6 +39,7 @@ function Guide() {
     selectTab,
     setSearch,
   } = useGuidePageState()
+  const isGameGuideAiAvailable = guideDataSource === 'api'
   const gameGuideAiCandidateRefs = useGameGuideAiCandidateRefs(activeTab, gameGuideAiVisibleItems)
   const gameGuideAiSelectionKey = gameGuideAiSelectedRefs
     .map((ref) => `${ref.guideType}:${ref.targetKey}`)
@@ -46,6 +48,13 @@ function Guide() {
     setGameGuideAiVisibleItems(items)
   }, [])
   const { handleGuideJump, highlightedGuide } = useGuideHighlight({ onJump: jumpToGuide })
+
+  useEffect(() => {
+    if (isGameGuideAiAvailable) return
+    setIsGameGuideAiOpen(false)
+    setGameGuideAiSelectedRefs([])
+    setGameGuideAiVisibleItems([])
+  }, [isGameGuideAiAvailable])
 
   function handleGameGuideAiAsk(ref: GameGuideAiPathfinderRef) {
     setGameGuideAiSelectedRefs([ref])
@@ -109,17 +118,19 @@ function Guide() {
           query={debouncedSearch}
         />
 
-        <GameGuideAiChatWidget
-          activeTab={activeTab}
-          activeTabLabel={activeTabInfo.label}
-          candidateRefs={gameGuideAiCandidateRefs}
-          isOpen={isGameGuideAiOpen}
-          key={gameGuideAiSelectionKey}
-          onOpenChange={handleGameGuideAiOpenChange}
-          onGuideJump={handleGuideJump}
-          patchVersion={patchVersion}
-          selectedRefs={gameGuideAiSelectedRefs}
-        />
+        {isGameGuideAiAvailable && (
+          <GameGuideAiChatWidget
+            activeTab={activeTab}
+            activeTabLabel={activeTabInfo.label}
+            candidateRefs={gameGuideAiCandidateRefs}
+            isOpen={isGameGuideAiOpen}
+            key={gameGuideAiSelectionKey}
+            onOpenChange={handleGameGuideAiOpenChange}
+            onGuideJump={handleGuideJump}
+            patchVersion={patchVersion}
+            selectedRefs={gameGuideAiSelectedRefs}
+          />
+        )}
       </div>
     </AppLayout>
   )

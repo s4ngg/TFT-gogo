@@ -33,6 +33,7 @@ import org.springframework.web.client.RestTemplate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -139,6 +140,16 @@ class GuideCdragonImportServiceImplTest {
         assertThat(activatedSnapshot.getAugmentCount()).isEqualTo(1);
         assertThat(activatedSnapshot.getValidatedAt()).isNotNull();
         assertThat(activatedSnapshot.getActivatedAt()).isNotNull();
+        verify(guideChampionRepository).deleteStaleByPatchVersion("17.3", Set.of("TFT17_Briar"));
+        verify(guideTraitRepository).deleteStaleByPatchVersion("17.3", Set.of("TFT17_AnimalSquad"));
+        verify(guideItemRepository).deleteStaleByPatchVersion(
+                "17.3",
+                Set.of("TFT_Item_GuinsoosRageblade")
+        );
+        verify(guideAugmentRepository).deleteStaleByPatchVersion(
+                "17.3",
+                Set.of("TFT17_Augment_BattleReady")
+        );
         verify(guideSnapshotRepository).flush();
     }
 
@@ -469,6 +480,10 @@ class GuideCdragonImportServiceImplTest {
         assertThat(trait.getTraitKey()).isEqualTo("TFT17_AnimalSquad");
         assertThat(trait.getPatchVersion()).isEqualTo("17.3");
         assertThat(trait.getChampionsJson()).contains("Briar");
+        verify(guideChampionRepository, never()).deleteStaleByPatchVersion(any(), any());
+        verify(guideTraitRepository, never()).deleteStaleByPatchVersion(any(), any());
+        verify(guideItemRepository, never()).deleteStaleByPatchVersion(any(), any());
+        verify(guideAugmentRepository, never()).deleteStaleByPatchVersion(any(), any());
     }
 
     @Test
