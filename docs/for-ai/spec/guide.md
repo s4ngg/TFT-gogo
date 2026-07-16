@@ -221,7 +221,8 @@ Page: Guide (/guide).
 </backend-implementation>
 
 <scheduler>
-- GuideCdragonImportScheduler is implemented.
+- ContentRefreshScheduler is the only automatic entry point for patch-note and CDragon guide refreshes.
+- GuideCdragonImportTask owns request construction and guide import without an independent schedule or lock.
 - Scheduler properties use prefix app.guide.cdragon.
 - Defaults:
   - enabled=false
@@ -237,15 +238,17 @@ Page: Guide (/guide).
   - minimum-trait-count=20
   - minimum-item-count=30
   - minimum-augment-count=50
-  - sync-cron=0 10 * * * *
-  - refresh-cron=0 40 6 * * *
-  - zone=Asia/Seoul
-- Startup import runs on ApplicationReadyEvent only when enabled=true and startup-import=true.
-- Startup import runs after patch-note startup import so patch-version=latest can resolve to the latest current patch note.
-- Sync import runs hourly by default and refresh import runs daily at 06:40 KST by default.
-- Scheduler uses an in-process AtomicBoolean lock to avoid overlapping guide imports in a single server instance.
-- Scheduler also uses a MySQL advisory DB lock so only one server instance runs CDragon import in multi-server deployments.
-- Scheduler skips before acquiring the DB lock when set-number or mutator is missing, preserving the current ACTIVE snapshot.
+- Guide timing comes only from app.patch-note.scheduler list-cron, refresh-cron, and zone. There is no independent guide cron.
+- Startup guide import runs only when patch-note startup import and guide enabled/startup-import are all true.
+- The non-transactional coordinator waits for the latest patch-note transaction to commit, then passes the exact returned
+  patch version to GuideCdragonImportTask. Automatic import must not rebuild the request with patch-version=`latest`.
+- The in-process AtomicBoolean and shared MySQL advisory lock cover the whole patch-note-to-guide sequence.
+- Scheduler skips the whole ordered refresh before patch persistence when the enabled guide step has no explicit
+  set-number or mutator, preserving patch/guide version alignment.
+- If patch import fails or returns no version, guide import does not start. If guide import fails, its transaction rolls
+  back, the current ACTIVE snapshot remains public, and the next scheduled refresh retries.
+- Admin manual patch-note and CDragon imports use the same advisory lock and return CONTENT_REFRESH_ALREADY_RUNNING
+  when another automatic or manual content import owns it.
 - Local/dev should keep the scheduler disabled by default. Use the admin import button for local QA.
 </scheduler>
 
@@ -259,7 +262,8 @@ Page: Guide (/guide).
 - Entities: backend/src/main/java/com/tftgogo/domain/guide/entity/
 - CDragon config: backend/src/main/java/com/tftgogo/global/cdragon/config/CommunityDragonProperties.java
 - CDragon locale proxy/cache: backend/src/main/java/com/tftgogo/global/cdragon/controller/CDragonController.java and backend/src/main/java/com/tftgogo/global/cdragon/service/TftAssetCacheService.java
-- Scheduler: backend/src/main/java/com/tftgogo/domain/guide/scheduler/GuideCdragonImportScheduler.java
+- Scheduler: backend/src/main/java/com/tftgogo/domain/content/scheduler/ContentRefreshScheduler.java
+- Guide task: backend/src/main/java/com/tftgogo/domain/guide/scheduler/GuideCdragonImportTask.java
 - Scheduler properties: backend/src/main/java/com/tftgogo/global/config/GuideCdragonImportProperties.java
 </backend-structure>
 

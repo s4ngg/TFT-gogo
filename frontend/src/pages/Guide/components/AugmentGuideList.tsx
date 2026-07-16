@@ -40,6 +40,7 @@ function AugmentGuideList({
         <div className={styles.augmentCardGrid}>
           {augments.map((augment) => {
             const isHighlighted = isGuideHighlighted('augments', augment, highlightedGuide)
+            const aiRef = createGameGuideAiRef('AUGMENT', augment.name, augment.targetKey)
 
             return (
               <article
@@ -53,15 +54,17 @@ function AugmentGuideList({
                     imageUrl={augment.imageUrl}
                   />
                   <h3>{augment.name}</h3>
-                  <button
-                    aria-label={`${augment.name} AI 질문`}
-                    className={styles.gameGuideAiCardButton}
-                    onClick={() => onGameGuideAiAsk(createGameGuideAiRef('AUGMENT', augment.name, augment.targetKey))}
-                    title="AI에게 물어보기"
-                    type="button"
-                  >
-                    <Bot size={14} />
-                  </button>
+                  {aiRef && (
+                    <button
+                      aria-label={`${augment.name} AI 질문`}
+                      className={styles.gameGuideAiCardButton}
+                      onClick={() => onGameGuideAiAsk(aiRef)}
+                      title="AI에게 물어보기"
+                      type="button"
+                    >
+                      <Bot size={14} />
+                    </button>
+                  )}
                 </div>
                 <p>{augment.description}</p>
                 {augment.tags.length > 0 && (

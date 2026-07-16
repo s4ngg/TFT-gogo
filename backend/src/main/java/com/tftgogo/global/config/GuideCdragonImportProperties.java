@@ -22,9 +22,6 @@ public class GuideCdragonImportProperties {
     private int minimumTraitCount = 20;
     private int minimumItemCount = 30;
     private int minimumAugmentCount = 50;
-    private String syncCron = "0 10 * * * *";
-    private String refreshCron = "0 40 6 * * *";
-    private String zone = "Asia/Seoul";
 
     public int getMinimumChampionCount() {
         return minimumRequired(minimumChampionCount);
