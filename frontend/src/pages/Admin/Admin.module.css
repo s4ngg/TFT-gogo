@@ -71,7 +71,7 @@
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
-  color: var(--text-primary);
+  color: var(--text-ui);
   font-size: 0.9rem;
   cursor: pointer;
 }
@@ -91,6 +91,10 @@
 
 /* 테이블 */
 .table {
+  /* 테이블은 카드 박스 없이 검정 페이지 배경 위에 바로 놓이므로 밝은 텍스트로 복귀 */
+  --text-main: var(--text-ondark-main);
+  --text-muted: var(--text-ondark-muted);
+
   width: 100%;
   border-collapse: collapse;
   font-size: 0.875rem;
@@ -115,6 +119,9 @@
 .hiddenRow td { opacity: 0.4; }
 
 .mutedText {
+  /* 카드 박스 밖 검정 배경 위 텍스트라 밝은 색 복귀 */
+  --text-muted: var(--text-ondark-muted);
+
   color: var(--text-muted);
 }
 
@@ -317,7 +324,7 @@
 .modalTitle {
   font-size: 1rem;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--text-main);
 }
 
 .modalClose {
@@ -571,7 +578,7 @@
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: 6px;
-  color: var(--text-primary);
+  color: var(--text-ui);
   font-size: 0.8rem;
   width: 100%;
   box-sizing: border-box;

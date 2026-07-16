@@ -23,14 +23,14 @@
   align-items: center;
   gap: 7px;
   margin-bottom: 8px;
-  color: #05f3e7;
+  color: var(--accent);
   font-size: 12px;
   font-weight: 700;
 }
 
 .titleBlock h1 {
   margin: 0 0 6px;
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 26px;
   font-weight: 700;
   letter-spacing: 0;
@@ -38,7 +38,7 @@
 
 .titleBlock p {
   margin: 0;
-  color: #8e97a1;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
@@ -54,9 +54,9 @@
   min-height: 46px;
   display: inline-flex;
   justify-content: center;
-  border: 1px solid rgba(112, 144, 152, 0.18);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: rgba(8, 20, 28, 0.76);
+  background: var(--bg-card);
 }
 
 .statBadge {
@@ -67,13 +67,13 @@
 }
 
 .statBadge small {
-  color: #6b7580;
+  color: var(--text-muted);
   font-size: 11px;
   font-weight: 600;
 }
 
 .statBadge strong {
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 16px;
   font-weight: 700;
 }
@@ -103,7 +103,7 @@
   padding: 10px 13px;
   border: 1px solid rgba(112, 144, 152, 0.18);
   border-radius: 8px;
-  color: #8e97a1;
+  color: var(--text-secondary);
   background: rgba(8, 20, 28, 0.72);
   cursor: pointer;
   text-align: left;
@@ -124,7 +124,7 @@
 
 .tabBar button small {
   overflow: hidden;
-  color: #6b7580;
+  color: var(--text-muted);
   font-size: 11px;
   font-weight: 500;
   text-overflow: ellipsis;
@@ -147,7 +147,7 @@
   padding: 0 12px;
   border: 1px solid rgba(110, 142, 150, 0.32);
   border-radius: 8px;
-  color: #8e97a1;
+  color: var(--text-secondary);
   background: rgba(5, 14, 20, 0.92);
 }
 
@@ -157,7 +157,7 @@
   height: 100%;
   border: 0;
   outline: 0;
-  color: #ffffff;
+  color: var(--text-main);
   background: transparent;
   font-size: 13px;
 }
@@ -207,17 +207,17 @@
   align-items: center;
   gap: var(--space-sm);
   padding: 0 var(--space-lg);
-  border: 1px solid var(--border-active);
+  border: 1px solid rgba(114, 150, 160, 0.38);
   border-radius: var(--radius-button);
-  color: var(--accent-bright);
-  background: var(--bg-card-soft);
+  color: var(--text-onlight-main);
+  background: var(--bg-onlight);
   font-size: var(--font-size-xs);
   font-weight: 800;
   cursor: pointer;
 }
 
 .statusBanner button:hover {
-  background: var(--bg-card);
+  background: var(--bg-onlight-hover);
 }
 
 .statusLoading {
@@ -273,10 +273,10 @@
   height: 25px;
   padding: 0 9px;
   overflow: hidden;
-  border: 1px solid rgba(110, 142, 150, 0.22);
+  border: 1px solid rgba(114, 150, 160, 0.38);
   border-radius: 6px;
-  color: #cfd6de;
-  background: rgba(10, 22, 30, 0.82);
+  color: var(--text-onlight-main);
+  background: var(--bg-onlight);
   font-size: 11px;
   font-weight: 700;
   text-overflow: ellipsis;
@@ -285,8 +285,7 @@
 }
 
 .quickGroup button:hover {
-  color: #05f3e7;
-  border-color: rgba(5, 243, 231, 0.42);
+  background: var(--bg-onlight-hover);
 }
 
 .sortButton {
@@ -307,11 +306,11 @@
 }
 
 .sortButton:hover {
-  color: #05f3e7;
+  color: var(--accent);
 }
 
 .sortButton span {
-  color: #05f3e7;
+  color: var(--accent);
   font-size: 10px;
 }
 
@@ -333,7 +332,7 @@
   padding: 0 10px;
   border: 1px solid rgba(110, 142, 150, 0.28);
   border-radius: 7px;
-  color: #8e97a1;
+  color: var(--text-secondary);
   background: rgba(8, 20, 28, 0.82);
   font-size: 12px;
   font-weight: 700;
@@ -375,9 +374,9 @@
 
 .traitCard,
 .metricCards article {
-  border: 1px solid rgba(112, 144, 152, 0.16);
-  border-radius: 10px;
-  background: linear-gradient(180deg, rgba(8, 21, 29, 0.96), rgba(5, 15, 21, 0.96));
+  border: 2px solid var(--border-card-highlight);
+  border-radius: var(--radius-panel);
+  background: var(--bg-card-gradient);
   box-shadow: 0 18px 38px rgba(0, 0, 0, 0.18);
 }
 
@@ -390,7 +389,7 @@
 
 .traitTop {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) auto;
+  grid-template-columns: 42px minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 10px;
 }
@@ -401,7 +400,7 @@
 
 .traitTitle h2 {
   margin: 0;
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 19px;
   font-weight: 700;
   letter-spacing: 0;
@@ -454,7 +453,7 @@
   place-items: center;
   border: 1px solid rgba(112, 144, 152, 0.24);
   border-radius: 6px;
-  color: #6b7580;
+  color: var(--text-muted);
   background: rgba(10, 22, 30, 0.84);
   font-size: 12px;
 }
@@ -562,6 +561,7 @@
 
 .traitSection {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-sm);
   margin-top: var(--space-lg);
 }
@@ -671,12 +671,13 @@
 }
 
 button.championMini:hover {
-  color: #05f3e7;
+  color: var(--accent);
   border-color: rgba(5, 243, 231, 0.42);
 }
 
 .tipLine {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   margin-top: auto;
   padding-top: 14px;
@@ -742,7 +743,7 @@ button.championMini:hover {
 .itemGuideIdentity h3 {
   margin: 0;
   overflow-wrap: anywhere;
-  color: #ffffff;
+  color: var(--text-main);
   font-size: var(--font-size-md);
   font-weight: 800;
   line-height: 1.25;
@@ -824,7 +825,7 @@ button.championMini:hover {
 }
 
 .itemRecipeText span {
-  color: #ffffff;
+  color: var(--text-main);
   font-size: var(--font-size-xs);
   font-weight: 700;
   line-height: 1.35;
@@ -879,9 +880,9 @@ button.championMini:hover {
 .augmentListWrap {
   max-width: 100%;
   padding: var(--space-2xl);
-  border: 1px solid var(--border-subtle);
+  border: 2px solid var(--border-card-highlight);
   border-radius: var(--radius-button);
-  background: linear-gradient(180deg, var(--bg-card), var(--bg-main));
+  background: var(--bg-card-gradient);
   box-shadow: 0 18px 38px rgba(0, 0, 0, 0.18);
 }
 
@@ -902,7 +903,7 @@ button.championMini:hover {
 
 .augmentCardTop {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
+  grid-template-columns: 44px minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-xl);
 }
@@ -1004,7 +1005,7 @@ button.championMini:hover {
 .comboCell span {
   display: block;
   margin-top: 3px;
-  color: #6b7580;
+  color: var(--text-muted);
   font-size: 11px;
 }
 
@@ -1059,13 +1060,13 @@ button.championMini:hover {
 .metricCards article {
   min-height: 112px;
   padding: 17px;
-  color: #05f3e7;
+  color: var(--accent);
 }
 
 .metricCards strong {
   display: block;
   margin-top: 10px;
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 14px;
   font-weight: 700;
 }
@@ -1073,7 +1074,7 @@ button.championMini:hover {
 .metricCards span {
   display: block;
   margin-top: 8px;
-  color: #8e97a1;
+  color: var(--text-secondary);
   font-size: 12px;
   line-height: 1.45;
   word-break: keep-all;
@@ -1084,7 +1085,7 @@ button.championMini:hover {
   padding: 0 12px;
   border: 1px solid rgba(110, 142, 150, 0.28);
   border-radius: 6px;
-  color: #8e97a1;
+  color: var(--text-secondary);
   background: rgba(8, 20, 28, 0.82);
   font-size: 12px;
   font-weight: 700;
@@ -1119,10 +1120,9 @@ button.championMini:hover {
   justify-items: center;
   gap: 9px;
   padding: 14px 12px 12px;
-  border: 1px solid rgba(112, 144, 152, 0.16);
-  border-radius: 10px;
-  background:
-    linear-gradient(180deg, rgba(9, 28, 36, 0.94), rgba(5, 15, 21, 0.96));
+  border: 2px solid var(--border-card-highlight);
+  border-radius: var(--radius-panel);
+  background: var(--bg-card-gradient);
   box-shadow: 0 18px 38px rgba(0, 0, 0, 0.18);
   cursor: default;
   outline: 0;
@@ -1174,7 +1174,7 @@ button.championMini:hover {
   padding: 0;
   border: 1px solid rgba(110, 142, 150, 0.28);
   border-radius: 7px;
-  color: #8e97a1;
+  color: var(--text-secondary);
   background: rgba(7, 18, 25, 0.86);
   cursor: pointer;
 }
@@ -1215,7 +1215,7 @@ button.championMini:hover {
 .championInfo strong {
   display: block;
   overflow: hidden;
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 14px;
   font-weight: 800;
   text-overflow: ellipsis;
@@ -1225,7 +1225,7 @@ button.championMini:hover {
 .championInfo span {
   display: block;
   margin-top: 4px;
-  color: #8e97a1;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
@@ -1240,7 +1240,7 @@ button.championMini:hover {
   padding: 13px;
   opacity: 0;
   border: 1px solid rgba(5, 243, 231, 0.34);
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
   background: rgba(4, 12, 18, 0.98);
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
   transform: translate(-50%, 6px);
@@ -1269,14 +1269,14 @@ button.championMini:hover {
 }
 
 .tooltipTop strong {
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 14px;
 }
 
 .tooltipTop span {
   display: block;
   margin-top: 4px;
-  color: #8e97a1;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
@@ -1309,7 +1309,7 @@ button.championMini:hover {
 }
 
 .statGrid dt {
-  color: #6b7580;
+  color: var(--text-muted);
   font-size: 10px;
 }
 
@@ -1340,7 +1340,7 @@ button.championMini:hover {
   width: 420px;
   padding: 18px;
   border: 1px solid rgba(5, 243, 231, 0.34);
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
   background: rgba(4, 12, 18, 0.98);
   box-shadow: 0 28px 70px rgba(0, 0, 0, 0.55);
 }
@@ -1432,7 +1432,7 @@ button.championMini:hover {
 
 .dialogHero strong {
   display: block;
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 20px;
   font-weight: 800;
 }
@@ -1440,7 +1440,7 @@ button.championMini:hover {
 .dialogHero span {
   display: block;
   margin-top: 5px;
-  color: #05f3e7;
+  color: var(--accent);
   font-size: 13px;
   font-weight: 700;
 }
@@ -1448,7 +1448,7 @@ button.championMini:hover {
 .dialogHero p,
 .dialogPosition {
   margin: 6px 0 0;
-  color: #8e97a1;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
@@ -1481,13 +1481,13 @@ button.championMini:hover {
 }
 
 .dialogStats dt {
-  color: #6b7580;
+  color: var(--text-muted);
   font-size: 11px;
 }
 
 .dialogStats dd {
   margin: 5px 0 0;
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 14px;
   font-weight: 800;
 }
@@ -1517,16 +1517,541 @@ button.championMini:hover {
   align-content: center;
   gap: 8px;
   border: 1px solid rgba(112, 144, 152, 0.14);
-  border-radius: 10px;
-  color: #6b7580;
+  border-radius: var(--radius-panel);
+  color: var(--text-muted);
   background: rgba(8, 20, 28, 0.58);
   font-size: 13px;
   font-weight: 600;
 }
 
+.gameGuideAiCardButton,
+.gameGuideAiChampionButton {
+  width: var(--size-control-sm);
+  height: var(--size-control-sm);
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 1px solid var(--cyan-border-subtle);
+  border-radius: var(--radius-button);
+  color: var(--color-cyan);
+  background: var(--cyan-bg-faint);
+  cursor: pointer;
+}
+
+.gameGuideAiCardButton {
+  justify-self: end;
+}
+
+.gameGuideAiChampionButton {
+  position: absolute;
+  top: var(--space-md);
+  left: var(--space-md);
+  z-index: 3;
+}
+
+.gameGuideAiCardButton:hover,
+.gameGuideAiChampionButton:hover {
+  border-color: var(--cyan-border-light);
+  color: var(--text-main);
+}
+
+.gameGuideAiShell {
+  position: fixed;
+  right: var(--space-5xl);
+  bottom: var(--space-5xl);
+  z-index: 80;
+}
+
+.gameGuideAiLauncher {
+  width: var(--size-gameguide-ai-launcher);
+  height: var(--size-gameguide-ai-launcher);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--cyan-border-subtle);
+  border-radius: 50%;
+  color: var(--text-main);
+  background: var(--search-btn-bg);
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.34);
+  cursor: pointer;
+}
+
+.gameGuideAiLauncher:hover {
+  border-color: var(--cyan-border-light);
+  color: var(--color-cyan);
+}
+
+.gameGuideAiLauncher span {
+  position: absolute;
+  right: var(--space-xs);
+  bottom: var(--space-xs);
+  display: grid;
+  place-items: center;
+  width: calc(var(--space-4xl) + var(--space-xs));
+  height: calc(var(--space-4xl) + var(--space-xs));
+  border: 1px solid var(--tone-gold-border);
+  border-radius: 50%;
+  color: var(--color-gold);
+  background: var(--bg-tooltip);
+  font-size: var(--font-size-2xs);
+  font-weight: 900;
+}
+
+.gameGuideAiPanel {
+  /* AI 챗 위젯은 오렌지 카드 위에 얹힌 자체 다크 배경 — 원래 다크 테마 토큰으로 복귀 */
+  --text-main: var(--text-ondark-main);
+  --text-ui: var(--text-ondark-ui);
+  --text-soft: var(--text-ondark-soft);
+  --text-secondary: var(--text-ondark-secondary);
+  --text-muted: var(--text-ondark-muted);
+  --bg-card: #0e1926;
+  --bg-card-soft: #142235;
+
+  width: min(var(--size-gameguide-ai-chat-width), calc(100vw - (var(--space-5xl) * 2)));
+  height: min(var(--size-gameguide-ai-chat-max-height), calc(100vh - (var(--space-5xl) * 2)));
+  height: min(var(--size-gameguide-ai-chat-max-height), calc(100dvh - (var(--space-5xl) * 2)));
+  max-height: min(var(--size-gameguide-ai-chat-max-height), calc(100vh - (var(--space-5xl) * 2)));
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  border: 1px solid var(--cyan-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--bg-tooltip);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+}
+
+.gameGuideAiHeader {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  padding: var(--space-2xl);
+  border-bottom: 1px solid var(--border-separator);
+  background: var(--bg-tooltip);
+}
+
+.gameGuideAiHeader > div:first-child {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.gameGuideAiHeader span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--text-main);
+  font-size: var(--font-size-sm);
+  font-weight: 900;
+}
+
+.gameGuideAiHeader small {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: var(--font-size-2xs);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gameGuideAiHeaderActions {
+  display: inline-flex;
+  gap: var(--space-sm);
+}
+
+.gameGuideAiHeaderActions button {
+  width: var(--size-control-sm);
+  height: var(--size-control-sm);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border-btn-muted);
+  border-radius: var(--radius-button);
+  color: var(--text-soft);
+  background: var(--bg-btn-dark-soft);
+  cursor: pointer;
+}
+
+.gameGuideAiHeaderActions button:hover {
+  border-color: var(--cyan-border-light);
+  color: var(--color-cyan);
+}
+
+.gameGuideAiSelectedRefs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  padding: var(--space-lg) var(--space-2xl) 0;
+}
+
+.gameGuideAiSelectedRefs span {
+  max-width: 100%;
+  padding: var(--space-xs) var(--space-sm);
+  overflow: hidden;
+  border: 1px solid var(--cyan-border-subtle);
+  border-radius: var(--radius-xs);
+  color: var(--color-cyan);
+  background: var(--cyan-bg-faint);
+  font-size: var(--font-size-2xs);
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gameGuideAiMessages {
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  gap: var(--space-lg);
+  padding: var(--space-2xl);
+  overflow-y: auto;
+}
+
+.gameGuideAiEmpty {
+  min-height: 210px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: var(--space-lg);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.gameGuideAiEmpty p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.gameGuideAiUserMessage,
+.gameGuideAiAssistantMessage {
+  max-width: 92%;
+  min-width: 0;
+}
+
+.gameGuideAiUserMessage {
+  justify-self: end;
+}
+
+.gameGuideAiAssistantMessage {
+  justify-self: start;
+}
+
+.gameGuideAiUserMessage > p,
+.gameGuideAiAssistantMessage > p {
+  margin: 0;
+  padding: var(--space-lg) var(--space-xl);
+  border-radius: var(--radius-button);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+}
+
+.gameGuideAiUserMessage > p {
+  color: var(--text-main);
+  background: var(--cyan-bg-subtle);
+}
+
+.gameGuideAiAssistantMessage > p {
+  color: var(--text-secondary);
+  background: var(--bg-card-soft);
+}
+
+.gameGuideAiResult {
+  display: grid;
+  gap: var(--space-lg);
+  padding: var(--space-xl);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--bg-card);
+}
+
+.gameGuideAiResult > strong {
+  color: var(--text-main);
+  font-size: var(--font-size-sm);
+  font-weight: 900;
+}
+
+.gameGuideAiResult > p,
+.gameGuideAiSection p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+.gameGuideAiSection {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.gameGuideAiSection article {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border: 1px solid var(--border-separator);
+  border-radius: var(--radius-button);
+  background: var(--bg-btn-dark-soft);
+}
+
+.gameGuideAiSection span {
+  align-self: start;
+  padding: var(--space-3xs) var(--space-xs);
+  border: 1px solid var(--cyan-border-subtle);
+  border-radius: var(--radius-xs);
+  color: var(--color-cyan);
+  background: var(--cyan-bg-faint);
+  font-size: var(--font-size-2xs);
+  font-weight: 900;
+  text-align: center;
+}
+
+.gameGuideAiSection b {
+  display: block;
+  margin-bottom: var(--space-xs);
+  color: var(--text-soft);
+  font-size: var(--font-size-xs);
+}
+
+.gameGuideAiInsightGrid {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.gameGuideAiInsightBlock {
+  display: grid;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  border: 1px solid var(--border-separator);
+  border-radius: var(--radius-button);
+  background: var(--bg-btn-dark-soft);
+}
+
+.gameGuideAiInsightBlock > span {
+  color: var(--color-cyan);
+  font-size: var(--font-size-2xs);
+  font-weight: 900;
+}
+
+.gameGuideAiPhaseRefs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.gameGuideAiList {
+  display: grid;
+  gap: var(--space-sm);
+  margin: 0;
+  padding: 0 0 0 var(--space-2xl);
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  line-height: 1.45;
+}
+
+.gameGuideAiRefList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.gameGuideAiRecommendedList {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.gameGuideAiRecommendedList > div {
+  display: grid;
+  gap: var(--space-xs);
+  padding: var(--space-sm);
+  border: 1px solid var(--border-separator);
+  border-radius: var(--radius-button);
+  background: var(--bg-btn-dark-soft);
+}
+
+.gameGuideAiRecommendedList small {
+  color: var(--text-muted);
+  font-size: var(--font-size-2xs);
+  font-weight: 700;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+}
+
+.gameGuideAiRefList button,
+.gameGuideAiPhaseRefs button,
+.gameGuideAiRecommendedList button {
+  max-width: 100%;
+  padding: var(--space-xs) var(--space-sm);
+  overflow: hidden;
+  border: 1px solid var(--cyan-border-subtle);
+  border-radius: var(--radius-xs);
+  color: var(--color-cyan);
+  background: var(--cyan-bg-faint);
+  cursor: pointer;
+  font-size: var(--font-size-2xs);
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gameGuideAiRefList button:hover,
+.gameGuideAiPhaseRefs button:hover,
+.gameGuideAiRecommendedList button:hover {
+  border-color: var(--cyan-border-light);
+  color: var(--text-main);
+}
+
+.gameGuideAiFallbackBadge {
+  justify-self: start;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--tone-gold-border);
+  border-radius: var(--radius-xs);
+  color: var(--color-gold);
+  background: var(--tone-gold-bg);
+  font-size: var(--font-size-2xs);
+  font-weight: 900;
+}
+
+.gameGuideAiMetaBlock {
+  display: grid;
+  gap: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border-separator);
+}
+
+.gameGuideAiMetaBlock > span {
+  color: var(--text-soft);
+  font-size: var(--font-size-2xs);
+  font-weight: 900;
+}
+
+.gameGuideAiTyping {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.gameGuideAiTyping span {
+  width: var(--space-sm);
+  height: var(--space-sm);
+  border-radius: 50%;
+  background: var(--color-cyan);
+  animation: gameguide-ai-typing 900ms infinite ease-in-out;
+}
+
+.gameGuideAiTyping span:nth-child(2) {
+  animation-delay: 120ms;
+}
+
+.gameGuideAiTyping span:nth-child(3) {
+  animation-delay: 240ms;
+}
+
+.gameGuideAiForm {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--size-control-md);
+  gap: var(--space-md);
+  padding: var(--space-2xl);
+  border-top: 1px solid var(--border-separator);
+  background: var(--bg-tooltip);
+}
+
+.gameGuideAiForm textarea {
+  min-width: 0;
+  resize: none;
+  border: 1px solid var(--border-btn-muted);
+  border-radius: var(--radius-button);
+  outline: 0;
+  color: var(--text-onlight-main);
+  background: var(--bg-input-dark);
+  font-family: inherit;
+  font-size: var(--font-size-xs);
+  line-height: 1.45;
+  padding: var(--space-md) var(--space-lg);
+}
+
+.gameGuideAiForm textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.gameGuideAiForm textarea:focus {
+  border-color: var(--cyan-border-light);
+}
+
+.gameGuideAiForm button {
+  width: var(--size-control-md);
+  height: var(--size-control-md);
+  align-self: end;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--cyan-border-subtle);
+  border-radius: var(--radius-button);
+  color: var(--color-cyan);
+  background: var(--cyan-bg-faint);
+  cursor: pointer;
+}
+
+.gameGuideAiForm button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.guideHighlighted {
+  scroll-margin: 96px;
+  outline: 2px solid var(--cyan-border-light);
+  outline-offset: 3px;
+  box-shadow:
+    0 0 0 4px var(--cyan-glow-sm),
+    0 18px 38px rgba(0, 0, 0, 0.18),
+    0 0 28px var(--cyan-glow-md);
+  animation: guide-highlight-pulse var(--guide-highlight-pulse-duration) ease-in-out var(--guide-highlight-pulse-iterations);
+}
+
+@keyframes guide-highlight-pulse {
+  0%,
+  100% {
+    outline-color: var(--cyan-border-light);
+  }
+
+  50% {
+    outline-color: var(--color-cyan);
+    box-shadow:
+      0 0 0 5px var(--cyan-glow-md),
+      0 18px 38px rgba(0, 0, 0, 0.18),
+      0 0 34px var(--cyan-glow-lg);
+  }
+}
+
 @keyframes status-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes gameguide-ai-typing {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+
+  40% {
+    opacity: 1;
+    transform: translateY(-3px);
   }
 }
 
@@ -1617,6 +2142,12 @@ button.championMini:hover {
     height: calc(var(--size-control-md) + var(--space-md));
   }
 
+  .gameGuideAiCardButton,
+  .gameGuideAiChampionButton {
+    width: calc(var(--size-control-md) + var(--space-xs));
+    height: calc(var(--size-control-md) + var(--space-xs));
+  }
+
   .itemIconButton {
     width: calc(var(--size-control-md) + var(--space-md));
     height: calc(var(--size-control-md) + var(--space-md));
@@ -1663,7 +2194,7 @@ button.championMini:hover {
     justify-self: start;
   }
 
-.costFilter {
+  .costFilter {
     flex-wrap: wrap;
   }
 
@@ -1674,6 +2205,28 @@ button.championMini:hover {
   .traitTop {
     grid-template-columns: 42px minmax(0, 1fr);
     align-items: start;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .traitTop .gameGuideAiCardButton {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+    justify-self: end;
+  }
+
+  .traitGrid,
+  .traitCard,
+  .traitSummaryPanel,
+  .traitSection,
+  .traitSectionHeader,
+  .championLine {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
 
   .levelTrackWrap {

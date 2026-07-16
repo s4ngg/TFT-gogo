@@ -6,6 +6,7 @@ import { deduplicateDecks } from '../../api/deckApi'
 import type { RankFilter } from '../Dashboard/dashboardData'
 import DeckListView from './components/DeckListView'
 import MetaStatsView from './components/MetaStatsView'
+import { useLatestPatchVersion } from './hooks/useLatestPatchVersion'
 import styles from './Decks.module.css'
 
 type Tab = '덱모음' | '메타통계'
@@ -31,14 +32,23 @@ function Decks() {
   const dataRangeLabel = metaDeckResponse?.dataStartDate
     ? `${metaDeckResponse.dataStartDate} 이후 수집 데이터`
     : '집계 데이터 수집 전'
+  const latestPatchVersion = useLatestPatchVersion()
+  const isPatchStale = Boolean(
+    metaDeckResponse?.patchVersion && latestPatchVersion && metaDeckResponse.patchVersion !== latestPatchVersion,
+  )
 
   return (
-    <AppLayout>
+    <AppLayout sunTheme>
       <div className={styles.page}>
         <div className={styles.pageHeader}>
           <div className={styles.titleBlock}>
             <h1>덱모음</h1>
             <p>{patchVersion} 패치 기준 · {dataRangeLabel} · 선택률순 노출</p>
+            {isPatchStale && (
+              <p className={styles.patchStaleNotice}>
+                최신 패치({latestPatchVersion})의 덱 집계가 아직 반영되지 않아 {patchVersion} 패치 기준으로 표시됩니다.
+              </p>
+            )}
           </div>
           <div className={styles.rightControls}>
             <div className={styles.rankFilterBar}>

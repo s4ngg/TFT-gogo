@@ -1,5 +1,7 @@
 package com.tftgogo.global.riot;
 
+import com.tftgogo.global.exception.BusinessException;
+import com.tftgogo.global.exception.ErrorCode;
 import com.tftgogo.global.riot.config.RiotProperties;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
@@ -24,7 +26,11 @@ public class RiotRateLimiter {
     private long shortWindowStart;
     private long longWindowStart;
 
+    // maxWaitMs 초과 시 RIOT_API_RATE_LIMIT으로 즉시 실패시킨다.
+    // 그렇지 않으면 동시 요청이 버킷 용량을 넘을 때 요청 스레드(및 osiv 하의 DB 커넥션)가
+    // 최대 longRateLimitWindowMs(2분)까지 블로킹되어 스레드/커넥션 풀 전체가 고갈된다(issue #698).
     public void acquire() throws InterruptedException {
+        long deadline = System.currentTimeMillis() + riotProperties.getRateLimitMaxWaitMs();
         synchronized (lock) {
             if (shortTokens < 0) {
                 shortTokens = riotProperties.getShortRateLimitMax();
@@ -37,11 +43,18 @@ public class RiotRateLimiter {
                 if (shortTokens > 0 && longTokens > 0) {
                     shortTokens--;
                     longTokens--;
+                    lock.notifyAll();
                     return;
                 }
                 long waitMs = nextRefillMs();
+                long remainingBudget = deadline - System.currentTimeMillis();
+                if (remainingBudget <= 0) {
+                    int retryAfterSeconds = (int) Math.max(1, (waitMs + 999) / 1000);
+                    logger.warn("Rate limit 내부 대기 한도 초과: waitMs={}, 단기={}, 장기={}", waitMs, shortTokens, longTokens);
+                    throw new BusinessException(ErrorCode.RIOT_API_RATE_LIMIT, retryAfterSeconds);
+                }
                 logger.debug("Rate limit 대기: {}ms (단기={}, 장기={})", waitMs, shortTokens, longTokens);
-                lock.wait(waitMs);
+                lock.wait(Math.min(waitMs, remainingBudget));
             }
         }
     }

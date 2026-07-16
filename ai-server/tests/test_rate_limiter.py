@@ -70,6 +70,10 @@ def _create_test_app() -> FastAPI:
     def analyze():
         return {"result": "ok"}
 
+    @app.post("/api/gameguide/pathfinder")
+    def gameguide_pathfinder():
+        return {"result": "ok"}
+
     @app.get("/health")
     def health():
         return {"status": "ok"}
@@ -92,6 +96,19 @@ def test_대상_경로_rate_limit_초과_시_429():
         assert body["success"] is False
         assert body["code"] == "RATE_LIMIT_EXCEEDED"
         assert body["data"] is None
+
+
+def test_gameguide_pathfinder_경로도_rate_limit_대상이다():
+    _reset_bucket()
+    app = _create_test_app()
+    client = TestClient(app)
+
+    with patch("app.core.rate_limiter.settings", _settings(requests=1)):
+        resp1 = client.post("/api/gameguide/pathfinder")
+        assert resp1.status_code == 200
+
+        resp2 = client.post("/api/gameguide/pathfinder")
+        assert resp2.status_code == 429
 
 
 def test_비대상_경로는_rate_limit_미적용():

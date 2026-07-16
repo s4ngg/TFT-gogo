@@ -12,6 +12,7 @@ import com.tftgogo.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -26,6 +27,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.regex.Pattern;
 
 @Service
+@Profile("local")
 @RequiredArgsConstructor
 public class InMemoryChatServiceImpl implements ChatService {
 

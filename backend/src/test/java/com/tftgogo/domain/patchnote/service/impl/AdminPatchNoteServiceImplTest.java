@@ -1,6 +1,10 @@
 package com.tftgogo.domain.patchnote.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tftgogo.domain.guide.entity.GuideChampion;
+import com.tftgogo.domain.guide.entity.GuideTrait;
+import com.tftgogo.domain.guide.repository.GuideChampionRepository;
+import com.tftgogo.domain.guide.repository.GuideTraitRepository;
 import com.tftgogo.domain.patchnote.config.PatchNoteCrawlerProperties;
 import com.tftgogo.domain.patchnote.dto.crawl.PatchChangeCrawlRow;
 import com.tftgogo.domain.patchnote.dto.crawl.PatchNoteCrawlDocument;
@@ -15,10 +19,12 @@ import com.tftgogo.domain.patchnote.dto.response.PatchNoteResponse;
 import com.tftgogo.domain.patchnote.entity.PatchChange;
 import com.tftgogo.domain.patchnote.entity.PatchChangeCategory;
 import com.tftgogo.domain.patchnote.entity.PatchChangeImpact;
+import com.tftgogo.domain.patchnote.entity.PatchChangeTombstone;
 import com.tftgogo.domain.patchnote.entity.PatchChangeType;
 import com.tftgogo.domain.patchnote.entity.PatchNote;
 import com.tftgogo.domain.patchnote.entity.PatchNoteImportSource;
 import com.tftgogo.domain.patchnote.repository.PatchChangeRepository;
+import com.tftgogo.domain.patchnote.repository.PatchChangeTombstoneRepository;
 import com.tftgogo.domain.patchnote.repository.PatchNoteRepository;
 import com.tftgogo.domain.patchnote.service.PatchNoteCrawlerFetchService;
 import com.tftgogo.domain.patchnote.service.PatchNoteCrawlerParser;
@@ -37,6 +43,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -44,6 +51,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -55,6 +63,15 @@ class AdminPatchNoteServiceImplTest {
 
     @Mock
     private PatchChangeRepository patchChangeRepository;
+
+    @Mock
+    private PatchChangeTombstoneRepository patchChangeTombstoneRepository;
+
+    @Mock
+    private GuideChampionRepository guideChampionRepository;
+
+    @Mock
+    private GuideTraitRepository guideTraitRepository;
 
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
@@ -349,11 +366,177 @@ class AdminPatchNoteServiceImplTest {
     }
 
     @Test
+    void importRiotPatchNote_whenGuideNameAppearsWithoutCategoryHeading_infersGuideCategory() {
+        // given
+        PatchNote existingCurrent = patchNote(1L, "17.4", true);
+        PatchNoteCrawlFetchedPage detailPage = fetchedPage("https://www.leagueoflegends.com/ko-kr/news/game-updates/patch-17-5-notes/");
+        PatchChangeCrawlRow championRow = new PatchChangeCrawlRow(
+                "twisted-fate-candidate",
+                "twisted-fate-row-key",
+                "변경사항",
+                1,
+                "변경사항",
+                "트위스티드 페이트",
+                "트위스티드 페이트 마나 조정",
+                "<li>트위스티드 페이트 마나 조정</li>",
+                "50",
+                "45",
+                List.of()
+        );
+        PatchChangeCrawlRow traitRow = new PatchChangeCrawlRow(
+                "pathfinder-candidate",
+                "pathfinder-row-key",
+                "변경사항",
+                2,
+                "변경사항",
+                "길잡이 뾰족꼬리 휩쓸기 피해량",
+                "길잡이 체력 배수 (스테이지 4~6) 조정",
+                "<li>길잡이 체력 배수 (스테이지 4~6) 조정</li>",
+                "100%",
+                "110%",
+                List.of()
+        );
+        PatchNoteCrawlDocument document = new PatchNoteCrawlDocument(
+                detailPage.sourceUrl(),
+                "ko-kr",
+                "riot-content-17-5-guide-name",
+                "17.5 Patch Notes",
+                "17.5",
+                "Official summary",
+                LocalDateTime.of(2026, 6, 9, 18, 0),
+                "https://example.com/official.png",
+                List.of("Riot"),
+                List.of("변경사항"),
+                List.of(championRow, traitRow),
+                List.of()
+        );
+        AdminPatchNoteImportRequest request = new AdminPatchNoteImportRequest();
+        ReflectionTestUtils.setField(request, "sourceUrl", detailPage.sourceUrl());
+
+        when(crawlerProperties.getDefaultLocale()).thenReturn("ko-kr");
+        when(crawlerFetchService.fetch(detailPage.sourceUrl())).thenReturn(detailPage);
+        when(crawlerParser.parseDetailPage(detailPage, null, "ko-kr")).thenReturn(document);
+        when(patchNoteRepository.findBySourceKey("riot-content-17-5-guide-name")).thenReturn(Optional.empty());
+        when(patchNoteRepository.findBySourceUrl(detailPage.sourceUrl())).thenReturn(Optional.empty());
+        when(patchNoteRepository.findByVersion("17.5")).thenReturn(Optional.empty());
+        when(patchNoteRepository.findByCurrentTrueAndDeletedAtIsNull()).thenReturn(List.of(existingCurrent));
+        when(patchNoteRepository.save(any(PatchNote.class))).thenAnswer(invocation -> {
+            PatchNote patchNote = invocation.getArgument(0);
+            ReflectionTestUtils.setField(patchNote, "id", 2L);
+            return patchNote;
+        });
+        when(guideChampionRepository.findByPatchVersionOrderByNameAscIdAsc("17.5"))
+                .thenReturn(List.of(guideChampion("tft17_twistedfate", "트위스티드 페이트", "17.5")));
+        when(guideTraitRepository.findByPatchVersionOrderByNameAscIdAsc("17.5"))
+                .thenReturn(List.of(guideTrait("tft17_pathfinder", "길잡이", "17.5")));
+        when(patchChangeRepository.findByPatchNoteAndSourceKey(any(PatchNote.class), eq("twisted-fate-row-key")))
+                .thenReturn(Optional.empty());
+        when(patchChangeRepository.findByPatchNoteAndSourceKey(any(PatchNote.class), eq("pathfinder-row-key")))
+                .thenReturn(Optional.empty());
+        when(patchChangeRepository.save(any(PatchChange.class))).thenAnswer(invocation -> {
+            PatchChange patchChange = invocation.getArgument(0);
+            ReflectionTestUtils.setField(patchChange, "id", 10L);
+            return patchChange;
+        });
+
+        // when
+        AdminPatchNoteImportResponse response = adminPatchNoteService.importRiotPatchNote(request);
+
+        // then
+        assertThat(response.getCreatedChanges()).isEqualTo(2);
+
+        ArgumentCaptor<PatchChange> patchChangeCaptor = ArgumentCaptor.forClass(PatchChange.class);
+        verify(patchChangeRepository, times(2)).save(patchChangeCaptor.capture());
+        assertThat(patchChangeCaptor.getAllValues())
+                .extracting(PatchChange::getCategory)
+                .containsExactly(PatchChangeCategory.CHAMPION, PatchChangeCategory.TRAIT);
+        assertThat(patchChangeCaptor.getAllValues())
+                .extracting(PatchChange::getTargetName)
+                .containsExactly("트위스티드 페이트", "길잡이 뾰족꼬리 휩쓸기 피해량");
+    }
+
+    @Test
+    void importRiotPatchNote_whenGuideNameIsEmbeddedInsideAnotherToken_keepsSystemCategory() {
+        // given
+        PatchNote existingCurrent = patchNote(1L, "17.4", true);
+        PatchNoteCrawlFetchedPage detailPage = fetchedPage("https://www.leagueoflegends.com/ko-kr/news/game-updates/patch-17-5-notes/");
+        PatchChangeCrawlRow row = new PatchChangeCrawlRow(
+                "scouting-candidate",
+                "scouting-row-key",
+                "Balance",
+                1,
+                "Balance",
+                "Scouting report",
+                "Scouting report adjusted",
+                "<li>Scouting report adjusted</li>",
+                null,
+                null,
+                List.of()
+        );
+        PatchNoteCrawlDocument document = new PatchNoteCrawlDocument(
+                detailPage.sourceUrl(),
+                "ko-kr",
+                "riot-content-17-5-guide-name-boundary",
+                "17.5 Patch Notes",
+                "17.5",
+                "Official summary",
+                LocalDateTime.of(2026, 6, 9, 18, 0),
+                "https://example.com/official.png",
+                List.of("Riot"),
+                List.of("Balance"),
+                List.of(row),
+                List.of()
+        );
+        AdminPatchNoteImportRequest request = new AdminPatchNoteImportRequest();
+        ReflectionTestUtils.setField(request, "sourceUrl", detailPage.sourceUrl());
+
+        when(crawlerProperties.getDefaultLocale()).thenReturn("ko-kr");
+        when(crawlerFetchService.fetch(detailPage.sourceUrl())).thenReturn(detailPage);
+        when(crawlerParser.parseDetailPage(detailPage, null, "ko-kr")).thenReturn(document);
+        when(patchNoteRepository.findBySourceKey("riot-content-17-5-guide-name-boundary")).thenReturn(Optional.empty());
+        when(patchNoteRepository.findBySourceUrl(detailPage.sourceUrl())).thenReturn(Optional.empty());
+        when(patchNoteRepository.findByVersion("17.5")).thenReturn(Optional.empty());
+        when(patchNoteRepository.findByCurrentTrueAndDeletedAtIsNull()).thenReturn(List.of(existingCurrent));
+        when(patchNoteRepository.save(any(PatchNote.class))).thenAnswer(invocation -> {
+            PatchNote patchNote = invocation.getArgument(0);
+            ReflectionTestUtils.setField(patchNote, "id", 2L);
+            return patchNote;
+        });
+        when(guideChampionRepository.findByPatchVersionOrderByNameAscIdAsc("17.5")).thenReturn(List.of());
+        when(guideTraitRepository.findByPatchVersionOrderByNameAscIdAsc("17.5"))
+                .thenReturn(List.of(guideTrait("tft17_scout", "Scout", "17.5")));
+        when(patchChangeRepository.findByPatchNoteAndSourceKey(any(PatchNote.class), eq("scouting-row-key")))
+                .thenReturn(Optional.empty());
+        when(patchChangeRepository.save(any(PatchChange.class))).thenAnswer(invocation -> {
+            PatchChange patchChange = invocation.getArgument(0);
+            ReflectionTestUtils.setField(patchChange, "id", 10L);
+            return patchChange;
+        });
+
+        // when
+        AdminPatchNoteImportResponse response = adminPatchNoteService.importRiotPatchNote(request);
+
+        // then
+        assertThat(response.getCreatedChanges()).isEqualTo(1);
+
+        ArgumentCaptor<PatchChange> patchChangeCaptor = ArgumentCaptor.forClass(PatchChange.class);
+        verify(patchChangeRepository).save(patchChangeCaptor.capture());
+        assertThat(patchChangeCaptor.getValue().getCategory()).isEqualTo(PatchChangeCategory.SYSTEM);
+    }
+
+    @Test
     void importRiotPatchNote_whenExistingPatchFound_updatesOfficialMetadataAndDeletesOnlyImportedStaleChanges() {
         // given
         PatchNote existingPatchNote = patchNote(1L, "17.3", true);
         PatchChange staleChange = importedPatchChange(99L, existingPatchNote);
         PatchChange manualChange = patchChange(100L, existingPatchNote);
+        PatchChange manuallyEditedImportedChange = importedPatchChange(
+                101L,
+                existingPatchNote,
+                "manually-edited-imported-row",
+                100
+        );
+        manuallyEditedImportedChange.markManuallyEditedIfImported();
         PatchNoteCrawlFetchedPage detailPage = fetchedPage("https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-3/");
         LocalDateTime officialPublishedAt = LocalDateTime.of(2026, 5, 12, 18, 0);
         PatchChangeCrawlRow row = new PatchChangeCrawlRow(
@@ -401,7 +584,7 @@ class AdminPatchNoteServiceImplTest {
             return patchChange;
         });
         when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(existingPatchNote))
-                .thenReturn(List.of(staleChange, manualChange));
+                .thenReturn(List.of(staleChange, manualChange, manuallyEditedImportedChange));
 
         // when
         AdminPatchNoteImportResponse response = adminPatchNoteService.importRiotPatchNote(request);
@@ -416,6 +599,392 @@ class AdminPatchNoteServiceImplTest {
         assertThat(existingPatchNote.isCurrent()).isFalse();
         assertThat(existingPatchNote.getSourceUrl()).isEqualTo(detailPage.sourceUrl());
         verify(patchChangeRepository).deleteAllInBatch(List.of(staleChange));
+    }
+
+    @Test
+    void importRiotPatchNote_whenRowsAreEmpty_rejectsBeforeChangingData() {
+        // given
+        PatchNoteCrawlFetchedPage detailPage = fetchedPage(
+                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-3/"
+        );
+        PatchNoteCrawlDocument document = patchNoteCrawlDocument(detailPage, List.of(), List.of());
+        AdminPatchNoteImportRequest request = patchNoteImportRequest(detailPage.sourceUrl(), false);
+
+        when(crawlerProperties.getDefaultLocale()).thenReturn("ko-kr");
+        when(crawlerFetchService.fetch(detailPage.sourceUrl())).thenReturn(detailPage);
+        when(crawlerParser.parseDetailPage(detailPage, null, "ko-kr")).thenReturn(document);
+
+        // when, then
+        assertThatThrownBy(() -> adminPatchNoteService.importRiotPatchNote(request))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PATCH_NOTE_INVALID_DATA));
+        verify(patchNoteRepository, never()).save(any(PatchNote.class));
+        verify(patchChangeRepository, never()).save(any(PatchChange.class));
+        verify(patchChangeRepository, never()).deleteAllInBatch(any());
+    }
+
+    @Test
+    void importRiotPatchNote_whenFatalParserWarningExists_rejectsBeforeChangingData() {
+        // given
+        PatchNoteCrawlFetchedPage detailPage = fetchedPage(
+                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-3/"
+        );
+        PatchNoteCrawlDocument document = patchNoteCrawlDocument(
+                detailPage,
+                List.of(patchChangeCrawlRow("row-1", 1)),
+                List.of("max detail rows reached")
+        );
+        AdminPatchNoteImportRequest request = patchNoteImportRequest(detailPage.sourceUrl(), false);
+
+        when(crawlerProperties.getDefaultLocale()).thenReturn("ko-kr");
+        when(crawlerFetchService.fetch(detailPage.sourceUrl())).thenReturn(detailPage);
+        when(crawlerParser.parseDetailPage(detailPage, null, "ko-kr")).thenReturn(document);
+
+        // when, then
+        assertThatThrownBy(() -> adminPatchNoteService.importRiotPatchNote(request))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PATCH_NOTE_INVALID_DATA));
+        verify(patchNoteRepository, never()).save(any(PatchNote.class));
+        verify(patchChangeRepository, never()).save(any(PatchChange.class));
+        verify(patchChangeRepository, never()).deleteAllInBatch(any());
+    }
+
+    @Test
+    void importRiotPatchNote_whenRowsDropBelowMinimumRatio_preservesExistingData() {
+        // given
+        PatchNote existingPatchNote = importedPatchNote(1L, "17.3", true);
+        List<PatchChange> existingChanges = List.of(
+                importedPatchChange(1L, existingPatchNote, "row-1", 1),
+                importedPatchChange(2L, existingPatchNote, "row-2", 2),
+                importedPatchChange(3L, existingPatchNote, "row-3", 3),
+                importedPatchChange(4L, existingPatchNote, "row-4", 4),
+                importedPatchChange(5L, existingPatchNote, "row-5", 5)
+        );
+        PatchNoteCrawlFetchedPage detailPage = fetchedPage(existingPatchNote.getSourceUrl());
+        PatchNoteCrawlDocument document = patchNoteCrawlDocument(
+                detailPage,
+                List.of(patchChangeCrawlRow("row-1", 1)),
+                List.of()
+        );
+        AdminPatchNoteImportRequest request = patchNoteImportRequest(detailPage.sourceUrl(), false);
+
+        when(crawlerProperties.getDefaultLocale()).thenReturn("ko-kr");
+        when(crawlerProperties.getMinRetainedRowRatio()).thenReturn(0.5);
+        when(crawlerFetchService.fetch(detailPage.sourceUrl())).thenReturn(detailPage);
+        when(crawlerParser.parseDetailPage(detailPage, null, "ko-kr")).thenReturn(document);
+        when(patchNoteRepository.findBySourceKey("riot-content-17-3")).thenReturn(Optional.of(existingPatchNote));
+        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(existingPatchNote))
+                .thenReturn(existingChanges);
+
+        // when, then
+        assertThatThrownBy(() -> adminPatchNoteService.importRiotPatchNote(request))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PATCH_NOTE_INVALID_DATA));
+        assertThat(existingPatchNote.getTitle()).isEqualTo("17.3 patch");
+        assertThat(existingPatchNote.isCurrent()).isTrue();
+        verify(patchChangeRepository, never()).findByPatchNoteAndSourceKey(any(PatchNote.class), any(String.class));
+        verify(patchChangeRepository, never()).save(any(PatchChange.class));
+        verify(patchChangeRepository, never()).deleteAllInBatch(any());
+    }
+
+    @Test
+    void importRiotPatchNote_whenHeaderIsManuallyEditedAndRowsDropBelowMinimumRatio_preservesExistingData() {
+        // given
+        PatchNote existingPatchNote = importedPatchNote(1L, "17.3", true);
+        existingPatchNote.markManuallyEditedIfImported();
+        List<PatchChange> existingChanges = List.of(
+                importedPatchChange(1L, existingPatchNote, "row-1", 1),
+                importedPatchChange(2L, existingPatchNote, "row-2", 2),
+                importedPatchChange(3L, existingPatchNote, "row-3", 3),
+                importedPatchChange(4L, existingPatchNote, "row-4", 4),
+                importedPatchChange(5L, existingPatchNote, "row-5", 5)
+        );
+        PatchNoteCrawlFetchedPage detailPage = fetchedPage(existingPatchNote.getSourceUrl());
+        PatchNoteCrawlDocument document = patchNoteCrawlDocument(
+                detailPage,
+                List.of(patchChangeCrawlRow("row-1", 1)),
+                List.of()
+        );
+        AdminPatchNoteImportRequest request = patchNoteImportRequest(detailPage.sourceUrl(), false);
+
+        when(crawlerProperties.getDefaultLocale()).thenReturn("ko-kr");
+        when(crawlerProperties.getMinRetainedRowRatio()).thenReturn(0.5);
+        when(crawlerFetchService.fetch(detailPage.sourceUrl())).thenReturn(detailPage);
+        when(crawlerParser.parseDetailPage(detailPage, null, "ko-kr")).thenReturn(document);
+        when(patchNoteRepository.findBySourceKey("riot-content-17-3")).thenReturn(Optional.of(existingPatchNote));
+        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(existingPatchNote))
+                .thenReturn(existingChanges);
+
+        // when, then
+        assertThatThrownBy(() -> adminPatchNoteService.importRiotPatchNote(request))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PATCH_NOTE_INVALID_DATA));
+        verify(patchChangeRepository, never()).findByPatchNoteAndSourceKey(any(PatchNote.class), any(String.class));
+        verify(patchChangeRepository, never()).save(any(PatchChange.class));
+        verify(patchChangeRepository, never()).deleteAllInBatch(any());
+    }
+
+    @Test
+    void importRiotPatchNote_whenRowCountIsSameButSourceKeysDoNotOverlap_preservesExistingData() {
+        // given
+        PatchNote existingPatchNote = importedPatchNote(1L, "17.3", true);
+        List<PatchChange> existingChanges = List.of(
+                importedPatchChange(1L, existingPatchNote, "existing-row-1", 1),
+                importedPatchChange(2L, existingPatchNote, "existing-row-2", 2)
+        );
+        PatchNoteCrawlFetchedPage detailPage = fetchedPage(existingPatchNote.getSourceUrl());
+        PatchNoteCrawlDocument document = patchNoteCrawlDocument(
+                detailPage,
+                List.of(
+                        patchChangeCrawlRow("incoming-row-1", 1),
+                        patchChangeCrawlRow("incoming-row-2", 2)
+                ),
+                List.of()
+        );
+        AdminPatchNoteImportRequest request = patchNoteImportRequest(detailPage.sourceUrl(), false);
+
+        when(crawlerProperties.getDefaultLocale()).thenReturn("ko-kr");
+        when(crawlerProperties.getMinRetainedRowRatio()).thenReturn(0.5);
+        when(crawlerFetchService.fetch(detailPage.sourceUrl())).thenReturn(detailPage);
+        when(crawlerParser.parseDetailPage(detailPage, null, "ko-kr")).thenReturn(document);
+        when(patchNoteRepository.findBySourceKey("riot-content-17-3")).thenReturn(Optional.of(existingPatchNote));
+        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(existingPatchNote))
+                .thenReturn(existingChanges);
+
+        // when, then
+        assertThatThrownBy(() -> adminPatchNoteService.importRiotPatchNote(request))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PATCH_NOTE_INVALID_DATA));
+        verify(patchChangeRepository, never()).findByPatchNoteAndSourceKey(any(PatchNote.class), any(String.class));
+        verify(patchChangeRepository, never()).save(any(PatchChange.class));
+        verify(patchChangeRepository, never()).deleteAllInBatch(any());
+    }
+
+    @Test
+    void importRiotPatchNote_whenImportedRowsAreManuallyEdited_excludesThemFromRetainedRatio() {
+        // given
+        PatchNote existingPatchNote = importedPatchNote(1L, "17.3", true);
+        PatchChange retainedChange = importedPatchChange(1L, existingPatchNote, "row-1", 1);
+        PatchChange manuallyEditedChange = importedPatchChange(2L, existingPatchNote, "manual-row", 2);
+        manuallyEditedChange.markManuallyEditedIfImported();
+        List<PatchChange> existingChanges = List.of(retainedChange, manuallyEditedChange);
+        PatchNoteCrawlFetchedPage detailPage = fetchedPage(existingPatchNote.getSourceUrl());
+        PatchNoteCrawlDocument document = patchNoteCrawlDocument(
+                detailPage,
+                List.of(patchChangeCrawlRow("row-1", 1)),
+                List.of()
+        );
+        AdminPatchNoteImportRequest request = patchNoteImportRequest(detailPage.sourceUrl(), false);
+
+        when(crawlerProperties.getDefaultLocale()).thenReturn("ko-kr");
+        when(crawlerProperties.getMinRetainedRowRatio()).thenReturn(1.0);
+        when(crawlerFetchService.fetch(detailPage.sourceUrl())).thenReturn(detailPage);
+        when(crawlerParser.parseDetailPage(detailPage, null, "ko-kr")).thenReturn(document);
+        when(patchNoteRepository.findBySourceKey("riot-content-17-3")).thenReturn(Optional.of(existingPatchNote));
+        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(existingPatchNote))
+                .thenReturn(existingChanges);
+        when(patchChangeRepository.findByPatchNoteAndSourceKey(existingPatchNote, "row-1"))
+                .thenReturn(Optional.of(retainedChange));
+
+        // when
+        AdminPatchNoteImportResponse response = adminPatchNoteService.importRiotPatchNote(request);
+
+        // then
+        assertThat(response.getUpdatedChanges()).isEqualTo(1);
+        verify(patchChangeRepository, never()).deleteAllInBatch(any());
+    }
+
+    @Test
+    void importRiotPatchNote_whenRowRatioEqualsMinimum_updatesAndDeletesOnlyStaleRows() {
+        // given
+        PatchNote existingPatchNote = importedPatchNote(1L, "17.3", true);
+        PatchChange first = importedPatchChange(1L, existingPatchNote, "row-1", 1);
+        PatchChange second = importedPatchChange(2L, existingPatchNote, "row-2", 2);
+        PatchChange firstStale = importedPatchChange(3L, existingPatchNote, "row-3", 3);
+        PatchChange secondStale = importedPatchChange(4L, existingPatchNote, "row-4", 4);
+        List<PatchChange> existingChanges = List.of(first, second, firstStale, secondStale);
+        List<PatchChangeCrawlRow> rows = List.of(
+                patchChangeCrawlRow("row-1", 1),
+                patchChangeCrawlRow("row-2", 2)
+        );
+        PatchNoteCrawlFetchedPage detailPage = fetchedPage(existingPatchNote.getSourceUrl());
+        PatchNoteCrawlDocument document = patchNoteCrawlDocument(detailPage, rows, List.of());
+        AdminPatchNoteImportRequest request = patchNoteImportRequest(detailPage.sourceUrl(), false);
+
+        when(crawlerProperties.getDefaultLocale()).thenReturn("ko-kr");
+        when(crawlerProperties.getMinRetainedRowRatio()).thenReturn(0.5);
+        when(crawlerFetchService.fetch(detailPage.sourceUrl())).thenReturn(detailPage);
+        when(crawlerParser.parseDetailPage(detailPage, null, "ko-kr")).thenReturn(document);
+        when(patchNoteRepository.findBySourceKey("riot-content-17-3")).thenReturn(Optional.of(existingPatchNote));
+        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(existingPatchNote))
+                .thenReturn(existingChanges);
+        when(patchChangeRepository.findByPatchNoteAndSourceKey(existingPatchNote, "row-1"))
+                .thenReturn(Optional.of(first));
+        when(patchChangeRepository.findByPatchNoteAndSourceKey(existingPatchNote, "row-2"))
+                .thenReturn(Optional.of(second));
+        // when
+        AdminPatchNoteImportResponse response = adminPatchNoteService.importRiotPatchNote(request);
+
+        // then
+        assertThat(response.getUpdatedChanges()).isEqualTo(2);
+        assertThat(existingPatchNote.isCurrent()).isFalse();
+        verify(patchChangeRepository).deleteAllInBatch(List.of(firstStale, secondStale));
+    }
+
+    @Test
+    void deletePatchChange_whenImported_thenReimport_doesNotRestoreDeletedChange() {
+        // given
+        String sourceKey = "deleted-source-key";
+        PatchNote patchNote = importedPatchNote(1L, "17.3", true);
+        PatchChange patchChange = importedPatchChange(10L, patchNote, sourceKey, 1);
+        PatchNoteCrawlFetchedPage detailPage = fetchedPage(patchNote.getSourceUrl());
+        PatchNoteCrawlDocument document = patchNoteCrawlDocument(
+                detailPage,
+                List.of(patchChangeCrawlRow(sourceKey, 1)),
+                List.of()
+        );
+        AdminPatchNoteImportRequest request = patchNoteImportRequest(detailPage.sourceUrl(), false);
+
+        when(patchChangeRepository.findById(10L)).thenReturn(Optional.of(patchChange));
+        when(crawlerProperties.getDefaultLocale()).thenReturn("ko-kr");
+        when(crawlerFetchService.fetch(detailPage.sourceUrl())).thenReturn(detailPage);
+        when(crawlerParser.parseDetailPage(detailPage, null, "ko-kr")).thenReturn(document);
+        when(patchNoteRepository.findBySourceKey(patchNote.getSourceKey())).thenReturn(Optional.of(patchNote));
+        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote)).thenReturn(List.of());
+        when(patchChangeTombstoneRepository.findSourceKeysByPatchNote(patchNote)).thenReturn(Set.of(sourceKey));
+
+        // when
+        adminPatchNoteService.deletePatchChange(10L);
+        AdminPatchNoteImportResponse response = adminPatchNoteService.importRiotPatchNote(request);
+
+        // then
+        ArgumentCaptor<PatchChangeTombstone> tombstoneCaptor = ArgumentCaptor.forClass(PatchChangeTombstone.class);
+        InOrder deletionOrder = inOrder(patchChangeTombstoneRepository, patchChangeRepository);
+        deletionOrder.verify(patchChangeTombstoneRepository).save(tombstoneCaptor.capture());
+        deletionOrder.verify(patchChangeRepository).delete(patchChange);
+
+        PatchChangeTombstone tombstone = tombstoneCaptor.getValue();
+        assertThat(tombstone.getPatchNote()).isSameAs(patchNote);
+        assertThat(tombstone.getSourceKey()).isEqualTo(sourceKey);
+        assertThat(tombstone.getDeletedAt()).isNotNull();
+        assertThat(response.getCreatedChanges()).isZero();
+        assertThat(response.getUpdatedChanges()).isZero();
+        assertThat(response.getSkippedChanges()).isEqualTo(1);
+        verify(patchChangeRepository, never()).findByPatchNoteAndSourceKey(patchNote, sourceKey);
+        verify(patchChangeRepository, never()).save(any(PatchChange.class));
+    }
+
+    @Test
+    void importRiotPatchNote_whenPatchHeaderManuallyEdited_preservesHeaderAndAppliesChildHotfix() {
+        // given
+        String sourceKey = "hotfix-source-key";
+        PatchNote existingPatchNote = importedPatchNote(1L, "17.3", false);
+        existingPatchNote.update(
+                "17.3",
+                "관리자 제목",
+                "관리자 요약",
+                "관리자 설명",
+                "관리자 포커스",
+                "https://example.com/admin-patch.png",
+                existingPatchNote.getPublishedAt(),
+                false,
+                "[\"관리자 하이라이트\"]"
+        );
+        existingPatchNote.markManuallyEditedIfImported();
+        PatchNote previousCurrent = patchNote(2L, "17.2", true);
+        PatchChange existingChange = importedPatchChange(10L, existingPatchNote, sourceKey, 1);
+        PatchNoteCrawlFetchedPage detailPage = fetchedPage(existingPatchNote.getSourceUrl());
+        PatchNoteCrawlDocument document = patchNoteCrawlDocument(
+                detailPage,
+                List.of(patchChangeCrawlRow(sourceKey, 1)),
+                List.of()
+        );
+        AdminPatchNoteImportRequest request = patchNoteImportRequest(detailPage.sourceUrl(), true);
+
+        when(crawlerProperties.getDefaultLocale()).thenReturn("ko-kr");
+        when(crawlerFetchService.fetch(detailPage.sourceUrl())).thenReturn(detailPage);
+        when(crawlerParser.parseDetailPage(detailPage, null, "ko-kr")).thenReturn(document);
+        when(patchNoteRepository.findBySourceKey(existingPatchNote.getSourceKey()))
+                .thenReturn(Optional.of(existingPatchNote));
+        when(patchNoteRepository.findByCurrentTrueAndDeletedAtIsNullAndIdNot(existingPatchNote.getId()))
+                .thenReturn(List.of(previousCurrent));
+        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(existingPatchNote))
+                .thenReturn(List.of(existingChange));
+        when(patchChangeTombstoneRepository.findSourceKeysByPatchNote(existingPatchNote)).thenReturn(Set.of());
+        when(patchChangeRepository.findByPatchNoteAndSourceKey(existingPatchNote, sourceKey))
+                .thenReturn(Optional.of(existingChange));
+
+        // when
+        AdminPatchNoteImportResponse response = adminPatchNoteService.importRiotPatchNote(request);
+
+        // then
+        assertThat(response.isPatchNoteSkipped()).isTrue();
+        assertThat(response.isPatchNoteUpdated()).isFalse();
+        assertThat(response.getUpdatedChanges()).isEqualTo(1);
+        assertThat(response.getSkippedChanges()).isZero();
+        assertThat(existingPatchNote.getTitle()).isEqualTo("관리자 제목");
+        assertThat(existingPatchNote.getDescription()).isEqualTo("관리자 설명");
+        assertThat(existingPatchNote.isCurrent()).isTrue();
+        assertThat(previousCurrent.isCurrent()).isFalse();
+        assertThat(existingChange.getSummary()).isEqualTo("Jinx attack damage changed 1");
+        assertThat(existingChange.getBeforeValue()).isEqualTo("50");
+        assertThat(existingChange.getAfterValue()).isEqualTo("55");
+        verify(patchNoteRepository).flush();
+    }
+
+    @Test
+    void importRiotPatchNote_whenChildManuallyEdited_preservesChild() {
+        // given
+        String sourceKey = "manual-child-source-key";
+        PatchNote existingPatchNote = importedPatchNote(1L, "17.3", true);
+        PatchChange existingChange = importedPatchChange(10L, existingPatchNote, sourceKey, 1);
+        existingChange.update(
+                existingPatchNote,
+                PatchChangeCategory.CHAMPION,
+                PatchChangeType.BUFF,
+                PatchChangeImpact.HIGH,
+                "tft17_jinx",
+                "Jinx",
+                "관리자 수정 내용",
+                "10",
+                "30",
+                "https://example.com/jinx.png",
+                "[\"champion\"]",
+                1
+        );
+        existingChange.markManuallyEditedIfImported();
+        PatchNoteCrawlFetchedPage detailPage = fetchedPage(existingPatchNote.getSourceUrl());
+        PatchNoteCrawlDocument document = patchNoteCrawlDocument(
+                detailPage,
+                List.of(patchChangeCrawlRow(sourceKey, 1)),
+                List.of()
+        );
+        AdminPatchNoteImportRequest request = patchNoteImportRequest(detailPage.sourceUrl(), false);
+
+        when(crawlerProperties.getDefaultLocale()).thenReturn("ko-kr");
+        when(crawlerFetchService.fetch(detailPage.sourceUrl())).thenReturn(detailPage);
+        when(crawlerParser.parseDetailPage(detailPage, null, "ko-kr")).thenReturn(document);
+        when(patchNoteRepository.findBySourceKey(existingPatchNote.getSourceKey()))
+                .thenReturn(Optional.of(existingPatchNote));
+        when(patchChangeTombstoneRepository.findSourceKeysByPatchNote(existingPatchNote)).thenReturn(Set.of());
+        when(patchChangeRepository.findByPatchNoteAndSourceKey(existingPatchNote, sourceKey))
+                .thenReturn(Optional.of(existingChange));
+        when(patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(existingPatchNote))
+                .thenReturn(List.of(existingChange));
+
+        // when
+        AdminPatchNoteImportResponse response = adminPatchNoteService.importRiotPatchNote(request);
+
+        // then
+        assertThat(response.getUpdatedChanges()).isZero();
+        assertThat(response.getSkippedChanges()).isEqualTo(1);
+        assertThat(existingChange.getSummary()).isEqualTo("관리자 수정 내용");
+        assertThat(existingChange.getBeforeValue()).isEqualTo("10");
+        assertThat(existingChange.getAfterValue()).isEqualTo("30");
+        assertThat(existingChange.getChangeType()).isEqualTo(PatchChangeType.BUFF);
+        assertThat(existingChange.getImpact()).isEqualTo(PatchChangeImpact.HIGH);
+        verify(patchChangeRepository, never()).save(any(PatchChange.class));
+        verify(patchChangeRepository, never()).deleteAllInBatch(any());
     }
 
     @Test
@@ -620,11 +1189,20 @@ class AdminPatchNoteServiceImplTest {
     }
 
     private PatchChange importedPatchChange(Long id, PatchNote patchNote) {
+        return importedPatchChange(
+                id,
+                patchNote,
+                "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+                1
+        );
+    }
+
+    private PatchChange importedPatchChange(Long id, PatchNote patchNote, String sourceKey, int sourceOrder) {
         PatchChange patchChange = PatchChange.builder()
                 .patchNote(patchNote)
-                .sourceKey("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+                .sourceKey(sourceKey)
                 .sourceHeadingPath("Champion > Jinx")
-                .sourceOrder(1)
+                .sourceOrder(sourceOrder)
                 .importedAt(LocalDateTime.of(2026, 6, 1, 10, 0))
                 .category(PatchChangeCategory.CHAMPION)
                 .changeType(PatchChangeType.BUFF)
@@ -636,10 +1214,86 @@ class AdminPatchNoteServiceImplTest {
                 .afterValue("20")
                 .imageUrl("https://example.com/jinx.png")
                 .tagsJson("[\"champion\"]")
-                .sortOrder(1)
+                .sortOrder(sourceOrder)
                 .build();
         ReflectionTestUtils.setField(patchChange, "id", id);
         return patchChange;
+    }
+
+    private AdminPatchNoteImportRequest patchNoteImportRequest(String sourceUrl, boolean current) {
+        AdminPatchNoteImportRequest request = new AdminPatchNoteImportRequest();
+        ReflectionTestUtils.setField(request, "sourceUrl", sourceUrl);
+        ReflectionTestUtils.setField(request, "current", current);
+        return request;
+    }
+
+    private PatchNoteCrawlDocument patchNoteCrawlDocument(
+            PatchNoteCrawlFetchedPage detailPage,
+            List<PatchChangeCrawlRow> rows,
+            List<String> parserWarnings
+    ) {
+        return new PatchNoteCrawlDocument(
+                detailPage.sourceUrl(),
+                "ko-kr",
+                "riot-content-17-3",
+                "17.3 Patch Notes",
+                "17.3",
+                "Official summary",
+                LocalDateTime.of(2026, 6, 15, 9, 0),
+                "https://example.com/patch.png",
+                List.of("Riot"),
+                List.of("Champions"),
+                rows,
+                parserWarnings
+        );
+    }
+
+    private PatchChangeCrawlRow patchChangeCrawlRow(String sourceKey, int sourceOrder) {
+        return new PatchChangeCrawlRow(
+                "candidate-" + sourceKey,
+                sourceKey,
+                "Champions > Jinx",
+                sourceOrder,
+                "Champions",
+                "Jinx",
+                "Jinx attack damage changed " + sourceOrder,
+                "<li>Jinx attack damage changed</li>",
+                "50",
+                "55",
+                List.of()
+        );
+    }
+
+    private GuideChampion guideChampion(String championKey, String name, String patchVersion) {
+        return GuideChampion.builder()
+                .championKey(championKey)
+                .name(name)
+                .cost(4)
+                .role("carry")
+                .position("backline")
+                .imageUrl("https://example.com/champion.png")
+                .statsJson("{}")
+                .traitsJson("[]")
+                .bestItemsJson("[]")
+                .patchVersion(patchVersion)
+                .build();
+    }
+
+    private GuideTrait guideTrait(String traitKey, String name, String patchVersion) {
+        return GuideTrait.builder()
+                .traitKey(traitKey)
+                .name(name)
+                .type("origin")
+                .iconUrl("https://example.com/trait.png")
+                .tone("cyan")
+                .summary("trait summary")
+                .levelsJson("[]")
+                .tierEffectsJson("[]")
+                .championsJson("[]")
+                .specialUnitsJson("[]")
+                .tipsJson("[]")
+                .patchVersion(patchVersion)
+                .build();
     }
 
     private PatchNoteCrawlFetchedPage fetchedPage(String sourceUrl) {

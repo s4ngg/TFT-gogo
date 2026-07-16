@@ -1,0 +1,14 @@
+.shell {
+  /* 메인 앱과 동일한 오렌지 사이드바 + 검정 배경 테마 */
+  min-height: 100vh;
+  display: flex;
+  color: var(--text-main);
+  background: var(--bg-page-black-gradient);
+}
+
+.content {
+  flex: 1;
+  min-height: 100vh;
+  padding: 32px 28px;
+  overflow-y: auto;
+}

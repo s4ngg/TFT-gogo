@@ -11,27 +11,39 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class RiotQueueTest {
 
+    private static final int WORKER_CONCURRENCY = 2;
+
     private RiotQueue riotQueue;
 
     @BeforeEach
     void setUp() {
+        riotQueue = createQueue(WORKER_CONCURRENCY, WORKER_CONCURRENCY);
+    }
+
+    private RiotQueue createQueue(int workerConcurrency, int executorPoolSize) {
         RiotProperties props = new RiotProperties();
         props.setApiKey("test-key");
-        props.setQueueWorkerConcurrency(2);
+        props.setQueueWorkerConcurrency(workerConcurrency);
         props.setMaxForegroundStreak(5);
         props.setForegroundTaskTtlMs(5_000L);
         props.setBackgroundTaskTtlMs(10_000L);
 
-        ThreadPoolTaskExecutorAdapter executor = new ThreadPoolTaskExecutorAdapter(2);
-        riotQueue = new RiotQueue(props, executor, new SimpleMeterRegistry());
+        ThreadPoolTaskExecutorAdapter executor = new ThreadPoolTaskExecutorAdapter(executorPoolSize);
+        return new RiotQueue(props, executor, new SimpleMeterRegistry());
     }
 
     @AfterEach
@@ -95,73 +107,57 @@ class RiotQueueTest {
 
     @Test
     void 큐_포화시_RIOT_QUEUE_FULL_예외가_발생한다() {
-        RiotQueue saturatedQueue = createRiotQueue(1);
-        CountDownLatch blockLatch = null;
+        RiotQueue saturatedQueue = createQueue(0, 1);
 
         try {
-            blockLatch = saturateForegroundQueue(saturatedQueue);
-
-            CompletableFuture<String> overflowFuture = saturatedQueue.submitForeground(() -> "overflow");
-
-            assertThat(overflowFuture).isCompletedExceptionally();
-            assertThatThrownBy(() -> overflowFuture.get())
-                    .hasCauseInstanceOf(BusinessException.class)
-                    .satisfies(e -> {
-                        BusinessException be = (BusinessException) e.getCause();
-                        assertThat(be.getErrorCode()).isEqualTo(ErrorCode.RIOT_QUEUE_FULL);
-                    });
+            primeSchedulerBlock(saturatedQueue);
+            CompletableFuture<String> overflowFuture = fillForegroundQueueUntilRejected(saturatedQueue);
+            assertRiotQueueFull(overflowFuture);
         } finally {
-            if (blockLatch != null) {
-                blockLatch.countDown();
-            }
             saturatedQueue.destroy();
         }
     }
 
     @Test
     void 큐_포화시_dedupKey_제출해도_IllegalStateException이_발생하지_않는다() {
-        RiotQueue saturatedQueue = createRiotQueue(1);
-        CountDownLatch blockLatch = null;
+        RiotQueue saturatedQueue = createQueue(0, 1);
 
         try {
-            blockLatch = saturateForegroundQueue(saturatedQueue);
-
+            primeSchedulerBlock(saturatedQueue);
+            fillForegroundQueueUntilRejected(saturatedQueue);
             CompletableFuture<String> dedupFuture = saturatedQueue.submitForeground("saturated-key", () -> "overflow");
-
-            assertThat(dedupFuture).isCompletedExceptionally();
-            assertThatThrownBy(() -> dedupFuture.get())
-                    .hasCauseInstanceOf(BusinessException.class)
-                    .satisfies(e -> {
-                        BusinessException be = (BusinessException) e.getCause();
-                        assertThat(be.getErrorCode()).isEqualTo(ErrorCode.RIOT_QUEUE_FULL);
-                    });
+            assertRiotQueueFull(dedupFuture);
         } finally {
-            if (blockLatch != null) {
-                blockLatch.countDown();
-            }
             saturatedQueue.destroy();
         }
     }
 
+    // 스케줄러가 태스크 1개를 dequeue한 직후 semaphore.acquire()로 영구 블록되는 시점을 먼저 확정해,
+    // 이후 fillForegroundQueueUntilRejected/dedup 제출이 스케줄러 dequeue 타이밍과 경합하지 않게 한다.
+    private void primeSchedulerBlock(RiotQueue targetQueue) {
+        targetQueue.submitForeground(() -> "prime-block");
+        waitUntil(() -> targetQueue.getForegroundQueueSize() == 0);
+    }
+
     @Test
     void destroy_호출시_대기중인_작업이_예외로_완료된다() throws Exception {
-        CountDownLatch blockLatch = new CountDownLatch(1);
+        CountDownLatch workersRelease = blockForegroundWorkers(riotQueue);
 
-        CompletableFuture<String> future = riotQueue.submit(() -> {
-            try { blockLatch.await(10, TimeUnit.SECONDS); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
-            return "blocked";
-        });
+        try {
+            CompletableFuture<String> schedulerBlockedFuture = blockForegroundScheduler(riotQueue);
+            CompletableFuture<String> pendingFuture = riotQueue.submit(() -> "pending");
 
-        // 큐에 추가 작업 넣기 (처리되기 전에 destroy 호출)
-        CompletableFuture<String> pendingFuture = riotQueue.submit(() -> "pending");
+            assertThat(riotQueue.getBackgroundQueueSize()).isEqualTo(1);
 
-        Thread.sleep(100);
-        riotQueue.destroy();
-        blockLatch.countDown();
+            riotQueue.destroy();
 
-        // pendingFuture가 아직 큐에 있었다면 예외로 완료됨
-        // (이미 처리 시작된 경우 정상 완료될 수도 있으므로 isDone만 확인)
-        assertThat(pendingFuture.isDone()).isTrue();
+            waitUntil(schedulerBlockedFuture::isDone);
+            waitUntil(pendingFuture::isDone);
+            assertRiotQueueFull(schedulerBlockedFuture);
+            assertRiotQueueFull(pendingFuture);
+        } finally {
+            workersRelease.countDown();
+        }
     }
 
     @Test
@@ -186,11 +182,9 @@ class RiotQueueTest {
             });
             blockerStarted.await(3, TimeUnit.SECONDS);
 
-            // sentinel: 스케줄러가 이 작업을 꺼내고 semaphore.acquire()에서 대기하게 만듦
             serialQueue.submitForeground(() -> "sentinel");
             Thread.sleep(50);
 
-            // 스케줄러가 semaphore 대기 중이므로 bg/fg 모두 안전하게 큐에 적재
             CompletableFuture<String> bgFuture = serialQueue.submit(() -> {
                 executionOrder.add("bg");
                 return "bg";
@@ -227,44 +221,60 @@ class RiotQueueTest {
         }
     }
 
-    private RiotQueue createRiotQueue(int concurrency) {
-        RiotProperties props = new RiotProperties();
-        props.setApiKey("test-key");
-        props.setQueueWorkerConcurrency(concurrency);
-        props.setMaxForegroundStreak(5);
-        props.setForegroundTaskTtlMs(5_000L);
-        props.setBackgroundTaskTtlMs(10_000L);
-        return new RiotQueue(props, new ThreadPoolTaskExecutorAdapter(concurrency), new SimpleMeterRegistry());
+    private CompletableFuture<String> fillForegroundQueueUntilRejected(RiotQueue targetQueue) {
+        for (int i = 0; i < 300; i++) {
+            CompletableFuture<String> future = targetQueue.submitForeground(() -> "blocked");
+            if (future.isCompletedExceptionally()) {
+                return future;
+            }
+        }
+        throw new AssertionError("큐 포화 상태를 만들지 못했습니다.");
     }
 
-    private CountDownLatch saturateForegroundQueue(RiotQueue targetQueue) {
-        CountDownLatch blockLatch = new CountDownLatch(1);
-        CountDownLatch blockerStarted = new CountDownLatch(1);
+    private CountDownLatch blockForegroundWorkers(RiotQueue targetQueue) throws InterruptedException {
+        CountDownLatch workersStarted = new CountDownLatch(WORKER_CONCURRENCY);
+        CountDownLatch workersRelease = new CountDownLatch(1);
 
-        targetQueue.submitForeground(() -> {
-            blockerStarted.countDown();
-            try { blockLatch.await(10, TimeUnit.SECONDS); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
-            return "blocked";
-        });
+        for (int i = 0; i < WORKER_CONCURRENCY; i++) {
+            targetQueue.submitForeground(() -> {
+                workersStarted.countDown();
+                try { workersRelease.await(5, TimeUnit.SECONDS); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+                return "worker-blocked";
+            });
+        }
 
-        try {
-            assertThat(blockerStarted.await(3, TimeUnit.SECONDS)).isTrue();
+        assertThat(workersStarted.await(3, TimeUnit.SECONDS)).isTrue();
+        return workersRelease;
+    }
 
-            targetQueue.submitForeground(() -> "sentinel");
-            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(3);
-            while (targetQueue.getForegroundQueueSize() != 0 && System.nanoTime() < deadline) {
+    private CompletableFuture<String> blockForegroundScheduler(RiotQueue targetQueue) {
+        CompletableFuture<String> schedulerBlockedFuture = targetQueue.submitForeground(() -> "scheduler-blocked");
+
+        waitUntil(() -> targetQueue.getForegroundQueueSize() == 0);
+        assertThat(schedulerBlockedFuture.isDone()).isFalse();
+        return schedulerBlockedFuture;
+    }
+
+    private void waitUntil(BooleanSupplier condition) {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(3);
+        while (!condition.getAsBoolean() && System.nanoTime() < deadline) {
+            try {
                 Thread.sleep(10);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new AssertionError("대기 중 인터럽트가 발생했습니다.", e);
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new AssertionError(e);
         }
-        assertThat(targetQueue.getForegroundQueueSize()).isZero();
+        assertThat(condition.getAsBoolean()).isTrue();
+    }
 
-        for (int i = 0; i < 200; i++) {
-            targetQueue.submitForeground(() -> "queued");
-        }
-
-        return blockLatch;
+    private void assertRiotQueueFull(CompletableFuture<String> future) {
+        assertThat(future).isCompletedExceptionally();
+        assertThatThrownBy(future::get)
+                .hasCauseInstanceOf(BusinessException.class)
+                .satisfies(e -> {
+                    BusinessException be = (BusinessException) e.getCause();
+                    assertThat(be.getErrorCode()).isEqualTo(ErrorCode.RIOT_QUEUE_FULL);
+                });
     }
 }

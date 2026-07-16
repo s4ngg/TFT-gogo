@@ -1,8 +1,8 @@
 import { useRef } from 'react'
 import { AppLayout } from '../../components/layout'
 import { usePatchNotes } from '../../hooks/usePatchNotes'
-import { patchNotesFallbackData } from '../../mocks/patchNotesMock'
 import type { PatchCategory } from '../../api/patchNotes'
+import { patchNotesFallbackData } from './patchNotesFallbackData'
 import PatchChangeFilters from './components/PatchChangeFilters'
 import PatchChangeList from './components/PatchChangeList'
 import PatchHero from './components/PatchHero'
@@ -50,7 +50,9 @@ function PatchNotes() {
     patchHistory,
   })
   const isPatchChangesFallback = patchChangesQuery.data?.source === 'fallback'
-  const showFallbackStatus = (isFallbackData || isPatchChangesFallback) && !isFetching && !patchChangesQuery.isFetching
+  const isPatchChangesUnavailable = patchChangesQuery.data?.source === 'unavailable'
+  const isContentFetching = isFetching || patchChangesQuery.isFetching
+  const showFallbackStatus = (isFallbackData || isPatchChangesFallback) && !isPatchChangesUnavailable
 
   function handlePatchSelect(version: string) {
     if (version === selectedPatchVersion) return
@@ -75,14 +77,16 @@ function PatchNotes() {
 
   if (!selectedPatch) {
     return (
-      <AppLayout>
+      <AppLayout sunTheme>
         <div className={styles.page}>
           <PatchStatusBanner
             isFallbackData={false}
             isFetching
+            isUnavailableData={false}
             onRetry={() => {
               void refetchPatchNotes()
             }}
+            patchVersion={selectedPatchVersion}
           />
         </div>
       </AppLayout>
@@ -90,17 +94,19 @@ function PatchNotes() {
   }
 
   return (
-    <AppLayout>
+    <AppLayout sunTheme>
       <div className={styles.page}>
         <PatchHero selectedPatch={selectedPatch} />
 
         <PatchStatusBanner
           isFallbackData={showFallbackStatus}
-          isFetching={isFetching}
+          isFetching={isContentFetching}
+          isUnavailableData={isPatchChangesUnavailable}
           onRetry={() => {
             void refetchPatchNotes()
             void patchChangesQuery.refetch()
           }}
+          patchVersion={selectedPatchVersion}
         />
 
         <PatchSummaryGrid
@@ -110,9 +116,6 @@ function PatchNotes() {
 
         <div className={styles.contentGrid}>
           <PatchSideRail
-            activeCategory={activeCategory}
-            categoryCounts={changeStats.categoryCounts}
-            onCategorySelect={handleCategorySelect}
             onInsightSelect={handleCategorySelect}
             onPatchSelect={handlePatchSelect}
             patchHistory={patchHistory}

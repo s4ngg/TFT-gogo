@@ -6,14 +6,18 @@ import com.tftgogo.domain.guide.dto.response.GuideImportResponse;
 import com.tftgogo.domain.guide.entity.GuideAugment;
 import com.tftgogo.domain.guide.entity.GuideChampion;
 import com.tftgogo.domain.guide.entity.GuideItem;
+import com.tftgogo.domain.guide.entity.GuideSnapshot;
+import com.tftgogo.domain.guide.entity.GuideSnapshotStatus;
 import com.tftgogo.domain.guide.entity.GuideTrait;
 import com.tftgogo.domain.guide.repository.GuideAugmentRepository;
 import com.tftgogo.domain.guide.repository.GuideChampionRepository;
 import com.tftgogo.domain.guide.repository.GuideItemRepository;
+import com.tftgogo.domain.guide.repository.GuideSnapshotRepository;
 import com.tftgogo.domain.guide.repository.GuideTraitRepository;
 import com.tftgogo.domain.patchnote.entity.PatchNote;
 import com.tftgogo.domain.patchnote.repository.PatchNoteRepository;
 import com.tftgogo.global.cdragon.config.CommunityDragonProperties;
+import com.tftgogo.global.config.GuideCdragonImportProperties;
 import com.tftgogo.global.exception.BusinessException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,7 +31,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -53,6 +59,9 @@ class GuideCdragonImportServiceImplTest {
     private GuideAugmentRepository guideAugmentRepository;
 
     @Mock
+    private GuideSnapshotRepository guideSnapshotRepository;
+
+    @Mock
     private PatchNoteRepository patchNoteRepository;
 
     @Mock
@@ -64,6 +73,9 @@ class GuideCdragonImportServiceImplTest {
     @Spy
     private CommunityDragonProperties communityDragonProperties = new CommunityDragonProperties();
 
+    @Spy
+    private GuideCdragonImportProperties guideCdragonImportProperties = new GuideCdragonImportProperties();
+
     @InjectMocks
     private GuideCdragonImportServiceImpl guideCdragonImportService;
 
@@ -71,6 +83,10 @@ class GuideCdragonImportServiceImplTest {
     void setUp() {
         communityDragonProperties.setTftKoKrUrl("https://example.com/cdragon/tft/ko_kr.json");
         communityDragonProperties.setAssetBaseUrl("https://raw.communitydragon.org/latest/game");
+        guideCdragonImportProperties.setMinimumChampionCount(1);
+        guideCdragonImportProperties.setMinimumTraitCount(1);
+        guideCdragonImportProperties.setMinimumItemCount(1);
+        guideCdragonImportProperties.setMinimumAugmentCount(1);
         lenient().when(guideChampionRepository.findByChampionKeyAndPatchVersion(any(), any()))
                 .thenReturn(Optional.empty());
         lenient().when(guideTraitRepository.findByTraitKeyAndPatchVersion(any(), any()))
@@ -79,6 +95,360 @@ class GuideCdragonImportServiceImplTest {
                 .thenReturn(Optional.empty());
         lenient().when(guideAugmentRepository.findByAugmentKeyAndPatchVersion(any(), any()))
                 .thenReturn(Optional.empty());
+        lenient().when(guideSnapshotRepository.findByPatchVersionForUpdate(any()))
+                .thenReturn(Optional.empty());
+    }
+
+    @Test
+    void 완전한_가져오기는_기존_스냅샷을_비활성화하고_새_스냅샷을_활성화한다() {
+        // given
+        GuideSnapshot previousActive = GuideSnapshot.builder()
+                .patchVersion("17.2")
+                .status(GuideSnapshotStatus.ACTIVE)
+                .championCount(1)
+                .traitCount(1)
+                .itemCount(1)
+                .augmentCount(1)
+                .build();
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonJson());
+        when(guideSnapshotRepository.findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE))
+                .thenReturn(Optional.of(previousActive));
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request(true, true, true, true));
+
+        // then
+        assertThat(response.getChampionCount()).isEqualTo(1);
+        assertThat(response.getTraitCount()).isEqualTo(1);
+        assertThat(response.getItemCount()).isEqualTo(1);
+        assertThat(response.getAugmentCount()).isEqualTo(1);
+        assertThat(response.getSetNumber()).isEqualTo(17);
+        assertThat(response.getMutator()).isEqualTo("TFTSet17");
+        assertThat(previousActive.getStatus()).isEqualTo(GuideSnapshotStatus.INACTIVE);
+
+        ArgumentCaptor<GuideSnapshot> snapshotCaptor = ArgumentCaptor.forClass(GuideSnapshot.class);
+        verify(guideSnapshotRepository).save(snapshotCaptor.capture());
+        GuideSnapshot activatedSnapshot = snapshotCaptor.getValue();
+        assertThat(activatedSnapshot.getPatchVersion()).isEqualTo("17.3");
+        assertThat(activatedSnapshot.getSourceSetNumber()).isEqualTo(17);
+        assertThat(activatedSnapshot.getSourceMutator()).isEqualTo("TFTSet17");
+        assertThat(activatedSnapshot.getStatus()).isEqualTo(GuideSnapshotStatus.ACTIVE);
+        assertThat(activatedSnapshot.getChampionCount()).isEqualTo(1);
+        assertThat(activatedSnapshot.getTraitCount()).isEqualTo(1);
+        assertThat(activatedSnapshot.getItemCount()).isEqualTo(1);
+        assertThat(activatedSnapshot.getAugmentCount()).isEqualTo(1);
+        assertThat(activatedSnapshot.getValidatedAt()).isNotNull();
+        assertThat(activatedSnapshot.getActivatedAt()).isNotNull();
+        verify(guideChampionRepository).deleteStaleByPatchVersion("17.3", Set.of("TFT17_Briar"));
+        verify(guideTraitRepository).deleteStaleByPatchVersion("17.3", Set.of("TFT17_AnimalSquad"));
+        verify(guideItemRepository).deleteStaleByPatchVersion(
+                "17.3",
+                Set.of("TFT_Item_GuinsoosRageblade")
+        );
+        verify(guideAugmentRepository).deleteStaleByPatchVersion(
+                "17.3",
+                Set.of("TFT17_Augment_BattleReady")
+        );
+        verify(guideSnapshotRepository).flush();
+    }
+
+    @Test
+    void 현재_ACTIVE_패치를_완전_재수집하면_활성_상태를_유지하고_검증_건수를_갱신한다() {
+        // given
+        LocalDateTime activatedAt = LocalDateTime.of(2026, 7, 14, 8, 1);
+        GuideSnapshot currentActive = GuideSnapshot.builder()
+                .patchVersion("17.3")
+                .status(GuideSnapshotStatus.ACTIVE)
+                .championCount(40)
+                .traitCount(20)
+                .itemCount(30)
+                .augmentCount(50)
+                .validatedAt(LocalDateTime.of(2026, 7, 14, 8, 0))
+                .activatedAt(activatedAt)
+                .build();
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonJson());
+        when(guideSnapshotRepository.findByPatchVersionForUpdate("17.3"))
+                .thenReturn(Optional.of(currentActive));
+        when(guideSnapshotRepository.findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE))
+                .thenReturn(Optional.of(currentActive));
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request(true, true, true, true));
+
+        // then
+        assertThat(response.getPatchVersion()).isEqualTo("17.3");
+        assertThat(currentActive.getStatus()).isEqualTo(GuideSnapshotStatus.ACTIVE);
+        assertThat(currentActive.getChampionCount()).isEqualTo(1);
+        assertThat(currentActive.getTraitCount()).isEqualTo(1);
+        assertThat(currentActive.getItemCount()).isEqualTo(1);
+        assertThat(currentActive.getAugmentCount()).isEqualTo(1);
+        assertThat(currentActive.getValidatedAt()).isAfter(LocalDateTime.of(2026, 7, 14, 8, 0));
+        assertThat(currentActive.getActivatedAt()).isEqualTo(activatedAt);
+        verify(guideSnapshotRepository).save(currentActive);
+        verify(guideSnapshotRepository, never()).flush();
+    }
+
+    @Test
+    void 두_자리_마이너_패치는_숫자로_비교해_17_10이_17_9를_대체한다() {
+        // given
+        GuideSnapshot previousActive = GuideSnapshot.builder()
+                .patchVersion("17.9")
+                .status(GuideSnapshotStatus.ACTIVE)
+                .championCount(1)
+                .traitCount(1)
+                .itemCount(1)
+                .augmentCount(1)
+                .validatedAt(LocalDateTime.of(2026, 7, 14, 8, 0))
+                .activatedAt(LocalDateTime.of(2026, 7, 14, 8, 1))
+                .build();
+        GuideCdragonImportRequest request = request(true, true, true, true);
+        ReflectionTestUtils.setField(request, "patchVersion", "17.10");
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonJson());
+        when(guideSnapshotRepository.findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE))
+                .thenReturn(Optional.of(previousActive));
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request);
+
+        // then
+        assertThat(response.getPatchVersion()).isEqualTo("17.10");
+        assertThat(previousActive.getStatus()).isEqualTo(GuideSnapshotStatus.INACTIVE);
+        ArgumentCaptor<GuideSnapshot> snapshotCaptor = ArgumentCaptor.forClass(GuideSnapshot.class);
+        verify(guideSnapshotRepository).save(snapshotCaptor.capture());
+        assertThat(snapshotCaptor.getValue().getPatchVersion()).isEqualTo("17.10");
+        assertThat(snapshotCaptor.getValue().getStatus()).isEqualTo(GuideSnapshotStatus.ACTIVE);
+        verify(guideSnapshotRepository).flush();
+    }
+
+    @Test
+    void 과거_패치의_완전한_가져오기는_검증된_히스토리로만_저장한다() {
+        // given
+        GuideSnapshot currentActive = GuideSnapshot.builder()
+                .patchVersion("17.3")
+                .status(GuideSnapshotStatus.ACTIVE)
+                .championCount(1)
+                .traitCount(1)
+                .itemCount(1)
+                .augmentCount(1)
+                .validatedAt(LocalDateTime.of(2026, 7, 14, 8, 0))
+                .activatedAt(LocalDateTime.of(2026, 7, 14, 8, 1))
+                .build();
+        GuideCdragonImportRequest request = request(true, true, true, true);
+        ReflectionTestUtils.setField(request, "patchVersion", "17.2");
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonJson());
+        when(guideSnapshotRepository.findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE))
+                .thenReturn(Optional.of(currentActive));
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request);
+
+        // then
+        assertThat(response.getPatchVersion()).isEqualTo("17.2");
+        assertThat(currentActive.getStatus()).isEqualTo(GuideSnapshotStatus.ACTIVE);
+        ArgumentCaptor<GuideSnapshot> snapshotCaptor = ArgumentCaptor.forClass(GuideSnapshot.class);
+        verify(guideSnapshotRepository).save(snapshotCaptor.capture());
+        GuideSnapshot historicalSnapshot = snapshotCaptor.getValue();
+        assertThat(historicalSnapshot.getPatchVersion()).isEqualTo("17.2");
+        assertThat(historicalSnapshot.getSourceSetNumber()).isEqualTo(17);
+        assertThat(historicalSnapshot.getSourceMutator()).isEqualTo("TFTSet17");
+        assertThat(historicalSnapshot.getStatus()).isEqualTo(GuideSnapshotStatus.INACTIVE);
+        assertThat(historicalSnapshot.getValidatedAt()).isNotNull();
+        assertThat(historicalSnapshot.getActivatedAt()).isNull();
+        verify(guideSnapshotRepository, never()).flush();
+    }
+
+    @Test
+    void 완전한_가져오기에서_필수_종류가_0건이면_저장과_활성화를_하지_않는다() {
+        // given
+        GuideSnapshot previousActive = GuideSnapshot.builder()
+                .patchVersion("17.2")
+                .status(GuideSnapshotStatus.ACTIVE)
+                .championCount(1)
+                .traitCount(1)
+                .itemCount(1)
+                .augmentCount(1)
+                .build();
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonSpecialUnitJson());
+
+        // when, then
+        assertThatThrownBy(() -> guideCdragonImportService.importGuides(request(true, true, true, true)))
+                .isInstanceOf(BusinessException.class);
+        verify(guideChampionRepository, never()).save(any(GuideChampion.class));
+        verify(guideTraitRepository, never()).save(any(GuideTrait.class));
+        verify(guideItemRepository, never()).save(any(GuideItem.class));
+        verify(guideAugmentRepository, never()).save(any(GuideAugment.class));
+        verify(guideSnapshotRepository, never()).save(any(GuideSnapshot.class));
+        verify(guideSnapshotRepository, never()).findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(any());
+        verify(guideSnapshotRepository, never()).flush();
+        assertThat(previousActive.getStatus()).isEqualTo(GuideSnapshotStatus.ACTIVE);
+    }
+
+    @Test
+    void 부분_가져오기에서_선택한_종류가_0건이면_저장하지_않는다() {
+        // given
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonSpecialUnitJson());
+
+        // when, then
+        assertThatThrownBy(() -> guideCdragonImportService.importGuides(request(false, false, false, true)))
+                .isInstanceOf(BusinessException.class);
+        verify(guideAugmentRepository, never()).save(any(GuideAugment.class));
+        verify(guideSnapshotRepository, never()).save(any(GuideSnapshot.class));
+        verify(guideSnapshotRepository, never()).findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(any());
+    }
+
+    @Test
+    void 완전한_가져오기에서_설정된_최소_건수보다_적으면_저장하지_않는다() {
+        // given
+        GuideSnapshot previousActive = GuideSnapshot.builder()
+                .patchVersion("17.2")
+                .status(GuideSnapshotStatus.ACTIVE)
+                .championCount(10)
+                .traitCount(10)
+                .itemCount(10)
+                .augmentCount(10)
+                .build();
+        guideCdragonImportProperties.setMinimumChampionCount(2);
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonJson());
+
+        // when, then
+        assertThatThrownBy(() -> guideCdragonImportService.importGuides(request(true, true, true, true)))
+                .isInstanceOf(BusinessException.class);
+        verify(guideChampionRepository, never()).save(any(GuideChampion.class));
+        verify(guideTraitRepository, never()).save(any(GuideTrait.class));
+        verify(guideItemRepository, never()).save(any(GuideItem.class));
+        verify(guideAugmentRepository, never()).save(any(GuideAugment.class));
+        verify(guideSnapshotRepository, never()).save(any(GuideSnapshot.class));
+        verify(guideSnapshotRepository, never()).findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(any());
+        verify(guideSnapshotRepository, never()).flush();
+        assertThat(previousActive.getStatus()).isEqualTo(GuideSnapshotStatus.ACTIVE);
+    }
+
+    @Test
+    void 부분_가져오기는_데이터를_저장하지만_새_패치를_STAGING으로_유지한다() {
+        // given
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonJson());
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(request(true, false, false, false));
+
+        // then
+        assertThat(response.getChampionCount()).isEqualTo(1);
+        ArgumentCaptor<GuideSnapshot> snapshotCaptor = ArgumentCaptor.forClass(GuideSnapshot.class);
+        verify(guideSnapshotRepository).save(snapshotCaptor.capture());
+        GuideSnapshot stagedSnapshot = snapshotCaptor.getValue();
+        assertThat(stagedSnapshot.getStatus()).isEqualTo(GuideSnapshotStatus.STAGING);
+        assertThat(stagedSnapshot.getSourceSetNumber()).isEqualTo(17);
+        assertThat(stagedSnapshot.getSourceMutator()).isEqualTo("TFTSet17");
+        assertThat(stagedSnapshot.getChampionCount()).isEqualTo(1);
+        assertThat(stagedSnapshot.getTraitCount()).isZero();
+        assertThat(stagedSnapshot.getItemCount()).isZero();
+        assertThat(stagedSnapshot.getAugmentCount()).isZero();
+        assertThat(stagedSnapshot.getValidatedAt()).isNull();
+        assertThat(stagedSnapshot.getActivatedAt()).isNull();
+        verify(guideSnapshotRepository, never()).findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(any());
+    }
+
+    @Test
+    void 부분_가져오기가_현재_ACTIVE_패치를_대상으로_하면_저장_전에_거절한다() {
+        // given
+        LocalDateTime validatedAt = LocalDateTime.of(2026, 7, 13, 6, 40);
+        LocalDateTime activatedAt = LocalDateTime.of(2026, 7, 13, 6, 41);
+        GuideSnapshot activeSnapshot = GuideSnapshot.builder()
+                .patchVersion("17.3")
+                .status(GuideSnapshotStatus.ACTIVE)
+                .championCount(4)
+                .traitCount(5)
+                .itemCount(6)
+                .augmentCount(7)
+                .validatedAt(validatedAt)
+                .activatedAt(activatedAt)
+                .build();
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonJson());
+        when(guideSnapshotRepository.findByPatchVersionForUpdate("17.3"))
+                .thenReturn(Optional.of(activeSnapshot));
+
+        // when, then
+        assertThatThrownBy(() -> guideCdragonImportService.importGuides(request(true, false, false, false)))
+                .isInstanceOf(BusinessException.class);
+        assertThat(activeSnapshot.getStatus()).isEqualTo(GuideSnapshotStatus.ACTIVE);
+        assertThat(activeSnapshot.getChampionCount()).isEqualTo(4);
+        assertThat(activeSnapshot.getTraitCount()).isEqualTo(5);
+        assertThat(activeSnapshot.getItemCount()).isEqualTo(6);
+        assertThat(activeSnapshot.getAugmentCount()).isEqualTo(7);
+        assertThat(activeSnapshot.getValidatedAt()).isEqualTo(validatedAt);
+        assertThat(activeSnapshot.getActivatedAt()).isEqualTo(activatedAt);
+        verify(guideChampionRepository, never()).save(any(GuideChampion.class));
+        verify(guideSnapshotRepository, never()).save(any(GuideSnapshot.class));
+        verify(guideSnapshotRepository, never()).findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(any());
+    }
+
+    @Test
+    void 부분_가져오기가_검증된_INACTIVE_패치를_대상으로_하면_저장_전에_거절한다() {
+        // given
+        GuideSnapshot historicalSnapshot = GuideSnapshot.builder()
+                .patchVersion("17.3")
+                .status(GuideSnapshotStatus.INACTIVE)
+                .championCount(40)
+                .traitCount(20)
+                .itemCount(30)
+                .augmentCount(50)
+                .validatedAt(LocalDateTime.of(2026, 7, 13, 6, 40))
+                .build();
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonJson());
+        when(guideSnapshotRepository.findByPatchVersionForUpdate("17.3"))
+                .thenReturn(Optional.of(historicalSnapshot));
+
+        // when, then
+        assertThatThrownBy(() -> guideCdragonImportService.importGuides(request(false, false, true, false)))
+                .isInstanceOf(BusinessException.class);
+        assertThat(historicalSnapshot.getStatus()).isEqualTo(GuideSnapshotStatus.INACTIVE);
+        assertThat(historicalSnapshot.getItemCount()).isEqualTo(30);
+        verify(guideItemRepository, never()).save(any(GuideItem.class));
+        verify(guideSnapshotRepository, never()).save(any(GuideSnapshot.class));
+        verify(guideSnapshotRepository, never()).findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(any());
+    }
+
+    @Test
+    void 부분_가져오기는_기존_STAGING의_미선택_종류_건수를_보존한다() {
+        // given
+        GuideSnapshot stagedSnapshot = GuideSnapshot.builder()
+                .patchVersion("17.3")
+                .status(GuideSnapshotStatus.STAGING)
+                .championCount(1)
+                .traitCount(2)
+                .itemCount(0)
+                .augmentCount(3)
+                .build();
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonJson());
+        when(guideSnapshotRepository.findByPatchVersionForUpdate("17.3"))
+                .thenReturn(Optional.of(stagedSnapshot));
+
+        // when
+        guideCdragonImportService.importGuides(request(false, false, true, false));
+
+        // then
+        assertThat(stagedSnapshot.getStatus()).isEqualTo(GuideSnapshotStatus.STAGING);
+        assertThat(stagedSnapshot.getSourceSetNumber()).isEqualTo(17);
+        assertThat(stagedSnapshot.getSourceMutator()).isEqualTo("TFTSet17");
+        assertThat(stagedSnapshot.getChampionCount()).isEqualTo(1);
+        assertThat(stagedSnapshot.getTraitCount()).isEqualTo(2);
+        assertThat(stagedSnapshot.getItemCount()).isEqualTo(1);
+        assertThat(stagedSnapshot.getAugmentCount()).isEqualTo(3);
+        assertThat(stagedSnapshot.getValidatedAt()).isNull();
+        assertThat(stagedSnapshot.getActivatedAt()).isNull();
+        verify(guideSnapshotRepository).save(stagedSnapshot);
+        verify(guideSnapshotRepository, never()).findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(any());
     }
 
     @Test
@@ -110,6 +480,10 @@ class GuideCdragonImportServiceImplTest {
         assertThat(trait.getTraitKey()).isEqualTo("TFT17_AnimalSquad");
         assertThat(trait.getPatchVersion()).isEqualTo("17.3");
         assertThat(trait.getChampionsJson()).contains("Briar");
+        verify(guideChampionRepository, never()).deleteStaleByPatchVersion(any(), any());
+        verify(guideTraitRepository, never()).deleteStaleByPatchVersion(any(), any());
+        verify(guideItemRepository, never()).deleteStaleByPatchVersion(any(), any());
+        verify(guideAugmentRepository, never()).deleteStaleByPatchVersion(any(), any());
     }
 
     @Test
@@ -229,6 +603,146 @@ class GuideCdragonImportServiceImplTest {
     }
 
     @Test
+    void setNumber가_없으면_CDragon을_조회하지_않고_거절한다() {
+        // given
+        GuideCdragonImportRequest request = request(true, false, false, false);
+        ReflectionTestUtils.setField(request, "setNumber", null);
+
+        // when, then
+        assertThatThrownBy(() -> guideCdragonImportService.importGuides(request))
+                .isInstanceOf(BusinessException.class);
+        verify(restTemplate, never()).getForObject(communityDragonProperties.getTftKoKrUrl(), String.class);
+        verify(guideSnapshotRepository, never()).findByPatchVersionForUpdate(any());
+        verify(guideChampionRepository, never()).save(any(GuideChampion.class));
+    }
+
+    @Test
+    void mutator가_비어있으면_CDragon을_조회하지_않고_거절한다() {
+        // given
+        GuideCdragonImportRequest request = request(true, false, false, false);
+        ReflectionTestUtils.setField(request, "mutator", "   ");
+
+        // when, then
+        assertThatThrownBy(() -> guideCdragonImportService.importGuides(request))
+                .isInstanceOf(BusinessException.class);
+        verify(restTemplate, never()).getForObject(communityDragonProperties.getTftKoKrUrl(), String.class);
+        verify(guideSnapshotRepository, never()).findByPatchVersionForUpdate(any());
+        verify(guideChampionRepository, never()).save(any(GuideChampion.class));
+    }
+
+    @Test
+    void 명시한_현재_set만_사용하고_더_큰_미래_set은_선택하지_않는다() {
+        // given
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonMultipleSetsJson());
+
+        // when
+        GuideImportResponse response = guideCdragonImportService.importGuides(
+                request(true, false, false, false)
+        );
+
+        // then
+        assertThat(response.getChampionCount()).isEqualTo(1);
+        assertThat(response.getSetNumber()).isEqualTo(17);
+        assertThat(response.getMutator()).isEqualTo("TFTSet17");
+        ArgumentCaptor<GuideChampion> championCaptor = ArgumentCaptor.forClass(GuideChampion.class);
+        verify(guideChampionRepository).save(championCaptor.capture());
+        assertThat(championCaptor.getValue().getChampionKey()).isEqualTo("TFT17_CurrentCarry");
+    }
+
+    @Test
+    void 신규_패치에서_운영_설정과_다른_미래_set은_저장하지_않는다() {
+        // given
+        guideCdragonImportProperties.setEnabled(true);
+        guideCdragonImportProperties.setSetNumber(17);
+        guideCdragonImportProperties.setMutator("TFTSet17");
+        GuideCdragonImportRequest request = request(true, false, false, false);
+        ReflectionTestUtils.setField(request, "patchVersion", "latest");
+        ReflectionTestUtils.setField(request, "setNumber", 18);
+        ReflectionTestUtils.setField(request, "mutator", "TFTSet18");
+        when(patchNoteRepository.findFirstByCurrentTrueAndDeletedAtIsNullOrderByPublishedAtDescIdDesc())
+                .thenReturn(Optional.of(patchNote("17.3")));
+
+        // when, then
+        assertThatThrownBy(() -> guideCdragonImportService.importGuides(request))
+                .isInstanceOf(BusinessException.class);
+        verify(restTemplate, never()).getForObject(communityDragonProperties.getTftKoKrUrl(), String.class);
+        verify(guideSnapshotRepository, never()).findByPatchVersionForUpdate(any());
+        verify(guideChampionRepository, never()).save(any(GuideChampion.class));
+    }
+
+    @Test
+    void 운영_패치보다_미래인_패치와_set은_CDragon_조회_전에_거절한다() {
+        // given
+        guideCdragonImportProperties.setEnabled(true);
+        guideCdragonImportProperties.setPatchVersion("latest");
+        guideCdragonImportProperties.setSetNumber(17);
+        guideCdragonImportProperties.setMutator("TFTSet17");
+        GuideCdragonImportRequest request = request(true, false, false, false);
+        ReflectionTestUtils.setField(request, "patchVersion", "17.4");
+        ReflectionTestUtils.setField(request, "setNumber", 18);
+        ReflectionTestUtils.setField(request, "mutator", "TFTSet18");
+        when(patchNoteRepository.findFirstByCurrentTrueAndDeletedAtIsNullOrderByPublishedAtDescIdDesc())
+                .thenReturn(Optional.of(patchNote("17.3")));
+
+        // when, then
+        assertThatThrownBy(() -> guideCdragonImportService.importGuides(request))
+                .isInstanceOf(BusinessException.class);
+        verify(restTemplate, never()).getForObject(communityDragonProperties.getTftKoKrUrl(), String.class);
+        verify(guideSnapshotRepository, never()).findByPatchVersionForUpdate(any());
+        verify(guideChampionRepository, never()).save(any(GuideChampion.class));
+    }
+
+    @Test
+    void 기존_스냅샷과_source가_다르면_분할_테이블_저장_전에_거절한다() {
+        // given
+        GuideSnapshot stagedSnapshot = GuideSnapshot.builder()
+                .patchVersion("17.3")
+                .sourceSetNumber(17)
+                .sourceMutator("TFTSet17")
+                .status(GuideSnapshotStatus.STAGING)
+                .championCount(1)
+                .traitCount(0)
+                .itemCount(0)
+                .augmentCount(0)
+                .build();
+        GuideCdragonImportRequest request = request(true, false, false, false);
+        ReflectionTestUtils.setField(request, "setNumber", 18);
+        ReflectionTestUtils.setField(request, "mutator", "TFTSet18");
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonMultipleSetsJson());
+        when(guideSnapshotRepository.findByPatchVersionForUpdate("17.3"))
+                .thenReturn(Optional.of(stagedSnapshot));
+
+        // when, then
+        assertThatThrownBy(() -> guideCdragonImportService.importGuides(request))
+                .isInstanceOf(BusinessException.class);
+        assertThat(stagedSnapshot.getSourceSetNumber()).isEqualTo(17);
+        assertThat(stagedSnapshot.getSourceMutator()).isEqualTo("TFTSet17");
+        assertThat(stagedSnapshot.getChampionCount()).isEqualTo(1);
+        verify(guideChampionRepository, never()).findByChampionKeyAndPatchVersion(any(), any());
+        verify(guideChampionRepository, never()).save(any(GuideChampion.class));
+        verify(guideSnapshotRepository, never()).save(any(GuideSnapshot.class));
+        verify(guideSnapshotRepository, never())
+                .findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(any());
+    }
+
+    @Test
+    void 비기본_mutator는_sets_폴백으로_대체하지_않는다() {
+        // given
+        GuideCdragonImportRequest request = request(true, false, false, false);
+        ReflectionTestUtils.setField(request, "mutator", "TFTSet17_PBE");
+        when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
+                .thenReturn(cdragonFallbackSetJson());
+
+        // when, then
+        assertThatThrownBy(() -> guideCdragonImportService.importGuides(request))
+                .isInstanceOf(BusinessException.class);
+        verify(guideSnapshotRepository, never()).findByPatchVersionForUpdate(any());
+        verify(guideChampionRepository, never()).save(any(GuideChampion.class));
+    }
+
+    @Test
     void cdragon_import_saves_special_units_on_trait_without_champion_row() {
         // given
         when(restTemplate.getForObject(communityDragonProperties.getTftKoKrUrl(), String.class))
@@ -287,6 +801,95 @@ class GuideCdragonImportServiceImplTest {
                 .publishedAt(LocalDateTime.of(2026, 6, 18, 9, 0))
                 .current(true)
                 .build();
+    }
+
+    private String cdragonMultipleSetsJson() {
+        return """
+                {
+                  "setData": [
+                    {
+                      "number": 17,
+                      "mutator": "TFTSet17",
+                      "champions": [
+                        {
+                          "apiName": "TFT17_CurrentCarry",
+                          "name": "Current Carry",
+                          "cost": 4,
+                          "role": "ADCarry",
+                          "squareIcon": "ASSETS/Characters/TFT17_CurrentCarry/HUD/TFT17_CurrentCarry_Square.TFT_Set17.tex",
+                          "traits": ["Current Trait"],
+                          "stats": {
+                            "armor": 30,
+                            "attackSpeed": 0.7,
+                            "damage": 50,
+                            "hp": 700,
+                            "initialMana": 0,
+                            "magicResist": 30,
+                            "mana": 60,
+                            "range": 4
+                          }
+                        }
+                      ],
+                      "traits": [],
+                      "augments": []
+                    },
+                    {
+                      "number": 18,
+                      "mutator": "TFTSet18",
+                      "champions": [
+                        {
+                          "apiName": "TFT18_TestCarry",
+                          "name": "Test Carry",
+                          "cost": 5,
+                          "role": "APCarry",
+                          "squareIcon": "ASSETS/Characters/TFT18_TestCarry/HUD/TFT18_TestCarry_Square.TFT_Set18.tex",
+                          "traits": ["Next Trait"],
+                          "stats": {
+                            "armor": 35,
+                            "attackSpeed": 0.8,
+                            "damage": 60,
+                            "hp": 800,
+                            "initialMana": 20,
+                            "magicResist": 35,
+                            "mana": 80,
+                            "range": 4
+                          }
+                        }
+                      ],
+                      "traits": [],
+                      "augments": []
+                    }
+                  ],
+                  "sets": {},
+                  "items": []
+                }
+                """;
+    }
+
+    private String cdragonFallbackSetJson() {
+        return """
+                {
+                  "setData": [],
+                  "sets": {
+                    "17": {
+                      "champions": [
+                        {
+                          "apiName": "TFT17_CurrentCarry",
+                          "name": "Current Carry",
+                          "cost": 4,
+                          "role": "ADCarry",
+                          "traits": ["Current Trait"],
+                          "stats": {
+                            "range": 4
+                          }
+                        }
+                      ],
+                      "traits": []
+                    }
+                  },
+                  "items": []
+                }
+                """;
     }
 
     private String cdragonSpecialUnitJson() {

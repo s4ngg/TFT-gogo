@@ -1,4 +1,4 @@
-import { ChevronRight, MessageCircle, Users } from 'lucide-react'
+import { MessageCircle, Users } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   COMMUNITY_CHAT_ROOM_QUERY_PARAM,
@@ -22,10 +22,6 @@ function LiveChat() {
     <section className={`${styles.panel} ${styles.chatPanel}`}>
       <div className={styles.sideHeading}>
         <h2>실시간 채팅</h2>
-        <button type="button" onClick={() => navigate('/party')}>
-          더 보기
-          <ChevronRight size={16} />
-        </button>
       </div>
       <div className={styles.chatList}>
         {chatChannels.map((channel) => (

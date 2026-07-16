@@ -1,0 +1,85 @@
+import assert from 'node:assert/strict'
+import test from 'node:test'
+import {
+  getGuideHighlightAttrs,
+  isGuideHighlighted,
+} from '../guideHighlight'
+
+test('isGuideHighlighted matches the guide name on the active tab', () => {
+  assert.equal(
+    isGuideHighlighted(
+      'traits',
+      { name: '동물특공대', targetKey: 'TFT17_AnimalSquad' },
+      { label: '동물특공대', query: '동물특공대', tab: 'traits' },
+    ),
+    true,
+  )
+})
+
+test('isGuideHighlighted matches targetKey when the AI ref has no display name', () => {
+  assert.equal(
+    isGuideHighlighted(
+      'champions',
+      { name: '징크스', targetKey: 'TFT17_Jinx' },
+      { label: 'TFT17_Jinx', query: 'TFT17_Jinx', tab: 'champions' },
+    ),
+    true,
+  )
+})
+
+test('isGuideHighlighted ignores matching names on a different tab', () => {
+  assert.equal(
+    isGuideHighlighted(
+      'items',
+      { name: '구인수의 격노검', targetKey: 'TFT_Item_GuinsoosRageblade' },
+      { label: '구인수의 격노검', query: '구인수의 격노검', tab: 'champions' },
+    ),
+    false,
+  )
+})
+
+test('isGuideHighlighted uses targetKey to disambiguate duplicate display names', () => {
+  assert.equal(
+    isGuideHighlighted(
+      'traits',
+      { name: '별돌보미', targetKey: 'TFT17_Stargazer_Wolf' },
+      {
+        label: '별돌보미',
+        query: '별돌보미',
+        tab: 'traits',
+        targetKey: 'TFT17_Stargazer_Huntress',
+      },
+    ),
+    false,
+  )
+  assert.equal(
+    isGuideHighlighted(
+      'traits',
+      { name: '별돌보미', targetKey: 'TFT17_Stargazer_Huntress' },
+      {
+        label: '별돌보미',
+        query: '별돌보미',
+        tab: 'traits',
+        targetKey: 'TFT17_Stargazer_Huntress',
+      },
+    ),
+    true,
+  )
+})
+
+test('getGuideHighlightAttrs returns class and data attribute only when highlighted', () => {
+  assert.deepEqual(
+    getGuideHighlightAttrs(true, 'card', 'highlighted'),
+    {
+      className: 'card highlighted',
+      'data-guide-highlighted': 'true',
+    },
+  )
+  assert.deepEqual(
+    getGuideHighlightAttrs(false, 'card', 'highlighted'),
+    {
+      className: 'card',
+      'data-guide-highlighted': undefined,
+    },
+  )
+})

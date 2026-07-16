@@ -14,6 +14,7 @@ public enum ErrorCode {
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증이 필요합니다."),
     FORBIDDEN(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다."),
+    CONTENT_REFRESH_ALREADY_RUNNING(HttpStatus.CONFLICT, "콘텐츠 갱신이 이미 실행 중입니다. 완료 후 다시 시도해주세요."),
 
     // ── 회원 ────────────────────────────────────────────
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
@@ -30,6 +31,8 @@ public enum ErrorCode {
     HERO_AUGMENT_DECK_NOT_FOUND(HttpStatus.NOT_FOUND, "영웅증강 덱을 찾을 수 없습니다."),
     AGGREGATION_ALREADY_RUNNING(HttpStatus.CONFLICT, "집계가 이미 실행 중입니다. 완료 후 다시 시도해주세요."),
     AGGREGATION_QUEUE_FULL(HttpStatus.SERVICE_UNAVAILABLE, "집계 작업 큐가 가득 찼습니다. 잠시 후 다시 시도해주세요."),
+    CLIENT_VERSION_PATCH_MAPPING_NOT_FOUND(HttpStatus.NOT_FOUND, "클라이언트 버전 매핑을 찾을 수 없습니다."),
+    CLIENT_VERSION_PATCH_MAPPING_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 등록된 클라이언트 버전입니다."),
 
     // ── 게임가이드 ─────────────────────────────────────
     GUIDE_NOT_FOUND(HttpStatus.NOT_FOUND, "게임가이드를 찾을 수 없습니다."),

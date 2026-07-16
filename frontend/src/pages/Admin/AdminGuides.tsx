@@ -82,6 +82,7 @@ function AdminGuides() {
   function buildPayload(patchVersionInput: string): GuideCdragonImportRequest | null {
     const patchVersion = patchVersionInput.trim()
     const setNumber = Number(form.setNumber)
+    const mutator = form.mutator.trim()
 
     if (!patchVersion) {
       setError('패치 버전을 입력하세요.')
@@ -90,6 +91,11 @@ function AdminGuides() {
 
     if (!Number.isInteger(setNumber) || setNumber < 1) {
       setError('세트 번호는 1 이상 정수여야 합니다.')
+      return null
+    }
+
+    if (!mutator) {
+      setError('Mutator를 입력하세요.')
       return null
     }
 
@@ -103,7 +109,7 @@ function AdminGuides() {
       includeChampions: form.includeChampions,
       includeItems: form.includeItems,
       includeTraits: form.includeTraits,
-      mutator: form.mutator.trim() || null,
+      mutator,
       patchVersion,
       setNumber,
     }
@@ -283,6 +289,14 @@ function AdminGuides() {
               <div className={styles.guideImportMetric}>
                 <span className={styles.guideImportMetricLabel}>저장 패치</span>
                 <strong className={styles.guideImportMetricValue}>{result.patchVersion}</strong>
+              </div>
+              <div className={styles.guideImportMetric}>
+                <span className={styles.guideImportMetricLabel}>실제 세트</span>
+                <strong className={styles.guideImportMetricValue}>{result.setNumber}</strong>
+              </div>
+              <div className={styles.guideImportMetric}>
+                <span className={styles.guideImportMetricLabel}>실제 Mutator</span>
+                <strong className={styles.guideImportMetricValue}>{result.mutator}</strong>
               </div>
               <div className={styles.guideImportMetric}>
                 <span className={styles.guideImportMetricLabel}>반영</span>

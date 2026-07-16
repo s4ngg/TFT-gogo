@@ -17,8 +17,8 @@ All admin backend endpoints are protected by X-Admin-Token.
 </routes>
 
 <frontend-structure>
-- frontend/src/layouts/AdminLayout.tsx
-- frontend/src/components/admin/AdminSidebar.tsx
+- frontend/src/pages/Admin/components/AdminLayout.tsx
+- frontend/src/pages/Admin/components/AdminSidebar.tsx
 - frontend/src/pages/Admin/AdminLogin.tsx
 - frontend/src/pages/Admin/AdminDecks.tsx
 - frontend/src/pages/Admin/AdminHeroAugments.tsx
@@ -115,7 +115,7 @@ All admin backend endpoints are protected by X-Admin-Token.
 </guide-curation>
 
 <patch-note-curation>
-- Manual patch-note CRUD uses patch_notes and patch_note_changes.
+- Manual patch-note CRUD uses patch_notes and patch_note_changes. Imported change deletion intent is stored in patch_note_change_tombstones.
 - `patch_note_changes` is the final admin/runtime table. `patch_changes` is legacy migration terminology only and must not be used in current admin/API docs.
 - Patch note version identifies one patch note.
 - isCurrent must be unique among active, non-deleted patch notes.
@@ -123,12 +123,16 @@ All admin backend endpoints are protected by X-Admin-Token.
 - When the database has a single-current unique index, current patch updates should persist the old rows as not-current before saving the new current row.
 - highlightsJson and tagsJson are JSON string arrays.
 - Patch changes belong to one patch note.
-- Admin delete is soft delete.
+- Admin patch-note delete is soft delete for the patch note row.
+- Patch-change delete is hard delete in the current implementation.
+- Deleting a patch note soft-deletes the patch note row and hard-deletes its patch changes.
+- Deleting one imported patch change stores its sourceKey tombstone so Riot re-import does not recreate it.
 - Manual updates to imported patch notes or changes mark manuallyEdited=true.
 - Riot official import endpoint is POST /api/admin/patch-notes/import/riot.
 - Import request fields are sourceUrl, locale, version, and current.
 - If sourceUrl is omitted, backend discovers the latest official TFT patch note from the configured Riot tag page.
-- Import preserves manuallyEdited rows on later imports.
+- Import preserves manually edited patch headers while continuing to synchronize their non-manually-edited child rows.
+- Import preserves manually edited child rows independently and skips child source keys recorded as tombstones.
 - Imported highlights should be normalized so Riot source numbering such as `(6)` and redundant date/patch prefixes do not appear in public summary cards.
 - Patch-note scheduler exists but must stay disabled in local/dev unless explicitly enabled.
 </patch-note-curation>

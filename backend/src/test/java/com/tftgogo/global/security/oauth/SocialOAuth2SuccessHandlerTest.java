@@ -1,18 +1,22 @@
 package com.tftgogo.global.security.oauth;
 
-import com.tftgogo.domain.member.dto.command.SocialLoginCommand;
+import com.tftgogo.domain.member.dto.request.SocialLoginCommand;
 import com.tftgogo.domain.member.dto.response.AuthResponse;
 import com.tftgogo.domain.member.dto.response.MemberResponse;
 import com.tftgogo.domain.member.entity.SocialProvider;
 import com.tftgogo.domain.member.service.MemberService;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
+import com.tftgogo.global.security.RefreshTokenCookieService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockHttpSession;
@@ -39,6 +43,12 @@ class SocialOAuth2SuccessHandlerTest {
     @Mock
     private OAuth2RedirectService redirectService;
 
+    @Mock
+    private RefreshTokenCookieService refreshTokenCookieService;
+
+    @InjectMocks
+    private SocialOAuth2SuccessHandler handler;
+
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
@@ -47,7 +57,6 @@ class SocialOAuth2SuccessHandlerTest {
     @Test
     void 성공하면_소셜명령으로_로그인하고_accessToken_fragment로_리다이렉트한다() throws Exception {
         // given
-        SocialOAuth2SuccessHandler handler = new SocialOAuth2SuccessHandler(memberService, redirectService);
         MockHttpServletRequest request = new MockHttpServletRequest();
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockHttpSession session = (MockHttpSession) request.getSession(true);
@@ -60,9 +69,15 @@ class SocialOAuth2SuccessHandlerTest {
                         .email("google@example.com")
                         .nickname("Google User")
                         .notificationEnabled(true)
-                        .build()
+                        .build(),
+                "refresh.token.value"
         );
         when(memberService.socialLogin(any(SocialLoginCommand.class))).thenReturn(authResponse);
+        when(refreshTokenCookieService.createCookie("refresh.token.value"))
+                .thenReturn(ResponseCookie.from("refreshToken", "refresh.token.value")
+                        .httpOnly(true)
+                        .path("/api/v1/auth")
+                        .build());
         when(redirectService.buildSuccessRedirectUri("access.token.value"))
                 .thenReturn("http://localhost:5173/oauth/callback#accessToken=access.token.value");
 
@@ -80,6 +95,9 @@ class SocialOAuth2SuccessHandlerTest {
         assertThat(command.getProfileImage()).isEqualTo("https://cdn.example.com/profile.png");
         assertThat(response.getRedirectedUrl())
                 .isEqualTo("http://localhost:5173/oauth/callback#accessToken=access.token.value");
+        assertThat(response.getHeader(HttpHeaders.SET_COOKIE))
+                .contains("refreshToken=refresh.token.value")
+                .contains("HttpOnly");
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
         assertThat(session.isInvalid()).isTrue();
     }
@@ -87,7 +105,6 @@ class SocialOAuth2SuccessHandlerTest {
     @Test
     void 같은_이메일_일반회원이_있으면_email_exists로_리다이렉트한다() throws Exception {
         // given
-        SocialOAuth2SuccessHandler handler = new SocialOAuth2SuccessHandler(memberService, redirectService);
         MockHttpServletRequest request = new MockHttpServletRequest();
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockHttpSession session = (MockHttpSession) request.getSession(true);
@@ -110,7 +127,6 @@ class SocialOAuth2SuccessHandlerTest {
     @Test
     void provider_email이_없으면_email_required로_리다이렉트한다() throws Exception {
         // given
-        SocialOAuth2SuccessHandler handler = new SocialOAuth2SuccessHandler(memberService, redirectService);
         MockHttpServletRequest request = new MockHttpServletRequest();
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockHttpSession session = (MockHttpSession) request.getSession(true);
@@ -133,7 +149,6 @@ class SocialOAuth2SuccessHandlerTest {
     @Test
     void 예상하지_못한_예외는_provider_error로_리다이렉트한다() throws Exception {
         // given
-        SocialOAuth2SuccessHandler handler = new SocialOAuth2SuccessHandler(memberService, redirectService);
         MockHttpServletRequest request = new MockHttpServletRequest();
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockHttpSession session = (MockHttpSession) request.getSession(true);

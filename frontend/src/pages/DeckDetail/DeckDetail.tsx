@@ -5,7 +5,7 @@ import { AppLayout } from '../../components/layout'
 import TierBadge from '../../components/common/TierBadge'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
 import { useCDragonLocale } from '../../hooks/useCDragonLocale'
-import { getChampionApiName, getChampionShortName, getTraitName } from '../../api/cdragonLocale'
+import { getChampionApiName } from '../../api/cdragonLocale'
 import HexBoard from './components/HexBoard'
 import TraitPanel from './components/TraitPanel'
 import HeroAugmentsPanel from './components/HeroAugmentsPanel'
@@ -13,6 +13,7 @@ import PlayGuidePanel from './components/PlayGuidePanel'
 import ItemsPanel from './components/ItemsPanel'
 import { parseBoardPositions } from './utils/boardUtils'
 import { isCarry, getCost, computeTraitCounts } from './utils/champUtils'
+import { deckDisplayName } from '../Decks/utils/deckListUtils'
 import type { RankFilter } from '../Dashboard/dashboardData'
 import styles from './DeckDetail.module.css'
 
@@ -104,7 +105,7 @@ function DeckDetail() {
 
   if (isLoading) {
     return (
-      <AppLayout>
+      <AppLayout sunTheme>
         <div className={styles.page}>
           <p className={styles.loading}>불러오는 중...</p>
         </div>
@@ -114,7 +115,7 @@ function DeckDetail() {
 
   if (isError) {
     return (
-      <AppLayout>
+      <AppLayout sunTheme>
         <div className={styles.page}>
           <button type="button" className={styles.backBtn} onClick={() => navigate('/decks')}>
             <ArrowLeft size={16} /> 덱모음으로
@@ -127,7 +128,7 @@ function DeckDetail() {
 
   if (!deck) {
     return (
-      <AppLayout>
+      <AppLayout sunTheme>
         <div className={styles.page}>
           <button type="button" className={styles.backBtn} onClick={() => navigate(`/decks`)}>
             <ArrowLeft size={16} /> 덱모음으로
@@ -138,15 +139,10 @@ function DeckDetail() {
     )
   }
 
-  const traitName = deck.traits.length > 0 ? getTraitName(deck.traits[0].name, locale) : ''
-  const carries = deck.champions
-    .filter((c) => (c.recommendedItems?.length ?? 0) > 0)
-    .slice(0, 2)
-    .map((c) => getChampionShortName(c.imageUrl, locale, c.name))
-  const displayName = [traitName, ...carries].filter(Boolean).join(' ') || deck.name
+  const displayName = deckDisplayName(deck, locale)
 
   return (
-    <AppLayout>
+    <AppLayout sunTheme>
       <div className={styles.page}>
         <button type="button" className={styles.backBtn} onClick={() => navigate('/decks')}>
           <ArrowLeft size={16} /> 덱모음으로

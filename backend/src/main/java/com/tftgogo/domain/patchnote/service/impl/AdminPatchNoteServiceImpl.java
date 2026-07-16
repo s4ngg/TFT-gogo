@@ -3,6 +3,10 @@ package com.tftgogo.domain.patchnote.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tftgogo.domain.guide.entity.GuideChampion;
+import com.tftgogo.domain.guide.entity.GuideTrait;
+import com.tftgogo.domain.guide.repository.GuideChampionRepository;
+import com.tftgogo.domain.guide.repository.GuideTraitRepository;
 import com.tftgogo.domain.patchnote.config.PatchNoteCrawlerProperties;
 import com.tftgogo.domain.patchnote.dto.crawl.PatchChangeCrawlRow;
 import com.tftgogo.domain.patchnote.dto.crawl.PatchNoteCrawlDocument;
@@ -17,11 +21,13 @@ import com.tftgogo.domain.patchnote.dto.response.PatchNoteResponse;
 import com.tftgogo.domain.patchnote.entity.PatchChange;
 import com.tftgogo.domain.patchnote.entity.PatchChangeCategory;
 import com.tftgogo.domain.patchnote.entity.PatchChangeImpact;
+import com.tftgogo.domain.patchnote.entity.PatchChangeTombstone;
 import com.tftgogo.domain.patchnote.entity.PatchChangeType;
 import com.tftgogo.domain.patchnote.entity.PatchNote;
 import com.tftgogo.domain.patchnote.entity.PatchNoteImportSource;
 import com.tftgogo.domain.patchnote.repository.PatchChangeRepository;
 import com.tftgogo.domain.patchnote.repository.PatchChangeRepository.PatchChangeCount;
+import com.tftgogo.domain.patchnote.repository.PatchChangeTombstoneRepository;
 import com.tftgogo.domain.patchnote.repository.PatchNoteRepository;
 import com.tftgogo.domain.patchnote.service.AdminPatchNoteService;
 import com.tftgogo.domain.patchnote.service.PatchNoteCrawlerFetchService;
@@ -48,19 +54,24 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
 
     private static final Logger logger = LogManager.getLogger(AdminPatchNoteServiceImpl.class);
+    private static final Set<String> FATAL_PARSER_WARNINGS = Set.of("max detail rows reached");
 
     private final PatchNoteRepository patchNoteRepository;
     private final PatchChangeRepository patchChangeRepository;
+    private final PatchChangeTombstoneRepository patchChangeTombstoneRepository;
     private final ObjectMapper objectMapper;
     private final PatchNoteCrawlerFetchService crawlerFetchService;
     private final PatchNoteCrawlerParser crawlerParser;
     private final PatchNoteCrawlerProperties crawlerProperties;
+    private final GuideChampionRepository guideChampionRepository;
+    private final GuideTraitRepository guideTraitRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -109,12 +120,18 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
         String explicitVersion = normalizeText(importRequest.getVersion());
         PatchNoteCrawlFetchedPage detailPage = fetchImportDetailPage(importRequest, locale);
         PatchNoteCrawlDocument document = crawlerParser.parseDetailPage(detailPage, explicitVersion, locale);
+        Set<String> incomingSourceKeys = validateImportDocument(document);
         String version = requireText(document.version(), ErrorCode.PATCH_NOTE_INVALID_DATA);
         String sourceUrl = requireText(document.sourceUrl(), ErrorCode.PATCH_NOTE_INVALID_DATA);
         String sourceKey = resolvePatchNoteSourceKey(document);
-        LocalDateTime importedAt = LocalDateTime.now();
 
         Optional<PatchNote> existingPatchNote = findImportTarget(sourceKey, sourceUrl, version);
+        List<PatchChange> existingPatchChanges = existingPatchNote
+                .map(patchChangeRepository::findByPatchNoteOrderBySortOrderAscIdAsc)
+                .orElseGet(List::of);
+        validateRetainedRowRatio(version, incomingSourceKeys, existingPatchChanges);
+
+        LocalDateTime importedAt = LocalDateTime.now();
         PatchNote patchNote;
         boolean patchNoteCreated = false;
         boolean patchNoteUpdated = false;
@@ -124,6 +141,10 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
             patchNote = existingPatchNote.get();
             if (patchNote.isManuallyEdited()) {
                 patchNoteSkipped = true;
+                if (patchNote.getDeletedAt() == null && importRequest.shouldMarkCurrent()) {
+                    clearCurrentPatchNotes(patchNote.getId());
+                    patchNote.markCurrent();
+                }
             } else {
                 if (importRequest.shouldMarkCurrent()) {
                     clearCurrentPatchNotes(patchNote.getId());
@@ -170,9 +191,15 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
             patchNoteCreated = true;
         }
 
-        ImportChangeStats changeStats = patchNoteSkipped
+        ImportChangeStats changeStats = patchNote.getDeletedAt() != null
                 ? ImportChangeStats.skipped(document.rows().size())
-                : importChanges(patchNote, document.rows(), importedAt, !patchNoteCreated);
+                : importChanges(
+                        patchNote,
+                        document.rows(),
+                        importedAt,
+                        existingPatchChanges,
+                        !patchNoteCreated
+                );
 
         return AdminPatchNoteImportResponse.of(
                 patchNote.getId(),
@@ -219,7 +246,10 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
         patchNote.markManuallyEditedIfImported();
         patchNote.softDelete();
         patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote)
-                .forEach(this::deletePatchChangeByAdmin);
+                .forEach(patchChange -> {
+                    patchChange.markManuallyEditedIfImported();
+                    patchChangeRepository.delete(patchChange);
+                });
     }
 
     @Override
@@ -312,21 +342,103 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
         return patchNoteRepository.findByVersion(version);
     }
 
+    private Set<String> validateImportDocument(PatchNoteCrawlDocument document) {
+        if (document == null || document.rows() == null || document.rows().isEmpty()) {
+            logger.warn("Patch note import rejected because parsed rows are empty");
+            throw new BusinessException(ErrorCode.PATCH_NOTE_INVALID_DATA);
+        }
+
+        List<String> parserWarnings = document.parserWarnings() == null
+                ? List.of()
+                : document.parserWarnings();
+        Optional<String> fatalWarning = parserWarnings.stream()
+                .filter(this::hasText)
+                .map(warning -> warning.trim().toLowerCase(Locale.ROOT))
+                .filter(FATAL_PARSER_WARNINGS::contains)
+                .findFirst();
+        if (fatalWarning.isPresent()) {
+            logger.warn(
+                    "Patch note import rejected because parser result is incomplete. warning={}, sourceUrl={}",
+                    fatalWarning.get(),
+                    document.sourceUrl()
+            );
+            throw new BusinessException(ErrorCode.PATCH_NOTE_INVALID_DATA);
+        }
+
+        Set<String> sourceKeys = new HashSet<>();
+        for (PatchChangeCrawlRow row : document.rows()) {
+            if (row == null) {
+                throw new BusinessException(ErrorCode.PATCH_NOTE_INVALID_DATA);
+            }
+            requireText(row.rowText(), ErrorCode.PATCH_NOTE_INVALID_DATA);
+            if (!sourceKeys.add(resolveChangeSourceKey(row))) {
+                logger.warn("Patch note import rejected because a duplicate source key was parsed");
+                throw new BusinessException(ErrorCode.PATCH_NOTE_INVALID_DATA);
+            }
+        }
+        return sourceKeys;
+    }
+
+    private void validateRetainedRowRatio(
+            String version,
+            Set<String> incomingSourceKeys,
+            List<PatchChange> existingPatchChanges
+    ) {
+        Set<String> existingImportedSourceKeys = existingPatchChanges.stream()
+                .filter(patchChange -> patchChange.getImportedAt() != null)
+                .filter(patchChange -> !patchChange.isManuallyEdited())
+                .map(PatchChange::getSourceKey)
+                .filter(this::hasText)
+                .collect(Collectors.toSet());
+        if (existingImportedSourceKeys.isEmpty()) {
+            return;
+        }
+
+        long retainedSourceKeyCount = existingImportedSourceKeys.stream()
+                .filter(incomingSourceKeys::contains)
+                .count();
+        double retainedRowRatio = retainedSourceKeyCount / (double) existingImportedSourceKeys.size();
+        double minimumRetainedRowRatio = crawlerProperties.getMinRetainedRowRatio();
+        if (retainedRowRatio >= minimumRetainedRowRatio) {
+            return;
+        }
+
+        logger.warn(
+                "Patch note import rejected because imported source key retention dropped abnormally. "
+                        + "version={}, existingRows={}, incomingRows={}, retainedRows={}, "
+                        + "retainedRatio={}, minimumRatio={}",
+                version,
+                existingImportedSourceKeys.size(),
+                incomingSourceKeys.size(),
+                retainedSourceKeyCount,
+                retainedRowRatio,
+                minimumRetainedRowRatio
+        );
+        throw new BusinessException(ErrorCode.PATCH_NOTE_INVALID_DATA);
+    }
+
     private ImportChangeStats importChanges(
             PatchNote patchNote,
             List<PatchChangeCrawlRow> rows,
             LocalDateTime importedAt,
+            List<PatchChange> existingPatchChanges,
             boolean deleteStaleChanges
     ) {
         int created = 0;
         int updated = 0;
         int skipped = 0;
         Set<String> importedSourceKeys = new HashSet<>();
+        Set<String> tombstonedSourceKeys = patchChangeTombstoneRepository.findSourceKeysByPatchNote(patchNote);
+        PatchChangeGuideNameCatalog guideNameCatalog = buildGuideNameCatalog(patchNote.getVersion());
 
         for (PatchChangeCrawlRow row : rows) {
             String sourceKey = resolveChangeSourceKey(row);
             importedSourceKeys.add(sourceKey);
-            PatchChangeCategory category = inferCategory(row);
+            if (tombstonedSourceKeys.contains(sourceKey)) {
+                skipped++;
+                continue;
+            }
+            PatchChangeCategory category = inferCategory(row, guideNameCatalog);
             PatchChangeType changeType = inferChangeType(row);
             PatchChangeImpact impact = PatchChangeImpact.MEDIUM;
             String targetName = resolveTargetName(row);
@@ -384,14 +496,17 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
         }
 
         if (deleteStaleChanges) {
-            deleteStaleImportedChanges(patchNote, importedSourceKeys);
+            deleteStaleImportedChanges(existingPatchChanges, importedSourceKeys);
         }
 
         return new ImportChangeStats(created, updated, skipped);
     }
 
-    private void deleteStaleImportedChanges(PatchNote patchNote, Set<String> importedSourceKeys) {
-        List<PatchChange> staleChanges = patchChangeRepository.findByPatchNoteOrderBySortOrderAscIdAsc(patchNote).stream()
+    private void deleteStaleImportedChanges(
+            List<PatchChange> existingPatchChanges,
+            Set<String> importedSourceKeys
+    ) {
+        List<PatchChange> staleChanges = existingPatchChanges.stream()
                 .filter(patchChange -> patchChange.getImportedAt() != null)
                 .filter(patchChange -> !patchChange.isManuallyEdited())
                 .filter(patchChange -> !hasText(patchChange.getSourceKey())
@@ -491,7 +606,7 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
         return document.publishedAt() == null ? fallback : document.publishedAt();
     }
 
-    private PatchChangeCategory inferCategory(PatchChangeCrawlRow row) {
+    private PatchChangeCategory inferCategory(PatchChangeCrawlRow row, PatchChangeGuideNameCatalog guideNameCatalog) {
         String text = normalizeLower(row.headingPath() + " " + row.sectionTitle() + " " + row.groupTitle());
         if (isBugFixRow(row)) {
             return PatchChangeCategory.SYSTEM;
@@ -508,7 +623,158 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
         if (text.contains("augment") || text.contains("증강")) {
             return PatchChangeCategory.AUGMENT;
         }
+        Optional<PatchChangeCategory> guideCategory = inferCategoryFromGuideNames(row, guideNameCatalog);
+        if (guideCategory.isPresent()) {
+            return guideCategory.get();
+        }
         return PatchChangeCategory.SYSTEM;
+    }
+
+    private PatchChangeGuideNameCatalog buildGuideNameCatalog(String patchVersion) {
+        if (!hasText(patchVersion)) {
+            return PatchChangeGuideNameCatalog.empty();
+        }
+
+        return new PatchChangeGuideNameCatalog(
+                collectGuideChampionNames(patchVersion),
+                collectGuideTraitNames(patchVersion)
+        );
+    }
+
+    private Set<String> collectGuideChampionNames(String patchVersion) {
+        List<GuideChampion> champions = guideChampionRepository.findByPatchVersionOrderByNameAscIdAsc(patchVersion);
+        if (champions == null || champions.isEmpty()) {
+            return Set.of();
+        }
+        Set<String> names = new HashSet<>();
+        champions.forEach(champion -> addGuideName(names, champion.getName()));
+        return names;
+    }
+
+    private Set<String> collectGuideTraitNames(String patchVersion) {
+        List<GuideTrait> traits = guideTraitRepository.findByPatchVersionOrderByNameAscIdAsc(patchVersion);
+        if (traits == null || traits.isEmpty()) {
+            return Set.of();
+        }
+        Set<String> names = new HashSet<>();
+        traits.forEach(trait -> addGuideName(names, trait.getName()));
+        return names;
+    }
+
+    private void addGuideName(Set<String> names, String name) {
+        String normalizedName = normalizeGuideName(name);
+        if (!hasText(normalizedName)) {
+            return;
+        }
+        names.add(normalizedName);
+
+        String compactName = normalizedName.replace(" ", "");
+        if (compactName.length() >= 3) {
+            names.add(compactName);
+        }
+    }
+
+    private Optional<PatchChangeCategory> inferCategoryFromGuideNames(
+            PatchChangeCrawlRow row,
+            PatchChangeGuideNameCatalog guideNameCatalog
+    ) {
+        if (guideNameCatalog.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Optional<PatchChangeCategory> targetCategory = inferCategoryFromGuideText(
+                row.groupTitle() + " " + row.sectionTitle(),
+                guideNameCatalog
+        );
+        if (targetCategory.isPresent()) {
+            return targetCategory;
+        }
+
+        Optional<PatchChangeCategory> rowTextCategory = inferCategoryFromGuideText(row.rowText(), guideNameCatalog);
+        if (rowTextCategory.isPresent()) {
+            return rowTextCategory;
+        }
+
+        return inferCategoryFromGuideText(row.headingPath(), guideNameCatalog);
+    }
+
+    private Optional<PatchChangeCategory> inferCategoryFromGuideText(
+            String text,
+            PatchChangeGuideNameCatalog guideNameCatalog
+    ) {
+        String normalizedText = normalizeGuideName(text);
+        if (!hasText(normalizedText)) {
+            return Optional.empty();
+        }
+
+        int championMatchLength = longestGuideNameMatchLength(normalizedText, guideNameCatalog.championNames());
+        int traitMatchLength = longestGuideNameMatchLength(normalizedText, guideNameCatalog.traitNames());
+
+        if (championMatchLength <= 0 && traitMatchLength <= 0) {
+            return Optional.empty();
+        }
+        if (championMatchLength >= traitMatchLength) {
+            return Optional.of(PatchChangeCategory.CHAMPION);
+        }
+        return Optional.of(PatchChangeCategory.TRAIT);
+    }
+
+    private int longestGuideNameMatchLength(String normalizedText, Set<String> guideNames) {
+        int longestMatchLength = 0;
+        for (String guideName : guideNames) {
+            if (isGuideNameMatch(normalizedText, guideName)) {
+                longestMatchLength = Math.max(longestMatchLength, guideName.length());
+            }
+        }
+        return longestMatchLength;
+    }
+
+    private boolean isGuideNameMatch(String normalizedText, String guideName) {
+        if (!hasText(normalizedText) || !hasText(guideName)) {
+            return false;
+        }
+        if (normalizedText.equals(guideName)) {
+            return true;
+        }
+        if (normalizedText.startsWith(guideName) && isGuideNameBoundary(normalizedText, guideName.length())) {
+            return true;
+        }
+        if (guideName.length() < 4) {
+            return false;
+        }
+
+        int matchIndex = normalizedText.indexOf(guideName);
+        while (matchIndex >= 0) {
+            int matchEndIndex = matchIndex + guideName.length();
+            if (isGuideNameBoundary(normalizedText, matchIndex - 1)
+                    && isGuideNameBoundary(normalizedText, matchEndIndex)) {
+                return true;
+            }
+            matchIndex = normalizedText.indexOf(guideName, matchIndex + 1);
+        }
+        return false;
+    }
+
+    private boolean isGuideNameBoundary(String value, int index) {
+        if (index < 0) {
+            return true;
+        }
+        if (index >= value.length()) {
+            return true;
+        }
+        char boundaryCandidate = value.charAt(index);
+        return Character.isWhitespace(boundaryCandidate)
+                || ":：,，.;·•/\\-–—()[]{}<>".indexOf(boundaryCandidate) >= 0;
+    }
+
+    private String normalizeGuideName(String value) {
+        if (value == null) {
+            return "";
+        }
+        return normalizeLower(value)
+                .replaceAll("[\\s\\u00A0]+", " ")
+                .replaceAll("^\\(\\s*\\d+\\s*\\)\\s*", "")
+                .trim();
     }
 
     private PatchChangeType inferChangeType(PatchChangeCrawlRow row) {
@@ -541,8 +807,26 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
     }
 
     private void deletePatchChangeByAdmin(PatchChange patchChange) {
+        recordPatchChangeTombstone(patchChange);
         patchChange.markManuallyEditedIfImported();
         patchChangeRepository.delete(patchChange);
+    }
+
+    private void recordPatchChangeTombstone(PatchChange patchChange) {
+        if (!patchChange.isImported() || !hasText(patchChange.getSourceKey())) {
+            return;
+        }
+        if (patchChangeTombstoneRepository.existsByPatchNoteAndSourceKey(
+                patchChange.getPatchNote(),
+                patchChange.getSourceKey()
+        )) {
+            return;
+        }
+
+        patchChangeTombstoneRepository.save(PatchChangeTombstone.builder()
+                .patchNote(patchChange.getPatchNote())
+                .sourceKey(patchChange.getSourceKey())
+                .build());
     }
 
     private void validateUniqueVersion(String version, Long excludedPatchNoteId) {
@@ -691,6 +975,16 @@ public class AdminPatchNoteServiceImpl implements AdminPatchNoteService {
     private record ImportChangeStats(int created, int updated, int skipped) {
         private static ImportChangeStats skipped(int skipped) {
             return new ImportChangeStats(0, 0, skipped);
+        }
+    }
+
+    private record PatchChangeGuideNameCatalog(Set<String> championNames, Set<String> traitNames) {
+        private static PatchChangeGuideNameCatalog empty() {
+            return new PatchChangeGuideNameCatalog(Set.of(), Set.of());
+        }
+
+        private boolean isEmpty() {
+            return championNames.isEmpty() && traitNames.isEmpty();
         }
     }
 }

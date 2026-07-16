@@ -5,7 +5,10 @@ import ChampionCard from '../../../components/common/ChampionCard'
 import TierBadge from '../../../components/common/TierBadge'
 import TraitHexBadge from '../../../components/common/TraitHexBadge'
 import { useMetaSnapshot } from '../../../hooks/useMetaSnapshot'
-import type { ChampionSummary, MetaDeck, TraitSummary } from '../dashboardData'
+import { useCDragonLocale } from '../../../hooks/useCDragonLocale'
+import { deckDisplayName } from '../../Decks/utils/deckListUtils'
+import { TIER_ORDER } from '../../../constants/tiers'
+import type { ChampionSummary, MetaDeck, RankFilter, TraitSummary } from '../dashboardData'
 import styles from '../Dashboard.module.css'
 
 type MetaFilter = 'overall' | 'upper' | 'master'
@@ -21,6 +24,8 @@ const sortOptions: { label: string; value: MetaSortKey }[] = [
   { label: 'TOP 4', value: 'top4' },
   { label: '평균 등수', value: 'avgPlace' },
 ]
+
+const DETAIL_RANK_FILTER: RankFilter = 'EMERALD_PLUS'
 
 function toNumber(value: string | undefined): number {
   if (!value) return 0
@@ -39,10 +44,21 @@ function filterMetaDecks(decks: MetaDeck[], filter: MetaFilter) {
   return decks
 }
 
+function tierRank(grade: MetaDeck['grade']): number {
+  const index = TIER_ORDER.indexOf(grade as (typeof TIER_ORDER)[number])
+  return index === -1 ? TIER_ORDER.length : index
+}
+
 function sortMetaDecks(decks: MetaDeck[], sortKey: MetaSortKey) {
   const direction = sortKey === 'avgPlace' ? 1 : -1
 
   return [...decks].sort((a, b) => {
+    const tierResult = tierRank(a.grade) - tierRank(b.grade)
+
+    if (tierResult !== 0) {
+      return tierResult
+    }
+
     const result = toNumber(a[sortKey]) - toNumber(b[sortKey])
 
     if (result === 0) {
@@ -96,6 +112,7 @@ function Champions({ champions }: ChampionsProps) {
 
 function MetaSnapshot() {
   const { data: metaDeckResponse, isError: isDeckError } = useMetaSnapshot()
+  const { data: locale } = useCDragonLocale()
   const allDecks = useMemo(() => metaDeckResponse?.decks ?? [], [metaDeckResponse?.decks])
   const [selectedFilter, setSelectedFilter] = useState<MetaFilter>('overall')
   const [sortKey, setSortKey] = useState<MetaSortKey>('top4')
@@ -104,6 +121,10 @@ function MetaSnapshot() {
     [allDecks, selectedFilter, sortKey],
   )
   const navigate = useNavigate()
+
+  function handleDeckDetailClick(deck: MetaDeck) {
+    navigate(`/decks/${DETAIL_RANK_FILTER}/${deck.rank}`)
+  }
 
   return (
     <section className={`${styles.panel} ${styles.metaPanel}`}>
@@ -147,22 +168,45 @@ function MetaSnapshot() {
         ))}
       </div>
 
+      {metaDecks.length > 0 && (
+        <div className={styles.deckListHeader}>
+          <span />
+          <span>덱 정보</span>
+          <span>챔피언 구성</span>
+          <span>TOP 4</span>
+          <span>평균 등수</span>
+          <span />
+        </div>
+      )}
+
       <div className={styles.deckList}>
         {isDeckError ? (
           <p className={styles.emptyState}>메타 덱 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</p>
         ) : metaDecks.length > 0 ? (
           metaDecks.map((deck) => (
             <article className={styles.deckRow} key={deck.rank}>
-              <strong className={styles.rankNumber}>{deck.rank}</strong>
               <TierBadge value={deck.grade} />
               <div className={styles.deckInfo}>
-                <h3>{deck.name}</h3>
+                <h3>{deckDisplayName(deck, locale)}</h3>
                 <Traits values={deck.traits} />
               </div>
               <Champions champions={deck.champions} />
-              <b className={styles.top4}>{deck.top4}</b>
-              <b className={styles.avgPlace}>{deck.avgPlace}</b>
-              <ChevronRight className={styles.rowArrow} size={22} />
+              <div className={styles.metricCell} title="TOP 4 진입 비율">
+                <span>TOP 4</span>
+                <b>{deck.top4}</b>
+              </div>
+              <div className={styles.metricCell} title="평균 등수">
+                <span>평균</span>
+                <b>{deck.avgPlace}</b>
+              </div>
+              <button
+                aria-label={`${deckDisplayName(deck, locale)} 상세 보기`}
+                className={styles.rowArrow}
+                onClick={() => handleDeckDetailClick(deck)}
+                type="button"
+              >
+                <ChevronRight size={20} />
+              </button>
             </article>
           ))
         ) : (

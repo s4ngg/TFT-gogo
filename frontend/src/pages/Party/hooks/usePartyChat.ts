@@ -91,11 +91,11 @@ export function usePartyChat({ activeRoomId, onActiveRoomChange }: UsePartyChatO
   const reconnectNotice = isReconnecting
     ? `실시간 연결을 다시 시도하고 있습니다. (${reconnectAttempt}/${maxReconnectAttempts})`
     : ''
-  const chatReadNotice = chatStatusMessage
-    || reconnectNotice
+  const chatReadNotice = reconnectNotice
     || chatErrorMessage
     || (hasReconnectFailed ? '실시간 연결을 복구하지 못했습니다.' : '')
     || (queryError ? '채팅 메시지를 불러오지 못했습니다.' : '')
+    || chatStatusMessage
   const chatNotice = chatReadNotice || (!canSendMessages ? '채팅은 조회할 수 있고 메시지 전송은 로그인 후 가능합니다.' : '')
   const isMessageDisabled = !canSendMessages || isSending || !activeRoom
 
@@ -111,13 +111,9 @@ export function usePartyChat({ activeRoomId, onActiveRoomChange }: UsePartyChatO
     onActiveRoomChange(PARTY_RECRUITMENT_ROOM_ID)
   }
 
-  const preparePartyRoom = () => {
+  const handlePartyAction = (_post?: unknown, message?: string) => {
     openPartyRecruitmentRoom()
-    setChatStatusMessage('')
-  }
-
-  const appendPartyMessage = () => {
-    setChatStatusMessage('')
+    setChatStatusMessage(message ?? '')
   }
 
   const sendMessage = async () => {
@@ -150,7 +146,7 @@ export function usePartyChat({ activeRoomId, onActiveRoomChange }: UsePartyChatO
     activeMessages,
     activeRoomId,
     activeRoomName,
-    appendPartyMessage,
+    appendPartyMessage: handlePartyAction,
     chatInput,
     chatNotice,
     connectionLabel,
@@ -159,7 +155,7 @@ export function usePartyChat({ activeRoomId, onActiveRoomChange }: UsePartyChatO
     isLoading,
     isMessageDisabled,
     isSendBlockedByAuth: !canSendMessages,
-    preparePartyRoom,
+    preparePartyRoom: handlePartyAction,
     rooms: displayedRooms,
     sendMessage,
     setActiveRoomId: onActiveRoomChange,

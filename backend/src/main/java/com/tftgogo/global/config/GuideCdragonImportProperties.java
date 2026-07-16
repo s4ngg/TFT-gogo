@@ -12,13 +12,34 @@ public class GuideCdragonImportProperties {
     private boolean enabled = false;
     private boolean startupImport = false;
     private String patchVersion = "latest";
-    private Integer setNumber = 17;
-    private String mutator = "TFTSet17";
+    private Integer setNumber;
+    private String mutator;
     private boolean includeChampions = true;
     private boolean includeTraits = true;
     private boolean includeItems = true;
     private boolean includeAugments = true;
-    private String syncCron = "0 10 * * * *";
-    private String refreshCron = "0 40 6 * * *";
-    private String zone = "Asia/Seoul";
+    private int minimumChampionCount = 40;
+    private int minimumTraitCount = 20;
+    private int minimumItemCount = 30;
+    private int minimumAugmentCount = 50;
+
+    public int getMinimumChampionCount() {
+        return minimumRequired(minimumChampionCount);
+    }
+
+    public int getMinimumTraitCount() {
+        return minimumRequired(minimumTraitCount);
+    }
+
+    public int getMinimumItemCount() {
+        return minimumRequired(minimumItemCount);
+    }
+
+    public int getMinimumAugmentCount() {
+        return minimumRequired(minimumAugmentCount);
+    }
+
+    private int minimumRequired(int configuredMinimum) {
+        return Math.max(1, configuredMinimum);
+    }
 }

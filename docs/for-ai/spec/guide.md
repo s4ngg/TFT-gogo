@@ -14,19 +14,20 @@ Page: Guide (/guide).
 <api>
 <backend>
 - GET  /api/guide       -> fetch public guide catalog
+- GET  /api/guide/patch-version -> fetch only the current/latest guide patch version without loading catalog entries
 - GET  /api/guide/{tab} -> fetch public guide data for one tab
-- GET  /api/guide/{tab}?patchVersion=&query=&page=&pageSize=&sortKey=&sortDir=&cost=
+- GET  /api/guide/{tab}?patchVersion=&query=&page=&pageSize=&cost=
 - POST /api/admin/guides/import/cdragon -> import champion/trait/item/augment guide rows from Community Dragon
 - GET  /api/cdragon/tft/ko-kr -> backend-proxied CDragon TFT locale JSON for frontend name/trait/item resolution
 </backend>
 <frontend>
 - frontend/src/api/guide.ts            -> main guide API calls
 - frontend/src/api/guideClient.ts      -> HTTP client wrapper for guide
-- frontend/src/api/guideFallback.ts    -> fallback data when API is unavailable
+- frontend/src/pages/Guide/guideFallbackData.ts -> fallback data when API is unavailable
 - frontend/src/api/guideNormalizers.ts -> normalize raw guide data before use
 - frontend/src/api/guideTypes.ts       -> TypeScript types for guide domain
-- frontend/src/hooks/useGuide.ts       -> TanStack Query hooks for guide catalog and tab pages
-- frontend/src/pages/Guide/hooks/      -> page UI state, tab pagination, metric sorting, and dialog state
+- frontend/src/hooks/useGuide.ts       -> TanStack Query hooks for guide patch version and tab pages
+- frontend/src/pages/Guide/hooks/      -> page UI state, tab pagination, quick-access, candidate-ref, and dialog state
 - frontend/src/pages/Guide/components/ -> page-specific guide panels/cards/controls
 </frontend>
 </api>
@@ -39,25 +40,48 @@ Page: Guide (/guide).
 - dataJson must serialize as a JSON object, not a raw JSON string.
 - The legacy unified `guides` table is not part of the current contract and must not be reintroduced for admin CRUD or public fallback.
 - Admin manual guide CRUD is removed from the backend contract. Admin guide writes currently happen only through /api/admin/guides/import/cdragon.
-- Admin endpoints are protected by X-Admin-Token through /api/admin/**.
+- Admin endpoints under /api/admin/** require an admin JWT bearer token. /api/admin/guides/import/cdragon requires ADMIN_MASTER or ADMIN_EDITOR.
 - CDragon import is upsert-based per split table. Same domain key + patchVersion updates the existing row; missing rows are created.
 - Split guide tables do not use soft delete. If deletion/restoration policy is needed later, design it explicitly per table.
-- If patchVersion is omitted on the public catalog, the latest patch is resolved from split guide tables.
-- If patchVersion is omitted on a tab endpoint, the latest patch is resolved from that tab's table.
+- CDragon import validates every requested guide type against its configured minimum candidate count before writing rows.
+  A requested type with zero or fewer candidates than its minimum fails the import and preserves the current ACTIVE snapshot.
+- Only an import requesting all four guide types can validate and activate a snapshot. A new partial import stores its
+  patchVersion as STAGING, so split-table rows cannot become public until a complete import succeeds.
+- Partial imports may continue an existing STAGING snapshot, but are rejected before split-table writes when the target
+  snapshot is ACTIVE or INACTIVE. Public and validated historical snapshots are never partially overwritten.
+- A complete historical import is validated as INACTIVE when a newer ACTIVE patch already exists. Only a complete
+  import whose patchVersion is newer than the current ACTIVE version may replace the public snapshot.
+- If patchVersion is omitted on the public catalog or a tab endpoint, all public guide reads use the single ACTIVE
+  guide snapshot's patchVersion. Split-table maximum versions must never select a public patch independently.
+- The public /api/guide/patch-version endpoint resolves only the ACTIVE snapshot's patchVersion and must not load
+  catalog entries. It exists so the Guide page can show the patch 기준 and request tab data without an expensive
+  upfront catalog query.
+- An explicit patchVersion is readable only when its snapshot is ACTIVE or is an INACTIVE historical snapshot with
+  validatedAt set. STAGING, unvalidated INACTIVE, and unknown snapshots return the existing empty-page response and
+  must not expose partially collected split-table data.
 - CDragon import accepts patchVersion=`latest`. The backend resolves it from the current patch note first, then from the latest non-deleted patch note. If no patch note exists, import fails with INVALID_INPUT; local QA should import patch notes first or pass an explicit guide patchVersion.
 - Admin guide import UI defaults patchVersion to `latest` so guide data aligns with the current patch-note version when patch notes are available.
-- Latest patch selection sorts patchVersion numerically by major/minor parts, then lexicographically as a final tie-breaker.
-- Public page defaults are page=1 and pageSize=10. page must be 1..10000 and pageSize must be 1..100.
-- Public sortKey is optional and limited to avgPlace, pickRate, top4, winRate. Current static CDragon rows do not provide production metrics; missing metrics sort last and default ordering is used.
-- Public default ordering is Korean name collation, then sortOrder, then id.
+- Backend public tab defaults are page=1 and pageSize=10 when omitted. page must be 1..10000 and pageSize must be 1..100.
+- Frontend tab requests use tab-specific page sizes: traits/items/augments use 6 and champions use 15.
+- Public sortKey/sortDir are not supported while metric refresh is unimplemented. Any non-empty sortKey or sortDir must fail with INVALID_INPUT instead of pretending to sort unavailable metrics.
+- Public default ordering for API tab pages is database name ASC, then id ASC. Static fallback data may use Korean name collation client-side.
 - cost filter is valid only as 1..5 and applies only to champion data.
-- query searches name, summary, and targetKey in memory after loading the resolved split-table patch.
-- If no patch exists, /api/guide returns an empty catalog and /api/guide/{tab} returns an empty page with totalPages=1.
+- query is handled by split-table database search, not in-memory filtering. Each table searches the fields available for that guide type, including name/domain key and relevant JSON/text columns.
+- Champion tab responses include only rows whose traits_json is a non-empty JSON array.
+- Trait tab responses include only rows whose champions_json is a non-empty JSON array. If Stargazer variant rows exist for a patch, the base TFT{set}_Stargazer row is hidden.
+- If no ACTIVE snapshot exists, /api/guide returns an empty catalog, /api/guide/patch-version returns an empty string,
+  and /api/guide/{tab} returns an empty page with totalPages=1.
 - Invalid persisted JSON fields are treated as GUIDE_INVALID_DATA and should be fixed in import/storage logic, not hidden by public API fallback.
-- CDragon import request fields: patchVersion (required, max 20, supports `latest`), setNumber (default 17), mutator (default TFTSet{setNumber}), includeChampions, includeTraits, includeItems, includeAugments.
+- CDragon import request fields: patchVersion (required, max 20, supports `latest`), setNumber (required, positive), mutator (required, max 100), includeChampions, includeTraits, includeItems, includeAugments.
 - CDragon import request flag behavior: omitted includeChampions/includeTraits default to true; omitted includeItems/includeAugments default to false at request DTO level, so admin UI and scheduler must send explicit true when items/augments should be imported.
 - CDragon import rejects requests where includeChampions, includeTraits, includeItems, and includeAugments all resolve to false.
-- CDragon import response fields: createdCount, updatedCount, skippedCount, championCount, traitCount, itemCount, augmentCount, importedCount (= createdCount + updatedCount).
+- CDragon import response fields: patchVersion, setNumber, mutator, createdCount, updatedCount, skippedCount, championCount, traitCount, itemCount, augmentCount, importedCount (= createdCount + updatedCount).
+- When an operating CDragon source is configured, the configured patchVersion (including `latest` resolved from patch notes)
+  permits only that configured setNumber/mutator pair. A different pair is rejected before CDragon fetch and DB writes.
+- A requested patchVersion newer than the configured operating patch is rejected before CDragon fetch and DB writes,
+  even when it supplies a different future/PBE set pair. Older historical patches remain importable with an explicit source.
+- Every guide snapshot records its source setNumber/mutator. A later import for the same patchVersion must use the same
+  source pair; legacy snapshots with both source values null bind to the first successful explicit import.
 - CDragon item import includes only completed craftable TFT_Item_* rows with exactly two composition components and no associatedTraits.
 - CDragon item import excludes component-only rows, emblem/trait-associated rows, radiant/artifact/support/non-craftable rows that do not match the completed-item policy.
 - CDragon augment import reads only the requested set/mutator augments and requires apiName, name, description, and icon.
@@ -67,9 +91,19 @@ Page: Guide (/guide).
 - #393 owns the separate guide metric strategy. CDragon provides static names/descriptions/images/tags/combinations; Riot match detail stored in cached_match can later provide avgPlace, pickRate, TOP4 rate, winRate, and sampleCount through a dedicated refresh path.
 - Metric refresh must keep "-" and [] fallbacks when an item or augment is below the minimum sample size; do not invent numbers from insufficient samples.
 - Data originates from CDragon where possible; use communityDragonAssets.ts helpers for frontend images.
-- guideFallback.ts provides static fallback when the backend is unreachable.
+- guideFallbackData.ts provides static fallback when the backend is unreachable.
 - guideNormalizers.ts must be applied before passing data to components; do not use raw API responses directly.
-- Public guide UI should request tab data through useGuideTabItems; components must not fetch guide data directly.
+- Public guide UI should request only the patch version through a dedicated patch-version query/hook,
+  not the full catalog query, then request tab data through useGuideTabItems. Components must not fetch guide data directly.
+- GET /api/guide remains available for compatibility, but the Guide page should not prefetch the full catalog on
+  every load when only patchVersion is needed.
+- Public guide UI includes the GameGuide AI entry points on guide cards. The AI behavior itself is owned by
+  gameguide-ai-pathfinder.md, but Guide cards are responsible for opening the widget with the selected
+  guideType/targetKey/name ref.
+- On mobile widths, Guide cards and section headers must never expand wider than the viewport. Trait cards use
+  minmax(0, 1fr) internal tracks, wrap tip rows, and keep card-level AI buttons inside the card grid.
+- The top app layout must not inherit horizontal scroll from the mobile nav or top status badges. Guide page
+  mobile QA should assert app shell scrollLeft=0 and document/body scrollWidth equals viewport width.
 </business-rules>
 
 <database-contract>
@@ -100,6 +134,20 @@ Page: Guide (/guide).
 - Unique: augment_key + patch_version
 - Index: patch_version + name + id
 </tft-guide-augments>
+
+<tft-guide-snapshots>
+- Table: tft_guide_snapshots
+- Columns: id, patch_version, source_set_number, source_mutator, status, champion_count, trait_count, item_count, augment_count, validated_at, activated_at, created_at, updated_at
+- Status: STAGING | ACTIVE | INACTIVE
+- Unique: patch_version
+- Integrity: a functional unique index permits at most one ACTIVE row
+- Integrity: CHECK constraints restrict status values, forbid unvalidated ACTIVE rows, and require positive counts for every validated row
+- Source integrity: legacy rows may have both source columns null; otherwise both must be present, source_set_number must
+  be positive, and source_mutator must be nonblank
+- Publication: only a complete, minimum-count-validated four-type import can move a snapshot to ACTIVE
+- Migration: legacy rows are grandfathered only when all four tables meet the same Flyway minimum-count placeholders;
+  rows below those thresholds remain hidden because no snapshot is created
+</tft-guide-snapshots>
 
 <removed-legacy>
 - Do not use: guides
@@ -157,10 +205,13 @@ Page: Guide (/guide).
 
 <backend-implementation>
 - GuideController owns public read endpoints under /api/guide.
-- GuideServiceImpl resolves patch versions from split repositories, validates query params, parses split JSON columns, sorts responses, and builds GuidePageResponse.
+- GuideServiceImpl resolves public patch versions from GuideSnapshotRepository, validates query params, delegates tab search/pagination to split-table repositories, parses split JSON columns, and builds GuidePageResponse.
 - AdminGuideController owns only /api/admin/guides/import/cdragon for guide writes.
-- GuideCdragonImportServiceImpl fetches CommunityDragonProperties.tftKoKrUrl using RestTemplate and builds split-table guide candidates.
-- CDragon set data resolution first searches root.setData by setNumber + mutator, then falls back to root.sets[setNumber] if champions and traits exist.
+- GuideCdragonImportServiceImpl fetches CommunityDragonProperties.tftKoKrUrl using RestTemplate, validates requested
+  candidate counts before persistence, writes split-table candidates, and activates only complete four-type snapshots.
+- CDragon set data resolution requires an explicit setNumber + mutator and first searches root.setData for that exact pair.
+  It may fall back to root.sets[setNumber] only for the default `TFTSet{setNumber}` mutator. It never auto-selects the
+  largest set number.
 - Champion import includes only shop champions whose apiName starts with TFT{setNumber}_, cost is 1..5, has at least one trait, and has a display name.
 - Trait import skips traits with no matching shop champion references.
 - Generated/summon units are excluded from champion rows and attached to trait special_units_json when explicitly mapped.
@@ -170,25 +221,40 @@ Page: Guide (/guide).
 </backend-implementation>
 
 <scheduler>
-- GuideCdragonImportScheduler is implemented.
+- ContentRefreshScheduler is the only automatic entry point for patch-note and CDragon guide refreshes.
+- GuideCdragonImportTask owns request construction and guide import without an independent schedule or lock.
 - Scheduler properties use prefix app.guide.cdragon.
 - Defaults:
   - enabled=false
   - startup-import=false
   - patch-version=latest
-  - set-number=17
-  - mutator=TFTSet17
+  - set-number unset by default; scheduler execution requires an explicit operating value
+  - mutator unset by default; scheduler execution requires an explicit operating value
   - include-champions=true
   - include-traits=true
   - include-items=true
   - include-augments=true
-  - sync-cron=0 10 * * * *
-  - refresh-cron=0 40 6 * * *
-  - zone=Asia/Seoul
-- Startup import runs on ApplicationReadyEvent only when enabled=true and startup-import=true.
-- Sync import runs hourly by default and refresh import runs daily at 06:40 KST by default.
-- Scheduler uses an in-process AtomicBoolean lock to avoid overlapping guide imports in a single server instance.
-- Multi-server deployments require a future shared DB/Redis lock before enabling the scheduler on multiple instances.
+  - minimum-champion-count=40
+  - minimum-trait-count=20
+  - minimum-item-count=30
+  - minimum-augment-count=50
+- Guide timing comes only from app.patch-note.scheduler list-cron, refresh-cron, and zone. There is no independent guide cron.
+- Startup guide import runs only when patch-note startup import and guide enabled/startup-import are all true.
+- The non-transactional coordinator waits for the latest patch-note transaction to commit, then passes the exact returned
+  patch version to GuideCdragonImportTask. Automatic import must not rebuild the request with patch-version=`latest`.
+- The in-process AtomicBoolean and shared MySQL advisory lock cover the whole patch-note-to-guide sequence.
+- Scheduler skips the whole ordered refresh before patch persistence when the enabled guide step has no explicit
+  set-number or mutator, preserving patch/guide version alignment.
+- If patch import fails or returns no version, guide import does not start. If guide import fails, its transaction rolls
+  back, the current ACTIVE snapshot remains public, and the next scheduled refresh retries.
+- Admin manual patch-note and CDragon imports use the same advisory lock and return CONTENT_REFRESH_ALREADY_RUNNING
+  when another automatic or manual content import owns it.
+- Automatic guide attempts and results are persisted in content_refresh_job_statuses. The admin-only
+  GET /api/admin/content-refresh/health endpoint reports the last successful guide version/count and validates the
+  current ACTIVE snapshot plus the actual four guide-table row counts against all configured minimum counts and the
+  current patch-note version.
+- Monitoring persistence is best-effort and must not change guide import commit/rollback behavior. Content freshness
+  warnings are not added to the public /actuator/health response used by infrastructure health checks.
 - Local/dev should keep the scheduler disabled by default. Use the admin import button for local QA.
 </scheduler>
 
@@ -202,15 +268,22 @@ Page: Guide (/guide).
 - Entities: backend/src/main/java/com/tftgogo/domain/guide/entity/
 - CDragon config: backend/src/main/java/com/tftgogo/global/cdragon/config/CommunityDragonProperties.java
 - CDragon locale proxy/cache: backend/src/main/java/com/tftgogo/global/cdragon/controller/CDragonController.java and backend/src/main/java/com/tftgogo/global/cdragon/service/TftAssetCacheService.java
-- Scheduler: backend/src/main/java/com/tftgogo/domain/guide/scheduler/GuideCdragonImportScheduler.java
+- Scheduler: backend/src/main/java/com/tftgogo/domain/content/scheduler/ContentRefreshScheduler.java
+- Guide task: backend/src/main/java/com/tftgogo/domain/guide/scheduler/GuideCdragonImportTask.java
 - Scheduler properties: backend/src/main/java/com/tftgogo/global/config/GuideCdragonImportProperties.java
 </backend-structure>
 
 <validation>
 - Service-layer unit tests are the primary backend verification target.
-- Public guide tests should cover tab parsing, page/pageSize bounds, sortKey/sortDir validation, cost filtering, JSON object response, latest patch fallback, empty latest patch behavior, split champion/trait filtering, and CDragon import split-table upsert.
+- Public guide tests should cover tab parsing, page/pageSize bounds, sortKey/sortDir validation, cost filtering, JSON object response, ACTIVE snapshot selection, empty ACTIVE behavior, explicit validated historical lookup, STAGING rejection, split champion/trait filtering, and CDragon import split-table upsert.
+- Import tests should cover zero/minimum-count rejection before persistence, previous ACTIVE retention on failure,
+  complete snapshot activation, and partial-import STAGING behavior.
 - Import tests should assert importedCount semantics through createdCount + updatedCount, not championCount + traitCount.
 - #393 metric refresh tests should be added with the dedicated refresh implementation: cached match fixture aggregation, queue/patch filtering, duplicate match handling, minimum sample fallback, sampleCount, and idempotent guide metric updates.
+- Frontend/browser QA should cover the /guide mobile layout at 390px width: trait cards, section headers,
+  champion rows, tip rows, and GameGuide AI card buttons must have no right overflow.
+- GameGuide AI card-click smoke QA should verify the widget opens with the selected card ref and, when logged out,
+  shows only the auth-required message defined in gameguide-ai-pathfinder.md.
 </validation>
 
 <data-ingestion>

@@ -1,39 +1,40 @@
-/* Base theme tokens */
+/* Base theme tokens — Light (Orange + Cream) */
 :root {
-  --bg-main: #02070d;
-  --bg-sidebar: #050a10;
-  --bg-card: #0e1926;
-  --bg-card-soft: #142235;
+  --bg-main: #fdf8f4;
+  --bg-sidebar: #fff8f3;
+  --bg-card: #ffffff;
+  --bg-card-soft: #fff4ec;
 
-  --border: #1f2a37;
-  --border-subtle: rgba(114, 145, 153, 0.18);
-  --border-faint:  rgba(114, 145, 153, 0.08);
-  --border-active: #00d4b4;
-  --accent: #00d4b4;
-  --accent-bright: #1fe5c8;
+  --border: rgba(180, 110, 60, 0.18);
+  --border-subtle: rgba(180, 110, 60, 0.12);
+  --border-faint: rgba(180, 110, 60, 0.07);
+  --border-active: #ff8c42;
+  --accent: #ff8c42;
+  --accent-bright: #ffa366;
 
   --color-cyan: #04f3e5;
   --color-gold: #f7d26d;
   --color-red: #ff4945;
-  --color-success: #4ade80;
-  --color-win: #76ef33;
-  --color-purple: #a78bfa;
-  --color-star: #f9c860;
-  --color-silver: #b8c1cc;
-  --color-bronze: #cd7f32;
+  --color-success: #2da84a;
+  --color-win: #2da84a;
+  --color-purple: #7c5cbf;
+  --color-star: #c8880a;
+  --color-silver: #7a8694;
+  --color-bronze: #9b5e1e;
 
-  --gold: #d7a93a;
-  --danger: #ff5b57;
-  --danger-bg: rgba(255, 91, 87, 0.12);
-  --danger-border: rgba(255, 91, 87, 0.30);
-  --success: #4ade80;
+  --gold: #b87d1a;
+  --danger: #d63030;
+  --danger-bg: rgba(214, 48, 48, 0.08);
+  --danger-border: rgba(214, 48, 48, 0.25);
+  --success: #2da84a;
 
   /* 영웅 증강 뱃지 */
-  --color-purple-light: #c4b5fd;
-  --hero-aug-badge-border: rgba(167, 139, 250, 0.45);
-  --hero-aug-badge-bg: rgba(167, 139, 250, 0.10);
+  --color-purple-light: #7c5cbf;
+  --hero-aug-badge-border: rgba(124, 92, 191, 0.35);
+  --hero-aug-badge-bg: rgba(124, 92, 191, 0.08);
 
   --text-main: #ffffff;
+  --text-primary: var(--text-main);
   --text-ui: #d9dde3;
   --text-soft: #c6ccd8;
   --text-secondary: #b5bdc5;
@@ -64,6 +65,9 @@
   --size-admin-change-list-min-width: 320px;
   --size-admin-change-list-max-height: 680px;
   --size-admin-textarea-min-height: 78px;
+  --size-gameguide-ai-chat-width: 380px;
+  --size-gameguide-ai-chat-max-height: 640px;
+  --size-gameguide-ai-launcher: 58px;
 
   --font-size-xs: 12px;
   --font-size-sm: 13px;
@@ -77,6 +81,7 @@
   --sidebar-collapsed-width: 78px;
   --radius-card: 12px;
   --radius-button: 8px;
+  --radius-panel: 10px;
   --chevron-col-width: 28px;
 }
 
@@ -116,32 +121,32 @@
   --rank-filter-radius: 14px;
   --rank-filter-font-size: 12px;
   --rank-filter-font-weight: 500;
-  --rank-filter-border: rgba(110, 142, 150, 0.3);
-  --rank-filter-border-hover: rgba(110, 142, 150, 0.6);
-  --rank-filter-text: #6b757e;
-  --rank-filter-text-hover: #c0c8d0;
-  --rank-filter-active: var(--color-cyan);
-  --rank-filter-active-bg: rgba(4, 243, 229, 0.08);
+  --rank-filter-border: rgba(180, 110, 60, 0.25);
+  --rank-filter-border-hover: rgba(180, 110, 60, 0.5);
+  --rank-filter-text: #8a6a50;
+  --rank-filter-text-hover: #3d2010;
+  --rank-filter-active: #c55a00;
+  --rank-filter-active-bg: rgba(197, 90, 0, 0.08);
   --transition-fast: 0.15s;
 }
 
 /* Trait tone tokens */
 :root {
-  --tone-gold-color: var(--color-star);
-  --tone-gold-border: rgba(249, 200, 96, 0.25);
-  --tone-gold-bg: rgba(249, 200, 96, 0.08);
+  --tone-gold-color: #a06800;
+  --tone-gold-border: rgba(160, 104, 0, 0.3);
+  --tone-gold-bg: rgba(160, 104, 0, 0.07);
 
-  --tone-silver-color: #a0aec0;
-  --tone-silver-border: rgba(160, 174, 192, 0.2);
-  --tone-silver-bg: rgba(160, 174, 192, 0.06);
+  --tone-silver-color: #5a6a78;
+  --tone-silver-border: rgba(90, 106, 120, 0.25);
+  --tone-silver-bg: rgba(90, 106, 120, 0.07);
 
-  --tone-bronze-color: #c6a96a;
-  --tone-bronze-border: rgba(198, 169, 106, 0.2);
-  --tone-bronze-bg: rgba(198, 169, 106, 0.06);
+  --tone-bronze-color: #8a5020;
+  --tone-bronze-border: rgba(138, 80, 32, 0.25);
+  --tone-bronze-bg: rgba(138, 80, 32, 0.07);
 
-  --tone-prismatic-color: #c084fc;
-  --tone-prismatic-border: rgba(192, 132, 252, 0.25);
-  --tone-prismatic-bg: rgba(192, 132, 252, 0.08);
+  --tone-prismatic-color: #7c5cbf;
+  --tone-prismatic-border: rgba(124, 92, 191, 0.3);
+  --tone-prismatic-bg: rgba(124, 92, 191, 0.07);
 
   /* Trait breakpoint pip */
   --bp-bronze: var(--tone-bronze-color);
@@ -155,75 +160,144 @@
   --font-size-2xs: 11px;
   --space-3xs: 2px;
   --radius-xs: 4px;
-  --bg-faint: rgba(255, 255, 255, 0.06);
+  --bg-faint: rgba(0, 0, 0, 0.04);
 }
 
 /* Status banner tokens */
 :root {
-  --status-action-border: rgba(110, 142, 150, 0.28);
-  --status-action-bg: rgba(8, 20, 28, 0.82);
-  --status-loading-border: rgba(4, 243, 229, 0.28);
-  --status-loading-icon-bg: rgba(4, 243, 229, 0.12);
-  --status-fallback-border: rgba(255, 91, 87, 0.28);
-  --status-fallback-icon-bg: rgba(255, 91, 87, 0.12);
+  --status-action-border: rgba(180, 110, 60, 0.28);
+  --status-action-bg: rgba(255, 248, 243, 0.95);
+  --status-loading-border: rgba(197, 90, 0, 0.28);
+  --status-loading-icon-bg: rgba(197, 90, 0, 0.10);
+  --status-fallback-border: rgba(214, 48, 48, 0.28);
+  --status-fallback-icon-bg: rgba(214, 48, 48, 0.10);
 }
 
 /* Panel / card background tokens */
 :root {
-  --bg-card-gradient: linear-gradient(180deg, rgba(8, 21, 29, 0.96), rgba(5, 15, 21, 0.96));
-  --bg-input-dark: rgba(3, 15, 20, 0.94);
-  --bg-btn-dark: rgba(14, 27, 34, 0.74);
-  --bg-btn-dark-soft: rgba(14, 27, 34, 0.6);
-  --bg-profile-level: rgba(0, 212, 180, 0.12);
-  --bg-match-panel: rgba(3, 10, 16, 0.97);
-  --bg-donut-inner: rgba(5, 15, 21, 0.97);
-  --bg-tooltip: rgba(5, 12, 18, 0.96);
-  --bg-row-hover: rgba(255, 255, 255, 0.025);
+  --bg-card-gradient: linear-gradient(180deg, #ffffff 0%, #fff8f3 100%);
+  --border-card-highlight: rgba(180, 110, 60, 0.18);
+  --bg-input-dark: #ffffff;
+  --bg-btn-dark: rgba(255, 248, 243, 0.95);
+  --bg-btn-dark-soft: rgba(255, 248, 243, 0.8);
+  --bg-profile-level: rgba(197, 90, 0, 0.08);
+  --bg-match-panel: rgba(253, 248, 244, 0.98);
+  --bg-donut-inner: #fdf8f4;
+  --bg-tooltip: rgba(253, 248, 244, 0.97);
+  --bg-row-hover: rgba(255, 140, 66, 0.04);
 }
 
 /* Search / CTA button tokens */
 :root {
-  --search-btn-bg: linear-gradient(135deg, #075c62, #0b9898);
-  --search-btn-border: rgba(0, 244, 235, 0.55);
+  --search-btn-bg: linear-gradient(135deg, #c55a00, #ff8c42);
+  --search-btn-border: rgba(197, 90, 0, 0.55);
 }
 
 /* Muted border tokens */
 :root {
-  --border-btn-muted: rgba(118, 151, 160, 0.36);
-  --border-load-more: rgba(118, 151, 160, 0.28);
-  --border-separator: rgba(112, 144, 152, 0.14);
-  --border-row-divider: rgba(112, 144, 152, 0.06);
-  --border-tooltip: rgba(112, 144, 152, 0.3);
+  --border-btn-muted: rgba(180, 110, 60, 0.28);
+  --border-load-more: rgba(180, 110, 60, 0.22);
+  --border-separator: rgba(180, 110, 60, 0.12);
+  --border-row-divider: rgba(180, 110, 60, 0.07);
+  --border-tooltip: rgba(180, 110, 60, 0.22);
 }
 
-/* Cyan opacity variant tokens */
+/* Cyan opacity variant tokens — 라이트 테마에서는 오렌지 계열로 대체 */
 :root {
-  --cyan-bg-faint: rgba(4, 243, 229, 0.07);
-  --cyan-bg-subtle: rgba(4, 243, 229, 0.1);
-  --cyan-border-subtle: rgba(4, 243, 229, 0.28);
-  --cyan-border-light: rgba(4, 243, 229, 0.3);
-  --donut-track-bg: rgba(255, 255, 255, 0.07);
+  --cyan-bg-faint: rgba(197, 90, 0, 0.05);
+  --cyan-bg-subtle: rgba(197, 90, 0, 0.08);
+  --cyan-border-subtle: rgba(197, 90, 0, 0.22);
+  --cyan-border-light: rgba(197, 90, 0, 0.28);
+  --cyan-glow-sm: rgba(197, 90, 0, 0.10);
+  --cyan-glow-md: rgba(197, 90, 0, 0.14);
+  --cyan-glow-lg: rgba(197, 90, 0, 0.20);
+  --guide-highlight-pulse-duration: 1.3s;
+  --guide-highlight-pulse-iterations: 2;
+  --donut-track-bg: rgba(0, 0, 0, 0.07);
 }
 
 /* Match row background tokens */
 :root {
-  --match-row-base-end: rgba(6, 17, 24, 0.82);
-  --match-row-gold-start: rgba(108, 74, 25, 0.24);
-  --match-row-top4-start: rgba(0, 80, 80, 0.22);
-  --match-row-bot4-start: rgba(100, 20, 20, 0.22);
-  --match-my-row-bg: rgba(4, 243, 229, 0.055);
-  --match-my-row-hover: rgba(4, 243, 229, 0.08);
+  --match-row-base-end: rgba(253, 248, 244, 0.95);
+  --match-row-gold-start: #fff8ee;
+  --match-row-top4-start: #f0faf4;
+  --match-row-bot4-start: #fff3f3;
+  --match-my-row-bg: rgba(197, 90, 0, 0.05);
+  --match-my-row-hover: rgba(197, 90, 0, 0.09);
+  /* 신규: 라이트 테마 매치 행 보더 */
+  --match-win-border: #e8a000;
+  --match-lose-border: #d63030;
 }
 
 /* Game type badge tokens */
 :root {
-  --badge-normal-bg: rgba(140, 150, 160, 0.1);
-  --badge-normal-border: rgba(140, 150, 160, 0.22);
+  --badge-normal-bg: rgba(180, 110, 60, 0.08);
+  --badge-normal-border: rgba(180, 110, 60, 0.2);
 }
-
 
 /* Page layout tokens */
 :root {
   --page-content-width: 1100px;
   --summoner-right-col-width: 340px;
+  --page-dashboard-width: 1460px;
+  --page-decks-width: 1270px;
+  --page-party-width: 1273px;
+  --party-chat-panel-min-width: 320px;
+}
+
+/* Sunshine card theme tokens */
+:root {
+  --bg-card-sun: #ffd93d;
+  --bg-card-sun-soft: #ffc627;
+  --bg-card-sun-gradient: linear-gradient(180deg, #ffe066 0%, #ffd93d 100%);
+  --border-card-sun: rgba(0, 0, 0, 0.65);
+  --divider-sun: rgba(0, 0, 0, 0.2);
+  --text-sun-main: #1a1300;
+  --text-sun-soft: #332609;
+  --text-sun-secondary: #4a3d1f;
+  --text-sun-muted: #6b5a30;
+  --accent-bg-faint: rgba(255, 140, 66, 0.1);
+  --accent-border-subtle: rgba(255, 140, 66, 0.32);
+
+  /* 오렌지 테마 — 사이드바 */
+  --bg-card-orange: #fff8f3;
+  --bg-card-orange-soft: #fff0e6;
+  --bg-card-orange-gradient: linear-gradient(180deg, #fff8f3 0%, #fff4ec 100%);
+  --border-card-orange: rgba(255, 140, 66, 0.3);
+  --text-orange-main: #b34a00;
+  --text-orange-soft: rgba(179, 74, 0, 0.85);
+  --text-orange-secondary: #8a6a50;
+  --text-orange-muted: #b8956a;
+
+  --bg-page-white-gradient: linear-gradient(180deg, #fdf8f4 0%, #faf4ef 100%);
+  --bg-page-black-gradient: linear-gradient(180deg, #0a0a0a 0%, #000000 100%);
+
+  --bg-sidebar-mint: #6bcb77;
+  --bg-sidebar-mint-gradient: linear-gradient(180deg, #86d692 0%, #6bcb77 100%);
+  --divider-mint: rgba(0, 0, 0, 0.2);
+  --text-mint-main: #0d2b12;
+  --text-mint-secondary: #1f4726;
+
+  --bg-card-aqua: #00c9a7;
+  --bg-card-aqua-soft: #00b090;
+  --bg-card-aqua-gradient: linear-gradient(180deg, #29d9bb 0%, #00c9a7 100%);
+  --border-card-aqua: rgba(0, 0, 0, 0.65);
+  --text-aqua-main: #00332b;
+  --text-aqua-soft: #0d4a3d;
+  --text-aqua-secondary: #1a5c4c;
+  --text-aqua-muted: #3d7a6a;
+
+  --bg-onlight: #ffffff;
+  --bg-onlight-hover: #fff4ec;
+  --text-onlight-main: #1a0800;
+  --border-onlight-subtle: rgba(180, 110, 60, 0.25);
+  --overlay-onlight-faint: rgba(0, 0, 0, 0.04);
+  --overlay-onlight-soft: rgba(0, 0, 0, 0.15);
+  --selected-filter-bg-onlight: rgba(197, 90, 0, 0.12);
+
+  --text-ondark-main: #ffffff;
+  --text-ondark-ui: #d9dde3;
+  --text-ondark-soft: #c6ccd8;
+  --text-ondark-secondary: #b5bdc5;
+  --text-ondark-muted: #8b92a8;
 }

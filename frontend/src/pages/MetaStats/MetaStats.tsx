@@ -6,6 +6,9 @@ import TierBadge from '../../components/common/TierBadge'
 import TraitHexBadge from '../../components/common/TraitHexBadge'
 import { TIER_META, TIER_ORDER } from '../../constants/tiers'
 import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
+import { useCDragonLocale } from '../../hooks/useCDragonLocale'
+import { deckDisplayName } from '../Decks/utils/deckListUtils'
+import type { TFTLocale } from '../../api/cdragonLocale'
 import type { MetaDeck, RankFilter } from '../Dashboard/dashboardData'
 import type { RankedTierBadgeValue } from '../../types/badges'
 import styles from './MetaStats.module.css'
@@ -17,12 +20,12 @@ interface RankFilterOption {
 
 
 /* ── 덱 카드 ── */
-function DeckCard({ deck }: { deck: MetaDeck }) {
+function DeckCard({ deck, locale }: { deck: MetaDeck; locale: TFTLocale | undefined }) {
   return (
     <article className={styles.deckCard}>
       <div className={styles.cardTop}>
         <TierBadge value={deck.grade} />
-        <span className={styles.cardName}>{deck.name}</span>
+        <span className={styles.cardName}>{deckDisplayName(deck, locale)}</span>
       </div>
       <div className={styles.cardTraits}>
         {deck.traits.slice(0, 4).map((t) => (
@@ -57,7 +60,15 @@ function DeckCard({ deck }: { deck: MetaDeck }) {
 }
 
 /* ── 티어 섹션 ── */
-function TierSection({ tier, decks }: { tier: RankedTierBadgeValue; decks: MetaDeck[] }) {
+function TierSection({
+  tier,
+  decks,
+  locale,
+}: {
+  tier: RankedTierBadgeValue
+  decks: MetaDeck[]
+  locale: TFTLocale | undefined
+}) {
   if (decks.length === 0) return null
   const { color, label } = TIER_META[tier]
 
@@ -70,7 +81,7 @@ function TierSection({ tier, decks }: { tier: RankedTierBadgeValue; decks: MetaD
         <span className={styles.tierCount}>{decks.length}개 덱</span>
       </div>
       <div className={styles.cardGrid}>
-        {decks.map((d) => <DeckCard key={d.rank} deck={d} />)}
+        {decks.map((d) => <DeckCard key={d.rank} deck={d} locale={locale} />)}
       </div>
     </section>
   )
@@ -85,6 +96,7 @@ const RANK_FILTERS: RankFilterOption[] = [
 /* ── 메인 ── */
 function MetaStats() {
   const [rankFilter, setRankFilter] = useState<RankFilter>('EMERALD_PLUS')
+  const { data: locale } = useCDragonLocale()
   const { data: metaDeckResponse } = useMetaSnapshot(rankFilter)
   const decks = metaDeckResponse?.decks ?? []
 
@@ -94,7 +106,7 @@ function MetaStats() {
   )
 
   return (
-    <AppLayout>
+    <AppLayout sunTheme>
       <div className={styles.page}>
         <div className={styles.pageHeader}>
           <div>
@@ -123,7 +135,7 @@ function MetaStats() {
         </div>
 
         {TIER_ORDER.map((t) => (
-          <TierSection key={t} tier={t} decks={byTier[t]} />
+          <TierSection key={t} tier={t} decks={byTier[t]} locale={locale} />
         ))}
       </div>
     </AppLayout>

@@ -13,13 +13,31 @@ interface UsePatchChangesPageOptions {
   onPageOutOfRange: (page: number) => void
 }
 
+/** Uses fallback rows only when they belong to the requested patch version. */
+export function resolvePatchChangesFallbackData(
+  version: string,
+  fallbackData: PatchNoteDetail[],
+  patchHistory: PatchNoteDetail[],
+) {
+  const selectedHistoryPatch = patchHistory.find((patch) => patch.version === version)
+  if (selectedHistoryPatch && selectedHistoryPatch.changes.length > 0) return patchHistory
+
+  const selectedFallbackPatch = fallbackData.find((patch) => patch.version === version)
+  if (selectedFallbackPatch && selectedFallbackPatch.changes.length > 0) return fallbackData
+
+  return []
+}
+
 export function usePatchChangesPage({
   fallbackData,
   onPageOutOfRange,
   params,
   patchHistory,
 }: UsePatchChangesPageOptions) {
-  const patchChangesFallbackData = patchHistory.length > 0 ? patchHistory : fallbackData
+  const patchChangesFallbackData = useMemo(
+    () => resolvePatchChangesFallbackData(params.version, fallbackData, patchHistory),
+    [fallbackData, params.version, patchHistory],
+  )
   const fallbackChangesPage = useMemo(
     () => getFallbackPatchChangePage(params, patchChangesFallbackData),
     [params, patchChangesFallbackData],

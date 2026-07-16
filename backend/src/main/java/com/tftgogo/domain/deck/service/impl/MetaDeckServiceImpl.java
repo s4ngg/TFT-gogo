@@ -2,11 +2,13 @@ package com.tftgogo.domain.deck.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tftgogo.global.config.CacheConfig;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import com.tftgogo.domain.deck.dto.response.MetaDeckListResponse;
 import com.tftgogo.domain.deck.dto.response.MetaDeckResponse;
 import com.tftgogo.domain.deck.entity.ArtifactStat;
+import com.tftgogo.domain.deck.entity.ClientVersionPatchMapping;
 import com.tftgogo.domain.deck.entity.DeckTrait;
 import com.tftgogo.domain.deck.entity.DeckUnit;
 import com.tftgogo.domain.deck.entity.MetaDeck;
@@ -25,6 +27,7 @@ import com.tftgogo.global.riot.util.TftShopUnitFilter;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
@@ -106,12 +109,15 @@ public class MetaDeckServiceImpl implements MetaDeckService {
 
     private final MetaDeckRepository metaDeckRepository;
     private final com.tftgogo.domain.deck.repository.DeckCurationRepository deckCurationRepository;
+    private final com.tftgogo.domain.deck.repository.ClientVersionPatchMappingRepository clientVersionPatchMappingRepository;
     private final RiotApiClient riotApiClient;
     private final PlatformTransactionManager transactionManager;
     private final AsyncAggregationRunner asyncAggregationRunner;
+    private final org.springframework.cache.CacheManager cacheManager;
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = CacheConfig.META_DECKS, key = "#rankFilter")
     public MetaDeckListResponse getMetaDecks(RankFilter rankFilter) {
         Optional<String> latestPatchOpt = findLatestPatchVersion(rankFilter);
         if (latestPatchOpt.isEmpty()) {
@@ -123,10 +129,11 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                     .build();
         }
         String latestPatchVersion = latestPatchOpt.get();
+        List<String> rawVersions = resolveRawVersionsForPatch(rankFilter, latestPatchVersion);
 
         // 선택률 기준 내림차순 정렬 + 최소 선택률 필터 적용
         List<MetaDeck> decks = metaDeckRepository
-                .findMetaDecksByPickRate(rankFilter, latestPatchVersion, MIN_PLAY_RATE);
+                .findMetaDecksByPickRateIn(rankFilter, rawVersions, MIN_PLAY_RATE);
 
         // 큐레이션 적용: customName 오버라이드, 숨김 처리, sortPriority 정렬
         Map<String, com.tftgogo.domain.deck.entity.DeckCuration> curationMap =
@@ -191,6 +198,11 @@ public class MetaDeckServiceImpl implements MetaDeckService {
             }
             logger.info("전체 랭크 구간 메타 덱 일일 집계 완료 - date={}", dataDate);
         } finally {
+            // 랭크별로 개별 TransactionTemplate 커밋을 사용하므로 일부 랭크 저장 후
+            // 예외가 나도 이미 커밋된 변경이 반영되도록 finally에서 직접 clear한다.
+            // (@CacheEvict는 기본 beforeInvocation=false라 예외 종료 시 무효화되지 않음)
+            java.util.Optional.ofNullable(cacheManager.getCache(CacheConfig.META_DECKS))
+                    .ifPresent(org.springframework.cache.Cache::clear);
             aggregating.set(false);
         }
     }
@@ -211,6 +223,9 @@ public class MetaDeckServiceImpl implements MetaDeckService {
                     }
                     logger.info("전체 랭크 구간 메타 덱 일일 집계 완료 - date={}", dataDate);
                 } finally {
+                    // 비동기 람다 내부라 @CacheEvict 프록시를 타지 않으므로 직접 무효화한다.
+                    java.util.Optional.ofNullable(cacheManager.getCache(CacheConfig.META_DECKS))
+                            .ifPresent(org.springframework.cache.Cache::clear);
                     aggregating.set(false);
                 }
             });
@@ -761,20 +776,46 @@ public class MetaDeckServiceImpl implements MetaDeckService {
         return TftAssetUrlBuilder.buildTraitIconUrl(traitId);
     }
 
+    // meta_decks에는 원본 client version을 그대로 저장한다.
+    // client version → 표시용 패치 번호 변환은 조회 시점에 매핑 테이블을 참조해 계산한다 (#726 관련 소급 반영 문제 회피).
     private String normalizePatchVersion(String gameVersion) {
         if (gameVersion == null || gameVersion.isBlank()) {
             return UNKNOWN_PATCH_VERSION;
         }
 
         Matcher matcher = PATCH_VERSION_PATTERN.matcher(gameVersion);
-        return matcher.find() ? matcher.group(1) : UNKNOWN_PATCH_VERSION;
+        if (!matcher.find()) {
+            return UNKNOWN_PATCH_VERSION;
+        }
+
+        return matcher.group(1);
     }
 
     @Override
     public Optional<String> findLatestPatchVersion(RankFilter rankFilter) {
+        Map<String, String> clientVersionToPatch = buildClientVersionToPatchMap();
         return metaDeckRepository.findDistinctPatchVersionsByRankFilter(rankFilter).stream()
-                .filter(patchVersion -> !UNKNOWN_PATCH_VERSION.equals(patchVersion))
+                .filter(rawVersion -> !UNKNOWN_PATCH_VERSION.equals(rawVersion))
+                .map(rawVersion -> resolveDisplayPatchVersion(rawVersion, clientVersionToPatch))
                 .max(this::comparePatchVersions);
+    }
+
+    @Override
+    public List<String> resolveRawVersionsForPatch(RankFilter rankFilter, String displayPatchVersion) {
+        Map<String, String> clientVersionToPatch = buildClientVersionToPatchMap();
+        return metaDeckRepository.findDistinctPatchVersionsByRankFilter(rankFilter).stream()
+                .filter(rawVersion -> resolveDisplayPatchVersion(rawVersion, clientVersionToPatch).equals(displayPatchVersion))
+                .toList();
+    }
+
+    private Map<String, String> buildClientVersionToPatchMap() {
+        return clientVersionPatchMappingRepository.findAll().stream()
+                .collect(Collectors.toMap(ClientVersionPatchMapping::getClientVersion, ClientVersionPatchMapping::getPatchVersion));
+    }
+
+    // 매핑이 없는 클라이언트 버전은 원본 값을 그대로 노출 (데이터 누락처럼 보이지 않도록 UNKNOWN으로 치환하지 않음)
+    private String resolveDisplayPatchVersion(String rawVersion, Map<String, String> clientVersionToPatch) {
+        return clientVersionToPatch.getOrDefault(rawVersion, rawVersion);
     }
 
     private int comparePatchVersions(String left, String right) {

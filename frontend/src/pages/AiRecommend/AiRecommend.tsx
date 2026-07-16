@@ -2,7 +2,7 @@ import { Bot, Trophy } from 'lucide-react'
 import { AppLayout } from '../../components/layout'
 import { useAiRecommendQuery } from '../../hooks/useAiRecommendQuery'
 import useAuthStore from '../../store/useAuthStore'
-import useSummonerStore from '../../store/useSummonerStore'
+import useSearchStore from '../../store/useSearchStore'
 import type { AiRecommendStats } from '../../api/aiRecommendApi'
 import { tftTierEmblemUrl } from '../../api/communityDragonAssets'
 import ConnectPrompt from './components/ConnectPrompt'
@@ -13,7 +13,7 @@ import styles from './AiRecommend.module.css'
 
 function AiRecommend() {
   const token = useAuthStore((s) => s.token)
-  const summoner = useSummonerStore((s) => s.summoner)
+  const summoner = useSearchStore((s) => s.summoner)
 
   const recommendationQuery = useAiRecommendQuery(
     summoner ? { gameName: summoner.name, tagLine: summoner.tag } : null,
@@ -108,7 +108,7 @@ function AiRecommend() {
   }
 
   return (
-    <AppLayout>
+    <AppLayout sunTheme>
       <div className={styles.page}>
         <div className={styles.pageHeader}>
           <div>

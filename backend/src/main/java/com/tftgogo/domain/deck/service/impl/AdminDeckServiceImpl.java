@@ -10,9 +10,11 @@ import com.tftgogo.domain.deck.repository.DeckCurationRepository;
 import com.tftgogo.domain.deck.repository.MetaDeckRepository;
 import com.tftgogo.domain.deck.service.AdminDeckService;
 import com.tftgogo.domain.deck.service.MetaDeckService;
+import com.tftgogo.global.config.CacheConfig;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,7 +41,8 @@ public class AdminDeckServiceImpl implements AdminDeckService {
     }
 
     private List<AdminDeckResponse> buildAdminResponses(RankFilter rankFilter, String patch) {
-        List<MetaDeck> decks = metaDeckRepository.findByRankFilterAndPatchVersion(rankFilter, patch);
+        List<String> rawVersions = metaDeckService.resolveRawVersionsForPatch(rankFilter, patch);
+        List<MetaDeck> decks = metaDeckRepository.findByRankFilterAndPatchVersionIn(rankFilter, rawVersions);
         Map<String, DeckCuration> curationMap = deckCurationRepository
                 .findByRankFilter(rankFilter).stream()
                 .collect(Collectors.toMap(DeckCuration::getSignature, Function.identity()));
@@ -50,6 +53,7 @@ public class AdminDeckServiceImpl implements AdminDeckService {
 
     @Override
     @Transactional
+    @CacheEvict(value = CacheConfig.META_DECKS, allEntries = true)
     public AdminDeckResponse updateCuration(Long deckId, DeckCurationRequest request) {
         validateJsonFields(request);
 
@@ -85,6 +89,7 @@ public class AdminDeckServiceImpl implements AdminDeckService {
 
     @Override
     @Transactional
+    @CacheEvict(value = CacheConfig.META_DECKS, allEntries = true)
     public void resetCuration(Long deckId) {
         MetaDeck deck = metaDeckRepository.findById(deckId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.DECK_NOT_FOUND));

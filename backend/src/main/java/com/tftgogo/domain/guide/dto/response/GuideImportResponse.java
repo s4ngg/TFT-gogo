@@ -8,6 +8,8 @@ import lombok.Getter;
 public class GuideImportResponse {
 
     private String patchVersion;
+    private int setNumber;
+    private String mutator;
     private int createdCount;
     private int updatedCount;
     private int skippedCount;

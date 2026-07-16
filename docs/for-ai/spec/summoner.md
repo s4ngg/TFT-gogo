@@ -2,12 +2,12 @@
 
 <purpose>
 Summoner profile lookup and TFT match history display.
-Page: SummonerDetail (/summoner/:gameName/:tagLine).
+Page: SearchDetail (/summoner/:gameName/:tagLine).
 Detailed human spec: docs/for-humans/spec/summoner.md
 </purpose>
 
 <routes>
-- /summoner/:gameName/:tagLine → SummonerDetail (profile + rank + match history)
+- /summoner/:gameName/:tagLine → SearchDetail (profile + rank + match history)
 </routes>
 
 <api>
@@ -33,11 +33,11 @@ Detailed human spec: docs/for-humans/spec/summoner.md
   — 429 응답 시 `Retry-After` 헤더 포함 (초 단위). 기본값 120초.
 </backend>
 <frontend>
-- frontend/src/api/summonerApi.ts               — getSummonerProfile, getMatchHistory
+- frontend/src/api/searchApi.ts                 — getSummonerProfile, getMatchHistory
 - frontend/src/api/communityDragonAssets.ts     — tftChampSquareUrl, tftTraitIconUrl (CDragon CDN)
 - frontend/src/hooks/useMatchHistory.ts         — getMatchHistory 래핑 + 페이징 상태 관리
-- frontend/src/hooks/useSummonerProfile.ts      — getSummonerProfile 래핑
-- frontend/src/pages/SummonerDetail/SummonerDetail.tsx
+- frontend/src/hooks/useSearchProfile.ts        — getSummonerProfile 래핑
+- frontend/src/pages/SearchDetail/SearchDetail.tsx
 </frontend>
 </api>
 
@@ -62,6 +62,8 @@ Detailed human spec: docs/for-humans/spec/summoner.md
 - Search input: split('#') 후 gameName·tagLine 양쪽 모두 trim(). "닉네임 # KR1" 형태 입력 허용.
 - 갱신 버튼 쿨다운:
   - 갱신 성공 후 60초 동안 버튼 비활성화 + 카운트다운 표시 (`N초 후 가능`). 쿨다운은 버튼 전용이며 페이지(RateLimitState)를 가리지 않음.
+  - 갱신 성공 시 refreshSuccess=true, 쿨다운(cooldownSeconds > 0) 동안에만 버튼 아래 "갱신됨" 빨간 텍스트(`var(--danger)`) 표시. 쿨다운 종료 또는 다음 갱신 시작 시 자동 숨김/리셋.
+  - 소환사(name/tag) 변경 시에도 refreshSuccess=false로 리셋 (다른 소환사 페이지 진입 시 이전 소환사의 "갱신됨" 표시가 남지 않도록).
   - localStorage(`tft_last_refresh`)에 소환사별 마지막 갱신 시각 저장. 페이지 재진입 시 잔여 쿨다운 자동 복원.
   - cooldownSeconds(버튼 전용)와 refreshRateLimitSeconds(429 전용)는 별도 상태로 분리.
 - 429 rate limit:
@@ -70,15 +72,15 @@ Detailed human spec: docs/for-humans/spec/summoner.md
 </business-rules>
 
 <frontend-structure>
-- frontend/src/pages/SummonerDetail/SummonerDetail.tsx              — main page component
-- frontend/src/pages/SummonerDetail/components/RecentSummary.tsx    — 게임 요약 카드 (불러온 전체 매치 기준)
-- frontend/src/pages/SummonerDetail/components/MatchDetailPanel.tsx — 전적 행 상세 펼침 패널 (8인)
-- frontend/src/pages/SummonerDetail/components/EmptyState.tsx       — 소환사 없음 빈 상태
-- frontend/src/pages/SummonerDetail/utils/summonerUtils.ts          — timeAgo, formatDate, placementTone, detailRankClass
-- frontend/src/hooks/useMatchHistory.ts                             — 전적 목록 fetching hook
-- frontend/src/hooks/useSummonerProfile.ts                          — 프로필 fetching hook
-- frontend/src/api/summonerApi.ts                                   — API calls
-- frontend/src/api/communityDragonAssets.ts                         — CDragon image URL helpers
+- frontend/src/pages/SearchDetail/SearchDetail.tsx              — main page component
+- frontend/src/pages/SearchDetail/components/RecentSummary.tsx    — 게임 요약 카드 (불러온 전체 매치 기준)
+- frontend/src/pages/SearchDetail/components/MatchDetailPanel.tsx — 전적 행 상세 펼침 패널 (8인)
+- frontend/src/pages/SearchDetail/components/EmptyState.tsx       — 소환사 없음 빈 상태
+- frontend/src/pages/SearchDetail/utils/searchUtils.ts            — timeAgo, formatDate, placementTone, detailRankClass
+- frontend/src/hooks/useMatchHistory.ts                           — 전적 목록 fetching hook
+- frontend/src/hooks/useSearchProfile.ts                          — 프로필 fetching hook
+- frontend/src/api/searchApi.ts                                   — API calls
+- frontend/src/api/communityDragonAssets.ts                       — CDragon image URL helpers
 </frontend-structure>
 
 <open-issues>

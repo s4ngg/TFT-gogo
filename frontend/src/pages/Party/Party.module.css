@@ -1,7 +1,8 @@
 .communityPage {
-  width: 1273px;
+  width: 100%;
+  max-width: var(--page-party-width);
   display: grid;
-  grid-template-columns: minmax(0, 744px) minmax(0, 514px);
+  grid-template-columns: minmax(0, 1fr) minmax(var(--party-chat-panel-min-width), 0.7fr);
   grid-template-rows: auto minmax(0, 1fr);
   align-content: start;
   gap: 15px;
@@ -46,20 +47,22 @@
 }
 
 .panel {
-  border: 1px solid var(--border);
+  border: 2px solid var(--border-card-highlight);
   border-radius: var(--radius-card);
-  background: linear-gradient(180deg, rgba(8, 21, 29, 0.97), rgba(5, 15, 21, 0.96));
+  background: var(--bg-card-gradient);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.015), 0 18px 38px rgba(0, 0, 0, 0.18);
 }
 
 .partyPanel,
 .chatPanel {
+  min-width: 0;
   min-height: 658px;
   padding: 18px;
   overflow: hidden;
 }
 
 .panelHeader {
+  min-width: 0;
   display: flex;
   align-items: start;
   justify-content: space-between;
@@ -72,7 +75,7 @@
 }
 
 .panelHeader h2 {
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 22px;
   font-weight: 650;
   letter-spacing: -0.024em;
@@ -157,13 +160,16 @@
 }
 
 .composeBox {
+  /* 오렌지 카드 위 자체 다크 배경 박스 — 밝은 텍스트로 복귀 */
+  --text-main: var(--text-ondark-main);
+
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) 96px 112px 92px;
   gap: 8px;
   margin-top: 12px;
   padding: 12px;
   border: 1px solid rgba(112, 145, 153, 0.17);
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
   background: rgba(4, 13, 18, 0.48);
 }
 
@@ -237,6 +243,7 @@
 
 .filterTabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -272,7 +279,7 @@
   place-items: center;
   margin: 0;
   border: 1px solid rgba(112, 145, 153, 0.17);
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
   color: #9ea8b2;
   background: rgba(4, 13, 18, 0.48);
   font-size: 13px;
@@ -287,7 +294,7 @@
   min-height: 118px;
   padding: 14px;
   border: 1px solid rgba(112, 145, 153, 0.17);
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
   background:
     radial-gradient(circle at 6% 18%, rgba(0, 238, 224, 0.07), transparent 28%),
     linear-gradient(90deg, rgba(12, 29, 37, 0.78), rgba(6, 17, 24, 0.4));
@@ -507,7 +514,7 @@
   grid-template-rows: auto minmax(0, 1fr) auto;
   overflow: hidden;
   border: 1px solid rgba(112, 145, 153, 0.17);
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
   background: rgba(4, 13, 18, 0.54);
 }
 
@@ -606,6 +613,9 @@
 }
 
 .messageForm {
+  /* 오렌지 카드 위 자체 다크 배경 박스 — 밝은 텍스트로 복귀 */
+  --text-muted: var(--text-ondark-muted);
+
   height: 50px;
   display: grid;
   grid-template-columns: 24px minmax(0, 1fr) 36px;
@@ -700,5 +710,81 @@ button:hover {
   .partyMeta,
   .partyTags {
     margin-top: 7px;
+  }
+}
+
+@media (max-width: 1180px) {
+  .toolbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .composeBox {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .composeBox textarea,
+  .deadlineInput,
+  .tagInput,
+  .composeBox button {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 900px) {
+  .communityPage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pageHeader {
+    align-items: start;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .pageHeader span {
+    margin-bottom: 0;
+    white-space: normal;
+  }
+
+  .partyPanel,
+  .chatPanel {
+    min-height: 0;
+  }
+
+  .chatPanel {
+    min-height: 560px;
+  }
+}
+
+@media (max-width: 640px) {
+  .composeBox {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .partyCard {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  .partyIcon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .joinButton {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .partyMeta,
+  .partyTags {
+    flex-wrap: wrap;
+  }
+
+  .channelList {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .messageList article {
+    max-width: 100%;
   }
 }

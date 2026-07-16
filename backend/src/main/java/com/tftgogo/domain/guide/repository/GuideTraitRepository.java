@@ -4,17 +4,30 @@ import com.tftgogo.domain.guide.entity.GuideTrait;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface GuideTraitRepository extends JpaRepository<GuideTrait, Long> {
 
     Optional<GuideTrait> findByTraitKeyAndPatchVersion(String traitKey, String patchVersion);
 
     List<GuideTrait> findByPatchVersionOrderByNameAscIdAsc(String patchVersion);
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            DELETE FROM GuideTrait trait
+            WHERE trait.patchVersion = :patchVersion
+              AND trait.traitKey NOT IN (:retainedKeys)
+            """)
+    int deleteStaleByPatchVersion(
+            @Param("patchVersion") String patchVersion,
+            @Param("retainedKeys") Set<String> retainedKeys
+    );
 
     @Query(
             value = """
@@ -28,8 +41,14 @@ public interface GuideTraitRepository extends JpaRepository<GuideTrait, Long> {
                       AND (
                             :query IS NULL
                             OR LOWER(name) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(type) LIKE LOWER(CONCAT('%', :query, '%'))
                             OR LOWER(summary) LIKE LOWER(CONCAT('%', :query, '%'))
                             OR LOWER(trait_key) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(CAST(levels_json AS CHAR)) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(CAST(tier_effects_json AS CHAR)) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(CAST(champions_json AS CHAR)) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(CAST(special_units_json AS CHAR)) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(CAST(tips_json AS CHAR)) LIKE LOWER(CONCAT('%', :query, '%'))
                       )
                       AND JSON_TYPE(champions_json) = 'ARRAY'
                       AND JSON_LENGTH(champions_json) > 0
@@ -46,8 +65,14 @@ public interface GuideTraitRepository extends JpaRepository<GuideTrait, Long> {
                       AND (
                             :query IS NULL
                             OR LOWER(name) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(type) LIKE LOWER(CONCAT('%', :query, '%'))
                             OR LOWER(summary) LIKE LOWER(CONCAT('%', :query, '%'))
                             OR LOWER(trait_key) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(CAST(levels_json AS CHAR)) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(CAST(tier_effects_json AS CHAR)) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(CAST(champions_json AS CHAR)) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(CAST(special_units_json AS CHAR)) LIKE LOWER(CONCAT('%', :query, '%'))
+                            OR LOWER(CAST(tips_json AS CHAR)) LIKE LOWER(CONCAT('%', :query, '%'))
                       )
                       AND JSON_TYPE(champions_json) = 'ARRAY'
                       AND JSON_LENGTH(champions_json) > 0

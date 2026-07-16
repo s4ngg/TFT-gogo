@@ -7,14 +7,18 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tftgogo.domain.guide.dto.response.GuideCatalogResponse;
 import com.tftgogo.domain.guide.dto.response.GuideEntryResponse;
 import com.tftgogo.domain.guide.dto.response.GuidePageResponse;
+import com.tftgogo.domain.guide.dto.response.GuidePatchVersionResponse;
 import com.tftgogo.domain.guide.entity.GuideAugment;
 import com.tftgogo.domain.guide.entity.GuideChampion;
 import com.tftgogo.domain.guide.entity.GuideItem;
+import com.tftgogo.domain.guide.entity.GuideSnapshot;
+import com.tftgogo.domain.guide.entity.GuideSnapshotStatus;
 import com.tftgogo.domain.guide.entity.GuideTrait;
 import com.tftgogo.domain.guide.entity.GuideType;
 import com.tftgogo.domain.guide.repository.GuideAugmentRepository;
 import com.tftgogo.domain.guide.repository.GuideChampionRepository;
 import com.tftgogo.domain.guide.repository.GuideItemRepository;
+import com.tftgogo.domain.guide.repository.GuideSnapshotRepository;
 import com.tftgogo.domain.guide.repository.GuideTraitRepository;
 import com.tftgogo.domain.guide.service.GuideService;
 import com.tftgogo.global.exception.BusinessException;
@@ -30,8 +34,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -43,12 +45,11 @@ public class GuideServiceImpl implements GuideService {
     private static final int MAX_PAGE = 10_000;
     private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int MAX_PAGE_SIZE = 100;
-    private static final Pattern PATCH_VERSION_PATTERN = Pattern.compile("^(\\d+)\\.(\\d+)([A-Za-z]*)$");
-
     private final GuideChampionRepository guideChampionRepository;
     private final GuideTraitRepository guideTraitRepository;
     private final GuideItemRepository guideItemRepository;
     private final GuideAugmentRepository guideAugmentRepository;
+    private final GuideSnapshotRepository guideSnapshotRepository;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -62,6 +63,11 @@ public class GuideServiceImpl implements GuideService {
                     );
                 })
                 .orElseGet(() -> GuideCatalogResponse.of("", List.of()));
+    }
+
+    @Override
+    public GuidePatchVersionResponse getCurrentPatchVersion() {
+        return GuidePatchVersionResponse.of(resolvePatchVersion(null).orElse(""));
     }
 
     @Override
@@ -81,7 +87,7 @@ public class GuideServiceImpl implements GuideService {
         validateSort(sortKey, sortDir);
         validateCost(cost);
 
-        Optional<String> resolvedPatchVersion = resolvePatchVersion(guideType, patchVersion);
+        Optional<String> resolvedPatchVersion = resolvePatchVersion(patchVersion);
         if (resolvedPatchVersion.isEmpty()) {
             return GuidePageResponse.of(List.of(), normalizedPage, normalizedPageSize, 0, 1);
         }
@@ -454,70 +460,16 @@ public class GuideServiceImpl implements GuideService {
 
     private Optional<String> resolvePatchVersion(String patchVersion) {
         if (hasText(patchVersion)) {
-            return Optional.of(patchVersion.trim());
+            return guideSnapshotRepository.findByPatchVersion(patchVersion.trim())
+                    .filter(GuideSnapshot::isPubliclyReadable)
+                    .map(GuideSnapshot::getPatchVersion);
         }
-        List<String> patchVersions = new ArrayList<>();
-        guideChampionRepository.findLatestPatchVersion().ifPresent(patchVersions::add);
-        guideTraitRepository.findLatestPatchVersion().ifPresent(patchVersions::add);
-        guideItemRepository.findLatestPatchVersion().ifPresent(patchVersions::add);
-        guideAugmentRepository.findLatestPatchVersion().ifPresent(patchVersions::add);
-
-        return patchVersions.stream().max(this::comparePatchVersion);
-    }
-
-    private Optional<String> resolvePatchVersion(GuideType guideType, String patchVersion) {
-        if (hasText(patchVersion)) {
-            return Optional.of(patchVersion.trim());
-        }
-        return switch (guideType) {
-            case CHAMPION -> guideChampionRepository.findLatestPatchVersion();
-            case TRAIT -> guideTraitRepository.findLatestPatchVersion();
-            case ITEM -> guideItemRepository.findLatestPatchVersion();
-            case AUGMENT -> guideAugmentRepository.findLatestPatchVersion();
-        };
-    }
-
-    private int comparePatchVersion(String left, String right) {
-        PatchVersionParts leftParts = parsePatchVersion(left);
-        PatchVersionParts rightParts = parsePatchVersion(right);
-
-        int majorResult = Integer.compare(leftParts.major(), rightParts.major());
-        if (majorResult != 0) {
-            return majorResult;
-        }
-
-        int minorResult = Integer.compare(leftParts.minor(), rightParts.minor());
-        if (minorResult != 0) {
-            return minorResult;
-        }
-
-        int suffixResult = leftParts.suffix().compareTo(rightParts.suffix());
-        if (suffixResult != 0) {
-            return suffixResult;
-        }
-
-        return left.compareTo(right);
-    }
-
-    private PatchVersionParts parsePatchVersion(String patchVersion) {
-        if (!hasText(patchVersion)) {
-            return new PatchVersionParts(0, 0, "");
-        }
-        Matcher matcher = PATCH_VERSION_PATTERN.matcher(patchVersion.trim());
-        if (!matcher.matches()) {
-            return new PatchVersionParts(0, 0, patchVersion);
-        }
-        return new PatchVersionParts(
-                Integer.parseInt(matcher.group(1)),
-                Integer.parseInt(matcher.group(2)),
-                matcher.group(3)
-        );
+        return guideSnapshotRepository.findFirstByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE)
+                .filter(GuideSnapshot::isPubliclyReadable)
+                .map(GuideSnapshot::getPatchVersion);
     }
 
     private boolean hasText(String value) {
         return value != null && !value.trim().isEmpty();
-    }
-
-    private record PatchVersionParts(int major, int minor, String suffix) {
     }
 }

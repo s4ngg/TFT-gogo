@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
     social_provider VARCHAR(20) NULL,
     social_id VARCHAR(255) NULL,
     notification_enabled TINYINT(1) NOT NULL DEFAULT 1,
+    auth_token_version BIGINT NOT NULL DEFAULT 0,
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     deleted_at DATETIME(6) NULL,
@@ -25,6 +26,35 @@ CREATE TABLE IF NOT EXISTS users (
             (social_provider IS NULL AND social_id IS NULL)
             OR (social_provider IS NOT NULL AND social_id IS NOT NULL)
         )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS refresh_token_sessions (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    token_hash VARCHAR(64) NOT NULL,
+    revoked TINYINT(1) NOT NULL DEFAULT 0,
+    reuse_detected TINYINT(1) NOT NULL DEFAULT 0,
+    expires_at DATETIME(6) NOT NULL,
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    revoked_at DATETIME(6) NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_refresh_token_sessions_token_hash (token_hash),
+    KEY idx_refresh_token_sessions_user_active (user_id, revoked, expires_at),
+    CONSTRAINT fk_refresh_token_sessions_user
+        FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS access_token_blocklist (
+    token_id VARCHAR(80) NOT NULL,
+    user_id BIGINT NOT NULL,
+    expires_at DATETIME(6) NOT NULL,
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    PRIMARY KEY (token_id),
+    KEY idx_access_token_blocklist_expiry (expires_at),
+    KEY idx_access_token_blocklist_user (user_id),
+    CONSTRAINT fk_access_token_blocklist_user
+        FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS cached_summoner (
@@ -178,7 +208,7 @@ CREATE TABLE IF NOT EXISTS tft_guide_champions (
     id BIGINT NOT NULL AUTO_INCREMENT,
     champion_key VARCHAR(100) NOT NULL,
     name VARCHAR(100) NOT NULL,
-    cost TINYINT NOT NULL,
+    cost INT NOT NULL,
     role VARCHAR(50) NOT NULL,
     position VARCHAR(50) NOT NULL,
     image_url VARCHAR(500) NOT NULL,
@@ -248,6 +278,88 @@ CREATE TABLE IF NOT EXISTS tft_guide_augments (
     KEY idx_tft_guide_augments_patch_name (patch_version, name, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS tft_guide_snapshots (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    patch_version VARCHAR(20) NOT NULL,
+    source_set_number INT UNSIGNED NULL,
+    source_mutator VARCHAR(100) NULL,
+    status VARCHAR(20) NOT NULL,
+    champion_count INT UNSIGNED NOT NULL DEFAULT 0,
+    trait_count INT UNSIGNED NOT NULL DEFAULT 0,
+    item_count INT UNSIGNED NOT NULL DEFAULT 0,
+    augment_count INT UNSIGNED NOT NULL DEFAULT 0,
+    validated_at DATETIME(6) NULL,
+    activated_at DATETIME(6) NULL,
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_tft_guide_snapshots_patch (patch_version),
+    KEY idx_tft_guide_snapshots_status_activated (status, activated_at, id),
+    CONSTRAINT chk_tft_guide_snapshots_status
+        CHECK (status IN ('STAGING', 'ACTIVE', 'INACTIVE')),
+    CONSTRAINT chk_tft_guide_snapshots_active_validation
+        CHECK (
+            (validated_at IS NULL AND status <> 'ACTIVE')
+            OR (
+                validated_at IS NOT NULL
+                AND champion_count > 0
+                AND trait_count > 0
+                AND item_count > 0
+                AND augment_count > 0
+            )
+        ),
+    CONSTRAINT chk_tft_guide_snapshots_source_pair
+        CHECK (
+            (source_set_number IS NULL AND source_mutator IS NULL)
+            OR (
+                source_set_number IS NOT NULL
+                AND source_set_number > 0
+                AND source_mutator IS NOT NULL
+                AND CHAR_LENGTH(TRIM(source_mutator)) > 0
+            )
+        )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE UNIQUE INDEX uk_tft_guide_snapshots_single_active
+    ON tft_guide_snapshots (
+        (CASE
+            WHEN status = 'ACTIVE' THEN 1
+            ELSE NULL
+        END)
+    );
+
+CREATE TABLE IF NOT EXISTS content_refresh_job_statuses (
+    job_type VARCHAR(30) NOT NULL,
+    last_status VARCHAR(20) NOT NULL DEFAULT 'NEVER_RUN',
+    last_attempt_at DATETIME(6) NULL,
+    last_success_at DATETIME(6) NULL,
+    last_failure_at DATETIME(6) NULL,
+    last_success_version VARCHAR(20) NULL,
+    last_success_count BIGINT UNSIGNED NULL,
+    consecutive_failure_count INT UNSIGNED NOT NULL DEFAULT 0,
+    last_failure_type VARCHAR(30) NULL,
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    PRIMARY KEY (job_type),
+    CONSTRAINT chk_content_refresh_job_type
+        CHECK (job_type IN ('PATCH_NOTE', 'GAME_GUIDE')),
+    CONSTRAINT chk_content_refresh_last_status
+        CHECK (last_status IN ('NEVER_RUN', 'RUNNING', 'SUCCESS', 'FAILURE')),
+    CONSTRAINT chk_content_refresh_failure_type
+        CHECK (
+            last_failure_type IS NULL
+            OR last_failure_type IN (
+                'SOURCE_UNAVAILABLE',
+                'INVALID_DATA',
+                'VALIDATION',
+                'STORAGE',
+                'CONCURRENCY',
+                'HISTORY_BACKFILL',
+                'UNEXPECTED'
+            )
+        )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS patch_notes (
     id BIGINT NOT NULL AUTO_INCREMENT,
     version VARCHAR(20) NOT NULL,
@@ -272,7 +384,8 @@ CREATE TABLE IF NOT EXISTS patch_notes (
     UNIQUE KEY uk_patch_notes_version (version),
     UNIQUE KEY uk_patch_notes_source_key (source_key),
     UNIQUE KEY uk_patch_notes_source_url (source_url),
-    KEY idx_patch_notes_public (deleted_at, is_current, published_at, id)
+    KEY idx_patch_notes_public (deleted_at, is_current, published_at, id),
+    KEY idx_patch_notes_history (deleted_at, published_at, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE UNIQUE INDEX uk_patch_notes_single_current
@@ -310,6 +423,17 @@ CREATE TABLE IF NOT EXISTS patch_note_changes (
     KEY idx_patch_note_changes_public (patch_note_id, sort_order, id),
     KEY idx_patch_note_changes_filters (patch_note_id, category, change_type, impact),
     CONSTRAINT fk_patch_note_changes_patch_note
+        FOREIGN KEY (patch_note_id) REFERENCES patch_notes (id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS patch_note_change_tombstones (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    patch_note_id BIGINT NOT NULL,
+    source_key VARCHAR(150) NOT NULL,
+    deleted_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_patch_note_change_tombstones_source (patch_note_id, source_key),
+    CONSTRAINT fk_patch_note_change_tombstones_patch_note
         FOREIGN KEY (patch_note_id) REFERENCES patch_notes (id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -364,8 +488,8 @@ CREATE TABLE IF NOT EXISTS party_post_tags (
         FOREIGN KEY (party_post_id) REFERENCES party_posts (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ELD reserved tables. Current MVP chat runtime uses CommunityChatRoomIds and
--- InMemoryChatServiceImpl, so these tables are not read or written by the app yet.
+-- Runtime chat room metadata. The local profile may still use InMemoryChatServiceImpl,
+-- but non-local profiles persist recent chat messages through these tables.
 CREATE TABLE IF NOT EXISTS chat_rooms (
     id BIGINT NOT NULL AUTO_INCREMENT,
     room_key VARCHAR(80) NOT NULL,
@@ -385,7 +509,7 @@ CREATE TABLE IF NOT EXISTS chat_rooms (
         FOREIGN KEY (party_post_id) REFERENCES party_posts (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ELD reserved table. Current MVP chat messages are in-memory only.
+-- Persistent chat messages used by the non-local ChatService implementation.
 CREATE TABLE IF NOT EXISTS chat_messages (
     id BIGINT NOT NULL AUTO_INCREMENT,
     user_id BIGINT NOT NULL,

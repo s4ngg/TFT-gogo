@@ -17,6 +17,7 @@ interface PartyListEmptyMessageOptions {
 interface PartyJoinActionStateOptions {
   hasJoinedOtherPost: boolean
   isAuthenticated: boolean
+  isClosed: boolean
   isFull: boolean
   isJoined: boolean
   isJoinPending: boolean
@@ -93,12 +94,16 @@ export function removePostOverride(overrides: Record<string, PartyPost>, postId:
 export function updatePostJoinState(post: PartyPost, isJoining: boolean): PartyPost {
   const { current, total } = parseCapacity(post.capacity)
   const nextCurrent = isJoining ? Math.min(total, current + 1) : Math.max(0, current - 1)
+  const isClosedForNonCapacityReason = post.isDeadlineExpired === true
+    || (post.isClosed && current < total)
+  const isClosed = isClosedForNonCapacityReason || nextCurrent >= total
 
   return {
     ...post,
     capacity: `${nextCurrent}/${total}`,
+    isClosed,
     isJoined: isJoining,
-    status: nextCurrent >= total ? '대기중' : '모집중',
+    status: isClosed ? '대기중' : '모집중',
   }
 }
 
@@ -150,6 +155,7 @@ export function getPartyListEmptyMessage({
 export function getPartyJoinActionState({
   hasJoinedOtherPost,
   isAuthenticated,
+  isClosed,
   isFull,
   isJoined,
   isJoinPending,
@@ -171,7 +177,7 @@ export function getPartyJoinActionState({
     return { disabled: false, label: '참여중' }
   }
 
-  if (isFull) {
+  if (isClosed || isFull) {
     return { disabled: true, label: '마감' }
   }
 

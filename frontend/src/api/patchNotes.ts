@@ -33,6 +33,7 @@ export interface PatchNoteSummary {
   imageUrl: string
   importedAt?: string
   importSource?: string
+  isCurrent?: boolean
   summary?: string
   status: '현재' | '이전'
   sourceUrl?: string
@@ -45,6 +46,7 @@ export interface PatchNoteDetail extends PatchNoteSummary {
 }
 
 export type PatchNotesSource = 'api' | 'fallback'
+export type PatchChangesSource = PatchNotesSource | 'unavailable'
 
 export interface PatchNotesResult {
   data: PatchNoteDetail[]
@@ -71,7 +73,8 @@ export interface PatchChangePage {
 
 export interface PatchChangesResult {
   data: PatchChangePage
-  source: PatchNotesSource
+  patchVersion: string
+  source: PatchChangesSource
 }
 
 export interface PatchChangesQuery {
@@ -333,6 +336,7 @@ function normalizePatchNote(note: PatchNoteResponse): PatchNoteDetail {
   const publishedDate = readString(note.date ?? note.publishedAt)
   const summary = readString(note.summary)
   const description = readString(note.description ?? note.content ?? summary)
+  const isCurrent = note.status === '현재' || note.status === 'CURRENT' || note.isCurrent === true
   const imageUrl = readNonEmptyString(note.imageUrl)
     ?? readNonEmptyString(note.representativeImageUrl)
     ?? PATCH_NOTE_DEFAULT_IMAGE
@@ -346,8 +350,9 @@ function normalizePatchNote(note: PatchNoteResponse): PatchNoteDetail {
     imageUrl,
     importedAt: readNonEmptyString(note.importedAt),
     importSource: readNonEmptyString(note.importSource),
+    isCurrent,
     summary,
-    status: note.status === '현재' || note.status === 'CURRENT' || note.isCurrent ? '현재' : '이전',
+    status: isCurrent ? '현재' : '이전',
     sourceUrl: readNonEmptyString(note.sourceUrl),
     title: readString(note.title, `${readString(note.version)} 패치`),
     version: readString(note.version),
@@ -525,7 +530,7 @@ export function getFallbackPatchChangePage(
   params: PatchChangesQuery,
   fallbackData: PatchNoteDetail[],
 ): PatchChangePage {
-  const fallbackPatch = fallbackData.find((patch) => patch.version === params.version) ?? fallbackData[0]
+  const fallbackPatch = fallbackData.find((patch) => patch.version === params.version)
   const patchChanges = fallbackPatch?.changes ?? []
   const normalizedQuery = params.query.trim().toLowerCase()
   const stats = countPatchChangeStats(patchChanges)
@@ -547,6 +552,21 @@ export function getFallbackPatchChangePage(
     stats,
     totalItems: filteredChanges.length,
     totalPages: Math.max(1, Math.ceil(filteredChanges.length / params.pageSize)),
+  }
+}
+
+export function getFallbackPatchChangesResult(
+  params: PatchChangesQuery,
+  fallbackData: PatchNoteDetail[],
+): PatchChangesResult {
+  const hasMatchingChanges = fallbackData.some(
+    (patch) => patch.version === params.version && patch.changes.length > 0,
+  )
+
+  return {
+    data: getFallbackPatchChangePage(params, fallbackData),
+    patchVersion: params.version,
+    source: hasMatchingChanges ? 'fallback' : 'unavailable',
   }
 }
 
@@ -587,7 +607,7 @@ export async function getPatchChanges(
   fallbackData: PatchNoteDetail[],
 ): Promise<PatchChangesResult> {
   if (!params.version) {
-    return { data: getFallbackPatchChangePage(params, fallbackData), source: 'fallback' }
+    return getFallbackPatchChangesResult(params, fallbackData)
   }
 
   try {
@@ -608,11 +628,11 @@ export async function getPatchChanges(
     const page = normalizePatchChangePage(payload, params)
 
     if (!page) {
-      return { data: getFallbackPatchChangePage(params, fallbackData), source: 'fallback' }
+      return getFallbackPatchChangesResult(params, fallbackData)
     }
 
-    return { data: page, source: 'api' }
+    return { data: page, patchVersion: params.version, source: 'api' }
   } catch {
-    return { data: getFallbackPatchChangePage(params, fallbackData), source: 'fallback' }
+    return getFallbackPatchChangesResult(params, fallbackData)
   }
 }

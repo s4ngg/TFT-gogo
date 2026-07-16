@@ -1,8 +1,8 @@
 package com.tftgogo.domain.ai.service;
 
 import com.tftgogo.domain.ai.client.AiServerClient;
-import com.tftgogo.domain.ai.dto.AiChatRequest;
-import com.tftgogo.domain.ai.dto.AiChatResponse;
+import com.tftgogo.domain.ai.dto.request.AiChatRequest;
+import com.tftgogo.domain.ai.dto.response.AiChatResponse;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import org.junit.jupiter.api.Test;

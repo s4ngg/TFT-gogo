@@ -1,10 +1,10 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   DEFAULT_GUIDE_PAGE_SIZE,
-  getGuideCatalog,
+  getGuidePatchVersion,
   getGuideTabItems,
   type GuideCatalog,
-  type GuideCatalogResult,
   type GuideListQuery,
   type GuideTab,
   type GuideTabItems,
@@ -41,25 +41,26 @@ function createGuidePlaceholderPage<T extends GuideTab>(
       totalItems: 0,
       totalPages: 1,
     },
+    patchVersion: params.patchVersion ?? '',
     source: 'placeholder',
   }
 }
 
 export function useGuideCatalog({ fallbackData }: UseGuideCatalogOptions) {
-  const placeholderData: GuideCatalogResult = { data: fallbackData, source: 'placeholder' }
-  const guideQuery = useQuery<GuideCatalogResult>({
+  const placeholderData = { patchVersion: fallbackData.patchVersion, source: 'placeholder' as const }
+  const patchVersionQuery = useQuery({
     placeholderData,
-    queryFn: () => getGuideCatalog(fallbackData),
-    queryKey: ['guide', 'catalog'],
+    queryFn: () => getGuidePatchVersion(fallbackData.patchVersion),
+    queryKey: ['guide', 'patch-version'],
     ...LIVE_CONTENT_QUERY_OPTIONS,
   })
-  const guideResult = guideQuery.data ?? placeholderData
-
+  const patchVersionResult = patchVersionQuery.data ?? placeholderData
   return {
-    guideData: guideResult.data,
-    isFallbackData: guideResult.source === 'fallback' && !guideQuery.isFetching,
-    isFetching: guideQuery.isFetching,
-    refetchGuideData: guideQuery.refetch,
+    dataSource: patchVersionResult.source,
+    isFallbackData: patchVersionResult.source === 'fallback' && !patchVersionQuery.isFetching,
+    isFetching: patchVersionQuery.isFetching,
+    patchVersion: patchVersionResult.patchVersion,
+    refetchGuideData: patchVersionQuery.refetch,
   }
 }
 
@@ -67,13 +68,30 @@ export function useGuideTabItems<T extends GuideTab>({
   fallbackData,
   params,
 }: UseGuideTabItemsOptions<T>) {
-  const placeholderData = createGuidePlaceholderPage(params)
   const resolvedParams = {
     ...params,
-    patchVersion: params.patchVersion ?? fallbackData.patchVersion,
+    patchVersion: params.patchVersion?.trim() || fallbackData.patchVersion,
   }
+  const placeholderData = useMemo(
+    () => createGuidePlaceholderPage({
+      page: resolvedParams.page,
+      pageSize: resolvedParams.pageSize,
+      patchVersion: resolvedParams.patchVersion,
+      tab: resolvedParams.tab,
+    }),
+    [
+      resolvedParams.page,
+      resolvedParams.pageSize,
+      resolvedParams.patchVersion,
+      resolvedParams.tab,
+    ],
+  )
   const guideQuery = useQuery<GuideTabPageResult<T>>({
-    placeholderData: keepPreviousData,
+    placeholderData: (previousData) => (
+      previousData?.patchVersion === resolvedParams.patchVersion
+        ? previousData
+        : placeholderData
+    ),
     queryFn: () => getGuideTabItems(resolvedParams, fallbackData),
     queryKey: [
       'guide',

@@ -232,6 +232,72 @@ export async function triggerDeckAggregate(date?: string): Promise<void> {
   })
 }
 
+export interface AdminClientVersionPatchMapping {
+  id: number
+  clientVersion: string
+  patchVersion: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AdminClientVersionPatchMappingPayload {
+  clientVersion: string
+  patchVersion: string
+}
+
+export async function fetchAdminClientVersionPatchMappings(): Promise<AdminClientVersionPatchMapping[]> {
+  try {
+    const { data } = await axiosInstance.get<ApiResponse<AdminClientVersionPatchMapping[]>>(
+      '/admin/client-version-patch-mappings',
+      { headers: adminAuthHeaders() },
+    )
+    return data.data
+  } catch (error) {
+    throw createAdminRequestError(error, 'Failed to fetch client version patch mappings.')
+  }
+}
+
+export async function createAdminClientVersionPatchMapping(
+  payload: AdminClientVersionPatchMappingPayload,
+): Promise<AdminClientVersionPatchMapping> {
+  try {
+    const { data } = await axiosInstance.post<ApiResponse<AdminClientVersionPatchMapping>>(
+      '/admin/client-version-patch-mappings',
+      payload,
+      { headers: adminAuthHeaders() },
+    )
+    return data.data
+  } catch (error) {
+    throw createAdminRequestError(error, 'Failed to create client version patch mapping.')
+  }
+}
+
+export async function updateAdminClientVersionPatchMapping(
+  mappingId: number,
+  payload: AdminClientVersionPatchMappingPayload,
+): Promise<AdminClientVersionPatchMapping> {
+  try {
+    const { data } = await axiosInstance.patch<ApiResponse<AdminClientVersionPatchMapping>>(
+      `/admin/client-version-patch-mappings/${mappingId}`,
+      payload,
+      { headers: adminAuthHeaders() },
+    )
+    return data.data
+  } catch (error) {
+    throw createAdminRequestError(error, 'Failed to update client version patch mapping.')
+  }
+}
+
+export async function deleteAdminClientVersionPatchMapping(mappingId: number): Promise<void> {
+  try {
+    await axiosInstance.delete(`/admin/client-version-patch-mappings/${mappingId}`, {
+      headers: adminAuthHeaders(),
+    })
+  } catch (error) {
+    throw createAdminRequestError(error, 'Failed to delete client version patch mapping.')
+  }
+}
+
 // ── 게임가이드 import ─────────────────────────────────────────────────────
 
 export interface GuideCdragonImportRequest {
@@ -239,7 +305,7 @@ export interface GuideCdragonImportRequest {
   includeChampions: boolean
   includeItems: boolean
   includeTraits: boolean
-  mutator: string | null
+  mutator: string
   patchVersion: string
   setNumber: number
 }
@@ -250,7 +316,9 @@ export interface GuideImportResponse {
   createdCount: number
   importedCount: number
   itemCount: number
+  mutator: string
   patchVersion: string
+  setNumber: number
   skippedCount: number
   traitCount: number
   updatedCount: number

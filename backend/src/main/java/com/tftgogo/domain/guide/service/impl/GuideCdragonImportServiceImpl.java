@@ -10,16 +10,20 @@ import com.tftgogo.domain.guide.dto.response.GuideImportResponse;
 import com.tftgogo.domain.guide.entity.GuideAugment;
 import com.tftgogo.domain.guide.entity.GuideChampion;
 import com.tftgogo.domain.guide.entity.GuideItem;
+import com.tftgogo.domain.guide.entity.GuideSnapshot;
+import com.tftgogo.domain.guide.entity.GuideSnapshotStatus;
 import com.tftgogo.domain.guide.entity.GuideTrait;
 import com.tftgogo.domain.guide.entity.GuideType;
 import com.tftgogo.domain.guide.repository.GuideAugmentRepository;
 import com.tftgogo.domain.guide.repository.GuideChampionRepository;
 import com.tftgogo.domain.guide.repository.GuideItemRepository;
+import com.tftgogo.domain.guide.repository.GuideSnapshotRepository;
 import com.tftgogo.domain.guide.repository.GuideTraitRepository;
 import com.tftgogo.domain.guide.service.GuideCdragonImportService;
 import com.tftgogo.domain.patchnote.entity.PatchNote;
 import com.tftgogo.domain.patchnote.repository.PatchNoteRepository;
 import com.tftgogo.global.cdragon.config.CommunityDragonProperties;
+import com.tftgogo.global.config.GuideCdragonImportProperties;
 import com.tftgogo.global.exception.BusinessException;
 import com.tftgogo.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +36,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -40,6 +45,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -49,6 +55,7 @@ import java.util.regex.Pattern;
 public class GuideCdragonImportServiceImpl implements GuideCdragonImportService {
 
     private static final Logger logger = LogManager.getLogger(GuideCdragonImportServiceImpl.class);
+    private static final Pattern PATCH_VERSION_PATTERN = Pattern.compile("^(\\d+)\\.(\\d+)(.*)$");
     private static final Pattern BREAK_TAG_PATTERN = Pattern.compile("(?i)<br\\s*/?>|</p>|</li>|</div>");
     private static final Pattern ROW_TAG_PATTERN = Pattern.compile("(?is)<(row|expandRow)>(.*?)</\\1>");
     private static final Pattern STARGAZER_VARIANT_PATTERN = Pattern.compile("이번 게임:\\s*([^\\s(]+)");
@@ -65,6 +72,7 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
     private static final Pattern METRIC_ONLY_PATTERN = Pattern.compile("^[+\\-]?\\d[\\d,./%\\s+\\-]*$");
     private static final Pattern EMPTY_PARENS_PATTERN = Pattern.compile("\\(\\s*\\)");
     private static final int PATCH_VERSION_MAX_LENGTH = 20;
+    private static final int MUTATOR_MAX_LENGTH = 100;
     private static final String LATEST_PATCH_VERSION_ALIAS = "latest";
     private static final Set<String> SPECIAL_UNIT_KEYS = Set.of(
             "TFT17_DarkStar_FakeUnit"
@@ -129,10 +137,12 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
     private final GuideTraitRepository guideTraitRepository;
     private final GuideItemRepository guideItemRepository;
     private final GuideAugmentRepository guideAugmentRepository;
+    private final GuideSnapshotRepository guideSnapshotRepository;
     private final PatchNoteRepository patchNoteRepository;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final CommunityDragonProperties communityDragonProperties;
+    private final GuideCdragonImportProperties guideCdragonImportProperties;
 
     @Override
     @Transactional
@@ -147,12 +157,19 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
 
+        GuideImportSource requestedSource = resolveRequestedSource(request.getSetNumber(), request.resolveMutator());
         String patchVersion = normalizePatchVersion(request.getPatchVersion());
+        validateConfiguredPatchSource(request.getPatchVersion(), patchVersion, requestedSource);
         JsonNode cdragonData = fetchCdragonData();
-        JsonNode setData = findSetData(cdragonData, request.resolveSetNumber(), request.resolveMutator());
+        ResolvedCdragonSet resolvedSet = resolveSetData(
+                cdragonData,
+                requestedSource.setNumber(),
+                requestedSource.mutator()
+        );
+        JsonNode setData = resolvedSet.data();
         JsonNode items = cdragonData.path("items");
         List<JsonNode> allChampions = readSetChampions(setData);
-        List<JsonNode> champions = readShopChampions(allChampions, request.resolveSetNumber());
+        List<JsonNode> champions = readShopChampions(allChampions, resolvedSet.setNumber());
         List<GuideCandidate> candidates = new ArrayList<>();
         if (request.shouldIncludeChampions()) {
             candidates.addAll(toChampionCandidates(champions, patchVersion));
@@ -167,21 +184,338 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             candidates.addAll(toAugmentCandidates(readAugments(setData.path("augments"), items), patchVersion));
         }
 
+        GuideImportCounts counts = new GuideImportCounts(
+                countByType(candidates, GuideType.CHAMPION),
+                countByType(candidates, GuideType.TRAIT),
+                countByType(candidates, GuideType.ITEM),
+                countByType(candidates, GuideType.AUGMENT)
+        );
+        validateRequestedImport(request, counts);
+        boolean completeImport = isCompleteImport(request);
+        Optional<GuideSnapshot> targetSnapshot = guideSnapshotRepository.findByPatchVersionForUpdate(patchVersion);
+        validateSnapshotSource(patchVersion, targetSnapshot, resolvedSet);
+        if (!completeImport) {
+            validatePartialImportTarget(patchVersion, targetSnapshot);
+        }
+        if (completeImport) {
+            deleteStaleSplitGuides(patchVersion, candidates);
+        }
+
         ImportCounter counter = new ImportCounter();
         for (GuideCandidate candidate : candidates) {
             counter.add(upsertSplitGuide(candidate));
         }
+        if (completeImport) {
+            activateCompleteSnapshot(patchVersion, resolvedSet, counts, targetSnapshot);
+        } else {
+            stagePartialSnapshot(request, patchVersion, resolvedSet, counts, targetSnapshot);
+        }
 
         return GuideImportResponse.builder()
                 .patchVersion(patchVersion)
+                .setNumber(resolvedSet.setNumber())
+                .mutator(resolvedSet.mutator())
                 .createdCount(counter.createdCount)
                 .updatedCount(counter.updatedCount)
                 .skippedCount(counter.skippedCount)
-                .championCount(countByType(candidates, GuideType.CHAMPION))
-                .traitCount(countByType(candidates, GuideType.TRAIT))
-                .itemCount(countByType(candidates, GuideType.ITEM))
-                .augmentCount(countByType(candidates, GuideType.AUGMENT))
+                .championCount(counts.championCount())
+                .traitCount(counts.traitCount())
+                .itemCount(counts.itemCount())
+                .augmentCount(counts.augmentCount())
                 .build();
+    }
+
+    private boolean isCompleteImport(GuideCdragonImportRequest request) {
+        return request.shouldIncludeChampions()
+                && request.shouldIncludeTraits()
+                && request.shouldIncludeItems()
+                && request.shouldIncludeAugments();
+    }
+
+    private void deleteStaleSplitGuides(String patchVersion, List<GuideCandidate> candidates) {
+        int deletedChampionCount = guideChampionRepository.deleteStaleByPatchVersion(
+                patchVersion,
+                targetKeys(candidates, GuideType.CHAMPION)
+        );
+        int deletedTraitCount = guideTraitRepository.deleteStaleByPatchVersion(
+                patchVersion,
+                targetKeys(candidates, GuideType.TRAIT)
+        );
+        int deletedItemCount = guideItemRepository.deleteStaleByPatchVersion(
+                patchVersion,
+                targetKeys(candidates, GuideType.ITEM)
+        );
+        int deletedAugmentCount = guideAugmentRepository.deleteStaleByPatchVersion(
+                patchVersion,
+                targetKeys(candidates, GuideType.AUGMENT)
+        );
+        logger.info(
+                "CDragon guide stale rows deleted. patchVersion={}, champions={}, traits={}, items={}, augments={}",
+                patchVersion,
+                deletedChampionCount,
+                deletedTraitCount,
+                deletedItemCount,
+                deletedAugmentCount
+        );
+    }
+
+    private Set<String> targetKeys(List<GuideCandidate> candidates, GuideType guideType) {
+        Set<String> targetKeys = new HashSet<>();
+        candidates.stream()
+                .filter(candidate -> candidate.guideType() == guideType)
+                .map(GuideCandidate::targetKey)
+                .forEach(targetKeys::add);
+        return targetKeys;
+    }
+
+    private GuideImportSource resolveRequestedSource(Integer setNumber, String mutator) {
+        if (setNumber == null
+                || setNumber < 1
+                || !hasText(mutator)
+                || mutator.trim().length() > MUTATOR_MAX_LENGTH) {
+            logger.warn(
+                    "CDragon guide import rejected because set number and mutator must be explicit. setNumber={}",
+                    setNumber
+            );
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+        return new GuideImportSource(setNumber, mutator.trim());
+    }
+
+    private void validateConfiguredPatchSource(
+            String requestedPatchVersion,
+            String resolvedPatchVersion,
+            GuideImportSource requestedSource
+    ) {
+        Integer configuredSetNumber = guideCdragonImportProperties.getSetNumber();
+        String configuredMutator = guideCdragonImportProperties.getMutator();
+        boolean hasConfiguredSource = configuredSetNumber != null || configuredMutator != null;
+        if (!guideCdragonImportProperties.isEnabled() && !hasConfiguredSource) {
+            return;
+        }
+
+        GuideImportSource configuredSource = resolveRequestedSource(configuredSetNumber, configuredMutator);
+        String configuredPatchVersion = resolveConfiguredPatchVersion(
+                requestedPatchVersion,
+                resolvedPatchVersion
+        );
+        if (comparePatchVersions(resolvedPatchVersion, configuredPatchVersion) > 0) {
+            logger.warn(
+                    "CDragon guide import rejected because the requested patch is newer than the configured "
+                            + "production patch. requestedPatchVersion={}, configuredPatchVersion={}",
+                    resolvedPatchVersion,
+                    configuredPatchVersion
+            );
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+        if (configuredSource.equals(requestedSource)) {
+            return;
+        }
+        if (!resolvedPatchVersion.equals(configuredPatchVersion)) {
+            return;
+        }
+
+        logger.warn(
+                "CDragon guide import rejected by configured patch-source mapping. "
+                        + "patchVersion={}, requestedSetNumber={}, requestedMutator={}, "
+                        + "configuredSetNumber={}, configuredMutator={}",
+                resolvedPatchVersion,
+                requestedSource.setNumber(),
+                requestedSource.mutator(),
+                configuredSource.setNumber(),
+                configuredSource.mutator()
+        );
+        throw new BusinessException(ErrorCode.INVALID_INPUT);
+    }
+
+    private String resolveConfiguredPatchVersion(
+            String requestedPatchVersion,
+            String resolvedPatchVersion
+    ) {
+        String configuredPatchVersion = guideCdragonImportProperties.getPatchVersion();
+        if (isLatestPatchVersion(configuredPatchVersion)
+                && isLatestPatchVersion(requestedPatchVersion)) {
+            return resolvedPatchVersion;
+        }
+        return normalizePatchVersion(configuredPatchVersion);
+    }
+
+    private boolean isLatestPatchVersion(String patchVersion) {
+        return hasText(patchVersion)
+                && LATEST_PATCH_VERSION_ALIAS.equalsIgnoreCase(patchVersion.trim());
+    }
+
+    private void validateSnapshotSource(
+            String patchVersion,
+            Optional<GuideSnapshot> targetSnapshot,
+            ResolvedCdragonSet resolvedSet
+    ) {
+        if (targetSnapshot.isEmpty()
+                || !targetSnapshot.get().hasSource()
+                || targetSnapshot.get().matchesSource(resolvedSet.setNumber(), resolvedSet.mutator())) {
+            return;
+        }
+
+        GuideSnapshot snapshot = targetSnapshot.get();
+        logger.warn(
+                "CDragon guide import rejected because snapshot source differs. "
+                        + "patchVersion={}, requestedSetNumber={}, requestedMutator={}, "
+                        + "snapshotSetNumber={}, snapshotMutator={}",
+                patchVersion,
+                resolvedSet.setNumber(),
+                resolvedSet.mutator(),
+                snapshot.getSourceSetNumber(),
+                snapshot.getSourceMutator()
+        );
+        throw new BusinessException(ErrorCode.INVALID_INPUT);
+    }
+
+    private void validateRequestedImport(GuideCdragonImportRequest request, GuideImportCounts counts) {
+        if ((request.shouldIncludeChampions()
+                && counts.championCount() < guideCdragonImportProperties.getMinimumChampionCount())
+                || (request.shouldIncludeTraits()
+                && counts.traitCount() < guideCdragonImportProperties.getMinimumTraitCount())
+                || (request.shouldIncludeItems()
+                && counts.itemCount() < guideCdragonImportProperties.getMinimumItemCount())
+                || (request.shouldIncludeAugments()
+                && counts.augmentCount() < guideCdragonImportProperties.getMinimumAugmentCount())) {
+            logger.warn(
+                    "CDragon guide import rejected before persistence. champions={}, traits={}, items={}, augments={}",
+                    counts.championCount(),
+                    counts.traitCount(),
+                    counts.itemCount(),
+                    counts.augmentCount()
+            );
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+    }
+
+    private void validatePartialImportTarget(
+            String patchVersion,
+            Optional<GuideSnapshot> targetSnapshot
+    ) {
+        if (targetSnapshot.isPresent()
+                && targetSnapshot.get().getStatus() != GuideSnapshotStatus.STAGING) {
+            logger.warn(
+                    "Partial CDragon guide import rejected for a public or historical snapshot. patchVersion={}, status={}",
+                    patchVersion,
+                    targetSnapshot.get().getStatus()
+            );
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+    }
+
+    private void activateCompleteSnapshot(
+            String patchVersion,
+            ResolvedCdragonSet resolvedSet,
+            GuideImportCounts counts,
+            Optional<GuideSnapshot> targetSnapshot
+    ) {
+        LocalDateTime validatedAt = LocalDateTime.now();
+        GuideSnapshot snapshot = targetSnapshot
+                .orElseGet(() -> GuideSnapshot.builder()
+                        .patchVersion(patchVersion)
+                        .sourceSetNumber(resolvedSet.setNumber())
+                        .sourceMutator(resolvedSet.mutator())
+                        .status(GuideSnapshotStatus.STAGING)
+                        .championCount(counts.championCount())
+                        .traitCount(counts.traitCount())
+                        .itemCount(counts.itemCount())
+                        .augmentCount(counts.augmentCount())
+                        .build());
+        snapshot.recordSource(resolvedSet.setNumber(), resolvedSet.mutator());
+        snapshot.updateValidation(
+                counts.championCount(),
+                counts.traitCount(),
+                counts.itemCount(),
+                counts.augmentCount(),
+                validatedAt
+        );
+        Optional<GuideSnapshot> activeSnapshot = guideSnapshotRepository
+                .findFirstForUpdateByStatusOrderByActivatedAtDescIdDesc(GuideSnapshotStatus.ACTIVE);
+        boolean targetIsAlreadyActive = activeSnapshot
+                .map(current -> current.getPatchVersion().equals(patchVersion))
+                .orElse(false);
+
+        if (targetIsAlreadyActive) {
+            guideSnapshotRepository.save(snapshot);
+            return;
+        }
+
+        boolean shouldActivate = activeSnapshot.isEmpty()
+                || comparePatchVersions(patchVersion, activeSnapshot.get().getPatchVersion()) > 0;
+        if (shouldActivate) {
+            activeSnapshot.ifPresent(GuideSnapshot::deactivate);
+            if (activeSnapshot.isPresent()) {
+                guideSnapshotRepository.flush();
+            }
+            snapshot.activate(validatedAt);
+        } else {
+            snapshot.deactivate();
+        }
+        guideSnapshotRepository.save(snapshot);
+    }
+
+    private void stagePartialSnapshot(
+            GuideCdragonImportRequest request,
+            String patchVersion,
+            ResolvedCdragonSet resolvedSet,
+            GuideImportCounts counts,
+            Optional<GuideSnapshot> targetSnapshot
+    ) {
+        if (targetSnapshot.isPresent()) {
+            GuideSnapshot snapshot = targetSnapshot.get();
+            snapshot.recordSource(resolvedSet.setNumber(), resolvedSet.mutator());
+            snapshot.updateCounts(
+                    request.shouldIncludeChampions() ? counts.championCount() : snapshot.getChampionCount(),
+                    request.shouldIncludeTraits() ? counts.traitCount() : snapshot.getTraitCount(),
+                    request.shouldIncludeItems() ? counts.itemCount() : snapshot.getItemCount(),
+                    request.shouldIncludeAugments() ? counts.augmentCount() : snapshot.getAugmentCount()
+            );
+            guideSnapshotRepository.save(snapshot);
+            return;
+        }
+        guideSnapshotRepository.save(GuideSnapshot.builder()
+                .patchVersion(patchVersion)
+                .sourceSetNumber(resolvedSet.setNumber())
+                .sourceMutator(resolvedSet.mutator())
+                .status(GuideSnapshotStatus.STAGING)
+                .championCount(counts.championCount())
+                .traitCount(counts.traitCount())
+                .itemCount(counts.itemCount())
+                .augmentCount(counts.augmentCount())
+                .build());
+    }
+
+    private int comparePatchVersions(String left, String right) {
+        PatchVersionParts leftParts = parsePatchVersion(left);
+        PatchVersionParts rightParts = parsePatchVersion(right);
+
+        int majorResult = Integer.compare(leftParts.major(), rightParts.major());
+        if (majorResult != 0) {
+            return majorResult;
+        }
+        int minorResult = Integer.compare(leftParts.minor(), rightParts.minor());
+        if (minorResult != 0) {
+            return minorResult;
+        }
+        int suffixResult = leftParts.suffix().compareToIgnoreCase(rightParts.suffix());
+        if (suffixResult != 0) {
+            return suffixResult;
+        }
+        return left.compareTo(right);
+    }
+
+    private PatchVersionParts parsePatchVersion(String patchVersion) {
+        Matcher matcher = PATCH_VERSION_PATTERN.matcher(patchVersion == null ? "" : patchVersion.trim());
+        if (!matcher.matches()) {
+            return new PatchVersionParts(0, 0, patchVersion == null ? "" : patchVersion);
+        }
+        return new PatchVersionParts(
+                Integer.parseInt(matcher.group(1)),
+                Integer.parseInt(matcher.group(2)),
+                matcher.group(3)
+        );
     }
 
     private JsonNode fetchCdragonData() {
@@ -197,7 +531,15 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         }
     }
 
-    private JsonNode findSetData(JsonNode root, int setNumber, String mutator) {
+    private ResolvedCdragonSet resolveSetData(JsonNode root, int setNumber, String mutator) {
+        return new ResolvedCdragonSet(
+                findExplicitSetData(root, setNumber, mutator),
+                setNumber,
+                mutator
+        );
+    }
+
+    private JsonNode findExplicitSetData(JsonNode root, int setNumber, String mutator) {
         for (JsonNode setData : root.path("setData")) {
             if (setData.path("number").asInt() == setNumber
                     && mutator.equals(setData.path("mutator").asText())) {
@@ -206,7 +548,10 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         }
 
         JsonNode fallback = root.path("sets").path(String.valueOf(setNumber));
-        if (!fallback.isMissingNode() && fallback.has("champions") && fallback.has("traits")) {
+        if (("TFTSet" + setNumber).equals(mutator)
+                && !fallback.isMissingNode()
+                && fallback.has("champions")
+                && fallback.has("traits")) {
             return fallback;
         }
 
@@ -1479,6 +1824,30 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
             String patchVersion,
             int sortOrder
     ) {
+    }
+
+    private record ResolvedCdragonSet(
+            JsonNode data,
+            int setNumber,
+            String mutator
+    ) {
+    }
+
+    private record GuideImportSource(
+            int setNumber,
+            String mutator
+    ) {
+    }
+
+    private record GuideImportCounts(
+            int championCount,
+            int traitCount,
+            int itemCount,
+            int augmentCount
+    ) {
+    }
+
+    private record PatchVersionParts(int major, int minor, String suffix) {
     }
 
     private static class ImportCounter {
