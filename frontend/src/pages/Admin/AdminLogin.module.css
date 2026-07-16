@@ -6,6 +6,8 @@
 }
 
 .loginForm {
+  --text-primary: var(--text-onlight-main);
+
   background: var(--bg-card-gradient);
   border-color: var(--border-card-highlight);
 }
