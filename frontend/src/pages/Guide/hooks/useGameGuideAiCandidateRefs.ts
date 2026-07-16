@@ -11,33 +11,36 @@ import {
 
 const MAX_CANDIDATE_REFS = 20
 
+export function createGameGuideAiCandidateRefs(
+  activeTab: GuideTab,
+  visibleItems: GuideTabItems[GuideTab][number][],
+): GameGuideAiPathfinderRef[] {
+  const guideType = GUIDE_TYPE_BY_TAB[activeTab]
+  const seen = new Set<string>()
+  const candidateRefs: GameGuideAiPathfinderRef[] = []
+
+  for (const guideEntry of visibleItems) {
+    if (candidateRefs.length >= MAX_CANDIDATE_REFS) break
+
+    const ref = createGameGuideAiRef(guideType, guideEntry.name, guideEntry.targetKey)
+    if (!ref) continue
+
+    const uniqueKey = `${ref.guideType}:${ref.targetKey}`
+    if (seen.has(uniqueKey)) continue
+
+    seen.add(uniqueKey)
+    candidateRefs.push(ref)
+  }
+
+  return candidateRefs
+}
+
 export function useGameGuideAiCandidateRefs(
   activeTab: GuideTab,
   visibleItems: GuideTabItems[GuideTab][number][],
 ): GameGuideAiPathfinderRef[] {
-  return useMemo(() => {
-    const guideType = GUIDE_TYPE_BY_TAB[activeTab]
-    const seen = new Set<string>()
-    const candidateRefs: GameGuideAiPathfinderRef[] = []
-
-    for (const guideEntry of visibleItems) {
-      if (candidateRefs.length >= MAX_CANDIDATE_REFS) break
-
-      const name = guideEntry.name.trim()
-      if (!name) continue
-
-      const targetKey = createGameGuideAiRef(guideType, name, guideEntry.targetKey).targetKey
-      const uniqueKey = `${guideType}:${targetKey}`
-      if (seen.has(uniqueKey)) continue
-
-      seen.add(uniqueKey)
-      candidateRefs.push({
-        guideType,
-        name,
-        targetKey,
-      })
-    }
-
-    return candidateRefs
-  }, [activeTab, visibleItems])
+  return useMemo(
+    () => createGameGuideAiCandidateRefs(activeTab, visibleItems),
+    [activeTab, visibleItems],
+  )
 }
