@@ -291,7 +291,7 @@
 }
 
 .patchBrief {
-  width: 520px;
+  width: fit-content;
   height: 30px;
   display: inline-flex;
   align-items: center;
@@ -314,16 +314,6 @@
   font-size: 12px;
   font-weight: 500;
   letter-spacing: -0.01em;
-}
-
-.patchBrief strong {
-  min-width: 0;
-  overflow: hidden;
-  color: #a8b0b8;
-  font-size: 12px;
-  font-weight: 400;
-  letter-spacing: -0.01em;
-  text-overflow: ellipsis;
 }
 
 .riotStatus {
@@ -582,10 +572,6 @@
   .topBar {
     height: 38px;
     margin-bottom: 12px;
-  }
-
-  .patchBrief {
-    width: 448px;
   }
 
   .riotStatus {
