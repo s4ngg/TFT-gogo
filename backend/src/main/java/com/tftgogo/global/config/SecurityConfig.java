@@ -2,6 +2,7 @@ package com.tftgogo.global.config;
 
 import com.tftgogo.global.filter.AdminJwtFilter;
 import com.tftgogo.global.filter.JwtAuthenticationFilter;
+import com.tftgogo.global.security.ApiAuthenticationEntryPoint;
 import com.tftgogo.global.security.oauth.CookieOAuth2AuthorizationRequestRepository;
 import com.tftgogo.global.security.oauth.SocialOAuth2FailureHandler;
 import com.tftgogo.global.security.oauth.SocialOAuth2SuccessHandler;
@@ -33,6 +34,7 @@ public class SecurityConfig {
 
     private final AdminJwtFilter adminJwtFilter;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final ApiAuthenticationEntryPoint apiAuthenticationEntryPoint;
     private final CorsProperties corsProperties;
     private final SocialOAuth2SuccessHandler socialOAuth2SuccessHandler;
     private final SocialOAuth2FailureHandler socialOAuth2FailureHandler;
@@ -47,6 +49,8 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(exception ->
+                        exception.authenticationEntryPoint(apiAuthenticationEntryPoint))
                 .authorizeHttpRequests(auth ->
                         auth
                         .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
