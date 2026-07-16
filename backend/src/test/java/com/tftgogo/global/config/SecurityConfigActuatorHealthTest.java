@@ -3,6 +3,7 @@ package com.tftgogo.global.config;
 import com.tftgogo.domain.admin.service.AdminAuditService;
 import com.tftgogo.global.filter.AdminJwtFilter;
 import com.tftgogo.global.filter.JwtAuthenticationFilter;
+import com.tftgogo.global.security.ApiAuthenticationEntryPoint;
 import com.tftgogo.global.security.oauth.CookieOAuth2AuthorizationRequestRepository;
 import com.tftgogo.global.security.oauth.SocialOAuth2FailureHandler;
 import com.tftgogo.global.security.oauth.SocialOAuth2SuccessHandler;
@@ -37,6 +38,9 @@ class SecurityConfigActuatorHealthTest {
 
     @MockBean
     private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @MockBean
+    private ApiAuthenticationEntryPoint apiAuthenticationEntryPoint;
 
     @MockBean
     private SocialOAuth2SuccessHandler socialOAuth2SuccessHandler;
