@@ -44,7 +44,7 @@
 
 .heroCopy h1 {
   margin: 12px 0 9px;
-  color: var(--text-main);
+  color: var(--text-orange-main);
   font-size: 28px;
   font-weight: 700;
   letter-spacing: -0.024em;
@@ -309,7 +309,7 @@
   border: 1px solid rgba(110, 142, 150, 0.28);
   border-radius: 8px;
   color: #84909c;
-  background: rgba(5, 14, 20, 0.92);
+  background: var(--bg-input-light);
 }
 
 .searchBox:focus-within {
@@ -320,9 +320,10 @@
 .searchBox input {
   width: 100%;
   border: 0;
-  color: #fff;
+  color: var(--color-black);
   background: transparent;
   font-size: 13px;
+  font-weight: 750;
 }
 
 .searchBox input:focus-visible {
@@ -330,7 +331,7 @@
 }
 
 .searchBox input::placeholder {
-  color: #596472;
+  color: var(--text-onlight-placeholder);
 }
 
 .filterLabel {
@@ -364,8 +365,8 @@
   padding: 0 11px;
   border: 1px solid transparent;
   border-radius: 8px;
-  color: #7c8794;
-  background: transparent;
+  color: var(--text-on-accent);
+  background: var(--bg-card-orange-soft);
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
@@ -373,29 +374,33 @@
 }
 
 .categoryTabs button:hover {
-  color: #d5dde8;
-  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-on-accent);
+  background: var(--accent-bright);
 }
 
 .categoryTabs button:focus-visible,
 .pagination button:focus-visible,
 .seasonHeaderButton:focus-visible,
 .seasonPatchButton:focus-visible {
-  border-color: rgba(5, 243, 231, 0.7);
-  outline: 2px solid rgba(5, 243, 231, 0.72);
+  border-color: var(--accent-strong);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(5, 243, 231, 0.1);
+  box-shadow: 0 0 0 4px var(--accent-bg-faint);
 }
 
 .categoryTabs button span {
-  color: #596472;
+  color: var(--text-on-accent);
   font-size: 11px;
 }
 
 .categoryTabs .activeTab {
-  border-color: rgba(5, 243, 231, 0.55);
-  color: #05f3e7;
-  background: rgba(5, 243, 231, 0.08);
+  border-color: var(--accent-strong);
+  color: var(--text-on-accent);
+  background: var(--accent-gradient);
+}
+
+.categoryTabs .activeTab span {
+  color: var(--text-on-accent);
 }
 
 .changeTimeline {

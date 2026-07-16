@@ -32,7 +32,7 @@
 
 .pageHeader h1 {
   margin-top: 5px;
-  color: #ffffff;
+  color: var(--text-orange-main);
   font-size: 30px;
   font-weight: 650;
   letter-spacing: -0.024em;
@@ -92,10 +92,10 @@
 .joinButton,
 .filterTabs button,
 .messageForm button {
-  border: 1px solid rgba(5, 221, 213, 0.82);
+  border: 1px solid var(--accent-strong);
   border-radius: var(--radius-button);
-  color: #05f0e3;
-  background: rgba(2, 77, 82, 0.64);
+  color: var(--text-on-accent);
+  background: var(--accent);
   font-weight: 700;
   cursor: pointer;
 }
@@ -132,7 +132,7 @@
   border: 1px solid rgba(110, 142, 150, 0.28);
   border-radius: var(--radius-button);
   color: #aeb8c2;
-  background: rgba(3, 15, 20, 0.94);
+  background: var(--bg-input-light);
 }
 
 .searchBox input {
@@ -141,10 +141,10 @@
   min-width: 0;
   border: 0;
   outline: 0;
-  color: #ffffff;
+  color: var(--color-black);
   background: transparent;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 750;
 }
 
 .searchBox button {
@@ -238,7 +238,7 @@
 }
 
 .searchBox input::placeholder {
-  color: #9ea8b2;
+  color: var(--text-onlight-placeholder);
 }
 
 .filterTabs {
@@ -251,16 +251,16 @@
   height: 36px;
   min-width: 59px;
   border-color: rgba(110, 142, 150, 0.28);
-  color: #b7bec7;
-  background: rgba(8, 20, 27, 0.84);
+  color: var(--text-on-accent);
+  background: var(--bg-card-orange-soft);
   font-size: 12px;
   font-weight: 500;
 }
 
 .filterTabs .selectedTab {
-  color: #04f3e5;
-  border-color: #05ddd5;
-  background: rgba(5, 102, 104, 0.56);
+  color: var(--text-on-accent);
+  border-color: var(--accent-strong);
+  background: var(--accent-gradient);
 }
 
 .partyList {
@@ -432,8 +432,8 @@
 }
 
 .joinButton[aria-pressed="true"] {
-  color: #ffffff;
-  background: rgba(0, 122, 118, 0.86);
+  color: var(--text-on-accent);
+  background: var(--accent-gradient);
 }
 
 .joinButton:disabled {
@@ -470,15 +470,15 @@
   padding: 11px 12px;
   border: 1px solid rgba(112, 145, 153, 0.18);
   border-radius: 9px;
-  color: #b8c2ca;
-  background: rgba(8, 20, 27, 0.68);
+  color: var(--text-on-accent);
+  background: var(--bg-card-orange-soft);
   text-align: left;
   cursor: pointer;
 }
 
 .channelList strong {
   overflow: hidden;
-  color: #ffffff;
+  color: var(--text-on-accent);
   font-size: 13px;
   font-weight: 700;
   text-overflow: ellipsis;
@@ -489,23 +489,28 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #aab4bd;
+  color: var(--text-on-accent);
   font-size: 11px;
 }
 
 .channelList small {
   overflow: hidden;
-  color: #8f9aa3;
+  color: var(--text-on-accent);
   font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .channelList .activeChannel {
-  border-color: rgba(5, 221, 213, 0.78);
-  background:
-    linear-gradient(90deg, rgba(0, 116, 108, 0.42), rgba(5, 48, 56, 0.56)),
-    rgba(8, 20, 27, 0.86);
+  border-color: var(--accent-strong);
+  color: var(--text-on-accent);
+  background: var(--accent-gradient);
+}
+
+.channelList .activeChannel strong,
+.channelList .activeChannel span,
+.channelList .activeChannel small {
+  color: var(--text-on-accent);
 }
 
 .chatWindow {
@@ -625,21 +630,22 @@
   padding: 0 8px 0 12px;
   border: 1px solid rgba(5, 221, 213, 0.62);
   border-radius: 8px;
-  color: #05f0e3;
-  background: rgba(2, 54, 59, 0.62);
+  color: var(--color-black);
+  background: var(--bg-input-light);
 }
 
 .messageForm input {
   min-width: 0;
   border: 0;
   outline: 0;
-  color: #ffffff;
+  color: var(--color-black);
   background: transparent;
   font-size: 13px;
+  font-weight: 750;
 }
 
 .messageForm input::placeholder {
-  color: #9ca7b1;
+  color: var(--text-onlight-placeholder);
 }
 
 .messageForm input:disabled {

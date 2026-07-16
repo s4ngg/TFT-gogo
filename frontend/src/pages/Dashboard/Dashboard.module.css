@@ -113,6 +113,7 @@
 }
 
 .searchPanel h1 {
+  color: var(--text-orange-main);
   font-size: 25px;
   letter-spacing: 0.045em;
   line-height: 1.1;
@@ -137,14 +138,14 @@
   padding: 0 16px;
   border: 0;
   outline: 0;
-  color: var(--text-main);
-  background: transparent;
+  color: var(--color-black);
+  background: var(--bg-input-light);
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 750;
 }
 
 .searchBox input::placeholder {
-  color: var(--text-secondary);
+  color: var(--text-onlight-placeholder);
 }
 
 .searchBox button {
@@ -489,7 +490,7 @@
   border: 1px solid rgba(110, 142, 150, 0.28);
   border-radius: 5px;
   color: var(--text-onlight-main);
-  background: var(--bg-onlight);
+  background: var(--bg-card-orange-soft);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -510,19 +511,20 @@
   height: auto;
   padding: 0;
   border: 0;
-  color: var(--text-secondary);
-  background: transparent;
+  color: var(--text-onlight-main);
+  background: var(--bg-card-orange-soft);
   box-shadow: none;
   text-align: center;
 }
 
 .selectedSort {
-  color: var(--accent) !important;
+  color: var(--rank-filter-active) !important;
+  background: var(--selected-filter-bg-onlight) !important;
 }
 
 .selectedFilter {
-  color: var(--accent) !important;
-  border-color: var(--accent) !important;
+  color: var(--rank-filter-active) !important;
+  border-color: var(--rank-filter-active) !important;
   background: var(--selected-filter-bg-onlight) !important;
   box-shadow: inset 0 0 17px var(--accent-bg-faint);
 }
@@ -561,8 +563,8 @@
   align-items: center;
   gap: var(--deck-row-gap);
   padding: 7px var(--deck-row-padding-right) 7px var(--deck-row-padding-left);
-  border-bottom: 1px solid rgba(114, 145, 153, 0.13);
-  background: linear-gradient(90deg, rgba(12, 29, 37, 0.78), rgba(6, 17, 24, 0.38));
+  border-bottom: 1px solid var(--color-black);
+  background: var(--accent);
 }
 
 .deckRow:last-child {
