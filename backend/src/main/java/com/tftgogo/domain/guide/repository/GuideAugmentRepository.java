@@ -4,17 +4,30 @@ import com.tftgogo.domain.guide.entity.GuideAugment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface GuideAugmentRepository extends JpaRepository<GuideAugment, Long> {
 
     Optional<GuideAugment> findByAugmentKeyAndPatchVersion(String augmentKey, String patchVersion);
 
     List<GuideAugment> findByPatchVersionOrderByNameAscIdAsc(String patchVersion);
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            DELETE FROM GuideAugment augment
+            WHERE augment.patchVersion = :patchVersion
+              AND augment.augmentKey NOT IN (:retainedKeys)
+            """)
+    int deleteStaleByPatchVersion(
+            @Param("patchVersion") String patchVersion,
+            @Param("retainedKeys") Set<String> retainedKeys
+    );
 
     @Query(
             value = """

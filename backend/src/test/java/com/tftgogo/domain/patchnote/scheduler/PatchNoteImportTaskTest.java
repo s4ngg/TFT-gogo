@@ -25,14 +25,13 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class PatchNoteImportSchedulerTest {
+class PatchNoteImportTaskTest {
 
     @Mock
     private AdminPatchNoteService adminPatchNoteService;
@@ -46,70 +45,37 @@ class PatchNoteImportSchedulerTest {
     @Mock
     private PatchNoteRepository patchNoteRepository;
 
-    @Mock
-    private PatchNoteImportSchedulerLock schedulerLock;
-
     private PatchNoteImportSchedulerProperties properties;
-    private PatchNoteImportScheduler scheduler;
+    private PatchNoteImportTask importTask;
 
     @BeforeEach
     void setUp() {
         properties = new PatchNoteImportSchedulerProperties();
-        scheduler = new PatchNoteImportScheduler(
+        importTask = new PatchNoteImportTask(
                 adminPatchNoteService,
                 crawlerFetchService,
                 crawlerParser,
                 patchNoteRepository,
-                properties,
-                schedulerLock
+                properties
         );
     }
 
     @Test
-    void scheduler_disabled이면_목록_확인을_실행하지_않는다() {
-        // when
-        scheduler.importNewPatchNotesFromList();
-
-        // then
-        verifyNoInteractions(crawlerFetchService, crawlerParser, patchNoteRepository, adminPatchNoteService);
-    }
-
-    @Test
-    void startup_import가_false이면_서버_시작_import를_실행하지_않는다() {
+    void 최신_패치노트를_현재_패치로_import한다() {
         // given
-        properties.setEnabled(true);
-
-        // when
-        scheduler.importOnStartupIfEnabled();
-
-        // then
-        verifyNoInteractions(adminPatchNoteService);
-    }
-
-    @Test
-    void startup_import는_이미_import된_최신_패치도_refresh한다() {
-        // given
-        properties.setEnabled(true);
-        properties.setStartupImport(true);
-        givenSchedulerLockRunsTask();
-        PatchNoteCrawlListItem latestImported = listItem(
-                "전략적 팀 전투 17.5 패치",
-                "riot-content-17-5",
-                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-5/"
-        );
-        givenPatchList(latestImported);
-        when(patchNoteRepository.findBySourceKey("riot-content-17-5"))
-                .thenReturn(Optional.of(patchNote("17.5")));
+        properties.setLocale(" KO-KR ");
+        AdminPatchNoteImportResponse response = importResponse("17.5", "https://example.com/17-5");
         when(adminPatchNoteService.importRiotPatchNote(any(AdminPatchNoteImportRequest.class)))
-                .thenReturn(importResponse("17.5", latestImported.detailUrl()));
+                .thenReturn(response);
 
         // when
-        scheduler.importOnStartupIfEnabled();
+        AdminPatchNoteImportResponse result = importTask.importLatestPatchNote();
 
         // then
         ArgumentCaptor<AdminPatchNoteImportRequest> captor =
                 ArgumentCaptor.forClass(AdminPatchNoteImportRequest.class);
         verify(adminPatchNoteService).importRiotPatchNote(captor.capture());
+        assertThat(result).isSameAs(response);
         assertThat(captor.getValue().getSourceUrl()).isNull();
         assertThat(captor.getValue().getVersion()).isNull();
         assertThat(captor.getValue().getLocale()).isEqualTo("ko-kr");
@@ -117,87 +83,57 @@ class PatchNoteImportSchedulerTest {
     }
 
     @Test
-    void 일일_refresh는_이미_import된_최신_패치도_다시_import한다() {
+    void 최신_패치_commit_후_history_backfill이_실패해도_최신_결과를_반환한다() {
         // given
-        properties.setEnabled(true);
-        givenSchedulerLockRunsTask();
+        AdminPatchNoteImportResponse response = importResponse("17.5", "https://example.com/17-5");
         when(adminPatchNoteService.importRiotPatchNote(any(AdminPatchNoteImportRequest.class)))
-                .thenReturn(importResponse("17.5", "https://example.com/17-5"));
+                .thenReturn(response);
+        when(crawlerFetchService.fetchTagPage("ko-kr"))
+                .thenThrow(new RuntimeException("riot list unavailable"));
 
-        // when
-        scheduler.refreshLatestPatchNote();
-
-        // then
-        ArgumentCaptor<AdminPatchNoteImportRequest> captor =
-                ArgumentCaptor.forClass(AdminPatchNoteImportRequest.class);
-        verify(adminPatchNoteService).importRiotPatchNote(captor.capture());
-        assertThat(captor.getValue().getSourceUrl()).isNull();
-        assertThat(captor.getValue().getVersion()).isNull();
-        assertThat(captor.getValue().getLocale()).isEqualTo("ko-kr");
-        assertThat(captor.getValue().shouldMarkCurrent()).isTrue();
+        // when, then
+        assertThatCode(() -> assertThat(importTask.importLatestPatchNoteThenUnknownPatchNotesFromList())
+                .isSameAs(response))
+                .doesNotThrowAnyException();
+        verify(adminPatchNoteService).importRiotPatchNote(any(AdminPatchNoteImportRequest.class));
     }
 
     @Test
-    void 목록_확인은_히스토리_기간보다_오래된_항목을_skip한다() {
+    void history_기간보다_오래됐거나_게시일이_없는_패치는_skip한다() {
         // given
-        properties.setEnabled(true);
-        givenSchedulerLockRunsTask();
-        PatchNoteCrawlListItem latestImported = listItem(
-                "Teamfight Tactics patch 17.5",
-                "riot-content-17-5",
-                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-5/"
-        );
-        PatchNoteCrawlListItem oldNew = listItem(
+        PatchNoteCrawlListItem oldItem = listItem(
                 "Teamfight Tactics patch 17.1",
                 LocalDateTime.now().minusMonths(7),
                 "riot-content-17-1",
-                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-1/"
+                "https://example.com/teamfight-tactics-patch-17-1/"
         );
-        givenPatchList(latestImported, oldNew);
-        when(patchNoteRepository.findBySourceKey("riot-content-17-5"))
-                .thenReturn(Optional.of(patchNote("17.5")));
-
-        // when
-        scheduler.importNewPatchNotesFromList();
-
-        // then
-        verifyNoInteractions(adminPatchNoteService);
-    }
-
-    @Test
-    void 목록_확인은_publishedAt이_없는_항목을_skip한다() {
-        // given
-        properties.setEnabled(true);
-        givenSchedulerLockRunsTask();
-        PatchNoteCrawlListItem noDateNew = listItem(
-                "Teamfight Tactics patch 17.5",
+        PatchNoteCrawlListItem noDateItem = listItem(
+                "Teamfight Tactics patch 17.2",
                 null,
-                "riot-content-17-5",
-                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-5/"
+                "riot-content-17-2",
+                "https://example.com/teamfight-tactics-patch-17-2/"
         );
-        givenPatchList(noDateNew);
+        givenPatchList(oldItem, noDateItem);
 
         // when
-        scheduler.importNewPatchNotesFromList();
+        importTask.importUnknownPatchNotesFromList();
 
         // then
-        verifyNoInteractions(adminPatchNoteService);
+        verifyNoInteractions(patchNoteRepository, adminPatchNoteService);
     }
 
     @Test
-    void 목록_확인은_단일_항목_import_실패_후에도_계속_진행한다() {
+    void history는_오래된_항목부터_import하고_한_항목_실패후에도_계속한다() {
         // given
-        properties.setEnabled(true);
-        givenSchedulerLockRunsTask();
         PatchNoteCrawlListItem latestNew = listItem(
                 "Teamfight Tactics patch 17.5",
                 "riot-content-17-5",
-                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-5/"
+                "https://example.com/teamfight-tactics-patch-17-5/"
         );
         PatchNoteCrawlListItem failingOld = listItem(
                 "Teamfight Tactics patch 17.4",
                 "riot-content-17-4",
-                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-4/"
+                "https://example.com/teamfight-tactics-patch-17-4/"
         );
         givenPatchList(latestNew, failingOld);
         givenPatchNoteIsNotImported(latestNew, "17.5");
@@ -212,7 +148,7 @@ class PatchNoteImportSchedulerTest {
                 });
 
         // when
-        scheduler.importNewPatchNotesFromList();
+        importTask.importUnknownPatchNotesFromList();
 
         // then
         ArgumentCaptor<AdminPatchNoteImportRequest> captor =
@@ -226,34 +162,27 @@ class PatchNoteImportSchedulerTest {
     }
 
     @Test
-    void 목록_확인은_DB에_없는_패치노트만_상세_import한다() {
+    void history에서_DB에_없는_패치만_import한다() {
         // given
-        properties.setEnabled(true);
-        givenSchedulerLockRunsTask();
-        PatchNoteCrawlFetchedPage listPage = fetchedPage();
         PatchNoteCrawlListItem latestNew = listItem(
                 "전략적 팀 전투 17.5 패치",
                 "riot-content-17-5",
-                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-5/"
+                "https://example.com/teamfight-tactics-patch-17-5/"
         );
         PatchNoteCrawlListItem alreadyImported = listItem(
                 "전략적 팀 전투 17.4 패치",
                 "riot-content-17-4",
-                "https://teamfighttactics.leagueoflegends.com/ko-kr/news/game-updates/teamfight-tactics-patch-17-4/"
+                "https://example.com/teamfight-tactics-patch-17-4/"
         );
-
-        when(crawlerFetchService.fetchTagPage("ko-kr")).thenReturn(listPage);
-        when(crawlerParser.parseListPage(listPage)).thenReturn(List.of(latestNew, alreadyImported));
+        givenPatchList(latestNew, alreadyImported);
         when(patchNoteRepository.findBySourceKey("riot-content-17-4"))
                 .thenReturn(Optional.of(patchNote("17.4")));
-        when(patchNoteRepository.findBySourceKey("riot-content-17-5")).thenReturn(Optional.empty());
-        when(patchNoteRepository.findBySourceUrl(latestNew.detailUrl())).thenReturn(Optional.empty());
-        when(patchNoteRepository.findByVersion("17.5")).thenReturn(Optional.empty());
+        givenPatchNoteIsNotImported(latestNew, "17.5");
         when(adminPatchNoteService.importRiotPatchNote(any(AdminPatchNoteImportRequest.class)))
                 .thenReturn(importResponse("17.5", latestNew.detailUrl()));
 
         // when
-        scheduler.importNewPatchNotesFromList();
+        importTask.importUnknownPatchNotesFromList();
 
         // then
         ArgumentCaptor<AdminPatchNoteImportRequest> captor =
@@ -262,61 +191,6 @@ class PatchNoteImportSchedulerTest {
         assertThat(captor.getValue().getSourceUrl()).isEqualTo(latestNew.detailUrl());
         assertThat(captor.getValue().getVersion()).isEqualTo("17.5");
         assertThat(captor.getValue().shouldMarkCurrent()).isTrue();
-    }
-
-    @Test
-    void 이미_import가_실행중이면_다른_스케줄은_skip한다() {
-        // given
-        properties.setEnabled(true);
-        properties.setStartupImport(true);
-        givenSchedulerLockRunsTask();
-        givenPatchList();
-        doAnswer(invocation -> {
-            scheduler.refreshLatestPatchNote();
-            return importResponse("17.5", "https://example.com/17-5");
-        }).when(adminPatchNoteService).importRiotPatchNote(any(AdminPatchNoteImportRequest.class));
-
-        // when
-        scheduler.importOnStartupIfEnabled();
-
-        // then
-        verify(adminPatchNoteService, times(1)).importRiotPatchNote(any(AdminPatchNoteImportRequest.class));
-    }
-
-    @Test
-    void 스케줄_import_실패는_서버_실행을_막지_않는다() {
-        // given
-        properties.setEnabled(true);
-        properties.setStartupImport(true);
-        givenSchedulerLockRunsTask();
-        when(adminPatchNoteService.importRiotPatchNote(any(AdminPatchNoteImportRequest.class)))
-                .thenThrow(new RuntimeException("riot unavailable"));
-
-        // when, then
-        assertThatCode(() -> scheduler.importOnStartupIfEnabled())
-                .doesNotThrowAnyException();
-    }
-
-    @Test
-    void DB_락을_얻지_못하면_import를_skip한다() {
-        // given
-        properties.setEnabled(true);
-        properties.setStartupImport(true);
-        when(schedulerLock.runWithLock(any(), any())).thenReturn(false);
-
-        // when
-        scheduler.importOnStartupIfEnabled();
-
-        // then
-        verifyNoInteractions(adminPatchNoteService);
-    }
-
-    private void givenSchedulerLockRunsTask() {
-        doAnswer(invocation -> {
-            Runnable task = invocation.getArgument(1);
-            task.run();
-            return true;
-        }).when(schedulerLock).runWithLock(any(), any());
     }
 
     private void givenPatchList(PatchNoteCrawlListItem... items) {

@@ -197,6 +197,9 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
         if (!completeImport) {
             validatePartialImportTarget(patchVersion, targetSnapshot);
         }
+        if (completeImport) {
+            deleteStaleSplitGuides(patchVersion, candidates);
+        }
 
         ImportCounter counter = new ImportCounter();
         for (GuideCandidate candidate : candidates) {
@@ -227,6 +230,42 @@ public class GuideCdragonImportServiceImpl implements GuideCdragonImportService 
                 && request.shouldIncludeTraits()
                 && request.shouldIncludeItems()
                 && request.shouldIncludeAugments();
+    }
+
+    private void deleteStaleSplitGuides(String patchVersion, List<GuideCandidate> candidates) {
+        int deletedChampionCount = guideChampionRepository.deleteStaleByPatchVersion(
+                patchVersion,
+                targetKeys(candidates, GuideType.CHAMPION)
+        );
+        int deletedTraitCount = guideTraitRepository.deleteStaleByPatchVersion(
+                patchVersion,
+                targetKeys(candidates, GuideType.TRAIT)
+        );
+        int deletedItemCount = guideItemRepository.deleteStaleByPatchVersion(
+                patchVersion,
+                targetKeys(candidates, GuideType.ITEM)
+        );
+        int deletedAugmentCount = guideAugmentRepository.deleteStaleByPatchVersion(
+                patchVersion,
+                targetKeys(candidates, GuideType.AUGMENT)
+        );
+        logger.info(
+                "CDragon guide stale rows deleted. patchVersion={}, champions={}, traits={}, items={}, augments={}",
+                patchVersion,
+                deletedChampionCount,
+                deletedTraitCount,
+                deletedItemCount,
+                deletedAugmentCount
+        );
+    }
+
+    private Set<String> targetKeys(List<GuideCandidate> candidates, GuideType guideType) {
+        Set<String> targetKeys = new HashSet<>();
+        candidates.stream()
+                .filter(candidate -> candidate.guideType() == guideType)
+                .map(GuideCandidate::targetKey)
+                .forEach(targetKeys::add);
+        return targetKeys;
     }
 
     private GuideImportSource resolveRequestedSource(Integer setNumber, String mutator) {

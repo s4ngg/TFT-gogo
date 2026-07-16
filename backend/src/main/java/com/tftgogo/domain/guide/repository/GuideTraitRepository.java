@@ -4,17 +4,30 @@ import com.tftgogo.domain.guide.entity.GuideTrait;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface GuideTraitRepository extends JpaRepository<GuideTrait, Long> {
 
     Optional<GuideTrait> findByTraitKeyAndPatchVersion(String traitKey, String patchVersion);
 
     List<GuideTrait> findByPatchVersionOrderByNameAscIdAsc(String patchVersion);
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            DELETE FROM GuideTrait trait
+            WHERE trait.patchVersion = :patchVersion
+              AND trait.traitKey NOT IN (:retainedKeys)
+            """)
+    int deleteStaleByPatchVersion(
+            @Param("patchVersion") String patchVersion,
+            @Param("retainedKeys") Set<String> retainedKeys
+    );
 
     @Query(
             value = """
