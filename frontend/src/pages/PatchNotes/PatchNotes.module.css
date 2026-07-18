@@ -19,9 +19,9 @@
 .changePanel,
 .insightPanel,
 .historyPanel {
-  border: 2px solid var(--border-card-highlight);
-  background: var(--bg-card-gradient);
-  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  box-shadow: 0 12px 30px rgba(23, 32, 51, 0.1);
 }
 
 .heroCopy {
@@ -72,10 +72,10 @@
   align-items: center;
   height: 28px;
   padding: 0 10px;
-  border: 1px solid rgba(112, 144, 152, 0.16);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
-  color: #c6ccd8;
-  background: rgba(255, 255, 255, 0.035);
+  color: var(--text-secondary);
+  background: var(--bg-card-soft);
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
@@ -121,7 +121,7 @@
 
 .releaseCard p {
   margin: 10px 0 0;
-  color: #aeb7c4;
+  color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.55;
   word-break: keep-all;
@@ -306,15 +306,15 @@
   flex: 1;
   height: 38px;
   padding: 0 13px;
-  border: 1px solid rgba(110, 142, 150, 0.28);
+  border: 1px solid var(--border-control);
   border-radius: 8px;
   color: #84909c;
   background: var(--bg-input-light);
 }
 
 .searchBox:focus-within {
-  border-color: rgba(5, 243, 231, 0.68);
-  box-shadow: 0 0 0 3px rgba(5, 243, 231, 0.12);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg-faint);
 }
 
 .searchBox input {
@@ -340,10 +340,10 @@
   gap: 6px;
   height: 38px;
   padding: 0 12px;
-  border: 1px solid rgba(112, 144, 152, 0.16);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
-  color: #aeb7c4;
-  background: rgba(255, 255, 255, 0.035);
+  color: var(--text-secondary);
+  background: var(--bg-card-soft);
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
@@ -363,10 +363,10 @@
   gap: 7px;
   height: 34px;
   padding: 0 11px;
-  border: 1px solid transparent;
+  border: 1px solid var(--border-control);
   border-radius: 8px;
-  color: var(--text-on-accent);
-  background: var(--bg-card-orange-soft);
+  color: var(--text-ui);
+  background: var(--bg-card);
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
@@ -375,7 +375,8 @@
 
 .categoryTabs button:hover {
   color: var(--text-on-accent);
-  background: var(--accent-bright);
+  border-color: var(--accent);
+  background: var(--accent);
 }
 
 .categoryTabs button:focus-visible,
@@ -389,7 +390,7 @@
 }
 
 .categoryTabs button span {
-  color: var(--text-on-accent);
+  color: var(--text-secondary);
   font-size: 11px;
 }
 
@@ -403,6 +404,10 @@
   color: var(--text-on-accent);
 }
 
+.categoryTabs button:hover span {
+  color: var(--text-on-accent);
+}
+
 .changeTimeline {
   display: grid;
   gap: var(--space-xl);
@@ -411,9 +416,9 @@
 
 .changeSection {
   overflow: hidden;
-  border: 1px solid rgba(112, 144, 152, 0.13);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-button);
-  background: rgba(255, 255, 255, 0.026);
+  background: var(--bg-card);
 }
 
 .changeSectionHeader {
@@ -426,8 +431,8 @@
   justify-content: space-between;
   gap: var(--space-lg);
   padding: 0 var(--space-xl);
-  border-bottom: 1px solid rgba(112, 144, 152, 0.13);
-  background: rgba(5, 14, 20, 0.72);
+  border-bottom: 1px solid var(--border-inverse);
+  background: var(--bg-midnight-gradient);
 }
 
 .changeSectionHeader span {
@@ -663,10 +668,10 @@
   display: grid;
   place-items: center;
   min-height: 180px;
-  border: 1px dashed rgba(112, 144, 152, 0.2);
+  border: 1px dashed var(--border-control);
   border-radius: var(--radius-panel);
-  color: #7c8794;
-  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-muted);
+  background: var(--bg-card-soft);
   font-size: 13px;
   font-weight: 700;
 }
@@ -685,10 +690,10 @@
   min-width: 34px;
   height: 34px;
   padding: 0 11px;
-  border: 1px solid rgba(112, 144, 152, 0.2);
+  border: 1px solid var(--border-control);
   border-radius: 8px;
-  color: #8f9aaa;
-  background: rgba(255, 255, 255, 0.025);
+  color: var(--text-secondary);
+  background: var(--bg-card);
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
@@ -699,20 +704,20 @@
 }
 
 .pagination button:hover {
-  border-color: rgba(5, 243, 231, 0.42);
-  color: #dce3ec;
-  background: rgba(5, 243, 231, 0.06);
+  border-color: var(--accent);
+  color: var(--text-main);
+  background: var(--bg-card-soft);
 }
 
 .pagination .activePage {
-  border-color: rgba(5, 243, 231, 0.7);
-  color: #061116;
-  background: #05f3e7;
+  border-color: var(--accent-strong);
+  color: var(--text-on-accent);
+  background: var(--accent-gradient);
 }
 
 .pagination .pageMore {
   min-width: 62px;
-  color: #05f3e7;
+  color: var(--accent);
 }
 
 .sideRail {
