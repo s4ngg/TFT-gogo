@@ -9,7 +9,6 @@ import PatchHero from './components/PatchHero'
 import PatchPagination from './components/PatchPagination'
 import PatchSideRail from './components/PatchSideRail'
 import PatchStatusBanner from './components/PatchStatusBanner'
-import PatchSummaryGrid from './components/PatchSummaryGrid'
 import { usePatchChangesPage } from './hooks/usePatchChangesPage'
 import { usePatchNotesPageState } from './hooks/usePatchNotesPageState'
 import styles from './PatchNotes.module.css'
@@ -107,11 +106,6 @@ function PatchNotes() {
             void patchChangesQuery.refetch()
           }}
           patchVersion={selectedPatchVersion}
-        />
-
-        <PatchSummaryGrid
-          newCount={changeStats.typeCounts.신규}
-          totalCount={changeStats.totalChanges}
         />
 
         <div className={styles.contentGrid}>

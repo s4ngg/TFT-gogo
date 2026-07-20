@@ -15,7 +15,6 @@
 
 .heroCopy,
 .releaseCard,
-.summaryCard,
 .changePanel,
 .insightPanel,
 .historyPanel {
@@ -197,13 +196,6 @@
   background: var(--status-fallback-icon-bg);
 }
 
-.summaryGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
 @keyframes status-spin {
   to {
     transform: rotate(360deg);
@@ -214,44 +206,6 @@
   .statusLoading .statusIcon svg {
     animation: none;
   }
-}
-
-.summaryCard {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  min-height: 86px;
-  padding: 18px;
-  border-radius: var(--radius-panel);
-}
-
-.summaryIcon {
-  display: inline-grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 9px;
-  color: #061116;
-  background: #05f3e7;
-}
-
-.newSummaryIcon {
-  background: #f7d26d;
-}
-
-.summaryCard strong {
-  display: block;
-  color: var(--text-main);
-  font-size: 21px;
-  font-weight: 800;
-  letter-spacing: 0;
-}
-
-.summaryCard p {
-  margin: 4px 0 0;
-  color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 600;
 }
 
 .contentGrid {
@@ -933,13 +887,8 @@
     padding: 8px 0 48px;
   }
 
-  .summaryGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .hero,
-  .contentGrid,
-  .summaryGrid {
+  .contentGrid {
     width: 100%;
     max-width: 100%;
     min-width: 0;
@@ -947,7 +896,6 @@
 
   .hero > *,
   .contentGrid > *,
-  .summaryGrid > *,
   .sideRail,
   .historyPanel,
   .insightPanel,
