@@ -25,8 +25,8 @@
   flex-direction: column;
   overflow: visible;
   padding: 18px 14px 24px;
-  border-right: 1px solid var(--border-card-orange);
-  background: var(--bg-card-orange-gradient);
+  border-right: 1px solid var(--overlay-gold-border);
+  background: var(--bg-midnight-gradient);
 }
 
 .sidebarHeader {
@@ -52,7 +52,7 @@
   flex: 0 0 auto;
   min-width: max-content;
   overflow: visible;
-  color: var(--text-orange-main);
+  color: var(--overlay-gold);
   font-size: var(--font-size-xl);
   font-weight: 800;
   letter-spacing: 0;
@@ -64,7 +64,9 @@
   width: 37px;
   height: 37px;
   flex: 0 0 auto;
-  background: url("/assets/brand/tftgogo-mark.png") center / contain no-repeat;
+  background: var(--accent-secondary);
+  -webkit-mask: url("/assets/brand/tftgogo-mark.png") center / contain no-repeat;
+  mask: url("/assets/brand/tftgogo-mark.png") center / contain no-repeat;
 }
 
 .sidebarToggle {
@@ -73,10 +75,10 @@
   display: inline-grid;
   place-items: center;
   padding: 0;
-  border: 1px solid var(--border-btn-muted);
+  border: 1px solid var(--overlay-gold-border);
   border-radius: var(--radius-button);
-  color: var(--text-onlight-main);
-  background: var(--bg-onlight);
+  color: var(--text-inverse);
+  background: var(--bg-midnight-control);
   cursor: pointer;
 }
 
@@ -99,7 +101,7 @@
   padding: 0 18px;
   border: 1px solid transparent;
   border-radius: var(--radius-button);
-  color: var(--text-orange-secondary);
+  color: var(--text-inverse-secondary);
   background: transparent;
   font-size: 16px;
   font-weight: 500;
@@ -111,10 +113,10 @@
 }
 
 .activeNav {
-  color: var(--text-orange-main);
-  border-color: var(--accent-border-subtle);
-  background: var(--accent-bg-faint);
-  box-shadow: inset 0 0 0 1px var(--overlay-onlight-faint);
+  color: var(--text-inverse);
+  border-color: var(--overlay-gold-border);
+  background: var(--overlay-gold-soft);
+  box-shadow: inset 0 0 0 1px var(--overlay-gold-soft);
 }
 
 .activeNav span {
@@ -122,7 +124,7 @@
 }
 
 .activeNav svg {
-  color: var(--accent);
+  color: var(--overlay-gold);
 }
 
 .sidebarFill {
@@ -166,11 +168,14 @@
 }
 
 .rankCard {
+  --text-main: var(--color-black);
+  --text-secondary: var(--color-black-muted);
+  --text-soft: var(--text-orange-soft);
   flex: 0 0 auto;
   min-height: 256px;
   overflow: hidden;
   padding: 18px 16px 15px;
-  border: 1px solid rgba(191, 134, 58, 0.55);
+  border: 1px solid var(--border-control);
   border-radius: var(--radius-card);
   background: var(--bg-card-gradient);
 }
@@ -228,7 +233,7 @@
   display: block;
   width: 56%;
   height: 100%;
-  background: linear-gradient(90deg, #ff8c42, #c55a00);
+  background: linear-gradient(90deg, var(--accent-secondary), var(--accent));
 }
 
 .secondaryButton,
@@ -239,7 +244,7 @@
   align-items: center;
   justify-content: center;
   gap: 9px;
-  border: 1px solid rgba(118, 151, 160, 0.36);
+  border: 1px solid var(--border-control);
   border-radius: var(--radius-button);
   color: var(--text-onlight-main);
   background: var(--bg-onlight);
@@ -251,6 +256,9 @@
 .feedbackButton {
   flex: 0 0 auto;
   margin-top: 24px;
+  border-color: var(--overlay-gold-border);
+  color: var(--text-inverse);
+  background: var(--overlay-gold-soft);
 }
 
 .main {
@@ -272,7 +280,7 @@
   --text-soft: var(--text-orange-soft);
   --text-secondary: var(--text-orange-secondary);
   --text-muted: var(--text-orange-muted);
-  background: var(--bg-page-black-gradient);
+  background: var(--bg-page-white-gradient);
 }
 
 .topBar {
@@ -292,7 +300,7 @@
 .profileButton,
 .loginButton {
   border: 0;
-  color: #cfd3da;
+  color: var(--text-secondary);
   background: transparent;
   cursor: pointer;
 }
@@ -390,15 +398,20 @@
   justify-content: center;
   gap: 7px;
   padding: 0 13px;
-  border: 1px solid rgba(0, 224, 210, 0.58);
+  border: 1px solid var(--accent-strong);
   border-radius: var(--radius-button);
-  color: var(--text-main);
-  background: rgba(0, 109, 112, 0.28);
+  color: var(--text-on-accent);
+  background: var(--accent);
   font-size: 13px;
   font-weight: 650;
   letter-spacing: -0.012em;
   text-decoration: none;
   white-space: nowrap;
+}
+
+.loginButton:hover {
+  color: var(--text-on-accent);
+  background: var(--accent-bright);
 }
 
 .profileAvatar {

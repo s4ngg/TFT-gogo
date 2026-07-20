@@ -1,44 +1,70 @@
-/* Base theme tokens — Light (Orange + Cream) */
+/* Premium light preview: Ivory Midnight Gold */
 :root {
-  --bg-main: #fdf8f4;
-  --bg-sidebar: #fff8f3;
+  --bg-main: #f6f2ea;
+  --bg-sidebar: #eee7db;
   --bg-card: #ffffff;
-  --bg-card-soft: #fff4ec;
+  --bg-card-soft: #e9edf2;
 
-  --border: rgba(180, 110, 60, 0.18);
-  --border-subtle: rgba(180, 110, 60, 0.12);
-  --border-faint: rgba(180, 110, 60, 0.07);
-  --border-active: #ff8c42;
-  --accent: #ff8c42;
-  --accent-bright: #ffa366;
+  --border: #c9c0b4;
+  --border-subtle: #d9d2c8;
+  --border-faint: #e8e3dc;
+  --border-control: #8f8272;
+  --border-active: #243b5a;
+  --focus-ring: #9a5200;
+  --accent: #243b5a;
+  --accent-bright: #365277;
+  --accent-strong: #172a43;
+  --accent-gradient: linear-gradient(180deg, var(--accent-bright) 0%, var(--accent) 100%);
+  --accent-secondary: #9a5200;
+  --text-on-accent: #ffffff;
+  --bg-midnight: #172033;
+  --bg-midnight-soft: #222e43;
+  --bg-midnight-control: rgba(255, 255, 255, 0.06);
+  --bg-midnight-gradient: linear-gradient(180deg, #1d2940 0%, #121b2c 100%);
+  --bg-gold-soft: #f7ebcb;
+  --text-inverse: #ffffff;
+  --text-inverse-secondary: #c8d2df;
+  --border-inverse: #72839b;
+  --overlay-card: #111c2e;
+  --overlay-card-raised: #1b2a42;
+  --overlay-accent: #63ddd2;
+  --overlay-gold: #f0c766;
+  --overlay-gold-soft: rgba(240, 199, 102, 0.14);
+  --overlay-gold-border: rgba(240, 199, 102, 0.58);
+  --bg-card-overlay-strong: rgba(255, 255, 255, 0.78);
+  --bg-card-overlay-medium: rgba(255, 255, 255, 0.72);
+  --bg-card-overlay-faint: rgba(255, 255, 255, 0.08);
 
-  --color-cyan: #04f3e5;
-  --color-gold: #f7d26d;
-  --color-red: #ff4945;
-  --color-success: #2da84a;
-  --color-win: #2da84a;
-  --color-purple: #7c5cbf;
-  --color-star: #c8880a;
+  --color-cyan: #2f5bd3;
+  --color-gold: #9a5200;
+  --color-red: #a12b32;
+  --color-black: #172033;
+  --color-black-muted: #536174;
+  --color-active-yellow: #9a5200;
+  --color-success: #17633a;
+  --color-win: #17633a;
+  --color-purple: #624095;
+  --color-star: #8a5a00;
   --color-silver: #7a8694;
   --color-bronze: #9b5e1e;
 
-  --gold: #b87d1a;
-  --danger: #d63030;
-  --danger-bg: rgba(214, 48, 48, 0.08);
-  --danger-border: rgba(214, 48, 48, 0.25);
-  --success: #2da84a;
+  --gold: #9a5200;
+  --danger: #a12b32;
+  --danger-bg: #fdecee;
+  --danger-border: #d99298;
+  --success: #17633a;
 
   /* 영웅 증강 뱃지 */
   --color-purple-light: #7c5cbf;
   --hero-aug-badge-border: rgba(124, 92, 191, 0.35);
   --hero-aug-badge-bg: rgba(124, 92, 191, 0.08);
 
-  --text-main: #ffffff;
+  --text-main: #172033;
   --text-primary: var(--text-main);
-  --text-ui: #d9dde3;
-  --text-soft: #c6ccd8;
-  --text-secondary: #b5bdc5;
-  --text-muted: #8b92a8;
+  --text-ui: #263852;
+  --text-soft: #41516a;
+  --text-secondary: #536174;
+  --text-muted: #6c7888;
 
   --space-2xs: 3px;
   --space-xs: 4px;
@@ -121,12 +147,12 @@
   --rank-filter-radius: 14px;
   --rank-filter-font-size: 12px;
   --rank-filter-font-weight: 500;
-  --rank-filter-border: rgba(180, 110, 60, 0.25);
-  --rank-filter-border-hover: rgba(180, 110, 60, 0.5);
-  --rank-filter-text: #8a6a50;
-  --rank-filter-text-hover: #3d2010;
-  --rank-filter-active: #c55a00;
-  --rank-filter-active-bg: rgba(197, 90, 0, 0.08);
+  --rank-filter-border: #c9c0b4;
+  --rank-filter-border-hover: #8f8272;
+  --rank-filter-text: #536174;
+  --rank-filter-text-hover: #172033;
+  --rank-filter-active: #243b5a;
+  --rank-filter-active-bg: #e4eaf1;
   --transition-fast: 0.15s;
 }
 
@@ -165,52 +191,52 @@
 
 /* Status banner tokens */
 :root {
-  --status-action-border: rgba(180, 110, 60, 0.28);
-  --status-action-bg: rgba(255, 248, 243, 0.95);
-  --status-loading-border: rgba(197, 90, 0, 0.28);
-  --status-loading-icon-bg: rgba(197, 90, 0, 0.10);
-  --status-fallback-border: rgba(214, 48, 48, 0.28);
-  --status-fallback-icon-bg: rgba(214, 48, 48, 0.10);
+  --status-action-border: #c9c0b4;
+  --status-action-bg: #ffffff;
+  --status-loading-border: #aab6c4;
+  --status-loading-icon-bg: #e9edf2;
+  --status-fallback-border: #d99298;
+  --status-fallback-icon-bg: #fdecee;
 }
 
 /* Panel / card background tokens */
 :root {
-  --bg-card-gradient: linear-gradient(180deg, #ffffff 0%, #fff8f3 100%);
-  --border-card-highlight: rgba(180, 110, 60, 0.18);
+  --bg-card-gradient: linear-gradient(180deg, #ffffff 0%, #fbfaf8 100%);
+  --border-card-highlight: #c9c0b4;
   --bg-input-dark: #ffffff;
-  --bg-btn-dark: rgba(255, 248, 243, 0.95);
-  --bg-btn-dark-soft: rgba(255, 248, 243, 0.8);
-  --bg-profile-level: rgba(197, 90, 0, 0.08);
-  --bg-match-panel: rgba(253, 248, 244, 0.98);
-  --bg-donut-inner: #fdf8f4;
-  --bg-tooltip: rgba(253, 248, 244, 0.97);
-  --bg-row-hover: rgba(255, 140, 66, 0.04);
+  --bg-btn-dark: #ffffff;
+  --bg-btn-dark-soft: #f5f6f7;
+  --bg-profile-level: #e4eaf1;
+  --bg-match-panel: #ffffff;
+  --bg-donut-inner: #f6f2ea;
+  --bg-tooltip: #ffffff;
+  --bg-row-hover: #f0f3f6;
 }
 
 /* Search / CTA button tokens */
 :root {
-  --search-btn-bg: linear-gradient(135deg, #c55a00, #ff8c42);
-  --search-btn-border: rgba(197, 90, 0, 0.55);
+  --search-btn-bg: linear-gradient(135deg, #172a43, #365277);
+  --search-btn-border: #172a43;
 }
 
 /* Muted border tokens */
 :root {
-  --border-btn-muted: rgba(180, 110, 60, 0.28);
-  --border-load-more: rgba(180, 110, 60, 0.22);
-  --border-separator: rgba(180, 110, 60, 0.12);
-  --border-row-divider: rgba(180, 110, 60, 0.07);
-  --border-tooltip: rgba(180, 110, 60, 0.22);
+  --border-btn-muted: #b9b0a4;
+  --border-load-more: #c9c0b4;
+  --border-separator: #d9d2c8;
+  --border-row-divider: #e8e3dc;
+  --border-tooltip: #c9c0b4;
 }
 
 /* Cyan opacity variant tokens — 라이트 테마에서는 오렌지 계열로 대체 */
 :root {
-  --cyan-bg-faint: rgba(197, 90, 0, 0.05);
-  --cyan-bg-subtle: rgba(197, 90, 0, 0.08);
-  --cyan-border-subtle: rgba(197, 90, 0, 0.22);
-  --cyan-border-light: rgba(197, 90, 0, 0.28);
-  --cyan-glow-sm: rgba(197, 90, 0, 0.10);
-  --cyan-glow-md: rgba(197, 90, 0, 0.14);
-  --cyan-glow-lg: rgba(197, 90, 0, 0.20);
+  --cyan-bg-faint: rgba(47, 91, 211, 0.06);
+  --cyan-bg-subtle: rgba(47, 91, 211, 0.10);
+  --cyan-border-subtle: rgba(47, 91, 211, 0.28);
+  --cyan-border-light: rgba(47, 91, 211, 0.42);
+  --cyan-glow-sm: rgba(47, 91, 211, 0.10);
+  --cyan-glow-md: rgba(47, 91, 211, 0.14);
+  --cyan-glow-lg: rgba(47, 91, 211, 0.20);
   --guide-highlight-pulse-duration: 1.3s;
   --guide-highlight-pulse-iterations: 2;
   --donut-track-bg: rgba(0, 0, 0, 0.07);
@@ -256,21 +282,22 @@
   --text-sun-soft: #332609;
   --text-sun-secondary: #4a3d1f;
   --text-sun-muted: #6b5a30;
-  --accent-bg-faint: rgba(255, 140, 66, 0.1);
-  --accent-border-subtle: rgba(255, 140, 66, 0.32);
+  --accent-bg-faint: rgba(36, 59, 90, 0.08);
+  --accent-border-subtle: rgba(36, 59, 90, 0.30);
 
   /* 오렌지 테마 — 사이드바 */
-  --bg-card-orange: #fff8f3;
-  --bg-card-orange-soft: #fff0e6;
-  --bg-card-orange-gradient: linear-gradient(180deg, #fff8f3 0%, #fff4ec 100%);
-  --border-card-orange: rgba(255, 140, 66, 0.3);
-  --text-orange-main: #b34a00;
-  --text-orange-soft: rgba(179, 74, 0, 0.85);
-  --text-orange-secondary: #8a6a50;
-  --text-orange-muted: #b8956a;
+  --bg-card-orange: #ffffff;
+  --bg-card-orange-soft: #f1f3f6;
+  --bg-card-orange-gradient: linear-gradient(180deg, #ffffff 0%, #f8f6f2 100%);
+  --bg-input-light: #e9edf2;
+  --border-card-orange: #c9c0b4;
+  --text-orange-main: #172033;
+  --text-orange-soft: #41516a;
+  --text-orange-secondary: #536174;
+  --text-orange-muted: #6c7888;
 
-  --bg-page-white-gradient: linear-gradient(180deg, #fdf8f4 0%, #faf4ef 100%);
-  --bg-page-black-gradient: linear-gradient(180deg, #0a0a0a 0%, #000000 100%);
+  --bg-page-white-gradient: linear-gradient(180deg, #f6f2ea 0%, #f1ede5 100%);
+  --bg-page-black-gradient: linear-gradient(180deg, #f6f2ea 0%, #f1ede5 100%);
 
   --bg-sidebar-mint: #6bcb77;
   --bg-sidebar-mint-gradient: linear-gradient(180deg, #86d692 0%, #6bcb77 100%);
@@ -288,12 +315,13 @@
   --text-aqua-muted: #3d7a6a;
 
   --bg-onlight: #ffffff;
-  --bg-onlight-hover: #fff4ec;
-  --text-onlight-main: #1a0800;
-  --border-onlight-subtle: rgba(180, 110, 60, 0.25);
+  --bg-onlight-hover: #f0f3f6;
+  --text-onlight-main: #172033;
+  --text-onlight-placeholder: #4a5560;
+  --border-onlight-subtle: #b9b0a4;
   --overlay-onlight-faint: rgba(0, 0, 0, 0.04);
-  --overlay-onlight-soft: rgba(0, 0, 0, 0.15);
-  --selected-filter-bg-onlight: rgba(197, 90, 0, 0.12);
+  --overlay-onlight-soft: rgba(23, 32, 51, 0.12);
+  --selected-filter-bg-onlight: #e4eaf1;
 
   --text-ondark-main: #ffffff;
   --text-ondark-ui: #d9dde3;

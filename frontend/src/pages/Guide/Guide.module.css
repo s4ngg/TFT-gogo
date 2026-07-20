@@ -30,7 +30,7 @@
 
 .titleBlock h1 {
   margin: 0 0 6px;
-  color: var(--text-main);
+  color: var(--text-orange-main);
   font-size: 26px;
   font-weight: 700;
   letter-spacing: 0;
@@ -101,10 +101,10 @@
   align-items: center;
   gap: 2px 9px;
   padding: 10px 13px;
-  border: 1px solid rgba(112, 144, 152, 0.18);
+  border: 1px solid var(--border-control);
   border-radius: 8px;
-  color: var(--text-secondary);
-  background: rgba(8, 20, 28, 0.72);
+  color: var(--text-ui);
+  background: var(--bg-card);
   cursor: pointer;
   text-align: left;
 }
@@ -115,7 +115,7 @@
 
 .tabBar button span {
   overflow: hidden;
-  color: #dbe2e8;
+  color: var(--text-main);
   font-size: 14px;
   font-weight: 700;
   text-overflow: ellipsis;
@@ -124,7 +124,7 @@
 
 .tabBar button small {
   overflow: hidden;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: 11px;
   font-weight: 500;
   text-overflow: ellipsis;
@@ -133,10 +133,16 @@
 
 .tabBar button:hover,
 .activeTab {
-  border-color: rgba(5, 243, 231, 0.5) !important;
-  color: #05f3e7 !important;
-  background:
-    linear-gradient(180deg, rgba(3, 80, 86, 0.42), rgba(8, 20, 28, 0.88)) !important;
+  border-color: var(--accent-strong) !important;
+  color: var(--text-on-accent) !important;
+  background: var(--accent-gradient) !important;
+}
+
+.tabBar button:hover span,
+.tabBar button:hover small,
+.activeTab span,
+.activeTab small {
+  color: var(--text-on-accent) !important;
 }
 
 .searchBox {
@@ -145,10 +151,10 @@
   align-items: center;
   gap: 8px;
   padding: 0 12px;
-  border: 1px solid rgba(110, 142, 150, 0.32);
+  border: 1px solid var(--border-control);
   border-radius: 8px;
-  color: var(--text-secondary);
-  background: rgba(5, 14, 20, 0.92);
+  color: var(--text-muted);
+  background: var(--bg-input-light);
 }
 
 .searchBox input {
@@ -157,13 +163,14 @@
   height: 100%;
   border: 0;
   outline: 0;
-  color: var(--text-main);
+  color: var(--color-black);
   background: transparent;
   font-size: 13px;
+  font-weight: 750;
 }
 
 .searchBox input::placeholder {
-  color: #5a6470;
+  color: var(--text-onlight-placeholder);
 }
 
 .statusBanner {
@@ -332,8 +339,8 @@
   padding: 0 10px;
   border: 1px solid rgba(110, 142, 150, 0.28);
   border-radius: 7px;
-  color: var(--text-secondary);
-  background: rgba(8, 20, 28, 0.82);
+  color: var(--color-black);
+  background: var(--bg-onlight);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
@@ -341,9 +348,9 @@
 
 .pagination button:hover:not(:disabled),
 .activePage {
-  color: #05f3e7 !important;
-  border-color: rgba(5, 243, 231, 0.55) !important;
-  background: rgba(5, 115, 118, 0.34) !important;
+  color: var(--color-black) !important;
+  border-color: var(--rank-filter-active) !important;
+  background: var(--bg-card-orange) !important;
 }
 
 .pagination button:disabled {
@@ -605,9 +612,9 @@
   align-items: center;
   gap: var(--space-xs);
   padding: 4px 8px 4px 4px;
-  border: 1px solid rgba(0, 245, 212, 0.14);
+  border: 1px solid var(--accent-strong);
   border-radius: 8px;
-  background: rgba(8, 20, 28, 0.72);
+  background: var(--accent);
 }
 
 .specialUnitMini img,
@@ -620,7 +627,7 @@
 
 .specialUnitMini span {
   overflow: hidden;
-  color: var(--text-secondary);
+  color: var(--text-on-accent);
   font-size: var(--font-size-xs);
   font-weight: 800;
   text-overflow: ellipsis;
@@ -629,7 +636,7 @@
 
 .specialUnitMini small {
   grid-column: 2;
-  color: var(--text-muted);
+  color: var(--text-on-accent);
   font-size: var(--font-size-2xs);
   font-weight: 700;
 }
@@ -643,9 +650,9 @@
   gap: 6px;
   padding-right: var(--space-md);
   overflow: hidden;
-  border: 1px solid rgba(112, 144, 152, 0.16);
+  border: 1px solid var(--border-subtle);
   border-radius: 6px;
-  background: rgba(10, 22, 30, 0.78);
+  background: var(--bg-card);
   cursor: pointer;
 }
 
@@ -658,21 +665,30 @@
 
 .championMini span {
   overflow: hidden;
-  color: #e0e6ec;
+  color: var(--color-black);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .championMini b {
-  color: #f7d26d;
+  color: var(--accent);
   font-size: 11px;
 }
 
 button.championMini:hover {
-  color: var(--accent);
-  border-color: rgba(5, 243, 231, 0.42);
+  color: var(--text-on-accent);
+  border-color: var(--accent-strong);
+  background: var(--accent-bright);
+}
+
+button.championMini:hover span {
+  color: var(--text-on-accent) !important;
+}
+
+button.championMini:hover b {
+  color: var(--text-on-accent);
 }
 
 .tipLine {
@@ -687,10 +703,10 @@ button.championMini:hover {
   min-width: 0;
   padding: 5px 8px;
   overflow: hidden;
-  border: 1px solid rgba(110, 142, 150, 0.18);
+  border: 1px solid var(--border-subtle);
   border-radius: 6px;
-  color: #7f8b95;
-  background: rgba(8, 20, 28, 0.78);
+  color: var(--text-secondary);
+  background: var(--bg-card-soft);
   font-size: 11px;
   font-weight: 600;
   text-overflow: ellipsis;
@@ -997,7 +1013,7 @@ button.championMini:hover {
 
 .comboCell strong {
   display: block;
-  color: #e0e6ec;
+  color: var(--text-main);
   font-size: 12px;
   font-weight: 700;
 }
@@ -1083,19 +1099,19 @@ button.championMini:hover {
 .costFilter button {
   min-height: calc(var(--size-control-md) + var(--space-xs));
   padding: 0 12px;
-  border: 1px solid rgba(110, 142, 150, 0.28);
+  border: 1px solid var(--border-control);
   border-radius: 6px;
-  color: var(--text-secondary);
-  background: rgba(8, 20, 28, 0.82);
+  color: var(--text-ui);
+  background: var(--bg-card);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
 }
 
 .costActive {
-  color: #05f3e7 !important;
-  border-color: rgba(5, 243, 231, 0.55) !important;
-  background: rgba(5, 115, 118, 0.34) !important;
+  color: var(--text-on-accent) !important;
+  border-color: var(--accent-strong) !important;
+  background: var(--accent-gradient) !important;
 }
 
 .costFilter {
@@ -1120,10 +1136,10 @@ button.championMini:hover {
   justify-items: center;
   gap: 9px;
   padding: 14px 12px 12px;
-  border: 2px solid var(--border-card-highlight);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-panel);
-  background: var(--bg-card-gradient);
-  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.18);
+  background: var(--bg-card);
+  box-shadow: 0 12px 28px rgba(23, 32, 51, 0.1);
   cursor: default;
   outline: 0;
 }
@@ -1131,7 +1147,8 @@ button.championMini:hover {
 .championCard:hover,
 .championCard:focus-within {
   z-index: 5;
-  border-color: rgba(5, 243, 231, 0.45);
+  border-color: var(--overlay-gold-border);
+  box-shadow: 0 16px 34px rgba(23, 32, 51, 0.15);
 }
 
 .championOpenButton {
@@ -1172,18 +1189,18 @@ button.championMini:hover {
   display: grid;
   place-items: center;
   padding: 0;
-  border: 1px solid rgba(110, 142, 150, 0.28);
+  border: 1px solid var(--border-control);
   border-radius: 7px;
   color: var(--text-secondary);
-  background: rgba(7, 18, 25, 0.86);
+  background: var(--bg-card-soft);
   cursor: pointer;
 }
 
 .favoriteButton:hover,
 .favoriteActive {
-  color: #f9c860 !important;
-  border-color: rgba(249, 200, 96, 0.52) !important;
-  background: rgba(96, 64, 13, 0.42) !important;
+  color: var(--accent-secondary) !important;
+  border-color: var(--overlay-gold-border) !important;
+  background: var(--bg-gold-soft) !important;
 }
 
 .championPortrait img {
@@ -1230,6 +1247,12 @@ button.championMini:hover {
 }
 
 .championTooltip {
+  --accent: var(--overlay-accent);
+  --color-gold: var(--overlay-gold);
+  --text-main: var(--text-ondark-main);
+  --text-secondary: var(--text-ondark-secondary);
+  --text-muted: var(--text-ondark-muted);
+
   display: none;
   pointer-events: auto;
   position: absolute;
@@ -1239,9 +1262,9 @@ button.championMini:hover {
   width: 268px;
   padding: 13px;
   opacity: 0;
-  border: 1px solid rgba(5, 243, 231, 0.34);
+  border: 1px solid var(--border-inverse);
   border-radius: var(--radius-panel);
-  background: rgba(4, 12, 18, 0.98);
+  background: var(--overlay-card);
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
   transform: translate(-50%, 6px);
   transition: opacity 0.12s, transform 0.12s;
@@ -1336,12 +1359,19 @@ button.championMini:hover {
 }
 
 .championDialog {
+  --accent: var(--overlay-accent);
+  --bg-card-soft: var(--overlay-card-raised);
+  --color-gold: var(--overlay-gold);
+  --text-main: var(--text-ondark-main);
+  --text-secondary: var(--text-ondark-secondary);
+  --text-muted: var(--text-ondark-muted);
+
   position: relative;
   width: 420px;
   padding: 18px;
-  border: 1px solid rgba(5, 243, 231, 0.34);
+  border: 1px solid var(--border-inverse);
   border-radius: var(--radius-panel);
-  background: rgba(4, 12, 18, 0.98);
+  background: var(--overlay-card);
   box-shadow: 0 28px 70px rgba(0, 0, 0, 0.55);
 }
 
@@ -1516,10 +1546,10 @@ button.championMini:hover {
   place-items: center;
   align-content: center;
   gap: 8px;
-  border: 1px solid rgba(112, 144, 152, 0.14);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-panel);
   color: var(--text-muted);
-  background: rgba(8, 20, 28, 0.58);
+  background: var(--bg-card-soft);
   font-size: 13px;
   font-weight: 600;
 }
@@ -1605,8 +1635,14 @@ button.championMini:hover {
   --text-soft: var(--text-ondark-soft);
   --text-secondary: var(--text-ondark-secondary);
   --text-muted: var(--text-ondark-muted);
-  --bg-card: #0e1926;
-  --bg-card-soft: #142235;
+  --accent: var(--overlay-accent);
+  --bg-card: var(--overlay-card);
+  --bg-card-soft: var(--overlay-card-raised);
+  --bg-tooltip: var(--overlay-card);
+  --border-separator: var(--border-inverse);
+  --border-subtle: var(--border-inverse);
+  --color-cyan: var(--overlay-accent);
+  --color-gold: var(--overlay-gold);
 
   width: min(var(--size-gameguide-ai-chat-width), calc(100vw - (var(--space-5xl) * 2)));
   height: min(var(--size-gameguide-ai-chat-max-height), calc(100vh - (var(--space-5xl) * 2)));
