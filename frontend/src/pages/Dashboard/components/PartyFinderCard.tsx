@@ -80,19 +80,23 @@ function PartyFinderCard() {
                 <span className={`${styles.partyIcon} ${partyToneClassNames[post.tone]}`}>
                   <Icon size={21} strokeWidth={2.2} />
                 </span>
-                <div>
-                  <h3>{post.title}</h3>
+                <div className={styles.partyContent}>
+                  <div className={styles.partyTitleLine}>
+                    <h3>{post.title}</h3>
+                    <em>{post.close}</em>
+                  </div>
                   <p>
                     <span>{post.mode}</span>
                     <span>{post.tier}</span>
-                    <Users size={14} />
-                    {post.capacity}
+                    <span className={styles.partyCapacity}>
+                      <Users size={14} />
+                      {post.capacity}
+                    </span>
                     <span className={partyStatusClassNames[post.status]}>
                       {getPartyPreviewStatusLabel(post.status)}
                     </span>
                   </p>
                 </div>
-                <em>{post.close}</em>
               </article>
             )
           })

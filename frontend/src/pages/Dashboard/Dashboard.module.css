@@ -704,11 +704,22 @@
 .partyRow {
   min-height: 0;
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) auto;
+  grid-template-columns: 48px minmax(0, 1fr);
   align-items: center;
   gap: 9px;
   padding: 6px 9px 6px 7px;
   border-bottom: 1px solid var(--divider-sun);
+}
+
+.partyContent {
+  min-width: 0;
+}
+
+.partyTitleLine {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
 }
 
 .partyRow:last-child {
@@ -771,6 +782,8 @@
 }
 
 .partyRow h3 {
+  min-width: 0;
+  flex: 1 1 auto;
   margin: 0 0 4px;
   overflow: hidden;
   color: var(--text-main);
@@ -784,6 +797,7 @@
 
 .partyRow p {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 5px;
   margin: 0;
@@ -793,10 +807,21 @@
 }
 
 .partyRow p span {
+  flex: 0 0 auto;
   padding: 2px 7px;
   border: 1px solid rgba(118, 151, 160, 0.22);
   border-radius: 4px;
   background: rgba(10, 22, 30, 0.8);
+  white-space: nowrap;
+}
+
+.partyRow p .partyCapacity {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .partyRow p .partyStateOpen {
@@ -812,6 +837,7 @@
 }
 
 .partyRow em {
+  flex: 0 0 auto;
   color: #ff4945;
   font-size: 12px;
   font-style: normal;
@@ -1169,7 +1195,7 @@ button:hover {
 
   .partyRow {
     min-height: 50px;
-    grid-template-columns: 45px minmax(0, 1fr) auto;
+    grid-template-columns: 45px minmax(0, 1fr);
     padding-top: 5px;
     padding-bottom: 5px;
   }
