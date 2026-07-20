@@ -23,7 +23,7 @@
 }
 
 .pageHeader p {
-  color: #05e9dd;
+  color: var(--accent-secondary);
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -32,7 +32,7 @@
 
 .pageHeader h1 {
   margin-top: 5px;
-  color: #ffffff;
+  color: var(--text-orange-main);
   font-size: 30px;
   font-weight: 650;
   letter-spacing: -0.024em;
@@ -40,17 +40,17 @@
 
 .pageHeader span {
   margin-bottom: 5px;
-  color: #9ca7b1;
+  color: var(--text-secondary);
   font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
 }
 
 .panel {
-  border: 2px solid var(--border-card-highlight);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-card);
-  background: var(--bg-card-gradient);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.015), 0 18px 38px rgba(0, 0, 0, 0.18);
+  background: var(--bg-card);
+  box-shadow: 0 12px 30px rgba(23, 32, 51, 0.1);
 }
 
 .partyPanel,
@@ -83,7 +83,7 @@
 
 .panelHeader p {
   margin-top: 7px;
-  color: #aab3bc;
+  color: var(--text-secondary);
   font-size: 13px;
   font-weight: 400;
 }
@@ -92,10 +92,10 @@
 .joinButton,
 .filterTabs button,
 .messageForm button {
-  border: 1px solid rgba(5, 221, 213, 0.82);
+  border: 1px solid var(--accent-strong);
   border-radius: var(--radius-button);
-  color: #05f0e3;
-  background: rgba(2, 77, 82, 0.64);
+  color: var(--text-on-accent);
+  background: var(--accent);
   font-weight: 700;
   cursor: pointer;
 }
@@ -129,10 +129,10 @@
   gap: 9px;
   overflow: hidden;
   padding: 0 0 0 13px;
-  border: 1px solid rgba(110, 142, 150, 0.28);
+  border: 1px solid var(--border-control);
   border-radius: var(--radius-button);
   color: #aeb8c2;
-  background: rgba(3, 15, 20, 0.94);
+  background: var(--bg-input-light);
 }
 
 .searchBox input {
@@ -141,19 +141,19 @@
   min-width: 0;
   border: 0;
   outline: 0;
-  color: #ffffff;
+  color: var(--color-black);
   background: transparent;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 750;
 }
 
 .searchBox button {
   align-self: stretch;
   flex: 0 0 62px;
   border: 0;
-  border-left: 1px solid rgba(5, 221, 213, 0.42);
-  color: #04f3e5;
-  background: rgba(2, 77, 82, 0.64);
+  border-left: 1px solid var(--accent-strong);
+  color: var(--text-on-accent);
+  background: var(--accent);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
@@ -162,26 +162,27 @@
 .composeBox {
   /* 오렌지 카드 위 자체 다크 배경 박스 — 밝은 텍스트로 복귀 */
   --text-main: var(--text-ondark-main);
+  --text-muted: var(--text-ondark-muted);
 
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) 96px 112px 92px;
   gap: 8px;
   margin-top: 12px;
   padding: 12px;
-  border: 1px solid rgba(112, 145, 153, 0.17);
+  border: 1px solid var(--border-inverse);
   border-radius: var(--radius-panel);
-  background: rgba(4, 13, 18, 0.48);
+  background: var(--overlay-card);
 }
 
 .composeBox input,
 .composeBox select,
 .composeBox textarea {
   min-width: 0;
-  border: 1px solid rgba(110, 142, 150, 0.26);
+  border: 1px solid var(--border-inverse);
   border-radius: 7px;
   outline: 0;
   color: var(--text-main);
-  background: rgba(3, 15, 20, 0.92);
+  background: var(--overlay-card-raised);
   font: inherit;
   font-size: 12px;
   font-weight: 500;
@@ -210,7 +211,7 @@
 
 .composeBox input::placeholder,
 .composeBox textarea::placeholder {
-  color: #8f9aa3;
+  color: var(--text-muted);
 }
 
 .composeBox button {
@@ -238,7 +239,7 @@
 }
 
 .searchBox input::placeholder {
-  color: #9ea8b2;
+  color: var(--text-onlight-placeholder);
 }
 
 .filterTabs {
@@ -250,17 +251,17 @@
 .filterTabs button {
   height: 36px;
   min-width: 59px;
-  border-color: rgba(110, 142, 150, 0.28);
-  color: #b7bec7;
-  background: rgba(8, 20, 27, 0.84);
+  border-color: var(--border-control);
+  color: var(--text-ui);
+  background: var(--bg-card);
   font-size: 12px;
   font-weight: 500;
 }
 
 .filterTabs .selectedTab {
-  color: #04f3e5;
-  border-color: #05ddd5;
-  background: rgba(5, 102, 104, 0.56);
+  color: var(--text-on-accent);
+  border-color: var(--accent-strong);
+  background: var(--accent-gradient);
 }
 
 .partyList {
@@ -278,10 +279,10 @@
   display: grid;
   place-items: center;
   margin: 0;
-  border: 1px solid rgba(112, 145, 153, 0.17);
+  border: 1px dashed var(--border-control);
   border-radius: var(--radius-panel);
-  color: #9ea8b2;
-  background: rgba(4, 13, 18, 0.48);
+  color: var(--text-muted);
+  background: var(--bg-card-soft);
   font-size: 13px;
   font-weight: 500;
 }
@@ -293,11 +294,11 @@
   align-items: center;
   min-height: 118px;
   padding: 14px;
-  border: 1px solid rgba(112, 145, 153, 0.17);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-panel);
   background:
-    radial-gradient(circle at 6% 18%, rgba(0, 238, 224, 0.07), transparent 28%),
-    linear-gradient(90deg, rgba(12, 29, 37, 0.78), rgba(6, 17, 24, 0.4));
+    radial-gradient(circle at 6% 18%, var(--bg-gold-soft), transparent 30%),
+    var(--bg-card);
 }
 
 .partyIcon {
@@ -362,7 +363,7 @@
   min-width: 0;
   margin: 0;
   overflow: hidden;
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 17px;
   font-weight: 650;
   letter-spacing: -0.018em;
@@ -378,10 +379,10 @@
   display: inline-flex;
   align-items: center;
   padding: 0 9px;
-  border: 1px solid rgba(5, 221, 213, 0.35);
+  border: 1px solid var(--border-active);
   border-radius: 999px;
-  color: #06e9db;
-  background: rgba(3, 60, 65, 0.44);
+  color: var(--accent);
+  background: var(--accent-bg-faint);
   font-size: 11px;
   font-weight: 700;
 }
@@ -389,7 +390,7 @@
 .partyContent > p {
   margin: 7px 0 0;
   overflow: hidden;
-  color: #aab4bd;
+  color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.45;
   text-overflow: ellipsis;
@@ -413,10 +414,10 @@
   gap: 4px;
   height: 24px;
   padding: 0 8px;
-  border: 1px solid rgba(118, 151, 160, 0.22);
+  border: 1px solid var(--border-subtle);
   border-radius: 5px;
-  color: #c0c8d0;
-  background: rgba(10, 22, 30, 0.76);
+  color: var(--text-secondary);
+  background: var(--bg-card-soft);
   font-size: 11px;
   font-weight: 500;
 }
@@ -432,8 +433,8 @@
 }
 
 .joinButton[aria-pressed="true"] {
-  color: #ffffff;
-  background: rgba(0, 122, 118, 0.86);
+  color: var(--text-on-accent);
+  background: var(--accent-gradient);
 }
 
 .joinButton:disabled {
@@ -468,17 +469,17 @@
   display: grid;
   gap: 5px;
   padding: 11px 12px;
-  border: 1px solid rgba(112, 145, 153, 0.18);
+  border: 1px solid var(--border-control);
   border-radius: 9px;
-  color: #b8c2ca;
-  background: rgba(8, 20, 27, 0.68);
+  color: var(--text-ui);
+  background: var(--bg-card);
   text-align: left;
   cursor: pointer;
 }
 
 .channelList strong {
   overflow: hidden;
-  color: #ffffff;
+  color: var(--text-main);
   font-size: 13px;
   font-weight: 700;
   text-overflow: ellipsis;
@@ -489,33 +490,41 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #aab4bd;
+  color: var(--text-secondary);
   font-size: 11px;
 }
 
 .channelList small {
   overflow: hidden;
-  color: #8f9aa3;
+  color: var(--text-muted);
   font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .channelList .activeChannel {
-  border-color: rgba(5, 221, 213, 0.78);
-  background:
-    linear-gradient(90deg, rgba(0, 116, 108, 0.42), rgba(5, 48, 56, 0.56)),
-    rgba(8, 20, 27, 0.86);
+  border-color: var(--accent-strong);
+  color: var(--text-on-accent);
+  background: var(--accent-gradient);
+}
+
+.channelList .activeChannel strong,
+.channelList .activeChannel span,
+.channelList .activeChannel small {
+  color: var(--text-on-accent);
 }
 
 .chatWindow {
+  --text-secondary: var(--text-ondark-secondary);
+  --text-muted: var(--text-ondark-muted);
+
   min-height: 0;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   overflow: hidden;
-  border: 1px solid rgba(112, 145, 153, 0.17);
+  border: 1px solid var(--border-inverse);
   border-radius: var(--radius-panel);
-  background: rgba(4, 13, 18, 0.54);
+  background: var(--overlay-card);
 }
 
 .chatWindowHeader {
@@ -561,9 +570,9 @@
 .messageList article {
   max-width: 86%;
   padding: 10px 11px;
-  border: 1px solid rgba(112, 145, 153, 0.14);
+  border: 1px solid var(--border-inverse);
   border-radius: 9px;
-  background: rgba(13, 29, 38, 0.72);
+  background: var(--overlay-card-raised);
 }
 
 .messageList article div {
@@ -580,7 +589,7 @@
 }
 
 .messageList span {
-  color: #05e9dd;
+  color: var(--overlay-gold);
   font-size: 11px;
   font-weight: 600;
 }
@@ -600,8 +609,8 @@
 
 .messageList .myMessage {
   align-self: end;
-  border-color: rgba(5, 221, 213, 0.35);
-  background: rgba(0, 83, 88, 0.54);
+  border-color: var(--overlay-gold-border);
+  background: var(--bg-midnight-soft);
 }
 
 .chatEmpty {
@@ -625,21 +634,22 @@
   padding: 0 8px 0 12px;
   border: 1px solid rgba(5, 221, 213, 0.62);
   border-radius: 8px;
-  color: #05f0e3;
-  background: rgba(2, 54, 59, 0.62);
+  color: var(--color-black);
+  background: var(--bg-input-light);
 }
 
 .messageForm input {
   min-width: 0;
   border: 0;
   outline: 0;
-  color: #ffffff;
+  color: var(--color-black);
   background: transparent;
   font-size: 13px;
+  font-weight: 750;
 }
 
 .messageForm input::placeholder {
-  color: #9ca7b1;
+  color: var(--text-onlight-placeholder);
 }
 
 .messageForm input:disabled {
