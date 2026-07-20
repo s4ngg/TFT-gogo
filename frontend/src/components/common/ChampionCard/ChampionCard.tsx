@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type SyntheticEvent } from 'react'
 import { tftItemIconOnError } from '../../../api/communityDragonAssets'
 import styles from './ChampionCard.module.css'
 
@@ -25,13 +25,31 @@ export interface ChampionCardProps {
 
 function ChampionCard({ label, imageUrl, items = [], stars = 2, hasItem = false, cost }: ChampionCardProps) {
   const costClass = cost != null ? (costClasses[cost] ?? styles.cost1) : undefined
-  const equippedItems = items.slice(0, 3)
+  const allItems = items.slice(0, 3)
   const [imageFailed, setImageFailed] = useState(false)
+  const [failedItemKeys, setFailedItemKeys] = useState<Set<string>>(new Set())
 
   // imageUrl이 바뀌면 실패 상태 초기화 (새 이미지 재시도)
   useEffect(() => {
     setImageFailed(false)
   }, [imageUrl])
+
+  // items가 바뀌면 실패 상태 초기화 (새 아이템 재시도)
+  useEffect(() => {
+    setFailedItemKeys(new Set())
+  }, [items])
+
+  const equippedItems = allItems
+    .map((item, index) => ({ item, itemKey: `${item.name}_${index}` }))
+    .filter(({ itemKey }) => !failedItemKeys.has(itemKey))
+
+  function handleItemError(e: SyntheticEvent<HTMLImageElement>, itemKey: string) {
+    tftItemIconOnError(e)
+    // 모든 fallback 경로가 실패하면 이미지를 완전히 제거해 배경색 박스가 남지 않도록 한다
+    if (e.currentTarget.style.opacity === '0') {
+      setFailedItemKeys((prev) => new Set(prev).add(itemKey))
+    }
+  }
 
   return (
     <span className={`${styles.card} ${costClass ?? ''}`}>
@@ -48,13 +66,13 @@ function ChampionCard({ label, imageUrl, items = [], stars = 2, hasItem = false,
       )}
       {equippedItems.length > 0 && (
         <span className={styles.itemTray}>
-          {equippedItems.map((item,index) => (
+          {equippedItems.map(({ item, itemKey }) => (
             <img
               className={styles.itemIcon}
               src={item.imageUrl}
               alt={item.name}
-              key={`${item.name}_${index}`}
-              onError={tftItemIconOnError}
+              key={itemKey}
+              onError={(e) => handleItemError(e, itemKey)}
             />
           ))}
         </span>
