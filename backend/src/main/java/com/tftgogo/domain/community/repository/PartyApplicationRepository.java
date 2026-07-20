@@ -47,7 +47,6 @@ public interface PartyApplicationRepository extends JpaRepository<PartyApplicati
               and application.status = :status
               and partyPost.id <> :partyPostId
               and partyPost.deletedAt is null
-              and partyPost.closed = false
               and (partyPost.deadline is null or partyPost.deadline > :now)
             """)
     boolean existsActiveAcceptedApplicationForOtherParty(
@@ -64,7 +63,6 @@ public interface PartyApplicationRepository extends JpaRepository<PartyApplicati
             where application.userId = :userId
               and application.status = :status
               and partyPost.deletedAt is null
-              and partyPost.closed = false
               and (partyPost.deadline is null or partyPost.deadline > :now)
             """)
     boolean existsActiveAcceptedApplication(

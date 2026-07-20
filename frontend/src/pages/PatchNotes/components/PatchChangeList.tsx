@@ -14,7 +14,6 @@ import {
   shouldShowPatchChangeValueLine,
   type PatchChangeStatusTone,
 } from '../utils/patchChangeDisplay'
-import { getPatchChangeImageUrl } from '../patchNotesImages'
 import styles from '../PatchNotes.module.css'
 
 const CATEGORY_ICON: Record<ChangeCategory, LucideIcon> = {
@@ -70,8 +69,6 @@ function PatchChangeList({ patchChanges }: PatchChangeListProps) {
               {section.groups.map((group) => {
                 const changeStatuses = getVisiblePatchChangeStatuses(group.changes)
                 const changeTypes = getVisibleNewChangeTypes(group.changes)
-                const representativeChange = group.changes[0]
-                const imageUrl = getPatchChangeImageUrl(representativeChange)
                 const changeDetails = group.changes
                   .map((change) => ({
                     change,
@@ -82,44 +79,34 @@ function PatchChangeList({ patchChanges }: PatchChangeListProps) {
 
                 return (
                   <li key={`${section.category}-${getPatchChangeGroupKey(group.title)}`} className={styles.changeTargetGroup}>
-                    <div className={styles.changeTargetHeader}>
-                      <img
-                        src={imageUrl}
-                        alt=""
-                        aria-hidden="true"
-                        className={styles.changeTargetImage}
-                        loading="lazy"
-                        decoding="async"
-                      />
-                      <div className={styles.changeTargetHeading}>
-                        <div className={styles.changeTargetTitle}>
-                          <strong>{group.title}</strong>
-                          {group.changes.length > 1 && (
-                            <span className={styles.changeGroupCount}>{group.changes.length}개</span>
-                          )}
-                        </div>
-                        {(changeStatuses.length > 0 || changeTypes.length > 0) && (
-                          <div className={styles.changeMetaStack}>
-                            {changeStatuses.map((status) => (
-                              <span
-                                key={`${status.tone}-${status.label}`}
-                                className={`${styles.changeStatusBadge} ${STATUS_TONE_CLASS[status.tone]}`}
-                                aria-label={`상태: ${status.label}`}
-                              >
-                                {status.label}
-                              </span>
-                            ))}
-                            {changeTypes.map((changeType) => (
-                              <span
-                                key={changeType}
-                                className={`${styles.changeType} ${styles.new}`}
-                              >
-                                {changeType}
-                              </span>
-                            ))}
-                          </div>
+                    <div className={styles.changeTargetHeading}>
+                      <div className={styles.changeTargetTitle}>
+                        <strong>{group.title}</strong>
+                        {group.changes.length > 1 && (
+                          <span className={styles.changeGroupCount}>{group.changes.length}개</span>
                         )}
                       </div>
+                      {(changeStatuses.length > 0 || changeTypes.length > 0) && (
+                        <div className={styles.changeMetaStack}>
+                          {changeStatuses.map((status) => (
+                            <span
+                              key={`${status.tone}-${status.label}`}
+                              className={`${styles.changeStatusBadge} ${STATUS_TONE_CLASS[status.tone]}`}
+                              aria-label={`상태: ${status.label}`}
+                            >
+                              {status.label}
+                            </span>
+                          ))}
+                          {changeTypes.map((changeType) => (
+                            <span
+                              key={changeType}
+                              className={`${styles.changeType} ${styles.new}`}
+                            >
+                              {changeType}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {changeDetails.length > 0 && (

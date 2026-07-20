@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ChevronRight, Clock3 } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import ChampionCard from '../../../components/common/ChampionCard'
 import TierBadge from '../../../components/common/TierBadge'
@@ -131,10 +131,6 @@ function MetaSnapshot() {
       <div className={styles.panelHeading}>
         <div>
           <h2>추천 메타 스냅샷</h2>
-          <span>
-            <Clock3 size={17} />
-            업데이트: 3분 전
-          </span>
         </div>
         <button type="button" onClick={() => navigate('/decks')}>
           전체 보기

@@ -5,9 +5,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { communityDragonProfileIconUrl } from '../../api/communityDragonAssets'
 import { logout } from '../../api/memberApi'
 import { useAuthSession } from '../../hooks/useAuthSession'
-import { useMetaSnapshot } from '../../hooks/useMetaSnapshot'
 import useAuthStore from '../../store/useAuthStore'
-import RiotApiStatusBadge from './RiotApiStatusBadge'
 import { clearTopBarAuthSession } from './topBarAuth'
 import styles from './Layout.module.css'
 
@@ -23,11 +21,6 @@ function TopBar() {
   const token = useAuthStore((state) => state.token)
   const isLoggedIn = Boolean(token)
   const { data: member } = useAuthSession()
-  const { data: metaDeckResponse } = useMetaSnapshot()
-  const patchVersion = metaDeckResponse?.patchVersion ?? '집계 대기'
-  const patchBriefText = metaDeckResponse?.dataStartDate
-    ? `${metaDeckResponse.dataStartDate} 이후 메타 덱 집계 기준`
-    : '메타 덱 데이터를 집계 중입니다'
   const displayName = member?.nickname ?? member?.email ?? 'TFTgogo'
   const memberProfileIconUrl = member?.profileImage || profileIconUrl
 
@@ -83,13 +76,6 @@ function TopBar() {
 
   return (
     <header className={styles.topBar}>
-      <div className={styles.topStatusGroup}>
-        <div className={styles.patchBrief} aria-label="패치 한줄 요약">
-          <span>{patchVersion} 패치 요약</span>
-          <strong>{patchBriefText}</strong>
-        </div>
-        <RiotApiStatusBadge />
-      </div>
       <div className={styles.topActions}>
         {isLoggedIn ? (
           <div className={styles.profileMenuShell}>

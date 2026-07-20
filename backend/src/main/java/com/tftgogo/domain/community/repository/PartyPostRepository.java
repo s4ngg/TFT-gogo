@@ -62,7 +62,6 @@ public interface PartyPostRepository extends JpaRepository<PartyPost, Long> {
             where partyPost.userId = :userId
               and partyPost.id <> :partyPostId
               and partyPost.deletedAt is null
-              and partyPost.closed = false
               and (partyPost.deadline is null or partyPost.deadline > :now)
             """)
     boolean existsActiveOwnedPartyPostForOtherParty(
@@ -76,7 +75,6 @@ public interface PartyPostRepository extends JpaRepository<PartyPost, Long> {
             from PartyPost partyPost
             where partyPost.userId = :userId
               and partyPost.deletedAt is null
-              and partyPost.closed = false
               and (partyPost.deadline is null or partyPost.deadline > :now)
             """)
     boolean existsActiveOwnedPartyPost(
