@@ -22,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,7 +52,7 @@ class SummonerServiceImplTest {
         CachedSummoner cached = cachedSummoner(PUUID, GAME_NAME, TAG_LINE,
                 LocalDateTime.now().minusMinutes(10));
         when(cachedSummonerRepository.findByGameNameIgnoreCaseAndTagLineIgnoreCase(GAME_NAME, TAG_LINE))
-                .thenReturn(Optional.of(cached));
+                .thenReturn(List.of(cached));
 
         // when
         SummonerProfileResponse result = summonerService.getProfile(GAME_NAME, TAG_LINE);
@@ -69,7 +70,7 @@ class SummonerServiceImplTest {
         CachedSummoner cached = cachedSummoner(PUUID, GAME_NAME, TAG_LINE,
                 LocalDateTime.now().minusMinutes(10));
         when(cachedSummonerRepository.findByGameNameIgnoreCaseAndTagLineIgnoreCase(upperGameName, lowerTagLine))
-                .thenReturn(Optional.of(cached));
+                .thenReturn(List.of(cached));
 
         // when
         SummonerProfileResponse result = summonerService.getProfile(upperGameName, lowerTagLine);
@@ -85,7 +86,7 @@ class SummonerServiceImplTest {
         CachedSummoner stale = cachedSummoner(PUUID, GAME_NAME, TAG_LINE,
                 LocalDateTime.now().minusMinutes(70));
         when(cachedSummonerRepository.findByGameNameIgnoreCaseAndTagLineIgnoreCase(GAME_NAME, TAG_LINE))
-                .thenReturn(Optional.of(stale));
+                .thenReturn(List.of(stale));
         when(riotApiClient.getAccount(GAME_NAME, TAG_LINE))
                 .thenReturn(accountDto(PUUID, GAME_NAME, TAG_LINE));
         when(riotApiClient.getSummoner(PUUID)).thenReturn(summonerDto(PUUID, 100, 300L));
@@ -102,7 +103,7 @@ class SummonerServiceImplTest {
     void 캐시_미스시_Riot_API를_호출하고_저장한다() {
         // given
         when(cachedSummonerRepository.findByGameNameIgnoreCaseAndTagLineIgnoreCase(GAME_NAME, TAG_LINE))
-                .thenReturn(Optional.empty());
+                .thenReturn(List.of());
         when(riotApiClient.getAccount(GAME_NAME, TAG_LINE))
                 .thenReturn(accountDto(PUUID, GAME_NAME, TAG_LINE));
         when(riotApiClient.getSummoner(PUUID)).thenReturn(summonerDto(PUUID, 100, 300L));
@@ -115,6 +116,25 @@ class SummonerServiceImplTest {
         verify(riotApiClient).getAccount(GAME_NAME, TAG_LINE);
         verify(riotApiClient).getSummoner(PUUID);
         verify(cachedSummonerRepository).save(any(CachedSummoner.class));
+    }
+
+    @Test
+    void 같은_소환사명에_puuid가_다른_캐시_행이_여러_개면_가장_최근_캐시를_사용한다() {
+        // given: 라이엇 ID 소유권 이전 등으로 puuid가 다른 중복 캐시 행이 남아있는 상황
+        String olderPuuid = "old-puuid";
+        CachedSummoner older = cachedSummoner(olderPuuid, GAME_NAME, TAG_LINE,
+                LocalDateTime.now().minusMinutes(30));
+        CachedSummoner newer = cachedSummoner(PUUID, GAME_NAME, TAG_LINE,
+                LocalDateTime.now().minusMinutes(5));
+        when(cachedSummonerRepository.findByGameNameIgnoreCaseAndTagLineIgnoreCase(GAME_NAME, TAG_LINE))
+                .thenReturn(List.of(older, newer));
+
+        // when
+        SummonerProfileResponse result = summonerService.getProfile(GAME_NAME, TAG_LINE);
+
+        // then
+        assertThat(result.getPuuid()).isEqualTo(PUUID);
+        verify(riotApiClient, never()).getAccount(anyString(), anyString());
     }
 
     // ── getRank ──────────────────────────────────────────────────────────────
@@ -216,7 +236,7 @@ class SummonerServiceImplTest {
         CachedRank cachedRankData = cachedRank(PUUID, "DIAMOND", "III",
                 LocalDateTime.now().minusMinutes(1));
         when(cachedSummonerRepository.findByGameNameIgnoreCaseAndTagLineIgnoreCase(GAME_NAME, TAG_LINE))
-                .thenReturn(Optional.of(cachedSummonerData));
+                .thenReturn(List.of(cachedSummonerData));
         when(cachedRankRepository.findById(PUUID)).thenReturn(Optional.of(cachedRankData));
 
         // when
@@ -236,7 +256,7 @@ class SummonerServiceImplTest {
         CachedRank cachedRankData = cachedRank(PUUID, "DIAMOND", "III",
                 LocalDateTime.now().minusMinutes(1));
         when(cachedSummonerRepository.findByGameNameIgnoreCaseAndTagLineIgnoreCase(GAME_NAME, TAG_LINE))
-                .thenReturn(Optional.of(cachedSummonerData));
+                .thenReturn(List.of(cachedSummonerData));
         when(cachedRankRepository.findById(PUUID)).thenReturn(Optional.of(cachedRankData));
 
         // when

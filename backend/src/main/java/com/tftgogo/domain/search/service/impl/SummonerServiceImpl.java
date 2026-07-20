@@ -19,6 +19,7 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 
 @Service
 public class SummonerServiceImpl implements SummonerService {
@@ -48,6 +49,8 @@ public class SummonerServiceImpl implements SummonerService {
     public SummonerProfileResponse getProfile(String gameName, String tagLine) {
         return cachedSummonerRepository
                 .findByGameNameIgnoreCaseAndTagLineIgnoreCase(gameName, tagLine)
+                .stream()
+                .max(Comparator.comparing(CachedSummoner::getCachedAt))
                 .filter(cs -> isFresh(cs.getCachedAt(), SUMMONER_TTL_MINUTES))
                 .map(cs -> SummonerProfileResponse.builder()
                         .puuid(cs.getPuuid())
@@ -131,7 +134,7 @@ public class SummonerServiceImpl implements SummonerService {
     public SummonerDetailResponse refresh(String gameName, String tagLine) {
         cachedSummonerRepository
                 .findByGameNameIgnoreCaseAndTagLineIgnoreCase(gameName, tagLine)
-                .ifPresent(cs -> {
+                .forEach(cs -> {
                     cachedRankRepository.deleteById(cs.getPuuid());
                     cachedSummonerRepository.deleteById(cs.getPuuid());
                 });
